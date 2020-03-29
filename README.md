@@ -12,5 +12,5 @@
 
 ## notes
 
-We have chosen to make the current package available publicly now (March 2020) in order to help people who are analyzing COVID-19 data.  The documentation will improve over time.  If you have suggestions for improvement, please e-mail us (bbolker@gmail.com and earn@math.mcmaster.ca).
+We have chosen to make the current package available publicly now (March 2020) in order to help people who are analyzing COVID-19 data.  The documentation will improve over time.  If you have suggestions for improvement, please e-mail us (bbolker@mcmaster.ca and earn@math.mcmaster.ca).
 
