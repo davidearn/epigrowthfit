@@ -708,7 +708,9 @@ setMethod("summary",
           "epigrowthfit",
           definition=function(object,gof_agg=NULL,
                               plague_R0=FALSE) {
-    rr <- function(x) setNames(range(x),c("min","max"))
+              rr <- function(x) setNames(range(x),c("min","max"))
+              msg <- object@mle2@details$message
+              if (is.null(msg)) msg <- ""
     return(new("summary.epigrowthfit",
                fulltime=rr(object@time),
                ntime=length(object@time),
@@ -718,12 +720,12 @@ setMethod("summary",
                distribname=object@loglik@name,
                growthrate=growthRate(object),
                doublingtime=doublingTime(object),
-               R0=if (plague_R0) R0(object) else NA,
-               finalsize=if (plague_R0) finalsize(R0(object)) else NA,
+               R0=if (plague_R0) R0(object) else NA_real_,
+               finalsize=if (plague_R0) finalsize(R0(object)) else NA_real_,
                coefficients=coef(object),
                gof=gof(object,gof_agg),
                conv=object@mle2@details$conv,
-               convmsg=object@mle2@details$message))
+               convmsg=msg))
 })
 
 #' @importFrom methods slotNames slot
