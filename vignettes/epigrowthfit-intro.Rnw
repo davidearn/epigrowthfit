@@ -55,6 +55,10 @@ and Benjamin M.\ Bolker$^{a,c,e}$\\
 Rver <- R.version$version.string
 @ 
 
+<<options>>=
+options(tinytex.verbose = TRUE)
+@ 
+
 <<tikzopts,include=FALSE>>=
 library(tikzDevice)
 ## table gets passed to \usepackage{xcolor} and all other packages
