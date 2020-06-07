@@ -1,3 +1,4 @@
+R_HOME = /usr/local
 Rscript = $(R_HOME)/bin/Rscript
 
 all: plotmodels.pdf epigrowthfit-intro.pdf
