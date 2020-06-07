@@ -1,0 +1,289 @@
+%\VignetteIndexEntry{epigrowthfit intro}
+%\VignetteEngine{knitr::knitr}
+%\VignetteEncoding{UTF-8}
+\documentclass[12pt]{article}
+%% knitr requires documentclass to be the first line of the file
+%% Created: 19 Mar 2017
+%% Changed: 22 Apr 2017
+%%          30 Apr 2017
+\input{nlipreamble.tex}
+\newcommand{\mysection}[1]{\clearpage\section*{#1}\addcontentsline{toc}{section}{#1}}
+\newcommand{\mysectionsamepage}[1]{\section*{#1}\addcontentsline{toc}{section}{#1}}
+%% http://tex.stackexchange.com/questions/316510/hyperlink-within-caption-to-a-figure
+%% if used in a caption, need short content \caption[...]{ ... \Methodslink ... }
+\newcommand{\Methodslink}{\href[page=9]{plaguegrowthrates.pdf}{\emph{Methods}}}
+\newcommand\ttbackslash{{\tt\char`\\}}
+\newcommand{\macro}[1]{{\tt\ttbackslash#1}}
+
+%% put S in front of equation and figure names in \supp
+\renewcommand{\theequation}{S\arabic{equation}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}}
+
+%% tables:
+\usepackage{tabularx} % for \newcolumntype
+
+\title{Vignette \texttt{epigrowthfit-intro}\\A brief introduction to the \texttt{epigrowthfit} R package}
+
+\author{David J.\,D.\ Earn$^{a,c,e}$, 
+Junling Ma$^{f}$, 
+Hendrik N.\ Poinar$^{b,c,d,e}$,\\
+Jonathan Dushoff$^{a,c,e}$,
+and Benjamin M.\ Bolker$^{a,c,e}$\\
+\href{mailto:earn@math.mcmaster.ca}{\tt earn@math.mcmaster.ca}\\
+\small $^a$Department of Mathematics \& Statistics,\\
+\small $^b$McMaster Ancient DNA Centre, Department of Anthropology,\\
+\small $^c$Department of Biology, $^d$Department of Biochemistry,\\
+\small and $^e$Michael G.\ deGroote Institute for Infectious Disease Research,\\
+\small McMaster University, 1280 Main Street West, Hamilton, ON, L8S 4K1, Canada;\\
+\small $^f$Department of Mathematics \& Statistics, University of Victoria, Victoria, BC, Canada}
+
+%%\input{plaguegrowthrates_labels}
+%%\input{plaguegrowthratessupp_labels}
+
+\begin{document}
+
+\linenumbers
+
+\maketitle
+
+\tableofcontents
+
+\clearpage
+
+<<rver,echo=FALSE>>=
+Rver <- R.version$version.string
+@ 
+
+<<tikzopts,include=FALSE>>=
+library(tikzDevice)
+## table gets passed to \usepackage{xcolor} and all other packages
+##options(tikzDocumentDeclaration="\\documentclass[12pt,table]{article}")
+@ 
+
+We used \Sexpr{Rver} and package versions:
+<<pkglist,echo=FALSE,message=FALSE>>=
+usedpkgs <- sort(c("epigrowthfit","bbmle","tikzDevice",
+                   "dplyr","tidyr","ggplot2","emdbook",
+                   "knitr","methods"))
+for(p in usedpkgs) library(p,character.only = TRUE)
+i1 <- installed.packages()
+print(i1[usedpkgs,"Version"],quote=FALSE)
+@ 
+\david{Any other key packages since we last updated this list?}
+
+\section{\texttt{epigrowthfit} R package}
+
+\david{We need to decide exactly which data will be included in the version of the package that we release.  The structure of the various data frames is not consistent, and only \texttt{plague} data frame is documented.  We probably won't be including the original \texttt{plague} data frame that is discussed below, but if we do then Harbin and London should not be in the same data frame.}
+
+\subsection{Wills data}
+
+<<hustingwillscols>>=
+names(husting_wills)
+summary(husting_wills)
+@ 
+
+<<canterburywillscols>>=
+names(canterbury_wills)
+summary(canterbury_wills)
+@ 
+
+<<billscols>>=
+names(london_bills)
+summary(london_bills)
+@ 
+
+<<parishcols>>=
+names(london_parish)
+summary(london_parish)
+@ 
+
+\subsection{Data frame containing mortality from plague}
+
+The \code{epigrowthfit} package includes a \code{plague} data frame that contains all the data described in the \Methodslink\ section of the main paper.  
+The columns of the data frame are:
+<<plaguecols>>=
+names(plague)
+@ 
+\noindent
+The meanings of these columns are explained in \cref{tab:plague.data.frame}.
+
+\begin{table}[h]
+\begin{center}
+\newcommand{\tableleft}[1]{\texttt{#1}}
+\newcommand{\tableright}[1]{\relax{#1}}
+\begin{tabular}{lp{10cm}}
+{\bfseries Column} & {\bfseries explanation} \\
+\hline
+\input{./plague.desc.tex}
+\hline
+\end{tabular}
+\end{center}
+\caption{Explanations of each of the columns in the \code{plague} data frame in the \code{epigrowthfit} package.}
+\label{tab:plague.data.frame}
+\end{table}
+
+We have coded the \code{outbreak.year} and \code{severity} for convenience in selecting subsets of the data.  For example, to extract the subset of data pertaining to the Great Plague of London in 1665--1666:
+<<gp>>=
+gp <- subset(plague,outbreak.year==1665)
+head(gp)
+@ 
+
+\subsection{Plotting plague epidemics}
+
+\david{This is based on the \code{plague} data frame, which we're probably not going to use\dots}
+
+The \code{plotPlague} function in the \code{epigrowthfit} package facilitates convenient plots, since it requires nothing more than the \code{outbreak.year}.  All cause mortality can be shown optionally.
+%
+\begin{figure}[h]
+\begin{center}
+<<plot.gp,fig.height=5,dev="tikz">>=
+plotPlague(1665,show.acm=TRUE)
+@ 
+\end{center}
+\caption{Plague deaths and all cause mortality during the Great Plague of London.}
+\label{F:plot.gp}
+\end{figure}
+%
+
+\clearpage
+
+\section{Estimating the initial exponential growth rate using \texttt{epigrowthfit}}
+
+The \code{epigrowthfit} function estimates an initial exponential growth rate $r$ for a time series.  To estimate $r$ for the Great Plague of London in 1665 based on our default methods:
+
+\david{I have (temporarily) set things up so that the fits are saved to an RData file, which is read if it exists.  Setting \code{cache=TRUE} in this chunk doesn't work: it fails to restore properly for some reason.}
+
+<<gpfit,cache=FALSE>>=
+gpfit.file <- "gpfit.RData"
+if (file.exists(gpfit.file)) {
+  load(gpfit.file)
+} else {
+  gpfit <- with(gp,epigrowthfit(time,plague.deaths))
+}
+@ 
+\noindent
+Here, \code{gpfit} is an \code{epigrowthfit} object, for which there are \code{show}, \code{summary} and \code{plot} methods.
+\hypertarget{showgpfit}{}
+<<show.gpfit>>=
+show(gpfit)
+@ 
+<<summary.gpfit>>=
+summary(gpfit)
+@ 
+\begin{figure}[h]
+\begin{center}
+<<plot.gpfit,fig.height=5>>=
+plot(gpfit)
+@ 
+\end{center}
+\caption{By default, the \code{plot} method for an \code{epigrowthfit} object produces this style of graph.  The default annotation includes the goodness of fit measure (\code{gof}), the index range of the fitted time window, the index of the specified \code{peak} time point, the name of the model used for fitting, and the observation error distribution type.  The dotted grey vertical lines identify the fitting window.}
+\label{F:gpfit}
+\end{figure}
+
+\bigskip
+\noindent
+A sample plot of the \code{gpfit} object is shown in \cref{F:gpfit}.
+
+\clearpage
+
+\subsection{Specifying the fitting window}
+
+By default, a sensible algorithm is used to choose a fitting window for the fit (see \Methodslink\ in the main paper).  The time points at which the fit starts and ends can be overridden by specifying optional arguments:
+
+\begin{table}[h]
+\begin{center}
+\newcommand{\tableleft}[1]{\texttt{#1}}
+\newcommand{\tableright}[1]{\relax{#1}}
+\begin{tabular}{lp{10cm}}
+{\bfseries argument} & {\bfseries explanation} \\
+\hline
+\tableleft{first} & \tableright{first time step to use} \\
+\tableleft{peak} & \tableright{estimated peak of epidemic (fitting window ends at \code{peak} for exponential models, \code{peak+1} otherwise; initial parameter guesses are based on log-linear fits to the data from the \code{first} to halfway between the \code{first} step and the \code{peak})} \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Arguments for altering the fitting window in the \code{epigrowthfit} function.}
+\label{tab:fittingwindowargs}
+\end{table}
+\noindent
+The \code{last} time point in the fitting window is determined by \code{peak}:
+<<lastpt,eval=FALSE>>=
+     last <- if (peak < length(deaths)) peak+1 else peak
+@ 
+\david{We should edit the help on \code{epigrowthfit} to clarify that it is \code{peak} if \code{peak} is the last point.}
+
+\david{It's actually a little weird that we don't let ourselves be completely flexible about the last point.  We do not allow ourselves to fit beyond one point past an estimated peak.  Why do we do that?}
+
+Printing the fit (via \hyperlink{showgpfit}{\code{show(gpfit)}} above) revealed that the (default) range of time point indices that was used for fitting was \Sexpr{sprintf("%d:%d",min(gpfit@window),max(gpfit@window))}.
+\cref{F:gpfit2} shows an example with an explicit fitting window specified.
+%
+\begin{figure}[h!]
+\begin{center}
+<<gpfit2,fig.height=5,warning=FALSE>>=
+first <- 20; peak <- 37
+if (file.exists(gpfit.file)) {
+  load(gpfit.file)
+} else {
+  gpfit2 <- with(gp,epigrowthfit(time,plague.deaths,first=first,peak=peak))
+}
+plot(gpfit2)
+legend("bottomright",bty="n",legend=c("Explicit arguments:",
+                               sprintf("first = %d",first),
+                               sprintf("peak = %d",peak)," "))
+@ 
+\end{center}
+\caption{An \code{epigrowthfit} fitting example in which the fitting window is explicitly specified.  (The default fitting window is used in \cref{F:gpfit}.)}
+\label{F:gpfit2}
+\end{figure}
+
+<<>>=
+if (!file.exists(gpfit.file)) {
+  save(gpfit, gpfit2, file=gpfit.file)
+}
+@ 
+
+\clearpage
+\subsection{Other fitting details}
+
+As an initial guess of the exponential growth rate, we simply choose the slope of the best fit line through log of the data during the first half of the selected time window.
+
+The package includes three epidemic growth curve models: pure exponential growth, a logistic curve, and the Richards model (\sref{richards}).  For this paper, we use the Richards model in all cases, since our previous work showed this to be the best choice when working with mortality data \cite{Ma+14}.
+
+All details of our fitting procedure are specified in the source code for the \code{epigrowthfit} function in the package.
+
+\subsection{The Richards model}\label{S:richards}
+
+The Richards \cite{Rich59} model for the cumulative epidemic curve is given in \cref{E:Richards} in the \Methodslink\ section of the main text.
+
+The parameter $K$ has a natural interpretation since $\lim_{t\to\infty}c(t)=K$, for any $c_0$, $r$, and $s$.
+In addition, for $t\ll 1/(rs)$ we have $e^{-rst}\sim1$ so as $t\to0$ we have
+%
+\begin{linenomath*}
+\begin{equation}\label{E:tto0approx}
+1 + \big((K/c_0)^s - 1\big) e^{-rst}
+\sim e^{-rst} + \big((K/c_0)^s - 1\big)e^{-rst}
+= \big((K/c_0)e^{-rt}\big)^s \,,
+\end{equation}
+\end{linenomath*}
+%
+and hence $c(t)\simeq c_0e^{rt}$ as $t\to0$.  Thus, $r$ is indeed the initial exponential growth rate that we wish to estimate.
+
+\cref{F:plotmodels} shows how the shapes of the cumulative and instantaneous curves depend on the parameters $K$ and $s$ of the Richards model.
+%
+\begin{figure}
+\begin{center}
+\scalebox{1}{
+\includegraphics{plotmodels.pdf}
+}
+\end{center}
+\caption{The Richards \cite{Rich59} model.  \emph{Top panels:} cumulative mortality; \emph{bottom panels:} instantaneous mortality rate.  The model has four parameters: the initial cumulative mortality $c_0$, the initial exponential growth rate $r$, the cumulative asymptote $K$, and the shape parameter $s$.  The plots show the effects of changing $s$ (left panels) and $K$ (right panels) with the other parameters fixed ($c_0=0.01$, $r=1$).}
+\label{F:plotmodels}
+\end{figure}
+
+\clearpage
+\bibliographystyle{vancouver}
+\bibliography{plague}
+\addcontentsline{toc}{section}{References}
+
+\end{document}
