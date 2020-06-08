@@ -16,9 +16,10 @@
 \newcommand{\macro}[1]{{\tt\ttbackslash#1}}
 
 %% put S in front of equation and figure names in \supp
-\renewcommand{\theequation}{S\arabic{equation}}
-\renewcommand{\thefigure}{S\arabic{figure}}
-\renewcommand{\thetable}{S\arabic{table}}
+%% (actually this isn't a formal supplement to a paper)
+%% \renewcommand{\theequation}{S\arabic{equation}}
+%% \renewcommand{\thefigure}{S\arabic{figure}}
+%% \renewcommand{\thetable}{S\arabic{table}}
 
 %% tables:
 \usepackage{tabularx} % for \newcolumntype
@@ -56,7 +57,7 @@ Rver <- R.version$version.string
 @ 
 
 <<options>>=
-options(tinytex.verbose = TRUE)
+options(tinytex.verbose = TRUE) # see TeX progress
 @ 
 
 <<tikzopts,include=FALSE>>=
@@ -65,7 +66,7 @@ library(tikzDevice)
 ##options(tikzDocumentDeclaration="\\documentclass[12pt,table]{article}")
 @ 
 
-We used \Sexpr{Rver} and package versions:
+This vignette was compiled using \Sexpr{Rver} and package versions:
 <<pkglist,echo=FALSE,message=FALSE>>=
 usedpkgs <- sort(c("epigrowthfit","bbmle","tikzDevice",
                    "dplyr","tidyr","ggplot2","emdbook",
@@ -78,9 +79,17 @@ print(i1[usedpkgs,"Version"],quote=FALSE)
 
 \section{\texttt{epigrowthfit} R package}
 
+\code{epigrowthfit} is an R package for estimating the initial growth
+rate of an epidemic.  The methodology is based on Ma \etal
+\cite{Ma+14}, but enhanced to handle sparsely sampled, noisy data.
+
 \david{We need to decide exactly which data will be included in the version of the package that we release.  The structure of the various data frames is not consistent, and only \texttt{plague} data frame is documented.  We probably won't be including the original \texttt{plague} data frame that is discussed below, but if we do then Harbin and London should not be in the same data frame.}
 
-\subsection{Wills data}
+\subsection{Plague data}
+
+The \code{epigrowthfit} package was developed initially to support analysis of historical epidemics of plague.  All the data used by Earn \etal \cite{Earn+20} (and described in the \Methodslink\ section of that paper) are available in the package.  There is a summary method for these data objects.
+
+\subsubsection*{Wills}
 
 <<hustingwillscols>>=
 names(husting_wills)
@@ -92,20 +101,25 @@ names(canterbury_wills)
 summary(canterbury_wills)
 @ 
 
+\subsubsection*{Bills of Mortality}
+
 <<billscols>>=
 names(london_bills)
 summary(london_bills)
 @ 
+
+\subsubsection*{Parish mortality records}
 
 <<parishcols>>=
 names(london_parish)
 summary(london_parish)
 @ 
 
-\subsection{Data frame containing mortality from plague}
+\subsubsection*{Old plague data frame}
 
-The \code{epigrowthfit} package includes a \code{plague} data frame that contains all the data described in the \Methodslink\ section of the main paper.  
-The columns of the data frame are:
+The package also includes a much less comprehensive \code{plague} data
+frame, which we used before obtaining all the data used in Earn \etal
+\cite{Earn+20}.  The columns of the \code{plague} data frame are:
 <<plaguecols>>=
 names(plague)
 @ 
@@ -193,7 +207,8 @@ A sample plot of the \code{gpfit} object is shown in \cref{F:gpfit}.
 
 \subsection{Specifying the fitting window}
 
-By default, a sensible algorithm is used to choose a fitting window for the fit (see \Methodslink\ in the main paper).  The time points at which the fit starts and ends can be overridden by specifying optional arguments:
+By default, a sensible algorithm is used to choose a fitting window
+for the fit (see \Methodslink\ in Earn \etal \cite{Earn+20}).  The time points at which the fit starts and ends can be overridden by specifying optional arguments:
 
 \begin{table}[h]
 \begin{center}
@@ -252,14 +267,22 @@ if (!file.exists(gpfit.file)) {
 
 As an initial guess of the exponential growth rate, we simply choose the slope of the best fit line through log of the data during the first half of the selected time window.
 
-The package includes three epidemic growth curve models: pure exponential growth, a logistic curve, and the Richards model (\sref{richards}).  For this paper, we use the Richards model in all cases, since our previous work showed this to be the best choice when working with mortality data \cite{Ma+14}.
+The package includes three epidemic growth curve models: pure exponential growth, a logistic curve, and the Richards model (\sref{richards}).  In this vignette, we use the Richards model in all cases.  Our initial work showed the Richards model to be the best choice when working with mortality data \cite{Ma+14}, but our detailed analysis of historical plague data showed that the simpler logistic model is better if the data are extremely noisy \cite{Earn+20}.
 
 All details of our fitting procedure are specified in the source code for the \code{epigrowthfit} function in the package.
 
 \subsection{The Richards model}\label{S:richards}
 
-The Richards \cite{Rich59} model for the cumulative epidemic curve is given in \cref{E:Richards} in the \Methodslink\ section of the main text.
-
+The logistic model for the cumulative epidemic curve is specified in Equation~(1) of the \Methodslink\ section of Earn \etal \cite{Earn+20} (see the discussion there about why we chose the logistic model).  The Richards \cite{Rich59} model
+%
+\begin{linenomath*}
+\begin{equation}
+c(t) = b t + \frac{K}{\big[1 + \big((K/c_0) - 1\big)e^{-rst}\big]^{1/s}} \,.
+\label{E:Richards}
+\end{equation}
+\end{linenomath*}
+%
+includes the additional shape parameter $s$ (the logistic model is obtained for $s=1$).
 The parameter $K$ has a natural interpretation since $\lim_{t\to\infty}c(t)=K$, for any $c_0$, $r$, and $s$.
 In addition, for $t\ll 1/(rs)$ we have $e^{-rst}\sim1$ so as $t\to0$ we have
 %
