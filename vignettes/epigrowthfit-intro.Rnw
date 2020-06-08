@@ -141,7 +141,7 @@ The \code{plotPlague} function in the \code{epigrowthfit} package facilitates co
 %
 \begin{figure}[h]
 \begin{center}
-<<plot.gp,fig.height=5,dev="tikz">>=
+<<plot.gp,fig.height=5>>=
 plotPlague(1665,show.acm=TRUE)
 @ 
 \end{center}
