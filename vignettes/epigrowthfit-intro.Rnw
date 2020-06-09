@@ -7,6 +7,7 @@
 %% Changed: 22 Apr 2017
 %%          30 Apr 2017
 \input{nlipreamble.tex}
+\renewcommand{\david}[1]{\relax}
 \newcommand{\mysection}[1]{\clearpage\section*{#1}\addcontentsline{toc}{section}{#1}}
 \newcommand{\mysectionsamepage}[1]{\section*{#1}\addcontentsline{toc}{section}{#1}}
 %% http://tex.stackexchange.com/questions/316510/hyperlink-within-caption-to-a-figure
