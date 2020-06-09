@@ -1,6 +1,8 @@
 *.log
 *.blg
 *.aux
+*.toc
+*.out
 *-tikzDictionary
 *.Rout
 figure/*
