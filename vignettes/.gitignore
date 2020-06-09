@@ -6,3 +6,8 @@
 *-tikzDictionary
 *.Rout
 figure/*
+## specific files:
+plotmodels.tex
+plotmodels.pdf
+epigrowthfit-intro.tex
+epigrowthfit-intro.pdf
