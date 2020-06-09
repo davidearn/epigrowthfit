@@ -6,15 +6,14 @@
 %% Created: 19 Mar 2017
 %% Changed: 22 Apr 2017
 %%          30 Apr 2017
-\input{nlipreamble.tex}
+%%\input{nlipreamble.tex}
+\input{vignettepreamble.tex}
 \renewcommand{\david}[1]{\relax}
 \newcommand{\mysection}[1]{\clearpage\section*{#1}\addcontentsline{toc}{section}{#1}}
 \newcommand{\mysectionsamepage}[1]{\section*{#1}\addcontentsline{toc}{section}{#1}}
 %% http://tex.stackexchange.com/questions/316510/hyperlink-within-caption-to-a-figure
 %% if used in a caption, need short content \caption[...]{ ... \Methodslink ... }
 \newcommand{\Methodslink}{\href[page=9]{plaguegrowthrates.pdf}{\emph{Methods}}}
-\newcommand\ttbackslash{{\tt\char`\\}}
-\newcommand{\macro}[1]{{\tt\ttbackslash#1}}
 
 %% put S in front of equation and figure names in \supp
 %% (actually this isn't a formal supplement to a paper)
@@ -53,12 +52,15 @@ and Benjamin M.\ Bolker$^{a,c,e}$\\
 
 \clearpage
 
+
 <<rver,echo=FALSE>>=
 Rver <- R.version$version.string
 @ 
 
-<<options>>=
+<<options, echo=FALSE>>=
 options(tinytex.verbose = TRUE) # see TeX progress
+## attemping to avoid color warnings using Yihui's suggestion, but doesn't work:
+##knit_hooks$set(document = function(x) {sub('\\usepackage[]{color}', '\\usepackage{xcolor}', x, fixed = TRUE)})
 @ 
 
 <<tikzopts,include=FALSE>>=
@@ -268,7 +270,7 @@ if (!file.exists(gpfit.file)) {
 
 As an initial guess of the exponential growth rate, we simply choose the slope of the best fit line through log of the data during the first half of the selected time window.
 
-The package includes three epidemic growth curve models: pure exponential growth, a logistic curve, and the Richards model (\sref{richards}).  In this vignette, we use the Richards model in all cases.  Our initial work showed the Richards model to be the best choice when working with mortality data \cite{Ma+14}, but our detailed analysis of historical plague data showed that the simpler logistic model is better if the data are extremely noisy \cite{Earn+20}.
+The package includes three epidemic growth curve models: pure exponential growth, a logistic curve, and the Richards model (\cref{S:richards}).  In this vignette, we use the Richards model in all cases.  Our initial work showed the Richards model to be the best choice when working with mortality data \cite{Ma+14}, but our detailed analysis of historical plague data showed that the simpler logistic model is better if the data are extremely noisy \cite{Earn+20}.
 
 All details of our fitting procedure are specified in the source code for the \code{epigrowthfit} function in the package.
 

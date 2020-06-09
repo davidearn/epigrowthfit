@@ -6,7 +6,7 @@ all: plotmodels.pdf epigrowthfit-intro.pdf
 plotmodels.tex: plotmodels.R
 	R CMD BATCH --vanilla $<
 
-%.pdf: %.Rnw *.bib
+%.pdf: %.Rnw *.bib *preamble.tex
 	$(Rscript) -e "knitr::knit2pdf('$<')"
 
 %.pdf: %.tex
