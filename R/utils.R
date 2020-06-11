@@ -644,7 +644,7 @@ summary.fitList <- function(object,level=1,keys=c("outbreak.year","source"),
     template[] <- NA ## replace *contents* of template with NA
     funList <- list()
     sumfun <- function(x) {
-        r <- as(summary(x,gof_agg=gof_agg),"data.frame")
+        r <- as(summary(x,gof_agg=gof_agg,...),"data.frame")
         ## FIXME/hack: would be cleaner to change bindrows() below
         ## to use dplyr::bindrows or plyr::rbind.fill, but trying
         ## not to add dependencies ...
