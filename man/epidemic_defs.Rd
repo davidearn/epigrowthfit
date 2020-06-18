@@ -4,13 +4,15 @@
 \name{epidemic_defs}
 \alias{epidemic_defs}
 \title{Epidemic year definitions}
-\format{A data frame containing columns:
+\format{
+A data frame containing columns:
 \describe{
 \item{\code{outbreak.year}}{numeric outbreak year}
 \item{\code{severity}}{"major" or "minor"}
 \item{\code{start}}{starting time (julian date)}
 \item{\code{end}}{ending time (julian date)}
-}}
+}
+}
 \usage{
 epidemic_defs
 }

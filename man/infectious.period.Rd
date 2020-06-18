@@ -4,12 +4,14 @@
 \name{infectious.period}
 \alias{infectious.period}
 \title{Estimated infectious period for pneumonic plague}
-\format{A data frame containing columns:
+\format{
+A data frame containing columns:
 \describe{
 \item{\code{days}}{days since beginning of infectiousness}
 \item{\code{frequency}}{frequency distribution of the length of the infectious period}
 \item{\code{prediction}}{fitted lognormal distribution}
-}}
+}
+}
 \source{
 These data come from Figure 1B of Gani and Leach (2004).
 }

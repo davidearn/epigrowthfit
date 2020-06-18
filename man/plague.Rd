@@ -7,7 +7,8 @@
 \alias{deaths}
 \alias{mortality}
 \title{Plague data}
-\format{A data frame with 1429 observations and 12 variables:
+\format{
+A data frame with 1429 observations and 12 variables:
 \describe{
 \item{year}{year}
 \item{month}{month}
@@ -21,7 +22,8 @@
 \item{type}{what was recorded (e.g., testaments, deaths)}
 \item{population}{estimate of population size, if available}
 \item{severity}{minor vs major epidemic}
-}}
+}
+}
 \source{
 \itemize{
 \item London, 1348-1349:  Cohn (2003, Figure 7.33, page 184).

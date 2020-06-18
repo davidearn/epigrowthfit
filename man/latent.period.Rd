@@ -4,12 +4,14 @@
 \name{latent.period}
 \alias{latent.period}
 \title{Estimated latent period for pneumonic plague}
-\format{A data frame containing columns:
+\format{
+A data frame containing columns:
 \describe{
 \item{\code{days}}{days since infection}
 \item{\code{frequency}}{frequency distribution of the length of the latent period}
 \item{\code{prediction}}{fitted lognormal distribution}
-}}
+}
+}
 \source{
 These data come from Figure 1A of Gani and Leach (2004).
 }

@@ -111,10 +111,8 @@ Fitting function for plague data. Uses either Richards (by default, or if an alp
 \describe{
 \item{fitting window}{if \code{peak} is \code{NULL} and \code{first_level} is non-\code{NULL} (the default), \code{peak} is set to the maximum of the data, while \code{first} is set to the first element after the last observation with cases/deaths less than (\code{first_level*max(data)}). Otherwise, if \code{first_level} and \code{first} are both \code{NULL}, \code{first} is set to the first element after the last local minimum before the peak. If either \code{first} or \code{peak} are non-\code{NULL} (integers), they are set to the specified values. The fitting window goes from elements \code{first} to \code{peak}+1 (inclusive) of the data (or to \code{peak} for exponential fits).}
 \item{initial parameter values}{If initial parameters (\code{theta0}) are not supplied, uses log-linear fitting over a range starting at \code{first} and going halfway to \code{peak+1} to estimate the initial size and growth rates. The initial population size (K) is set to the total number of cases/deaths. The Richards parameter (s) is initially set to 1.0001; the log of the negative binomial size parameter is initially set to 1.}
-}
-\itemize{
-\item{to debug, use \code{trace("initialize",sig="epigrowthfit",browser)}
-}
+\item{data frame structure}{Two \code{numeric} columns are required, which by default are assumed to be named \code{"time"} and \code{"plague.deaths"}.  Either column name can be changed using the \code{time_var} and \code{deaths_var} arguments.}
+\item{debugging}{to debug, use \code{trace("initialize",sig="epigrowthfit",browser)}}
 }
 }
 \section{Slots}{
