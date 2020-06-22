@@ -1,12 +1,9 @@
+\documentclass[12pt]{article}
+%% knitr requires documentclass to be the first line of the file
+%% vignette index specifications need to be *after* \documentclass{} !
 %\VignetteIndexEntry{epigrowthfit intro}
 %\VignetteEngine{knitr::knitr}
 %\VignetteEncoding{UTF-8}
-\documentclass[12pt]{article}
-%% knitr requires documentclass to be the first line of the file
-%% Created: 19 Mar 2017
-%% Changed: 22 Apr 2017
-%%          30 Apr 2017
-%%\input{nlipreamble.tex}
 \input{vignettepreamble.tex}
 \renewcommand{\david}[1]{\relax}
 \newcommand{\mysection}[1]{\clearpage\section*{#1}\addcontentsline{toc}{section}{#1}}
@@ -158,7 +155,7 @@ The \code{plotPlague} function in the \code{epigrowthfit} package facilitates co
 %
 \begin{figure}[h]
 \begin{center}
-<<plot.gp,fig.height=5>>=
+<<plot_gp,fig.height=5>>=
 plotPlague(1665,show.acm=TRUE)
 @ 
 \end{center}
@@ -173,28 +170,50 @@ plotPlague(1665,show.acm=TRUE)
 
 The \code{epigrowthfit} function estimates an initial exponential growth rate $r$ for a time series.  To estimate $r$ for the Great Plague of London in 1665 based on our default methods:
 
-\david{I have (temporarily) set things up so that the fits are saved to an RData file, which is read if it exists.  Setting \code{cache=TRUE} in this chunk doesn't work: it fails to restore properly for some reason.}
 
-<<gpfit,cache=FALSE>>=
-gpfit.file <- "gpfit.RData"
-if (file.exists(gpfit.file)) {
-  load(gpfit.file)
-} else {
-  gpfit <- with(gp,epigrowthfit(time,plague.deaths))
-}
+<<gpfit0,eval=FALSE,echo=FALSE>>=
+gpfit.time <- system.time(gpfit <- with(gp,epigrowthfit(time,plague.deaths)))
+first <- 20; peak <- 37
+gpfit2 <- with(gp,epigrowthfit(time,plague.deaths,first=first,peak=peak))
+save("gpfit","gpfit.time","gpfit2",
+     "first", "peak", file="../inst/vignette_data/gpfit.RData",
+     ## version=2 needed for back-compatibility
+     version=2)
+@
+
+<<gpfit_load0,echo=FALSE>>=
+## need this first to get timing info
+load(system.file("vignette_data","gpfit.RData",package="epigrowthfit"))
 @ 
+
+
+At this point we would typically run:
+
+<<gpfit1,eval=FALSE>>=
+gpfit <- with(gp,epigrowthfit(time,plague.deaths))
+@
+
+but this might take a little while (\Sexpr{round(gpfit.time[["elapsed"]],1)} seconds) so we load it from a data file instead:
+
+<<gpfit_load>>=
+load(system.file("vignette_data","gpfit.RData",package="epigrowthfit"))
+@
+
+You should probably try it on your own system and make sure it works.
+Note that it produces some warning messages \ldots don't be alarmed \ldots
+
 \noindent
 Here, \code{gpfit} is an \code{epigrowthfit} object, for which there are \code{show}, \code{summary} and \code{plot} methods.
 \hypertarget{showgpfit}{}
-<<show.gpfit>>=
+<<show_gpfit>>=
 show(gpfit)
 @ 
-<<summary.gpfit>>=
+<<summary_gpfit>>=
 summary(gpfit)
 @ 
 \begin{figure}[h]
 \begin{center}
-<<plot.gpfit,fig.height=5>>=
+<<plot_gpfit,fig.height=5>>=
 plot(gpfit)
 @ 
 \end{center}
@@ -231,7 +250,7 @@ for the fit (see \Methodslink\ in Earn \etal \cite{Earn+20}).  The time points a
 \noindent
 The \code{last} time point in the fitting window is determined by \code{peak}:
 <<lastpt,eval=FALSE>>=
-     last <- if (peak < length(deaths)) peak+1 else peak
+last <- if (peak < length(deaths)) peak+1 else peak
 @ 
 \david{We should edit the help on \code{epigrowthfit} to clarify that it is \code{peak} if \code{peak} is the last point.}
 
@@ -242,13 +261,11 @@ Printing the fit (via \hyperlink{showgpfit}{\code{show(gpfit)}} above) revealed 
 %
 \begin{figure}[h!]
 \begin{center}
-<<gpfit2,fig.height=5,warning=FALSE>>=
-first <- 20; peak <- 37
-if (file.exists(gpfit.file)) {
-  load(gpfit.file)
-} else {
-  gpfit2 <- with(gp,epigrowthfit(time,plague.deaths,first=first,peak=peak))
-}
+<<gpfit2_fake,eval=FALSE>>=
+gpfit2 <- with(gp,epigrowthfit(time,plague.deaths,first=first,peak=peak))
+@
+
+<<gpfit2, fig.height=5>>=
 plot(gpfit2)
 legend("bottomright",bty="n",legend=c("Explicit arguments:",
                                sprintf("first = %d",first),
@@ -258,11 +275,6 @@ legend("bottomright",bty="n",legend=c("Explicit arguments:",
 \caption{An \code{epigrowthfit} fitting example in which the fitting window is explicitly specified.  (The default fitting window is used in \cref{F:gpfit}.)}
 \label{F:gpfit2}
 \end{figure}
-
-<<>>=
-if (!file.exists(gpfit.file)) {
-  save(gpfit, gpfit2, file=gpfit.file)
-}
 @ 
 
 \clearpage
