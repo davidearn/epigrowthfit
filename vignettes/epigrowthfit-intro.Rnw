@@ -4,6 +4,12 @@
 %\VignetteIndexEntry{epigrowthfit intro}
 %\VignetteEngine{knitr::knitr}
 %\VignetteEncoding{UTF-8}
+%\VignettePackage{epigrowthfit}
+%\VignetteDepends{bbmle}
+%\VignetteDepends{dplyr}
+%\VignetteDepends{tidyr}
+%\VignetteDepends{ggplot2}
+%\VignetteDepends{emdbook}
 \input{vignettepreamble.tex}
 \renewcommand{\david}[1]{\relax}
 \newcommand{\mysection}[1]{\clearpage\section*{#1}\addcontentsline{toc}{section}{#1}}
@@ -66,11 +72,12 @@ library(tikzDevice)
 ##options(tikzDocumentDeclaration="\\documentclass[12pt,table]{article}")
 @ 
 
+%% FIXME: remove tikzDevice, knitr (not end-user packages) ?
 This vignette was compiled using \Sexpr{Rver} and package versions:
 <<pkglist,echo=FALSE,message=FALSE>>=
 usedpkgs <- sort(c("epigrowthfit","bbmle","tikzDevice",
                    "dplyr","tidyr","ggplot2","emdbook",
-                   "knitr","methods"))
+                   "knitr"))
 for(p in usedpkgs) library(p,character.only = TRUE)
 i1 <- installed.packages()
 print(i1[usedpkgs,"Version"],quote=FALSE)
