@@ -7,7 +7,7 @@
 
 ## installation
 
-- run `remotes::install_github("davidearn/epigrowthfit")` to install the `epigrowthfit` package
+- run `remotes::install_github("davidearn/epigrowthfit", build_vignettes=TRUE, dependencies=TRUE)` to install the `epigrowthfit` package
 - this should automatically install required upstream packages, but if necessary you can download and run [install_pkgs.R](./install_pkgs.R) (please [add a comment here](https://github.com/davidearn/epigrowthfit/issues/1) if you have to run this step, or for other installation problems)
 
 ## notes
