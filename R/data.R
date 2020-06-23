@@ -88,3 +88,14 @@
 #' \item{\code{end}}{ending time (julian date)}
 #' }
 "epidemic_defs"
+
+#' Canada COVID-19 cases, 2020
+#'
+#' @name canada_covid
+#' @format A tibble containing columns:
+#' \describe{
+#' \item{\code{Date}}{reporting date}
+#' \item{\code{Province}}{province}
+#' \time{\code{newConfirmations}}{number of new confirmed cases}
+#' }
+"canada_covid"

@@ -8,6 +8,7 @@
 %\VignetteDepends{bbmle}
 %\VignetteDepends{dplyr}
 %\VignetteDepends{tidyr}
+%\VignetteDepends{lubridate}
 %\VignetteDepends{ggplot2}
 %\VignetteDepends{emdbook}
 \input{vignettepreamble.tex}
@@ -329,6 +330,37 @@ and hence $c(t)\simeq c_0e^{rt}$ as $t\to0$.  Thus, $r$ is indeed the initial ex
 \caption{The Richards \cite{Rich59} model.  \emph{Top panels:} cumulative mortality; \emph{bottom panels:} instantaneous mortality rate.  The model has four parameters: the initial cumulative mortality $c_0$, the initial exponential growth rate $r$, the cumulative asymptote $K$, and the shape parameter $s$.  The plots show the effects of changing $s$ (left panels) and $K$ (right panels) with the other parameters fixed ($c_0=0.01$, $r=1$).}
 \label{F:plotmodels}
 \end{figure}
+
+\section{COVID19 in Canada}
+
+The \code{canada\_covid} data set includes daily case counts for COVID-19 for all provinces up to
+\Sexpr{format(max(canada_covid$Date)))}.
+
+<<covid1>>=
+library(ggplot2)
+print(ggplot(canada_covid,aes(Date,newConfirmations,colour=Province))
+      + geom_line()
+      + scale_y_log10()
+      )
+@
+
+We'll start by just looking at Ontario.
+
+<<ontario, cache=TRUE>>=
+ontario <- (dplyr::filter(canada_covid,Province=="ON")
+    ## need time to be numeric
+    %>% mutate(time=lubridate::decimal_date(Date))
+    ## NAs mess us up
+    %>% drop_na(newConfirmations)
+)
+cc <- epigrowthfit(data=ontario, deaths_var="newConfirmations")
+@
+
+<<>>=
+plot(cc)
+@
+
+What about R0?
 
 \clearpage
 \bibliographystyle{vancouver}
