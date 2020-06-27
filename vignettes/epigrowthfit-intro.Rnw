@@ -334,7 +334,7 @@ and hence $c(t)\simeq c_0e^{rt}$ as $t\to0$.  Thus, $r$ is indeed the initial ex
 \section{COVID19 in Canada}
 
 The \code{canada\_covid} data set includes daily case counts for COVID-19 for all provinces up to
-\Sexpr{format(max(canada_covid$Date)))}.
+\Sexpr{format(max(canada_covid$Date))}.
 
 <<covid1>>=
 library(ggplot2)
