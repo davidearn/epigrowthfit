@@ -21,7 +21,8 @@ Type objective_function<Type>::operator() ()
 {
   // Data
   DATA_VECTOR(t);      // times (includes step [-1])
-  DATA_VECTOR(x);      // initial densities
+  DATA_VECTOR(x);     // counts
+  DATA_INTEGER(debug); // debug flag
   
   // Parameters  
   PARAMETER(log_thalf);    // log half-max time
@@ -42,20 +43,30 @@ Type objective_function<Type>::operator() ()
   Type r = exp(log_r);
   Type p = exp(log_p);
   Type nb_disp = exp(log_nb_disp); 
+
+  Type nb_var;
   
   // parameter est
 
+  // std::cout << "start"  << std::endl;
+  // std::cout << "thalf " << thalf << " K " << K << " r " << r << " p " << p << " nbdisp " << nb_disp << std::endl;
   for (int i = 0; i < t.size(); i++) {
     cumcurve(i) = K/pow(1+exp(-r*p*(t(i)-thalf)),1/p);
+    // cumcurve(i) = K/(1+exp(-r*p*(t(i)-thalf)));
   }
-  for (int i = 0; i < x.size(); i++) {
+  for (int i = 0; i < x.size()-1; i++) {
     inccurve(i) = cumcurve(i+1)-cumcurve(i);
     if (!isNA(x(i))) {
-      // std::cout << i << " " << x(i) << " " << inccurve(i)  << std::endl;      
-      jnll -= dnbinom2(x(i),inccurve(i),nb_disp,1);
+      nb_var = inccurve(i)*(1+inccurve(i)/nb_disp);
+      jnll -= dnbinom2(x(i),inccurve(i),nb_var,1);
+      if (debug==1) {
+	std::cout << i << " " << x(i) << " " << cumcurve(i) << " " <<
+	  inccurve(i)  << " " << nb_var << " " << jnll << std::endl;
+      }
     }
   }
   
   REPORT(inccurve);
+  ADREPORT(inccurve);
   return jnll;
 }
