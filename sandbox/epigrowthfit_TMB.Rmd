@@ -1,0 +1,142 @@
+---
+title: "implementing epigrowthfit in TMB"
+bibliography: "../inst/REFERENCES.bib"
+---
+
+The `epigrowthfit` package, based on @Ma+14, is useful but has grown organically and has a variety of annoying features. Some of our ideas for improvement include:
+
+- better estimation via
+     - reparameterization (cf. @Smir+17, @DeCamp17), in particular substituting a half-time $\tau$ for $x_0$
+	 - implementation in TMB (see below)
+- cleaner implementation of link functions, relabeling of parameters based on whether they are on the constrained or unconstrained scale
+- replace S4 with S3 methods?
+- better/more flexible methods for choosing the *end* of the fitting window
+- handle Poisson/NB distinction better; maybe use generalized Poisson (which can be over/underdisp)? Or fit $1/\theta$ and use a constraint at 0?
+- allow for random effects (e.g. fitting many regions simultaneously)
+
+```{r pkgs}
+library(TMB)
+library(epigrowthfit)
+library(tidyverse)
+library(bbmle)
+library(broom.mixed)
+```
+
+Get Canadian COVID data and reduce it to a simple format:
+```{r get_data}
+ontario <- (dplyr::filter(canada_covid,Province=="ON")
+    ## need time to be numeric
+    %>% mutate(time=lubridate::decimal_date(Date))
+    %>% select(time, x=newConfirmations)
+    ## NAs mess us up
+    %>% drop_na(x)
+)
+```
+
+Use the `epigrowthfit` machinery to decide on a fitting window and derive initial parameter estimates
+
+```{r inits}
+i <- with(ontario,
+          getInits(time, x, model="richards", distrib="nbinom"))
+```
+
+
+Select data up to the peak and set time to start at 0:
+
+```{r data2}
+dd <- (ontario[i$first:i$peak,]
+    %>% mutate_at("time", ~ . -min(.))
+)
+```
+
+Set up parameter vector: the peak is a good initial guess for the half-maximum-time of the cumulative incidence curve. (We're using `p` internally in the TMB code based on the presentation in @Smir+17; @Ma+14 used `s`.)
+
+```{r params}
+params <- with(i, list(log_thalf=log(tail(dd$time,1))
+                     , log_K=log(theta0[["K"]])
+                     , log_r=log(theta0[["r"]])
+                     , log_p=log(theta0[["s"]])
+                     , log_nb_disp=log(theta0[["ll.k"]])
+))
+```
+
+These are the essential steps for going from a TMB (C++) file to a set of functions usable in R.
+
+```{r comp,message=FALSE}
+compile("epigrowthfit_TMB.cpp")
+dyn.load(dynlib("epigrowthfit_TMB"))
+m <- MakeADFun(data=list(t=dd$time, x=dd$x, debug=0),
+          parameters=params,
+          DLL="epigrowthfit_TMB",
+          silent=TRUE)
+```
+
+Test the negative log-likelihood function and gradient function:
+
+```{r tests}
+m$fn(unlist(params)) ## NLL
+m$gr(unlist(params)) ## gradient
+```
+
+We can drop the starting values, objective function, and gradient straight into any derivative-based optimizer:
+```{r nlminb}
+nlminb(start=unlist(params), objective=m$fn, gradient=m$gr)
+```
+
+We can also use `bbmle::mle2()`, provided that we specify the parameter names as an attribute of the objective function
+(the BFGS optimizer is used by default).
+
+```{r mle2, eval=FALSE}
+parnames(m$fn) <- names(params)
+mle2(minuslogl=m$fn, start=params, gr=m$gr)
+```
+
+(**not** evaluated: some things look weird here?
+
+TMB functions carry along the best-fit parameters in their environment, so we don't actually need to substitute them in.
+When we set up the model we asked for the incidence curve (and its delta-method/Wald CIs) to be reported in addition to the parameters.
+
+```{r results}
+par(las=1,bty="l")
+plot(x~time,data=dd,log="y",xlab="time (years)",ylab="new confirmations")
+lines(dd$time,m$report()$inccurve)
+lines(dd$time,m$report(unlist(params))$inccurve,col=2)
+with(sdreport(m),matlines(dd$time,cbind(value,value-1.96*sd,
+                                        value+1.96*sd),lty=c(1,2,2),
+                          col=1))
+legend("topleft",lty=c(1,1,2), bty="n",
+       col=c(1,2,1),
+       legend=c("fit","initial params","95% CI (Wald/delta)"))
+```
+
+Some utilities for parameters/CIs:
+
+```{r tidy,cache=TRUE}
+class(m) <- c("TMB", class(m))
+tt <- function(x,...) {
+    (tidy(x,...)
+        %>% as_tibble()
+        %>% select(-std.error)
+        %>% mutate_if(is.numeric,exp)
+        %>% mutate_if(is.character,~gsub("log_","",.))
+    )
+}
+tt(m, conf.int=TRUE, conf.method="wald")
+tt(m, conf.int=TRUE, conf.method="uniroot") ## needs work/fragile
+## "profile" not implemented but could be?
+```
+
+## to do / fix me
+
+- first and last point are wonky because of differencing etc.? (`exp_fit` uses `t0 = t[1]; t1 <- t - t0; t2 = c(t[-1], tail(t, n=1)+t[2]-t[1]) - t0` for starting and ending points)
+- check Richards parameterization (esp., make sure that our value of $r$ corresponds to growth rate at zero); re-read @Ma+14, @Smir+17?
+- discuss:
+   - pros and cons of `bbmle`
+   - delta method vs likelihood profiles vs. importance sampling
+- blue sky:
+   - process error via Kalman filter??
+   - *generalized* Richards?
+- compute $R_0$
+
+
+## References
