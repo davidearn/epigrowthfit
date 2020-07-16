@@ -14,7 +14,7 @@ The `epigrowthfit` package, based on @Ma+14, is useful but has grown organically
 - handle Poisson/NB distinction better; maybe use generalized Poisson (which can be over/underdisp)? Or fit $1/\theta$ and use a constraint at 0?
 - allow for random effects (e.g. fitting many regions simultaneously)
 
-```{r pkgs}
+```{r pkgs,message=FALSE}
 library(TMB)
 library(epigrowthfit)
 library(tidyverse)
@@ -27,7 +27,7 @@ Get Canadian COVID data and reduce it to a simple format:
 ontario <- (dplyr::filter(canada_covid,Province=="ON")
     ## need time to be numeric
     %>% mutate(time=lubridate::decimal_date(Date))
-    %>% select(time, x=newConfirmations)
+    %>% select(time, Date, x=newConfirmations)
     ## NAs mess us up
     %>% drop_na(x)
 )
@@ -65,10 +65,14 @@ These are the essential steps for going from a TMB (C++) file to a set of functi
 ```{r comp,message=FALSE}
 compile("epigrowthfit_TMB.cpp")
 dyn.load(dynlib("epigrowthfit_TMB"))
-m <- MakeADFun(data=list(t=dd$time, x=dd$x, debug=0),
-          parameters=params,
-          DLL="epigrowthfit_TMB",
-          silent=TRUE)
+## translate from x0 to t_half?
+dt <- diff(dd$time[1:2]) ## assume equal time steps
+ad_data <- list(t=c(dd$time[1]-dt,dd$time), x=dd$x, debug=0)
+lapply(ad_data,length)
+m <- MakeADFun(data=ad_data, parameters=params,
+               DLL="epigrowthfit_TMB",
+               silent=TRUE)
+lapply(environment(m$fn)$data, length)
 ```
 
 Test the negative log-likelihood function and gradient function:
@@ -80,34 +84,55 @@ m$gr(unlist(params)) ## gradient
 
 We can drop the starting values, objective function, and gradient straight into any derivative-based optimizer:
 ```{r nlminb}
-nlminb(start=unlist(params), objective=m$fn, gradient=m$gr)
+(nlminbfit <- nlminb(start=unlist(params), objective=m$fn, gradient=m$gr))
+## default: Nelder-Mead
+(optimfit <- optim(par=unlist(params), fn=m$fn, gr=m$gr,
+      method="BFGS"))
 ```
 
 We can also use `bbmle::mle2()`, provided that we specify the parameter names as an attribute of the objective function
 (the BFGS optimizer is used by default).
 
-```{r mle2, eval=FALSE}
+```{r mle2}
 parnames(m$fn) <- names(params)
-mle2(minuslogl=m$fn, start=params, gr=m$gr)
+mle2fit <- mle2(minuslogl=m$fn,
+                start=params, gr=m$gr,
+                vecpar=TRUE)
 ```
 
-(**not** evaluated: some things look weird here?
+```{r}
+cbind(mle2=coef(mle2fit), optim=optimfit$par, nlminb=nlminbfit$par)
+```
 
 TMB functions carry along the best-fit parameters in their environment, so we don't actually need to substitute them in.
 When we set up the model we asked for the incidence curve (and its delta-method/Wald CIs) to be reported in addition to the parameters.
 
 ```{r results}
 par(las=1,bty="l")
+## plot data
 plot(x~time,data=dd,log="y",xlab="time (years)",ylab="new confirmations")
-lines(dd$time,m$report()$inccurve)
+## retrieve params from TMB object
+## pp <- environment(m$fn)$last.par.best
+## or from optimizer fit
+pp <- nlminbfit$par
+lapply(environment(m$fn)$data, length)
+## plot estimated inc curve at the MLE (last params evaluated)
+lines(dd$time,m$report(pp)$inccurve)
+## plot estimated inc curve at the starting values
 lines(dd$time,m$report(unlist(params))$inccurve,col=2)
-with(sdreport(m),matlines(dd$time,cbind(value,value-1.96*sd,
-                                        value+1.96*sd),lty=c(1,2,2),
+## get CIs from sdreport (delta method)
+with(sdreport(m),
+     matlines(dd$time,cbind(value,value-1.96*sd,
+                            value+1.96*sd),lty=c(1,2,2),
                           col=1))
 legend("topleft",lty=c(1,1,2), bty="n",
        col=c(1,2,1),
        legend=c("fit","initial params","95% CI (Wald/delta)"))
 ```
+
+The bump at the second time step occurs because the elapsed time is twice as long, so the
+expected incidence is (approximately) doubled. We don't know why 7 March 2020 is actually
+missing in the data, but the model is behaving consistently ...
 
 Some utilities for parameters/CIs:
 

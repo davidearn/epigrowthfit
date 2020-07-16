@@ -27,7 +27,9 @@ params <- with(i, list(log_thalf=log(tail(dd$time,1))
                      , log_nb_disp=log(theta0[["ll.k"]])
 ))
 ## translate from x0 to t_half?
-m <- MakeADFun(data=list(t=dd$time, x=dd$x, debug=0),
+dt <- diff(dd$time[1:2]) ## assume equal time steps
+m <- MakeADFun(data=list(t=c(dd$time[1]-dt,dd$time),
+                         x=dd$x, debug=0),
           parameters=params,
           DLL="epigrowthfit_TMB",
           silent=TRUE)

@@ -29,7 +29,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER(log_p);        // log Richards shape parameter
   PARAMETER(log_nb_disp);  // log NB dispersion parameter
 
-  vector<Type> cumcurve(t.size()); // includes starting time
+  vector<Type> cumcurve(t.size()); // includes starting time (1 longer than x)
   vector<Type> inccurve(x.size());
   
   // Objective function
@@ -50,15 +50,16 @@ Type objective_function<Type>::operator() ()
 
   // first calculate cumulative curve at observed points
   for (int i = 0; i < t.size(); i++) {
-    cumcurve(i) = K/pow(1+exp(-r*p*(t(i)-thalf)),1/p);  // Richards
+      cumcurve(i) = K/pow(1+exp(-r*p*(t(i)-thalf)),1/p);  // Richards
   }
 
   // difference cumulative curve to get expected incidence
-  for (int i = 0; i < x.size()-1; i++) {
+  for (int i = 0; i < x.size(); i++) {
     inccurve(i) = cumcurve(i+1)-cumcurve(i);
     if (!isNA(x(i))) {
-      nb_var = inccurve(i)*(1+inccurve(i)/nb_disp); // compute NB variance from mean, dispersion param
-      jnll -= dnbinom2(x(i),inccurve(i),nb_var,1);
+	    // nbinom2 parameterization: https://kaskr.github.io/adcomp/group__R__style__distribution.html
+	    nb_var = inccurve(i)*(1+inccurve(i)/nb_disp); // compute NB variance from mean, dispersion param
+	    jnll -= dnbinom2(x(i),inccurve(i),nb_var,1); // 1 = log
       if (debug==1) {
 	std::cout << i << " " << x(i) << " " << cumcurve(i) << " " <<
 	  inccurve(i)  << " " << nb_var << " " << jnll << std::endl;
