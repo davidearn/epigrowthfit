@@ -25,6 +25,7 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(debug); // debug flag (1=print debugging statements)
   DATA_INTEGER(curve_flag);  // cumulative curve model
   DATA_INTEGER(distr_flag);  // response distribution model
+  // DATA_INTEGER(baseline_flag);  // 0 or 1 depending on baseline or not
   
   // Parameters  
   PARAMETER(log_thalf);    // log half-max time
@@ -32,6 +33,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER(log_r);        // log growth rate
   PARAMETER(log_p);        // log Richards shape parameter
   PARAMETER(log_x0);       // log initial value
+  // PARAMETER(log_b); // log baseline value
   PARAMETER(log_nbdisp);   // *inverse* NB dispersion parameter
 
   // FIXME: add background-count model, parameters?

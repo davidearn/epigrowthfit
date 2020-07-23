@@ -102,6 +102,9 @@ m <- MakeADFun(data=ad_data, parameters=all_params,
                DLL="epigrowthfit_TMB",
                silent=TRUE,
                ## exclude x0 because we're not fitting an exponential model
+               ## richards: ignore x0
+               ## logistic: ignore x0 and p
+               ## exponential: ignore K and thalf
                map=list(log_x0=factor(NA))  
                )
 ```
@@ -168,9 +171,8 @@ The bump at the second time step occurs because the elapsed time is twice as lon
 expected incidence is (approximately) doubled. We don't know why 7 March 2020 is actually
 missing in the data, but the model is behaving consistently ...
 
-Some utilities for parameters/CIs:
-
-```{r tidy}
+```{r tidy_def,echo=FALSE}
+## some utilities
 class(m) <- c("TMB", class(m))
 tt <- function(x,...) {
     (tidy(x,...)
@@ -180,9 +182,35 @@ tt <- function(x,...) {
         %>% mutate_if(is.character,~gsub("log_","",.))
     )
 }
-tt(m, conf.int=TRUE, conf.method="wald")
-tt(m, conf.int=TRUE, conf.method="uniroot") ## needs work/fragile
+```
+
+```{r tidy,warning=FALSE}
+(tt1 <- tt(m, conf.int=TRUE, conf.method="wald"))
+(tt2 <- tt(m, conf.int=TRUE, conf.method="uniroot")) ## needs work/fragile
 ## "profile" not implemented but could be?
+```
+
+Let's look a little more deeply into what's going on with the uniroot parameters.
+(**fixme**: based on what's below, could probably write a profile CI method in `broom.mixed::tidy.TMB` that would do better ...)
+
+```{r calc_prof,echo=FALSE,cache=TRUE}
+vars <- c("log_thalf","log_r","log_p")
+all_vars <- names(m$env$last.par.best)
+prof0 <- purrr:::map_dfr(setNames(all_vars,all_vars),
+                         ~ setNames(tmbprofile(m,name=.,trace=FALSE),c("focal","value")),
+                         .id="param") %>%
+    dplyr::filter(focal>-10)
+## more precise profiles on problematic variables
+prof1 <- purrr:::map2_dfr(setNames(vars,vars),
+                 list(c(-10,3),c(2,8),c(-6,1)),
+                 ~ setNames(tmbprofile(m,name=.x,parm.range=.y,trace=FALSE, ystep=0.025),c("focal","value")),
+                 .id="param")
+```
+
+```{r plot_prof,echo=FALSE}
+ggplot(prof0,aes(focal,sqrt(2*(value-min(value))))) + geom_point(alpha=0.5)+ geom_line() + facet_wrap(~param,scale="free_x") +
+    geom_point(data=prof1,colour="red",alpha=0.3) + geom_line(data=prof1,colour="red") +
+    labs(x="",y="sqrt(deviance)")
 ```
 
 ## digression: negative binomial models
