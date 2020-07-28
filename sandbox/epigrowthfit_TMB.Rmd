@@ -20,10 +20,17 @@ library(epigrowthfit)
 library(tidyverse)
 theme_set(theme_bw())
 library(colorspace)
+library(ggstance) ## position_dodgev
 scale_colour_discrete <- scale_colour_discrete_qualitative ## default colo(u)rs
 library(bbmle)
 library(broom.mixed)
 library(numDeriv)
+```
+
+```{r checkversion,echo=FALSE}
+if (packageVersion("broom.mixed")<"0.2.7") {
+    warning("for best results, install the latest broom.mixed via 'remotes::install_github(\"bbolker/broom.mixed\")'")
+}
 ```
 
 ```{r enum, echo=FALSE}
@@ -174,7 +181,7 @@ missing in the data, but the model is behaving consistently ...
 ```{r tidy_def,echo=FALSE}
 ## some utilities
 class(m) <- c("TMB", class(m))
-tt <- function(x,...) {
+tidyfun <- function(x,...) {
     (tidy(x,...)
         %>% as_tibble()
         %>% select(-std.error)
@@ -184,14 +191,28 @@ tt <- function(x,...) {
 }
 ```
 
+Comparing confidence intervals: all still a bit fragile ...
+
 ```{r tidy,warning=FALSE}
-(tt1 <- tt(m, conf.int=TRUE, conf.method="wald"))
-(tt2 <- tt(m, conf.int=TRUE, conf.method="uniroot")) ## needs work/fragile
-## "profile" not implemented but could be?
+ci_methods <- c("wald","uniroot","profile")
+tt <- purrr::map_dfr(setNames(ci_methods,ci_methods),
+              ~tidyfun(m, conf.int=TRUE, conf.method=.),
+              .id="ci_method") %>%
+    mutate_at("conf.low", replace_na, 0) %>%
+    mutate_at("conf.high", replace_na, Inf)
+
+## https://github.com/tidyverse/ggplot2/issues/3617
+pv <- position_dodgev(0.2)
+ggplot(tt, aes(y=term,x=estimate,xmin=conf.low, xmax=conf.high, colour=ci_method)) +
+    geom_pointrange(position=pv) +
+    ## would like to draw half-
+    ## geom_segment(aes(x=estimate,xend=conf.high,y=term,yend=term),
+    ##  position=pv) +
+    scale_x_log10() +
+    facet_wrap(~term,scale="free")
 ```
 
-Let's look a little more deeply into what's going on with the uniroot parameters.
-(**fixme**: based on what's below, could probably write a profile CI method in `broom.mixed::tidy.TMB` that would do better ...)
+CIs that go all the way to the edge of the plot are `NA`, either because the negative log-likelihood never goes above the critical value or because something else is wrong with the CI estimate ("uniroot" looks fragile ...)
 
 ```{r calc_prof,echo=FALSE,cache=TRUE}
 vars <- c("log_thalf","log_r","log_p")
@@ -287,84 +308,15 @@ If you want to look [inside the R code](https://github.com/wch/r-source/blob/f8d
 Bottom line: even with `dnbinom_robust`, in cases where we think we are approaching Poisson, we will have to set a threshold and switch to Poisson if the dispersion parameter is unrealistically large
 
 
-## digression: multiple models in one template (`.cpp`) file
-
-We often want the flexibility to fit several different models, with different (possibly non-nested) sets of parameters. 
-
-### Repeat yourself 
-
- The simplest way to do this is to write separate `.cpp` files for every model, but this risks lots of code repetition (violating [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself))
- 
-### Unpack parameter vectors
-
-A second alternative is to pass parameters as *vectors* of parameters, whose length is determined at run-time (??). This is convenient, for example, if all of the model complexity can be set up as linear sub-models of various components (as in the `params` argument to `gnls` or the `parameters` argument to `bbmle::mle2`). In this case you can use `model.matrix()` or `sparse.model.matrix()` to set up a model matrix that you pass as a data object, which effectively defines the order and meaning of the parameters in the associated parameter vector.
-    * if your models do not fit into the linear model framework, then you need to unpack the parameter vectors inside the template file. Furthermore, you need some way to pass information about which model is being fitted. Probably the simplest way to do this is to pass an `enum` as a data object; this is the closest you can get to passing a factor variable. Ideally you should have a way to keep your `enum`s in sync between your R and C++ code; `glmmTMB` does this by running a shell script on the R code, but perhaps it could be done by operating on a factor?
-	
-For example, here is a snippet of code from a template that calculates an attack rate as constant ($a(i)=c$); as a Ricker function  of size ($a(i)=c*S(i)/d*exp(1-S(i)/d)$); or as a power-Ricker function of size ($a(i)=c*pow(S(i)/d,g)*exp(1-S(i)/d)$). Going through the model from least to most specific, we increment a parameter counter (using `p++`) for each parameter we take from the parameter vector ...
-
-```{c++,eval=FALSE}
-PARAMETER_VECTOR(consume_parms);  // parameter vector
-DATA_INTEGER(size_model_flag);    // integer code for size model
-// ...
-enum size_model_type {
-  constant  = 0,
-  ricker    = 1,
-  powricker = 2
-};
-// ...
-int p=0;  // parameter counter
-if(size_model_flag==constant || size_model_flag==ricker || size_model_flag==powricker) {
-    c = exp(consume_parms(p++)); // max attack rate
- }
-if(size_model_flag==ricker || size_model_flag==powricker) {
-    d = exp(consume_parms(p++)); // size at max attack rate
- }
-  
-if(size_model_flag==powricker){
-    g = exp(consume_parms(p++)); // shape of power ricker curve
- }
-```
-
-### map parameters
-
-An alternative in this case is to *always* pass all of the parameters, fixing some to special values; in the example above, setting `g` to 1 reduces the power-Ricker to the Ricker. We have a problem making the constant model a nested case of the Ricker, because we need $d \to \infty$ (R can handle `Inf` values, but I don't know if TMB/C++ can - it seems risky). One alternative is to reparameterize the model so that we use `f = 1/d`; then we have $a(i)=c \textrm{pow}(f*S(i),g)\exp(1-fS(i))$, and the Ricker converges to constant when $f=0$.
-
-There's a minor technical problem here (which is shared by a lot of model types): when the model converges to a parameter value on the boundary (i.e. only values of $f \ge 0$ make sense, not $f<0$), then a bunch of derivative-based machinery (such as the estimate of standard deviations based on the curvature of the log-likelihood surface) no longer works properly. We can use bounded (box-constrained) optimization to prevent the parameter from going negative, *or* we can fit the parameter on the log scale. However, if we fit $\log(f)$ instead of $f$, then we're still not out of the woods, because $\log(f) \to -\infty$ and we will still run into trouble with curvatures etc. (It's also possible that R and TMB would handle `Inf` values consistently, but convergence to `Inf` [e.g. in the case where a constant really is a better fit than the Ricker] is harder than convergence to zero ...)
-
-The other issue is that TMB/optim will get confused if we have a parameter that doesn't affect the likelihood; its curvature will be zero, which will make TMB think something has gone wrong. However, we can use the `map=` argument to `TMB::MakeADFun` to specify that a parameter is fixed.
-
-```{c++,eval=FALSE}
-PARAMETER(log_c);
-PARAMETER(dinv);
-PARAMETER(log_g);
-
-for (i=1; i<S.size(); i++) {
-	a(i)=exp(log_c)*pow(dinv*S(i),g)*exp(1-dinv*S(i));
- }
-```
-
-Then we would (1) call `nlminb()` (or `optim(..., method="L-BFGS-B")`) with an approporiate `lower` argument (e.g. `lower=c(log_c-Inf,dinv=0,log_g-Inf)`) and call `MakeADFun()` with `parameters=list(log_c=0,dinv=0,log_g=0)` and `map=list(dinv=NA, log_g=NA)` to fit a constant model.
-
-If we have incommensurate models we might want to set the starting parameters to `NA` (and use the `isNA` helper function defined below) as a flag for which model/parameter set to use internally ...
-
-```{c++,eval=FALSE}
-template<class Type>
-bool isNA(Type x){
-  return R_IsNA(asDouble(x));
-}
-```
-
-Similar arguments apply to Poisson/negative binomial fits: we can use a parameterization with $1/k$ as the negative binomial parameter, fit with $1/k$ bounded at zero, and use a Poisson model instead if $1/k$ is mapped to zero in `MakeADFun`. (**n.b.** we have to be very careful with `if` statements! Can we use `CppAD::CondExpEq(left,right,trueCase,falseCase)`? Or safer/clearer to use `enum`? Or use `CppAD::CondExpLt()` with a very small cutoff?
 
 ## to do / fix me
 
-- modify `epigrowthfit_TMB.cpp` to allow all three models (exp, logistic, Richards) and at least Poisson/nbinom responses
 - check Richards parameterization (esp., make sure that our value of $r$ corresponds to growth rate at zero); re-read @Ma+14, @Smir+17?
 - discuss:
     - pros and cons of `bbmle`
     - delta method vs likelihood profiles vs. importance sampling
 - blue sky:
-    - process error via Kalman filter??
+    - process error via (extended) Kalman filter
     - *generalized* Richards?
 - compute $R_0$
 
