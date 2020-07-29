@@ -33,7 +33,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER(log_r);        // log growth rate
   PARAMETER(log_p);        // log Richards shape parameter
   PARAMETER(log_x0);       // log initial value
-  // PARAMETER(log_b); // log baseline value
+  // PARAMETER(log_b);     // log baseline value
   PARAMETER(log_nbdisp);   // *inverse* NB dispersion parameter
 
   // FIXME: add background-count model, parameters?

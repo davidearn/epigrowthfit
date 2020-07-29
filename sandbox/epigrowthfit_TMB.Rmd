@@ -25,6 +25,7 @@ scale_colour_discrete <- scale_colour_discrete_qualitative ## default colo(u)rs
 library(bbmle)
 library(broom.mixed)
 library(numDeriv)
+library(nloptr)
 ```
 
 ```{r checkversion,echo=FALSE}
@@ -34,6 +35,8 @@ if (packageVersion("broom.mixed")<"0.2.7") {
 ```
 
 ```{r enum, echo=FALSE}
+## utility function for making sure model/curve coding is synchronized between
+##  TMB and R code
 factor_to_enum <- function(f,enum_name="curve_type",fn="",append=FALSE) {
     if (!append) unlink(fn) ## careful??
     if (!is.factor(f)) {  ## factorize, in order
@@ -85,11 +88,11 @@ Set up parameter vector: the peak is a good initial guess for the half-maximum-t
 
 ```{r params}
 all_params <- with(i, list(log_thalf=log(tail(dd$time,1))
-                     , log_x0=log(theta0[["x0"]])
-                     , log_K=log(theta0[["K"]])
-                     , log_r=log(theta0[["r"]])
-                     , log_p=log(theta0[["s"]])
-                     , log_nbdisp=log(theta0[["ll.k"]])
+                         , log_x0=log(theta0[["x0"]])
+                         , log_K=log(theta0[["K"]])
+                         , log_r=log(theta0[["r"]])
+                         , log_p=log(theta0[["s"]])
+                         , log_nbdisp=log(theta0[["ll.k"]])
 ))
 ```
 
@@ -98,21 +101,30 @@ These are the essential steps for going from a TMB (C++) file to a set of functi
 ```{r comp,message=FALSE,results="hide"}
 compile("epigrowthfit_TMB.cpp")
 dyn.load(dynlib("epigrowthfit_TMB"))
-exclude_params <- "log_x0"
+curve_str <- "richards"
+distr_str <- "nbinom2"
+exclude_params=switch(curve_str,
+                      richards="log_x0",
+                      logistic=c("log_x0","log_p"),
+                      exponential=c("log_thalf","log_p"))
+if (distr_str=="poisson") {
+    exclude_params <- c(exclude_params,"log_nbdisp")
+}
+
 params <- all_params[!names(all_params) %in% exclude_params]
 dt <- diff(dd$time[1:2]) ## assume equal time steps
 ad_data <- list(t=c(dd$time[1]-dt,dd$time), x=dd$x, debug=0,
                 curve_flag=match("richards",curve_f),
                 distr_flag=match("nbinom2",distr_f))
 ## lapply(ad_data,length)
-m <- MakeADFun(data=ad_data, parameters=all_params,
+mapvals <- replicate(length(exclude_params),
+                     factor(NA), simplify=FALSE)
+names(mapvals) <- exclude_params
+m <- MakeADFun(data=ad_data,
+               parameters=all_params,
                DLL="epigrowthfit_TMB",
                silent=TRUE,
-               ## exclude x0 because we're not fitting an exponential model
-               ## richards: ignore x0
-               ## logistic: ignore x0 and p
-               ## exponential: ignore K and thalf
-               map=list(log_x0=factor(NA))  
+               map=mapvals
                )
 ```
 
@@ -143,8 +155,18 @@ mle2fit <- mle2(minuslogl=m$fn,
                 vecpar=TRUE)
 ```
 
+Finally, it may be useful to try methods from the `nloptr` package, but 
+
+```{r nloptr}
+tmpfn <- function(x) { r <- m$fn(x); cat(x,r,"\n"); return(r) }
+tmpgrad <- function(x) { r <- m$gr(x); cat(x,r,"\n"); return(r) }
+n1 <- nloptr(unname(unlist(params)), tmpfn, tmpgrad, opts=list(algorithm="NLOPT_LD_LBFGS",
+                                                       ftol_rel=1e-8))
+```
+
 ```{r comp_coefs}
-cbind(mle2=coef(mle2fit), optim=optimfit$par, nlminb=nlminbfit$par)
+cbind(mle2=coef(mle2fit), optim=optimfit$par, nlminb=nlminbfit$par,
+      nloptr=n1$solution)
 ```
 
 TMB functions carry along the best-fit parameters in their environment, so we don't actually need to substitute them in.
@@ -213,26 +235,6 @@ ggplot(tt, aes(y=term,x=estimate,xmin=conf.low, xmax=conf.high, colour=ci_method
 ```
 
 CIs that go all the way to the edge of the plot are `NA`, either because the negative log-likelihood never goes above the critical value or because something else is wrong with the CI estimate ("uniroot" looks fragile ...)
-
-```{r calc_prof,echo=FALSE,cache=TRUE}
-vars <- c("log_thalf","log_r","log_p")
-all_vars <- names(m$env$last.par.best)
-prof0 <- purrr:::map_dfr(setNames(all_vars,all_vars),
-                         ~ setNames(tmbprofile(m,name=.,trace=FALSE),c("focal","value")),
-                         .id="param") %>%
-    dplyr::filter(focal>-10)
-## more precise profiles on problematic variables
-prof1 <- purrr:::map2_dfr(setNames(vars,vars),
-                 list(c(-10,3),c(2,8),c(-6,1)),
-                 ~ setNames(tmbprofile(m,name=.x,parm.range=.y,trace=FALSE, ystep=0.025),c("focal","value")),
-                 .id="param")
-```
-
-```{r plot_prof,echo=FALSE}
-ggplot(prof0,aes(focal,sqrt(2*(value-min(value))))) + geom_point(alpha=0.5)+ geom_line() + facet_wrap(~param,scale="free_x") +
-    geom_point(data=prof1,colour="red",alpha=0.3) + geom_line(data=prof1,colour="red") +
-    labs(x="",y="sqrt(deviance)")
-```
 
 ## digression: negative binomial models
 
