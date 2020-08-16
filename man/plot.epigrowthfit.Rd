@@ -10,6 +10,7 @@
   window.only = FALSE,
   cumulative = FALSE,
   show.data = TRUE,
+  show.window = TRUE,
   show.pred = TRUE,
   show.legend = TRUE,
   show.gof = TRUE,
@@ -36,6 +37,8 @@
 \item{cumulative}{logical flag: if \code{TRUE} then plot cumulative data}
 
 \item{show.data}{logical flag: if \code{TRUE} then display the observed data}
+
+\item{show.window}{logical flag: if \code{TRUE} then display the fitting window with vertical lines}
 
 \item{show.pred}{logical flag: if \code{TRUE} then display the fitted model}
 

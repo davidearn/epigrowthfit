@@ -772,6 +772,7 @@ setMethod("show",
 #' @param cumulative logical flag: if \code{TRUE} then plot cumulative data
 #' @param add logical flag: if \code{TRUE} then add to existing plot
 #' @param show.data logical flag: if \code{TRUE} then display the observed data
+#' @param show.window logical flag: if \code{TRUE} then display the fitting window with vertical lines
 #' @param show.pred logical flag: if \code{TRUE} then display the fitted model
 #' @param show.legend logical flag: if \code{TRUE} then display trajectory model and noise model in a legend
 #' @param show.gof logical flag: if \code{TRUE} then display goodness of fit in a legend
@@ -798,7 +799,8 @@ setMethod("plot",
           signature(x="epigrowthfit",y="missing"),
           definition = function(x,
                                 window.only=FALSE, cumulative=FALSE,
-                                show.data=TRUE, show.pred=TRUE, show.legend=TRUE,
+                                show.data=TRUE, show.window=TRUE,
+                                show.pred=TRUE, show.legend=TRUE,
                                 show.gof=TRUE, show.totals=TRUE,
                                 xlab="",ylab=NULL,
                                 col="black",
@@ -828,7 +830,7 @@ setMethod("plot",
                   fancy.axis.Date(df, col.year=col.year)
               }
               ## indicate the fitting window unless only the window is shown
-              if (!window.only)
+              if (!window.only && show.window)
                 abline(v=x@date[range(x@window)],
                        col="grey",lwd=3,lty="dotted")
               ## add the data
