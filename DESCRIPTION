@@ -1,25 +1,16 @@
 Package: epigrowthfit
-Title: Estimate epidemic growth rate parameters
-Version: 0.0.5.1
-Authors@R: c(person("Ben", "Bolker", email = "bbolker@mcmaster.ca", role = c("aut", "cre")),
-	   person("Junling", "Ma", role="aut"),
-	   person("David", "Earn", role="aut"),
-	   person("Jonathan", "Dushoff", role="aut"))
-Description: Simple estimation of epidemic growth rate parameters.
-Depends: R (>= 3.3.0)
-Imports: bbmle (>= 1.0.21.9004), stats4, emdbook, methods, MASS, Hmisc, Deriv, lubridate, zoo, numDeriv
-RdMacros: Rdpack
-Suggests: testthat, outbreaks, Rdpack, knitr
-VignetteBuilder: knitr
-License: GPL-3
+Title: What the Package Does (One Line, Title Case)
+Version: 0.0.0.9000
+Authors@R: 
+    person(given = "First",
+           family = "Last",
+           role = c("aut", "cre"),
+           email = "first.last@example.com",
+           comment = c(ORCID = "YOUR-ORCID-ID"))
+Description: What the package does (one paragraph).
+License: `use_mit_license()`, `use_gpl3_license()` or friends to
+    pick a license
 Encoding: UTF-8
 LazyData: true
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
-Collate: 
-    'data.R'
-    'models.R'
-    'epigrowthfit.R'
-    'exp_fit.R'
-    'get_baseline.R'
-    'utils.R'
-    'zzz.R'
