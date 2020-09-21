@@ -1,15 +1,19 @@
-Package: epigrowthfit
-Title: What the Package Does (One Line, Title Case)
+Package: epigrowthfitTMB
+Title: Estimation of Epidemic Growth Rates
 Version: 0.0.0.9000
-Authors@R: 
-    person(given = "First",
-           family = "Last",
-           role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+Authors@R: c(
+	     person("Mikael", "Jagan", email = "mjagan@uwaterloo.ca", role = c("aut", "cre")),
+	     person("Ben", "Bolker", email = "bbolker@mcmaster.ca", role = c("aut")),
+	     person("Junling", "Ma", role = "aut"),
+	     person("David", "Earn", role = "aut"),
+	     person("Jonathan", "Dushoff", role = "aut"))
+Description: Estimation of epidemic growth rates.
+Depends: R (>= 3.5.0)
+Imports:
+    knitr (>= 1.29),
+    mathjaxr (>= 1.0-1),
+    Rdpack (>= 0.7)
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
