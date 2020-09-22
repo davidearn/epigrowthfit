@@ -16,7 +16,7 @@
 #' @param error One of `"poisson"` and `"nbinom"`,
 #'   indicating an observation model.
 #' @param theta0 A list with numeric scalar elements specifying
-#'   initial parameter estimates:
+#'   initial estimates of these parameters:
 #'
 #'   \describe{
 #'     \item{`r`}{Initial growth rate expressed in reciprocal units of `time`.}
@@ -37,13 +37,7 @@
 #'
 #'   `theta0` can be `NULL` or a list specifying only a subset
 #'   of parameters. In this case, the absent parameters are set
-#'   internally as follows:
-#'   `r <- beta1`, `x0 <- exp(beta0)`, `K <- sum(cases)`,
-#'   `thalf <- times[peak]`, `p <- 1.0001`, `nbdisp <- 1`.
-#'   Here, `beta0` and `beta1` are the intercept and slope
-#'   of a linear fit to `log(cases)` within the first half
-#'   of the fitting window, with zeros in `cases` replaced
-#'   with 0.1.
+#'   internally (see Value).
 #' @param r_if_leq0 A numeric scalar. Assigned to `r`
 #'   if `!r %in% names(theta0)` and `beta1 <= 0`.
 #' @param min_wlen An integer scalar. The minimum number
@@ -69,9 +63,10 @@
 #'
 #' @return
 #' A list with integer elements `first`, `last`, and `wlen`,
-#' such that `first:last` specifies the chosen fitting window,
-#' and a list element `theta0` specifying the chosen initial
-#' parameter estimates. `names(theta0)` is the subset of
+#' such that `first:last` specifies the chosen fitting window
+#' and `wlen = last-first+1` the window length, and a list
+#' element `theta0`, specifying the chosen initial parameter
+#' estimates. `names(theta0)` is the subset of
 #' `c(r, x0, K, thalf, p, nbdisp)` relevant for the indicated
 #' `model` and `error` (see `theta0` in Arguments). Values
 #' for parameters already specified in argument `theta0` are
@@ -79,17 +74,20 @@
 #' follows:
 #'
 #' \describe{
-#'   \item{`r`,`x0`}{The slope and intercept of a linear
-#'     least squares fit to `log(cases_nz)` within the
-#'     first half of the chosen fitting window, where
-#'     `cases_nz = ifelse(cases == 0, 0.1, cases)`. If
-#'     the slope is negative or zero, then `r` is assigned
+#'   \item{`r`}{The slope of a linear least squares fit to
+#'     `log(cases_nz)` within the first half of the chosen
+#'     fitting window, where
+#'     `cases_nz = ifelse(cases == 0, 0.1, cases)`.
+#'     If the slope is negative or zero, then `r` is assigned
 #'     the value of argument `r_if_leq0`.
 #'   }
-#'   \item{`K`}{`sum(cases)`.}
-#'   \item{`thalf`}{`times[peak]`.}
-#'   \item{`p`}{1.0001.}
-#'   \item{`nbdisp`}{1.}
+#'   \item{`x0`}{The exponential of the intercept of the
+#'     linear fit described above.
+#'   }
+#'   \item{`K`}{`sum(cases)`}
+#'   \item{`thalf`}{`times[peak]`}
+#'   \item{`p`}{1.0001}
+#'   \item{`nbdisp`}{1}
 #' }
 #'
 #' `peak` will match its value in the function call, but
@@ -97,8 +95,6 @@
 #' arguments (see Details). `last` will be equal to `peak`
 #' if `model = "exponential"` and equal to
 #' `max(length(cases), peak + 1)` otherwise.
-#' Finally, `wlen = last-first+1` is simply the number of
-#' observations in the fitting window.
 #'
 #' @details
 #' Some details about the selection of fitting windows.
@@ -107,16 +103,16 @@
 #' data(canadacovid)
 #' ontario <- na.omit(subset(canadacovid, province == "ON"))
 #' get_init(
-#'   time = ontario$time,
+#'   time  = ontario$time,
 #'   cases = ontario$new_confirmations,
 #'   model = "richards",
 #'   error = "nbinom"
 #' )
 #'
 #' @references
-#' \insertref{Ma+14}{epigrowthfitTMB}
+#' \insertRef{Ma+14}{epigrowthfitTMB}
 #'
-#' \insertref{Earn+20}{epigrowthfitTMB}
+#' \insertRef{Earn+20}{epigrowthfitTMB}
 #'
 #' @import graphics
 #' @import stats
