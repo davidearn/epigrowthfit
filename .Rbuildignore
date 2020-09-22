@@ -2,5 +2,4 @@
 ^\.Rproj\.user$
 ^old/
 ^Makefile$
-^R/get_init\.R$
 ^R/peaks\.R$
