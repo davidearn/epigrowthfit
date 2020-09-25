@@ -35,51 +35,54 @@
 #'     \item{`nbdisp`}{Dispersion parameter. Used only if `error = "nbinom"`.}
 #'   }
 #'
-#'   `theta0` can be `NULL` or a list specifying only a subset
-#'   of parameters. In this case, the absent parameters are set
-#'   internally (see Value).
+#'   `theta0` can be `NULL` or a list specifying only a subset of
+#'   the relevant parameters. In this case, the absent parameters
+#'   are set internally. See Value.
 #' @param r_if_leq0 A numeric scalar. Assigned to `r`
 #'   if `!r %in% names(theta0)` and `beta1 <= 0`.
 #' @param min_wlen An integer scalar. The minimum number
-#'   of observations in the fitting window, which must be
-#'   at least the number of model parameters (see argument
-#'   `theta0`).
-#' @param peak An integer in `seq_along(cases)` giving the
-#'   index of the peak in `cases`, or `NULL`. See Details.
-#' @param first An integer in `seq_along(cases)` giving the
-#'   index of the first observation in the fitting window,
-#'   or `NULL`. See Details.
+#'   of observations in the fitting window. Ignored if
+#'   less than the number of model parameters. See Details.
+#' @param peak An integer in `seq_along(cases)` indexing
+#'   the peak in `cases`. The index of the last observation
+#'   in the fitting window will be `peak` or `peak+1`.
+#'   See Details.
+#' @param first An integer in `seq_along(cases)` indexing
+#'   the first observation in the fitting window, or `NULL`.
+#'   See Details.
 #' @param first_level A numeric scalar or `NULL`. Can be
 #'   used to define `first` if `first = NULL`. See Details.
 #' @param skip_zero A logical scalar. If `TRUE`, then an
 #'   attempt is made when defining `first` to ensure that
 #'   `cases[first] > 0`. See Details.
-#' @param debug_window A logical scalar. If `TRUE`, then
-#'   `get_init()` returns early with a list specifying
-#'   the chosen fitting window.
 #' @param debug_lm A logical scalar. If `TRUE`, then
 #'   a diagnostic plot of the linear model (see Value)
 #'   is generated in addition to the usual output.
 #'
 #' @return
-#' A list with integer elements `first`, `last`, and `wlen`,
-#' such that `first:last` specifies the chosen fitting window
-#' and `wlen = last-first+1` the window length, and a list
-#' element `theta0`, specifying the chosen initial parameter
-#' estimates. `names(theta0)` is the subset of
-#' `c(r, x0, K, thalf, p, nbdisp)` relevant for the indicated
-#' `model` and `error` (see `theta0` in Arguments). Values
-#' for parameters already specified in argument `theta0` are
-#' retained. Those absent in argument `theta0` are defined as
-#' follows:
+#' A list with integer elements `first`, `last`, `peak`
+#' and `wlen` and a list element `theta0`.
+#'
+#' `first:last` specifies the chosen fitting window and
+#' `wlen = last-first+1` the window length. `peak` will
+#' match its value in the function call. `last` will be
+#' equal to  `peak` if  `model = "exponential"` and
+#' equal to `max(length(cases), peak + 1)` otherwise.
+#' `first` can differ from its value in the function
+#' call depending on the values of other arguments (see Details).
+#'
+#' `theta0` specifies the chosen initial parameter estimates.
+#' `names(theta0)` is the subset of
+#' `c("r", "x0", "K", "thalf", "p", "nbdisp")` relevant for
+#' the indicated `model` and `error`. Parameter values supplied
+#' in the function call are retained. Parameters not specified
+#' in the function call are defined as follows:
 #'
 #' \describe{
 #'   \item{`r`}{The slope of a linear least squares fit to
-#'     `log(cases_nz)` within the first half of the chosen
-#'     fitting window, where
-#'     `cases_nz = ifelse(cases == 0, 0.1, cases)`.
-#'     If the slope is negative or zero, then `r` is assigned
-#'     the value of argument `r_if_leq0`.
+#'     `log(cases + 0.1)` within the first half of the chosen
+#'     fitting window. If the slope is negative or zero, then
+#'     `r` is assigned the value of argument `r_if_leq0`.
 #'   }
 #'   \item{`x0`}{The exponential of the intercept of the
 #'     linear fit described above.
@@ -90,14 +93,42 @@
 #'   \item{`nbdisp`}{1}
 #' }
 #'
-#' `peak` will match its value in the function call, but
-#' `first` will differ according to the values of other
-#' arguments (see Details). `last` will be equal to `peak`
-#' if `model = "exponential"` and equal to
-#' `max(length(cases), peak + 1)` otherwise.
-#'
 #' @details
-#' Some details about the selection of fitting windows.
+#' # Fitting window selection
+#'
+#' The fitting window ends at index `last = peak`, where `last = peak`
+#' if `model = "exponential"` and `last = max(length(cases), peak + 1)`
+#' otherwise.
+#'
+#' The length `wlen = last-first+1` of the fitting window is constrained
+#' to be at least `m = max(min_wlen, npar)`, where `npar` is the number
+#' of parameters being fit:
+#' 2 for `model = "exponential"`,
+#' 3 for `model = "logistic"`, and
+#' 4 for `model = "richards"`, plus
+#' 0 for `error = "poisson"` and
+#' 1 for `error = "nbinom"`.
+#' This implies two constraints on the arguments: `peak >= m`
+#' if `model = "exponential"` and `peak >= m-1` otherwise,
+#' and `first <= peak-m+1`. An error will be thrown
+#' if arguments `peak` and `first` (unless `first = NULL`)
+#' do not conform to these constraints.
+#'
+#' If `first = NULL` and `first_level = NULL`, then `first`
+#' is set internally to the greatest index `i` in `1:(peak-m+1)`
+#' for which `cases[i] = min(cases[1:(peak-m+1)])`.
+#' If `first = NULL` and `first_level != NULL`, then `first`
+#' is set internally to one plus the greatest index `i` in
+#' `1:(peak-m)` for which `cases[i] < first_level * max(cases)`.
+#' (If no such index exists, then `first` is set to 1.)
+#' Finally, if `first != NULL`, then the supplied value is
+#' respected (unless `skip_zeros = TRUE`) and `first_level`
+#' is ignored.
+#'
+#' If `skip_zeros = TRUE` and `first` as defined above
+#' is such that `cases[first] = 0` and `first < peak-m+1`,
+#' then `first` is increased by one until `cases[first] > 0`
+#' or `first = peak-m+1`.
 #'
 #' @examples
 #' data(canadacovid)
@@ -110,9 +141,9 @@
 #' )
 #'
 #' @references
-#' \insertRef{Ma+14}{epigrowthfitTMB}
+#' \insertRef{Ma+14}{epigrowthfit}
 #'
-#' \insertRef{Earn+20}{epigrowthfitTMB}
+#' \insertRef{Earn+20}{epigrowthfit}
 #'
 #' @import graphics
 #' @import stats
@@ -128,37 +159,24 @@ get_init <- function(time,
                      first = NULL,
                      first_level = NULL,
                      skip_zero = TRUE,
-                     debug_window = FALSE,
                      debug_lm = FALSE) {
   ### CHECKS ON INPUT -----------------------------------------------
 
-  if (!(is.character(model) && length(model) == 1 &&
-          model %in% c("exponential", "logistic", "richards"))) {
+  if (!is.character(model) || length(model) != 1 ||
+        !model %in% c("exponential", "logistic", "richards")) {
     stop("`model` must be an element of ",
          "`c(\"exponential\", \"logistic\", \"richards\")`.")
   }
-  if (!(is.character(error) && length(error) == 1 &&
-          error %in% c("nbinom", "poisson"))) {
+  if (!is.character(error) || length(error) != 1 ||
+        !error %in% c("nbinom", "poisson")) {
     stop("`error` must be an element of `c(\"nbinom\", \"poisson\")`.")
   }
   npar <- switch(model, exponential = 2, logistic = 3, richards = 4) +
     (error == "nbinom")
   pe <- 1 * (model %in% c("logistic", "richards"))
-  if (!(is.numeric(min_wlen) && length(min_wlen) == 1 &&
-          is.finite(min_wlen) && min_wlen >= npar)) {
-    warning("`min_wlen` invalid, setting `min_wlen <- ", npar,
-            "` (number of parameters).",
-            call. = FALSE)
-    min_wlen <- npar
-  } else if (min_wlen %% 1 != 0) {
-    warning("`min_wlen` is numeric but not integer, ",
-            "setting `min_wlen <- floor(min_wlen)`.",
-            call. = FALSE)
-    min_wlen <- floor(min_wlen)
-  }
   if (missing(time)) {
     stop("Missing argument `time`.")
-  } else if (!(is.numeric(time) && length(time) >= npar))  {
+  } else if (!is.numeric(time) || length(time) < npar)  {
     stop("`time` must be numeric and have length no less than ", npar, ".")
   } else if (!all(is.finite(time))) {
     stop("`time` must not contain missing or infinite values.")
@@ -167,63 +185,51 @@ get_init <- function(time,
   }
   if (missing(cases)) {
     stop("Missing argument `cases`.")
-  } else if (!(is.numeric(cases) && length(cases) == length(time))) {
+  } else if (!is.numeric(cases) || length(cases) != length(time)) {
     stop("`cases` must be numeric and have length equal to `length(time)`.")
-  } else if (!(all(is.finite(cases)) && all(cases >= 0))) {
+  } else if (!all(is.finite(cases)) || !all(cases >= 0)) {
     stop("`cases` must not contain missing, infinite, or negative values.")
   }
-  if (min_wlen > length(cases)) {
-    warning("`min_wlen` exceeds `length(cases)`, ",
-            "setting `min_wlen <- length(cases)`.",
-            call. = FALSE)
-    min_wlen <- length(cases)
+  if (!is.numeric(min_wlen) || length(min_wlen) != 1 ||
+        !min_wlen %in% npar:length(cases)) {
+    warning("`min_wlen` set to the number of parameters: ", npar, ".", call. = FALSE)
+    min_wlen <- npar
   }
   min_peak <- min_wlen - pe
-  if (!(is.numeric(peak) && length(peak) == 1 &&
-          peak %in% min_peak:length(cases))) {
+  if (!is.numeric(peak) || length(peak) != 1 ||
+        !peak %in% min_peak:length(cases)) {
     stop("`peak` must be an element of `", min_peak, ":length(cases)`.")
   }
   last <- min(length(cases), peak + pe)
   max_first <- last - min_wlen + 1
   if (!is.null(first)) {
-    if (!(is.numeric(first) && length(first) == 1 &&
-            first %in% seq_len(max_first))) {
-      stop("`first` must be an element of `1:", max_first, "`.")
-    }
-    if (!is.null(first_level)) {
-      warning("`first` kept, `first_level` set to `NULL` and ignored.",
-              call. = FALSE)
-      first_level <- NULL
+    if (!is.numeric(first) || length(first) != 1 ||
+          !first %in% seq_len(max_first)) {
+      stop("`first` must be `NULL` or an element of `1:", max_first, "`.")
     }
   }
   if (!is.null(first_level)) {
-    if (!(is.numeric(first_level) && length(first_level) == 1 &&
-            is.finite(first_level))) {
-      warning("`first_level` invalid, set to `NULL` and ignored.",
-              call. = FALSE)
+    if (!is.numeric(first_level) || length(first_level) != 1 ||
+          !is.finite(first_level) || !is.null(first)) {
+      warning("`first` is non-`NULL`. Ignoring `first_level`.", call. = FALSE)
       first_level <- NULL
     }
   }
-  if (!(is.logical(skip_zero) && length(skip_zero) == 1 && !is.na(skip_zero))) {
-    warning("`skip_zero` invalid, set to `TRUE`.", call. = FALSE)
+  if (!is.logical(skip_zero) || length(skip_zero) != 1 || is.na(skip_zero)) {
+    warning("`skip_zero` set to `TRUE`.", call. = FALSE)
     skip_zero <- TRUE
   }
   if (!is.null(theta0) && !is.list(theta0)) {
-    warning("`theta0` invalid, set to `NULL`.", call. = FALSE)
+    warning("`theta0` set to `NULL`.", call. = FALSE)
     theta0 <- NULL
   }
-  if (!(is.numeric(r_if_leq0) && length(r_if_leq0) == 1 &&
-          isTRUE(r_if_leq0 > 0))) {
-    warning("`r_if_leq0` invalid, set to 0.1.", call. = FALSE)
+  if (!is.numeric(r_if_leq0) || length(r_if_leq0) != 1 ||
+        !isTRUE(r_if_leq0 > 0)) {
+    warning("`r_if_leq0` set to 0.1.", call. = FALSE)
     r_if_leq0 <- 0.1
   }
-  if (!(is.logical(debug_window) && length(debug_window) == 1 &&
-          !is.na(debug_window))) {
-    warning("`debug_window` invalid, set to `FALSE`.", call. = FALSE)
-    debug_window <- FALSE
-  }
-  if (!(is.logical(debug_lm) && length(debug_lm) == 1 && !is.na(debug_lm))) {
-    warning("`debug_lm` invalid, set to `FALSE`.", call. = FALSE)
+  if (!is.logical(debug_lm) || length(debug_lm) != 1 || is.na(debug_lm)) {
+    warning("`debug_lm` set to `FALSE`.", call. = FALSE)
     debug_lm <- FALSE
   }
 
@@ -239,45 +245,34 @@ get_init <- function(time,
       ## such index, then choose the greatest.
       first <- max_first - which.min(cases[max_first:1]) + 1
     } else {
-      ## Set `first` equal to one plus the index of the observation
-      ## in `cases[1:(max_first-1)]` less than or equal to
-      ## `first_level * max(cases)`. If there is more than one such
-      ## index, then choose the greatest. If there is no such index,
-      ## then set `first` equal to 1.
+      ## Set `first` equal to one plus the index of the observation in
+      ## `cases[1:(max_first-1)]` less than `first_level * max(cases)`.
+      ## If there is more than one such index, then choose the greatest.
+      ## If there is no such index, then set `first` equal to 1.
       is_below_level <- cases[1:(max_first-1)] < first_level * max(cases)
-      first <- if (any(is_below_level)) max(which(is_below_level)) + 1 else 1
+      first <- if (any(is_below_level)) 1 + max(which(is_below_level)) else 1
     }
   }
 
   ## Enforce `cases[first] > 0` if desired and possible
-  if (skip_zero && first < max_first && cases[first] == 0) {
+  if (cases[first] == 0 && skip_zero && first < max_first) {
     is_nz <- cases[(first+1):max_first] > 0
     if (any(is_nz)) {
       new_first <- first + min(which(is_nz))
       warning("`cases[first] = 0` with `first = ", first,
-              "`, advancing `first <- ", new_first, "`.",
+              "`, setting `first <- ", new_first, "`.",
               call. = FALSE)
       first <- new_first
     } else {
-      warning("`cases[first] = 0` with `first = ", first,
-              "`, but `first` cannot be advanced.",
+      warning("`cases[i] = 0` for all `i` in `first:max_first`, ",
+              "setting `first <- max_first`.",
               call. = FALSE)
+      first <- max_first
     }
   }
 
   ## Fitting window length
   wlen <- last - first + 1
-
-  if (debug_window) {
-    out <- list(
-      first = first,
-      peak = peak,
-      last = last,
-      wlen = wlen,
-      min_wlen = min_wlen
-    )
-    return(out)
-  }
 
   ### PARAMETER ESTIMATES -------------------------------------------
 
@@ -297,13 +292,11 @@ get_init <- function(time,
   ## Parameters that `theta0` doesn't specify
   par_missing <- par_needed[!par_needed %in% names(theta0)]
 
-  ## Fit a linear model to `log(max(0.1, cases))` in the first
-  ## half of the fitting window. This accommodates zeros in `cases`.
-  ## NB: `max()` isn't actually vectorized so use `ifelse()`.
+  ## Fit a linear model to `log(cases + 0.1)` in the first half
+  ## of the fitting window. This accommodates zeros in `cases`.
   m <- max(2, floor(wlen / 2))
-  lm_data <- data.frame(time, cases = ifelse(cases == 0, 0.1, cases))
-  lm_data <- lm_data[first:(first+m), ]
-  lm_coef <- coef(lm(log(cases) ~ I(time - time[1]), data = lm_data))
+  lm_data <- data.frame(time, cases)[first:(first+m), ]
+  lm_coef <- coef(lm(log(cases + 0.1) ~ I(time - time[1]), data = lm_data))
   if (isTRUE(lm_coef[[2]] <= 0)) {
     warning("Estimated `r <= 0`, ",
             "setting `r` equal to `r_if_leq0` (", r_if_leq0, ").",
@@ -326,16 +319,17 @@ get_init <- function(time,
   }
 
   if (debug_lm) {
-    plot(log(cases) ~ I(time - time[1]),
+    plot(log(cases + 0.1) ~ I(time - time[1]),
       data = lm_data,
       xlab = "time (from start of window)",
-      ylab = "log(max(0.1, cases))"
+      ylab = "log(cases + 0.1)"
     )
     abline(lm_coef)
   }
 
   list(
     first = first,
+    peak = peak,
     last = last,
     wlen = wlen,
     theta0 = theta0

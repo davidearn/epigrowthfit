@@ -1,7 +1,7 @@
 SHELL = bash
 MAKE = make
 R = R
-PACKAGE = epigrowthfitTMB
+PACKAGE = epigrowthfit
 VERSION := $(shell sed -n '/^Version: /s/Version: // p' DESCRIPTION)
 TARBALL := $(PACKAGE)_$(VERSION).tar.gz
 

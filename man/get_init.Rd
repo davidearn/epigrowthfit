@@ -17,7 +17,6 @@ get_init(
   first = NULL,
   first_level = NULL,
   skip_zero = TRUE,
-  debug_window = FALSE,
   debug_lm = FALSE
 )
 }
@@ -55,24 +54,25 @@ half of its final size. Used only if
 \item{\code{nbdisp}}{Dispersion parameter. Used only if \code{error = "nbinom"}.}
 }
 
-\code{theta0} can be \code{NULL} or a list specifying only a subset
-of parameters. In this case, the absent parameters are set
-internally (see Value).}
+\code{theta0} can be \code{NULL} or a list specifying only a subset of
+the relevant parameters. In this case, the absent parameters
+are set internally. See Value.}
 
 \item{r_if_leq0}{A numeric scalar. Assigned to \code{r}
 if \code{!r \%in\% names(theta0)} and \code{beta1 <= 0}.}
 
 \item{min_wlen}{An integer scalar. The minimum number
-of observations in the fitting window, which must be
-at least the number of model parameters (see argument
-\code{theta0}).}
+of observations in the fitting window. Ignored if
+less than the number of model parameters. See Details.}
 
-\item{peak}{An integer in \code{seq_along(cases)} giving the
-index of the peak in \code{cases}, or \code{NULL}. See Details.}
+\item{peak}{An integer in \code{seq_along(cases)} indexing
+the peak in \code{cases}. The index of the last observation
+in the fitting window will be \code{peak} or \code{peak+1}.
+See Details.}
 
-\item{first}{An integer in \code{seq_along(cases)} giving the
-index of the first observation in the fitting window,
-or \code{NULL}. See Details.}
+\item{first}{An integer in \code{seq_along(cases)} indexing
+the first observation in the fitting window, or \code{NULL}.
+See Details.}
 
 \item{first_level}{A numeric scalar or \code{NULL}. Can be
 used to define \code{first} if \code{first = NULL}. See Details.}
@@ -81,33 +81,34 @@ used to define \code{first} if \code{first = NULL}. See Details.}
 attempt is made when defining \code{first} to ensure that
 \code{cases[first] > 0}. See Details.}
 
-\item{debug_window}{A logical scalar. If \code{TRUE}, then
-\code{get_init()} returns early with a list specifying
-the chosen fitting window.}
-
 \item{debug_lm}{A logical scalar. If \code{TRUE}, then
 a diagnostic plot of the linear model (see Value)
 is generated in addition to the usual output.}
 }
 \value{
-A list with integer elements \code{first}, \code{last}, and \code{wlen},
-such that \code{first:last} specifies the chosen fitting window
-and \code{wlen = last-first+1} the window length, and a list
-element \code{theta0}, specifying the chosen initial parameter
-estimates. \code{names(theta0)} is the subset of
-\code{c(r, x0, K, thalf, p, nbdisp)} relevant for the indicated
-\code{model} and \code{error} (see \code{theta0} in Arguments). Values
-for parameters already specified in argument \code{theta0} are
-retained. Those absent in argument \code{theta0} are defined as
-follows:
+A list with integer elements \code{first}, \code{last}, \code{peak}
+and \code{wlen} and a list element \code{theta0}.
+
+\code{first:last} specifies the chosen fitting window and
+\code{wlen = last-first+1} the window length. \code{peak} will
+match its value in the function call. \code{last} will be
+equal to  \code{peak} if  \code{model = "exponential"} and
+equal to \code{max(length(cases), peak + 1)} otherwise.
+\code{first} can differ from its value in the function
+call depending on the values of other arguments (see Details).
+
+\code{theta0} specifies the chosen initial parameter estimates.
+\code{names(theta0)} is the subset of
+\code{c("r", "x0", "K", "thalf", "p", "nbdisp")} relevant for
+the indicated \code{model} and \code{error}. Parameter values supplied
+in the function call are retained. Parameters not specified
+in the function call are defined as follows:
 
 \describe{
 \item{\code{r}}{The slope of a linear least squares fit to
-\code{log(cases_nz)} within the first half of the chosen
-fitting window, where
-\code{cases_nz = ifelse(cases == 0, 0.1, cases)}.
-If the slope is negative or zero, then \code{r} is assigned
-the value of argument \code{r_if_leq0}.
+\code{log(cases + 0.1)} within the first half of the chosen
+fitting window. If the slope is negative or zero, then
+\code{r} is assigned the value of argument \code{r_if_leq0}.
 }
 \item{\code{x0}}{The exponential of the intercept of the
 linear fit described above.
@@ -117,12 +118,6 @@ linear fit described above.
 \item{\code{p}}{1.0001}
 \item{\code{nbdisp}}{1}
 }
-
-\code{peak} will match its value in the function call, but
-\code{first} will differ according to the values of other
-arguments (see Details). \code{last} will be equal to \code{peak}
-if \code{model = "exponential"} and equal to
-\code{max(length(cases), peak + 1)} otherwise.
 }
 \description{
 Creates a list specifying a fitting window and initial
@@ -130,14 +125,47 @@ parameter estimates. Pains are taken to define a window
 and estimates that are reasonable in the absence of any
 user input.
 }
-\details{
-Some details about the selection of fitting windows.
+\section{Fitting window selection}{
+The fitting window ends at index \code{last = peak}, where \code{last = peak}
+if \code{model = "exponential"} and \code{last = max(length(cases), peak + 1)}
+otherwise.
+
+The length \code{wlen = last-first+1} of the fitting window is constrained
+to be at least \code{m = max(min_wlen, npar)}, where \code{npar} is the number
+of parameters being fit:
+2 for \code{model = "exponential"},
+3 for \code{model = "logistic"}, and
+4 for \code{model = "richards"}, plus
+0 for \code{error = "poisson"} and
+1 for \code{error = "nbinom"}.
+This implies two constraints on the arguments: \code{peak >= m}
+if \code{model = "exponential"} and \code{peak >= m-1} otherwise,
+and \code{first <= peak-m+1}. An error will be thrown
+if arguments \code{peak} and \code{first} (unless \code{first = NULL})
+do not conform to these constraints.
+
+If \code{first = NULL} and \code{first_level = NULL}, then \code{first}
+is set internally to the greatest index \code{i} in \code{1:(peak-m+1)}
+for which \code{cases[i] = min(cases[1:(peak-m+1)])}.
+If \code{first = NULL} and \code{first_level != NULL}, then \code{first}
+is set internally to one plus the greatest index \code{i} in
+\code{1:(peak-m)} for which \code{cases[i] < first_level * max(cases)}.
+(If no such index exists, then \code{first} is set to 1.)
+Finally, if \code{first != NULL}, then the supplied value is
+respected (unless \code{skip_zeros = TRUE}) and \code{first_level}
+is ignored.
+
+If \code{skip_zeros = TRUE} and \code{first} as defined above
+is such that \code{cases[first] = 0} and \code{first < peak-m+1},
+then \code{first} is increased by one until \code{cases[first] > 0}
+or \code{first = peak-m+1}.
 }
+
 \examples{
 data(canadacovid)
 ontario <- na.omit(subset(canadacovid, province == "ON"))
 get_init(
-  time = ontario$time,
+  time  = ontario$time,
   cases = ontario$new_confirmations,
   model = "richards",
   error = "nbinom"
@@ -145,7 +173,7 @@ get_init(
 
 }
 \references{
-\insertRef{Ma+14}{epigrowthfitTMB}
+\insertRef{Ma+14}{epigrowthfit}
 
-\insertRef{Earn+20}{epigrowthfitTMB}
+\insertRef{Earn+20}{epigrowthfit}
 }

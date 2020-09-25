@@ -1,8 +1,8 @@
-#' Data in epigrowthfitTMB
+#' Data in epigrowthfit
 #'
 #' @description
 #' Epidemic time series data to which growth rates can be fit
-#' using the \pkg{epigrowthfitTMB} package.
+#' using the \pkg{epigrowthfit} package.
 #'
 #' @details
 #' Here is a list of available data sets with links to the
@@ -32,7 +32,7 @@
 #' }
 #'
 #' @keywords internal
-#' @name epigrowthfitTMB-data
+#' @name epigrowthfit-data
 NULL
 
 #' COVID-19 in Canadian provinces and territories
