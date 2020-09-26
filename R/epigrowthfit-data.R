@@ -45,18 +45,19 @@ NULL
 #' A data frame with 1677 rows and 3 variables:
 #'
 #' \describe{
-#'   \item{`date`}{Date formatted as YYYY-MM-DD, daily from
-#'     February 14, 2020 to June 21, 2020 within each level of `province`.
+#'   \item{`date`}{<Date> Date, daily from February 14, 2020
+#'     to June 21, 2020 within each level of `province`.
 #'   }
-#'   \item{`time`}{Decimal date, equal to year plus fraction
-#'     of year. The fraction is 0 on January 1, 1/365 or 1/366
-#'     on January 2, and so on.
+#'   \item{`time`}{<numeric> Decimal date, equal to year plus
+#'     fraction of year. The fraction is 0 on January 1, 1/365
+#'     or 1/366 on January 2, and so on.
 #'   }
-#'   \item{`province`}{A factor variable with 13 levels
-#'     specifying a Canadian province or territory.
+#'   \item{`province`}{<factor, 13 levels> A Canadian province
+#'     or territory (postal abbreviation).
 #'   }
-#'   \item{`new_confirmations`}{Number of new confirmations of COVID-19.
-#'     There are 37 missing values (at least one for each level of `province`).
+#'   \item{`new_confirmations`}{<numeric> Number of new confirmations
+#'     of COVID-19. There are 37 missing values, at least one for each
+#'     level of `province`.
 #'   }
 #' }
 #'
@@ -78,27 +79,27 @@ NULL
 #' A data frame with 246 rows and 5 variables:
 #'
 #' \describe{
-#'   \item{`date`}{Date formatted as YYYY-MM-DD, weekly within
-#'     each level of `outbreak` with longer gaps between outbreaks.
+#'   \item{`date`}{<Date> Date, weekly within each level of
+#'     `outbreak` with longer gaps between outbreaks.
 #'   }
-#'   \item{`time`}{Decimal date, equal to year plus fraction
-#'     of year. The fraction is 0 on January 1 and either 1/365
-#'     or 1/366 on January 2.
+#'   \item{`time`}{<numeric> Decimal date, equal to year plus
+#'     fraction of year. The fraction is 0 on January 1, 1/365
+#'     or 1/366 on January 2, and so on.
 #'   }
-#'   \item{`wills`}{Count of wills written. Within a given level
-#'     of `outbreak`, `wills[i]` is the number of wills written
-#'     between `date[i-1]+1` and `date[i]`.
+#'   \item{`wills`}{<numeric> Count of wills written. Within
+#'     a given level of `outbreak`, `wills[i]` is the number
+#'     of wills written between `date[i-1]+1` and `date[i]`.
 #'   }
-#'   \item{`outbreak`}{An ordered factor variable with 4 levels,
+#'   \item{`outbreak`}{<ordered factor, 4 levels> Outbreak label,
 #'     partitioning the time series into distinct plague outbreaks.
 #'     Levels are named roughly according to the years in which
 #'     the outbreaks took place: 1348, 1361, 1368, and 1375.
 #'   }
-#'   \item{`severity`}{An ordered factor variable with levels `"minor"`
-#'     and `"major"`, indicating outbreak severity. All 14th century
-#'     outbreaks are classified as major, only because the data are too
-#'     sparse to distinguish between minor and major outbreaks
-#'     (in contrast with wills probated in the
+#'   \item{`severity`}{<ordered factor, 2 levels> Severity label,
+#'     classifying outbreaks as `"minor"` or `"major"`. All 14th
+#'     century outbreaks are classified as major, only because
+#'     the data are too sparse to distinguish between minor and
+#'     major outbreaks (in contrast with wills probated in the
 #'     [Prerogative Court of Canterbury][canterbury]).
 #'   }
 #' }
@@ -120,26 +121,27 @@ NULL
 #' A data frame with 1343 rows and 5 variables:
 #'
 #' \describe{
-#'   \item{`date`}{Date formatted as YYYY-MM-DD, weekly within
-#'     each level of `outbreak` with longer gaps between outbreaks.
+#'   \item{`date`}{<Date> Date, weekly within each level of
+#'     `outbreak` with longer gaps between outbreaks.
 #'   }
-#'   \item{`time`}{Decimal date, equal to year plus fraction
-#'     of year. The fraction is 0 on January 1 and either 1/365
-#'     or 1/366 on January 2.
+#'   \item{`time`}{<numeric> Decimal date, equal to year plus
+#'     fraction of year. The fraction is 0 on January 1, 1/365
+#'     or 1/366 on January 2, and so on.
 #'   }
-#'   \item{`wills`}{Count of wills written. Within a given level
-#'     of `outbreak`, `wills[i]` is the number of wills written
-#'     between `date[i-1]+1` and `date[i]`.
+#'   \item{`wills`}{<numeric> Count of wills written. Within
+#'     a given level of `outbreak`, `wills[i]` is the number
+#'     of wills written between `date[i-1]+1` and `date[i]`.
 #'   }
-#'   \item{`outbreak`}{An ordered factor variable with 24 levels,
+#'   \item{`outbreak`}{<ordered factor, 24 levels> Outbreak label,
 #'     partitioning the time series into distinct plague outbreaks.
 #'     Levels are named roughly according to the years in which
-#'     the outbreaks took place: 1563, 1578, ..., 1647, and 1665.
+#'     the outbreaks took place: 1563, 1578, ..., 1647, and 1665
+#'     (the Great Plague of London).
 #'   }
-#'   \item{`severity`}{An ordered factor variable with levels
-#'     `"minor"` and `"major"`, indicating outbreak severity.
-#'     An outbreak is classified as major if and only if plague
-#'     deaths per week per 1000 individuals exceeded 5 at least once.
+#'   \item{`severity`}{<ordered factor, 2 levels> Severity label,
+#'     classifying outbreaks as `"minor"` or `"major"`. An outbreak
+#'     is classified as major if and only if plague deaths per week
+#'     per 1000 individuals exceeded 5 at least once.
 #'   }
 #' }
 #'
@@ -160,26 +162,27 @@ NULL
 #' A data frame with 1320 rows and 5 variables:
 #'
 #' \describe{
-#'   \item{`date`}{Date formatted as YYYY-MM-DD, weekly within
-#'     each level of `outbreak` with longer gaps between outbreaks.
+#'   \item{`date`}{<Date> Date, weekly within each level of
+#'     `outbreak` with longer gaps between outbreaks.
 #'   }
-#'   \item{`time`}{Decimal date, equal to year plus fraction
-#'     of year. The fraction is 0 on January 1 and either 1/365
-#'     or 1/366 on January 2.
+#'   \item{`time`}{<numeric> Decimal date, equal to year plus
+#'     fraction of year. The fraction is 0 on January 1, 1/365
+#'     or 1/366 on January 2, and so on.
 #'   }
-#'   \item{`burials`}{Count of burials. Within a given level
-#'     of `outbreak`, `burials[i]` is the number of burials
+#'   \item{`burials`}{<numeric> Count of burials. Within a given
+#'     level of `outbreak`, `burials[i]` is the number of burials
 #'     registered between `date[i-1]+1` and `date[i]`.
 #'   }
-#'   \item{`outbreak`}{An ordered factor variable with 24 levels,
+#'   \item{`outbreak`}{<ordered factor, 24 levels> Outbreak label,
 #'     partitioning the time series into distinct plague outbreaks.
 #'     Levels are named roughly according to the years in which
-#'     the outbreaks took place: 1563, 1578, ..., 1647, and 1665.
+#'     the outbreaks took place: 1563, 1578, ..., 1647, and 1665
+#'     (the Great Plague of London).
 #'   }
-#'   \item{`severity`}{An ordered factor variable with levels
-#'     `"minor"` and `"major"`, indicating outbreak severity.
-#'     An outbreak is classified as major if and only if plague
-#'     deaths per week per 1000 individuals exceeded 5 at least once.
+#'   \item{`severity`}{<ordered factor, 2 levels> Severity label,
+#'     classifying outbreaks as `"minor"` or `"major"`. An outbreak
+#'     is classified as major if and only if plague deaths per week
+#'     per 1000 individuals exceeded 5 at least once.
 #'   }
 #' }
 #'
@@ -200,35 +203,35 @@ NULL
 #' A data frame with 1329 rows and 7 variables:
 #'
 #' \describe{
-#'   \item{`date`}{Date formatted as YYYY-MM-DD, weekly within
-#'     each level of `outbreak` with longer gaps between outbreaks.
+#'   \item{`date`}{<Date> Date, weekly within each level of
+#'     `outbreak` with longer gaps between outbreaks.
 #'   }
-#'   \item{`time`}{Decimal date, equal to year plus fraction
-#'     of year. The fraction is 0 on January 1 and either 1/365
-#'     or 1/366 on January 2.
+#'   \item{`time`}{<numeric> Decimal date, equal to year plus
+#'     fraction of year. The fraction is 0 on January 1, 1/365
+#'     or 1/366 on January 2, and so on.
 #'   }
-#'   \item{`all_causes_deaths`}{Count of deaths due to all causes.
-#'     Within a given level of `outbreak`, `all_cause_deaths[i]`
-#'     is the number of all causes deaths between `date[i-1]+1`
-#'     and `date[i]`. There are 30 missing values, all during
-#'     `outbreak = 1563`.
+#'   \item{`all_causes_deaths`}{<numeric> Count of deaths due
+#'     to all causes. Within a given level of `outbreak`,
+#'     `all_cause_deaths[i]` is the number of all causes deaths
+#'     between `date[i-1]+1` and `date[i]`. There are 30 missing
+#'     values, all during `outbreak = 1563`.
 #'   }
-#'   \item{`plague_deaths`}{Count of deaths due to plague.
-#'     Within a given level of `outbreak`, `plague_deaths[i]`
-#'     is the number of plague deaths between `date[i-1]+1`
-#'     and `date[i]`.
+#'   \item{`plague_deaths`}{<numeric> Count of deaths due to plague.
+#'     Within a given level of `outbreak`, `plague_deaths[i]` is the
+#'     number of plague deaths between `date[i-1]+1` and `date[i]`.
 #'   }
-#'   \item{`outbreak`}{An ordered factor variable with 24 levels,
+#'   \item{`outbreak`}{<ordered factor, 24 levels> Outbreak label,
 #'     partitioning the time series into distinct plague outbreaks.
 #'     Levels are named roughly according to the years in which
-#'     the outbreaks took place: 1563, 1578, ..., 1647, and 1665.
+#'     the outbreaks took place: 1563, 1578, ..., 1647, and 1665
+#'     (the Great Plague of London).
 #'   }
-#'   \item{`severity`}{An ordered factor variable with levels
-#'     `"minor"` and `"major"`, indicating outbreak severity.
-#'     An outbreak is classified as major if and only if plague
-#'     deaths per week per 1000 individuals exceeded 5 at least once.
+#'   \item{`severity`}{<ordered factor, 2 levels> Severity label,
+#'     classifying outbreaks as `"minor"` or `"major"`. An outbreak
+#'     is classified as major if and only if plague deaths per week
+#'     per 1000 individuals exceeded 5 at least once.
 #'   }
-#'   \item{`population`}{Estimated London population size.}
+#'   \item{`population`}{<numeric> Estimated London population size.}
 #' }
 #'
 #' @usage data(londonbills)
