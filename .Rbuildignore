@@ -1,8 +1,8 @@
 ^epigrowthfit\.Rproj$
 ^\.Rproj\.user$
-^old/
-^ref/
-^data-raw/
+^old$
+^ref$
+^data-raw$
 ^Makefile$
 ^TODO\.md$
 ^R/peaks\.R$

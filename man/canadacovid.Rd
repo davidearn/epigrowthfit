@@ -8,18 +8,19 @@
 A data frame with 1677 rows and 3 variables:
 
 \describe{
-\item{\code{date}}{Date formatted as YYYY-MM-DD, daily from
-February 14, 2020 to June 21, 2020 within each level of \code{province}.
+\item{\code{date}}{[Date] Date, daily from February 14, 2020
+to June 21, 2020 within each level of \code{province}.
 }
-\item{\code{time}}{Decimal date, equal to year plus fraction
-of year. The fraction is 0 on January 1, 1/365 or 1/366
-on January 2, and so on.
+\item{\code{time}}{[numeric] Decimal date, equal to year plus
+fraction of year. The fraction is 0 on January 1, 1/365
+or 1/366 on January 2, and so on.
 }
-\item{\code{province}}{A factor variable with 13 levels
-specifying a Canadian province or territory.
+\item{\code{province}}{[factor, 13 levels] A Canadian province
+or territory (postal abbreviation).
 }
-\item{\code{new_confirmations}}{Number of new confirmations of COVID-19.
-There are 37 missing values (at least one for each level of \code{province}).
+\item{\code{new_confirmations}}{[numeric] Number of new confirmations
+of COVID-19. There are 37 missing values, at least one for each
+level of \code{province}.
 }
 }
 }

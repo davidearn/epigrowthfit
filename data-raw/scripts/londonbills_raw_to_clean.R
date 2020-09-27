@@ -32,7 +32,7 @@ list_of_aggregates <- by(df,
 df <- do.call(rbind, list_of_aggregates)
 ## Clean up
 df <- df[, c("date", "time", "all_causes_deaths", "plague_deaths",
-             "outbreak", "severity")]
+             "outbreak", "severity", "population")]
 rownames(df) <- NULL
 
 

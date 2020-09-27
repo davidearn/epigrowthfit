@@ -1,7 +1,8 @@
 #' Define fitting windows and initial parameter estimates
 #'
 #' @description
-#' Creates a list specifying a fitting window and initial
+#' Given an incidence or mortality time series, constructs an
+#' "egf_init" object specifying a fitting window and initial
 #' parameter estimates. Pains are taken to define a window
 #' and estimates that are reasonable in the absence of any
 #' user input.
@@ -9,14 +10,14 @@
 #' @param time A numeric vector listing (increasing) time points.
 #' @param cases A numeric vector with length `length(time)`.
 #'   `cases[i]` is the number of cases observed at time `time[i]`.
-#'   Here, "cases" can be (reported) infections or (reported) deaths.
-#'   Missing values are not tolerated.
+#'   Here, "cases" can mean (reported) infections or (reported)
+#'   deaths. Missing values are not tolerated.
 #' @param model One of `"exponential"`, `"logistic"`, and `"richards"`,
 #'   indicating a phenomenological model.
-#' @param error One of `"poisson"` and `"nbinom"`,
+#' @param distribution One of `"poisson"` and `"nbinom"`,
 #'   indicating an observation model.
 #' @param theta0 A list with numeric scalar elements specifying
-#'   initial estimates of these parameters:
+#'   initial estimates of parameters:
 #'
 #'   \describe{
 #'     \item{`r`}{Initial growth rate expressed in reciprocal units of `time`.}
@@ -32,112 +33,116 @@
 #'       `model %in% c("logistic", "richards")`
 #'     }
 #'     \item{`p`}{Shape parameter. Used only if `model = "richards"`.}
-#'     \item{`nbdisp`}{Dispersion parameter. Used only if `error = "nbinom"`.}
+#'     \item{`nbdisp`}{Dispersion parameter.
+#'       Used only if `distribution = "nbinom"`.
+#'     }
 #'   }
 #'
 #'   `theta0` can be `NULL` or a list specifying only a subset of
 #'   the relevant parameters. In this case, the absent parameters
 #'   are set internally. See Value.
-#' @param r_if_leq0 A numeric scalar. Assigned to `r`
-#'   if `!r %in% names(theta0)` and `beta1 <= 0`.
+#' @param r_if_leq0 A numeric scalar. Assigned to `theta0$r`
+#'   if `!"r" %in% names(theta0)` and the default value of
+#'   `theta0$r`, which is computed internally, is negative
+#'   or zero. See Value.
 #' @param min_wlen An integer scalar. The minimum number
-#'   of observations in the fitting window. Ignored if
-#'   less than the number of model parameters. See Details.
+#'   of observations in the fitting window. Must be at
+#'   least the number of parameters being fit (the default).
 #' @param peak An integer in `seq_along(cases)` indexing
 #'   the peak in `cases`. The index of the last observation
 #'   in the fitting window will be `peak` or `peak+1`.
-#'   See Details.
+#'   The default is like `which.max(cases)` but careful
+#'   to prevent `peak < min_wlen`. See Details.
 #' @param first An integer in `seq_along(cases)` indexing
 #'   the first observation in the fitting window, or `NULL`.
-#'   See Details.
+#'   Non-`NULL` values may not be respected, depending on
+#'   other arguments. See Details.
 #' @param first_level A numeric scalar or `NULL`. Can be
 #'   used to define `first` if `first = NULL`. See Details.
 #' @param skip_zero A logical scalar. If `TRUE`, then an
 #'   attempt is made when defining `first` to ensure that
 #'   `cases[first] > 0`. See Details.
-#' @param debug_lm A logical scalar. If `TRUE`, then
-#'   a diagnostic plot of the linear model (see Value)
-#'   is generated in addition to the usual output.
 #'
 #' @return
-#' A list with integer elements `first`, `last`, `peak`
-#' and `wlen` and a list element `theta0`.
-#'
-#' `first:last` specifies the chosen fitting window and
-#' `wlen = last-first+1` the window length. `peak` will
-#' match its value in the function call. `last` will be
-#' equal to  `peak` if  `model = "exponential"` and
-#' equal to `max(length(cases), peak + 1)` otherwise.
-#' `first` can differ from its value in the function
-#' call depending on the values of other arguments (see Details).
-#'
-#' `theta0` specifies the chosen initial parameter estimates.
-#' `names(theta0)` is the subset of
-#' `c("r", "x0", "K", "thalf", "p", "nbdisp")` relevant for
-#' the indicated `model` and `error`. Parameter values supplied
-#' in the function call are retained. Parameters not specified
-#' in the function call are defined as follows:
+#' An "epigrowthfit_init" object. A list with elements:
 #'
 #' \describe{
-#'   \item{`r`}{The slope of a linear least squares fit to
-#'     `log(cases + 0.1)` within the first half of the chosen
-#'     fitting window. If the slope is negative or zero, then
-#'     `r` is assigned the value of argument `r_if_leq0`.
+#'   \item{`first`}{An integer indexing the start of the fitting window,
+#'     so that the first observation is `cases[first]`. May not match
+#'     the argument of the same name. See Details.
 #'   }
-#'   \item{`x0`}{The exponential of the intercept of the
-#'     linear fit described above.
+#'   \item{`last`}{An integer indexing the end of the fitting window,
+#'     so that the last observation is `cases[last]`. Equal to `peak`
+#'     if `model = "exponential"` and `max(length(cases), peak + 1)`
+#'     otherwise.
 #'   }
-#'   \item{`K`}{`sum(cases)`}
-#'   \item{`thalf`}{`times[peak]`}
-#'   \item{`p`}{1.0001}
-#'   \item{`nbdisp`}{1}
+#'   \item{`theta0`}{A list like the argument of the same name,
+#'     but complete with values for all relevant parameters.
+#'     Parameters values specified in the argument are retained.
+#'     Those absent are assigned their default value:
+#'
+#'     \begin{describe}{
+#'       \item{`r`, `x0`}{`beta1` and `exp(beta0)`, respectively,
+#'         where `beta0` and `beta1` are the intercept and slope
+#'         of a linear least squares fit to `log(cases + 0.1)`
+#'         within the first half of the fitting window. Here,
+#'         "intercept" means the value of the fit at the start of
+#'         the fitting window. If the slope is negative or zero,
+#'         then `r` is assigned the value of argument `r_if_leq0`.
+#'       }
+#'       \item{`K`}{`sum(cases)`}
+#'       \item{`thalf`}{`time[peak]`}
+#'       \item{`p`}{1.0001}
+#'       \item{`nbdisp`}{1}
+#'     }
+#'   }
+#'   \item{arg_list}{A list of all arguments, making the `egf_init()`
+#'     output reproducible with `do.call(egf_init, arg_list)`.
+#'   }
+#'   \item{call}{The call to `egf_init()`, making the `egf_init()`
+#'     output reproducible with `eval(call)`.
+#'   }
 #' }
 #'
 #' @details
-#' # Fitting window selection
+#' ## Fitting window selection
 #'
-#' The fitting window ends at index `last = peak`, where `last = peak`
-#' if `model = "exponential"` and `last = max(length(cases), peak + 1)`
-#' otherwise.
+#' The fitting window ends at index `last = peak`,
+#' where `last = peak` if `model = "exponential"`
+#' and `last = max(length(cases), peak + 1)` otherwise.
 #'
-#' The length `wlen = last-first+1` of the fitting window is constrained
-#' to be at least `m = max(min_wlen, npar)`, where `npar` is the number
-#' of parameters being fit:
-#' 2 for `model = "exponential"`,
-#' 3 for `model = "logistic"`, and
-#' 4 for `model = "richards"`, plus
-#' 0 for `error = "poisson"` and
-#' 1 for `error = "nbinom"`.
-#' This implies two constraints on the arguments: `peak >= m`
-#' if `model = "exponential"` and `peak >= m-1` otherwise,
-#' and `first <= peak-m+1`. An error will be thrown
+#' The length `wlen = last-first+1` of the fitting window
+#' is constrained to be at least `min_wlen`. This implies
+#' two constraints on the arguments: `peak >= min_wlen` if
+#' `model = "exponential"` and `peak >= min_wlen-1` otherwise,
+#' and `first <= peak-min_wlen+1`. An error will be thrown
 #' if arguments `peak` and `first` (unless `first = NULL`)
 #' do not conform to these constraints.
 #'
 #' If `first = NULL` and `first_level = NULL`, then `first`
-#' is set internally to the greatest index `i` in `1:(peak-m+1)`
-#' for which `cases[i] = min(cases[1:(peak-m+1)])`.
+#' is set internally to the greatest index `i` in `1:(peak-min_wlen+1)`
+#' for which `cases[i] = min(cases[1:(peak-min_wlen+1)])`.
 #' If `first = NULL` and `first_level != NULL`, then `first`
 #' is set internally to one plus the greatest index `i` in
-#' `1:(peak-m)` for which `cases[i] < first_level * max(cases)`.
-#' (If no such index exists, then `first` is set to 1.)
+#' `1:(peak-min_wlen)` for which `cases[i] < first_level * max(cases)`.
+#' If no such index exists, then `first` is set to 1.
 #' Finally, if `first != NULL`, then the supplied value is
 #' respected (unless `skip_zeros = TRUE`) and `first_level`
 #' is ignored.
 #'
-#' If `skip_zeros = TRUE` and `first` as defined above
-#' is such that `cases[first] = 0` and `first < peak-m+1`,
+#' If `skip_zeros = TRUE` and `first` (as defined above) is
+#' such that `cases[first] = 0` and `first < peak-min_wlen+1`,
 #' then `first` is increased by one until `cases[first] > 0`
-#' or `first = peak-m+1`.
+#' or `first = peak-min_wlen+1`.
 #'
 #' @examples
 #' data(canadacovid)
 #' ontario <- na.omit(subset(canadacovid, province == "ON"))
-#' get_init(
-#'   time  = ontario$time,
+#' x <- egf_init(
+#'   time = ontario$time,
 #'   cases = ontario$new_confirmations,
 #'   model = "richards",
-#'   error = "nbinom"
+#'   distribution = "nbinom"
 #' )
 #'
 #' @references
@@ -145,21 +150,21 @@
 #'
 #' \insertRef{Earn+20}{epigrowthfit}
 #'
-#' @import graphics
-#' @import stats
+#' @seealso [methods for class "egf_init"][egf_init-methods]
 #' @export
-get_init <- function(time,
+#' @import stats
+egf_init <- function(time,
                      cases,
                      model = "exponential",
-                     error = "poisson",
+                     distribution = "poisson",
                      theta0 = NULL,
                      r_if_leq0 = 0.1,
-                     min_wlen = switch(model, exponential = 2, logistic = 3, richards = 4) + (error == "nbinom"),
+                     min_wlen = switch(model, exponential = 2, logistic = 3, richards = 4) + (distribution == "nbinom"),
                      peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
                      first = NULL,
                      first_level = NULL,
-                     skip_zero = TRUE,
-                     debug_lm = FALSE) {
+                     skip_zero = TRUE) {
+  arg_list <- as.list(environment())
   ### CHECKS ON INPUT -----------------------------------------------
 
   if (!is.character(model) || length(model) != 1 ||
@@ -167,12 +172,12 @@ get_init <- function(time,
     stop("`model` must be an element of ",
          "`c(\"exponential\", \"logistic\", \"richards\")`.")
   }
-  if (!is.character(error) || length(error) != 1 ||
-        !error %in% c("nbinom", "poisson")) {
-    stop("`error` must be an element of `c(\"nbinom\", \"poisson\")`.")
+  if (!is.character(distribution) || length(distribution) != 1 ||
+        !distribution %in% c("nbinom", "poisson")) {
+    stop("`distribution` must be an element of `c(\"nbinom\", \"poisson\")`.")
   }
   npar <- switch(model, exponential = 2, logistic = 3, richards = 4) +
-    (error == "nbinom")
+    (distribution == "nbinom")
   pe <- 1 * (model %in% c("logistic", "richards"))
   if (missing(time)) {
     stop("Missing argument `time`.")
@@ -192,8 +197,9 @@ get_init <- function(time,
   }
   if (!is.numeric(min_wlen) || length(min_wlen) != 1 ||
         !min_wlen %in% npar:length(cases)) {
-    warning("`min_wlen` set to the number of parameters: ", npar, ".", call. = FALSE)
-    min_wlen <- npar
+    stop("`min_wlen` must be at least ",
+         "the number of parameters being fit (", npar, ").",
+         call. = FALSE)
   }
   min_peak <- min_wlen - pe
   if (!is.numeric(peak) || length(peak) != 1 ||
@@ -228,10 +234,7 @@ get_init <- function(time,
     warning("`r_if_leq0` set to 0.1.", call. = FALSE)
     r_if_leq0 <- 0.1
   }
-  if (!is.logical(debug_lm) || length(debug_lm) != 1 || is.na(debug_lm)) {
-    warning("`debug_lm` set to `FALSE`.", call. = FALSE)
-    debug_lm <- FALSE
-  }
+
 
   ### FITTING WINDOW ------------------------------------------------
 
@@ -274,6 +277,7 @@ get_init <- function(time,
   ## Fitting window length
   wlen <- last - first + 1
 
+
   ### PARAMETER ESTIMATES -------------------------------------------
 
   if (is.null(theta0)) {
@@ -286,7 +290,7 @@ get_init <- function(time,
     logistic    = c("r", "thalf", "K"),
     richards    = c("r", "thalf", "K", "p")
   )
-  if (error == "nbinom") {
+  if (distribution == "nbinom") {
     par_needed <- c(par_needed, "nbdisp")
   }
   ## Parameters that `theta0` doesn't specify
@@ -318,20 +322,13 @@ get_init <- function(time,
     warning("`theta0` has missing or infinite values.")
   }
 
-  if (debug_lm) {
-    plot(log(cases + 0.1) ~ I(time - time[1]),
-      data = lm_data,
-      xlab = "time (from start of window)",
-      ylab = "log(cases + 0.1)"
-    )
-    abline(lm_coef)
-  }
 
-  list(
-    first = first,
-    peak = peak,
-    last = last,
-    wlen = wlen,
-    theta0 = theta0
+  out <- list(
+    first    = first,
+    last     = last,
+    theta0   = theta0,
+    arg_list = arg_list,
+    call     = match.call()
   )
+  structure(out, class = c("egf_init", "list"))
 }

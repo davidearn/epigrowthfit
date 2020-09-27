@@ -3,7 +3,7 @@
 \docType{package}
 \name{epigrowthfit-package}
 \alias{epigrowthfit-package}
-\title{epigrowthfit: Estimation of Epidemic Growth Rates}
+\title{\pkg{epigrowthfit}: Estimation of Epidemic Growth Rates}
 \description{
 A description of the \pkg{epigrowthfit} package.
 }

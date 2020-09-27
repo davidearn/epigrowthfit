@@ -2,14 +2,13 @@
 % Please edit documentation in R/epigrowthfit-data.R
 \name{epigrowthfit-data}
 \alias{epigrowthfit-data}
-\title{Data in epigrowthfit}
+\title{Data in the \pkg{epigrowthfit} package}
 \description{
-Epidemic time series data to which growth rates can be fit
-using the \pkg{epigrowthfit} package.
+Epidemic time series to which growth rates can be fit,
+and a few other data sets.
 }
 \details{
-Here is a list of available data sets with links to the
-relevant documentation:
+Here is a list of available data sets with links to their documentation.
 
 \describe{
 \item{\code{\link{canadacovid}}}{
@@ -31,6 +30,14 @@ during 24 plague epidemics in 16th and 17th century London.
 \item{\code{\link{londonbills}}}{
 Weekly counts of plague deaths recorded in the London Bills of Mortality
 during 24 plague epidemics in 16th and 17th century London.
+}
+\item{\code{\link{plague_latent_period}}}{
+Distributions (observed and fitted) of the latent period
+of pneumonic plague.
+}
+\item{\code{\link{plague_infectious_period}}}{
+Distributions (observed and fitted) of the infectious period
+of pneumonic plague.
 }
 }
 }

@@ -1,4 +1,4 @@
-#' epigrowthfit: Estimation of Epidemic Growth Rates
+#' \pkg{epigrowthfit}: Estimation of Epidemic Growth Rates
 #'
 #' @description
 #' A description of the \pkg{epigrowthfit} package.

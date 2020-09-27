@@ -8,35 +8,35 @@
 A data frame with 1329 rows and 7 variables:
 
 \describe{
-\item{\code{date}}{Date formatted as YYYY-MM-DD, weekly within
-each level of \code{outbreak} with longer gaps between outbreaks.
+\item{\code{date}}{[Date] Date, weekly within each level of
+\code{outbreak} with longer gaps between outbreaks.
 }
-\item{\code{time}}{Decimal date, equal to year plus fraction
-of year. The fraction is 0 on January 1 and either 1/365
-or 1/366 on January 2.
+\item{\code{time}}{[numeric] Decimal date, equal to year plus
+fraction of year. The fraction is 0 on January 1, 1/365
+or 1/366 on January 2, and so on.
 }
-\item{\code{all_causes_deaths}}{Count of deaths due to all causes.
-Within a given level of \code{outbreak}, \code{all_cause_deaths[i]}
-is the number of all causes deaths between \code{date[i-1]+1}
-and \code{date[i]}. There are 30 missing values, all during
-\code{outbreak = 1563}.
+\item{\code{all_causes_deaths}}{[numeric] Count of deaths due
+to all causes. Within a given level of \code{outbreak},
+\code{all_cause_deaths[i]} is the number of all causes deaths
+between \code{date[i-1]+1} and \code{date[i]}. There are 30 missing
+values, all during \code{outbreak = 1563}.
 }
-\item{\code{plague_deaths}}{Count of deaths due to plague.
-Within a given level of \code{outbreak}, \code{plague_deaths[i]}
-is the number of plague deaths between \code{date[i-1]+1}
-and \code{date[i]}.
+\item{\code{plague_deaths}}{[numeric] Count of deaths due to plague.
+Within a given level of \code{outbreak}, \code{plague_deaths[i]} is the
+number of plague deaths between \code{date[i-1]+1} and \code{date[i]}.
 }
-\item{\code{outbreak}}{An ordered factor variable with 24 levels,
+\item{\code{outbreak}}{[ordered factor, 24 levels] Outbreak label,
 partitioning the time series into distinct plague outbreaks.
 Levels are named roughly according to the years in which
-the outbreaks took place: 1563, 1578, ..., 1647, and 1665.
+the outbreaks took place: 1563, 1578, ..., 1647, and 1665
+(the Great Plague of London).
 }
-\item{\code{severity}}{An ordered factor variable with levels
-\code{"minor"} and \code{"major"}, indicating outbreak severity.
-An outbreak is classified as major if and only if plague
-deaths per week per 1000 individuals exceeded 5 at least once.
+\item{\code{severity}}{[ordered factor, 2 levels] Severity label,
+classifying outbreaks as \code{"minor"} or \code{"major"}. An outbreak
+is classified as major if and only if plague deaths per week
+per 1000 individuals exceeded 5 at least once.
 }
-\item{\code{population}}{Estimated London population size.}
+\item{\code{population}}{[numeric] Estimated London population size.}
 }
 }
 \usage{
@@ -49,5 +49,6 @@ during 24 plague epidemics in 16th and 17th century London.
 \examples{
 data(londonbills)
 subset(londonbills, outbreak == 1665) # Great Plague of London
+
 }
 \keyword{datasets}
