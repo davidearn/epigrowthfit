@@ -62,7 +62,7 @@
 #' and constant on the interval \mjseqn{(i,i+1)} for all integers \mjseqn{i}.
 #' Hence the probability that \mjseqn{Z \in (i,i+1\rbrack} is simply
 #'
-#' \mjsdeqn{z_i = \int_{i}^{i+1} f_Z(t)\,\text{d}t = \int_{i}^{i+1} f_Z(i+\tfrac{1}{2})\,\text{d}t = f_Z(i+\tfrac{1}{2})\,.}
+#' \mjsdeqn{z_i = \int_{i}^{i+1} f_Z(s)\,\text{d}s = \int_{i}^{i+1} f_Z(i+\tfrac{1}{2})\,\text{d}s = f_Z(i+\tfrac{1}{2})\,.}
 #'
 #' Then the distribution function of \mjseqn{Z} is
 #'

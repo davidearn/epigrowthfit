@@ -69,10 +69,11 @@ assuming that infectiousness is constant over an infectious period:%
   f_W(t) = \begin{cases} 0\,, & t \leq 0\,, \\ \frac{1 - F_Y(t)}{\mathrm{E}[Y]}\,, & t > 0\,. \end{cases}
 \end{equation}
 %
-If $t \leq 1$, then $f_W(t - i) = 0$ for all integers $i \geq 1$,
-and \eqref{eq:fZ} gives $f_Z(t) = 0$. If $t > 1$, then $f_W(t - i) = 0$
-for all integers $i \geq \lceil t \rceil$, and \eqref{eq:fZ} can be
-rewritten as
+If $t \leq 1$, then $t - i \leq 0$ for all $i \geq 1$. Hence
+$f_W(t - i) = 0$ for all $i \geq 1$, and \eqref{eq:fZ} gives
+$f_Z(t) = 0$. If $t > 1$, then $t - i \leq 0$ for all
+$i \geq t$. Hence $f_W(t - i) = 0$ for all $i \geq t$, and
+\eqref{eq:fZ} can be rewritten as
 %
 \begin{equation}
   \begin{aligned}
@@ -83,8 +84,9 @@ rewritten as
   \end{aligned}
 \end{equation}
 %
-If $1 < t < 2$, then $F_Y(t - i) = 0$ for all integers $i \geq 1$,
-and \eqref{eq:fZ-tgt0} simplifies to
+If $1 < t < 2$, then $t - i < 1$ for all $i \geq 1$. Hence
+$F_Y(t - i) = 0$ for all $i \geq 1$, and \eqref{eq:fZ-tgt0}
+simplifies to
 %
 \begin{equation}
   f_Z(t) = \mathbbm{E}[Y]^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i\,.
@@ -149,10 +151,31 @@ In summary, the forward generation interval $Z$ has density
   \end{cases}
 \end{equation}
 
-Becau
+Note that $f_Z$ is supported on the interval $(1,m+n]$ and constant
+on the interval $(i,i+1)$ for all integers $i$. Hence the probability
+that $Z \in (i,i+1]$ is simply
+%
+\begin{equation}
+    z_i = \int_{i}^{i+1} f_Z(s)\,\text{d}s = \int_{i}^{i+1} f_Z(i+\tfrac{1}{2})\,\text{d}s = f_Z(i+\tfrac{1}{2})\,.
+\end{equation}
+%
+Then the distribution function of $Z$ is
+%
+\begin{equation}
+  \begin{aligned}
+    F_Z(t)
+    &= \int_{\infty}^{t} f_Z(s)\,\text{d}t \\
+    &= \begin{cases}
+      0\,, & t \in (-\infty,1]\,, \\
+      (t-1) z_1\,, & t \in (1,2]\,, \\
+      (t-i) z_i + \sum_{j=1}^{i-1} z_j\,, & t \in (i,i+1]\,,\qquad i \in \{2,\ldots,m+n\}\,, \\
+      1\,, & t \in (m+n,\infty)\,.
+    \end{cases}
+  \end{aligned}
+\end{equation}
 
+            
 \section{Basic reproduction number}
-
 
 Eq 3.6 in Wallinga and Lipsitch (2007) gives an expression for 
 $\mathcal{R}_0$, conditional on $f_Z$ and an initial growth rate $r$:
@@ -160,16 +183,9 @@ $\mathcal{R}_0$, conditional on $f_Z$ and an initial growth rate $r$:
 \begin{equation}
   \begin{aligned}
     \mathcal{R}_0
-    &= \left. r \middle/ \bigg\{\sum_{i=2}^{m+n} \frac{y_i (e^{-r (i-1)} - e^{-r i})}{i - (i-1)}\bigg\} \right. \\
-    &= \left. r \middle/ \bigg\{\sum_{i=2}^{m+n} y_i (e^{-r (i-1)} - e^{-r i})\bigg\} \right.\,,
+    &= \left. r \middle/ \bigg\{\sum_{i=1}^{m+n-1} \frac{z_i (e^{-r i} - e^{-r (i+1)})}{(i+1) - i}\bigg\} \right. \\
+    &= \left. r \middle/ \bigg\{\sum_{i=1}^{m+n-1} z_i (e^{-r i} - e^{-r (i+1)})\bigg\} \right.\,.
    \end{aligned}
 \end{equation}
-%
-where
-%
-\begin{equation}
-y_i = \int_{i-1}^{i} f_Z(t)\,\text{d}t\,.
-\end{equation}
-
 
 \end{document}
