@@ -22,9 +22,8 @@ with \code{probs / sum(probs)} in the event that \code{sum(probs) != 1}.}
 }
 \value{
 A numeric vector of length \code{length(r)} listing values
-for the basic reproduction number \mjseqn{\mathcal{R}_0}.
-The \code{i}th element is conditional on initial growth rate
-\code{r[i]}. See Details.
+for the basic reproduction number. The \code{i}th element is
+computed using initial growth rate \code{r[i]}. See Details.
 }
 \description{
 Given an initial growth rate and a generation interval
@@ -43,7 +42,9 @@ states that the basic reproduction number is given by
 
 \mjsdeqn{\out{\mathcal{R}_0 = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{\ell-1} \frac{z_i (e^{-r a_i} - e^{-r a_{i+1}})}{a_{i+1} - a_i} \bigg\rbrace \right.\,,}}
 
-where \mjseqn{r} is the initial growth rate specified by \code{r}.
+where \mjseqn{r} is the initial growth rate. \code{compute_R0()}
+evaluates the right-hand side using each value for \mjseqn{r}
+specified in argument \code{r}.
 }
 \examples{
 data(plague_latent_period)

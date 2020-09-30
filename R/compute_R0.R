@@ -17,9 +17,8 @@
 #'
 #' @return
 #' A numeric vector of length `length(r)` listing values
-#' for the basic reproduction number \mjseqn{\mathcal{R}_0}.
-#' The `i`th element is conditional on initial growth rate
-#' `r[i]`. See Details.
+#' for the basic reproduction number. The `i`th element is
+#' computed using initial growth rate `r[i]`. See Details.
 #'
 #' @details
 #' Let \mjseqn{a_1 < \cdots < a_\ell} be the break points
@@ -34,7 +33,9 @@
 #'
 #' \mjsdeqn{\out{\mathcal{R}_0 = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{\ell-1} \frac{z_i (e^{-r a_i} - e^{-r a_{i+1}})}{a_{i+1} - a_i} \bigg\rbrace \right.\,,}}
 #'
-#' where \mjseqn{r} is the initial growth rate specified by `r`.
+#' where \mjseqn{r} is the initial growth rate. `compute_R0()`
+#' evaluates the right-hand side using each value for \mjseqn{r}
+#' specified in argument `r`.
 #'
 #' @references
 #' \insertRef{WallLips07}{epigrowthfit}
