@@ -3,6 +3,7 @@
 ^old$
 ^ref$
 ^data-raw$
+^scrap$
 ^Makefile$
 ^TODO\.md$
 ^R/peaks\.R$

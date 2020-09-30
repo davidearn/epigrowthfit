@@ -32,12 +32,10 @@ Weekly counts of plague deaths recorded in the London Bills of Mortality
 during 24 plague epidemics in 16th and 17th century London.
 }
 \item{\code{\link{plague_latent_period}}}{
-Distributions (observed and fitted) of the latent period
-of pneumonic plague.
+Empirical distribution of the latent period of pneumonic plague.
 }
 \item{\code{\link{plague_infectious_period}}}{
-Distributions (observed and fitted) of the infectious period
-of pneumonic plague.
+Empirical distribution of the infectious period of pneumonic plague.
 }
 }
 }

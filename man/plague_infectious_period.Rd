@@ -5,15 +5,12 @@
 \alias{plague_infectious_period}
 \title{Infectious period distribution (pneumonic plague)}
 \format{
-A data frame with 13 rows and 3 variables:
+A data frame with 12 rows and 2 variables:
 
 \describe{
-\item{\code{days}}{[integer] Infectious period in days, from 0 to 12.}
-\item{\code{observed}}{[numeric] Observed relative frequency
+\item{\code{days}}{[integer] Infectious period in days, from 1 to 12.}
+\item{\code{relfreq}}{[numeric] Observed relative frequency
 out of 225 cases.
-}
-\item{\code{fitted}}{[numeric] Probability from a fitted lognormal
-distribution.
 }
 }
 }
@@ -24,8 +21,12 @@ Obtained from Figure 1B in \insertCite{GaniLeac04;textual}{epigrowthfit}.
 data(plague_infectious_period)
 }
 \description{
-Distributions (observed and fitted) of the infectious period
-of pneumonic plague.
+Empirical distribution of the infectious period of pneumonic plague.
+}
+\examples{
+data(plague_infectious_period)
+plot(relfreq ~ days, data = plague_infectious_period)
+
 }
 \references{
 \insertRef{GaniLeac04}{epigrowthfit}

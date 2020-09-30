@@ -2,7 +2,10 @@
 
 S3method(plot,egf_init)
 S3method(print,egf_init)
+export(compute_R0)
+export(dgi)
 export(egf_init)
+export(pgi)
 import(graphics)
 import(stats)
 importFrom(Rdpack,reprompt)

@@ -29,12 +29,10 @@
 #'     during 24 plague epidemics in 16th and 17th century London.
 #'   }
 #'   \item{[`plague_latent_period`][plague_latent_period]}{
-#'     Distributions (observed and fitted) of the latent period
-#'     of pneumonic plague.
+#'     Empirical distribution of the latent period of pneumonic plague.
 #'   }
 #'   \item{[`plague_infectious_period`][plague_infectious_period]}{
-#'     Distributions (observed and fitted) of the infectious period
-#'     of pneumonic plague.
+#'     Empirical distribution of the infectious period of pneumonic plague.
 #'   }
 #' }
 #'
@@ -271,19 +269,15 @@ NULL
 #' Latent period distribution (pneumonic plague)
 #'
 #' @description
-#' Distributions (observed and fitted) of the latent period
-#' of pneumonic plague.
+#' Empirical distribution of the latent period of pneumonic plague.
 #'
 #' @format
-#' A data frame with 13 rows and 3 variables:
+#' A data frame with 12 rows and 2 variables:
 #'
 #' \describe{
-#'   \item{`days`}{\[integer\] Latent period in days, from 0 to 12.}
-#'   \item{`observed`}{\[numeric\] Observed relative frequency
+#'   \item{`days`}{\[integer\] Latent period in days, from 1 to 12.}
+#'   \item{`relfreq`}{\[numeric\] Observed relative frequency
 #'     out of 224 cases.
-#'   }
-#'   \item{`fitted`}{\[numeric\] Probability from a fitted lognormal
-#'     distribution.
 #'   }
 #' }
 #'
@@ -294,25 +288,25 @@ NULL
 #' \insertRef{GaniLeac04}{epigrowthfit}
 #'
 #' @usage data(plague_latent_period)
+#' @examples
+#' data(plague_latent_period)
+#' plot(relfreq ~ days, data = plague_latent_period)
+#'
 #' @name plague_latent_period
 "plague_latent_period"
 
 #' Infectious period distribution (pneumonic plague)
 #'
 #' @description
-#' Distributions (observed and fitted) of the infectious period
-#' of pneumonic plague.
+#' Empirical distribution of the infectious period of pneumonic plague.
 #'
 #' @format
-#' A data frame with 13 rows and 3 variables:
+#' A data frame with 12 rows and 2 variables:
 #'
 #' \describe{
-#'   \item{`days`}{\[integer\] Infectious period in days, from 0 to 12.}
-#'   \item{`observed`}{\[numeric\] Observed relative frequency
+#'   \item{`days`}{\[integer\] Infectious period in days, from 1 to 12.}
+#'   \item{`relfreq`}{\[numeric\] Observed relative frequency
 #'     out of 225 cases.
-#'   }
-#'   \item{`fitted`}{\[numeric\] Probability from a fitted lognormal
-#'     distribution.
 #'   }
 #' }
 #'
@@ -323,5 +317,9 @@ NULL
 #' \insertRef{GaniLeac04}{epigrowthfit}
 #'
 #' @usage data(plague_infectious_period)
+#' @examples
+#' data(plague_infectious_period)
+#' plot(relfreq ~ days, data = plague_infectious_period)
+#'
 #' @name plague_infectious_period
 "plague_infectious_period"

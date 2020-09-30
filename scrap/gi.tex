@@ -1,0 +1,175 @@
+\documentclass[12pt]{article}
+
+\usepackage[top=1in,bottom=1.5in,left=1in,right=1in]{geometry}
+\usepackage{amsmath,bbm}
+\allowdisplaybreaks
+\usepackage[colorlinks=true,allcolors=magenta]{hyperref}
+
+\begin{document}
+\setlength{\parskip}{3mm}
+\setlength{\parindent}{7mm}
+
+\section{Generation interval distribution}
+
+Let $X$ and $Y$ be the latent%
+\footnote{Time from infection to onset of infectiousness.}
+and infectious%
+\footnote{Time from onset of infectiousness to recovery.}
+periods, let $f_X$ and $f_Y$ be their density functions,
+and let $F_X$ and $F_Y$ be their distribution functions.
+Suppose $f_X$ and $f_Y$ are supported on $\{1,\ldots,m\}$
+days and $\{1,\ldots,n\}$ days respectively, so that
+%
+\begin{subequations}
+  \begin{align}
+    f_X(t) &= \sum_{i=1}^{m} p_i \delta(t - i)\,, \label{eq:fX} \\
+    F_X(t) &= \begin{cases} 0\,, & t < 1\,, \\ \sum\limits_{i=1}^{\min\{m,\lfloor t \rfloor\}} p_i\,, & t \geq 1\,, \end{cases} \\ 
+    \mathbbm{E}[X] &= \sum_{i=1}^{m} i p_i\,,
+  \end{align}
+\end{subequations}
+%
+and
+%
+\begin{subequations}
+  \begin{align}
+    f_Y(t) &= \sum_{i=1}^{n} q_i \delta(t - i)\,, \\
+    F_Y(t) &= \begin{cases} 0\,, & t < 1\,, \\ \sum\limits_{i=1}^{\min\{n,\lfloor t \rfloor\}} q_i\,, & t \geq 1\,, \end{cases} \label{eq:FY} \\
+    \mathbbm{E}[Y] &= \sum_{i=1}^{n} i q_i\,,
+  \end{align}
+\end{subequations}
+%
+where $p_i,q_i \in [0,1]$, $\sum_{i=1}^{m} p_i = \sum_{i=1}^{n} q_i = 1$,
+and $\delta$ is the Dirac delta.
+
+Let $W$ be the infectious waiting time%
+\footnote{Time from onset of infectiousness to transmission.}
+and $f_W$ its density. Then the generation interval%
+\footnote{Time from infection to transmission.}
+is $Z = X + W$ and has density $f_Z = f_X * f_W$
+(assuming independence of $X$ and $W$).
+From \eqref{eq:fX}, we obtain
+%
+\begin{equation}
+  \label{eq:fZ}
+  \begin{aligned}
+    f_Z(t)
+    &= (f_X * f_W(t) \\
+    &= \int_{-\infty}^{\infty} f_X(a) f_W(t - a)\,\text{d}a \\
+    &= \sum_{i=1}^{m} p_i \int_{-\infty}^{\infty} \delta(a - i) f_W(t - a)\,\text{d}a \\
+    &= \sum_{i=1}^{m} p_i f_W(t - i)\,.
+  \end{aligned}
+\end{equation}
+%
+Equation 5.7 in Svensson (2007) gives an expression for $f_W$,
+assuming that infectiousness is constant over an infectious period:%
+\footnote{Equation 5.7 in Svensson (2007) ignores the $t \leq 0$ case.}
+%
+\begin{equation}
+  \label{eq:fW}
+  f_W(t) = \begin{cases} 0\,, & t \leq 0\,, \\ \frac{1 - F_Y(t)}{\mathrm{E}[Y]}\,, & t > 0\,. \end{cases}
+\end{equation}
+%
+If $t \leq 1$, then $f_W(t - i) = 0$ for all integers $i \geq 1$,
+and \eqref{eq:fZ} gives $f_Z(t) = 0$. If $t > 1$, then $f_W(t - i) = 0$
+for all integers $i \geq \lceil t \rceil$, and \eqref{eq:fZ} can be
+rewritten as
+%
+\begin{equation}
+  \begin{aligned}
+    \label{eq:fZ-tgt0}
+    f_Z(t)
+    &= \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i f_W(t - i) \\
+    &= \mathbbm{E}[Y]^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i (1 - F_Y(t - i))\,.
+  \end{aligned}
+\end{equation}
+%
+If $1 < t < 2$, then $F_Y(t - i) = 0$ for all integers $i \geq 1$,
+and \eqref{eq:fZ-tgt0} simplifies to
+%
+\begin{equation}
+  f_Z(t) = \mathbbm{E}[Y]^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i\,.
+\end{equation}
+%
+If $t \geq 2$, then \eqref{eq:fZ-tgt0} can be rewritten in
+one of two ways:
+
+\begin{itemize}
+  %
+  \item If $t$ is an integer \textit{or} $t > m + 1$, then
+    %
+    \begin{equation*}
+      i \leq \min\{m,\lceil t \rceil-1\} \leq t-1 \qquad\implies\qquad t-i \geq 1\,.
+    \end{equation*}
+    %
+    Substituting \eqref{eq:FY} in \eqref{eq:fZ-tgt0} yields
+    %
+    \begin{equation}
+      f_Z(t) = \mathbbm{E}[Y]^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i \bigg(1   - \sum_{j=1}^{\min\{n,\lfloor t \rfloor-i\}} q_j\bigg)\,.
+    \end{equation}
+    %
+  \item If $t$ is not an integer \textit{and} $t < m + 1$, then
+    %
+    \begin{equation*}
+      i \leq \min\{m,\lceil t \rceil-1\} = \lceil t \rceil-1\,.
+    \end{equation*}
+    %
+    Noting that
+    %
+    \begin{equation*}
+      \lfloor t \rfloor-1 < t-1 < \lceil t \rceil-1\,,
+    \end{equation*}
+    %
+    we have
+    %
+    \begin{equation*}
+      t-i \geq 1 \qquad\Longleftrightarrow\qquad i \leq \lfloor t \rfloor-1\,.
+    \end{equation*}
+    %
+    That is, in \eqref{eq:fZ-tgt0}, $t-i \geq 1$ for all indices $i$
+    up to $\lfloor t \rfloor-1$, but not for $i = \lceil t \rceil-1$.
+    Substituting \eqref{eq:FY} in \eqref{eq:fZ-tgt0} yields
+    %
+    \begin{equation}
+      f_Z(t) = \mathbbm{E}[Y]^{-1} \bigg(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \bigg(1 - \sum_{j=1}^{\min\{n,\lfloor t \rfloor-i\}} q_j\bigg)\bigg)\,.
+    \end{equation}
+    %
+\end{itemize}
+%
+In summary, the forward generation interval $Z$ has density
+%
+\begin{equation}
+  f_Z(t) = 
+  \begin{cases}
+    0\,, & t \in (-\infty,1]\,, \\
+    %
+    \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i\,, & t \in (1,2)\,, \\
+    %
+    \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i \big(1   - \sum_{j=1}^{\min\{n,\lfloor t \rfloor-i\}} q_j\big)\,, & t \in \big([2,m+1] \cap \mathbbm{Z}\big) \cup (m+1,\infty)\,, \\
+    \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\{n,\lfloor t \rfloor-i\}} q_j\big)\big)\,, & t \in [2,m+1] \setminus \mathbbm{Z}\,.
+  \end{cases}
+\end{equation}
+
+Becau
+
+\section{Basic reproduction number}
+
+
+Eq 3.6 in Wallinga and Lipsitch (2007) gives an expression for 
+$\mathcal{R}_0$, conditional on $f_Z$ and an initial growth rate $r$:
+%
+\begin{equation}
+  \begin{aligned}
+    \mathcal{R}_0
+    &= \left. r \middle/ \bigg\{\sum_{i=2}^{m+n} \frac{y_i (e^{-r (i-1)} - e^{-r i})}{i - (i-1)}\bigg\} \right. \\
+    &= \left. r \middle/ \bigg\{\sum_{i=2}^{m+n} y_i (e^{-r (i-1)} - e^{-r i})\bigg\} \right.\,,
+   \end{aligned}
+\end{equation}
+%
+where
+%
+\begin{equation}
+y_i = \int_{i-1}^{i} f_Z(t)\,\text{d}t\,.
+\end{equation}
+
+
+\end{document}

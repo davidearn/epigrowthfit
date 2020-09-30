@@ -5,15 +5,12 @@
 \alias{plague_latent_period}
 \title{Latent period distribution (pneumonic plague)}
 \format{
-A data frame with 13 rows and 3 variables:
+A data frame with 12 rows and 2 variables:
 
 \describe{
-\item{\code{days}}{[integer] Latent period in days, from 0 to 12.}
-\item{\code{observed}}{[numeric] Observed relative frequency
+\item{\code{days}}{[integer] Latent period in days, from 1 to 12.}
+\item{\code{relfreq}}{[numeric] Observed relative frequency
 out of 224 cases.
-}
-\item{\code{fitted}}{[numeric] Probability from a fitted lognormal
-distribution.
 }
 }
 }
@@ -24,8 +21,12 @@ Obtained from Figure 1A in \insertCite{GaniLeac04;textual}{epigrowthfit}.
 data(plague_latent_period)
 }
 \description{
-Distributions (observed and fitted) of the latent period
-of pneumonic plague.
+Empirical distribution of the latent period of pneumonic plague.
+}
+\examples{
+data(plague_latent_period)
+plot(relfreq ~ days, data = plague_latent_period)
+
 }
 \references{
 \insertRef{GaniLeac04}{epigrowthfit}

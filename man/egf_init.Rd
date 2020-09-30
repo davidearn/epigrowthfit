@@ -10,7 +10,7 @@ egf_init(
   model = "exponential",
   distribution = "poisson",
   theta0 = NULL,
-  r_if_leq0 = 0.1,
+  r_if_leq0 = 0.1/365,
   min_wlen = switch(model, exponential = 2, logistic = 3, richards = 4) + (distribution
     == "nbinom"),
   peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
@@ -20,7 +20,7 @@ egf_init(
 )
 }
 \arguments{
-\item{time}{A numeric vector listing (increasing) time points.}
+\item{time}{A numeric vector listing increasing time points in years.}
 
 \item{cases}{A numeric vector with length \code{length(time)}.
 \code{cases[i]} is the number of cases observed at time \code{time[i]}.
@@ -37,7 +37,7 @@ indicating an observation model.}
 initial estimates of parameters:
 
 \describe{
-\item{\code{r}}{Initial growth rate expressed in reciprocal units of \code{time}.}
+\item{\code{r}}{Initial growth rate expressed per day.}
 \item{\code{x0}}{Expectation of the number of cases observed
 at time \code{time[1]}. Used only if \code{model = "exponential"}.
 }
@@ -45,8 +45,8 @@ at time \code{time[1]}. Used only if \code{model = "exponential"}.
 course of the epidemic (i.e., the expected final epidemic size).
 Used only if \code{model \%in\% c("logistic", "richards")}.
 }
-\item{\code{thalf}}{Expectation of the time at which the epidemic attains
-half of its final size. Used only if
+\item{\code{thalf}}{Expectation of the time in years at which
+the epidemic attains half of its final size. Used only if
 \code{model \%in\% c("logistic", "richards")}
 }
 \item{\code{p}}{Shape parameter. Used only if \code{model = "richards"}.}
@@ -87,7 +87,7 @@ attempt is made when defining \code{first} to ensure that
 \code{cases[first] > 0}. See Details.}
 }
 \value{
-An "epigrowthfit_init" object. A list with elements:
+An "egf_init" object. A list with elements:
 
 \describe{
 \item{\code{first}}{An integer indexing the start of the fitting window,
@@ -103,13 +103,13 @@ otherwise.
 but complete with values for all relevant parameters.
 Parameters values specified in the argument are retained.
 Those absent are assigned their default value:\preformatted{\\begin\{describe\}\{
-  \\item\{`r`, `x0`\}\{`beta1` and `exp(beta0)`, respectively,
-    where `beta0` and `beta1` are the intercept and slope
-    of a linear least squares fit to `log(cases + 0.1)`
-    within the first half of the fitting window. Here,
-    "intercept" means the value of the fit at the start of
-    the fitting window. If the slope is negative or zero,
-    then `r` is assigned the value of argument `r_if_leq0`.
+  \\item\{`r`, `x0`\}\{`beta1 / 365` and `exp(beta0)`, respectively,
+    where `beta0` and `beta1` are the intercept and slope of a
+    linear least squares fit to `log(cases + 0.1) ~ time` within
+    the first half of the fitting window. Here, "intercept" means
+    the value of the fit at the start of the fitting window. If
+    the slope is negative or zero, then `r` is assigned the value
+    of argument `r_if_leq0`.
   \}
   \\item\{`K`\}\{`sum(cases)`\}
   \\item\{`thalf`\}\{`time[peak]`\}
@@ -175,6 +175,8 @@ x <- egf_init(
   model = "richards",
   distribution = "nbinom"
 )
+print(x)
+plot(x)
 
 }
 \references{

@@ -4,7 +4,7 @@
 #' Methods for printing and plotting "egf_init" objects
 #' returned by [egf_init()].
 #'
-#' @param x An "epigrowthfit_init" object.
+#' @param x An "egf_init" object.
 #' @param ... Unused optional arguments.
 #'
 #' @name egf_init-methods
@@ -57,7 +57,10 @@ plot.egf_init <- function(x, ...) {
   first <- x$first
   last <- x$last
   theta0 <- x$theta0
-  plot(log(cases + 0.1) ~ time, data = data.frame(time, cases), las = 1)
+  plot(log(cases + 0.1) ~ time,
+       data = data.frame(time, cases),
+       xlab = "time (years)",
+       las = 1)
   abline(v = time[c(first, last)], lty = 2)
   axis(side = 3, at = time[c(first, last)], labels = c(first, last),
        tick = FALSE, mgp = c(3, 0.1, 0))

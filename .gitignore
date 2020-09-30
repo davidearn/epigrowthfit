@@ -1,1 +1,6 @@
 .Rproj.user
+*.aux
+*.log
+*.out
+*.pdf
+

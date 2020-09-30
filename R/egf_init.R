@@ -7,7 +7,7 @@
 #' and estimates that are reasonable in the absence of any
 #' user input.
 #'
-#' @param time A numeric vector listing (increasing) time points.
+#' @param time A numeric vector listing increasing time points in years.
 #' @param cases A numeric vector with length `length(time)`.
 #'   `cases[i]` is the number of cases observed at time `time[i]`.
 #'   Here, "cases" can mean (reported) infections or (reported)
@@ -20,7 +20,7 @@
 #'   initial estimates of parameters:
 #'
 #'   \describe{
-#'     \item{`r`}{Initial growth rate expressed in reciprocal units of `time`.}
+#'     \item{`r`}{Initial growth rate expressed per day.}
 #'     \item{`x0`}{Expectation of the number of cases observed
 #'       at time `time[1]`. Used only if `model = "exponential"`.
 #'     }
@@ -28,8 +28,8 @@
 #'       course of the epidemic (i.e., the expected final epidemic size).
 #'       Used only if `model %in% c("logistic", "richards")`.
 #'     }
-#'     \item{`thalf`}{Expectation of the time at which the epidemic attains
-#'       half of its final size. Used only if
+#'     \item{`thalf`}{Expectation of the time in years at which
+#'       the epidemic attains half of its final size. Used only if
 #'       `model %in% c("logistic", "richards")`
 #'     }
 #'     \item{`p`}{Shape parameter. Used only if `model = "richards"`.}
@@ -64,7 +64,7 @@
 #'   `cases[first] > 0`. See Details.
 #'
 #' @return
-#' An "epigrowthfit_init" object. A list with elements:
+#' An "egf_init" object. A list with elements:
 #'
 #' \describe{
 #'   \item{`first`}{An integer indexing the start of the fitting window,
@@ -82,13 +82,13 @@
 #'     Those absent are assigned their default value:
 #'
 #'     \begin{describe}{
-#'       \item{`r`, `x0`}{`beta1` and `exp(beta0)`, respectively,
-#'         where `beta0` and `beta1` are the intercept and slope
-#'         of a linear least squares fit to `log(cases + 0.1)`
-#'         within the first half of the fitting window. Here,
-#'         "intercept" means the value of the fit at the start of
-#'         the fitting window. If the slope is negative or zero,
-#'         then `r` is assigned the value of argument `r_if_leq0`.
+#'       \item{`r`, `x0`}{`beta1 / 365` and `exp(beta0)`, respectively,
+#'         where `beta0` and `beta1` are the intercept and slope of a
+#'         linear least squares fit to `log(cases + 0.1) ~ time` within
+#'         the first half of the fitting window. Here, "intercept" means
+#'         the value of the fit at the start of the fitting window. If
+#'         the slope is negative or zero, then `r` is assigned the value
+#'         of argument `r_if_leq0`.
 #'       }
 #'       \item{`K`}{`sum(cases)`}
 #'       \item{`thalf`}{`time[peak]`}
@@ -144,6 +144,8 @@
 #'   model = "richards",
 #'   distribution = "nbinom"
 #' )
+#' print(x)
+#' plot(x)
 #'
 #' @references
 #' \insertRef{Ma+14}{epigrowthfit}
@@ -158,7 +160,7 @@ egf_init <- function(time,
                      model = "exponential",
                      distribution = "poisson",
                      theta0 = NULL,
-                     r_if_leq0 = 0.1,
+                     r_if_leq0 = 0.1 / 365,
                      min_wlen = switch(model, exponential = 2, logistic = 3, richards = 4) + (distribution == "nbinom"),
                      peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
                      first = NULL,
@@ -231,8 +233,8 @@ egf_init <- function(time,
   }
   if (!is.numeric(r_if_leq0) || length(r_if_leq0) != 1 ||
         !isTRUE(r_if_leq0 > 0)) {
-    warning("`r_if_leq0` set to 0.1.", call. = FALSE)
-    r_if_leq0 <- 0.1
+    warning("`r_if_leq0` set to 0.1/365.", call. = FALSE)
+    r_if_leq0 <- 0.1 / 365
   }
 
 
@@ -309,7 +311,7 @@ egf_init <- function(time,
 
   ## Values for parameters that `theta0` doesn't specify
   par_vals <- list(
-    r      = if (isTRUE(lm_coef[[2]] <= 0)) r_if_leq0 else lm_coef[[2]],
+    r      = if (isTRUE(lm_coef[[2]] <= 0)) r_if_leq0 else lm_coef[[2]] / 365,
     K      = sum(cases),
     x0     = exp(lm_coef[[1]]),
     thalf  = time[peak],

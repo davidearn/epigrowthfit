@@ -11,7 +11,7 @@
 \method{plot}{egf_init}(x, ...)
 }
 \arguments{
-\item{x}{An "epigrowthfit_init" object.}
+\item{x}{An "egf_init" object.}
 
 \item{...}{Unused optional arguments.}
 }
