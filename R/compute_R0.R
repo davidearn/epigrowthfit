@@ -6,7 +6,7 @@
 #' distribution, compute the basic reproduction number.
 #'
 #' @param r A numeric vector listing values for the initial
-#'   growth rate \mjseqn{r} expressed per year.
+#'   growth rate expressed per day.
 #' @param breaks A numeric vector of length 2 or greater
 #'   listing increasing break points, in days, in the support
 #'   of the generation interval density.
