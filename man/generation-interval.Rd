@@ -7,25 +7,25 @@
 \title{\loadmathjax
 The generation interval distribution}
 \usage{
-dgi(x, latent, infectious)
+dgi(x, lat, inf)
 
-pgi(x, latent, infectious)
+pgi(x, lat, inf)
 }
 \arguments{
 \item{x}{A numeric vector listing values for the generation interval
 as numbers of days.}
 
-\item{latent}{A numeric vector listing the probability
+\item{lat}{A numeric vector listing the probability
 \mjseqn{p_i} that the latent period is \mjseqn{i} days,
 for all \mjseqn{i \in \lbrace 1,\ldots,m \rbrace}.
-Replaced with \code{latent / sum(latent)} in the event that
-\code{sum(latent) != 1}.}
+Replaced with \code{lat / sum(lat)} in the event that
+\code{sum(lat) != 1}.}
 
-\item{infectious}{A numeric vector listing the probability
+\item{inf}{A numeric vector listing the probability
 \mjseqn{q_i} that the infectious period is \mjseqn{i} days,
 for all \mjseqn{i \in \lbrace 1,\ldots,n \rbrace}.
-Replaced with \code{infectious / sum(infectious)} in the event
-that \code{sum(infectious) != 1}.}
+Replaced with \code{inf / sum(inf)} in the event
+that \code{sum(inf) != 1}.}
 }
 \value{
 A numeric vector \code{y} with length \code{length(x)}.
@@ -83,16 +83,16 @@ Then the distribution function of \mjseqn{Z} is
 }
 \examples{
 data(plague_latent_period)
-latent <- plague_latent_period$relfreq
-m <- length(latent)
+lat <- plague_latent_period$relfreq
+m <- length(lat)
 
 data(plague_infectious_period)
-infectious <- plague_infectious_period$relfreq
-n <- length(infectious)
+inf <- plague_infectious_period$relfreq
+n <- length(inf)
 
 x <- seq(0, m+n+1, by = 0.5)
-fx <- dgi(x, latent, infectious)
-Fx <- pgi(x, latent, infectious)
+fx <- dgi(x, lat, inf)
+Fx <- pgi(x, lat, inf)
 plot(x, fx, las = 1, xlab = "number of days", ylab = "density function")
 plot(x, Fx, las = 1, xlab = "number of days", ylab = "distribution function")
 

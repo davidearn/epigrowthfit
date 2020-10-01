@@ -16,46 +16,39 @@
 #'   with `probs / sum(probs)` in the event that `sum(probs) != 1`.
 #'
 #' @return
-#' A numeric vector of length `length(r)` listing values
-#' for the basic reproduction number. The `i`th element is
-#' computed using initial growth rate `r[i]`. See Details.
+#' A numeric vector `x` of length `length(r)`. `x[i]` is the
+#' basic reproduction number corresponding to initial growth rate
+#' `r[i]`. See Details.
 #'
 #' @details
-#' Let \mjseqn{a_1 < \cdots < a_\ell} be the break points
-#' specified by `breaks`.
-#' For \mjseqn{i \in \lbrace 1,\ldots,\ell-1 \rbrace}, let
-#' \mjseqn{z_i} be the probability specified by `probs[i]`
-#' that the generation interval \mjseqn{Z} is in the interval
-#' \mjseqn{(a_i,a_{i+1}\rbrack}.
-#'
+#' Let \mjseqn{t_1 < \cdots < t_\ell} be the break points specified
+#' by `breaks`. For \mjseqn{i \in \lbrace 1,\ldots,\ell-1 \rbrace},
+#' let \mjseqn{p_i} be the probability specified by `probs[i]` that
+#' the generation interval is in the interval \mjseqn{(t_i,t_{i+1}\rbrack}.
 #' Section 3(d) in \insertCite{WallLips07;textual}{epigrowthfit}
-#' states that the basic reproduction number is given by
+#' gives the basic reproduction number as a function of initial
+#' growth rate \mjseqn{r}:
 #'
-#' \mjsdeqn{\out{\mathcal{R}_0 = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{\ell-1} \frac{z_i (e^{-r a_i} - e^{-r a_{i+1}})}{a_{i+1} - a_i} \bigg\rbrace \right.\,,}}
-#'
-#' where \mjseqn{r} is the initial growth rate. `compute_R0()`
-#' evaluates the right-hand side using each value for \mjseqn{r}
-#' specified in argument `r`.
+#' \mjsdeqn{\out{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{\ell-1} \frac{p_i (e^{-r t_i} - e^{-r t_{i+1}})}{t_{i+1} - t_i} \bigg\rbrace \right.\,.}}
 #'
 #' @references
 #' \insertRef{WallLips07}{epigrowthfit}
 #'
-#' @seealso [dgi()], [pgi()] for evaluating generation interval
-#'   density and distribution functions assuming discrete latent
-#'   and infectious period distributions
+#' @seealso [compute_final_size()] for computing the expected epidemic
+#'   final size as a function of the basic reproduction number
 #'
 #' @examples
 #' data(plague_latent_period)
-#' latent <- plague_latent_period$relfreq
-#' m <- length(latent)
+#' lat <- plague_latent_period$relfreq
+#' m <- length(lat)
 #'
 #' data(plague_infectious_period)
-#' infectious <- plague_latent_period$relfreq
-#' n <- length(infectious)
+#' inf <- plague_infectious_period$relfreq
+#' n <- length(inf)
 #'
 #' r <- seq(0, 1, by = 0.02)
 #' breaks <- 1:(m+n)
-#' probs <- diff(pgi(breaks, latent, infectious))
+#' probs <- diff(pgi(breaks, lat, inf))
 #'
 #' R0 <- compute_R0(r, breaks, probs)
 #' plot(r, R0, las = 1,
