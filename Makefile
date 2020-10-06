@@ -20,9 +20,12 @@ install: build
 
 build: $(TARBALL)
 
-$(TARBALL): R/*.R rd DESCRIPTION NAMESPACE
+$(TARBALL): src/$(PACKAGE).so R/*.R rd DESCRIPTION NAMESPACE
 	$(R) CMD build --no-manual .
 	mv $@ ..
+
+src/$(PACKAGE).so:
+	$(MAKE) -C src
 
 rd: man/*.Rd
 
@@ -46,6 +49,7 @@ test:
 
 clean:
 	rm -f $(TARBALL) ../$(TARBALL)
+	rm -f src/$(PACKAGE).{o,so}
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
 

@@ -9,7 +9,7 @@
 #' infectiousness is constant over the infectious period.
 #'
 #' @param x A numeric vector listing values for the generation interval
-#'   as numbers of days.
+#'   as a number of days.
 #' @param lat A numeric vector listing the probability
 #'   \mjseqn{p_i} that the latent period is \mjseqn{i} days,
 #'   for all \mjseqn{i \in \lbrace 1,\ldots,m \rbrace}.
@@ -83,10 +83,15 @@
 #' inf <- plague_infectious_period$relfreq
 #' n <- length(inf)
 #'
-#' x <- seq(0, m+n+1, by = 0.5)
-#' fx <- dgi(x, lat, inf)
+#' ## For some reason, the density function
+#' ## is not left- or right-continuous at the
+#' ## integers ... ignore the integers for now
+#' x <- seq(0, m+n+1, by = 0.02) # support is actually (1,m+n]
+#' is_non_integer <- x %% 1 > 0
+#' xx <- x[is_non_integer]
+#' fx <- dgi(xx, lat, inf)
 #' Fx <- pgi(x, lat, inf)
-#' plot(x, fx, las = 1, xlab = "number of days", ylab = "density function")
+#' plot(xx, fx, las = 1, xlab = "number of days", ylab = "density function")
 #' plot(x, Fx, las = 1, xlab = "number of days", ylab = "distribution function")
 #'
 #' @name generation-interval

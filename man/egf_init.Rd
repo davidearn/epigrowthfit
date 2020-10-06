@@ -2,17 +2,18 @@
 % Please edit documentation in R/egf_init.R
 \name{egf_init}
 \alias{egf_init}
-\title{Define fitting windows and initial parameter estimates}
+\title{\loadmathjax
+Define fitting windows and initial parameter estimates}
 \usage{
 egf_init(
-  time,
+  date,
   cases,
-  model = "exponential",
-  distribution = "poisson",
+  curve = "logistic",
+  include_baseline = FALSE,
+  distr = "nbinom",
   theta0 = NULL,
   r_if_leq0 = 0.1/365,
-  min_wlen = switch(model, exponential = 2, logistic = 3, richards = 4) + (distribution
-    == "nbinom"),
+  min_wlen = 6,
   peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
   first = NULL,
   first_level = NULL,
@@ -20,53 +21,72 @@ egf_init(
 )
 }
 \arguments{
-\item{time}{A numeric vector listing increasing time points in years.}
+\item{date}{A Date vector listing increasing time points.}
 
-\item{cases}{A numeric vector with length \code{length(time)}.
-\code{cases[i]} is the number of cases observed at time \code{time[i]}.
-Here, "cases" can mean (reported) infections or (reported)
-deaths. Missing values are not tolerated.}
+\item{cases}{A numeric vector with length \code{length(date)-1}.
+\code{cases[i]} is the number of cases observed between
+\code{date[i]} and \code{date[i+1]}. Here, "cases" can mean
+(reported) infections or (reported) deaths. Missing
+values are not tolerated.}
 
-\item{model}{One of \code{"exponential"}, \code{"logistic"}, and \code{"richards"},
-indicating a phenomenological model.}
+\item{curve}{One of \code{"exponential"}, \code{"logistic"}, and \code{"richards"},
+indicating a phenomenological model for cumulative incidence.}
 
-\item{distribution}{One of \code{"poisson"} and \code{"nbinom"},
-indicating an observation model.}
+\item{include_baseline}{A logical scalar. If \code{TRUE}, then the
+cumulative incidence model will include a linear term \mjseqn{b t}.
+Assign \code{TRUE} only if \code{cases} counts deaths due to all causes and
+you want to model growth above a baseline mortality rate \mjseqn{b}.}
 
-\item{theta0}{A list with numeric scalar elements specifying
-initial estimates of parameters:
+\item{distr}{One of \code{"pois"} and \code{"nbinom"}, indicating an
+observation model for interval incidence.}
+
+\item{theta0}{A list of positive numbers specifying initial estimates
+of model parameters:
 
 \describe{
-\item{\code{r}}{Initial growth rate expressed per day.}
-\item{\code{x0}}{Expectation of the number of cases observed
-at time \code{time[1]}. Used only if \code{model = "exponential"}.
+\item{\code{r}}{\mjseqn{\lbrace\,r\,\rbrace}
+Initial (exponential) growth rate expressed per day.
 }
-\item{\code{K}}{Expectation of the number of cases observed over the full
-course of the epidemic (i.e., the expected final epidemic size).
-Used only if \code{model \%in\% c("logistic", "richards")}.
+\item{\code{x0}}{\mjseqn{\lbrace\,x_0\,\rbrace}
+Expected cumulative incidence on \code{date[first]} (see \code{first} below).
+Used only if \code{curve = "exponential"}.
 }
-\item{\code{thalf}}{Expectation of the time in years at which
-the epidemic attains half of its final size. Used only if
-\code{model \%in\% c("logistic", "richards")}
+\item{\code{K}}{\mjseqn{\lbrace\,K\,\rbrace}
+Expectation of the number of cases observed over the full course
+of the epidemic (i.e., the expected epidemic final size).
+Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
-\item{\code{p}}{Shape parameter. Used only if \code{model = "richards"}.}
-\item{\code{nbdisp}}{Dispersion parameter.
-Used only if \code{distribution = "nbinom"}.
+\item{\code{thalf}}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
+Expectation of the time at which the epidemic attains
+half its final size, expressed as a (possibly non-integer)
+number of days since \code{date[1]}.
+Used only if \code{curve \%in\% c("logistic", "richards")}.
+}
+\item{\code{p}}{\mjseqn{\lbrace\,p\,\rbrace}
+Richards shape parameter. Used only if \code{curve = "richards"}.
+}
+\item{\code{b}}{\mjseqn{\lbrace\,b\,\rbrace}
+Baseline (linear) growth rate expressed per day.
+Used only if \code{include_baseline = TRUE}.
+}
+\item{\code{nbdisp}}{\mjseqn{\lbrace\,k\,\rbrace}
+Negative binomial dispersion parameter.
+Used only if \code{distr = "nbinom"}.
 }
 }
 
-\code{theta0} can be \code{NULL} or a list specifying only a subset of
-the relevant parameters. In this case, the absent parameters
-are set internally. See Value.}
+\code{theta0} can be \code{NULL} or a list specifying a subset
+of the relevant parameters. Absent parameters and
+mis-specified parameters are (re)set internally. See Value.}
 
-\item{r_if_leq0}{A numeric scalar. Assigned to \code{theta0$r}
+\item{r_if_leq0}{A positive number. Assigned to \code{theta0$r}
 if \code{!"r" \%in\% names(theta0)} and the default value of
-\code{theta0$r}, which is computed internally, is negative
-or zero. See Value.}
+\code{theta0$r}, computed internally, is negative or zero.
+See Value.}
 
 \item{min_wlen}{An integer scalar. The minimum number
 of observations in the fitting window. Must be at
-least the number of parameters being fit (the default).}
+least the number of parameters being fit.}
 
 \item{peak}{An integer in \code{seq_along(cases)} indexing
 the peak in \code{cases}. The index of the last observation
@@ -90,61 +110,69 @@ attempt is made when defining \code{first} to ensure that
 An "egf_init" object. A list with elements:
 
 \describe{
+\item{\code{date}}{Matches argument.}
+\item{\code{time}}{Time as a number of days since \code{date[1]}.
+Equal to \code{as.numeric(date - date[1])}.
+}
+\item{\code{cases}}{Matches argument.}
 \item{\code{first}}{An integer indexing the start of the fitting window,
 so that the first observation is \code{cases[first]}. May not match
 the argument of the same name. See Details.
 }
 \item{\code{last}}{An integer indexing the end of the fitting window,
 so that the last observation is \code{cases[last]}. Equal to \code{peak}
-if \code{model = "exponential"} and \code{max(length(cases), peak + 1)}
+if \code{curve = "exponential"} and \code{max(length(cases), peak + 1)}
 otherwise.
 }
-\item{\code{theta0}}{A list like the argument of the same name,
-but complete with values for all relevant parameters.
-Parameters values specified in the argument are retained.
-Those absent are assigned their default value:\preformatted{\\begin\{describe\}\{
+\item{\code{curve}}{Matches argument.}
+\item{\code{include_baseline}}{Matches argument.}
+\item{\code{distr}}{Matches argument.}
+\item{\code{theta0}}{A list whose elements are the subset
+of \code{r}, \code{x0}, \code{K}, \code{thalf}, \code{p}, \code{b}, and \code{nbdisp}
+relevant to \code{curve}, \code{include_baseline}, and \code{distr}.
+Values specified in the argument of the same name
+are retained if they are valid (i.e., numeric,
+scalar, positive). The remaining values are taken
+from the list of default values below:\preformatted{\\begin\{describe\}\{
   \\item\{`r`, `x0`\}\{`beta1 / 365` and `exp(beta0)`, respectively,
-    where `beta0` and `beta1` are the intercept and slope of a
-    linear least squares fit to `log(cases + 0.1) ~ time` within
-    the first half of the fitting window. Here, "intercept" means
-    the value of the fit at the start of the fitting window. If
-    the slope is negative or zero, then `r` is assigned the value
-    of argument `r_if_leq0`.
+    where `beta1` and `beta0` are the slope and intercept of a
+    linear fit to `log(cumsum(cases) + 0.1)` within the first half
+    of the fitting window. Here, "intercept" means the value of
+    the fit at `time[first]`. If `beta1 <= 0`, then `r` is instead
+    assigned the value of argument `r_if_leq0`.
   \}
   \\item\{`K`\}\{`sum(cases)`\}
-  \\item\{`thalf`\}\{`time[peak]`\}
-  \\item\{`p`\}\{1.0001\}
-  \\item\{`nbdisp`\}\{1\}
+  \\item\{`thalf`\}\{`time[peak+1]`\}
+  \\item\{`p`, `b`, `nbdisp`\}\{1\}
 \}
 }
 
 }
-\item{arg_list}{A list of all arguments, making the \code{egf_init()}
-output reproducible with \code{do.call(egf_init, arg_list)}.
-}
-\item{call}{The call to \code{egf_init()}, making the \code{egf_init()}
-output reproducible with \code{eval(call)}.
+\item{call}{The call to \code{egf_init()}, making the output
+reproducible with \code{eval(call)}.
 }
 }
 }
 \description{
 Given an incidence or mortality time series, constructs an
 "egf_init" object specifying a fitting window and initial
-parameter estimates. Pains are taken to define a window
-and estimates that are reasonable in the absence of any
-user input.
+estimates of model parameters. Pains are taken to define a
+window and estimates that are reasonable in the absence of
+any user input. For model details, see \code{\link[=egf]{egf()}}.
 }
 \details{
 \subsection{Fitting window selection}{
 
-The fitting window ends at index \code{last = peak},
-where \code{last = peak} if \code{model = "exponential"}
-and \code{last = max(length(cases), peak + 1)} otherwise.
+The "fitting window" is the subset of \code{cases} used
+when fitting model parameters to the data. It ends
+at index \code{last}, where
+\code{last = peak} if \code{curve = "exponential"} and
+\code{last = max(length(cases), peak + 1)} otherwise.
 
 The length \code{wlen = last-first+1} of the fitting window
 is constrained to be at least \code{min_wlen}. This implies
 two constraints on the arguments: \code{peak >= min_wlen} if
-\code{model = "exponential"} and \code{peak >= min_wlen-1} otherwise,
+\code{curve = "exponential"} and \code{peak >= min_wlen-1} otherwise,
 and \code{first <= peak-min_wlen+1}. An error will be thrown
 if arguments \code{peak} and \code{first} (unless \code{first = NULL})
 do not conform to these constraints.
@@ -166,24 +194,11 @@ then \code{first} is increased by one until \code{cases[first] > 0}
 or \code{first = peak-min_wlen+1}.
 }
 }
-\examples{
-data(canadacovid)
-ontario <- na.omit(subset(canadacovid, province == "ON"))
-x <- egf_init(
-  time = ontario$time,
-  cases = ontario$new_confirmations,
-  model = "richards",
-  distribution = "nbinom"
-)
-print(x)
-plot(x)
-
-}
 \references{
 \insertRef{Ma+14}{epigrowthfit}
 
 \insertRef{Earn+20}{epigrowthfit}
 }
 \seealso{
-\link[=egf_init-methods]{methods for class "egf_init"}
+\link[=egf_init-methods]{methods for class "egf_init"}, \code{\link[=egf]{egf()}}
 }

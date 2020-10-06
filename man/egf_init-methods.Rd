@@ -4,18 +4,36 @@
 \alias{egf_init-methods}
 \alias{print.egf_init}
 \alias{plot.egf_init}
-\title{Methods for class "epigrowthfit_init"}
+\title{Methods for class "egf_init"}
 \usage{
 \method{print}{egf_init}(x, ...)
 
-\method{plot}{egf_init}(x, ...)
+\method{plot}{egf_init}(x, inc = "interval", tol = 0.025, ...)
 }
 \arguments{
 \item{x}{An "egf_init" object.}
 
 \item{...}{Unused optional arguments.}
+
+\item{inc}{One of \code{"interval"} and \code{"cumulative"},
+indicating whether to plot \code{x$cases} or \code{cumsum(x$cases)}.}
+
+\item{tol}{A non-negative number used only if
+\code{inc = "interval"}. \code{x$cases[i]} is plotted
+in light blue if \code{diff(x$time)[i] < (1-tol)*m},
+in dark blue if \code{diff(x$time)[i] > (1+tol)*m},
+and in grey otherwise, where \code{m = median(diff(x$time))}.
+Assign \code{Inf} to ensure that everything is grey. See Details.}
 }
 \description{
 Methods for printing and plotting "egf_init" objects
 returned by \code{\link[=egf_init]{egf_init()}}.
+}
+\details{
+If \code{x$time} is not equally spaced, then \code{inc = "interval"}
+should be used with caution. \code{x$cases[i]} is the number
+of cases observed between \code{x$time[i]} and \code{x$time[i+1]},
+hence \code{x$cases} roughly scales with \code{diff(x$time)}.
+Argument \code{tol} can be used with \code{inc = "interval"}
+in order to highlight outliers in \code{diff(x$time)}.
 }

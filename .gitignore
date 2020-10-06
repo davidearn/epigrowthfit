@@ -3,4 +3,5 @@
 *.log
 *.out
 *.pdf
-
+*.o
+*.so

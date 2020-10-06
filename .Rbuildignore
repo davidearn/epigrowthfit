@@ -7,3 +7,4 @@
 ^Makefile$
 ^TODO\.md$
 ^R/peaks\.R$
+^R/zzz\.R$

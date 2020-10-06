@@ -1,53 +1,72 @@
+#' \loadmathjax
 #' Define fitting windows and initial parameter estimates
 #'
 #' @description
 #' Given an incidence or mortality time series, constructs an
 #' "egf_init" object specifying a fitting window and initial
-#' parameter estimates. Pains are taken to define a window
-#' and estimates that are reasonable in the absence of any
-#' user input.
+#' estimates of model parameters. Pains are taken to define a
+#' window and estimates that are reasonable in the absence of
+#' any user input. For model details, see [egf()].
 #'
-#' @param time A numeric vector listing increasing time points in years.
-#' @param cases A numeric vector with length `length(time)`.
-#'   `cases[i]` is the number of cases observed at time `time[i]`.
-#'   Here, "cases" can mean (reported) infections or (reported)
-#'   deaths. Missing values are not tolerated.
-#' @param model One of `"exponential"`, `"logistic"`, and `"richards"`,
-#'   indicating a phenomenological model.
-#' @param distribution One of `"poisson"` and `"nbinom"`,
-#'   indicating an observation model.
-#' @param theta0 A list with numeric scalar elements specifying
-#'   initial estimates of parameters:
+#' @param date A Date vector listing increasing time points.
+#' @param cases A numeric vector with length `length(date)-1`.
+#'   `cases[i]` is the number of cases observed between
+#'   `date[i]` and `date[i+1]`. Here, "cases" can mean
+#'   (reported) infections or (reported) deaths. Missing
+#'   values are not tolerated.
+#' @param curve One of `"exponential"`, `"logistic"`, and `"richards"`,
+#'   indicating a phenomenological model for cumulative incidence.
+#' @param include_baseline A logical scalar. If `TRUE`, then the
+#'   cumulative incidence model will include a linear term \mjseqn{b t}.
+#'   Assign `TRUE` only if `cases` counts deaths due to all causes and
+#'   you want to model growth above a baseline mortality rate \mjseqn{b}.
+#' @param distr One of `"pois"` and `"nbinom"`, indicating an
+#'   observation model for interval incidence.
+#' @param theta0 A list of positive numbers specifying initial estimates
+#'   of model parameters:
 #'
 #'   \describe{
-#'     \item{`r`}{Initial growth rate expressed per day.}
-#'     \item{`x0`}{Expectation of the number of cases observed
-#'       at time `time[1]`. Used only if `model = "exponential"`.
+#'     \item{`r`}{\mjseqn{\lbrace\,r\,\rbrace}
+#'       Initial (exponential) growth rate expressed per day.
 #'     }
-#'     \item{`K`}{Expectation of the number of cases observed over the full
-#'       course of the epidemic (i.e., the expected final epidemic size).
-#'       Used only if `model %in% c("logistic", "richards")`.
+#'     \item{`x0`}{\mjseqn{\lbrace\,x_0\,\rbrace}
+#'       Expected cumulative incidence on `date[first]` (see `first` below).
+#'       Used only if `curve = "exponential"`.
 #'     }
-#'     \item{`thalf`}{Expectation of the time in years at which
-#'       the epidemic attains half of its final size. Used only if
-#'       `model %in% c("logistic", "richards")`
+#'     \item{`K`}{\mjseqn{\lbrace\,K\,\rbrace}
+#'       Expectation of the number of cases observed over the full course
+#'       of the epidemic (i.e., the expected epidemic final size).
+#'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
-#'     \item{`p`}{Shape parameter. Used only if `model = "richards"`.}
-#'     \item{`nbdisp`}{Dispersion parameter.
-#'       Used only if `distribution = "nbinom"`.
+#'     \item{`thalf`}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
+#'       Expectation of the time at which the epidemic attains
+#'       half its final size, expressed as a (possibly non-integer)
+#'       number of days since `date[1]`.
+#'       Used only if `curve %in% c("logistic", "richards")`.
+#'     }
+#'     \item{`p`}{\mjseqn{\lbrace\,p\,\rbrace}
+#'       Richards shape parameter. Used only if `curve = "richards"`.
+#'     }
+#'     \item{`b`}{\mjseqn{\lbrace\,b\,\rbrace}
+#'       Baseline (linear) growth rate expressed per day.
+#'       Used only if `include_baseline = TRUE`.
+#'     }
+#'     \item{`nbdisp`}{\mjseqn{\lbrace\,k\,\rbrace}
+#'       Negative binomial dispersion parameter.
+#'       Used only if `distr = "nbinom"`.
 #'     }
 #'   }
 #'
-#'   `theta0` can be `NULL` or a list specifying only a subset of
-#'   the relevant parameters. In this case, the absent parameters
-#'   are set internally. See Value.
-#' @param r_if_leq0 A numeric scalar. Assigned to `theta0$r`
+#'   `theta0` can be `NULL` or a list specifying a subset
+#'   of the relevant parameters. Absent parameters and
+#'   mis-specified parameters are (re)set internally. See Value.
+#' @param r_if_leq0 A positive number. Assigned to `theta0$r`
 #'   if `!"r" %in% names(theta0)` and the default value of
-#'   `theta0$r`, which is computed internally, is negative
-#'   or zero. See Value.
+#'   `theta0$r`, computed internally, is negative or zero.
+#'   See Value.
 #' @param min_wlen An integer scalar. The minimum number
 #'   of observations in the fitting window. Must be at
-#'   least the number of parameters being fit (the default).
+#'   least the number of parameters being fit.
 #' @param peak An integer in `seq_along(cases)` indexing
 #'   the peak in `cases`. The index of the last observation
 #'   in the fitting window will be `peak` or `peak+1`.
@@ -67,54 +86,62 @@
 #' An "egf_init" object. A list with elements:
 #'
 #' \describe{
+#'   \item{`date`}{Matches argument.}
+#'   \item{`time`}{Time as a number of days since `date[1]`.
+#'     Equal to `as.numeric(date - date[1])`.
+#'   }
+#'   \item{`cases`}{Matches argument.}
 #'   \item{`first`}{An integer indexing the start of the fitting window,
 #'     so that the first observation is `cases[first]`. May not match
 #'     the argument of the same name. See Details.
 #'   }
 #'   \item{`last`}{An integer indexing the end of the fitting window,
 #'     so that the last observation is `cases[last]`. Equal to `peak`
-#'     if `model = "exponential"` and `max(length(cases), peak + 1)`
+#'     if `curve = "exponential"` and `max(length(cases), peak + 1)`
 #'     otherwise.
 #'   }
-#'   \item{`theta0`}{A list like the argument of the same name,
-#'     but complete with values for all relevant parameters.
-#'     Parameters values specified in the argument are retained.
-#'     Those absent are assigned their default value:
+#'   \item{`curve`}{Matches argument.}
+#'   \item{`include_baseline`}{Matches argument.}
+#'   \item{`distr`}{Matches argument.}
+#'   \item{`theta0`}{A list whose elements are the subset
+#'     of `r`, `x0`, `K`, `thalf`, `p`, `b`, and `nbdisp`
+#'     relevant to `curve`, `include_baseline`, and `distr`.
+#'     Values specified in the argument of the same name
+#'     are retained if they are valid (i.e., numeric,
+#'     scalar, positive). The remaining values are taken
+#'     from the list of default values below:
 #'
 #'     \begin{describe}{
 #'       \item{`r`, `x0`}{`beta1 / 365` and `exp(beta0)`, respectively,
-#'         where `beta0` and `beta1` are the intercept and slope of a
-#'         linear least squares fit to `log(cases + 0.1) ~ time` within
-#'         the first half of the fitting window. Here, "intercept" means
-#'         the value of the fit at the start of the fitting window. If
-#'         the slope is negative or zero, then `r` is assigned the value
-#'         of argument `r_if_leq0`.
+#'         where `beta1` and `beta0` are the slope and intercept of a
+#'         linear fit to `log(cumsum(cases) + 0.1)` within the first half
+#'         of the fitting window. Here, "intercept" means the value of
+#'         the fit at `time[first]`. If `beta1 <= 0`, then `r` is instead
+#'         assigned the value of argument `r_if_leq0`.
 #'       }
 #'       \item{`K`}{`sum(cases)`}
-#'       \item{`thalf`}{`time[peak]`}
-#'       \item{`p`}{1.0001}
-#'       \item{`nbdisp`}{1}
+#'       \item{`thalf`}{`time[peak+1]`}
+#'       \item{`p`, `b`, `nbdisp`}{1}
 #'     }
 #'   }
-#'   \item{arg_list}{A list of all arguments, making the `egf_init()`
-#'     output reproducible with `do.call(egf_init, arg_list)`.
-#'   }
-#'   \item{call}{The call to `egf_init()`, making the `egf_init()`
-#'     output reproducible with `eval(call)`.
+#'   \item{call}{The call to `egf_init()`, making the output
+#'     reproducible with `eval(call)`.
 #'   }
 #' }
 #'
 #' @details
 #' ## Fitting window selection
 #'
-#' The fitting window ends at index `last = peak`,
-#' where `last = peak` if `model = "exponential"`
-#' and `last = max(length(cases), peak + 1)` otherwise.
+#' The "fitting window" is the subset of `cases` used
+#' when fitting model parameters to the data. It ends
+#' at index `last`, where
+#' `last = peak` if `curve = "exponential"` and
+#' `last = max(length(cases), peak + 1)` otherwise.
 #'
 #' The length `wlen = last-first+1` of the fitting window
 #' is constrained to be at least `min_wlen`. This implies
 #' two constraints on the arguments: `peak >= min_wlen` if
-#' `model = "exponential"` and `peak >= min_wlen-1` otherwise,
+#' `curve = "exponential"` and `peak >= min_wlen-1` otherwise,
 #' and `first <= peak-min_wlen+1`. An error will be thrown
 #' if arguments `peak` and `first` (unless `first = NULL`)
 #' do not conform to these constraints.
@@ -139,63 +166,68 @@
 #' data(canadacovid)
 #' ontario <- na.omit(subset(canadacovid, province == "ON"))
 #' x <- egf_init(
-#'   time = ontario$time,
-#'   cases = ontario$new_confirmations,
-#'   model = "richards",
-#'   distribution = "nbinom"
+#'   date = ontario$date,
+#'   cases = ontario$new_confirmations[-1],
+#'   curve = "richards",
+#'   distr = "nbinom"
 #' )
 #' print(x)
-#' plot(x)
+#' plot(x, inc = "interval)
+#' plot(x, inc = "cumulative")
 #'
 #' @references
 #' \insertRef{Ma+14}{epigrowthfit}
 #'
 #' \insertRef{Earn+20}{epigrowthfit}
 #'
-#' @seealso [methods for class "egf_init"][egf_init-methods]
+#' @seealso [methods for class "egf_init"][egf_init-methods], [egf()]
 #' @export
-#' @import stats
-egf_init <- function(time,
+#' @importFrom stats lm coef
+egf_init <- function(date,
                      cases,
-                     model = "exponential",
-                     distribution = "poisson",
+                     curve = "logistic",
+                     include_baseline = FALSE,
+                     distr = "nbinom",
                      theta0 = NULL,
                      r_if_leq0 = 0.1 / 365,
-                     min_wlen = switch(model, exponential = 2, logistic = 3, richards = 4) + (distribution == "nbinom"),
+                     min_wlen = 6,
                      peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
                      first = NULL,
                      first_level = NULL,
                      skip_zero = TRUE) {
-  arg_list <- as.list(environment())
   ### CHECKS ON INPUT -----------------------------------------------
 
-  if (!is.character(model) || length(model) != 1 ||
-        !model %in% c("exponential", "logistic", "richards")) {
-    stop("`model` must be an element of ",
+  if (!is.character(curve) || length(curve) != 1 ||
+        !curve %in% c("exponential", "logistic", "richards")) {
+    stop("`curve` must be an element of ",
          "`c(\"exponential\", \"logistic\", \"richards\")`.")
   }
-  if (!is.character(distribution) || length(distribution) != 1 ||
-        !distribution %in% c("nbinom", "poisson")) {
-    stop("`distribution` must be an element of `c(\"nbinom\", \"poisson\")`.")
+  if (!is.logical(include_baseline) || length(include_baseline) != 1 ||
+        is.na(include_baseline)) {
+    stop("`include_baseline` must be `TRUE` or `FALSE`.")
   }
-  npar <- switch(model, exponential = 2, logistic = 3, richards = 4) +
-    (distribution == "nbinom")
-  pe <- 1 * (model %in% c("logistic", "richards"))
-  if (missing(time)) {
-    stop("Missing argument `time`.")
-  } else if (!is.numeric(time) || length(time) < npar)  {
-    stop("`time` must be numeric and have length no less than ", npar, ".")
-  } else if (!all(is.finite(time))) {
-    stop("`time` must not contain missing or infinite values.")
-  } else if (!all(diff(time) > 0)) {
-    stop("`time` must be increasing.")
+  if (!is.character(distr) || length(distr) != 1 ||
+        !distr %in% c("nbinom", "pois")) {
+    stop("`distr` must be an element of `c(\"nbinom\", \"pois\")`.")
   }
+  npar <- switch(curve, exponential = 2, logistic = 3, richards = 4) +
+    (distr == "nbinom") + include_baseline
+  pe <- 1 * (curve %in% c("logistic", "richards"))
   if (missing(cases)) {
     stop("Missing argument `cases`.")
-  } else if (!is.numeric(cases) || length(cases) != length(time)) {
-    stop("`cases` must be numeric and have length equal to `length(time)`.")
+  } else if (!is.numeric(cases) || length(cases) < npar) {
+    stop("`cases` must be numeric and have length no less than ", npar, ".")
   } else if (!all(is.finite(cases)) || !all(cases >= 0)) {
     stop("`cases` must not contain missing, infinite, or negative values.")
+  }
+  if (missing(date)) {
+    stop("Missing argument `date`.")
+  } else if (!inherits(date, "Date") || length(date) != length(cases)+1) {
+    stop("`date` must be of class \"Date\" and have length `length(cases)+1`.")
+  } else if (any(is.na(date))) {
+    stop("`date` must not contain missing values.")
+  } else if (!all(diff(date) > 0)) {
+    stop("`date` must be increasing.")
   }
   if (!is.numeric(min_wlen) || length(min_wlen) != 1 ||
         !min_wlen %in% npar:length(cases)) {
@@ -276,61 +308,79 @@ egf_init <- function(time,
     }
   }
 
-  ## Fitting window length
-  wlen <- last - first + 1
-
 
   ### PARAMETER ESTIMATES -------------------------------------------
 
-  if (is.null(theta0)) {
+  ## Parameters that `theta0` must specify
+  pars <- switch(curve,
+    exponential = c("r", "x0"),
+    logistic    = c("r", "K", "thalf"),
+    richards    = c("r", "K", "thalf", "p")
+  )
+  if (include_baseline) {
+    pars <- c(pars, "b")
+  }
+  if (distr == "nbinom") {
+    pars <- c(pars, "nbdisp")
+  }
+
+  ## Initialize `theta0` if necessary
+  if (is.null(theta0) || is.null(names(theta0))) {
     theta0 <- list()
   }
 
-  ## Parameters that `theta0` must specify
-  par_needed <- switch(model,
-    exponential = c("r", "x0"),
-    logistic    = c("r", "thalf", "K"),
-    richards    = c("r", "thalf", "K", "p")
-  )
-  if (distribution == "nbinom") {
-    par_needed <- c(par_needed, "nbdisp")
+  ## Dispense with unwanted elements
+  if (length(theta0) > 0) {
+    has_good_name <- names(theta0) %in% pars
+    has_good_val <- sapply(theta0, function(x) {
+      is.numeric(x) && length(x) == 1 && isTRUE(x > 0)
+    })
+    theta0 <- theta0[has_good_name && has_good_val]
   }
-  ## Parameters that `theta0` doesn't specify
-  par_missing <- par_needed[!par_needed %in% names(theta0)]
 
-  ## Fit a linear model to `log(cases + 0.1)` in the first half
-  ## of the fitting window. This accommodates zeros in `cases`.
-  m <- max(2, floor(wlen / 2))
-  lm_data <- data.frame(time, cases)[first:(first+m), ]
-  lm_coef <- coef(lm(log(cases + 0.1) ~ I(time - time[1]), data = lm_data))
-  if (isTRUE(lm_coef[[2]] <= 0)) {
+  ## Parameters that `theta0` doesn't specify
+  pars_missing <- setdiff(pars, names(theta0))
+
+  ## Fit a linear model to `log(cumsum(cases) + 0.1)`
+  ## in the first half of the fitting window
+  m <- max(2, floor((last - first + 1) / 2))
+  time <- as.numeric(date - date[1])
+  lm_data <- data.frame(time = time[-1] - time[first], cases)
+  lm_data <- lm_data[first:(first+m), ]
+  lm_coef <- coef(lm(log(cumsum(cases) + 0.1) ~ time, data = lm_data))
+
+  ## Default values of all parameters
+  vals <- list(
+    r      = if (lm_coef[[2]] <= 0) r_if_leq0 else lm_coef[[2]],
+    x0     = exp(lm_coef[[1]]),
+    K      = sum(cases),
+    thalf  = time[peak+1],
+    p      = 1,
+    nbdisp = 1,
+    b      = 1
+  )
+
+  ## Take from `vals` what is missing in `theta0`
+  if ("r" %in% pars_missing && lm_coef[[2]] <= 0) {
     warning("Estimated `r <= 0`, ",
             "setting `r` equal to `r_if_leq0` (", r_if_leq0, ").",
             call. = FALSE)
   }
-
-  ## Values for parameters that `theta0` doesn't specify
-  par_vals <- list(
-    r      = if (isTRUE(lm_coef[[2]] <= 0)) r_if_leq0 else lm_coef[[2]] / 365,
-    K      = sum(cases),
-    x0     = exp(lm_coef[[1]]),
-    thalf  = time[peak],
-    p      = 1.0001,
-    nbdisp = 1
-  )
-  theta0[par_missing] <- par_vals[par_missing]
-  theta0 <- theta0[par_needed]
-  if (!all(is.finite(unlist(theta0)))) {
-    warning("`theta0` has missing or infinite values.")
-  }
+  theta0[pars_missing] <- vals[pars_missing]
+  theta0 <- theta0[pars]
 
 
   out <- list(
-    first    = first,
-    last     = last,
-    theta0   = theta0,
-    arg_list = arg_list,
-    call     = match.call()
+    date   = date,
+    time   = time,
+    cases  = cases,
+    first  = first,
+    last   = last,
+    curve  = curve,
+    include_baseline = include_baseline,
+    distr  = distr,
+    theta0 = theta0,
+    call   = match.call()
   )
   structure(out, class = c("egf_init", "list"))
 }
