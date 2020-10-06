@@ -49,8 +49,8 @@ test:
 
 clean:
 	rm -f $(TARBALL) ../$(TARBALL)
-	rm -f src/$(PACKAGE).{o,so}
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
 
 new: clean
+	rm -f src/$(PACKAGE).{o,so}
