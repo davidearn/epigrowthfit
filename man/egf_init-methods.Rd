@@ -16,14 +16,15 @@
 \item{...}{Unused optional arguments.}
 
 \item{inc}{One of \code{"interval"} and \code{"cumulative"},
-indicating whether to plot \code{x$cases} or \code{cumsum(x$cases)}.}
+indicating whether to plot \code{x$cases} (interval incidence)
+or \code{cumsum(x$cases)} (cumulative incidence).}
 
 \item{tol}{A non-negative number used only if
 \code{inc = "interval"}. \code{x$cases[i]} is plotted
 in light blue if \code{diff(x$time)[i] < (1-tol)*m},
 in dark blue if \code{diff(x$time)[i] > (1+tol)*m},
 and in grey otherwise, where \code{m = median(diff(x$time))}.
-Assign \code{Inf} to ensure that everything is grey. See Details.}
+Assign \code{Inf} to ensure that everything is grey.}
 }
 \description{
 Methods for printing and plotting "egf_init" objects

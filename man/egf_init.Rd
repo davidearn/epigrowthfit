@@ -12,7 +12,6 @@ egf_init(
   include_baseline = FALSE,
   distr = "nbinom",
   theta0 = NULL,
-  r_if_leq0 = 0.1/365,
   min_wlen = 6,
   peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
   first = NULL,
@@ -79,11 +78,6 @@ Used only if \code{distr = "nbinom"}.
 of the relevant parameters. Absent parameters and
 mis-specified parameters are (re)set internally. See Value.}
 
-\item{r_if_leq0}{A positive number. Assigned to \code{theta0$r}
-if \code{!"r" \%in\% names(theta0)} and the default value of
-\code{theta0$r}, computed internally, is negative or zero.
-See Value.}
-
 \item{min_wlen}{An integer scalar. The minimum number
 of observations in the fitting window. Must be at
 least the number of parameters being fit.}
@@ -138,8 +132,7 @@ from the list of default values below:\preformatted{\\begin\{describe\}\{
     where `beta1` and `beta0` are the slope and intercept of a
     linear fit to `log(cumsum(cases) + 0.1)` within the first half
     of the fitting window. Here, "intercept" means the value of
-    the fit at `time[first]`. If `beta1 <= 0`, then `r` is instead
-    assigned the value of argument `r_if_leq0`.
+    the fit at `time[first]`.
   \}
   \\item\{`K`\}\{`sum(cases)`\}
   \\item\{`thalf`\}\{`time[peak+1]`\}
@@ -193,6 +186,20 @@ such that \code{cases[first] = 0} and \code{first < peak-min_wlen+1},
 then \code{first} is increased by one until \code{cases[first] > 0}
 or \code{first = peak-min_wlen+1}.
 }
+}
+\examples{
+data(canadacovid)
+ontario <- na.omit(subset(canadacovid, province == "ON"))
+x <- egf_init(
+  date = ontario$date,
+  cases = ontario$new_confirmations[-1],
+  curve = "richards",
+  distr = "nbinom"
+)
+print(x)
+plot(x, inc = "interval")
+plot(x, inc = "cumulative")
+
 }
 \references{
 \insertRef{Ma+14}{epigrowthfit}
