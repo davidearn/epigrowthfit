@@ -5,22 +5,23 @@
 #'
 #' @param x An "egf" object.
 #' @param inc One of `"interval"` and `"cumulative"`,
-#'   indicating whether to plot `x$cases` or `cumsum(x$cases)`.
+#'   indicating whether to plot `x$cases` (interval incidence)
+#'   or `cumsum(x$cases)` (cumulative incidence).
 #' @param tol A non-negative number used only if
-#'   `inc = "interval"`. `x$cases[i]` is plotted
-#'   in blue if `diff(x$time)[i] < (1-tol)*m`,
-#'   in red if `diff(x$time)[i] > (1+tol)*m`,
-#'   and in grey otherwise, where `m = median(diff(x$time))`.
-#'   Assign `Inf` to ensure that everything is grey. See Details.
+#'   `inc = "interval"`. `x$ini$cases[i]` is plotted
+#'   in blue if `diff(x$init$time)[i] < (1-tol)*m`,
+#'   in red if `diff(x$init$time)[i] > (1+tol)*m`,
+#'   and in grey otherwise, where `m = median(diff(x$init$time))`.
+#'   Assign `Inf` to ensure that everything is grey.
 #' @param ... Unused optional arguments.
 #'
 #' @details
-#' If `x$time` is not equally spaced, then `inc = "interval"`
-#' should be used with caution. `x$cases[i]` is the number
-#' of cases observed between `x$time[i]` and `x$time[i+1]`,
-#' hence `x$cases` roughly scales with `diff(x$time)`.
-#' Argument `tol` can be used with `inc = "interval"`
-#' in order to highlight outliers in `diff(x$time)`.
+#' If `x$init$time` is not equally spaced, then `inc = "interval"`
+#' should be used with caution. `x$init$cases[i]` is the number
+#' of cases observed between `x$init$time[i]` and `x$init$time[i+1]`,
+#' hence `x$init$cases` roughly scales with `diff(x$init$time)`.
+#' Argument `tol` can be used with `inc = "interval"` in order to
+#' highlight outliers in `diff(x$init$time)`.
 #'
 #' @name egf-methods
 NULL

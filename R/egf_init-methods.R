@@ -6,13 +6,14 @@
 #'
 #' @param x An "egf_init" object.
 #' @param inc One of `"interval"` and `"cumulative"`,
-#'   indicating whether to plot `x$cases` or `cumsum(x$cases)`.
+#'   indicating whether to plot `x$cases` (interval incidence)
+#'   or `cumsum(x$cases)` (cumulative incidence).
 #' @param tol A non-negative number used only if
 #'   `inc = "interval"`. `x$cases[i]` is plotted
 #'   in light blue if `diff(x$time)[i] < (1-tol)*m`,
 #'   in dark blue if `diff(x$time)[i] > (1+tol)*m`,
 #'   and in grey otherwise, where `m = median(diff(x$time))`.
-#'   Assign `Inf` to ensure that everything is grey. See Details.
+#'   Assign `Inf` to ensure that everything is grey.
 #' @param ... Unused optional arguments.
 #'
 #' @details

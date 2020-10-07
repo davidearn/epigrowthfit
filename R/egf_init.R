@@ -60,10 +60,6 @@
 #'   `theta0` can be `NULL` or a list specifying a subset
 #'   of the relevant parameters. Absent parameters and
 #'   mis-specified parameters are (re)set internally. See Value.
-#' @param r_if_leq0 A positive number. Assigned to `theta0$r`
-#'   if `!"r" %in% names(theta0)` and the default value of
-#'   `theta0$r`, computed internally, is negative or zero.
-#'   See Value.
 #' @param min_wlen An integer scalar. The minimum number
 #'   of observations in the fitting window. Must be at
 #'   least the number of parameters being fit.
@@ -116,13 +112,13 @@
 #'         where `beta1` and `beta0` are the slope and intercept of a
 #'         linear fit to `log(cumsum(cases) + 0.1)` within the first half
 #'         of the fitting window. Here, "intercept" means the value of
-#'         the fit at `time[first]`. If `beta1 <= 0`, then `r` is instead
-#'         assigned the value of argument `r_if_leq0`.
+#'         the fit at `time[first]`.
 #'       }
 #'       \item{`K`}{`sum(cases)`}
 #'       \item{`thalf`}{`time[peak+1]`}
 #'       \item{`p`, `b`, `nbdisp`}{1}
 #'     }
+#'
 #'   }
 #'   \item{call}{The call to `egf_init()`, making the output
 #'     reproducible with `eval(call)`.
@@ -172,7 +168,7 @@
 #'   distr = "nbinom"
 #' )
 #' print(x)
-#' plot(x, inc = "interval)
+#' plot(x, inc = "interval")
 #' plot(x, inc = "cumulative")
 #'
 #' @references
@@ -189,7 +185,6 @@ egf_init <- function(date,
                      include_baseline = FALSE,
                      distr = "nbinom",
                      theta0 = NULL,
-                     r_if_leq0 = 0.1 / 365,
                      min_wlen = 6,
                      peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
                      first = NULL,
@@ -263,14 +258,9 @@ egf_init <- function(date,
     warning("`theta0` set to `NULL`.", call. = FALSE)
     theta0 <- NULL
   }
-  if (!is.numeric(r_if_leq0) || length(r_if_leq0) != 1 ||
-        !isTRUE(r_if_leq0 > 0)) {
-    warning("`r_if_leq0` set to 0.1/365.", call. = FALSE)
-    r_if_leq0 <- 0.1 / 365
-  }
 
 
-  ### FITTING WINDOW ------------------------------------------------
+  ### FITTING WINDOW ################################################
 
   if (max_first == 1) {
     first <- 1
@@ -309,7 +299,7 @@ egf_init <- function(date,
   }
 
 
-  ### PARAMETER ESTIMATES -------------------------------------------
+  ### PARAMETER ESTIMATES ###########################################
 
   ## Parameters that `theta0` must specify
   pars <- switch(curve,
@@ -351,7 +341,7 @@ egf_init <- function(date,
 
   ## Default values of all parameters
   vals <- list(
-    r      = if (lm_coef[[2]] <= 0) r_if_leq0 else lm_coef[[2]],
+    r      = lm_coef[[2]],
     x0     = exp(lm_coef[[1]]),
     K      = sum(cases),
     thalf  = time[peak+1],
@@ -361,11 +351,6 @@ egf_init <- function(date,
   )
 
   ## Take from `vals` what is missing in `theta0`
-  if ("r" %in% pars_missing && lm_coef[[2]] <= 0) {
-    warning("Estimated `r <= 0`, ",
-            "setting `r` equal to `r_if_leq0` (", r_if_leq0, ").",
-            call. = FALSE)
-  }
   theta0[pars_missing] <- vals[pars_missing]
   theta0 <- theta0[pars]
 

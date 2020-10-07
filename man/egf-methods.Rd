@@ -11,14 +11,15 @@
 \item{x}{An "egf" object.}
 
 \item{inc}{One of \code{"interval"} and \code{"cumulative"},
-indicating whether to plot \code{x$cases} or \code{cumsum(x$cases)}.}
+indicating whether to plot \code{x$cases} (interval incidence)
+or \code{cumsum(x$cases)} (cumulative incidence).}
 
 \item{tol}{A non-negative number used only if
-\code{inc = "interval"}. \code{x$cases[i]} is plotted
-in blue if \code{diff(x$time)[i] < (1-tol)*m},
-in red if \code{diff(x$time)[i] > (1+tol)*m},
-and in grey otherwise, where \code{m = median(diff(x$time))}.
-Assign \code{Inf} to ensure that everything is grey. See Details.}
+\code{inc = "interval"}. \code{x$ini$cases[i]} is plotted
+in blue if \code{diff(x$init$time)[i] < (1-tol)*m},
+in red if \code{diff(x$init$time)[i] > (1+tol)*m},
+and in grey otherwise, where \code{m = median(diff(x$init$time))}.
+Assign \code{Inf} to ensure that everything is grey.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -26,10 +27,10 @@ Assign \code{Inf} to ensure that everything is grey. See Details.}
 A method for plotting "egf" objects returned by \code{\link[=egf]{egf()}}.
 }
 \details{
-If \code{x$time} is not equally spaced, then \code{inc = "interval"}
-should be used with caution. \code{x$cases[i]} is the number
-of cases observed between \code{x$time[i]} and \code{x$time[i+1]},
-hence \code{x$cases} roughly scales with \code{diff(x$time)}.
-Argument \code{tol} can be used with \code{inc = "interval"}
-in order to highlight outliers in \code{diff(x$time)}.
+If \code{x$init$time} is not equally spaced, then \code{inc = "interval"}
+should be used with caution. \code{x$init$cases[i]} is the number
+of cases observed between \code{x$init$time[i]} and \code{x$init$time[i+1]},
+hence \code{x$init$cases} roughly scales with \code{diff(x$init$time)}.
+Argument \code{tol} can be used with \code{inc = "interval"} in order to
+highlight outliers in \code{diff(x$init$time)}.
 }
