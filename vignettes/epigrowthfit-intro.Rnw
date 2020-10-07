@@ -191,7 +191,7 @@ save("gpfit","gpfit.time","gpfit2",
 
 <<gpfit_load0,echo=FALSE>>=
 ## need this first to get timing info
-load(system.file("vignette_data","gpfit.RData",package="epigrowthfit"))
+load(system.file("vignette_data","gpfit.RData",package="epigrowthfitPNAS"))
 @
 
 
@@ -204,7 +204,7 @@ gpfit <- with(gp,epigrowthfit(time,plague.deaths))
 but this might take a little while (\Sexpr{round(gpfit.time[["elapsed"]],1)} seconds) so we load it from a data file instead:
 
 <<gpfit_load>>=
-load(system.file("vignette_data","gpfit.RData",package="epigrowthfit"))
+load(system.file("vignette_data","gpfit.RData",package="epigrowthfitPNAS"))
 @
 
 You should probably try it on your own system and make sure it works.
