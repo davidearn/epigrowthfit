@@ -22,8 +22,8 @@
 #'   you want to model growth above a baseline mortality rate \mjseqn{b}.
 #' @param distr One of `"pois"` and `"nbinom"`, indicating an
 #'   observation model for interval incidence.
-#' @param theta0 A list of positive numbers specifying initial estimates
-#'   of model parameters:
+#' @param theta0 A named numeric vector specifying positive
+#'   initial estimates of model parameters:
 #'
 #'   \describe{
 #'     \item{`r`}{\mjseqn{\lbrace\,r\,\rbrace}
@@ -31,17 +31,18 @@
 #'     }
 #'     \item{`x0`}{\mjseqn{\lbrace\,x_0\,\rbrace}
 #'       Expected cumulative incidence on `date[first]` (see `first` below).
-#'       Used only if `curve = "exponential"`.
+#'       This is the expectation of the number of cases observed
+#'       up to `date[first]`. Used only if `curve = "exponential"`.
 #'     }
 #'     \item{`K`}{\mjseqn{\lbrace\,K\,\rbrace}
-#'       Expectation of the number of cases observed over the full course
-#'       of the epidemic (i.e., the expected epidemic final size).
+#'       Expected epidemic final size. This is the expectation of the
+#'       number of cases observed over the full course of the epidemic.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
 #'     \item{`thalf`}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
-#'       Expectation of the time at which the epidemic attains
-#'       half its final size, expressed as a (possibly non-integer)
-#'       number of days since `date[1]`.
+#'       Expected time at which the epidemic attains half its
+#'       final size, expressed as a (possibly non-integer) number
+#'       of days since `date[1]`.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
 #'     \item{`p`}{\mjseqn{\lbrace\,p\,\rbrace}
@@ -57,9 +58,9 @@
 #'     }
 #'   }
 #'
-#'   `theta0` can be `NULL` or a list specifying a subset
-#'   of the relevant parameters. Absent parameters and
-#'   mis-specified parameters are (re)set internally. See Value.
+#'   `theta0` can be `NULL` or a vector specifying a subset
+#'   of the relevant parameters. Absent parameters are set
+#'   internally. See Value.
 #' @param min_wlen An integer scalar. The minimum number
 #'   of observations in the fitting window. Must be at
 #'   least the number of parameters being fit.
@@ -67,16 +68,16 @@
 #'   the peak in `cases`. The index of the last observation
 #'   in the fitting window will be `peak` or `peak+1`.
 #'   The default is like `which.max(cases)` but careful
-#'   to prevent `peak < min_wlen`. See Details.
+#'   to prevent `peak < min_wlen`. See Details 4.
 #' @param first An integer in `seq_along(cases)` indexing
 #'   the first observation in the fitting window, or `NULL`.
 #'   Non-`NULL` values may not be respected, depending on
-#'   other arguments. See Details.
+#'   other arguments. See Details 4.
 #' @param first_level A numeric scalar or `NULL`. Can be
-#'   used to define `first` if `first = NULL`. See Details.
+#'   used to define `first` if `first = NULL`. See Details 4.
 #' @param skip_zero A logical scalar. If `TRUE`, then an
 #'   attempt is made when defining `first` to ensure that
-#'   `cases[first] > 0`. See Details.
+#'   `cases[first] > 0`. See Details 4.
 #'
 #' @return
 #' An "egf_init" object. A list with elements:
@@ -89,7 +90,7 @@
 #'   \item{`cases`}{Matches argument.}
 #'   \item{`first`}{An integer indexing the start of the fitting window,
 #'     so that the first observation is `cases[first]`. May not match
-#'     the argument of the same name. See Details.
+#'     the argument of the same name. See Details 4.
 #'   }
 #'   \item{`last`}{An integer indexing the end of the fitting window,
 #'     so that the last observation is `cases[last]`. Equal to `peak`
@@ -99,34 +100,146 @@
 #'   \item{`curve`}{Matches argument.}
 #'   \item{`include_baseline`}{Matches argument.}
 #'   \item{`distr`}{Matches argument.}
-#'   \item{`theta0`}{A list whose elements are the subset
-#'     of `r`, `x0`, `K`, `thalf`, `p`, `b`, and `nbdisp`
-#'     relevant to `curve`, `include_baseline`, and `distr`.
-#'     Values specified in the argument of the same name
-#'     are retained if they are valid (i.e., numeric,
-#'     scalar, positive). The remaining values are taken
-#'     from the list of default values below:
+#'   \item{`theta0`}{A named numeric vector whose elements
+#'     are the subset of `r`, `x0`, `K`, `thalf`, `p`, `b`,
+#'     and `nbdisp` relevant to `curve`, `include_baseline`,
+#'     and `distr`. Values from the argument of the same
+#'     name are retained if they are positive and discarded
+#'     otherwise. Parameters not specified in the argument
+#'     are assigned their default value below:
 #'
 #'     \begin{describe}{
-#'       \item{`r`, `x0`}{`beta1 / 365` and `exp(beta0)`, respectively,
-#'         where `beta1` and `beta0` are the slope and intercept of a
-#'         linear fit to `log(cumsum(cases) + 0.1)` within the first half
-#'         of the fitting window. Here, "intercept" means the value of
-#'         the fit at `time[first]`.
+#'       \item{`r`, `x0`}{`beta1` and `exp(beta0)`, respectively,
+#'         where `beta1` and `beta0` are the slope and intercept
+#'         of a linear fit to `log(cumsum(cases) + 0.1)` within
+#'         the first half of the fitting window. Here, "intercept"
+#'         means the value of the fit at `time[first]`.
 #'       }
 #'       \item{`K`}{`sum(cases)`}
 #'       \item{`thalf`}{`time[peak+1]`}
-#'       \item{`p`, `b`, `nbdisp`}{1}
+#'       \item{`p`}{1}
+#'       \item{`b`}{1}
+#'       \item{`nbdisp`}{1}
 #'     }
 #'
 #'   }
-#'   \item{call}{The call to `egf_init()`, making the output
+#'   \item{`log_theta0`}{A named numeric vector, identical to
+#'     `log(theta0)` with `"log_"` prepended to the names.
+#'   }
+#'   \item{`call`}{The call to `egf_init()`, making the output
 #'     reproducible with `eval(call)`.
 #'   }
 #' }
 #'
 #' @details
-#' ## Fitting window selection
+#' ## 1. Phenomenological models
+#' Let \mjseqn{x(t)} be the expected number of cases observed
+#' up to time \mjseqn{t} (i.e., expected cumulative incidence),
+#' and let \mjseqn{x_0 = x(0) > 0}. Ignoring any baseline growth
+#' (see Details 2), \mjseqn{x(t)} is modeled as an exponential,
+#' logistic, or Richards curve.
+#'
+#' ### Exponential model
+#' If \mjseqn{x(t)} follows
+#'
+#' \mjsdeqn{x'(t) = r x(t)\,,\qquad r > 0\,,}
+#'
+#' then \mjseqn{x(t)} grows exponentially as
+#'
+#' \mjsdeqn{x(t) = x_0 e^{r t}\,.}
+#'
+#' Hence the exponential model for \mjseqn{x(t)} requires
+#' fitting two parameters to observed data: the exponential
+#' growth rate \mjseqn{r} and initial value \mjseqn{x_0}.
+#'
+#' The exponential model ignores depletion of susceptible
+#' individuals and implies continuous exponential growth
+#' in \mjseqn{x(t)}. Hence it will only agree with epidemic
+#' data during the (typically short) initial exponential
+#' growth phase. \insertCite{Ma+14;textual}{epigrowthfit}
+#' show that estimates of \mjseqn{r} are sensitive to the
+#' choice of fitting window, and that more robust fits to
+#' the data are likely to obtained with the logistic and
+#' Richards models, at negligible cost.
+#'
+#' ### Logistic model
+#' If \mjseqn{x(t)} follows
+#'
+#' \mjsdeqn{x'(t) = r x(t) \bigg(1 - \frac{x(t)}{K}\bigg)\,,\qquad r, K > 0\,,}
+#'
+#' and if \mjseqn{x_0 \in (0,K)}, then \mjseqn{x(t)} grows as
+#'
+#' \mjsdeqn{x(t) = \frac{K}{1 + \big(\frac{K}{x_0} - 1\big) e^{-r t}}}
+#'
+#' and increases to \mjseqn{K} as \mjseqn{t \to \infty}.
+#' The logistic model can be reparametrized as
+#'
+#' \mjsdeqn{x(t) = \frac{K}{1 + e^{-r (t - t_\text{half})}}\,,}
+#'
+#' where \mjseqn{t_\text{half}} is the time at which
+#' cumulative incidence attains half its final size,
+#' satisfying \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
+#'
+#' The reparametrized logistic model requires fitting
+#' \mjseqn{r}, \mjseqn{K}, and \mjseqn{t_\text{half}}
+#' to observed data.
+#'
+#' ### Richards
+#' If \mjsdeqn{x(t)} follows
+#'
+#' \mjsdeqn{x'(t) = r x(t) \bigg(1 - \bigg(\frac{x(t)}{K}\bigg)^p\bigg)\,,\qquad r, K, p > 0\,,}
+#'
+#' and if \mjseqn{x_0 \in (0,K)}, then \mjseqn{x(t)} grows as
+#'
+#' \mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + \big(\big(\frac{K}{x_0}\big)^p - 1\big) e^{-r p t} \big\rbrack^{1/p}}}
+#'
+#' and increases to \mjseqn{K} as \mjseqn{t \to \infty}.
+#' The Richards model can be reparametrized as
+#'
+#' \mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + (2^p - 1) * e^{-r p (t - t_\text{half}}) \big\rbrack^{1/p}}\,,}
+#'
+#' where, as with the logistic model, \mjseqn{t_\text{half}}
+#' satisfies \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
+#'
+#' The reparametrized logistic model requires fitting
+#' \mjseqn{r}, \mjseqn{K}, \mjseqn{t_\text{half}}, and \mjseqn{p}
+#' to observed data.
+#'
+#' ## 2. Baseline growth
+#' For many historical epidemics, the observed data are counts
+#' deaths due to all causes, not only the disease of interest.
+#' Growth in disease mortality over time can still be understood
+#' phenomenologically, provided that baseline mortality (deaths
+#' unrelated to the epidemic) and disease mortality are modeled
+#' separately. To account for baseline mortality, it is assumed
+#' that deaths occur at a constant rate \mjseqn{b > 0} in the
+#' absence of an epidemic. Then, for example, the logistic model
+#' (see Details 1) becomes
+#'
+#' \mjsdeqn{x(t) = b t + \frac{K}{1 + \big(\frac{K}{x_0} - 1\big) e^{-r t}}\,,}
+#'
+#' where \mjseqn{x(t)} is to be interpreted as expected
+#' cumulative mortality instead of expected cumulative incidence.
+#' Accounting for baseline mortality requires that \mjseqn{b} is
+#' fit in addition to the other model parameters.
+#'
+#' ## 3. Observation model
+#' Let \mjseqn{Y(t_1,t_2)} be the number of cases observed between times
+#' \mjseqn{t_1} and \mjseqn{t_2 > t_1} (i.e., observed interval incidence).
+#' \mjseqn{Y(t_1,t_2)} is modeled as either a Poisson-distributed random
+#' variable with mean \mjseqn{x(t_2) - x(t_1)},
+#'
+#' \mjsdeqn{Y(t_1,t_2) \sim \mathrm{Poisson}\big(x(t_2) - x(t_1)\big)\,,}
+#'
+#' or as negative binomial-distributed random variable with mean
+#' \mjseqn{x(t_2) - x(t_1)} and dispersion \mjseqn{k > 0},
+#'
+#' \mjsdeqn{Y(t_1,t_2) \sim \mathrm{NegativeBinomial}\big(x(t_2) - x(t_1), k\big)\,.}
+#'
+#' The negative binomial observation model requires that \mjseqn{k} is fit
+#' in addition to the other model parameters.
+#'
+#' ## 4. Fitting window selection
 #'
 #' The "fitting window" is the subset of `cases` used
 #' when fitting model parameters to the data. It ends
@@ -168,7 +281,7 @@
 #'   distr = "nbinom"
 #' )
 #' print(x)
-#' plot(x, inc = "interval")
+#' plot(x)
 #' plot(x, inc = "cumulative")
 #'
 #' @references
@@ -178,7 +291,7 @@
 #'
 #' @seealso [methods for class "egf_init"][egf_init-methods], [egf()]
 #' @export
-#' @importFrom stats lm coef
+#' @import stats
 egf_init <- function(date,
                      cases,
                      curve = "logistic",
@@ -227,8 +340,7 @@ egf_init <- function(date,
   if (!is.numeric(min_wlen) || length(min_wlen) != 1 ||
         !min_wlen %in% npar:length(cases)) {
     stop("`min_wlen` must be at least ",
-         "the number of parameters being fit (", npar, ").",
-         call. = FALSE)
+         "the number of parameters being fit (", npar, ").")
   }
   min_peak <- min_wlen - pe
   if (!is.numeric(peak) || length(peak) != 1 ||
@@ -251,11 +363,11 @@ egf_init <- function(date,
     }
   }
   if (!is.logical(skip_zero) || length(skip_zero) != 1 || is.na(skip_zero)) {
-    warning("`skip_zero` set to `TRUE`.", call. = FALSE)
+    warning("Setting `skip_zero = TRUE`.", call. = FALSE)
     skip_zero <- TRUE
   }
-  if (!is.null(theta0) && !is.list(theta0)) {
-    warning("`theta0` set to `NULL`.", call. = FALSE)
+  if (!is.null(theta0) && !is.numeric(theta0)) {
+    warning("Setting `theta0 = NULL`.", call. = FALSE)
     theta0 <- NULL
   }
 
@@ -286,9 +398,8 @@ egf_init <- function(date,
     is_nz <- cases[(first+1):max_first] > 0
     if (any(is_nz)) {
       new_first <- first + min(which(is_nz))
-      warning("`cases[first] = 0` with `first = ", first,
-              "`, setting `first <- ", new_first, "`.",
-              call. = FALSE)
+      message("`cases[first] = 0` with `first = ", first,
+              "`, setting `first <- ", new_first, "`.")
       first <- new_first
     } else {
       warning("`cases[i] = 0` for all `i` in `first:max_first`, ",
@@ -302,34 +413,33 @@ egf_init <- function(date,
   ### PARAMETER ESTIMATES ###########################################
 
   ## Parameters that `theta0` must specify
-  pars <- switch(curve,
+  par <- switch(curve,
     exponential = c("r", "x0"),
     logistic    = c("r", "K", "thalf"),
     richards    = c("r", "K", "thalf", "p")
   )
   if (include_baseline) {
-    pars <- c(pars, "b")
+    par <- c(par, "b")
   }
   if (distr == "nbinom") {
-    pars <- c(pars, "nbdisp")
+    par <- c(par, "nbdisp")
   }
 
   ## Initialize `theta0` if necessary
   if (is.null(theta0) || is.null(names(theta0))) {
-    theta0 <- list()
+    theta0 <- numeric(0)
   }
 
   ## Dispense with unwanted elements
-  if (length(theta0) > 0) {
-    has_good_name <- names(theta0) %in% pars
-    has_good_val <- sapply(theta0, function(x) {
-      is.numeric(x) && length(x) == 1 && isTRUE(x > 0)
-    })
-    theta0 <- theta0[has_good_name && has_good_val]
+  l <- length(theta0)
+  theta0 <- theta0[names(theta0) %in% par]
+  theta0 <- theta0[is.finite(theta0) & theta0 > 0]
+  if (length(theta0) < l) {
+    warning("Discarding improperly named or valued elements of `theta0`.")
   }
 
   ## Parameters that `theta0` doesn't specify
-  pars_missing <- setdiff(pars, names(theta0))
+  par_missing <- setdiff(par, names(theta0))
 
   ## Fit a linear model to `log(cumsum(cases) + 0.1)`
   ## in the first half of the fitting window
@@ -340,7 +450,7 @@ egf_init <- function(date,
   lm_coef <- coef(lm(log(cumsum(cases) + 0.1) ~ time, data = lm_data))
 
   ## Default values of all parameters
-  vals <- list(
+  val <- c(
     r      = lm_coef[[2]],
     x0     = exp(lm_coef[[1]]),
     K      = sum(cases),
@@ -350,9 +460,9 @@ egf_init <- function(date,
     b      = 1
   )
 
-  ## Take from `vals` what is missing in `theta0`
-  theta0[pars_missing] <- vals[pars_missing]
-  theta0 <- theta0[pars]
+  ## Take from `val` what is missing in `theta0`
+  theta0[par_missing] <- val[par_missing]
+  theta0 <- theta0[par]
 
 
   out <- list(
@@ -365,6 +475,7 @@ egf_init <- function(date,
     include_baseline = include_baseline,
     distr  = distr,
     theta0 = theta0,
+    log_theta0 = setNames(log(theta0), paste0("log_", names(theta0))),
     call   = match.call()
   )
   structure(out, class = c("egf_init", "list"))

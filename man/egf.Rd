@@ -5,170 +5,70 @@
 \title{\loadmathjax
 Fit models of epidemic growth}
 \usage{
-egf(init, method = "BFGS", ...)
+egf(init, method = "nlminb", ...)
 }
 \arguments{
 \item{init}{An "egf_init" object, specifying epidemic data,
 a fitting window, and initial parameter estimates.
 See \code{\link[=egf_init]{egf_init()}}.}
 
-\item{method}{One of \code{"Nelder-Mead"}, \code{"BFGS"}, \code{"CG"},
-\code{"L-BFGS-S"}, and \code{"SANN"}, indicating a method used
-to minimize the negative log likelihood function.
-Passed directly to \code{\link[stats:optim]{stats::optim()}}.}
+\item{method}{One of \code{"nlminb"}, \code{"nlm"}, \code{"Nelder-Mead"},
+\code{"BFGS"}, \code{"L-BFGS-S"}, and \code{"CG"}, indicating the method
+used to minimize the negative log likelihood function.}
 
-\item{...}{Additional arguments to \code{\link[stats:optim]{stats::optim()}}.}
+\item{...}{Additional arguments to \code{\link[stats:nlminb]{nlminb()}},
+\code{\link[stats:nlm]{nlm()}}, or \code{\link[stats:optim]{optim()}}.}
 }
 \value{
-An "egf" object. A list with elements
+An "egf" object. A list with elements:
 
 \describe{
-\item{\code{theta_mle}}{A list containing the maximum likelihood
-estimate of the model parameters.
+\item{\code{theta_hat}}{A named numeric vector specifying the
+optimizer's estimate of the minimizer of the negative
+log likelihood function.
 }
-\item{\code{eval_cum_inc}}{A closure with arguments \code{time} (numeric)
-and \code{theta} (list), evaluating expected cumulative incidence
-at \code{times} (days since \code{date[1]}, as provided to \code{\link[=egf_init]{egf_init()}})
-using parameter values \code{theta}. The default value of theta is
-\code{theta_mle}, hence the fitted cumulative curve is obtained as
-\code{eval_cum_inc(times)}.
+\item{\code{log_theta_hat}}{Log-transformed \code{theta_hat}. Identical
+to \code{log(theta_hat)} with \code{"log_"} prepended to the names.
 }
-\item{\code{eval_int_inc}}{A closure with arguments \code{time} (numeric)
-and \code{theta} (list), evaluating expected interval incidence.
-Returns \code{diff(eval_cum_inc(time, theta))}, hence the length
-of the value is \code{length(time)-1}. As with \code{eval_cum_inc},
-the default value of theta is \code{theta_mle}.
+\item{\code{nll}}{A numeric scalar giving the negative log likelihood
+corresponding to \code{log_theta_hat}.
+}
+\item{\code{nll_fn}}{A closure with numeric argument \code{log_theta}
+specifying a log-transformed parameter vector (default
+is \code{log_theta_hat}). Returns the negative log likelihood
+function evaluated at \code{x}.
+}
+\item{\code{nll_gr}}{A closure like \code{nll_fn}, but returning the
+gradient of the negative log likelihood function evaluated
+at \code{x}.
+}
+\item{\code{cum_inc}}{A closure with numeric arguments \code{time}
+and \code{theta} (default is \code{theta_hat}), evaluating expected
+cumulative incidence at \code{times} (days since \code{date[1]},
+as supplied to \code{\link[=egf_init]{egf_init()}}) using parameter values \code{theta}.
+}
+\item{\code{int_inc}}{A closure like \code{cum_inc}, but evaluating
+expected interval incidence. Returns \code{diff(cum_inc(time, theta))},
+hence the length of the value is \code{length(time)-1}.
 }
 \item{\code{init}}{Matches argument.}
 \item{\code{madf_out}}{The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.}
-\item{\code{optim_out}}{The list output of \code{\link[stats:optim]{stats::optim()}}.}
+\item{\code{optim_out}}{The list output of \code{\link[stats:nlminb]{nlminb()}},
+\code{\link[stats:nlm]{nlm()}}, or \code{\link[stats:optim]{optim()}},
+depending on \code{method}.
+}
 \item{\code{call}}{The call to \code{egf()}, making the output
 reproducible with \code{eval(call)}.
 }
 }
 }
 \description{
-A description of function \code{egf()}.
-}
-\details{
-\subsection{1. Phenomenological models}{
-
-Let \mjseqn{x(t)} be the expected number of cases observed
-up to time \mjseqn{t} (i.e., expected cumulative incidence),
-and let \mjseqn{x_0 = x(0) > 0}. Ignoring any baseline growth
-(see Details 2), \mjseqn{x(t)} is modeled as an exponential,
-logistic, or Richards curve.
-\subsection{Exponential model}{
-
-If \mjseqn{x(t)} follows
-
-\mjsdeqn{x'(t) = r x(t)\,,\qquad r > 0\,,}
-
-then \mjseqn{x(t)} grows exponentially as
-
-\mjsdeqn{x(t) = x_0 e^{r t}\,.}
-
-Hence the exponential model for \mjseqn{x(t)} requires
-fitting two parameters to observed data: the exponential
-growth rate \mjseqn{r} and initial value \mjseqn{x_0}.
-
-The exponential model ignores depletion of susceptible
-individuals and implies continuous exponential growth
-in \mjseqn{x(t)}. Hence it will only agree with epidemic
-data during the (typically short) initial exponential
-growth phase. \insertCite{Ma+14;textual}{epigrowthfit}
-show that estimates of \mjseqn{r} are sensitive to the
-choice of fitting window, and that more robust fits to
-the data are likely to obtained with the logistic and
-Richards models, at negligible cost.
-}
-
-\subsection{Logistic model}{
-
-If \mjseqn{x(t)} follows
-
-\mjsdeqn{x'(t) = r x(t) \bigg(1 - \frac{x(t)}{K}\bigg)\,,\qquad r, K > 0\,,}
-
-and if \mjseqn{x_0 \in (0,K)}, then \mjseqn{x(t)} grows as
-
-\mjsdeqn{x(t) = \frac{K}{1 + \big(\frac{K}{x_0} - 1\big) e^{-r t}}}
-
-and increases to \mjseqn{K} as \mjseqn{t \to \infty}.
-The logistic model can be reparametrized as
-
-\mjsdeqn{x(t) = \frac{K}{1 + e^{-r (t - t_\text{half})}}\,,}
-
-where \mjseqn{t_\text{half}} is the time at which
-cumulative incidence attains half its final size,
-satisfying \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
-
-The reparametrized logistic model requires fitting
-\mjseqn{r}, \mjseqn{K}, and \mjseqn{t_\text{half}}
-to observed data.
-}
-
-\subsection{Richards}{
-
-If \mjsdeqn{x(t)} follows
-
-\mjsdeqn{x'(t) = r x(t) \bigg(1 - \bigg(\frac{x(t)}{K}\bigg)^p\bigg)\,,\qquad r, K, p > 0\,,}
-
-and if \mjseqn{x_0 \in (0,K)}, then \mjseqn{x(t)} grows as
-
-\mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + \big(\big(\frac{K}{x_0}\big)^p - 1\big) e^{-r p t} \big\rbrack^{1/p}}}
-
-and increases to \mjseqn{K} as \mjseqn{t \to \infty}.
-The Richards model can be reparametrized as
-
-\mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + (2^p - 1) * e^{-r p (t - t_\text{half}}) \big\rbrack^{1/p}}\,,}
-
-where, as with the logistic model, \mjseqn{t_\text{half}}
-satisfies \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
-
-The reparametrized logistic model requires fitting
-\mjseqn{r}, \mjseqn{K}, \mjseqn{t_\text{half}}, and \mjseqn{p}
-to observed data.
-}
-
-}
-
-\subsection{2. Baseline growth}{
-
-For many historical epidemics, the observed data are counts
-of all causes deaths, not counts of deaths due to the disease
-of interest. Growth in disease mortality over time can still
-be understood phenomenologically, provided that baseline
-mortality (deaths unrelated to the epidemic) and disease
-mortality are modeled separately. To account for baseline
-mortality, it is assumed that deaths occur at a constant rate
-\mjseqn{b > 0} in the absence of an epidemic. Then,
-for example, the logistic model (see Details 1) becomes
-
-\mjsdeqn{x(t) = b t + \frac{K}{1 + \big(\frac{K}{x_0} - 1\big) e^{-r t}}\,,}
-
-where \mjseqn{x(t)} is to be interpreted as expected cumulative
-mortality instead of expected cumulative incidence. Hence accounting
-for baseline mortality requires that \mjseqn{b} is fit in addition
-to the other model parameters.
-}
-
-\subsection{3. Observation model}{
-
-Let \mjseqn{Y(t_1,t_2)} be the number of cases observed between times
-\mjseqn{t_1} and \mjseqn{t_2 > t_1} (i.e., observed interval incidence).
-\mjseqn{Y(t_1,t_2)} is modeled as either a Poisson-distributed random
-variable with mean \mjseqn{x(t_2) - x(t_1)},
-
-\mjsdeqn{Y(t_1,t_2) \sim \mathrm{Poisson}\big(x(t_2) - x(t_1)\big)\,,}
-
-or as negative binomial-distributed random variable with mean
-\mjseqn{x(t_2) - x(t_1)} and dispersion \mjseqn{k > 0},
-
-\mjsdeqn{Y(t_1,t_2) \sim \mathrm{NegativeBinomial}\big(x(t_2) - x(t_1), k\big)\,.}
-
-The negative binomial observation model requires that \mjseqn{k} is fit
-in addition to the other model parameters.
-}
+Minimizes the negative log likelihood of an epidemic growth model
+using \code{\link[stats:nlminb]{nlminb()}}, \code{\link[stats:nlm]{nlm()}}, or
+one of the routines provided through \code{\link[stats:optim]{optim()}}.
+The negative log likelihood function is written as a C++ template.
+Its gradient with respect to parameters is computed by automatic
+differentiation using package \pkg{TMB}.
 }
 \examples{
 data(canadacovid)
@@ -180,8 +80,10 @@ init <- egf_init(
   distr = "nbinom"
 )
 x <- egf(init)
-plot(x, inc = "interval")
+plot(x)
 plot(x, inc = "cumulative")
+coef(x)
+coef(x, log = TRUE)
 
 }
 \references{

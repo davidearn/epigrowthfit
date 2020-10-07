@@ -7,7 +7,8 @@ Authors@R: c(
 	     person("Junling", "Ma", role = "aut"),
 	     person("David", "Earn", role = "aut"),
 	     person("Jonathan", "Dushoff", role = "aut"))
-Description: Estimation of epidemic growth rates.
+Description:
+    Tools for estimating parameters associated with initial epidemic growth.
 Depends:
     R (>= 3.5.0),
     TMB
@@ -19,6 +20,7 @@ Imports:
 LinkingTo:
     TMB,
     RcppEigen
+VignetteBuilder: knitr
 NeedsCompilation: yes
 License: GPL-3
 Encoding: UTF-8

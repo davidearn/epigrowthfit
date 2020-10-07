@@ -51,6 +51,7 @@ clean:
 	rm -f $(TARBALL) ../$(TARBALL)
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
+	$(MAKE) -C vignettes clean
 
 new: clean
-	rm -f src/$(PACKAGE).{o,so}
+	$(MAKE) -C src clean

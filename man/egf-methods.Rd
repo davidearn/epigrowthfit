@@ -3,12 +3,15 @@
 \name{egf-methods}
 \alias{egf-methods}
 \alias{plot.egf}
+\alias{coef.egf}
 \title{Methods for class "egf"}
 \usage{
 \method{plot}{egf}(x, inc = "interval", tol = 0.025, ...)
+
+\method{coef}{egf}(object, log = FALSE, ...)
 }
 \arguments{
-\item{x}{An "egf" object.}
+\item{x, object}{An "egf" object.}
 
 \item{inc}{One of \code{"interval"} and \code{"cumulative"},
 indicating whether to plot \code{x$cases} (interval incidence)
@@ -22,9 +25,13 @@ and in grey otherwise, where \code{m = median(diff(x$init$time))}.
 Assign \code{Inf} to ensure that everything is grey.}
 
 \item{...}{Unused optional arguments.}
+
+\item{log}{A logical scalar. If \code{TRUE}, log-transformed
+parameter values are extracted.}
 }
 \description{
-A method for plotting "egf" objects returned by \code{\link[=egf]{egf()}}.
+Methods for plotting and extracting fitted parameter
+values from "egf" objects returned by \code{\link[=egf]{egf()}}.
 }
 \details{
 If \code{x$init$time} is not equally spaced, then \code{inc = "interval"}

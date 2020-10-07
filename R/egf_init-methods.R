@@ -71,7 +71,7 @@ plot.egf_init <- function(x, inc = "interval", tol = 0.025, ...) {
   }
   if (!is.character(inc) || length(inc) != 1 ||
         !inc %in% c("interval", "cumulative")) {
-    stop("`inc` must be an element of `c(\"interval\", \"cumulative\")`.")
+    stop("`inc` must be \"interval\" or \"cumulative\".")
   }
   if (inc == "interval") {
     if (!is.numeric(tol) || length(tol) != 1 || !isTRUE(tol >= 0)) {

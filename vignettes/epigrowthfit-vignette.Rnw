@@ -1,0 +1,333 @@
+\documentclass[dvipsnames,12pt]{article}
+%\VignetteIndexEntry{epigrowthfit-vignette}
+%\VignetteEngine{knitr::knitr}
+
+
+% Page layout
+\usepackage[top=1in,bottom=1.5in,left=1in,right=1in]{geometry}
+\usepackage{lineno} % line numbering
+\renewcommand{\linenumberfont}{\normalfont\tiny\sffamily\color[gray]{0.5}}
+\hfuzz=1in % tolerate \hbox fullness
+\vbadness=\maxdimen % tolerate \vbox badness
+
+% Text layout
+%\usepackage{setspace} % \onehalfspacing, \doublespacing
+\raggedright
+\usepackage[T1]{fontenc} % words with accented characters can be hyphenated
+
+% Title page setup
+\title{\Large The \pkg{epigrowthfit} package}
+\author{Mikael Jagan, Benjamin M.\ Bolker, Junling Ma,\\ David J.\ D.\ Earn, Jonathan Dushoff}
+\date{\today}
+
+% Deferred execution
+% front matter
+\usepackage{etoolbox} % document hooks
+\AfterEndPreamble{%
+  \pagenumbering{roman}
+  \maketitle
+  \tableofcontents
+  \thispagestyle{empty}
+  \clearpage
+  \pagenumbering{arabic}
+  \linenumbers
+}
+% back matter
+\AtEndDocument{%
+  \bibliographystyle{vancouver}
+  \bibliography{epigrowthfit-vignette}
+}
+
+% Math
+\usepackage{amsmath,mathtools}
+\usepackage{amssymb,bm,bbm}
+\allowdisplaybreaks % page breaks in display style math mode
+
+% Code
+\usepackage[scaled=0.85]{DejaVuSansMono}
+% Match inline code highlighting to custom knitr theme
+% specified in `knit_theme.css`
+\definecolor{background}{HTML}{f4f4f4} % background
+\definecolor{num}{HTML}{aa4499} % numeric, logical, NA
+\definecolor{str}{HTML}{999933} % character
+\definecolor{com}{HTML}{999999} % comment
+\definecolor{opt}{HTML}{555555} % !?
+\definecolor{std}{HTML}{555555} % variable name, operator, delimiter
+\definecolor{kwa}{HTML}{aa4499} % function, if, else, for, in, while, NULL
+\definecolor{kwb}{HTML}{555555} % assignment operator
+\definecolor{kwc}{HTML}{555555} % function argument
+\definecolor{kwd}{HTML}{3a9183} % function name
+\usepackage{listings} % \lstinline
+\lstset{%
+  basicstyle=\color{std}\ttfamily,%
+  breaklines=true,%
+  moredelim=[is][\color{num}]{`1}{`1},
+  moredelim=[is][\color{str}]{`2}{`2},
+  moredelim=[is][\color{com}\itshape]{`3}{`3},
+  moredelim=[is][\color{opt}]{`4}{`4},
+  moredelim=[is][\color{std}]{`5}{`5},
+  moredelim=[is][\color{kwa}\bfseries]{`6}{`6},
+  moredelim=[is][\color{kwb}]{`7}{`7},
+  moredelim=[is][\color{kwc}]{`8}{`8},
+  moredelim=[is][\color{kwd}]{`9}{`9}
+}
+\usepackage{realboxes} % \Colorbox
+
+% Float captions
+\usepackage{caption}
+\captionsetup{%
+  aboveskip=8pt,%
+  labelfont=bf,%
+  labelsep=period,%
+  justification=raggedright,%
+  singlelinecheck=false%
+}
+\renewcommand{\figurename}{Fig}
+
+% Float placement
+\usepackage{float} % \begin{figure}[H]
+\usepackage[section]{placeins} % \FloatBarrier
+
+% Lists
+\usepackage{enumitem}
+\setlist[enumerate]{label=(\roman*)}
+\setlist[itemize]{label=\tiny$\blacksquare$}
+
+% Tables
+\usepackage{booktabs} % \toprule, \midrule, \bottomrule, \addlinespace
+\usepackage{array}
+% columns with variable width, top alignment
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+
+% Citation
+\usepackage{cite}
+\makeatletter
+\renewcommand{\@biblabel}[1]{\quad #1.} % \@biblabel format
+\makeatother
+
+% Ref hyperlinks
+\usepackage[colorlinks=true,allcolors=magenta]{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+% equation
+\crefformat{equation}{#2Eq~#1#3}
+\crefmultiformat{equation}{#2Eqs~#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{equation}{#3Eqs~#1#4--#5#2#6}
+\crefformat{blankequation}{#2#1#3}
+\crefmultiformat{blankequation}{#2#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{blankequation}{#3#1#4--#5#2#6}
+\crefalias{blankequation}{equation}
+\crefformat{pluralequation}{#2Eqs~#1#3}
+\crefalias{pluralequation}{equation}
+% figure
+\crefformat{figure}{#2Fig~#1#3}
+\crefmultiformat{figure}{#2Figs~#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{figure}{#3Figs~#1#4--#5#2#6}
+% section
+\crefformat{section}{#2\S#1#3}
+\crefmultiformat{section}{#2\S\S#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{section}{#3\S\S#1#4--#5#2#6}
+% table
+\crefformat{Table}{#2Table~#1#3}
+\crefmultiformat{table}{#2Tables~#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{table}{#3Tables~#1#4--#5#2#6}
+
+% More macros
+% laziness
+\let\tops\texorpdfstring
+% fonts
+\renewcommand{\vec}[1]{\bm{\mathrm{#1}}}
+% diacritics
+\let\wh\widehat
+\let\wt\widetilde
+% delimiters
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+% operators
+\DeclareMathOperator*{\argmin}{arg\,min}
+% symbols
+\newcommand{\thalf}{t_\text{\normalfont half}}
+\newcommand{\R}{\mathcal{R}}
+% abbreviations
+\newcommand{\cf}{\textit{cf}.~}
+\newcommand{\eg}{\textit{e}.\textit{g}.,~}
+\newcommand{\ie}{\textit{i}.\textit{e}.,~}
+\newcommand{\etc}{\textit{etc}.}
+\newcommand{\etal}{\textit{et al}.}
+% code
+\newcommand{\code}[1]{\Colorbox{background}{\lstinline|#1|}}
+\newcommand{\fun}[1]{\code{`9#1`9()}}
+\let\pkg\textbf
+
+
+
+
+%%%%%%%%%%%%%%%%
+%% START HERE %%
+%%%%%%%%%%%%%%%%
+
+\begin{document}
+\setlength{\parskip}{0.5mm}
+\setlength{\parindent}{7mm}
+
+<<set-chunk-defaults, echo=FALSE>>=
+library(knitr)
+## Make some substitutions in the .tex output in order to:
+## * Prevent lineno from messing up breaking of chunks over pages.
+## * Prevent automatic indentation after chunks.
+## * Dispense with compile errors due to knitr-xcolor interaction.
+##   See https://tex.stackexchange.com/questions/148188/.
+knit_hooks$set(document = function(x) {
+  x <- sub("\\begin{knitrout}", "\\nolinenumbers\\begin{knitrout}", x, fixed = TRUE)
+  x <- sub("\\end{knitrout}", "\\end{knitrout}\\linenumbers\\noindent", x, fixed = TRUE)
+  sub("\\usepackage[]{color}", "\\usepackage{xcolor}", x, fixed = TRUE)
+})
+## Set number of digits printed in chunk output with chunk option "digits"
+knit_hooks$set(digits = function(before, options, envir) {
+  if (before) {
+    options(digits = options$digits)
+  }
+})
+## Set character width of chunk with chunk option "width"
+## (can be used to prevent intrusions into right margin)
+knit_hooks$set(char.width = function(before, options, envir) {
+  if (before) {
+    options(width = options$char.width)
+  }
+})
+## Use custom palette for code highlighting
+knit_theme$set(knit_theme$get("knit_theme.css"))
+## Set chunk defaults
+opts_chunk$set(
+  cache = TRUE, # if `FALSE`, chunk is evaluated from scratch with compile
+  echo = TRUE, # if `FALSE`, chunk is not displayed
+  eval = TRUE, # if `FALSE`, chunk is not evaluated
+  include = TRUE, # if `FALSE`, chunk output is not displayed and `error = FALSE`
+  error = TRUE, # if `FALSE`, evaluation stops on errors
+  warning = TRUE, # if `FALSE`, warnings printed in console, not document
+  message = FALSE, # if `FALSE`, messages printed in console, not document
+  digits = 7, # number of digits printed in chunk output
+  char.width = 74, # character width of chunks
+  fig.pos = "H", # figure position in document
+  dev = "pdf", # plotting device
+  dev.args = list(pointsize = 10), # base point size in plots
+  strip.white = TRUE # reduce white space around chunks (?)
+)
+@
+
+\section{Introduction}
+\label{sec:intro}
+
+R package \pkg{epigrowthfit} implements methods for estimating parameters
+associated with initial epidemic growth. \pkg{epigrowthfit} was initially
+developed to support the analysis of Ma \etal~\cite{Ma+14} and later Earn
+\etal~\cite{Earn+20}, but now extends their methods and provides additional
+useful machinery.
+
+This document was built using \Sexpr{R.Version()$version.string}
+and these R package versions:
+
+<<package-versions, echo=FALSE>>=
+package_list <- c(
+  "epigrowthfit",
+  "TMB",     # automatic differentiation of objective functions
+  "emdbook", # tools for ecological modeling
+  "knitr"    # integration of R code and LaTeX
+)
+for (package_name in package_list[-4]) {
+  library(package_name, character.only = TRUE)
+}
+print(installed.packages()[package_list, "Version"], quote = FALSE)
+@
+
+\subsection{Installation}
+
+\pkg{epigrowthfit} can be installed from a
+\href{https://github.com/davidearn/epigrowthfit/}{GitHub repository}
+using function \fun{install_github} from the \pkg{remotes} package.
+
+<<installation, eval=FALSE>>=
+if (!require(remotes)) {
+  install.packages("remotes")
+}
+remotes::install_github("davidearn/epigrowthfit", build_vignettes = TRUE)
+library(epigrowthfit)
+@
+%
+A list of data sets and functions in the \pkg{epigrowthfit} namespace
+can be retrieved with \fun{data} and \fun{ls}.
+
+<<namespace>>=
+# Data sets
+(dnames <- data(package = "epigrowthfit")$results[, "Item"])
+
+# Functions
+(fnames <- setdiff(ls("package:epigrowthfit"), dnames))
+@
+%
+Only S3 methods are not exported. However, these need not be called
+directly, as they are found by the corresponding generic functions.
+S3 methods implemented in \pkg{epigrowthfit} are listed here.
+
+<<s3methods>>=
+setdiff(ls(getNamespace("epigrowthfit")), c(dnames, fnames))
+@
+
+\subsection{Documentation}
+
+Package documentation can be accessed as follows:
+
+<<documentation, eval=FALSE>>=
+## This vignette
+vignette("epigrowthfit-vignette")
+
+## Help pages
+?"epigrowthfit-package" # package
+?function_name          # function "function_name"
+?"class_name-methods"   # S3 methods for class "class_name"
+@
+
+\begin{table}
+\renewcommand{\arraystretch}{1.5}
+\caption{%
+  Core functions of the \pkg{epigrowthfit} package. For a complete
+  list of exported functions, see \cref{sec:intro} or install and run
+  \protect\code{`9library`9(epigrowthfit); `9ls`9(`2"package:epigrowthfit"`2)}.
+}
+\begin{tabular}{R{1.1in} C{0.6in} L{4.2in}}
+\toprule
+\textbf{Function} & \textbf{Section} & \textbf{Description} \\
+\midrule
+\fun{egf_init} &  & \\
+\fun{egf} &  & \\
+\bottomrule
+\end{tabular}
+\label{tab:core-functions}
+\end{table}
+
+\section{Example 1}
+\label{sec:example1}
+
+<<example1>>=
+data(canadacovid)
+ontario <- na.omit(subset(canadacovid, province == "ON"))
+init <- egf_init(
+  date = ontario$date,
+  cases = ontario$new_confirmations[-1],
+  curve = "richards",
+  distr = "nbinom"
+)
+names(init)
+init
+x <- egf(init)
+names(x)
+coef(x, log = FALSE) # same as `coef(x)`
+coef(x, log = TRUE)
+plot(x, inc = "interval") # same as `plot(x)`
+plot(x, inc = "cumulative")
+@
+
+\end{document}
+
