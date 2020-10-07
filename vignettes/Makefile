@@ -1,13 +1,12 @@
-R_HOME = /usr/local
-Rscript = $(R_HOME)/bin/Rscript
+R = $(R_HOME)/bin/R
 
 all: plotmodels.pdf epigrowthfit-intro.pdf
 
 plotmodels.tex: plotmodels.R
-	R CMD BATCH --vanilla $<
+	$(R) CMD BATCH --vanilla $<
 
 %.pdf: %.Rnw *.bib *preamble.tex
-	$(Rscript) -e "knitr::knit2pdf('$<')"
+	$(R) --no-echo -e "knitr::knit2pdf('$<')"
 
 %.pdf: %.tex
 	pdflatex $<

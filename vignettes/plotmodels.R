@@ -4,11 +4,11 @@
 
 library(tikzDevice)
 library(ggplot2)
-library(epigrowthfit)
+library(epigrowthfitPNAS)
 
 ## plot.setup(pdfname,width=7,height=7)
 
-## texname = paste0(rtargetname, ".tex") 
+## texname = paste0(rtargetname, ".tex")
 texname <- "plotmodels.tex"  ## avoid make magic
 ## plot.setup(texname,width=7,height=7)
 tikz(texname,width=7,height=7, standAlone=TRUE) ## avoid make magic
