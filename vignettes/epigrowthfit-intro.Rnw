@@ -4,7 +4,7 @@
 %\VignetteIndexEntry{epigrowthfit intro}
 %\VignetteEngine{knitr::knitr}
 %\VignetteEncoding{UTF-8}
-%\VignettePackage{epigrowthfit}
+%\VignettePackage{epigrowthfitPNAS}
 %\VignetteDepends{bbmle}
 %\VignetteDepends{dplyr}
 %\VignetteDepends{tidyr}
@@ -30,8 +30,8 @@
 
 \title{Vignette \texttt{epigrowthfit-intro}\\A brief introduction to the \texttt{epigrowthfit} R package}
 
-\author{David J.\,D.\ Earn$^{a,c,e}$, 
-Junling Ma$^{f}$, 
+\author{David J.\,D.\ Earn$^{a,c,e}$,
+Junling Ma$^{f}$,
 Hendrik N.\ Poinar$^{b,c,d,e}$,\\
 Jonathan Dushoff$^{a,c,e}$,
 and Benjamin M.\ Bolker$^{a,c,e}$\\
@@ -59,30 +59,30 @@ and Benjamin M.\ Bolker$^{a,c,e}$\\
 
 <<rver,echo=FALSE>>=
 Rver <- R.version$version.string
-@ 
+@
 
 <<options, echo=FALSE>>=
 options(tinytex.verbose = TRUE) # see TeX progress
 ## attemping to avoid color warnings using Yihui's suggestion, but doesn't work:
 ##knit_hooks$set(document = function(x) {sub('\\usepackage[]{color}', '\\usepackage{xcolor}', x, fixed = TRUE)})
-@ 
+@
 
 <<tikzopts,include=FALSE>>=
 library(tikzDevice)
 ## table gets passed to \usepackage{xcolor} and all other packages
 ##options(tikzDocumentDeclaration="\\documentclass[12pt,table]{article}")
-@ 
+@
 
 %% FIXME: remove tikzDevice, knitr (not end-user packages) ?
 This vignette was compiled using \Sexpr{Rver} and package versions:
 <<pkglist,echo=FALSE,message=FALSE>>=
-usedpkgs <- sort(c("epigrowthfit","bbmle","tikzDevice",
+usedpkgs <- sort(c("epigrowthfitPNAS","bbmle","tikzDevice",
                    "dplyr","tidyr","ggplot2","emdbook",
                    "knitr"))
 for(p in usedpkgs) library(p,character.only = TRUE)
 i1 <- installed.packages()
 print(i1[usedpkgs,"Version"],quote=FALSE)
-@ 
+@
 \david{Any other key packages since we last updated this list?}
 
 \section{\texttt{epigrowthfit} R package}
@@ -102,26 +102,26 @@ The \code{epigrowthfit} package was developed initially to support analysis of h
 <<hustingwillscols>>=
 names(husting_wills)
 summary(husting_wills)
-@ 
+@
 
 <<canterburywillscols>>=
 names(canterbury_wills)
 summary(canterbury_wills)
-@ 
+@
 
 \subsubsection*{Bills of Mortality}
 
 <<billscols>>=
 names(london_bills)
 summary(london_bills)
-@ 
+@
 
 \subsubsection*{Parish mortality records}
 
 <<parishcols>>=
 names(london_parish)
 summary(london_parish)
-@ 
+@
 
 \subsubsection*{Old plague data frame}
 
@@ -130,7 +130,7 @@ frame, which we used before obtaining all the data used in Earn \etal
 \cite{Earn+20}.  The columns of the \code{plague} data frame are:
 <<plaguecols>>=
 names(plague)
-@ 
+@
 \noindent
 The meanings of these columns are explained in \cref{tab:plague.data.frame}.
 
@@ -153,7 +153,7 @@ We have coded the \code{outbreak.year} and \code{severity} for convenience in se
 <<gp>>=
 gp <- subset(plague,outbreak.year==1665)
 head(gp)
-@ 
+@
 
 \subsection{Plotting plague epidemics}
 
@@ -165,7 +165,7 @@ The \code{plotPlague} function in the \code{epigrowthfit} package facilitates co
 \begin{center}
 <<plot_gp,fig.height=5>>=
 plotPlague(1665,show.acm=TRUE)
-@ 
+@
 \end{center}
 \caption{Plague deaths and all cause mortality during the Great Plague of London.}
 \label{F:plot.gp}
@@ -192,7 +192,7 @@ save("gpfit","gpfit.time","gpfit2",
 <<gpfit_load0,echo=FALSE>>=
 ## need this first to get timing info
 load(system.file("vignette_data","gpfit.RData",package="epigrowthfit"))
-@ 
+@
 
 
 At this point we would typically run:
@@ -215,15 +215,15 @@ Here, \code{gpfit} is an \code{epigrowthfit} object, for which there are \code{s
 \hypertarget{showgpfit}{}
 <<show_gpfit>>=
 show(gpfit)
-@ 
+@
 <<summary_gpfit>>=
 summary(gpfit)
-@ 
+@
 \begin{figure}[h]
 \begin{center}
 <<plot_gpfit,fig.height=5>>=
 plot(gpfit)
-@ 
+@
 \end{center}
 \caption{By default, the \code{plot} method for an \code{epigrowthfit} object produces this style of graph.  The default annotation includes the goodness of fit measure (\code{gof}), the index range of the fitted time window, the index of the specified \code{peak} time point, the name of the model used for fitting, and the observation error distribution type.  The dotted grey vertical lines identify the fitting window.}
 \label{F:gpfit}
@@ -259,7 +259,7 @@ for the fit (see \Methodslink\ in Earn \etal \cite{Earn+20}).  The time points a
 The \code{last} time point in the fitting window is determined by \code{peak}:
 <<lastpt,eval=FALSE>>=
 last <- if (peak < length(deaths)) peak+1 else peak
-@ 
+@
 \david{We should edit the help on \code{epigrowthfit} to clarify that it is \code{peak} if \code{peak} is the last point.}
 
 \david{It's actually a little weird that we don't let ourselves be completely flexible about the last point.  We do not allow ourselves to fit beyond one point past an estimated peak.  Why do we do that?}
@@ -278,12 +278,12 @@ plot(gpfit2)
 legend("bottomright",bty="n",legend=c("Explicit arguments:",
                                sprintf("first = %d",first),
                                sprintf("peak = %d",peak)," "))
-@ 
+@
 \end{center}
 \caption{An \code{epigrowthfit} fitting example in which the fitting window is explicitly specified.  (The default fitting window is used in \cref{F:gpfit}.)}
 \label{F:gpfit2}
 \end{figure}
-@ 
+@
 
 \clearpage
 \subsection{Other fitting details}

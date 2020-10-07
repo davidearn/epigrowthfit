@@ -1,4 +1,4 @@
-Package: epigrowthfit
+Package: epigrowthfitPNAS
 Title: Estimate epidemic growth rate parameters
 Version: 0.0.5.1
 Authors@R: c(person("Ben", "Bolker", email = "bbolker@mcmaster.ca", role = c("aut", "cre")),
