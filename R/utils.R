@@ -4,10 +4,10 @@
 ##' @docType methods
 ##' @export
 setMethod(
-  "R0", 
+  "R0",
   "numeric",
   definition = function(obj, generation.interval=generation.interval.plague()) {
-    if (length(obj) == 1) { 
+    if (length(obj) == 1) {
       t = seq(0, by=1, along.with=generation.interval)/365
       1 / sum(exp(-obj*t)*generation.interval)
     } else sapply(obj, R0)
@@ -16,7 +16,7 @@ setMethod(
 
 ##' @export
 setMethod(
-  "R0", 
+  "R0",
   "matrix",
   definition = function(obj, ...) {
       obj[] <- R0(c(obj))
@@ -32,12 +32,12 @@ setMethod(
 #' infectious period distribution
 #'
 #' @references
-#' \insertRef{Sven07}{epigrowthfit}
+#' \insertRef{Sven07}{epigrowthfitPNAS}
 #' @importFrom stats convolve
 #' @export
 generation.interval.plague <- function() {
-  convolve(epigrowthfit::latent.period$frequency,
-           rev(epigrowthfit::infectious.period$frequency),
+  convolve(epigrowthfitPNAS::latent.period$frequency,
+           rev(epigrowthfitPNAS::infectious.period$frequency),
            type="open")
 }
 
@@ -63,17 +63,17 @@ setMethod(
 #' final size formula (Kermack and McKendrick 1927,
 #' Ma and Earn 2006) is used.
 #' @references
-#' \insertRef{KermMcKe27}{epigrowthfit}
+#' \insertRef{KermMcKe27}{epigrowthfitPNAS}
 #'
-#' \insertRef{MaEarn06}{epigrowthfit}
-#' 
+#' \insertRef{MaEarn06}{epigrowthfitPNAS}
+#'
 #' @param R0 basic reproduction number
 #' @export
 #' @importFrom emdbook lambertW
 ## FIXME: why does finalsize(1.13796303983581) warn?
 ## (finalsize(c(1.135,1.140)) is fine ...
 finalsize <- function(R0) {
-    ## don't know 
+    ## don't know
     fs <- 1 + 1/R0 * suppressWarnings(lambertW(-R0*exp(-R0), maxiter=1000))
     return(fs)
 }
@@ -313,7 +313,7 @@ fancy.axis.Date <- function(df, col.year="black") {
 #'       the wrong impression will be given for the magnitude
 #'       of more highly aggregated epidemics.
 #' }
-#' 
+#'
 #' @param epidemic epidemic year(s); all available years by default
 #' @param data data frame containing epidemic time series
 #' @param name.data the column name of the variable to be plotted (\code{"plague.deaths"} by default)
@@ -349,7 +349,7 @@ fancy.axis.Date <- function(df, col.year="black") {
 #' @importFrom Hmisc minor.tick
 #' @export
 plotPlague <- function(epidemic=NULL, # FIX: should probably call this outbreak.year as in plague data frame
-                       data=epigrowthfit::plague,
+                       data=epigrowthfitPNAS::plague,
                        name.data="plague.deaths",
                        toprightlabel=NULL,
                        cex.toprightlabel=2,
@@ -535,15 +535,15 @@ aggregate_wills <- function(wills_individual,
 
     w1 <- get_date_count(wills_individual,
                          aggregation,start_weekday = start_weekday)
-    wills <- get_baseline(w1, epigrowthfit::epidemic_defs,
+    wills <- get_baseline(w1, epigrowthfitPNAS::epidemic_defs,
                           in_col="nwills",do_plot=FALSE,
                           include_all=include_all)
-  
+
     attr(wills,"type") <- "wills"
     attr(wills,"place") <- "London"
     attr(wills,"aggregation") <- aggname
     attr(wills,"source") <- attr(wills_individual, "source")
-  
+
     class(wills) <- c("epidemic.data","data.frame")
     return(wills)
 }
@@ -619,7 +619,7 @@ aggsum <- function(year,month,day,deaths,period="1 months",time=NULL,
 }
 
 ##' summarize nested lists of fits
-##' 
+##'
 ##' level=0 returns the summary from a single fit
 ##' level=1 returns the summary from a list of fits
 ##' level=2 returns the summary from a nested list of fits ...
@@ -680,11 +680,11 @@ summary.fitList <- function(object,level=1,keys=c("outbreak.year","source"),
                          stringsAsFactors=FALSE)
         names(dd)[1] <- .id
         return(dd)
-            
+
     }
     for (i in 2:maxLevel) {
         funList[[i]] <- function(x,type="sum") {
-            ## dplyr::bind_rows(lapply(x,funList[[i-1]],type=type),.id=keys[i-1])                        
+            ## dplyr::bind_rows(lapply(x,funList[[i-1]],type=type),.id=keys[i-1])
             L <- lapply(x,funList[[i-1]],type=type)
             return(bindrows(L,keys[i-1]))
         }

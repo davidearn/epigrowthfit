@@ -1,5 +1,5 @@
 #' Plague data
-#' 
+#'
 #' @name plague
 #' @aliases data deaths mortality
 #' @format A data frame with 1429 observations and 12 variables:
@@ -37,18 +37,18 @@
 #' \item Harbin, 1911--1912: Dietz (2009)
 #' }
 #' @references
-#' \insertRef{Cohn03}{epigrowthfit}
+#' \insertRef{Cohn03}{epigrowthfitPNAS}
 #'
-#' \insertRef{Crei65}{epigrowthfit}
+#' \insertRef{Crei65}{epigrowthfitPNAS}
 #'
-#' \insertRef{Diet09}{epigrowthfit}
+#' \insertRef{Diet09}{epigrowthfitPNAS}
 #' @examples
 #' ## Look at the first few records in the data frame
 #' head(plague)
 "plague"
 
 #' Estimated infectious period for pneumonic plague
-#' 
+#'
 #' @name infectious.period
 #' @format A data frame containing columns:
 #' \describe{
@@ -59,7 +59,7 @@
 #' @source
 #' These data come from Figure 1B of Gani and Leach (2004).
 #' @references
-#' \insertRef{GaniLeac04}{epigrowthfit}
+#' \insertRef{GaniLeac04}{epigrowthfitPNAS}
 "infectious.period"
 
 #' Estimated latent period for pneumonic plague
@@ -74,7 +74,7 @@
 #' @source
 #' These data come from Figure 1A of Gani and Leach (2004).
 #' @references
-#' \insertRef{GaniLeac04}{epigrowthfit}
+#' \insertRef{GaniLeac04}{epigrowthfitPNAS}
 "latent.period"
 
 #' Epidemic year definitions

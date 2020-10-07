@@ -2,7 +2,7 @@
 #'
 #' convert a julian date to a date, being careful about truncation (\code{\link{as.Date}} truncates values instead of rounding)
 #' @param tvec vector of julian dates (YYYY.fff)
-#' 
+#'
 #' @export
 safe_date <- function(tvec) {
     ##  as.Date() **TRUNCATES**, magnifying possible roundoff error:
@@ -13,7 +13,7 @@ safe_date <- function(tvec) {
 #' @description
 #' A class representing an epidemic growth fit obtained
 #' using the methodology of Ma \emph{et al.} (2014)
-#' 
+#'
 #' @slot model the trajectory model (an object of class \code{\link{Model}})
 #' @slot loglik the log-likelihood for the observation error distribution
 #' @slot time decimal dates at each point in the time series
@@ -25,8 +25,8 @@ safe_date <- function(tvec) {
 #' @slot mean predicted mean value?
 #'
 #' @references
-#' \insertRef{Ma+14}{epigrowthfit}
-#' @include models.R  
+#' \insertRef{Ma+14}{epigrowthfitPNAS}
+#' @include models.R
 #' @importFrom methods setClass
 #' @rdname epigrowthfit
 #' @name epigrowthfit
@@ -131,13 +131,13 @@ getInits <- function(time,deaths,
         }
         return(x)
     }
-        
+
     if (is.null(theta0) || !all(c("r","K","N") %in% names(theta0))) {
         l = floor((peak + peak_extend - first)/2)
         if (l == 1) l = 2
         dd = data.frame(time,deaths)[first:(first+l),]
         ## add a bit to allow zeros in window
-        guess = lm(log(deaths+0.1) ~ I(time-time[1]),dd) 
+        guess = lm(log(deaths+0.1) ~ I(time-time[1]),dd)
         p = coef(guess)
         r_est <- p[[2]]
         if (is.na(r_est)) stop("getInits: r_est is NA")
@@ -168,7 +168,7 @@ getInits <- function(time,deaths,
 #' epidemic growth fit
 #' @rdname epigrowthfit
 #' @name epigrowthfit
-#' 
+#'
 #' @description
 #' Fitting function for plague data. Uses either Richards (by default, or if an alpha parameter is supplied in \code{theta0}) or logistic model (if alpha not supplied, or if data set contains <= 4 points).
 #'
@@ -182,7 +182,7 @@ getInits <- function(time,deaths,
 ## DE: FIXME: "deaths" or "cases" or "reports" would be a better default name.
 #' \item{debugging}{to debug, use \code{trace("initialize",sig="epigrowthfit",browser)}}
 #' }
-#' 
+#'
 #' @param time time vector
 #' @param deaths death vector
 #' @param data data frame
@@ -198,7 +198,7 @@ getInits <- function(time,deaths,
 #' @param first_time start time for fitting window
 #' @param last_time end time for fitting window
 #' @param baseline A "baseline" refers to a cumulative incidence model that incorporates
-#' a \code{b*t} term.  If \code{baseline=TRUE} then (if a baseline is being used) 
+#' a \code{b*t} term.  If \code{baseline=TRUE} then (if a baseline is being used)
 #' its value (\code{b}) is fixed (i.e., it is a fixed offset), based on
 #' the computed mean values in the surrounding years, rather than estimated
 #' from the outbreak year data.  Whether or not a baseline is used is specified
@@ -304,9 +304,9 @@ setMethod(
 
     loglik <- get_loglik(distrib)
     .Object@loglik <- loglik
-    
-    ## we use either the Richards model or the logistic model, 
-    ## the model is selected by the presence of the alpha parameter 
+
+    ## we use either the Richards model or the logistic model,
+    ## the model is selected by the presence of the alpha parameter
     ## in the initial guess, representing the Richards model.
     ## or, if data set is too small (=4) we use the logistic model
     ## default to richards
@@ -406,10 +406,10 @@ setMethod(
             stopifnot(is.numeric(baseline))
             fixed <- list(b=log(unname(baseline)))
         }
-    
+
   	# fit
-  	res <- exp_fit(t=time[window]-time[first], 
-                       X=deaths[window], 
+  	res <- exp_fit(t=time[window]-time[first],
+                       X=deaths[window],
                        theta0=theta0,
                        fixed=fixed,
                        model=model,
@@ -450,7 +450,7 @@ setMethod(
 #' @importFrom methods setMethod
 #' @export
 #' @references
-#' \insertRef{WallLips07}{epigrowthfit}
+#' \insertRef{WallLips07}{epigrowthfitPNAS}
 setGeneric(
   "R0",
   def=function(obj, ...) {
@@ -466,7 +466,7 @@ setGeneric(
 #' @importFrom methods setMethod
 #' @export
 #' @references
-#' \insertRef{WallLips07}{epigrowthfit}
+#' \insertRef{WallLips07}{epigrowthfitPNAS}
 setMethod(
   "R0",
   "epigrowthfit",
@@ -593,7 +593,7 @@ setMethod(
 #' @export
 fitted.epigrowthfit <- function(object, CI=TRUE, ...) {
   ## FIXME: how is this different from predict method?
-  ## MVN sampling is obsolete/overlaps with predict?  
+  ## MVN sampling is obsolete/overlaps with predict?
   if (length(list(...))>0) warning("extra arguments ignored")
   time <- object@time[object@window]
   deaths <- object@mean(coef(object@mle2), time - time[1])
@@ -628,7 +628,7 @@ fitted.epigrowthfit <- function(object, CI=TRUE, ...) {
     } else CIs=matrix(NA, nrow=2, ncol=length(time))
   }
   d <- data.frame(time=time, deaths=deaths)
-  if (CI) cbind(d, lower = CIs[1,], upper = CIs[2,]) else d 
+  if (CI) cbind(d, lower = CIs[1,], upper = CIs[2,]) else d
 }
 
 #' returns the fitting window
@@ -882,7 +882,7 @@ setMethod("plot",
 #' @importFrom stats quantile
 #' @importFrom Hmisc wtd.quantile
 #' @export
-#' 
+#'
 setMethod("predict",
           signature(object="epigrowthfit"),
           definition = function(object,
