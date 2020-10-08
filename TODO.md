@@ -5,9 +5,11 @@
 
 ## Documentation
 * Data sources, especially for London Bills
+* Vignette details
 
 ## Code
-* Make plot methods nicer
+* Implement delta method
+* Add LaTeX option to plot methods
 * Add random effects
 * Add R back end
 * Tests
@@ -16,5 +18,5 @@
 ## Math
 * GI stuff ... issues with GI density at the integers,
   differences with JD's code
-* Reparametrization not consistent with Smirnova et al.
-  it seems
+* Reparametrization not completely consistent with
+  Smirnova et al., who eliminate K with a scaling

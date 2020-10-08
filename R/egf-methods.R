@@ -82,13 +82,13 @@
 #' `time[first+1]` and `time[last+1]` (adding one since `first` and `last`
 #' index `cases`, and `length(time) = length(cases)+1`).
 #'
-#' The incidence curve predicted by fitted parameter values `x$theta_hat`
+#' The incidence curve predicted by fitted parameter estimates `x$theta_hat`
 #' is plotted as a teal line on grid points
 #' `wgrid = seq(time[first+1], time[last+1], by = m)`,
 #' where `m = median(diff(time))` for interval incidence (ensuring that
 #' the curve has the correct scale; see below) and `m = 1` for cumulative
 #' incidence. The predicted curve is obtained with `predict(x, wgrid)`.
-#' The initial parameter estimates are printed at the bottom of the right
+#' The fitted parameter estimates are printed at the bottom of the right
 #' margin.
 #'
 #' Careful interpretation of observed interval incidence is required
@@ -133,7 +133,7 @@ print.egf <- function(x, ...) {
   cat(" date   [", as.character(x$init$date[f+1]), ", ", as.character(x$init$date[l+1]), "]\n", sep = "")
   cat("cases   ", sum(x$init$cases[f:l]), " of ", sum(x$init$cases), "\n", sep = "")
   cat("\n")
-  cat("Parameter estimates:\n")
+  cat("Fitted parameter estimates:\n")
   cat("\n")
   print(x$theta_hat)
   invisible(x)
@@ -291,8 +291,8 @@ plot.egf <- function(x, inc = "interval", tol = 0.025, ...) {
     axis(side = 2, at = yax_at, labels = yax_labels)
   }
   ## Fitting window
-  abline(v = x$time[c(f,l)+1], lty = 2, col = "#555555")
-  pstr1 <- paste0(names(x$theta0), " = ")
+  abline(v = x$init$time[c(f,l)+1], lty = 2, col = "#555555")
+  pstr1 <- paste0(names(x$theta_hat), " = ")
   pstr2 <- round(x$theta_hat, digits = 4)
   px <- par("usr")[2] + 0.02 * diff(par("usr")[1:2])
   px <- px + max(strwidth(pstr1, cex = 0.7))
@@ -327,7 +327,7 @@ plot.egf <- function(x, inc = "interval", tol = 0.025, ...) {
   ## Title
   cstr <- x$init$curve
   substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1))
-  title(main = paste(cstr, "model of", inc, "incidence\n(initial guess)"),
+  title(main = paste(cstr, "model of", inc, "incidence\n(fitted)"),
         cex.main = 0.9)
   par(op)
   invisible(NULL)

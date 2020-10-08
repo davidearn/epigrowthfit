@@ -109,13 +109,13 @@ The left and right endpoints of the fitting window, specified by indices
 \code{time[first+1]} and \code{time[last+1]} (adding one since \code{first} and \code{last}
 index \code{cases}, and \code{length(time) = length(cases)+1}).
 
-The incidence curve predicted by fitted parameter values \code{x$theta_hat}
+The incidence curve predicted by fitted parameter estimates \code{x$theta_hat}
 is plotted as a teal line on grid points
 \code{wgrid = seq(time[first+1], time[last+1], by = m)},
 where \code{m = median(diff(time))} for interval incidence (ensuring that
 the curve has the correct scale; see below) and \code{m = 1} for cumulative
 incidence. The predicted curve is obtained with \code{predict(x, wgrid)}.
-The initial parameter estimates are printed at the bottom of the right
+The fitted parameter estimates are printed at the bottom of the right
 margin.
 
 Careful interpretation of observed interval incidence is required
