@@ -437,7 +437,7 @@ where, as with the logistic model, $\thalf$ satisfies
 $x(\thalf) = \frac{K}{2}$. The reparametrized Richards model
 requires fitting $r$, $K$, $\thalf$, and $p$ to observed data.
 
-\section{Models of observed interval incidence}
+\subsection{Models of observed interval incidence}
 
 Let $c(t_1,t_2) = x(t_2) - x(t_1)$ be the expected number of
 cases observed between times $t_1$ and $t_2 \geq t_1$, \ie
@@ -493,9 +493,36 @@ model parameters.
 \section{Example 1: Fitting epidemic growth models}
 \label{sec:example1}
 
-<<example1>>=
+\pkg{epigrowthfit} comes with a number of infectious disease
+data sets. One of these is \code{canadacovid}, which lists
+daily confirmations of COVID-19 in Canadian provinces and
+territories from February 14, 2020 to June 21, 2020. You
+can load this data set into your working environment with
+\fun{data}.
+
+<<example1-1>>=
 data(canadacovid)
-ontario <- na.omit(subset(canadacovid, province == "ON"))
+head(canadacovid, 10) # print the first 6 rows
+levels(canadacovid$province)
+@
+
+Let's consider just the data from Ontario.
+
+<<example1-2>>=
+ontario <- subset(canadacovid, province == "ON")
+sum(is.na(ontario$new_confirmations))
+@
+
+\pkg{epigrowthfit} does not tolerate missing values
+in the incidence. We can remove rows with \code{`1NA`1}
+using \fun{na.omit}.
+
+<<example1-3>>=
+ontario <- na.omit(ontario)
+sum(is.na(ontario$new_confirmations))
+@
+
+<<example1-4, fig.height=5>>=
 init <- egf_init(
   date = ontario$date,
   cases = ontario$new_confirmations[-1],
