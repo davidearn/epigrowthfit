@@ -1,9 +1,12 @@
 # epigrowthfit
 
 **epigrowthfit** is an R package for estimating parameters associated with
-initial epidemic growth. Methods are adapted from Ma *et al*. (2014):
+initial epidemic growth. Methods are adapted from Ma *et al*. (2014)
+and Earn *et al* (2020):
 
-[Ma J, Dushoff J, Bolker BM, Earn DJD (2014). “Estimating initial epidemic growth rates.” Bull. Math. Biol., 76(1), 245-260.](https://davidearn.mcmaster.ca/publications/MaEtAl2014)
+[Ma J, Dushoff J, Bolker BM, Earn DJD (2014). “Estimating initial epidemic growth rates.” *Bulletin of Mathematical Biology*, **76**, 245-260.](https://davidearn.mcmaster.ca/publications/MaEtAl2014)
+
+[Earn DJD, Ma J, Poinar HN, Dushoff J, Bolker BM (2020). “Acceleration of plague outbreaks in the second pandemic.” *Proceedings of the National Academy of Sciences USA*, in press.]
 
 ## Installation
 

@@ -20,7 +20,8 @@ egf_init(
 )
 }
 \arguments{
-\item{date}{A Date vector listing increasing time points.}
+\item{date}{A Date vector listing increasing time points.
+Should start at or before the date of the first observed case.}
 
 \item{cases}{A numeric vector with length \code{length(date)-1}.
 \code{cases[i]} is the number of cases observed between
@@ -40,16 +41,16 @@ you want to model growth above a baseline mortality rate \mjseqn{b}.}
 observation model for interval incidence.}
 
 \item{theta0}{A named numeric vector specifying positive
-initial estimates of model parameters:
+initial estimates of relevant model parameters:
 
 \describe{
 \item{\code{r}}{\mjseqn{\lbrace\,r\,\rbrace}
 Initial (exponential) growth rate expressed per day.
 }
 \item{\code{x0}}{\mjseqn{\lbrace\,x_0\,\rbrace}
-Expected cumulative incidence on \code{date[first]} (see \code{first} below).
-This is the expectation of the number of cases observed
-up to \code{date[first]}. Used only if \code{curve = "exponential"}.
+Expected cumulative incidence on \code{date[1]}. This is the
+expectation of the number of cases observed up to \code{date[1]}.
+Used only if \code{curve = "exponential"}.
 }
 \item{\code{K}}{\mjseqn{\lbrace\,K\,\rbrace}
 Expected epidemic final size. This is the expectation of the
@@ -128,24 +129,33 @@ and \code{nbdisp} relevant to \code{curve}, \code{include_baseline},
 and \code{distr}. Values from the argument of the same
 name are retained if they are positive and discarded
 otherwise. Parameters not specified in the argument
-are assigned their default value below:\preformatted{\\begin\{describe\}\{
-  \\item\{`r`, `x0`\}\{`beta1` and `exp(beta0)`, respectively,
-    where `beta1` and `beta0` are the slope and intercept
-    of a linear fit to `log(cumsum(cases) + 0.1)` within
-    the first half of the fitting window. Here, "intercept"
-    means the value of the fit at `time[first]`.
-  \}
-  \\item\{`K`\}\{`sum(cases)`\}
-  \\item\{`thalf`\}\{`time[peak+1]`\}
-  \\item\{`p`\}\{1\}
-  \\item\{`b`\}\{1\}
-  \\item\{`nbdisp`\}\{1\}
-\}
+are assigned their default value:
+\describe{
+\item{\code{r}, \code{x0}}{\code{beta1} and \code{exp(beta0)}, respectively,
+where \code{beta1} and \code{beta0} are the slope and intercept
+of a linear fit to \code{log(cumsum(cases) + 0.1) ~ time[-1]}
+within the first half of the fitting window.
 }
-
+\item{\code{K}}{\code{sum(cases)}}
+\item{\code{thalf}}{\code{time[peak+1]}}
+\item{\code{p}}{1}
+\item{\code{b}}{1}
+\item{\code{nbdisp}}{1}
 }
-\item{\code{log_theta0}}{A named numeric vector, identical to
+}
+\item{\code{log_theta0}}{Log-transformed \code{theta0}. Identical to
 \code{log(theta0)} with \code{"log_"} prepended to the names.
+}
+\item{\code{cum_inc}}{A closure with numeric arguments \code{time}
+and \code{theta} (default is \code{theta0}), evaluating expected
+cumulative incidence at \code{time} using parameter values
+\code{theta}.
+}
+\item{\code{int_inc}}{A closure with numeric arguments \code{time}
+and \code{theta} (default is \code{theta0}), evaluating expected
+interval incidence given \code{time} as interval endpoints.
+Returns \code{diff(cum_inc(time, theta))}, hence the value
+has length \code{length(time)-1}.
 }
 \item{\code{call}}{The call to \code{egf_init()}, making the output
 reproducible with \code{eval(call)}.
@@ -157,16 +167,16 @@ Given an incidence or mortality time series, constructs an
 "egf_init" object specifying a fitting window and initial
 estimates of model parameters. Pains are taken to define a
 window and estimates that are reasonable in the absence of
-any user input. For model details, see \code{\link[=egf]{egf()}}.
+any user input.
 }
 \details{
 \subsection{1. Phenomenological models}{
 
-Let \mjseqn{x(t)} be the expected number of cases observed
-up to time \mjseqn{t} (i.e., expected cumulative incidence),
+Let \mjseqn{x(t)} be the expected number of cases observed up to
+\mjseqn{t} days since \code{date[1]} (i.e., expected cumulative incidence),
 and let \mjseqn{x_0 = x(0) > 0}. Ignoring any baseline growth
-(see Details 2), \mjseqn{x(t)} is modeled as an exponential,
-logistic, or Richards curve.
+(see Details 2), \mjseqn{x(t)} is modeled as an exponential, logistic,
+or Richards curve.
 \subsection{Exponential model}{
 
 If \mjseqn{x(t)} follows
@@ -210,15 +220,14 @@ The logistic model can be reparametrized as
 where \mjseqn{t_\text{half}} is the time at which
 cumulative incidence attains half its final size,
 satisfying \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
-
 The reparametrized logistic model requires fitting
 \mjseqn{r}, \mjseqn{K}, and \mjseqn{t_\text{half}}
 to observed data.
 }
 
-\subsection{Richards}{
+\subsection{Richards model}{
 
-If \mjsdeqn{x(t)} follows
+If \mjseqn{x(t)} follows
 
 \mjsdeqn{x'(t) = r x(t) \bigg(1 - \bigg(\frac{x(t)}{K}\bigg)^p\bigg)\,,\qquad r, K, p > 0\,,}
 
@@ -229,11 +238,10 @@ and if \mjseqn{x_0 \in (0,K)}, then \mjseqn{x(t)} grows as
 and increases to \mjseqn{K} as \mjseqn{t \to \infty}.
 The Richards model can be reparametrized as
 
-\mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + (2^p - 1) * e^{-r p (t - t_\text{half}}) \big\rbrack^{1/p}}\,,}
+\mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + (2^p - 1) e^{-r p (t - t_\text{half}}) \big\rbrack^{1/p}}\,,}
 
 where, as with the logistic model, \mjseqn{t_\text{half}}
 satisfies \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
-
 The reparametrized logistic model requires fitting
 \mjseqn{r}, \mjseqn{K}, \mjseqn{t_\text{half}}, and \mjseqn{p}
 to observed data.
@@ -322,7 +330,13 @@ x <- egf_init(
   distr = "nbinom"
 )
 print(x)
-plot(x)
+coef(x, log = FALSE)
+coef(x, log = TRUE)
+time_obs <- as.numeric(ontario$date - ontario$date[1])
+time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
+predict(x, time = time_pred)
+simulate(x, nsim = 4, time = time_obs)
+plot(x, inc = "interval")
 plot(x, inc = "cumulative")
 
 }
@@ -332,5 +346,5 @@ plot(x, inc = "cumulative")
 \insertRef{Earn+20}{epigrowthfit}
 }
 \seealso{
-\link[=egf_init-methods]{methods for class "egf_init"}, \code{\link[=egf]{egf()}}
+\code{\link[=egf]{egf()}}, \link[=egf_init-methods]{methods for class "egf_init"}
 }

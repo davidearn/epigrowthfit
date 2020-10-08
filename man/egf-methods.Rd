@@ -2,42 +2,132 @@
 % Please edit documentation in R/egf-methods.R
 \name{egf-methods}
 \alias{egf-methods}
-\alias{plot.egf}
+\alias{print.egf}
 \alias{coef.egf}
+\alias{predict.egf}
+\alias{simulate.egf}
+\alias{plot.egf}
 \title{Methods for class "egf"}
 \usage{
-\method{plot}{egf}(x, inc = "interval", tol = 0.025, ...)
+\method{print}{egf}(x, ...)
 
 \method{coef}{egf}(object, log = FALSE, ...)
+
+\method{predict}{egf}(object, time, ...)
+
+\method{simulate}{egf}(object, nsim = 1, seed = NULL, time, ...)
+
+\method{plot}{egf}(x, inc = "interval", tol = 0.025, ...)
 }
 \arguments{
 \item{x, object}{An "egf" object.}
 
-\item{inc}{One of \code{"interval"} and \code{"cumulative"},
-indicating whether to plot \code{x$cases} (interval incidence)
-or \code{cumsum(x$cases)} (cumulative incidence).}
-
-\item{tol}{A non-negative number used only if
-\code{inc = "interval"}. \code{x$ini$cases[i]} is plotted
-in blue if \code{diff(x$init$time)[i] < (1-tol)*m},
-in red if \code{diff(x$init$time)[i] > (1+tol)*m},
-and in grey otherwise, where \code{m = median(diff(x$init$time))}.
-Assign \code{Inf} to ensure that everything is grey.}
-
 \item{...}{Unused optional arguments.}
 
-\item{log}{A logical scalar. If \code{TRUE}, log-transformed
-parameter values are extracted.}
+\item{log}{A logical scalar. If \code{TRUE}, then parameter values are
+log-transformed.}
+
+\item{time}{A numeric vector listing (increasing) time points in days
+since \code{object$init$date[1]}. Missing values are not tolerated. Must
+have length 2 or greater.}
+
+\item{nsim}{A positive integer specifying a number of simulations.}
+
+\item{seed}{An integer specifying a seed for RNG, otherwise \code{NULL}.}
+
+\item{inc}{One of \code{"interval"} and \code{"cumulative"},
+indicating a type of incidence to plot.}
+
+\item{tol}{A non-negative number used only if \code{inc = "interval"}.
+\code{x$init$cases[i]} is plotted
+in light red if \code{diff(x$init$time)[i] < (1-tol)*m},
+in dark red if \code{diff(x$init$time)[i] > (1+tol)*m}, and
+in grey otherwise, where \code{m = median(diff(x$init$time))}.
+Assign \code{Inf} to ensure that everything is grey.}
+}
+\value{
+The \code{print} method returns \code{x} invisibly.
+
+The \code{coef} method returns \code{object$theta_hat} if \code{log = FALSE}
+and \code{object$log_theta_hat} if \code{log = TRUE}.
+
+The \code{predict} method returns a list with numeric elements:
+
+\describe{
+\item{\code{time}}{Matches argument.}
+\item{\code{cum_inc}}{Expected cumulative incidence at time points \code{time},
+conditional on parameter values \code{object$theta_hat}.
+Equal to \code{object$cum_inc(time)}.
+}
+\item{\code{int_inc}}{Expected interval incidence given \code{time} as interval
+endpoints, conditional on parameter values \code{object$theta_hat}.
+Equal to \code{object$int_inc(time)}, which evaluates to \code{diff(cum_inc)}.
+}
+}
+
+The \code{simulate} method returns a list with numeric elements:
+
+\describe{
+\item{\code{time}}{Matches argument.}
+\item{\code{cum_inc}}{A matrix with \code{length(time)} rows and \code{nsim} columns,
+with each column a cumulative incidence curve implied by a simulated
+interval incidence curve (see \code{int_inc} below). Column \code{i} is computed
+as \code{x0 + cumsum(c(0, int_inc[, i]))}
+where \code{x0 = object$cum_inc(time[1])} is the predicted value of
+cumulative incidence at \code{time[1]}, conditional on parameter values
+\code{object$theta_hat}.
+}
+\item{\code{int_inc}}{A matrix with \code{length(time)-1} rows and \code{nsim} columns,
+with each column a simulated interval incidence curve. Simulations are
+performed by adding observation error to \code{predict(object, time)$int_inc},
+using the observation model specified by \code{object$init$distr}.
+}
+}
+
+The \code{plot} method returns \code{NULL} invisibly.
 }
 \description{
-Methods for plotting and extracting fitted parameter
-values from "egf" objects returned by \code{\link[=egf]{egf()}}.
+Methods for "egf" objects returned by \code{\link[=egf]{egf()}}.
 }
 \details{
-If \code{x$init$time} is not equally spaced, then \code{inc = "interval"}
-should be used with caution. \code{x$init$cases[i]} is the number
-of cases observed between \code{x$init$time[i]} and \code{x$init$time[i+1]},
-hence \code{x$init$cases} roughly scales with \code{diff(x$init$time)}.
-Argument \code{tol} can be used with \code{inc = "interval"} in order to
-highlight outliers in \code{diff(x$init$time)}.
+\subsection{Plot elements}{
+
+The bottom axis measures the number of days since \code{x$init$date[1]}.
+The left axis measures interval or cumulative incidence (depending
+on \code{inc}) on a log scale. Zeros are plotted as if they were 10^-0.2,
+and are therefore distinguished from nonzero counts, which are always
+at least 1.
+
+Observed data, specified by \code{x$init$time} and either \code{x$init$cases}
+or \code{cumsum(x$init$cases)}, are plotted as filled points. \code{cases[i]}
+gives the number of cases observed between \code{time[i]} and \code{time[i+1]},
+and \code{cumsum(cases)[i]} the number observed between \code{time[1]} and
+\code{time[i+1]}. Both are plotted at \code{time[i+1]}.
+
+The left and right endpoints of the fitting window, specified by indices
+\code{x$init$first} and \code{x$init$last}, are displayed as vertical lines at
+\code{time[first+1]} and \code{time[last+1]} (adding one since \code{first} and \code{last}
+index \code{cases}, and \code{length(time) = length(cases)+1}).
+
+The incidence curve predicted by fitted parameter values \code{x$theta_hat}
+is plotted as a teal line on grid points
+\code{wgrid = seq(time[first+1], time[last+1], by = m)},
+where \code{m = median(diff(time))} for interval incidence (ensuring that
+the curve has the correct scale; see below) and \code{m = 1} for cumulative
+incidence. The predicted curve is obtained with \code{predict(x, wgrid)}.
+The initial parameter estimates are printed at the bottom of the right
+margin.
+
+Careful interpretation of observed interval incidence is required
+if the plotted time series is not equally spaced, as \code{cases} roughly
+scales with \code{diff(time)}. That is, certain observations may vary from
+the predicted curve not due to chance, but because they represent a
+count over fewer or more days than the typical observation interval,
+namely \code{median(diff(time))}. Observations for which \code{diff(time)}
+differs sufficently from \code{median(diff(time))} are highlighted according
+to argument \code{tol}.
+}
+}
+\seealso{
+\code{\link[=egf]{egf()}}
 }

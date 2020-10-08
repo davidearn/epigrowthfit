@@ -44,12 +44,14 @@ at \code{x}.
 }
 \item{\code{cum_inc}}{A closure with numeric arguments \code{time}
 and \code{theta} (default is \code{theta_hat}), evaluating expected
-cumulative incidence at \code{times} (days since \code{date[1]},
-as supplied to \code{\link[=egf_init]{egf_init()}}) using parameter values \code{theta}.
+cumulative incidence at \code{time} using parameter values
+\code{theta}.
 }
-\item{\code{int_inc}}{A closure like \code{cum_inc}, but evaluating
-expected interval incidence. Returns \code{diff(cum_inc(time, theta))},
-hence the length of the value is \code{length(time)-1}.
+\item{\code{int_inc}}{A closure with numeric arguments \code{time}
+and \code{theta} (default is \code{theta_hat}), evaluating expected
+interval incidence given \code{time} as interval endpoints.
+Returns \code{diff(cum_inc(time, theta))}, hence the value
+has length \code{length(time)-1}.
 }
 \item{\code{init}}{Matches argument.}
 \item{\code{madf_out}}{The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.}
@@ -80,12 +82,22 @@ init <- egf_init(
   distr = "nbinom"
 )
 x <- egf(init)
-plot(x)
-plot(x, inc = "cumulative")
-coef(x)
+print(x)
+coef(x, log = FALSE)
 coef(x, log = TRUE)
+time_obs <- as.numeric(ontario$date - ontario$date[1])
+time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
+predict(x, time = time_pred)
+simulate(x, nsim = 4, time = time_obs)
+plot(x, inc = "interval")
+plot(x, inc = "cumulative")
 
 }
 \references{
 \insertRef{Ma+14}{epigrowthfit}
+
+\insertRef{Earn+20}{epigrowthfit}
+}
+\seealso{
+\code{\link[=egf_init]{egf_init()}}, \link[=egf-methods]{methods for class "egf"}
 }

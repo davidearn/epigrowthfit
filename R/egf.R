@@ -43,12 +43,14 @@
 #'   }
 #'   \item{`cum_inc`}{A closure with numeric arguments `time`
 #'     and `theta` (default is `theta_hat`), evaluating expected
-#'     cumulative incidence at `times` (days since `date[1]`,
-#'     as supplied to [egf_init()]) using parameter values `theta`.
+#'     cumulative incidence at `time` using parameter values
+#'     `theta`.
 #'   }
-#'   \item{`int_inc`}{A closure like `cum_inc`, but evaluating
-#'     expected interval incidence. Returns `diff(cum_inc(time, theta))`,
-#'     hence the length of the value is `length(time)-1`.
+#'   \item{`int_inc`}{A closure with numeric arguments `time`
+#'     and `theta` (default is `theta_hat`), evaluating expected
+#'     interval incidence given `time` as interval endpoints.
+#'     Returns `diff(cum_inc(time, theta))`, hence the value
+#'     has length `length(time)-1`.
 #'   }
 #'   \item{`init`}{Matches argument.}
 #'   \item{`madf_out`}{The list output of [TMB::MakeADFun()].}
@@ -71,13 +73,22 @@
 #'   distr = "nbinom"
 #' )
 #' x <- egf(init)
-#' plot(x)
-#' plot(x, inc = "cumulative")
-#' coef(x)
+#' print(x)
+#' coef(x, log = FALSE)
 #' coef(x, log = TRUE)
+#' time_obs <- as.numeric(ontario$date - ontario$date[1])
+#' time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
+#' predict(x, time = time_pred)
+#' simulate(x, nsim = 4, time = time_obs)
+#' plot(x, inc = "interval")
+#' plot(x, inc = "cumulative")
 #'
 #' @references
 #' \insertRef{Ma+14}{epigrowthfit}
+#'
+#' \insertRef{Earn+20}{epigrowthfit}
+#'
+#' @seealso [egf_init()], [methods for class "egf"][egf-methods]
 #'
 #' @export
 #' @import stats
@@ -176,20 +187,20 @@ egf <- function(init, method = "nlminb", ...) {
   ## Define convenience functions for evaluating
   ## cumulative and interval incidence
   cum_inc <- function(time, theta = theta_hat) {
-    with(as.list(theta_hat), {
-      x <- switch(init$curve,
-        exponential = x0 * exp(r * time),
-        logistic = K / (1 + exp(-r * (time - thalf))),
-        richards = K / (1 + (2^p - 1) * exp(-r * p * (time - thalf)))^(1 / p)
-      )
-      if (init$include_baseline) {
-        x <- b * time + x
-      }
-      x
-    })
+    x <- eval_inc(time,
+      curve = init$curve,
+      include_baseline = init$include_baseline,
+      theta = theta
+    )
+    x$cum_inc
   }
   int_inc <- function(time, theta = theta_hat) {
-    diff(cum_inc(time, theta))
+    x <- eval_inc(time,
+      curve = init$curve,
+      include_baseline = init$include_baseline,
+      theta = theta
+    )
+    x$int_inc
   }
 
 

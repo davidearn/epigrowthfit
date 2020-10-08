@@ -6,9 +6,10 @@
 #' "egf_init" object specifying a fitting window and initial
 #' estimates of model parameters. Pains are taken to define a
 #' window and estimates that are reasonable in the absence of
-#' any user input. For model details, see [egf()].
+#' any user input.
 #'
 #' @param date A Date vector listing increasing time points.
+#'   Should start at or before the date of the first observed case.
 #' @param cases A numeric vector with length `length(date)-1`.
 #'   `cases[i]` is the number of cases observed between
 #'   `date[i]` and `date[i+1]`. Here, "cases" can mean
@@ -23,16 +24,16 @@
 #' @param distr One of `"pois"` and `"nbinom"`, indicating an
 #'   observation model for interval incidence.
 #' @param theta0 A named numeric vector specifying positive
-#'   initial estimates of model parameters:
+#'   initial estimates of relevant model parameters:
 #'
 #'   \describe{
 #'     \item{`r`}{\mjseqn{\lbrace\,r\,\rbrace}
 #'       Initial (exponential) growth rate expressed per day.
 #'     }
 #'     \item{`x0`}{\mjseqn{\lbrace\,x_0\,\rbrace}
-#'       Expected cumulative incidence on `date[first]` (see `first` below).
-#'       This is the expectation of the number of cases observed
-#'       up to `date[first]`. Used only if `curve = "exponential"`.
+#'       Expected cumulative incidence on `date[1]`. This is the
+#'       expectation of the number of cases observed up to `date[1]`.
+#'       Used only if `curve = "exponential"`.
 #'     }
 #'     \item{`K`}{\mjseqn{\lbrace\,K\,\rbrace}
 #'       Expected epidemic final size. This is the expectation of the
@@ -106,14 +107,12 @@
 #'     and `distr`. Values from the argument of the same
 #'     name are retained if they are positive and discarded
 #'     otherwise. Parameters not specified in the argument
-#'     are assigned their default value below:
-#'
-#'     \begin{describe}{
+#'     are assigned their default value:
+#'     \describe{
 #'       \item{`r`, `x0`}{`beta1` and `exp(beta0)`, respectively,
 #'         where `beta1` and `beta0` are the slope and intercept
-#'         of a linear fit to `log(cumsum(cases) + 0.1)` within
-#'         the first half of the fitting window. Here, "intercept"
-#'         means the value of the fit at `time[first]`.
+#'         of a linear fit to `log(cumsum(cases) + 0.1) ~ time[-1]`
+#'         within the first half of the fitting window.
 #'       }
 #'       \item{`K`}{`sum(cases)`}
 #'       \item{`thalf`}{`time[peak+1]`}
@@ -121,10 +120,20 @@
 #'       \item{`b`}{1}
 #'       \item{`nbdisp`}{1}
 #'     }
-#'
 #'   }
-#'   \item{`log_theta0`}{A named numeric vector, identical to
+#'   \item{`log_theta0`}{Log-transformed `theta0`. Identical to
 #'     `log(theta0)` with `"log_"` prepended to the names.
+#'   }
+#'   \item{`cum_inc`}{A closure with numeric arguments `time`
+#'     and `theta` (default is `theta0`), evaluating expected
+#'     cumulative incidence at `time` using parameter values
+#'     `theta`.
+#'   }
+#'   \item{`int_inc`}{A closure with numeric arguments `time`
+#'     and `theta` (default is `theta0`), evaluating expected
+#'     interval incidence given `time` as interval endpoints.
+#'     Returns `diff(cum_inc(time, theta))`, hence the value
+#'     has length `length(time)-1`.
 #'   }
 #'   \item{`call`}{The call to `egf_init()`, making the output
 #'     reproducible with `eval(call)`.
@@ -133,13 +142,15 @@
 #'
 #' @details
 #' ## 1. Phenomenological models
-#' Let \mjseqn{x(t)} be the expected number of cases observed
-#' up to time \mjseqn{t} (i.e., expected cumulative incidence),
+#'
+#' Let \mjseqn{x(t)} be the expected number of cases observed up to
+#' \mjseqn{t} days since `date[1]` (i.e., expected cumulative incidence),
 #' and let \mjseqn{x_0 = x(0) > 0}. Ignoring any baseline growth
-#' (see Details 2), \mjseqn{x(t)} is modeled as an exponential,
-#' logistic, or Richards curve.
+#' (see Details 2), \mjseqn{x(t)} is modeled as an exponential, logistic,
+#' or Richards curve.
 #'
 #' ### Exponential model
+#'
 #' If \mjseqn{x(t)} follows
 #'
 #' \mjsdeqn{x'(t) = r x(t)\,,\qquad r > 0\,,}
@@ -163,6 +174,7 @@
 #' Richards models, at negligible cost.
 #'
 #' ### Logistic model
+#'
 #' If \mjseqn{x(t)} follows
 #'
 #' \mjsdeqn{x'(t) = r x(t) \bigg(1 - \frac{x(t)}{K}\bigg)\,,\qquad r, K > 0\,,}
@@ -179,13 +191,13 @@
 #' where \mjseqn{t_\text{half}} is the time at which
 #' cumulative incidence attains half its final size,
 #' satisfying \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
-#'
 #' The reparametrized logistic model requires fitting
 #' \mjseqn{r}, \mjseqn{K}, and \mjseqn{t_\text{half}}
 #' to observed data.
 #'
-#' ### Richards
-#' If \mjsdeqn{x(t)} follows
+#' ### Richards model
+#'
+#' If \mjseqn{x(t)} follows
 #'
 #' \mjsdeqn{x'(t) = r x(t) \bigg(1 - \bigg(\frac{x(t)}{K}\bigg)^p\bigg)\,,\qquad r, K, p > 0\,,}
 #'
@@ -196,16 +208,16 @@
 #' and increases to \mjseqn{K} as \mjseqn{t \to \infty}.
 #' The Richards model can be reparametrized as
 #'
-#' \mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + (2^p - 1) * e^{-r p (t - t_\text{half}}) \big\rbrack^{1/p}}\,,}
+#' \mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + (2^p - 1) e^{-r p (t - t_\text{half}}) \big\rbrack^{1/p}}\,,}
 #'
 #' where, as with the logistic model, \mjseqn{t_\text{half}}
 #' satisfies \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
-#'
 #' The reparametrized logistic model requires fitting
 #' \mjseqn{r}, \mjseqn{K}, \mjseqn{t_\text{half}}, and \mjseqn{p}
 #' to observed data.
 #'
 #' ## 2. Baseline growth
+#'
 #' For many historical epidemics, the observed data are counts
 #' deaths due to all causes, not only the disease of interest.
 #' Growth in disease mortality over time can still be understood
@@ -224,6 +236,7 @@
 #' fit in addition to the other model parameters.
 #'
 #' ## 3. Observation model
+#'
 #' Let \mjseqn{Y(t_1,t_2)} be the number of cases observed between times
 #' \mjseqn{t_1} and \mjseqn{t_2 > t_1} (i.e., observed interval incidence).
 #' \mjseqn{Y(t_1,t_2)} is modeled as either a Poisson-distributed random
@@ -281,7 +294,13 @@
 #'   distr = "nbinom"
 #' )
 #' print(x)
-#' plot(x)
+#' coef(x, log = FALSE)
+#' coef(x, log = TRUE)
+#' time_obs <- as.numeric(ontario$date - ontario$date[1])
+#' time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
+#' predict(x, time = time_pred)
+#' simulate(x, nsim = 4, time = time_obs)
+#' plot(x, inc = "interval")
 #' plot(x, inc = "cumulative")
 #'
 #' @references
@@ -289,7 +308,7 @@
 #'
 #' \insertRef{Earn+20}{epigrowthfit}
 #'
-#' @seealso [methods for class "egf_init"][egf_init-methods], [egf()]
+#' @seealso [egf()], [methods for class "egf_init"][egf_init-methods]
 #' @export
 #' @import stats
 egf_init <- function(date,
@@ -303,7 +322,7 @@ egf_init <- function(date,
                      first = NULL,
                      first_level = NULL,
                      skip_zero = TRUE) {
-  ### CHECKS ON INPUT -----------------------------------------------
+  ### CHECKS ON INPUT ################################################
 
   if (!is.character(curve) || length(curve) != 1 ||
         !curve %in% c("exponential", "logistic", "richards")) {
@@ -366,23 +385,27 @@ egf_init <- function(date,
     warning("Setting `skip_zero = TRUE`.", call. = FALSE)
     skip_zero <- TRUE
   }
-  if (!is.null(theta0) && !is.numeric(theta0)) {
-    warning("Setting `theta0 = NULL`.", call. = FALSE)
+  if (!is.null(theta0) && (!is.numeric(theta0) || is.null(names(theta0)))) {
+    warning("`theta0` is not a named numeric vector, setting `theta0 = NULL`.",
+            call. = FALSE)
     theta0 <- NULL
   }
 
 
-  ### FITTING WINDOW ################################################
+  ### FITTING WINDOW #################################################
 
-  if (max_first == 1) {
-    first <- 1
-  }
   if (is.null(first)) {
+    message("Starting with `first = NULL`.")
+    if (max_first == 1) {
+      first <- 1
+      message("Setting `first = ", first, "`.")
+    }
     if (is.null(first_level)) {
       ## Set `first` equal to the index of the minimum of
       ## `cases[1:max_first]`. If there is more than one
       ## such index, then choose the greatest.
       first <- max_first - which.min(cases[max_first:1]) + 1
+      message("Setting `first = ", first, "`.")
     } else {
       ## Set `first` equal to one plus the index of the observation in
       ## `cases[1:(max_first-1)]` less than `first_level * max(cases)`.
@@ -390,6 +413,7 @@ egf_init <- function(date,
       ## If there is no such index, then set `first` equal to 1.
       is_below_level <- cases[1:(max_first-1)] < first_level * max(cases)
       first <- if (any(is_below_level)) 1 + max(which(is_below_level)) else 1
+      message("Setting `first = ", first, "`.")
     }
   }
 
@@ -399,18 +423,18 @@ egf_init <- function(date,
     if (any(is_nz)) {
       new_first <- first + min(which(is_nz))
       message("`cases[first] = 0` with `first = ", first,
-              "`, setting `first <- ", new_first, "`.")
+              "`, setting `first = ", new_first, "`.")
       first <- new_first
     } else {
       warning("`cases[i] = 0` for all `i` in `first:max_first`, ",
-              "setting `first <- max_first`.",
+              "setting `first = max_first`.",
               call. = FALSE)
       first <- max_first
     }
   }
 
 
-  ### PARAMETER ESTIMATES ###########################################
+  ### PARAMETER ESTIMATES ############################################
 
   ## Parameters that `theta0` must specify
   par <- switch(curve,
@@ -426,7 +450,7 @@ egf_init <- function(date,
   }
 
   ## Initialize `theta0` if necessary
-  if (is.null(theta0) || is.null(names(theta0))) {
+  if (is.null(theta0)) {
     theta0 <- numeric(0)
   }
 
@@ -445,9 +469,9 @@ egf_init <- function(date,
   ## in the first half of the fitting window
   m <- max(2, floor((last - first + 1) / 2))
   time <- as.numeric(date - date[1])
-  lm_data <- data.frame(time = time[-1] - time[first], cases)
+  lm_data <- data.frame(x = time[-1], y = cumsum(cases))
   lm_data <- lm_data[first:(first+m), ]
-  lm_coef <- coef(lm(log(cumsum(cases) + 0.1) ~ time, data = lm_data))
+  lm_coef <- coef(lm(log(y + 0.1) ~ x, data = lm_data))
 
   ## Default values of all parameters
   val <- c(
@@ -465,6 +489,28 @@ egf_init <- function(date,
   theta0 <- theta0[par]
 
 
+  ### CUMULATIVE AND INTERVAL INCIDENCE ##############################
+
+  ## Define convenience functions for evaluating
+  ## cumulative and interval incidence
+  cum_inc <- function(time, theta = theta0) {
+    x <- eval_inc(time,
+      curve = curve,
+      include_baseline = include_baseline,
+      theta = theta
+    )
+    x$cum_inc
+  }
+  int_inc <- function(time, theta = theta0) {
+    x <- eval_inc(time,
+      curve = curve,
+      include_baseline = include_baseline,
+      theta = theta
+    )
+    x$int_inc
+  }
+
+
   out <- list(
     date   = date,
     time   = time,
@@ -476,6 +522,8 @@ egf_init <- function(date,
     distr  = distr,
     theta0 = theta0,
     log_theta0 = setNames(log(theta0), paste0("log_", names(theta0))),
+    cum_inc = cum_inc,
+    int_inc = int_inc,
     call   = match.call()
   )
   structure(out, class = c("egf_init", "list"))

@@ -1,100 +1,142 @@
 #' Methods for class "egf"
 #'
 #' @description
-#' Methods for plotting and extracting fitted parameter
-#' values from "egf" objects returned by [egf()].
+#' Methods for "egf" objects returned by [egf()].
 #'
 #' @param x,object An "egf" object.
+#' @param log A logical scalar. If `TRUE`, then parameter values are
+#'   log-transformed.
+#' @param time A numeric vector listing (increasing) time points in days
+#'   since `object$init$date[1]`. Missing values are not tolerated. Must
+#'   have length 2 or greater.
+#' @param nsim A positive integer specifying a number of simulations.
+#' @param seed An integer specifying a seed for RNG, otherwise `NULL`.
 #' @param inc One of `"interval"` and `"cumulative"`,
-#'   indicating whether to plot `x$cases` (interval incidence)
-#'   or `cumsum(x$cases)` (cumulative incidence).
-#' @param tol A non-negative number used only if
-#'   `inc = "interval"`. `x$ini$cases[i]` is plotted
-#'   in blue if `diff(x$init$time)[i] < (1-tol)*m`,
-#'   in red if `diff(x$init$time)[i] > (1+tol)*m`,
-#'   and in grey otherwise, where `m = median(diff(x$init$time))`.
+#'   indicating a type of incidence to plot.
+#' @param tol A non-negative number used only if `inc = "interval"`.
+#'   `x$init$cases[i]` is plotted
+#'   in light red if `diff(x$init$time)[i] < (1-tol)*m`,
+#'   in dark red if `diff(x$init$time)[i] > (1+tol)*m`, and
+#'   in grey otherwise, where `m = median(diff(x$init$time))`.
 #'   Assign `Inf` to ensure that everything is grey.
-#' @param log A logical scalar. If `TRUE`, log-transformed
-#'   parameter values are extracted.
 #' @param ... Unused optional arguments.
 #'
+#' @return
+#' The `print` method returns `x` invisibly.
+#'
+#' The `coef` method returns `object$theta_hat` if `log = FALSE`
+#' and `object$log_theta_hat` if `log = TRUE`.
+#'
+#' The `predict` method returns a list with numeric elements:
+#'
+#' \describe{
+#'   \item{`time`}{Matches argument.}
+#'   \item{`cum_inc`}{Expected cumulative incidence at time points `time`,
+#'     conditional on parameter values `object$theta_hat`.
+#'     Equal to `object$cum_inc(time)`.
+#'   }
+#'   \item{`int_inc`}{Expected interval incidence given `time` as interval
+#'     endpoints, conditional on parameter values `object$theta_hat`.
+#'     Equal to `object$int_inc(time)`, which evaluates to `diff(cum_inc)`.
+#'   }
+#' }
+#'
+#' The `simulate` method returns a list with numeric elements:
+#'
+#' \describe{
+#'   \item{`time`}{Matches argument.}
+#'   \item{`cum_inc`}{A matrix with `length(time)` rows and `nsim` columns,
+#'     with each column a cumulative incidence curve implied by a simulated
+#'     interval incidence curve (see `int_inc` below). Column `i` is computed
+#'     as `x0 + cumsum(c(0, int_inc[, i]))`
+#'     where `x0 = object$cum_inc(time[1])` is the predicted value of
+#'     cumulative incidence at `time[1]`, conditional on parameter values
+#'     `object$theta_hat`.
+#'   }
+#'   \item{`int_inc`}{A matrix with `length(time)-1` rows and `nsim` columns,
+#'     with each column a simulated interval incidence curve. Simulations are
+#'     performed by adding observation error to `predict(object, time)$int_inc`,
+#'     using the observation model specified by `object$init$distr`.
+#'   }
+#' }
+#'
+#' The `plot` method returns `NULL` invisibly.
+#'
 #' @details
-#' If `x$init$time` is not equally spaced, then `inc = "interval"`
-#' should be used with caution. `x$init$cases[i]` is the number
-#' of cases observed between `x$init$time[i]` and `x$init$time[i+1]`,
-#' hence `x$init$cases` roughly scales with `diff(x$init$time)`.
-#' Argument `tol` can be used with `inc = "interval"` in order to
-#' highlight outliers in `diff(x$init$time)`.
+#' ## Plot elements
+#'
+#' The bottom axis measures the number of days since `x$init$date[1]`.
+#' The left axis measures interval or cumulative incidence (depending
+#' on `inc`) on a log scale. Zeros are plotted as if they were 10^-0.2,
+#' and are therefore distinguished from nonzero counts, which are always
+#' at least 1.
+#'
+#' Observed data, specified by `x$init$time` and either `x$init$cases`
+#' or `cumsum(x$init$cases)`, are plotted as filled points. `cases[i]`
+#' gives the number of cases observed between `time[i]` and `time[i+1]`,
+#' and `cumsum(cases)[i]` the number observed between `time[1]` and
+#' `time[i+1]`. Both are plotted at `time[i+1]`.
+#'
+#' The left and right endpoints of the fitting window, specified by indices
+#' `x$init$first` and `x$init$last`, are displayed as vertical lines at
+#' `time[first+1]` and `time[last+1]` (adding one since `first` and `last`
+#' index `cases`, and `length(time) = length(cases)+1`).
+#'
+#' The incidence curve predicted by fitted parameter values `x$theta_hat`
+#' is plotted as a teal line on grid points
+#' `wgrid = seq(time[first+1], time[last+1], by = m)`,
+#' where `m = median(diff(time))` for interval incidence (ensuring that
+#' the curve has the correct scale; see below) and `m = 1` for cumulative
+#' incidence. The predicted curve is obtained with `predict(x, wgrid)`.
+#' The initial parameter estimates are printed at the bottom of the right
+#' margin.
+#'
+#' Careful interpretation of observed interval incidence is required
+#' if the plotted time series is not equally spaced, as `cases` roughly
+#' scales with `diff(time)`. That is, certain observations may vary from
+#' the predicted curve not due to chance, but because they represent a
+#' count over fewer or more days than the typical observation interval,
+#' namely `median(diff(time))`. Observations for which `diff(time)`
+#' differs sufficently from `median(diff(time))` are highlighted according
+#' to argument `tol`.
+#'
+#' @seealso [egf()]
 #'
 #' @name egf-methods
 NULL
 
 #' @rdname egf-methods
 #' @export
-#' @import graphics
-#' @importFrom stats median
-plot.egf <- function(x, inc = "interval", tol = 0.025, ...) {
+print.egf <- function(x, ...) {
   if (!inherits(x, "egf")) {
     stop("`x` must be an \"egf\" object.")
   }
-  if (!is.character(inc) || length(inc) != 1 ||
-      !inc %in% c("interval", "cumulative")) {
-    stop("`inc` must be \"interval\" or \"cumulative\".")
-  }
-  if (inc == "interval") {
-    if (!is.numeric(tol) || length(tol) != 1 || !isTRUE(tol >= 0)) {
-      stop("`tol` must be a non-negative number.")
-    }
-  }
-  init <- x$init
-  dtime <- diff(init$time)
-  m <- median(dtime)
-  f <- init$first
-  l <- init$last
-  wgrid <- seq(init$time[f+1], init$time[l+1], by = m)
-  op <- par(mar = c(5, 4, 4, 8) + 0.1, las = 1, mgp = c(3, 0.7, 0))
-  data <- data.frame(time = init$time[-1], cases = init$cases)
-  xlab <- paste("days since", as.character(init$date[1]))
-  if (inc == "interval") {
-    dtime_min <- (1 - tol) * m
-    dtime_max <- (1 + tol) * m
-    bg_enum <- 1 + 1 * (dtime < dtime_min) + 2 * (dtime > dtime_max)
-    bg <- c("#DDDDDD", "#66CCEE", "#4477AA")[bg_enum]
-    plot(cases + 0.1 ~ time, data = data, xlab = xlab,
-         log = "y", pch = 21, bg = bg)
-    int_inc <- x$int_inc(wgrid)
-    lines(wgrid[-1], int_inc, lwd = 2, col = "#EE6677")
-  } else if (inc == "cumulative") {
-    plot(cumsum(cases) + 0.1 ~ time, data = data, xlab = xlab,
-         log = "y", pch = 21, bg = "#DDDDDD")
-    cum_inc <- x$cum_inc(wgrid)
-    lines(wgrid, cum_inc, lwd = 2, col = "#EE6677")
-  }
-  abline(v = init$time[c(f,l)+1], lty = 2, col = "#555555")
-  axis(side = 3, at = init$time[c(f,l)+1], labels = c(f,l),
-       tick = FALSE, mgp = c(3, 0.1, 0))
-  mtext("index", side = 3, line = 2)
-  ## Model
-  mstr <- paste0(init$curve,
-                 if (init$include_baseline) "\nbaseline" else "",
-                 "\n", init$distr)
-  mx <- par("usr")[2] + 0.02 * diff(par("usr")[1:2])
-  my <- 10^(par("usr")[4] - 0.02 * diff(par("usr")[3:4]))
-  text(mx, my, mstr, adj = c(0, 1), xpd = NA)
-  ## Initial parameter estimates ...
-  ## hacking to get alignment at "=" and at "e"
-  pstr1 <- paste0(names(x$theta_hat), " = ")
-  mat <- matrix(unlist(strsplit(sprintf("%0.3e", x$theta_hat), "e")), nrow = 2)
-  pstr2 <- paste0(mat[1, ], "e")
-  pstr3 <- paste0(mat[2, ])
-  px1 <- mx + max(strwidth(pstr1))
-  px2 <- px1 + max(strwidth(pstr2))
-  py <- 10^(par("usr")[3] + 0.02 * diff(par("usr")[3:4]))
-  text(px1, py, paste(pstr1, collapse = "\n"), adj = c(1, 0), xpd = NA)
-  text(px2, py, paste(pstr2, collapse = "\n"), adj = c(1, 0), xpd = NA)
-  text(px2, py, paste(pstr3, collapse = "\n"), adj = c(0, 0), xpd = NA)
-  par(op)
-  invisible(NULL)
+
+  cstr <- switch(x$init$curve,
+    exponential = "an exponential model",
+    logistic    = "a logistic model",
+    richards    = "a Richards model"
+  )
+  bstr <- if (x$init$include_baseline) "with a linear baseline and" else "with"
+  dstr <- switch(x$init$distr,
+    poisson = "Poisson-distributed observations.",
+    nbinom  = "negative binomial observations."
+  )
+  f <- x$init$first
+  l <- x$init$last
+  cat("This \"egf\" object fits", cstr, "\n")
+  cat(bstr, dstr, "\n")
+  cat("\n")
+  cat("Fitting window:\n")
+  cat("\n")
+  cat("index   ", f, ":", l, "\n", sep = "")
+  cat(" date   [", as.character(x$init$date[f+1]), ", ", as.character(x$init$date[l+1]), "]\n", sep = "")
+  cat("cases   ", sum(x$init$cases[f:l]), " of ", sum(x$init$cases), "\n", sep = "")
+  cat("\n")
+  cat("Parameter estimates:\n")
+  cat("\n")
+  print(x$theta_hat)
+  invisible(x)
 }
 
 #' @rdname egf-methods
@@ -112,4 +154,181 @@ coef.egf <- function(object, log = FALSE, ...) {
   } else {
     object$theta_hat
   }
+}
+
+#' @rdname egf-methods
+#' @export
+predict.egf <- function(object, time, ...) {
+  if (!inherits(object, "egf")) {
+    stop("`object` must be an \"egf\" object.")
+  }
+  if (missing(time)) {
+    stop("Missing argument `time`.")
+  } else if (!is.numeric(time) || length(time) < 2) {
+    stop("`time` must be numeric and have length 2 or greater.")
+  } else if (anyNA(time)) {
+    stop("`time` must not have missing values.")
+  } else if (!all(diff(time) > 0)) {
+    stop("`time` must be increasing.")
+  }
+
+  list(
+    time = time,
+    cum_inc = object$cum_inc(time),
+    int_inc = object$int_inc(time)
+  )
+}
+
+#' @rdname egf-methods
+#' @export
+#' @importFrom stats rpois rnbinom
+simulate.egf <- function(object, nsim = 1, seed = NULL, time, ...) {
+  if (!inherits(object, "egf")) {
+    stop("`object` must be an \"egf\" object.")
+  }
+  if (missing(time)) {
+    stop("Missing argument `time`.")
+  } else if (!is.numeric(time) || length(time) < 2) {
+    stop("`time` must be numeric and have length 2 or greater.")
+  } else if (anyNA(time)) {
+    stop("`time` must not have missing values.")
+  } else if (!all(diff(time) > 0)) {
+    stop("`time` must be increasing.")
+  }
+  if (!is.numeric(nsim) || length(nsim) != 1 || !isTRUE(nsim >= 1)) {
+    stop("`nsim` must be a positive integer.")
+  }
+  if (!is.null(seed)) {
+    if (!is.null(numeric) && (!is.numeric(seed) || !is.finite(seed[1]))) {
+      stop("`seed` must be `NULL` or an integer.")
+    }
+  }
+
+  x <- object$cum_inc(time)
+  dx <- diff(x)
+  if (object$init$distr == "pois") {
+    set.seed(seed)
+    sim <- replicate(nsim, rpois(length(dx), dx))
+  } else if (object$init$distr == "nbinom") {
+    k <- object$theta_hat[["nbdisp"]]
+    set.seed(seed)
+    sim <- replicate(nsim, rnbinom(length(dx), mu = dx, size = k))
+  }
+
+  list(
+    time = time,
+    cum_inc = x[1] + rbind(0, apply(sim, 2, cumsum)),
+    int_inc = sim
+  )
+}
+
+#' @rdname egf-methods
+#' @export
+#' @import graphics
+#' @importFrom stats median
+plot.egf <- function(x, inc = "interval", tol = 0.025, ...) {
+  if (!inherits(x, "egf")) {
+    stop("`x` must be an \"egf\" object.")
+  }
+  if (!is.character(inc) || length(inc) != 1 ||
+        !inc %in% c("interval", "cumulative")) {
+    stop("`inc` must be \"interval\" or \"cumulative\".")
+  }
+  if (inc == "interval") {
+    if (!is.numeric(tol) || length(tol) != 1 || !isTRUE(tol >= 0)) {
+      stop("`tol` must be a non-negative number.")
+    }
+  }
+
+  op <- par(mar = c(5, 4, 4, 8) + 0.1, las = 1, mgp = c(3, 0.7, 0))
+  data <- data.frame(
+    time = x$init$time[-1],
+    int_inc = x$init$cases,
+    cum_inc = cumsum(x$init$cases)
+  )
+  data$dt <- diff(x$init$time)
+  m <- median(data$dt)
+  dt_min <- (1 - tol) * m
+  dt_max <- (1 + tol) * m
+  bg_enum <- 1 + 1 * (data$dt < dt_min) + 2 * (data$dt > dt_max)
+  data$bg <- c("#DDDDDD", "#CC6677", "#882255")[bg_enum]
+  data$col <- c("#BBBBBB", "#CC6677", "#882255")[bg_enum]
+  xlab <- paste("days since", as.character(x$init$date[1]))
+  ylab <- "cases"
+  f <- x$init$first
+  l <- x$init$last
+  ## Interval incidence
+  if (inc == "interval") {
+    data_z <- data[data$int_inc == 0, ]
+    data_nz <- data[data$int_inc > 0, ]
+    wgrid <- seq(x$init$time[f+1], x$init$time[l+1], by = m)
+    pred <- predict(x, wgrid)
+    ylim <- c(10^-0.2, max(c(data$int_inc, pred$int_inc)) * 10^0.2)
+    yax_at <- 10^(0:max(floor(log10(c(data$int_inc, pred$int_inc)))))
+    yax_labels <- parse(text = paste0("10^", log10(yax_at)))
+    plot(int_inc ~ time, data = data_nz, ylim = ylim, yaxs = "i", yaxt = "n",
+         log = "y", pch = 21, bg = data_nz$bg, col = data_nz$col,
+         xlab = xlab, ylab = ylab)
+    points(data_z$time, rep(ylim[1], nrow(data_z)), xpd = NA,
+           pch = 21, bg = data_z$bg, col = data_z$col)
+    lines(pred$time[-1], pred$int_inc, lwd = 3, col = "#44AA99")
+    axis(side = 2, at = yax_at, labels = yax_labels)
+  ## Cumulative incidence
+  } else if (inc == "cumulative") {
+    data_z <- data[data$cum_inc == 0, ]
+    data_nz <- data[data$cum_inc > 0, ]
+    wgrid <- seq(x$init$time[f+1], x$init$time[l+1], by = 1)
+    pred <- predict(x, wgrid)
+    ylim <- c(10^-0.2, max(c(data$cum_inc, pred$cum_inc)) * 10^0.2)
+    yax_at <- 10^(0:max(floor(log10(c(data$cum_inc, pred$cum_inc)))))
+    yax_labels <- parse(text = paste0("10^", log10(yax_at)))
+    plot(cum_inc ~ time, data = data_nz, ylim = ylim, yaxs = "i", yaxt = "n",
+         log = "y", pch = 21, bg = "#DDDDDD", col = "#BBBBBB",
+         xlab = xlab, ylab = ylab)
+    points(data_z$time, rep(ylim[1], nrow(data_z)), xpd = NA,
+           pch = 21, bg = "#DDDDDD", col = "#BBBBBB")
+    lines(wgrid, pred$cum_inc, lwd = 3, col = "#44AA99")
+    axis(side = 2, at = yax_at, labels = yax_labels)
+  }
+  ## Fitting window
+  abline(v = x$time[c(f,l)+1], lty = 2, col = "#555555")
+  pstr1 <- paste0(names(x$theta0), " = ")
+  pstr2 <- round(x$theta_hat, digits = 4)
+  px <- par("usr")[2] + 0.02 * diff(par("usr")[1:2])
+  px <- px + max(strwidth(pstr1, cex = 0.7))
+  py <- 10^(par("usr")[3] + 0.02 * diff(par("usr")[3:4]))
+  text(px, py, paste(pstr1, collapse = "\n"),
+       adj = c(1, 0), xpd = NA, cex = 0.7)
+  text(px, py, paste(pstr2, collapse = "\n"),
+       adj = c(0, 0), xpd = NA, cex = 0.7)
+  ## Legend
+  lx <- par("usr")[2] + 0.02 * diff(par("usr")[1:2])
+  ly <- 10^(par("usr")[4] - 0.02 * diff(par("usr")[3:4]))
+  if (inc == "interval") {
+    legend(x = lx, y = ly, xpd = NA, bty = "n", cex = 0.7, seg.len = 1,
+           pch = c(21, 21, 21, NA),
+           pt.bg = c("#DDDDDD", "#CC6677", "#882255", NA),
+           lty = c(NA, NA, NA, 1),
+           lwd = c(NA, NA, NA, 3),
+           col = c("#BBBBBB", "#CC6677", "#882255", "#44AA99"),
+           legend = c("obs, dt ~ median",
+                      "obs, dt < median",
+                      "obs, dt > median",
+                      "pred"))
+  } else if (inc == "cumulative") {
+    legend(x = lx, y = ly, xpd = NA, bty = "n", cex = 0.7, seg.len = 1,
+           pch = c(21, NA),
+           pt.bg = c("#DDDDDD", NA),
+           lty = c(NA, 1),
+           lwd = c(NA, 3),
+           col = c("#BBBBBB", "#44AA99"),
+           legend = c("obs", "pred"))
+  }
+  ## Title
+  cstr <- x$init$curve
+  substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1))
+  title(main = paste(cstr, "model of", inc, "incidence\n(initial guess)"),
+        cex.main = 0.9)
+  par(op)
+  invisible(NULL)
 }

@@ -7,9 +7,6 @@
 - fit multiple time series with random effects (latent variables)
 - compare fits to cumulative/interval incidence
 - regularization? priors? 
-- better alignment of printed text with printf
-- compute everything on log scale and use logspace_sub for differencing
-  - no so great when baseline mortality is included
 */
 
 /* Wrap body of second loop in `if (!isNA(x(i))) { }` 
