@@ -71,7 +71,6 @@
   moredelim=[is][\color{kwc}]{`8}{`8},
   moredelim=[is][\color{kwd}]{`9}{`9}
 }
-\usepackage{realboxes} % \Colorbox
 
 % Float captions
 \usepackage{caption}
@@ -157,7 +156,6 @@
 \newcommand{\etc}{\textit{etc}.}
 \newcommand{\etal}{\textit{et al}.}
 % code
-%\newcommand{\code}[1]{\Colorbox{background}{\lstinline|#1|}}
 \newcommand{\code}[1]{\lstinline|#1|}
 \newcommand{\fun}[1]{\code{`9#1`9()}}
 \let\pkg\textbf
@@ -212,9 +210,10 @@ opts_chunk$set(
   digits = 7, # number of digits printed in chunk output
   char.width = 74, # character width of chunks
   fig.pos = "H", # figure position in document
+  fig.align = "center", # figure alignment
   dev = "pdf", # plotting device
   dev.args = list(pointsize = 10), # base point size in plots
-  strip.white = TRUE # reduce white space around chunks (?)
+  strip.white = TRUE # reduce white space around chunks
 )
 @
 
@@ -222,7 +221,7 @@ opts_chunk$set(
 \label{sec:intro}
 
 R package \pkg{epigrowthfit} implements methods for estimating parameters
-associated with initial epidemic growth. \pkg{epigrowthfit} was initially
+associated with initial epidemic growth. \pkg{epigrowthfit} was first
 developed to support the analysis of Ma \etal~\cite{Ma+14} and later Earn
 \etal~\cite{Earn+20}, but now extends their methods and provides additional
 useful machinery.
@@ -235,12 +234,11 @@ package_list <- c(
   "epigrowthfit",
   "TMB",     # automatic differentiation of objective functions
   "emdbook", # tools for ecological modeling
-  "knitr"    # integration of R code and LaTeX
+  "knitr",   # integration of R code and LaTeX
+  "shape"    # arrows in plots
 )
-for (package_name in package_list[-4]) {
-  library(package_name, character.only = TRUE)
-}
 print(installed.packages()[package_list, "Version"], quote = FALSE)
+library(epigrowthfit)
 @
 
 \subsection{Installation}
@@ -253,41 +251,42 @@ using function \fun{install_github} from the \pkg{remotes} package.
 if (!require(remotes)) {
   install.packages("remotes")
 }
-remotes::install_github("davidearn/epigrowthfit", build_vignettes = TRUE)
+remotes::install_github("davidearn/epigrowthfit",
+  ref = "devel",
+  dependencies = TRUE,
+  build_vignettes = TRUE
+)
 library(epigrowthfit)
 @
 %
 A list of data sets and functions exported by \pkg{epigrowthfit}
 can be retrieved with \fun{data} and \fun{ls}.
 
-<<namespace>>=
+<<namespace1>>=
 # Data sets
 (dnames <- data(package = "epigrowthfit")$results[, "Item"])
 
 # Functions
 (fnames <- setdiff(ls("package:epigrowthfit"), dnames))
 @
+
+Functions \fun{egf_init} and \fun{egf} do most of the work in fitting
+models of epidemic growth. They define the \code{egf_init} and \code{egf}
+classes, for which there are a number of useful S3 methods.
 %
-Functions \fun{egf_init} and \fun{egf} do all of the work in
-estimating epidemic growth parameters. They return lists of
-class \code{egf_init} and \code{egf}. \pkg{epigrowthfit}
-implements a number of useful (S3) methods for each class:
-
-<<s3methods>>=
-(s3names <- setdiff(ls(getNamespace("epigrowthfit")), c(dnames, fnames)))
+<<namespace2>>=
+(mnames <- setdiff(ls(getNamespace("epigrowthfit")), c(dnames, fnames)))
 @
+%
+These should not be called directly, as S3 methods are found automatically
+by R when the corresponding generic functions (the names before the dot)
+are called. For example, if \code{`9plot`9(x)} is run and \code{x} is an
+\code{egf} object, then R evaluates \code{`9plot.egf`9(x)}. These methods
+are all used in \cref{sec:example1}.
 
-These methods should not be called directly, as they are found
-automatically by R when the corresponding generic functions
-(the names before the dot) are called. For example, if
-\code{`9plot`9(x)} is run and \code{x} is an \code{egf} object,
-then R evaluates \code{`9plot.egf`9(x)}. These methods are all
-demonstrated in \cref{sec:example1}.
-
-The remaining exported functions serve primarily to enable
-estimation of the basic reproduction number $\R_0$ from epidemic
-growth rates $r$ obtained by \fun{egf}. These functions will be
-examined in \cref{sec:example2}.
+The remaining exported functions serve primarily to enable estimation
+of the basic reproduction number $\R_0$ from epidemic growth rates $r$
+obtained by \fun{egf}. These functions are examined in \cref{sec:example2}.
 
 
 \subsection{Documentation}
@@ -306,88 +305,141 @@ vignette("epigrowthfit-vignette")
 
 
 \section{Data requirements}
+\label{sec:data}
 
 All that is required to use \pkg{epigrowthfit} is an interval incidence
 time series. That is, one must have times $t_0 < t_1 < \cdots < t_n$
-and know the number $c_i$ of cases observed between times $t_{i-1}$ and
-$t_i$, for $i = 1,\ldots,n$. Here, ``cases'' is used loosely to mean one
-of three things: (i) infections, (ii) reported infections, or (iii)
-reported deaths from disease.
+and know the number $x_i$ of cases observed between times $t_{i-1}$ and
+$t_i$ for $i = 1,\ldots,n$. Interval incidence can be derived from
+\emph{cumulative} incidence by differencing. That is, if one knows the
+number $c_i$ cases observed up to time $t_i$ for $i = 0,\ldots,n$, then
+one derives interval incidence as $x_i = c_i - c_{i-1}$.
+\cref{fig:data-types} displays the relationship between cumulative and
+interval incidence data.
 
-If, at the start of an epidemic, incidence $x(t)$ can be modeled as an
-exponential function, so that $x(t) \simeq x_0 e^{rt}$, and if reported
-incidence (or reported disease mortality) $y(t)$ is proportional to
-incidence at an earlier time, so that $y(t) \propto x(t-t_\text{delay})$,
-then both $x(t)$ and $y(t)$ grow exponentially with rate $r$. Hence,
-for the purpose of estimating $r$ for a given epidemic, it is sufficient
-to study reported incidence and mortality.
+<<data-types, fig.width=4, fig.height=3, fig.cap="A sketch of the relationship between cumulative and interval incidence. Cumulative incidence $c_i$ is observed at times $t_i$ for $i = 0,\\ldots,5$. Interval incidence $x_i$ is computed as $x_i = c_i - c_{i-1}$ for $i = 1,\\ldots,5$. When the times $t_i$ are roughly equally spaced, as in this sketch, interval incidence peaks near the inflection point in cumulative incidence, where the curvature changes.", echo=FALSE>>=
+r <- 1
+c0 <- 1
+K <- 10
+logistic <- function(time) K / (1 + (K / c0 - 1) * exp(-r * time))
 
-During many historical epidemics, one only observes deaths due to all causes.
-\pkg{epigrowthfit} handles this additional use case by assuming a model for
-how all causes mortality is decomposed into disease mortality and mortality
-due to other causes (see \cref{sec:baseline}).
+n <- 5
+time <- 0:n
+cum_inc <- logistic(time)
+int_inc <- diff(cum_inc)
+l <- length(time)
+curve_time <- seq(0, n, by = 0.2)
+curve_cum_inc <- logistic(curve_time)
 
-Note that interval incidence can be derived from \emph{cumulative} incidence
-by differencing. That is, if one knows the number $x_i$ cases observed up to
-time $t_i$ for $i = 0,\ldots,n$, then one derives interval incidence as
-$c_i = x_i - x_{i-1}$.
+par(mar = c(3, 3, 1, 1), mgp = c(3, 0.7, 0), las = 1)
+
+xax_labels <- parse(text = paste0("t[", time, "]"))
+yax_labels <- parse(text = paste0("c[", time, "]"))
+arr_labels <- parse(text = paste0("x[", time[-1], "]"))
+
+plot.new()
+plot.window(xlim = range(time), ylim = c(0, max(cum_inc) * 1.1), yaxs = "i")
+segments(x0 = rep(par("usr")[1], 4), y0 = cum_inc, x1 = time, y1 = cum_inc,
+         lty = 3, lwd = 2, col = "grey80")
+lines(curve_time, curve_cum_inc, lwd = 2, col = "grey80")
+shape::Arrows(x0 = time[-1], y0 = cum_inc[-l], x1 = time[-1], y1 = cum_inc[-1],
+              arr.length = 0.16, arr.width = 0.08, arr.adj = 1, col = "grey30")
+points(time, cum_inc)
+text(x = time[-1] + 0.2, y = cum_inc[-l] + 0.4 * int_inc,
+     labels = arr_labels, xpd = NA)
+axis(side = 1, at = time, labels = xax_labels)
+axis(side = 2, at = cum_inc, labels = yax_labels)
+title(xlab = "time", line = 2)
+title(ylab = "cumulative incidence", line = 2)
+box(bty = "l")
+@
+
+Here, ``cases'' is used loosely to mean one of three things:
+(i) infections, (ii) reported infections, or (iii) reported deaths
+from disease. Under certain assumptions, what data type one uses makes
+no difference to the epidemic growth rate. To make this precise, let
+$c(t)$ be the expected number of infections occurring up to time $t$
+(expected cumulative incidence), and let $\wt{c}(t)$ be the expected
+number of cases (or disease deaths) \emph{reported} up to to time $t$
+(expected cumulative reported incidence). If, at the start of an epidemic,
+cumulative incidence can be modeled as an exponential function, so
+that $c(t) \sim c_0 e^{rt}$, and if cumulative reported incidence
+is proportional to cumulative incidence at an earlier time, so that
+$\wt{c}(t) \propto c(t - t_\text{delay})$, then both $c(t)$ and $\wt{c}(t)$
+grow exponentially with rate $r$. In fact, the same is true for interval
+incidence $c(t) - c(t-\Delta t)$ and interval reported incidence
+$\wt{c}(t) - \wt{c}(t - \Delta t)$. Hence, for the purpose of estimating
+$r$ for a given epidemic, it is not necessary to know incidence;
+it is sufficient to study reported incidence. (Going forward, ``cases''
+and ``incidence'' are used as general terms referring to infections,
+reported infections, or reported deaths from disease.)
+
+In the context of early historical epidemics, one often observes deaths
+due to all causes, but not disease deaths. \pkg{epigrowthfit} handles
+this additional use case by assuming a model for how all causes mortality
+is decomposed into disease mortality and mortality due to other causes
+(see \cref{sec:models-baseline}).
 
 
 \section{Models of epidemic growth}
+\label{sec:models}
 
-The models fit by \pkg{epigrowthfit} consist of a phenomenological
-model and an observation model. The phenomenological model says what
-an incidence curve is expected to look like, while the observation
-model says how what we observe varies randomly from this expectation.
-Below is a brief outline of the phenomenological and observation
-models implemented in \pkg{epigrowthfit}.
+The models of epidemic growth implemented in \pkg{epigrowthfit} consist
+of a phenomenological model and an observation model. The phenomenological
+model formulates what an incidence curve is expected to look like, while
+the observation model expresses how what we observe varies randomly from
+this expectation. Below is a brief outline of these models.
 
 \subsection{Models of expected cumulative incidence}
+\label{sec:models-expected}
 
-Let $x(t)$ be the expected number of cases observed up to
-$t$ days since a reference date, and let $x(0) = x_0 > 0$.
+Let $c(t)$ be the expected number of cases observed up to
+$t$ days since a reference date, and let $c(0) = c_0 > 0$.
 
-\paragraph{Exponential model.} If $x(t)$ follows
+\paragraph{Exponential model.} If $c(t)$ follows
 %
 \begin{linenomath}
 \begin{equation}
-x'(t) = r x(t)\,,\qquad r > 0\,,
+\label{eq:exponential-de}
+c'(t) = r c(t)\,,\qquad r > 0\,,
 \end{equation}
 \end{linenomath}
 %
-then $x(t)$ grows exponentially as
+then $c(t)$ grows exponentially as
 %
 \begin{linenomath}
 \begin{equation}
 \label{eq:exponential}
-x(t) = x_0 e^{r t}\,.
+c(t) = c_0 e^{r t}\,.
 \end{equation}
 \end{linenomath}
 %
 Two parameters must be fit to observed data: the exponential
-growth rate $r$ and initial value $x_0$.
+growth rate $r$ and initial value $c_0$.
 
 The exponential model ignores depletion of susceptible individuals
-and implies continuous exponential growth of $x(t)$. Hence it will
-only agree with epidemic data during the (typically short) initial
-exponential growth phase. Ma \etal~\cite{Ma+14} show that estimates
-of $r$ are sensitive to the choice of fitting window, and that more
-robust fits to the data are likely to obtained with the logistic
-and Richards models (see below), at negligible cost.
+and implies unbounded exponential growth of $c(t)$. It only agrees
+with epidemic data during the (typically short) initial exponential
+growth phase. Indeed, Ma \etal~\cite{Ma+14} show that estimates of
+$r$ obtained from the exponential model are highly sensitive to the
+choice of fitting window. More robust and realistic fits to epidemic
+data are obtained with the logistic and Richards models, which allow
+$c(t)$ to saturate asymptotically (see below).
 
-\paragraph{Logistic model.} If $x(t)$ follows
+\paragraph{Logistic model.} If $c(t)$ follows
 %
 \begin{linenomath}
 \begin{equation}
-x'(t) = r x(t)\bigg(1 - \frac{x(t)}{K}\bigg)\,,\qquad r, K > 0\,,
+\label{eq:logistic-de}
+c'(t) = r c(t)\bigg(1 - \frac{c(t)}{K}\bigg)\,,\qquad r, K > 0\,,
 \end{equation}
 \end{linenomath}
 %
-and if $x_0 \in (0,K)$, then $x(t)$ grows logistically
+and if $c_0 \in (0,K)$, then $c(t)$ grows logistically
 %
 \begin{linenomath}
 \begin{equation}
-x(t) = \frac{K}{1 + \big(\frac{K}{x_0} - 1\big) e^{-r t}}
+c(t) = \frac{K}{1 + \big(\frac{K}{c_0} - 1\big) e^{-r t}}
 \end{equation}
 \end{linenomath}
 %
@@ -397,81 +449,189 @@ be reparametrized as
 \begin{linenomath}
 \begin{equation}
 \label{eq:logistic}
-x(t) = \frac{K}{1 + e^{-r (t - \thalf)}}\,,
+c(t) = \frac{K}{1 + e^{-r (t - \thalf)}}\,,
 \end{equation}
 \end{linenomath}
 %
 where $\thalf$ is the time at which cumulative incidence attains
-half its final size, satisfying $x(\thalf) = \frac{K}{2}$. The
+half its final size, satisfying $c(\thalf) = \frac{K}{2}$. The
 reparametrized logistic model requires fitting $r$, $K$, and $\thalf$
 to observed data.
 
-\paragraph{Richards model.} If $x(t)$ follows
+In the logistic model, $r$ represents the \emph{initial} exponential
+growth rate, as \cref{eq:logistic-de} gives $c'(t) \sim r c(t)$ for
+$c(t)/K \ll 1$. That is, at the start of an epidemic, when $c(t)$ is
+very small compared to $K$, $c(t)$ grows roughly exponentially with
+rate $r$.
+
+\paragraph{Richards model.} If $c(t)$ follows
 %
 \begin{linenomath}
 \begin{equation}
-x'(t) = r x(t)\bigg(1 - \bigg(\frac{x(t)}{K}\bigg)^p\bigg)\,,\qquad r, K, p > 0\,,
+\label{eq:richards-de}
+c'(t) = r c(t)\bigg(1 - \bigg(\frac{c(t)}{K}\bigg)^p\bigg)\,,\qquad r, K, p > 0\,,
 \end{equation}
 \end{linenomath}
 %
-and if $x_0 \in (0,K)$, then $x(t)$ grows as
+and if $c_0 \in (0,K)$, then $c(t)$ grows as
 %
 \begin{linenomath}
 \begin{equation}
-x(t) = \frac{K}{\big[1 + \big(\big(\frac{K}{x_0}\big)^p - 1\big) e^{-r p t}\big]^{1/p}}
+c(t) = \frac{K}{\big[1 + \big(\big(\frac{K}{c_0}\big)^p - 1\big) e^{-r p t}\big]^{1/p}}
 \end{equation}
 \end{linenomath}
 %
-and increases to $K$ as $t \to \infty$. (The logistic model
-is recovered in the special case $p = 1$.) The Richards model
-can be reparametrized as
+and increases to $K$ as $t \to \infty$. Here, $p$ is a shape parameter
+determining how quickly $c(t)$ saturates. (The logistic model is recovered
+in the special case $p = 1$.) The Richards model can be reparametrized as
 %
 \begin{linenomath}
 \begin{equation}
 \label{eq:richards}
-x(t) = \frac{K}{\big[1 + (2^p - 1) e^{-r p (t - \thalf)}\big]^{1/p}}
+c(t) = \frac{K}{\big[1 + (2^p - 1) e^{-r p (t - \thalf)}\big]^{1/p}}
 \end{equation}
 \end{linenomath}
 %
 where, as with the logistic model, $\thalf$ satisfies
-$x(\thalf) = \frac{K}{2}$. The reparametrized Richards model
+$c(\thalf) = \frac{K}{2}$. The reparametrized Richards model
 requires fitting $r$, $K$, $\thalf$, and $p$ to observed data.
+Here, again, $r$ represents the initial epidemic growth rate.
+
+\cref{fig:models-expected} compares cumulative and interval
+incidence curves generated by the exponential, logistic, and
+Richards models.
+
+<<models-expected, fig.height=2.5, fig.cap="\\textbf{[Left]} Cumulative incidence, $c(t)$. Displayed are exponential and Richards curves ($p = 1.3,1,0.7$) with $r = 1$, $c_0 = 1$, and $K = 1000$. The Richards curve with $p = 1$ corresponds to a logistic curve. Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval incidence, $c(t) - c(t - 1/2)$.", echo=FALSE>>=
+r <- 1
+c0 <- 1
+K <- 1000
+p <- c(1.3, 1, 0.7)
+time <- seq(0, 16, by = 0.5)
+richards <- function(p) K / (1 + ((K / c0)^p - 1) * exp(-r * p * time))^(1 / p)
+cum_inc <- c(list(c0 * exp(r * time)), lapply(p, richards))
+int_inc <- lapply(cum_inc, diff)
+
+## Setup
+cols <- c("grey80", rep("grey30", 3))
+ltys <- c(1, 2, 1, 3)
+labs <- c("exponential", paste0("Richards (p = ", p, ")"))
+par(mfrow = c(1, 2), mar = c(3, 4, 1, 3), oma = c(0, 0, 0, 5),
+    mgp = c(3, 0.7, 0), las = 1)
+
+## Panel 1
+plot.new()
+plot.window(xlim = range(time), ylim = c(0, max(unlist(cum_inc[-1])) * 1.1),
+            xaxs = "i", yaxs = "i")
+for (i in 1:4) {
+  lines(time, cum_inc[[i]], lty = ltys[i], lwd = 3, col = cols[i])
+}
+box(bty = "l")
+axis(side = 1)
+axis(side = 2)
+title(xlab = "time", line = 2)
+title(ylab = "cumulative incidence")
+
+## Panel 2
+plot.new()
+plot.window(xlim = range(time), ylim = c(0, max(unlist(int_inc[-1])) * 1.1),
+            xaxs = "i", yaxs = "i")
+for (i in 1:4) {
+  lines(time[-1], int_inc[[i]], lty = ltys[i], lwd = 3, col = cols[i])
+}
+box(bty = "l")
+axis(side = 1)
+axis(side = 2)
+title(xlab = "time", line = 2)
+title(ylab = "interval incidence")
+legend(x = par("usr")[2] * 1.05, y = mean(par("usr")[3:4]),
+       xpd = NA, yjust = 0.5, bty = "n", seg.len = 3, cex = 0.7,
+       legend = labs, lty = ltys, lwd = 3, col = cols)
+@
+
 
 \subsection{Models of observed interval incidence}
+\label{sec:models-observed}
 
-Let $c(t_1,t_2) = x(t_2) - x(t_1)$ be the expected number of
-cases observed between times $t_1$ and $t_2 \geq t_1$, \ie
-expected interval incidence. Let $C(t_1,t_2)$ be the number
-that is actually observed.
+Let $x_i = x(t_{i-1},t_i) = c(t_i) - c(t_{i-1})$ be the expected number
+of cases observed between times $t_{i-1}$ and $t_i > t_{i-1}$ (expected
+interval incidence). Let $X_i = X(t_{i-1},t_i)$ be the number that is
+actually observed.
 
-\paragraph{Poisson model.} $C(t_1,t_2)$ is modeled as
-a Poisson-distributed random variable with mean $c(t_1,t_2)$:
+\paragraph{Poisson model.} $X_i$ is modeled as a Poisson-distributed
+random variable with mean $x_i$:
 %
 \begin{linenomath}
 \begin{equation}
-C(t_1,t_2) \sim \mathrm{Poisson}\big(c(t_1,t_2)\big)\,.
+X_i \sim \mathrm{Poisson}\big(x_i\big)\,.
 \end{equation}
 \end{linenomath}
 
-\paragraph{Negative binomial model.} $C(t_1,t_2)$ is modeled as
-a negative binomial-distributed random variable with mean $c(t_1,t_2)$
-and dispersion $k > 0$:
+\paragraph{Negative binomial model.} $X_i$ is modeled as a negative
+binomial-distributed random variable with mean $x_i$ and dispersion
+$k > 0$:
 %
 \begin{linenomath}
 \begin{equation}
-C(t_1,t_2) \sim \mathrm{NegativeBinomial}\big(c(t_1,t_2),k\big)\,.
+X_i \sim \mathrm{NegativeBinomial}\big(x_i,k\big)\,.
 \end{equation}
 \end{linenomath}
 %
-This observation model requires that $k$ is fit in addition to
-other model parameters.
+This requires that $k$ is fit in addition to other model parameters.
+
+It is worth noting that a negative binomial distribution with mean
+$x_i$ is well approximated by the Poisson distribution with mean
+$x_i$ if $x_i / k \ll 1$. (Negative binomial variance exceeds
+Poisson variance by $x_i^2 / k$. Relative to the mean $x_i$,
+the excess variance is $x_i / k$.) Indeed,
+%
+\begin{linenomath}
+\begin{equation}
+\mathrm{NegativeBinomial}\big(x_i,k\big) \quad\xrightarrow{k \to \infty}\quad \mathrm{Poisson}(x_i)\,.
+\end{equation}
+\end{linenomath}
+%
+This means that if the fitted value of $x_i / k$ is less
+than roughly $1/10$ for all $i$, then one should consider
+switching to the Poisson observation model.
+
+\cref{fig:models-observed} compares negative binomial and Poisson
+distributions with a common mean of 20.
+
+<<models-observed, fig.height=2.5, fig.cap="Probability mass functions of three negative binomial random variables ($k = 1,10,100$) and a Poisson random variable, all with mean 20.", echo=FALSE>>=
+val <- 0:60
+mu <- 20
+k <- 10^{c(0:2)}
+pmf <- c(lapply(k, function(x) dnbinom(val, mu = mu, size = x)),
+         list(dpois(val, lambda = mu)))
+
+## Setup
+pchs <- c(8, 4, 1, 16)
+labs <- c(paste0("NegativeBinomial (", mu, ", ", k, ")"),
+          paste0("Poisson(", mu, ")"))
+par(mar = c(3, 4, 1, 1), mgp = c(3, 0.7, 0), las = 1)
+
+## Plot
+plot.new()
+plot.window(xlim = range(val), ylim = c(0, 0.1),
+            xaxs = "i", yaxs = "i")
+for (i in 1:4) {
+  points(val, pmf[[i]], pch = pchs[i])
+}
+box(bty = "l")
+axis(side = 1)
+axis(side = 2)
+title(xlab = "Value", line = 2)
+title(ylab = "Probability")
+legend("topright", bty = "n", cex = 0.7, legend = labs, pch = pchs)
+@
+
 
 \subsection{Baseline growth}
-\label{sec:baseline}
+\label{sec:models-baseline}
 
-For many historical epidemics, the observed data count deaths
-due to all causes, not only the disease of interest. Growth in
-disease mortality over time can still be understood
+For many historical epidemics, available data count deaths due
+to all causes, not deaths to disease of interest specifically.
+Growth in disease mortality over time can still be understood
 phenomenologically provided that it is modeled separately from
 baseline mortality (deaths to causes other than the disease).
 To account for baseline mortality, it is assumed that deaths
@@ -481,66 +641,276 @@ becomes
 %
 \begin{linenomath}
 \begin{equation}
-x(t) = b t + \frac{K}{1 + e^{-r (t - \thalf)}}\,,
+\label{eq:logistic-baseline}
+c(t) = b t + \frac{K}{1 + e^{-r (t - \thalf)}}\,,
 \end{equation}
 \end{linenomath}
 %
-where $x(t)$ is to be interpreted as expected cumulative mortality
-instead of expected cumulative disease mortality. Accounting for
-baseline mortality requires that $b$ is fit in addition to the other
-model parameters.
+where $c(t)$ is to be interpreted as expected cumulative all
+causes mortality instead of expected cumulative disease mortality.
+Accounting for baseline mortality requires that $b$ is fit in
+addition to other model parameters.
+
+\cref{fig:models-baseline} displays the effect of baseline growth
+on the logistic curve.
+
+<<models-baseline, fig.height=2.5, fig.cap="\\textbf{[Left]} Cumulative all causes mortality, $c(t)$. Displayed are logistic curves with $r = 1$, $c_0 = 1$, and $K = 1000$ accounting for a linear baseline $b t$ ($b = 0, 25, 50$). See \\cref{eq:logistic-baseline}. Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval all causes mortality, $c(t) - c(t - 1/2)$.", echo=FALSE>>=
+r <- 1
+c0 <- 1
+K <- 1000
+b <- c(50, 25, 0)
+time <- seq(0, 16, by = 0.5)
+logistic <- function(b) b * time + K / (1 + (K / c0 - 1) * exp(-r * time))
+cum_inc <- lapply(b, logistic)
+int_inc <- lapply(cum_inc, diff)
+
+## Setup
+cols <- c("grey30", "grey30", "grey80")
+ltys <- c(3, 2, 1)
+labs <- paste0("b = ", b)
+par(mfrow = c(1, 2), mar = c(3, 4, 1, 3), oma = c(0, 0, 0, 5),
+    mgp = c(3, 0.7, 0), las = 1)
+
+## Panel 1
+plot.new()
+plot.window(xlim = range(time), ylim = c(0, max(unlist(cum_inc)) * 1.1),
+            xaxs = "i", yaxs = "i")
+for (i in 1:3) {
+  lines(time, cum_inc[[i]], lty = ltys[i], lwd = 3, col = cols[i])
+}
+box(bty = "l")
+axis(side = 1)
+axis(side = 2)
+title(xlab = "time", line = 2)
+title(ylab = "cumulative AC mortality")
+
+## Panel 2
+plot.new()
+plot.window(xlim = range(time), ylim = c(0, max(unlist(int_inc)) * 1.1),
+            xaxs = "i", yaxs = "i")
+for (i in 1:3) {
+  lines(time[-1], int_inc[[i]], lty = ltys[i], lwd = 3, col = cols[i])
+}
+box(bty = "l")
+axis(side = 1)
+axis(side = 2)
+title(xlab = "time", line = 2)
+title(ylab = "interval AC mortality")
+legend(x = par("usr")[2] * 1.05, y = mean(par("usr")[3:4]),
+       xpd = NA, yjust = 0.5, bty = "n", seg.len = 3, cex = 0.7,
+       legend = labs, lty = ltys, lwd = 3, col = cols)
+@
+
+
+
+\section{Maximum likelihood estimation}
+\label{sec:mle}
+
+Let $x_i$ be the number of cases observed between times
+$t_{i-1}$ and $t_i$ for $i = 1,\ldots,n$. The likelihood
+of a parameter vector $\vec{\theta}$ given data $\vec{x}$ is
+%
+\begin{linenomath}
+\begin{equation}
+\mathcal{L}(\vec{\theta}|\vec{x}) = \prod_{i=1}^{n} f_i(x_i|\vec{\theta})\,,
+\end{equation}
+\end{linenomath}
+%
+where $f_i$ is the density function of $X(t_i,t_{i-1})$.
+Hence the negative log likelihood is
+%
+\begin{linenomath}
+\begin{equation}
+-\ell(\vec{\theta}|\vec{x})
+= -\log \mathcal{L}(\vec{\theta}|\vec{x})
+= -\sum_{i=1}^{n} \log f_i(x_i|\vec{\theta})\,.
+\end{equation}
+\end{linenomath}
+%
+\pkg{epigrowthfit} writes $-\ell$ in a C++ template and uses package
+\pkg{TMB} to carry out automatic differentiation---a fast algorithm
+for computing the derivatives of $-\ell$ with respect to log-transformed
+parameters. (All parameters are fit on an unconstrained logarithmic
+scale. Hence, for example, \pkg{epigrowthfit} fits $\log r$ on the
+interval $(-\infty,\infty)$, instead of $r$ on the interval $(0,\infty)$.)
+Function \fun{egf} calls gradient-based optimizer \fun{nlminb}
+(alternatively \fun{nlm} or one of the optimizers provided through
+\fun{optim}) from base package \pkg{stats} to search for the parameter
+vector $\wh{\vec{\theta}}$ minimizing $-\ell$, namely the maximum
+likelihood estimate of $\vec{\theta}$.
+
+The iterative optimizers are susceptible to various numerical problems
+preventing convergence near to $\wh{\vec{\theta}}$. Poor fits to the
+data by \fun{nlminb} may be corrected by trying a different optimizer,
+such as the Nelder-Mead algorithm available through \fun{optim}.
+Nelder-Mead is considered robust, but, as it makes no use of gradients,
+it is relatively slow. This may not be a concern in practice, as the
+models implemented in \pkg{epigrowthfit} have at most 6 parameters.
 
 \section{Example 1: Fitting epidemic growth models}
 \label{sec:example1}
 
+\subsection{Loading an epidemic time series}
+
 \pkg{epigrowthfit} comes with a number of infectious disease
-data sets. One of these is \code{canadacovid}, which lists
-daily confirmations of COVID-19 in Canadian provinces and
-territories from February 14, 2020 to June 21, 2020. You
-can load this data set into your working environment with
-\fun{data}.
+data sets. One of them is \code{canadacovid}, a data frame
+listing daily confirmations of COVID-19 in Canadian provinces
+and territories from February 14, 2020 to June 21, 2020
+(\ie an interval incidence time series). You can load
+\code{canadacovid} into your working environment using \fun{data}.
 
 <<example1-1>>=
+library(epigrowthfit)
 data(canadacovid)
-head(canadacovid, 10) # print the first 6 rows
-levels(canadacovid$province)
 @
-
-Let's consider just the data from Ontario.
+%
+Documentation for the data set can be accessed by running
+\code{?canadacovid}, but you can directly explore the data
+frame's structure as follows.
 
 <<example1-2>>=
-ontario <- subset(canadacovid, province == "ON")
-sum(is.na(ontario$new_confirmations))
+#?canadacovid
+dim(canadacovid) # dimensions
+head(canadacovid, 10) # first 10 rows
+levels(canadacovid$province) # province and territory labels
+sapply(canadacovid, class) # variable classes
 @
-
-\pkg{epigrowthfit} does not tolerate missing values
-in the incidence. We can remove rows with \code{`1NA`1}
-using \fun{na.omit}.
+%
+Let's consider just the data from Ontario.
 
 <<example1-3>>=
-ontario <- na.omit(ontario)
-sum(is.na(ontario$new_confirmations))
+ontario <- subset(canadacovid, province == "ON")
+dim(ontario)
 @
+%
+\pkg{epigrowthfit} does not tolerate missing values in incidence.
+You can remove rows containing \code{`1NA`1} with \fun{na.omit}.
 
-<<example1-4, fig.height=5>>=
+<<example1-4>>=
+ontario <- na.omit(ontario)
+dim(ontario)
+sum(is.na(ontario$new_confirmations)) # check that no NA remain
+@
+%
+Just removing a date with a missing value is sufficient only if
+the missing number of cases is carried over to the next observation
+time. Here, we assume this to be true, but if that is not the case,
+then imputation is necessary, unless the missing number is expected
+to be negligible.
+
+\subsection{Initializing the fitting machinery}
+
+We will fit a Richards model (see \cref{sec:models-expected}) with
+negative binomial observations (see \cref{sec:models-observed}) to
+the \code{ontario} data. The optimization (see \cref{sec:mle}) is
+carried out by function \fun{egf}, but requires initialization.
+Before applying \fun{egf}, we use function \fun{egf_init} to define
+(i) a fitting window and
+(ii) initial estimates of all model parameters.
+
+\paragraph{Fitting window.} The ``fitting window'' is the subset of
+data (the range of dates) considered when fitting a model.
+Ma \etal~\cite{Ma+14} examine the sensitivity of the fitted initial
+exponential growth rate $\wh{r}$ to the start and end of the fitting
+window. A reasonable initial approach for the logistic and Richards
+models, based on their analysis, is to start at the time of the
+first observed case and to end at the time of the peak in interval
+incidence (equivalently, the inflection point in cumulative incidence).
+If the peak has not occurred (\eg when fitting in real time, during
+a growing epidemic), then end at the last observation time.
+\fun{egf_init} implements this approach as a default.
+
+For an exponential model, this approach results in underestimation
+of $r$, because epidemic growth becomes subexponential much earlier
+than the peak in interval incidence. When fitting an exponential
+model, it is typically best to choose the window where interval
+incidence is roughly linear on a logarithmic scale.
+
+Regardless of the model being fit, one may need to experiment with
+different fitting windows. Optional \fun{egf_init} arguments, namely
+\code{min_wlen}, \code{peak}, \code{first}, \code{first_level}, and
+\code{skip_zero}, can be set explicitly to override the default
+window selection algorithm. For details, run \code{?egf_init}.
+
+\paragraph{Initial parameter estimates.} The optimization algorithms
+employed by \pkg{epigrowthfit} (see \cref{sec:mle}) are iterative and
+require an initial estimate $\vec{\theta}^{(0)}$ of parameter vector
+$\vec{\theta}$. The exact choice of $\vec{\theta}^{(0)}$ is typically
+not critical, but a good initial guess can support convergence. Reasonable
+initial estimates of $r$ and $c_0$ are $\beta_1$ and $e^{\beta_0}$,
+respectively, where $\beta_1$ and $\beta_0$ are the slope and intercept
+of a linear model fit to the logarithm of cumulative incidence, using
+only observations in the fitting window. If the epidemic curve is roughly
+symmetric, then an estimate of $\thalf$ is supplied by the time of the
+peak in interval incidence. Certainly, $K$ should be no less than the
+number of cases observed to date and no more than the population size.
+When fitting a Richards model, one can initially assume a logistic model
+by estimating $p = 1$. When including baseline growth in a model (see
+\cref{sec:models-baseline}), one can initially estimate $b$ as average
+mortality rate in the year(s) preceding and following the (presumably
+historical) epidemic.
+
+With the exception of $b$, \fun{egf_init} employs these initial estimates
+(using the lower bound on $K$) by default. For simplicity, the default
+initial estimates of parameters $b$ and $k$ is 1. Optional argument
+\code{theta0} can be set explicitly to override any of these defaults.
+For details, run \code{?egf_init}.
+
+\,\\
+
+Below, we pass to \fun{egf_init} a Date vector \code{date}
+listing times $t_0 < t_1 < \cdots < t_n$ and a numeric vector
+\code{cases} specifying interval incidence $x_i$ for
+$i = 1,\ldots,n$, where $x_i$ is the number of cases observed
+between times $t_{i-1}$ and $t_i$. We also specify the model
+we want to fit using arguments:
+%
+\par\vspace{6pt}
+\begin{tabular}{rl}
+\code{curve} & options \code{`2"exponential"`2}, \code{`2"logistic"`2} (default), or \code{`2"richards"`2} \\
+\code{distr} & options \code{`2"pois"`2} or \code{`2"nbinom"`2} (default) \\
+\code{include_baseline} & options \code{`1TRUE`1} or \code{`1FALSE`1} (default)
+\end{tabular}
+\vspace{6pt}\par\noindent
+%
+We accept the default values of all other arguments, allowing
+\fun{egf_init} to select a fitting window and initial parameter
+estimates for us (as described above).
+
+<<example1-5>>=
 init <- egf_init(
   date = ontario$date,
   cases = ontario$new_confirmations[-1],
   curve = "richards",
-  distr = "nbinom"
+  distr = "nbinom",
+  include_baseline = FALSE
 )
-x <- egf(init)
-print(x)
-coef(x, log = FALSE)
-coef(x, log = TRUE)
-#time_obs <- as.numeric(ontario$date - ontario$date[1])
-#time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
-#predict(x, time = time_pred)
-#simulate(x, nsim = 4, time = time_obs)
-plot(x, inc = "interval")
-plot(x, inc = "cumulative")
 @
+%
+Let's explore the output of the initialization.
 
+<<example1-6, fig.height=4>>=
+names(init)
+init
+plot(init, inc = "interval")
+plot(init, inc = "cumulative")
+@
+%
+Passing object \code{init} to function \fun{egf},
+we obtain a fit to the data.
+
+<<example1-7>>=
+fit <- egf(init, method = "nlminb")
+@
+%
+We can explore this output as before.
+
+<<example1-8, fig.height=4>>=
+names(fit)
+fit
+plot(fit, inc = "interval")
+plot(fit, inc = "cumulative")
+@
 
 \section{Example 2: Estimating the basic reproduction number \tops{$\R_0$}{R0}}
 \label{sec:example2}
