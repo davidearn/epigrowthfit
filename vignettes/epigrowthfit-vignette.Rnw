@@ -160,8 +160,10 @@
 \newcommand{\fun}[1]{\code{`9#1`9()}}
 \let\pkg\textbf
 
-
-
+%% comment macros
+\newcommand{\comment}[3]{\textcolor{#1}{\textbf{[#2: }\textit{#3}\textbf{]}}}
+\newcommand{\david}[1]{\comment{magenta}{DE}{#1}}
+\newcommand{\mikael}[1]{\comment{blue}{MJ}{#1}}
 
 %%%%%%%%%%%%%%%%
 %% START HERE %%
@@ -220,11 +222,12 @@ opts_chunk$set(
 \section{Introduction}
 \label{sec:intro}
 
-R package \pkg{epigrowthfit} implements methods for estimating parameters
-associated with initial epidemic growth. \pkg{epigrowthfit} was first
-developed to support the analysis of Ma \etal~\cite{Ma+14} and later Earn
-\etal~\cite{Earn+20}, but now extends their methods and provides additional
-useful machinery.
+R package \pkg{epigrowthfit} implements methods for estimating
+parameters associated with initial epidemic growth. \pkg{epigrowthfit}
+was first developed to support the analysis of Earn
+\etal~\cite{Earn+20}, based on the methodology of Ma
+\etal~\cite{Ma+14}, but now extends their methods and provides
+additional useful machinery.
 
 This document was built using \Sexpr{R.Version()$version.string}
 and these R package versions:
@@ -282,7 +285,7 @@ These should not be called directly, as S3 methods are found automatically
 by R when the corresponding generic functions (the names before the dot)
 are called. For example, if \code{`9plot`9(x)} is run and \code{x} is an
 \code{egf} object, then R evaluates \code{`9plot.egf`9(x)}. These methods
-are all used in \cref{sec:example1}.
+are all demonstrated in \cref{sec:example1}.
 
 The remaining exported functions serve primarily to enable estimation
 of the basic reproduction number $\R_0$ from epidemic growth rates $r$
@@ -300,7 +303,7 @@ vignette("epigrowthfit-vignette")
 ## Help pages
 ?"epigrowthfit-package" # package
 ?function_name          # function "function_name"
-?"class_name-methods"   # S3 methods for class "class_name"
+?"class_name-methods"   # S3 methods for class "class_name" ("egf" or "egf_init")
 @
 
 
@@ -354,25 +357,27 @@ title(ylab = "cumulative incidence", line = 2)
 box(bty = "l")
 @
 
-Here, ``cases'' is used loosely to mean one of three things:
+Here, ``cases'' is used loosely and usually means one of three things:
 (i) infections, (ii) reported infections, or (iii) reported deaths
-from disease. Under certain assumptions, what data type one uses makes
+from disease. Under certain assumptions, the data type one uses makes
 no difference to the epidemic growth rate. To make this precise, let
 $c(t)$ be the expected number of infections occurring up to time $t$
 (expected cumulative incidence), and let $\wt{c}(t)$ be the expected
 number of cases (or disease deaths) \emph{reported} up to to time $t$
-(expected cumulative reported incidence). If, at the start of an epidemic,
-cumulative incidence can be modeled as an exponential function, so
-that $c(t) \sim c_0 e^{rt}$, and if cumulative reported incidence
-is proportional to cumulative incidence at an earlier time, so that
-$\wt{c}(t) \propto c(t - t_\text{delay})$, then both $c(t)$ and $\wt{c}(t)$
-grow exponentially with rate $r$. In fact, the same is true for interval
-incidence $c(t) - c(t-\Delta t)$ and interval reported incidence
-$\wt{c}(t) - \wt{c}(t - \Delta t)$. Hence, for the purpose of estimating
-$r$ for a given epidemic, it is not necessary to know incidence;
-it is sufficient to study reported incidence. (Going forward, ``cases''
-and ``incidence'' are used as general terms referring to infections,
-reported infections, or reported deaths from disease.)
+(expected cumulative reported incidence). If, at the start of an
+epidemic, cumulative incidence can be modeled as an exponential
+function, so that $c(t) \sim c_0 e^{rt}$, and if cumulative reported
+incidence is proportional to cumulative incidence at an earlier time,
+so that $\wt{c}(t) \propto c(t - t_\text{delay})$, then both $c(t)$
+and $\wt{c}(t)$ grow exponentially with rate $r$. In fact, the same is
+true for interval incidence $c(t) - c(t-\Delta t)$ and interval
+reported incidence $\wt{c}(t) - \wt{c}(t - \Delta t)$. Hence, for the
+purpose of estimating $r$ for a given epidemic, it is not necessary to
+know incidence; it is sufficient to study reported incidence.
+\david{Well, provided there is a fixed delay.}
+(Going forward, ``cases'' and ``incidence'' are used as general terms
+referring to infections, reported infections, or reported deaths from
+disease.)
 
 In the context of early historical epidemics, one often observes deaths
 due to all causes, but not disease deaths. \pkg{epigrowthfit} handles
@@ -418,8 +423,8 @@ Two parameters must be fit to observed data: the exponential
 growth rate $r$ and initial value $c_0$.
 
 The exponential model ignores depletion of susceptible individuals
-and implies unbounded exponential growth of $c(t)$. It only agrees
-with epidemic data during the (typically short) initial exponential
+and implies unbounded exponential growth of $c(t)$. It canagree
+with epidemic data only during the (typically short) initial exponential
 growth phase. Indeed, Ma \etal~\cite{Ma+14} show that estimates of
 $r$ obtained from the exponential model are highly sensitive to the
 choice of fitting window. More robust and realistic fits to epidemic
@@ -465,6 +470,7 @@ very small compared to $K$, $c(t)$ grows roughly exponentially with
 rate $r$.
 
 \paragraph{Richards model.} If $c(t)$ follows
+\david{must cite Richards' paper}
 %
 \begin{linenomath}
 \begin{equation}
@@ -501,7 +507,7 @@ Here, again, $r$ represents the initial epidemic growth rate.
 incidence curves generated by the exponential, logistic, and
 Richards models.
 
-<<models-expected, fig.height=2.5, fig.cap="\\textbf{[Left]} Cumulative incidence, $c(t)$. Displayed are exponential and Richards curves ($p = 1.3,1,0.7$) with $r = 1$, $c_0 = 1$, and $K = 1000$. The Richards curve with $p = 1$ corresponds to a logistic curve. Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval incidence, $c(t) - c(t - 1/2)$.", echo=FALSE>>=
+<<models-expected, fig.height=2.5, fig.cap="\\textbf{[Left]} Cumulative incidence, $c(t)$. Displayed are exponential and Richards curves ($p = 1.3,1,0.7$) with $r = 1$, $c_0 = 1$, and $K = 1000$. The Richards curve with $p = 1$ corresponds to a logistic curve. Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval incidence, $c(t) - c(t - 1/2)$.\\david{It would be instructive to give the value of $\\thalf$  here.  Also consider using \\texttt{Sexpr} rather than hard-coding.}", echo=FALSE>>=
 r <- 1
 c0 <- 1
 K <- 1000
@@ -593,9 +599,11 @@ the excess variance is $x_i / k$.) Indeed,
 This means that if the fitted value of $x_i / k$ is less
 than roughly $1/10$ for all $i$, then one should consider
 switching to the Poisson observation model.
+\david{some citations needed in this section}
 
 \cref{fig:models-observed} compares negative binomial and Poisson
 distributions with a common mean of 20.
+\david{use different colours as well as different symbols}
 
 <<models-observed, fig.height=2.5, fig.cap="Probability mass functions of three negative binomial random variables ($k = 1,10,100$) and a Poisson random variable, all with mean 20.", echo=FALSE>>=
 val <- 0:60
@@ -654,7 +662,7 @@ addition to other model parameters.
 \cref{fig:models-baseline} displays the effect of baseline growth
 on the logistic curve.
 
-<<models-baseline, fig.height=2.5, fig.cap="\\textbf{[Left]} Cumulative all causes mortality, $c(t)$. Displayed are logistic curves with $r = 1$, $c_0 = 1$, and $K = 1000$ accounting for a linear baseline $b t$ ($b = 0, 25, 50$). See \\cref{eq:logistic-baseline}. Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval all causes mortality, $c(t) - c(t - 1/2)$.", echo=FALSE>>=
+<<models-baseline, fig.height=2.5, fig.cap="\\textbf{[Left]} Cumulative all causes mortality, $c(t)$. Displayed are logistic curves with $r = 1$, $c_0 = 1$, and $K = 1000$ accounting for a linear baseline $b t$ ($b = 0, 25, 50$). See \\cref{eq:logistic-baseline}. Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval all causes mortality, $c(t) - c(t - 1/2)$.  \\david{not clear why you're substracting 1/2 rather than 1}", echo=FALSE>>=
 r <- 1
 c0 <- 1
 K <- 1000
@@ -706,9 +714,10 @@ legend(x = par("usr")[2] * 1.05, y = mean(par("usr")[3:4]),
 \section{Maximum likelihood estimation}
 \label{sec:mle}
 
-Let $x_i$ be the number of cases observed between times
-$t_{i-1}$ and $t_i$ for $i = 1,\ldots,n$. The likelihood
-of a parameter vector $\vec{\theta}$ given data $\vec{x}$ is
+Let $x_i$ be the number of cases observed between times $t_{i-1}$ and
+$t_i$ for $i = 1,\ldots,n$. The likelihood of a model parameter vector
+$\vec{\theta}$ given data $\vec{x}$ is defined to be the probability
+density of the data given the model, \ie
 %
 \begin{linenomath}
 \begin{equation}
