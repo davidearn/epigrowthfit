@@ -3,17 +3,17 @@
 \name{egf}
 \alias{egf}
 \title{\loadmathjax
-Fit models of epidemic growth}
+Fit a model of epidemic growth}
 \usage{
 egf(init, method = "nlminb", ...)
 }
 \arguments{
-\item{init}{An "egf_init" object, specifying epidemic data,
+\item{init}{An "egf_init" object specifying epidemic data,
 a fitting window, and initial parameter estimates.
 See \code{\link[=egf_init]{egf_init()}}.}
 
 \item{method}{One of \code{"nlminb"}, \code{"nlm"}, \code{"Nelder-Mead"},
-\code{"BFGS"}, \code{"L-BFGS-S"}, and \code{"CG"}, indicating the method
+\code{"BFGS"}, \code{"L-BFGS-S"}, and \code{"CG"}, indicating the algorithm
 used to minimize the negative log likelihood function.}
 
 \item{...}{Additional arguments to \code{\link[stats:nlminb]{nlminb()}},
@@ -23,40 +23,38 @@ used to minimize the negative log likelihood function.}
 An "egf" object. A list with elements:
 
 \describe{
-\item{\code{theta_hat}}{A named numeric vector specifying the
-optimizer's estimate of the minimizer of the negative
-log likelihood function.
+\item{\code{init}}{Matches argument.}
+\item{\code{method}}{Matches argument.}
+\item{\code{theta_hat}}{A named numeric vector giving the optimizer's
+approximation of the maximum likelihood parameter vector.
 }
 \item{\code{log_theta_hat}}{Log-transformed \code{theta_hat}. Identical
-to \code{log(theta_hat)} with \code{"log_"} prepended to the names.
+to \code{log(theta_hat)} but with \code{"log_"} prepended to the names.
 }
 \item{\code{nll}}{A numeric scalar giving the negative log likelihood
-corresponding to \code{log_theta_hat}.
+of \code{log_theta_hat}.
 }
-\item{\code{nll_fn}}{A closure with numeric argument \code{log_theta}
+\item{\code{nll_fn}}{A closure with a numeric argument \code{log_theta}
 specifying a log-transformed parameter vector (default
 is \code{log_theta_hat}). Returns the negative log likelihood
-function evaluated at \code{x}.
+function evaluated at \code{log_theta}.
 }
-\item{\code{nll_gr}}{A closure like \code{nll_fn}, but returning the
-gradient of the negative log likelihood function evaluated
-at \code{x}.
+\item{\code{nll_gr}}{A closure with a numeric argument \code{log_theta}
+specifying a log-transformed parameter vector (default
+is \code{log_theta_hat}). Returns the gradient of the negative
+log likelihood with respect to log-transformed parameters
+evaluated at \code{log_theta}.
 }
 \item{\code{cum_inc}}{A closure with numeric arguments \code{time}
 and \code{theta} (default is \code{theta_hat}), evaluating expected
-cumulative incidence at \code{time} using parameter values
-\code{theta}.
+cumulative incidence at \code{time} days using parameter
+vector \code{theta}. Elements must be named as in \code{theta_hat}.
 }
-\item{\code{int_inc}}{A closure with numeric arguments \code{time}
-and \code{theta} (default is \code{theta_hat}), evaluating expected
-interval incidence given \code{time} as interval endpoints.
-Returns \code{diff(cum_inc(time, theta))}, hence the value
-has length \code{length(time)-1}.
-}
-\item{\code{init}}{Matches argument.}
 \item{\code{madf_out}}{The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.}
-\item{\code{optim_out}}{The list output of \code{\link[stats:nlminb]{nlminb()}},
-\code{\link[stats:nlm]{nlm()}}, or \code{\link[stats:optim]{optim()}},
+\item{\code{optim_out}}{The list output of
+\code{\link[stats:nlminb]{nlminb()}},
+\code{\link[stats:nlm]{nlm()}}, or
+\code{\link[stats:optim]{optim()}},
 depending on \code{method}.
 }
 \item{\code{call}}{The call to \code{egf()}, making the output
@@ -68,9 +66,9 @@ reproducible with \code{eval(call)}.
 Minimizes the negative log likelihood of an epidemic growth model
 using \code{\link[stats:nlminb]{nlminb()}}, \code{\link[stats:nlm]{nlm()}}, or
 one of the routines provided through \code{\link[stats:optim]{optim()}}.
-The negative log likelihood function is written as a C++ template.
-Its gradient with respect to parameters is computed by automatic
-differentiation using package \pkg{TMB}.
+The negative log likelihood function is written as a C++ template,
+and its gradient with respect to log-transformed parameters is
+defined by automatic differentiation using package \pkg{TMB}.
 }
 \examples{
 data(canadacovid)
@@ -85,12 +83,12 @@ x <- egf(init)
 print(x)
 coef(x, log = FALSE)
 coef(x, log = TRUE)
-time_obs <- as.numeric(ontario$date - ontario$date[1])
+time_obs <- init$time
 time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
 predict(x, time = time_pred)
-simulate(x, nsim = 4, time = time_obs)
-plot(x, inc = "interval")
+simulate(x, nsim = 5, time = time_obs)
 plot(x, inc = "cumulative")
+plot(x, inc = "interval")
 
 }
 \references{

@@ -1,14 +1,14 @@
 #' \loadmathjax
-#' Evaluate expected incidence
+#' Evaluate expected cumulative incidence
 #'
 #' @description
-#' Evaluates expected cumulative and interval incidence at desired time
-#' points, conditional on a phenomenological model of cumulative incidence.
+#' Evaluates expected cumulative incidence at desired time points,
+#' conditional on a model and a vector of model parameters.
 #'
-#' @param time A numeric vector listing (increasing) time points in days
-#'   since some initial date.
+#' @param time A numeric vector listing time points in days since
+#'   a reference date.
 #' @param curve One of `"exponential"`, `"logistic"`, and `"richards"`,
-#'   indicating a phenomenological model for cumulative incidence.
+#'   indicating a model of expected cumulative incidence.
 #' @param include_baseline A logical scalar. If `TRUE`, then the
 #'   cumulative incidence model will include a linear term \mjseqn{b t}.
 #' @param theta A named numeric vector listing positive values for all
@@ -16,54 +16,45 @@
 #'
 #'   \describe{
 #'     \item{`r`}{\mjseqn{\lbrace\,r\,\rbrace}
-#'       Initial (exponential) growth rate expressed per day.
+#'       Initial exponential growth rate expressed per day.
 #'     }
-#'     \item{`x0`}{\mjseqn{\lbrace\,x_0\,\rbrace}
-#'       Expected cumulative incidence on the initial date.
-#'       This is the expectation of the number of cases observed
-#'       up to the initial date. Used only if `curve = "exponential"`.
+#'     \item{`c0`}{\mjseqn{\lbrace\,c_0\,\rbrace}
+#'       Expected cumulative incidence on the reference date.
+#'       This is the expected number of cases observed up to
+#'       the reference date. Used only if `curve = "exponential"`.
 #'     }
 #'     \item{`K`}{\mjseqn{\lbrace\,K\,\rbrace}
-#'       Expected epidemic final size. This is the expectation of the
-#'       number of cases observed over the full course of the epidemic.
+#'       Expected epidemic final size. This is expected number
+#'       of cases observed over the full course of the epidemic.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
 #'     \item{`thalf`}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
-#'       Expected time at which the epidemic attains half its
+#'       Time at which the epidemic is expected to attain half its
 #'       final size, expressed as a (possibly non-integer) number
-#'       of days since the initial date.
+#'       of days since the reference date.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
 #'     \item{`p`}{\mjseqn{\lbrace\,p\,\rbrace}
 #'       Richards shape parameter. Used only if `curve = "richards"`.
 #'     }
 #'     \item{`b`}{\mjseqn{\lbrace\,b\,\rbrace}
-#'       Baseline (linear) growth rate expressed per day.
+#'       Baseline linear growth rate expressed per day.
 #'       Used only if `include_baseline = TRUE`.
 #'     }
 #'   }
 #'
 #' @return
-#' A list with elements:
-#'
-#' \describe{
-#'   \item{`time`}{Matches argument.}
-#'   \item{`cum_inc`}{A numeric vector with length `length(time)`
-#'     such that `cum_inc[i]` is the expected number of cases observed
-#'     up to `time[i]`.
-#'   }
-#'   \item{`int_inc`}{A numeric vector with length `length(time)-1`,
-#'     such that `int_inc[i]` is the expected number of cases observed
-#'     between `time[i]` and `time[i+1]`. Equal to `diff(cum_inc)`.
-#'   }
-#' }
+#' A numeric vector with length `length(time)` such that `cum_inc[i]`
+#' is the expected number of cases observed up to `time[i]`.
 #'
 #' @details
-#' Equations specifying how expected cumulative incidence is computed
-#' for a given model are presented in Details 1 and 2 of [egf_init()].
+#' A full description of the models of expected cumulative
+#' incidence specified by `curve` and `include_baseline`
+#' can be found in the package vignette, accessible with
+#' `vignette("epigrowthfit-vignette")`.
 #'
 #' @export
-eval_inc <- function(time, curve, include_baseline = FALSE, theta) {
+eval_model <- function(time, curve, include_baseline = FALSE, theta) {
   if (missing(time)) {
     stop("Missing argument `time`.")
   } else if (!is.numeric(time)) {
@@ -88,7 +79,7 @@ eval_inc <- function(time, curve, include_baseline = FALSE, theta) {
     stop("`theta` must be a named numeric vector.")
   }
   par <- switch(curve,
-    exponential = c("r", "x0"),
+    exponential = c("r", "c0"),
     logistic    = c("r", "K", "thalf"),
     richards    = c("r", "K", "thalf", "p")
   )
@@ -101,7 +92,7 @@ eval_inc <- function(time, curve, include_baseline = FALSE, theta) {
     stop("`theta` must specify positive values for all model parameters.")
   }
 
-  cum_inc <- with(as.list(theta[par]), {
+  with(as.list(theta[par]), {
     x <- switch(curve,
       exponential = x0 * exp(r * time),
       logistic = K / (1 + exp(-r * (time - thalf))),
@@ -112,5 +103,4 @@ eval_inc <- function(time, curve, include_baseline = FALSE, theta) {
     }
     x
   })
-  list(time = time, cum_inc = cum_inc, int_inc = diff(cum_inc))
 }

@@ -6,3 +6,4 @@
 ^scrap$
 ^Makefile$
 ^TODO\.md$
+^R/plot\.R$

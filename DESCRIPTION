@@ -17,6 +17,9 @@ Imports:
     mathjaxr (>= 1.0-1),
     Rdpack (>= 0.7),
     emdbook (>= 1.3.12)
+Suggests:
+    shape,
+    scales
 LinkingTo:
     TMB,
     RcppEigen

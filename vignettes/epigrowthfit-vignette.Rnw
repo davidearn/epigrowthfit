@@ -156,7 +156,7 @@
 \newcommand{\etc}{\textit{etc}.}
 \newcommand{\etal}{\textit{et al}.}
 % code
-\newcommand{\code}[1]{\lstinline|#1|}
+\newcommand{\code}[1]{\mbox{\lstinline|#1|}}
 \newcommand{\fun}[1]{\code{`9#1`9()}}
 \let\pkg\textbf
 % comments
@@ -238,7 +238,8 @@ package_list <- c(
   "TMB",     # automatic differentiation of objective functions
   "emdbook", # tools for ecological modeling
   "knitr",   # integration of R code and LaTeX
-  "shape"    # arrows in plots
+  "shape",   # arrows in plots
+  "scales"   # colour transparency in plots
 )
 print(installed.packages()[package_list, "Version"], quote = FALSE)
 library(epigrowthfit)
@@ -273,11 +274,11 @@ can be retrieved with \fun{data} and \fun{ls}.
 (fnames <- setdiff(ls("package:epigrowthfit"), dnames))
 @
 
-Functions \fun{egf_init} and \fun{egf} do most of the work in
+Functions \fun{egf_init} and \fun{egf} do all of the work in
 fitting models of epidemic growth. They define the \code{egf_init}
 and \code{egf} classes, for which there are a number of useful
 S3 methods.
-%
+
 <<namespace2>>=
 (mnames <- setdiff(ls(getNamespace("epigrowthfit")), c(dnames, fnames)))
 @
@@ -287,12 +288,11 @@ automatically by R when the corresponding generic functions
 (the names before the dot) are called. For example, if
 \code{`9plot`9(x)} is run and \code{x} is an \code{egf} object,
 then R evaluates \code{`9plot.egf`9(x)}. \fun{egf_init}, \fun{egf},
-and the associated methods are demonstrated in \cref{sec:example1}.
+and the associated methods are demonstrated in \cref{sec:ontario}.
 
 The remaining exported functions serve primarily to enable estimation
 of the basic reproduction number $\R_0$ from initial epidemic growth
-rates $r$ obtained by \fun{egf}. These functions are demonstrated in
-\cref{sec:example2}.
+rates $r$. These functions are demonstrated in \cref{sec:ontario-R0}.
 
 
 \subsection{Documentation}
@@ -305,7 +305,7 @@ vignette("epigrowthfit-vignette")
 
 ## Help pages
 ?"epigrowthfit-package" # package
-?data_name              # data set "data_name"
+?data_set_name          # data set "data_set_name"
 ?function_name          # function "function_name"
 ?"class_name-methods"   # S3 methods for class "class_name"
                         # ("egf_init" or "egf")
@@ -348,7 +348,7 @@ yax_labels <- parse(text = paste0("c[", time, "]"))
 arr_labels <- parse(text = paste0("x[", time[-1], "]"))
 
 plot.new()
-plot.window(xlim = range(time), ylim = c(0, max(cum_inc) * 1.1),
+plot.window(xlim = range(time), ylim = c(0, max(cum_inc) * 1.04),
             yaxs = "i")
 segments(x0 = rep(par("usr")[1], 4), y0 = cum_inc,
          x1 = time, y1 = cum_inc,
@@ -370,7 +370,7 @@ title(ylab = "cumulative incidence", line = 2)
 @
 
 Here, ``cases'' is used loosely and usually means one of three things:
-(i) infections, (ii) reported infections, or (iii) reported deaths
+(i)~infections, (ii)~reported infections, or (iii)~reported deaths
 from disease. Under certain assumptions, the data type one uses makes
 no difference to the initial epidemic growth rate. To make this
 precise, let $c(t)$ be the expected number of infections occurring up
@@ -382,7 +382,7 @@ exponential function, so that
 %
 \begin{linenomath}
 \begin{equation}
-\label[blankequation]{bleq:data-1}
+\label{eq:data-1}
 c(t) \sim c_0 e^{rt}\,,
 \end{equation}
 \end{linenomath}
@@ -392,7 +392,7 @@ incidence at an earlier time, so that
 %
 \begin{linenomath}
 \begin{equation}
-\label[blankequation]{bleq:data-2}
+\label{eq:data-2}
 \wt{c}(t) \propto c(t - t_\text{delay})\,,
 \end{equation}
 \end{linenomath}
@@ -402,16 +402,17 @@ In fact, the same is true for interval incidence $c(t) - c(t-\Delta t)$
 and interval reported incidence $\wt{c}(t) - \wt{c}(t - \Delta t)$.
 Hence, for the purpose of estimating $r$ for a given epidemic, it
 is sufficient to study reported incidence and not necessary to know
-incidence, at least under assumptions \cref{bleq:data-1,bleq:data-2}.
-(Going forward, ``cases'' and ``incidence'' are used as general terms
-referring to infections, reported infections, or reported deaths from
-disease.)
+incidence (assuming that \cref{eq:data-1,eq:data-2} are valid).
+Going forward, ``cases'' and ``incidence'' are used as general terms
+referring to infections, reported infections, or reported deaths
+from disease.
 
-In the context of early historical epidemics, one often observes
-deaths due to all causes, but not disease deaths. \pkg{epigrowthfit}
-handles this additional use case by assuming a model for how all
-causes mortality is decomposed into disease mortality and mortality
-due to other causes (see \cref{sec:models-baseline}).
+In the study of historical epidemics, one often observes deaths
+due to multiple causes including the disease of interest, rather
+than disease deaths alone. \pkg{epigrowthfit} handles this
+additional use case by assuming a model for how multiple causes
+mortality is decomposed into disease mortality and mortality due
+to other causes (see \cref{sec:models-baseline}).
 
 
 \section{Models of epidemic growth}
@@ -449,7 +450,7 @@ c(t) = c_0 e^{r t}\,.
 \end{linenomath}
 %
 Two parameters must be fit to observed data: the exponential
-growth rate $r$ and initial value $c_0$.
+growth rate $r$ and initial cumulative incidence $c_0$.
 
 The exponential model ignores depletion of susceptible individuals
 and implies unbounded exponential growth of $c(t)$. It can agree
@@ -516,9 +517,8 @@ c(t) = \frac{K}{\big[1 + \big(\big(\frac{K}{c_0}\big)^p - 1\big) e^{-r p t}\big]
 \end{linenomath}
 %
 and increases to $K$ as $t \to \infty$. Here, $p$ is a shape parameter
-determining how quickly $c(t)$ saturates. (The logistic model is
-recovered in the special case $p = 1$.) The Richards model can be
-reparametrized as
+determining how quickly $c(t)$ saturates, and setting $p = 1$ recovers
+the logistic model. The Richards model can be reparametrized as
 %
 \begin{linenomath}
 \begin{equation}
@@ -527,16 +527,17 @@ c(t) = \frac{K}{\big[1 + (2^p - 1) e^{-r p (t - \thalf)}\big]^{1/p}}
 \end{equation}
 \end{linenomath}
 %
-where, as with the logistic model, $\thalf$ satisfies
-$c(\thalf) = \frac{K}{2}$. The reparametrized Richards model
-requires fitting $r$, $K$, $\thalf$, and $p$ to observed data.
-Here, again, $r$ represents the initial epidemic growth rate.
+where $\thalf$ satisfies $c(\thalf) = \frac{K}{2}$, as in
+\cref{eq:logistic}. The reparametrized Richards model requires
+fitting $r$, $K$, $\thalf$, and $p$ to observed data. Here,
+as in \cref{eq:logistic}, $r$ represents the \emph{initial}
+epidemic growth rate.
 
 \cref{fig:models-expected} compares cumulative and interval
 incidence curves generated by the exponential, logistic, and
 Richards models.
 
-<<models-expected, fig.height=2.5, fig.cap=paste0("\\textbf{[Left]} Cumulative incidence, $c(t)$. Displayed are exponential and Richards ($p = ", paste0(p, collapse = ", "), "$) curves with $r = ", r, "$, $c_0 = ", c0, "$, and $K = ", K, "$. The Richards curve with $p = 1$ corresponds to a logistic curve. A dashed line is drawn at $c = K / 2 = ", K / 2, "$ to show that $\\thalf$ is a decreasing function of $p$. Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval incidence, $c(t) - c(t - 1)$."), echo=FALSE>>=
+<<models-expected, fig.height=2.5, fig.cap=paste0("\\textbf{[Left]} Cumulative incidence, $c(t)$. Displayed are exponential and Richards ($p = ", paste0(p, collapse = ", "), "$) curves with $r = ", r, "$, $c_0 = ", c0, "$, and $K = ", K, "$. The Richards curve with $p = 1$ corresponds to a logistic curve. A dashed line is drawn at $c = K / 2 = ", K / 2, "$. This line intersects the Richards curves at time $\\thalf$ and shows that $\\thalf$ is a decreasing function of $p$. Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval incidence, $c(t) - c(t - 1)$."), echo=FALSE>>=
 r <- 1
 c0 <- 1
 K <- 1000
@@ -556,7 +557,7 @@ par(mfrow = c(1, 2), mar = c(3, 4, 1, 3), oma = c(0, 0, 0, 5),
 ## Panel 1
 plot.new()
 plot.window(xlim = range(time),
-            ylim = c(0, max(unlist(cum_inc[-1])) * 1.1),
+            ylim = c(0, max(unlist(cum_inc[-1])) * 1.04),
             xaxs = "i", yaxs = "i")
 abline(h = K / 2, lty = 2, col = "grey30")
 for (i in 1:4) {
@@ -617,7 +618,7 @@ This requires that $k$ is fit in addition to other model parameters.
 
 It is worth noting that a negative binomial distribution with
 mean $x_i$ and dispersion $k$ is well approximated by the Poisson
-distribution with mean $x_i$ if $x_i / k \ll 1$~\cite{Bolk08}.
+distribution with mean $x_i$ if $x_i / k \ll 1$~\cite[p.\ 124]{Bolk08}.
 (Negative binomial variance exceeds Poisson variance by $x_i^2 / k$.
 Relative to the mean $x_i$, the excess variance is $x_i / k$.)
 Indeed,
@@ -631,9 +632,6 @@ Indeed,
 This means that if the fitted value of $x_i / k$ is less
 than roughly $1/10$ for all $i$, then one should consider
 switching to the Poisson observation model.
-\david{Some citations needed in this section.}
-\mikael{Do we know a textbook that proves convergence
-in distribution to Poisson? There is a sketch on Wikipedia\ldots}
 
 \cref{fig:models-observed} compares negative binomial and Poisson
 distributions with a common mean of 20.
@@ -672,13 +670,20 @@ legend("topright", bty = "n", cex = 0.7,
 \subsection{Baseline growth}
 \label{sec:models-baseline}
 
-For many historical epidemics, available data count deaths due
-to all causes, not deaths to disease of interest specifically.
-Growth in disease mortality over time can still be understood
-phenomenologically provided that it is modeled separately from
-baseline mortality (deaths to causes other than the disease).
-To account for baseline mortality, it is assumed that deaths
-in the absence of disease occur at a constant rate $b > 0$.
+For many historical epidemics, available data count deaths due to
+multiple causes including the disease of interest, rather
+than disease deaths alone. For example, during the 1918 influenza
+pandemic, many individuals contracted pneumonia secondary to an
+infection with influenza. As a result, many deaths due to influenza
+were recorded as deaths due to pneumonia. In this setting, one can
+attempt to make inferences about influenza spread from aggregates
+of pneumonia and influenza deaths.
+
+Growth in disease mortality over time can understood from multiple
+causes mortality provided that disease deaths and deaths from
+other causes (baseline mortality) are modeled separately. To account
+for baseline mortality, one can assume that deaths due to causes
+other than the disease of interest occur at a constant rate $b > 0$.
 Then, for example, the logistic model given by \cref{eq:logistic}
 becomes
 %
@@ -689,15 +694,15 @@ c(t) = b t + \frac{K}{1 + e^{-r (t - \thalf)}}\,,
 \end{equation}
 \end{linenomath}
 %
-where $c(t)$ is to be interpreted as expected cumulative all
-causes mortality instead of expected cumulative disease mortality.
-Accounting for baseline mortality requires that $b$ is fit in
-addition to other model parameters.
+where $c(t)$ is to be interpreted as expected cumulative multiple
+causes mortality rather than expected cumulative disease mortality.
+Accounting for baseline mortality in this way requires that $b$ is
+fit in addition to other model parameters.
 
 \cref{fig:models-baseline} displays the effect of baseline growth
 on the logistic curve.
 
-<<models-baseline, fig.height=2.5, fig.cap=paste0("\\textbf{[Left]} Cumulative all causes mortality, $c(t)$. Displayed are logistic curves with $r = ", r, "$, $c_0 = ", c0, "$, and $K = ", K, "$ and a linear baseline ($b = ", paste0(b, collapse = ", "), "$; see \\cref{eq:logistic-baseline}). Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval all causes mortality, $c(t) - c(t - 1)$."), echo=FALSE>>=
+<<models-baseline, fig.height=2.5, fig.cap=paste0("\\textbf{[Left]} Cumulative multiple causes mortality, $c(t)$. Displayed are logistic curves with $r = ", r, "$, $c_0 = ", c0, "$, and $K = ", K, "$ and a linear baseline ($b = ", paste0(b, collapse = ", "), "$; see \\cref{eq:logistic-baseline}). Units of time are characteristic ($1 / r$). \\textbf{[Right]} Interval all causes mortality, $c(t) - c(t - 1)$."), echo=FALSE>>=
 r <- 1
 c0 <- 1
 K <- 1000
@@ -727,7 +732,7 @@ box(bty = "l")
 axis(side = 1)
 axis(side = 2)
 title(xlab = "time", line = 2)
-title(ylab = "cumulative AC mortality")
+title(ylab = "cumulative MC mortality")
 
 ## Panel 2
 plot.new()
@@ -740,7 +745,7 @@ box(bty = "l")
 axis(side = 1)
 axis(side = 2)
 title(xlab = "time", line = 2)
-title(ylab = "interval AC mortality")
+title(ylab = "interval MC mortality")
 legend(x = par("usr")[2] * 1.05, y = mean(par("usr")[3:4]),
        xpd = NA, yjust = 0.5, bty = "n", seg.len = 3, cex = 0.7,
        legend = labs, lty = ltys, lwd = 3, col = cols)
@@ -785,28 +790,65 @@ to search for the parameter vector $\vec{\wh{\theta}}$ minimizing
 $-\ell$, namely the maximum likelihood estimate of $\vec{\theta}$.
 
 The iterative optimizers are susceptible to various numerical problems
-preventing convergence near to $\vec{\wh{\theta}}$. Poor fits to the
-data by \fun{nlminb} may be corrected by trying a different optimizer,
-such as the Nelder-Mead algorithm available through \fun{optim}.
-Nelder-Mead is considered robust, but, as it makes no use of gradients,
-it is relatively slow. This may not be a concern in practice, as the
-models implemented in \pkg{epigrowthfit} have at most 6 parameters.
+preventing convergence near to $\vec{\wh{\theta}}$. Poor fits to
+the data by \fun{nlminb} are sometimes corrected by trying a different
+optimizer, such as the Nelder-Mead algorithm available through
+\fun{optim}. Nelder-Mead is considered robust, but as it makes no use
+of gradients, it is relatively slow. Speed may not be a concern in
+practice, as the models implemented in \pkg{epigrowthfit} have at most
+six parameters.
 
 
-\section{Example 1: Fitting a model of epidemic growth}
-\label{sec:example1}
+\section{The basic reproduction number}
+\label{sec:R0}
+
+The basic reproduction number of an infectious disease, commonly
+denoted by $\R_0$, is the number of people that infected person
+is expected to infect in an otherwise completely susceptible
+population. Wallinga and Lipsitch~\cite{WallLips07} showed that
+$\R_0$ is determined by the initial exponential growth rate $r$
+and the distribution of the disease generation interval, the time
+from infection of a primary case to infection of a secondary case.
+In the special case where
+%
+\begin{enumerate}
+\item the generation interval is at most $\tau_m$, and
+\item you have durations $\tau_0 < \cdots < \tau_m$ and know
+  the probability $p_i$ that the generation interval is between
+  $\tau_{i-1}$ and $\tau_i$ for $i = 1,\ldots,m$,
+\end{enumerate}
+%
+$\R_0$ is given as a function of $r$ by
+%
+\begin{equation}
+\label{eq:R0}
+\R_0(r) = \left. r \middle/ \bigg\{ \sum_{i=1}^{m} \frac{p_i (e^{-r \tau_{i-1}} - e^{-r \tau_i})}{\tau_i - \tau_{i-1}} \bigg\} \right.
+\end{equation}
+%
+(see \S 3d in~\cite{WallLips07}).
+
+\pkg{epigrowthfit} function \fun{compute_R0} evaluates the
+right-hand side of \cref{eq:R0} for given $r$, $\tau_i$,
+and $p_i$, allowing users who have estimated $r$ using the
+package's fitting machinery to also estimate $\R_0$
+(conditional on their assumed generation interval distribution).
+
+
+\section{Example: COVID-19 in Ontario, Canada}
+\label{sec:ontario}
 
 
 \subsection{Loading an epidemic time series}
+\label{sec:ontario-data}
 
 \pkg{epigrowthfit} comes with a number of infectious disease
 data sets. One of them is \code{canadacovid}, a data frame
 listing daily confirmations of COVID-19 in Canadian provinces
 and territories from February 14, 2020 to June 21, 2020. You
-can load \code{canadacovid} into your working environment
-using \fun{data}.
+can load \code{canadacovid} into your global environment using
+\fun{data}.
 
-<<example1-1-1>>=
+<<ontario-data-1>>=
 library(epigrowthfit)
 data(canadacovid)
 @
@@ -815,7 +857,7 @@ Documentation for the data set can be accessed by running
 \code{?canadacovid}, but you can directly examine the data
 frame as follows.
 
-<<example1-1-2>>=
+<<ontario-data-2>>=
 dim(canadacovid) # dimensions
 head(canadacovid, 10) # first 10 rows
 levels(canadacovid$province) # province and territory labels
@@ -824,7 +866,7 @@ sapply(canadacovid, class) # variable classes
 %
 Let's consider just the data from Ontario.
 
-<<example1-1-3>>=
+<<ontario-data-3>>=
 ontario <- subset(canadacovid, province == "ON")
 dim(ontario)
 @
@@ -833,20 +875,21 @@ dim(ontario)
 incidence time series. You can remove rows containing \code{`1NA`1}
 using \fun{na.omit}.
 
-<<example1-1-4>>=
+<<ontario-data-4>>=
 ontario <- na.omit(ontario)
 dim(ontario)
 sum(is.na(ontario$new_confirmations)) # check that no NA remain
 @
 %
-Just removing a date with a missing value is sufficient only if
-the missing number of cases is carried over to the next observation
-time. Here, we assume this to be true, but if that is not the case,
-then imputation is necessary (unless the missing number is expected
-to be negligible).
+Just removing a date with a missing value is sufficient only if the
+missing number of cases is carried over to the next observation time.
+Here, we assume that this is true, but if that is not the case, then
+imputation is necessary unless the missing number is expected to be
+negligible.
 
 
 \subsection{Initializing the fitting machinery with \tops{\protect\fun{egf_init}}{egf\_init()}}
+\label{sec:ontario-init}
 
 We will fit a Richards model (see \cref{sec:models-expected}) with
 negative binomial observations (see \cref{sec:models-observed}) to
@@ -869,7 +912,7 @@ fitting in real time, during a growing epidemic), then end at the
 last observation time.
 
 \fun{egf_init} implements the above approach by default. However,
-for an exponential model, it results in underestimation of $r$,
+for an exponential model, this results in underestimation of $r$,
 because epidemic growth becomes subexponential much earlier than
 the peak in interval incidence. When fitting an exponential model,
 it is typically best to choose the window where interval incidence
@@ -885,7 +928,7 @@ selection algorithm. For details, run \code{?egf_init}.
 employed by \pkg{epigrowthfit} (see \cref{sec:mle}) are iterative and
 require an initial estimate $\vec{\theta}^{(0)}$ of parameter vector
 $\vec{\theta}$. The exact choice of $\vec{\theta}^{(0)}$ is typically
-not critical, but a good initial guess can support convergence.
+not critical, but a good initial guess can promote convergence.
 Reasonable initial estimates of $r$ and $c_0$ are $\beta_1$ and
 $e^{\beta_0}$, respectively, where $\beta_1$ and $\beta_0$ are
 the slope and intercept of a linear model fit to the logarithm of
@@ -894,41 +937,42 @@ If the epidemic curve is roughly symmetric, then an estimate of
 $\thalf$ is supplied by the time of the peak in interval incidence.
 Certainly, $K$ should be no less than the number of cases observed
 to date and no more than the population size. When fitting a Richards
-model, one can initially assume a logistic model by estimating $p = 1$.
-When including baseline growth in a model
+model, one can initially assume a logistic model by supplying an
+estimate of 1 for $p$. When including baseline growth in a model
 (see \cref{sec:models-baseline}), one can use the average mortality
-rate in the years preceding and following the (presumably historical)
-epidemic as an initial estimate of $b$.
+rate in the years preceding and following the epidemic as an initial
+estimate of $b$.
 
 With the exception of $b$, \fun{egf_init} employs these initial
-estimates (using the lower bound on $K$) by default. For simplicity,
+estimates (taking the lower bound on $K$) by default. For simplicity,
 the default initial estimates of parameters $b$ and $k$ are 1
-day$^{-1}$ and 1, respectively. Optional argument \code{theta0}
-can be set explicitly to override any of these defaults. For details,
-run \code{?egf_init}.
+day$^{-1}$ and 1, respectively. Optional \fun{egf_init} argument
+\code{theta0} can be set explicitly to override any of these defaults.
+For details, run \code{?egf_init}.
 
-\,\\
+\par\nolinenumbers\,\par\linenumbers
 
 Below, we pass to \fun{egf_init} a Date vector \code{date}
 listing times $t_0 < t_1 < \cdots < t_n$ and a numeric vector
-\code{cases} specifying interval incidence $x_i$ for
-$i = 1,\ldots,n$, where $x_i$ is the number of cases observed
-between times $t_{i-1}$ and $t_i$. We also indicate the model
-we want to fit using arguments:
-%
-\par\vspace{6pt}
+\code{cases} with length \code{`9length`9(date)-`11`1}
+specifying interval incidence $x_i$ for $i = 1,\ldots,n$,
+where $x_i$ is the number of cases observed between times
+$t_{i-1}$ and $t_i$. We indicate the model we want to fit
+using arguments:
+
+\nolinenumbers\par\vspace{6pt}
 \begin{tabular}{rl}
 \code{curve} & options \code{`2"exponential"`2}, \code{`2"logistic"`2} (default), or \code{`2"richards"`2} \\
 \code{distr} & options \code{`2"pois"`2} or \code{`2"nbinom"`2} (default) \\
 \code{include_baseline} & options \code{`1TRUE`1} or \code{`1FALSE`1} (default)
 \end{tabular}
-\vspace{6pt}\par\noindent
+\vspace{6pt}\par\linenumbers\noindent
 %
 We accept the default values of all other arguments, letting
 \fun{egf_init} select a fitting window and initial parameter
 estimates for us as described above.
 
-<<example1-2-1>>=
+<<ontario-init-1>>=
 init <- egf_init(
   date = ontario$date,
   cases = ontario$new_confirmations[-1],
@@ -942,7 +986,7 @@ The output of the initialization is an \code{egf_init} object---%
 a list with \Sexpr{length(init)} elements containing information
 used by \fun{egf} and methods for class \code{egf_init}.
 
-<<example1-2-2>>=
+<<ontario-init-2>>=
 class(init)
 names(init)
 @
@@ -952,22 +996,20 @@ Elements \code{date}, \code{cases}, \code{curve}, \code{distr}, and
 Element \code{time} expresses each date listed in \code{date} as a
 number of days since \code{date[`11`1]}.
 
-<<example1-2-3>>=
+<<ontario-init-3>>=
 with(init, identical(time, as.numeric(date - date[1])))
 @
 %
 Elements \code{first} and \code{last} define the selected fitting
 window. They are integer indices such that \code{cases[first]}
 and \code{cases[last]} are the first and last observations in the
-window.
-%
-Element \code{theta0} is a numeric vector listing initial parameter
-estimates, which, in this example, were all selected by \fun{egf_init}.
-Element \code{log_theta0} gives the log-transformed estimates.
-To retrieve \code{theta0} and \code{log_theta0}, you can use the
-\fun{coef} method for class \code{egf_init}.
+window. Element \code{theta0} is a numeric vector listing initial
+parameter estimates, which in this example were all selected by
+\fun{egf_init}. Element \code{log_theta0} gives the log-transformed
+estimates. To retrieve \code{theta0} and \code{log_theta0}, you can
+use the \fun{coef} method for class \code{egf_init}.
 
-<<example1-2-4>>=
+<<ontario-init-4>>=
 coef(init) # same as `init$theta0`
 coef(init, log = TRUE) # same as `init$log_theta0`
 @
@@ -975,90 +1017,456 @@ coef(init, log = TRUE) # same as `init$log_theta0`
 Here, $r$ is expressed in units per day and $\thalf$ in days.
 The doubling time corresponding to an initial epidemic growth
 rate $r$ is $(\log 2) / r$, hence the doubling time corresponding
-to \code{theta0[[`2"r"`2]]} in this example is
-\Sexpr{log(2) / init$theta0[["r"]]} days.
+to \code{theta0[[`2"r"`2]]} here is
+\Sexpr{round(log(2) / init$theta0[["r"]], 2)} days.
 
-Element \code{cum_inc} is a closure (function) with a numeric
-argument \code{time} specifying times in days since \code{date[`11`1]}.
-\code{`9cum_inc`9(time)} evaluates the expected cumulative incidence
-curve (\cref{eq:richards} in this example) at \code{time} days,
-conditional on parameter vector \code{theta0}.
-Element \code{int_inc} is a closure such that \code{int_inc(time)}
-evaluates \code{`9diff`9(`9cum_inc`9(time))}, the interval incidence
-time series corresponding to \code{`9cum_inc`9(time)}.
-The \fun{predict} method for class \code{egf_init} provides
-a convenient interface to these two functions.
+Element \code{cum_inc} is a closure%
+%
+\footnote{Strictly speaking, a closure is a pairing of a
+function and an environment binding free variables. By this
+definition, every \code{function} object in R is a closure,
+because every \code{function} object \code{f} is associated
+with an enclosing environment, namely \code{`9environment`9(f)}.
 
-<<example1-2-5>>=
-predict(init, init$time[1:10])
+However, in this vignette, the word ``closure'' refers
+specifically to any function whose enclosing environment
+is the execution environment of another function ---that is,
+any function defined inside another function.}
+%
+taking numeric arguments \code{time} and \code{theta} (defaults
+are the \code{time} and \code{theta0} elements of the \code{egf_init}
+object) that specify times in days since \code{date[`11`1]} and
+parameter values named as in \code{theta0}.
+\code{`9cum_inc`9(time, theta)} evaluates the expected cumulative
+incidence curve (in this case \cref{eq:richards}) at \code{time}
+days conditional on parameter vector \code{theta}. The \fun{predict}
+method for class \code{egf_init} provides a convenient interface
+to \fun{cum_inc}.
+
+<<ontario-init-5>>=
+predict(init, time = init$time[1:10])
 @
+%
+Here, \code{int_inc} is simply \code{`9diff`9(cum_inc)}, the
+interval incidence time series associated with \code{cum_inc}.
+(This means that \code{`9length`9(int_inc)} is one less than
+\code{`9length`9(cum_inc)}.)
 
-Finally, element \code{call} contains the call to \fun{egf_init},
-so that the returned \code{egf_init} object is reproducible with
-\code{`9eval`9(call)}.
+Finally, element \code{call} is the call to \fun{egf_init},
+so that the returned \code{egf_init} object is reproducible
+with \code{`9eval`9(call)}.
 
 
 \subsection{Plotting and printing \tops{\protect\code{egf_init}}{egf\_init} objects}
+\label{sec:ontario-init-plot}
 
 The \fun{plot} method for class \code{egf_init} displays together
-all of the salient components of an \code{egf_init} object. It
-takes an argument \code{inc} indicating the type of incidence to
-plot: \code{`2"cumulative"`2} (default) or \code{`2"interval"`2}.
+the main components of an \code{egf_init} object. It takes an
+argument \code{inc} indicating the type of incidence to plot:
+\code{`2"cumulative"`2} (default) or \code{`2"interval"`2}.
 
-<<example1-3-1, fig.height=7, fig.cap='Result of plotting an \\code{egf_init} object: \\textbf{[Top]} cumulative incidence (\\code{inc = `2"cumulative"`2}) and \\textbf{[Bottom]} interval incidence (\\code{inc = `2"interval"`2}). Points are observed incidence. Lines are expected incidence conditional on initial parameter estimates listed at the bottom of the right margin. Initial parameter estimates are guesses, hence the lines are \\emph{not} fitted to the data. Incidence is plotted on a logarithmic scale, with zeros plotted directly on the horizontal axis. Vertical dashed lines indicate the selected fitting window. For interval incidence, a coloured point at time $t_i$ indicates that the observation interval $t_i-t_{i-1}$ was more than 2.5\\% longer than the median observation interval.'>>=
+<<ontario-init-plot-1, fig.height=7, fig.cap='Result of \\code{`9plot`9(init, inc)}: \\textbf{[Top]} cumulative incidence (\\code{inc = `2"cumulative"`2}) and \\textbf{[Bottom]} interval incidence (\\code{inc = `2"interval"`2}). Points are observed incidence. Lines are expected incidence conditional on initial parameter estimates listed at the bottom of the right margin. Initial parameter estimates are guesses, hence the lines are \\emph{not} fitted to the data. Incidence is plotted on a logarithmic scale, with zeros plotted directly on the horizontal axis. Vertical dashed lines indicate the selected fitting window. For interval incidence, a coloured point at time $t_i$ indicates that the observation interval $t_i-t_{i-1}$ was more than 2.5\\% shorter or longer than the median observation interval.'>>=
 par(mfrow = c(2, 1)) # create a two-panel plot
 plot(init, inc = "cumulative")
 plot(init, inc = "interval")
 @
 
-The exact endpoints of the fitting window selected by \fun{egf_init}
-are not obvious from \cref{fig:example1-3-1}. The \fun{print} method
-for class \code{egf_init} will tell you more about the window and
-remind you that actually fitting a model requires a call to \fun{egf}.
+Plots of interval incidence should be interpreted with care.
+The displayed curve is supported on a grid of equally spaced time
+points, and the spacing chosen is the median observation interval.
 
-<<example1-3-2>>=
-print(init) # or just `init`
+<<ontario-init-plot-2>>=
+## Grid spacing in days
+dt <- diff(init$time)
+median(dt)
+@
+%
+However, the displayed data may not be equally spaced. This is the
+case in the \code{ontario} data, where most observations are counts
+over one day, but some are counts over two days.
+
+<<ontario-init-plot-3>>=
+## Frequency table
+dtt <- table(dt)
+names(dtt) <- paste0(names(dtt), "d")
+dtt
+@
+%
+Counts over fewer or more days than the median observation interval
+will tend to deviate from the plotted curve, not due to chance but
+due to scale. These exceptional counts should be noted when visually
+assessing whether the plotted curve fits the data. The \fun{plot}
+method for class \code{egf_init} highlights exceptional counts
+(see \cref{fig:ontario-init-plot-1}). By default, it tolerates a 2.5\%
+difference from the median. This can be changed by setting optional
+argument \code{tol} to a non-negative number other than 0.025.
+
+<<ontario-init-plot-4, eval=FALSE>>=
+## Not run
+plot(init, inc = "interval", tol = 0) # highlight all exceptional counts
+plot(init, inc = "interval", tol = Inf) # disable highlighting
+@
+
+The exact endpoints of the fitting window selected by \fun{egf_init}
+are not obvious from \cref{fig:ontario-init-plot-1}. The \fun{print}
+method for class \code{egf_init} will tell you more about the window
+and remind you that actually fitting a model requires a call to
+\fun{egf}.
+
+<<ontario-init-plot-5>>=
+init # same as `print(init)`
 @
 
 
-\subsection{Obtaining a fit with \tops{\protect\fun{egf}}{egf()}}
+\subsection{Fitting the model with \tops{\protect\fun{egf}}{egf()}}
+\label{sec:ontario-fit}
 
-Function \fun{egf} takes an optional argument \code{method},
-used to indicate an optimization algorithm. The options are
-\code{`2"nlminb"`2} (default) \code{`2"nlm"`2},
+\cref{fig:ontario-init-plot-1} shows that our initial guess
+$\vec{\theta}^{(0)}$ of the model parameter vector $\vec{\theta}$
+produces a poor fit to the \code{ontario} data. Function \fun{egf}
+uses this initial guess as a starting point in an optimization
+algorithm to obtain a superior estimate---specifically, a
+numerical approximation of the maximum likelihood parameter
+vector $\vec{\wh{\theta}}$ (see \cref{sec:mle}).
+
+The first argument of \fun{egf} expects an \code{egf_init}
+object. An optional second argument \code{method} lets you
+specify an optimization algorithm. The options are
+\code{`2"nlminb"`2} (default), \code{`2"nlm"`2},
 \code{`2"Nelder-Mead"`2}, \code{`2"BFGS"`2},
 \code{`2"L-BFGS-S"`2}, and \code{`2"CG"`2}.
-If the default produces a bad fit to the data, then try
-different algorithms and choose the fit with the greatest
-likelihood.
+Further optional arguments will be passed directly to
+\fun{nlminb}, \fun{nlm}, or \fun{optim}, depending on
+\code{method}. Below, we pass \code{init} to \fun{egf},
+accepting the default \code{method = `2"nlminb"`2}.
 
-Below, we pass \code{init} to \fun{egf}, accepting the
-default \code{method = `2"nlminb"`2}.
-
-<<example1-4-1>>=
+<<ontario-fit-1>>=
 fit <- egf(init)
-class(fit)
 @
 
 \fun{egf} returns an \code{egf} object---a list with
-\Sexpr{length(init)} elements containing information
-about the fit that it obtained and other information
-used by methods for class \code{egf_init}.
+\Sexpr{length(init)} elements specifying the fitted model
+and other information used by methods for class \code{egf}.
 
-<<example1-4-2>>=
+<<ontario-fit-2>>=
 class(fit)
 names(fit)
 @
+%
+Elements \code{init} and \code{method} are copies of the arguments
+of \fun{egf}. Element \code{theta_hat} is a numeric vector listing
+\emph{fitted} parameter estimates, and element \code{log_theta_hat}
+gives the log-transformed estimates. To retrieve \code{theta_hat}
+and \code{log_theta_hat}, you can use the \fun{coef} method for
+class \code{egf}.
 
-<<example-4-3>>=
+<<ontario-fit-3>>=
+coef(fit) # same as `fit$theta_hat`
+coef(fit, log = TRUE) # same as `fit$log_theta_hat`
+@
+%
+Once again, $r$ is expressed in units per day and $\thalf$ in days.
+The doubling time corresponding to \code{theta_hat[[`2"r"`2]]} here
+is \Sexpr{round(log(2) / fit$theta_hat[["r"]], 2)} days, shorter
+than our initial estimate of
+\Sexpr{round(log(2) / init$theta0[["r"]], 2)} days.
+
+Element \code{nll} is the negative log likelihood of
+\code{log_theta_hat}. Elements \code{nll_fn} and \code{nll_gr} are
+closures taking a single numeric argument \code{log_theta} (default is
+\code{log_theta_hat}) specifying log-transformed parameter values in
+the order used by \code{log_theta_hat}. They evaluate the negative log
+likelihood function and its gradient with respect to log-transformed
+parameters at \code{log_theta}.
+
+<<ontario-fit-4>>=
+## Temporarily add list subset to search path
+attach(fit[c("log_theta_hat", "nll", "nll_fn", "nll_gr")], name = "tmp")
+
+nll_fn(log_theta_hat)
+nll_gr(log_theta_hat)
+identical(nll, nll_fn(log_theta_hat))
+@
+%
+It is a good idea to check that:
+%
+\begin{enumerate}
+\item the norm of the gradient evaluated at \code{log_theta_hat}
+  is some orders of magnitude less than one;
+\item that small, random perturbations of \code{log_theta_hat}
+  have lower likelihood (greater negative log likelihood).
+\end{enumerate}
+
+<<ontario-fit-5>>=
+## Check 1
+norm(nll_gr(log_theta_hat))
+
+## Check 2
+n <- 1e04
+ptb <- replicate(n, rnorm(log_theta_hat, mean = 0, sd = 0.1))
+lth_ptb <- log_theta_hat + ptb
+nll_ptb <- apply(lth_ptb, 2, nll_fn)
+head(nll_ptb)
+sum(nll_ptb > nll) / n # should be close to 1
+
+## Remove list subset from search path
+detach("tmp")
+@
+%
+These checks provide some assurance that \fun{theta_hat} approximates
+a local maximum of the likelihood surface. They do not, however, rule
+out the possibility of multiple local maxima. Hence \code{theta_hat}
+may still not approximate the global maximum. Such apprehensions are
+typically resolved by plotting the fitted model to assess goodness of
+fit (see \cref{sec:ontario-fit-plot}).
+
+Element \code{cum_inc} of the \code{egf} object is a closure
+identical to that found in the \code{egf_init} object, except
+except that the default value of argument \code{theta} is
+\code{theta_hat}, not \code{theta0}. The \fun{predict} method
+for class \code{egf} uses \fun{cum_inc} to evaluate the fitted
+model of expected cumulative incidence at desired times.
+
+<<ontario-fit-6>>=
+predict(fit, time = init$time[1:10])
+@
+%
+Once again, \code{int_inc} is simply \code{`9diff`9(cum_inc)},
+the interval incidence time series associated with \code{cum_inc}.
+
+Elements \code{madf_out} and \code{optim_out} save the output
+of \pkg{TMB} function \fun{MakeADFun} and the optimizer specified
+by \fun{egf} argument \code{method} (\fun{nlminb}, \fun{nlm},
+or \fun{optim}). These are retained in the \code{egf} object to
+allow the user to diagnose poor fits, as well as warnings and
+errors issued by the optimizer. For details, consult the relevant
+documentation (\eg by running \code{?TMB::MakeADFun}).
+
+Finally, element \code{call} contains the call to \fun{egf}.
+The \fun{egf} object is reproducible with \code{`9eval`9(call)}.
+
+
+\subsection{Plotting and printing \tops{\protect\code{egf}}{egf} objects}
+\label{fig:ontario-fit-plot}
+
+The \fun{plot} and \fun{print} methods for class \code{egf}
+replicate the methods for class \code{egf_init}
+(see \cref{sec:ontario-init-plot}), except that what is
+plotted and printed is no longer an initial guess but
+a fit to the data obtained by optimization. Comparing
+\cref{fig:ontario-init-plot-1, fig:ontario-fit-plot-1}
+shows that the fit is much better than the guess, as we
+might have expected.
+
+<<ontario-fit-plot-1, fig.height=7, fig.cap='Result of \\code{`9plot`9(fit, inc)}: \\textbf{[Top]} cumulative incidence (\\code{inc = `2"cumulative"`2}) and \\textbf{[Bottom]} interval incidence (\\code{inc = `2"interval"`2}). Points are observed incidence. Lines are expected incidence conditional on fitted parameter estimates listed at the bottom of the right margin. Incidence is plotted on a logarithmic scale, with zeros plotted directly on the horizontal axis. Vertical dashed lines indicate the selected fitting window. For interval incidence, a coloured point at time $t_i$ indicates that the observation interval $t_i-t_{i-1}$ was more than 2.5\\% shorter or longer than the median observation interval.'>>=
+par(mfrow = c(2, 1)) # create a two-panel plot
 plot(fit, inc = "interval")
 plot(fit, inc = "cumulative")
 @
 
-\section{Example 2: Estimating the basic reproduction number \tops{$\R_0$}{R0}}
-\label{sec:example2}
+<<ontario-fit-plot-2>>=
+fit # same as `print(fit)`
+@
 
-Under construction!
+If you would like to hand craft a plot (\eg one with a different
+colour palette and without annotation), then do not rely on the
+\fun{plot} method for \code{egf} objects. You can retrieve the
+interval incidence data from \code{init} elements \code{date}
+and \code{cases}, and you can evaluate the fitted cumulative
+incidence curve at arbitrary time points using the \fun{plot}
+method for \code{egf} objects (see \cref{sec:ontario-fit}).
+
+\subsection{Simulating the fitted model}
+\label{sec:ontario-fit-simulate}
+
+Simulations of a fitted model can be used to assess the robustness
+of the model to observation error (see \cref{sec:models-observed}).
+You can obtain simulations using the \fun{simulate} method for class
+\code{egf}. Arguments \code{nsim} and \code{seed} specify a number
+of simulations and an optional seed for random number generation, used
+to make simulations reproducible. You can specify time points with
+optional argument \code{time}. The default is \code{object$init$time},
+where \code{object} is the \code{egf} object. This matches the time
+points in your simulations to the time points in your data, which is
+typically what you want.
+
+<<ontario-fit-simulate-1>>=
+sim <- simulate(fit, nsim = 6, seed = 1257)
+@
+%
+\fun{simulate} returns a list with containing a copy of argument
+\code{time}, as well as two matrices \code{int_inc} and \code{cum_inc}.
+
+<<ontario-fit-simulate-2>>=
+t(sapply(sim[c(2, 3)], dim)) # dimensions of each matrix
+@
+
+Matrix \code{int_inc} has \code{`9length`9(time)-`11`1} rows and
+\code{nsim} columns, such that \code{int_inc[i, j]} is the number
+of cases observed between \code{time[i]} and \code{time[i+`11`1]}
+in simulation \code{j}. Each element of row vector
+\code{int_inc[i, ]} is sampled independently from
+a Poisson or negative binomial distribution
+(depending on \code{object$init$distr},
+in this case \code{`2"nbinom"`2}) with mean
+\code{`9predict`9(object, time)$int_inc[i]}.
+The negative binomial dispersion parameter, if used,
+takes its fitted value \code{object$theta_hat[[`2"nbdisp"`2]]}.
+
+Matrix \code{cum_inc} has \code{`9length`9(time)} rows and
+\code{nsim} columns, such that \code{int_inc[i, j]} is the
+number of cases observed up to \code{time[i]} in simulation
+\code{j}. Column vector \code{cum_inc[, j]} is computed as
+\code{c0 + `9cumsum`9(`9c`9(`10`1, int_inc[, j]))}, where
+\code{c0 = `9predict`9(object, time)$cum_inc[`11`1]} is the
+value of expected cumulative incidence at \code{time[`11`1]}
+in the fitted model.
+
+<<ontario-fit-simulate-3>>=
+lapply(sim, head)
+@
+%
+Plotting the predicted incidence curves on top of the simulated ones
+yields \cref{fig:ontario-fit-simulate-4}.
+
+<<ontario-fit-simulate-4, fig.height=2.5, fig.cap="Results of \\code{`9simulate`9(fit, nsim = `16`1, seed = `11257`1)} and \\code{`9predict`9(fit)}: \\textbf{[Left]} cumulative incidence and \\textbf{[Right]} interval incidence. Simulated curves are plotted in grey with transparency. Predicted curves are plotted in colour.", echo=FALSE>>=
+pred <- predict(fit)
+
+## Setup
+par(mfrow = c(1, 2), mar = c(3, 5, 1, 2), mgp = c(3, 0.7, 0), las = 1)
+
+## Panel 1
+plot.new()
+plot.window(xlim = range(sim$time),
+            ylim = c(0, max(sim$cum_inc) * 1.04),
+            xaxs = "i", yaxs = "i")
+for (j in 1:ncol(sim$cum_inc)) {
+  lines(sim$time, sim$cum_inc[, j],
+        lwd = 2, col = scales::alpha("#BBBBBB", alpha = 0.7))
+}
+lines(pred$time, pred$cum_inc, lwd = 3, col = "#44AA99")
+box(bty = "l")
+axis(side = 1)
+axis(side = 2)
+title(xlab = "time", line = 2)
+title(ylab = "cumulative incidence", line = 3.8)
+
+## Panel 2
+plot.new()
+plot.window(xlim = range(sim$time),
+            ylim = c(0, max(sim$int_inc) * 1.04),
+            xaxs = "i", yaxs = "i")
+for (j in 1:ncol(sim$int_inc)) {
+  lines(sim$time[-1], sim$int_inc[, j],
+        lwd = 2, col = scales::alpha("#BBBBBB", alpha = 0.3))
+}
+lines(pred$time[-1], pred$int_inc, lwd = 3, col = "#44AA99")
+box(bty = "l")
+axis(side = 1)
+axis(side = 2)
+title(xlab = "time", line = 2)
+title(ylab = "interval incidence")
+@
+
+
+\subsection{Estimating the basic reproduction number}
+\label{sec:ontario-R0}
+
+\pkg{epigrowthfit} function \fun{compute_R0} uses \cref{eq:R0}
+to calculate the basic reproduction number $\R_0$ as a function
+of the initial exponential growth rate $r$. This calculation
+depends on interval endpoints $\tau_i$ and bin probabilities
+$p_i$ defining a binned generation interval distribution (see
+\cref{sec:R0}).
+
+Function \fun{compute_R0} takes numeric arguments \code{r},
+\code{breaks}, and \code{probs}, specifying $r$ (in units
+day$^{-1}$), $\tau_i$ (in units days), and $p_i$, respectively.
+It is vectorized in \code{r}, so \code{r} can have length
+greater than 1.
+\code{probs} must have length \code{`9length`9(breaks)-`11`1},
+and \code{probs[i]} should define the probability that
+the generation interval is between \code{breaks[i]} and
+\code{breaks[i+1]} days.%
+\footnote{It is actually sufficient for \code{probs} to give
+probability \emph{weights}, because \fun{compute_R0} normalizes
+for you (\ie it assigns \code{probs <- probs / `9sum`9(probs)}).
+Here, for clarity, we do the normalization up front.}
+
+Below, we assign to \code{r} the estimate obtained in the fit
+to the Ontario data.
+
+<<ontario-R0-1>>=
+(r <- coef(fit)[["r"]])
+@
+%
+For the purpose of demonstration, we assume that the generation
+interval in days follows a log-normal distribution with parameters
+$\mu = \log 5$ and $\sigma = 0.25$, truncated at 10
+(see \cref{fig:dlnorm}).%
+\footnote{A log-normal distribution with parameters $\mu$ and $\sigma$
+is the distribution of the natural logarithm of a normally distributed
+random variable with mean $\mu$ and variance $\sigma^2$,
+\ie the distribution of $Y = \log(X)$,
+where $X \sim \mathrm{Normal(\mu,\sigma^2)}$.}
+Then the probability $p_i$ that the generation interval is between
+$i-1$ and $i$ days is given by
+%
+\begin{equation}
+p_i = \frac{F(i) - F(i-1)}{F(10)}\,,\qquad i = 1,\ldots,10\,,
+\end{equation}
+%
+where $F$ is the untruncated log-normal distribution function.
+We calculate these $p_i$ as follows, using \pkg{stats} function
+\fun{plnorm} to evaluate $F$.
+
+<<ontario-R0-2>>=
+breaks <- 0:10
+probs <- diff(plnorm(breaks, meanlog = log(5), sdlog = 0.25))
+probs <- probs / plnorm(10, meanlog = log(5), sdlog = 0.25)
+@
+%
+Passing \code{r}, \code{breaks}, and \code{probs} to \fun{compute_R0}
+generates the desired value of $\R_0$.
+
+<<ontario-R0-3>>=
+compute_R0(r, breaks, probs)
+@
+
+
+<<dlnorm, fig.height=2.5, fig.cap=paste0("The density function of a random variable whose distribution is $\\mathrm{Lognormal}(\\mu = \\log ", exp_mu, ", \\sigma^2 = ", sigma, "^2)$ and truncated at ", end, "."), echo=FALSE>>=
+end <- 10
+x <- seq(0, end, by = 0.2)
+mu <- log(5)
+exp_mu <- exp(mu)
+sigma <- 0.25
+Fend <- plnorm(end, meanlog = mu, sdlog = sigma)
+fx <- dlnorm(x, meanlog = mu, sdlog = sigma) / Fend
+
+## Setup
+par(mar = c(3, 4, 1, 1), mgp = c(3, 0.7, 0), las = 1)
+
+## Plot
+plot.new()
+plot.window(xlim = c(0, end+1), ylim = c(0, max(fx) * 1.04),
+            xaxs = "i", yaxs = "i")
+lines(x, fx, lwd = 3, col = "grey80")
+box(bty = "l")
+axis(side = 1)
+axis(side = 2)
+title(xlab = "Value", line = 2)
+title(ylab = "Probability")
+@
+
+
+\section{Missing functionality (to be implemented soon)}
+
+\begin{itemize}
+\item Confidence intervals on fitted incidence curves
+  and parameter estimates.
+\item Mixed models including random effects in a principled way.
+\end{itemize}
+
 
 \end{document}
 

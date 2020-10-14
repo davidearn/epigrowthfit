@@ -42,21 +42,21 @@ Type objective_function<Type>::operator() ()
 
     // Parameters
     PARAMETER(log_r);      // log initial growth rate
-    PARAMETER(log_x0);     // log initial cases         (exponential)
+    PARAMETER(log_c0);     // log initial cum. inc.     (exponential)
     PARAMETER(log_K);      // log final size            (logistic, richards)
     PARAMETER(log_thalf);  // log time half final size  (logistic, richards)
     PARAMETER(log_p);      // log Richards shape        (richards)
-    PARAMETER(log_b);      // log baseline growth rate  (baseline_flag)
     PARAMETER(log_nbdisp); // log nb dispersion         (nbinom)
+    PARAMETER(log_b);      // log baseline growth rate  (baseline_flag)
 
     // Inverse-link transform parameters
     Type r = exp(log_r);
-    Type x0 = exp(log_x0);
+    Type c0 = exp(log_c0);
     Type K = exp(log_K);
     Type thalf = exp(log_thalf);
     Type p = exp(log_p);
-    Type b = exp(log_b);
     Type nbdisp = exp(log_nbdisp);
+    Type b = exp(log_b);
     Type log_nbxsvar;
     
     // Objective function
@@ -65,9 +65,6 @@ Type objective_function<Type>::operator() ()
     vector<Type> cum_inc(t.size());     // cumulative incidence,    length N+1
     vector<Type> int_inc(x.size());     // interval incidence,      length N
     vector<Type> log_int_inc(x.size()); /* log interval incidence,  length N
-					   - redundant but useful for plots
-					   - though plots are confusing if 
-					     time points are unequally spaced */
 
     
     /*COMPUTE NEGATIVE LOG LIKELIHOOD ========================================*/
@@ -78,7 +75,7 @@ Type objective_function<Type>::operator() ()
         switch (curve_flag)
         {
         case exponential:
-            cum_inc(i) = x0 * exp(r * t(i));
+            cum_inc(i) = c0 * exp(r * t(i));
             break;
         case logistic:
             cum_inc(i) = K / (Type(1) + exp(-r * (t(i) - thalf)));
@@ -113,7 +110,5 @@ Type objective_function<Type>::operator() ()
 	}
     }
 
-    REPORT(log_int_inc);
-    ADREPORT(log_int_inc);
     return nll;   
 }

@@ -3,14 +3,14 @@
 \name{egf_init}
 \alias{egf_init}
 \title{\loadmathjax
-Define fitting windows and initial parameter estimates}
+Define a fitting window and initial parameter estimates}
 \usage{
 egf_init(
   date,
   cases,
   curve = "logistic",
-  include_baseline = FALSE,
   distr = "nbinom",
+  include_baseline = FALSE,
   theta0 = NULL,
   min_wlen = 6,
   peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
@@ -24,41 +24,42 @@ egf_init(
 Should start at or before the date of the first observed case.}
 
 \item{cases}{A numeric vector with length \code{length(date)-1}.
-\code{cases[i]} is the number of cases observed between
-\code{date[i]} and \code{date[i+1]}. Here, "cases" can mean
-(reported) infections or (reported) deaths. Missing
-values are not tolerated.}
+\code{cases[i]} is the number of cases observed between \code{date[i]}
+and \code{date[i+1]}. Here, "cases" can mean infections, reported
+infections, or reported deaths (either disease deaths or deaths
+due to multiple causes including the disease of interest).
+Missing values are not tolerated.}
 
 \item{curve}{One of \code{"exponential"}, \code{"logistic"}, and \code{"richards"},
-indicating a phenomenological model for cumulative incidence.}
+indicating a model of expected cumulative incidence. See Details 2.}
 
-\item{include_baseline}{A logical scalar. If \code{TRUE}, then the
-cumulative incidence model will include a linear term \mjseqn{b t}.
-Assign \code{TRUE} only if \code{cases} counts deaths due to all causes and
-you want to model growth above a baseline mortality rate \mjseqn{b}.}
+\item{distr}{One of \code{"pois"} and \code{"nbinom"}, indicating a
+model of observed interval incidence. See Details 2.}
 
-\item{distr}{One of \code{"pois"} and \code{"nbinom"}, indicating an
-observation model for interval incidence.}
+\item{include_baseline}{A logical scalar. If \code{TRUE}, then
+the model of expected cumulative incidence will include
+a linear baseline \mjseqn{b t}. Assign \code{TRUE} if \code{cases}
+counts deaths due to multiple causes. See Details 2.}
 
 \item{theta0}{A named numeric vector specifying positive
 initial estimates of relevant model parameters:
 
 \describe{
 \item{\code{r}}{\mjseqn{\lbrace\,r\,\rbrace}
-Initial (exponential) growth rate expressed per day.
+Initial exponential growth rate expressed per day.
 }
-\item{\code{x0}}{\mjseqn{\lbrace\,x_0\,\rbrace}
-Expected cumulative incidence on \code{date[1]}. This is the
-expectation of the number of cases observed up to \code{date[1]}.
+\item{\code{c0}}{\mjseqn{\lbrace\,c_0\,\rbrace}
+Expected cumulative incidence on \code{date[1]}. This is
+the expected number of cases observed up to \code{date[1]}.
 Used only if \code{curve = "exponential"}.
 }
 \item{\code{K}}{\mjseqn{\lbrace\,K\,\rbrace}
-Expected epidemic final size. This is the expectation of the
-number of cases observed over the full course of the epidemic.
+Expected epidemic final size. This is the expected number
+of cases observed over the full course of the epidemic.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
 \item{\code{thalf}}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
-Expected time at which the epidemic attains half its
+Time at which the epidemic is expected to attain half its
 final size, expressed as a (possibly non-integer) number
 of days since \code{date[1]}.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
@@ -67,7 +68,7 @@ Used only if \code{curve \%in\% c("logistic", "richards")}.
 Richards shape parameter. Used only if \code{curve = "richards"}.
 }
 \item{\code{b}}{\mjseqn{\lbrace\,b\,\rbrace}
-Baseline (linear) growth rate expressed per day.
+Baseline linear growth rate expressed per day.
 Used only if \code{include_baseline = TRUE}.
 }
 \item{\code{nbdisp}}{\mjseqn{\lbrace\,k\,\rbrace}
@@ -77,8 +78,8 @@ Used only if \code{distr = "nbinom"}.
 }
 
 \code{theta0} can be \code{NULL} or a vector specifying a subset
-of the relevant parameters. Absent parameters are set
-internally. See Value.}
+of the relevant parameters. Unspecified parameters are
+set internally. See Value.}
 
 \item{min_wlen}{An integer scalar. The minimum number
 of observations in the fitting window. Must be at
@@ -88,19 +89,19 @@ least the number of parameters being fit.}
 the peak in \code{cases}. The index of the last observation
 in the fitting window will be \code{peak} or \code{peak+1}.
 The default is like \code{which.max(cases)} but careful
-to prevent \code{peak < min_wlen}. See Details 4.}
+to prevent \code{peak < min_wlen}. See Details 1.}
 
 \item{first}{An integer in \code{seq_along(cases)} indexing
 the first observation in the fitting window, or \code{NULL}.
 Non-\code{NULL} values may not be respected, depending on
-other arguments. See Details 4.}
+other arguments. See Details 1.}
 
 \item{first_level}{A numeric scalar or \code{NULL}. Can be
-used to define \code{first} if \code{first = NULL}. See Details 4.}
+used to define \code{first} if \code{first = NULL}. See Details 1.}
 
 \item{skip_zero}{A logical scalar. If \code{TRUE}, then an
 attempt is made when defining \code{first} to ensure that
-\code{cases[first] > 0}. See Details 4.}
+\code{cases[first] > 0}. See Details 1.}
 }
 \value{
 An "egf_init" object. A list with elements:
@@ -113,7 +114,7 @@ Equal to \code{as.numeric(date - date[1])}.
 \item{\code{cases}}{Matches argument.}
 \item{\code{first}}{An integer indexing the start of the fitting window,
 so that the first observation is \code{cases[first]}. May not match
-the argument of the same name. See Details 4.
+the argument of the same name. See Details 1.
 }
 \item{\code{last}}{An integer indexing the end of the fitting window,
 so that the last observation is \code{cases[last]}. Equal to \code{peak}
@@ -121,41 +122,35 @@ if \code{curve = "exponential"} and \code{max(length(cases), peak + 1)}
 otherwise.
 }
 \item{\code{curve}}{Matches argument.}
-\item{\code{include_baseline}}{Matches argument.}
 \item{\code{distr}}{Matches argument.}
+\item{\code{include_baseline}}{Matches argument.}
 \item{\code{theta0}}{A named numeric vector whose elements
-are the subset of \code{r}, \code{x0}, \code{K}, \code{thalf}, \code{p}, \code{b},
+are the subset of \code{r}, \code{c0}, \code{K}, \code{thalf}, \code{p}, \code{b},
 and \code{nbdisp} relevant to \code{curve}, \code{include_baseline},
 and \code{distr}. Values from the argument of the same
 name are retained if they are positive and discarded
 otherwise. Parameters not specified in the argument
 are assigned their default value:
 \describe{
-\item{\code{r}, \code{x0}}{\code{beta1} and \code{exp(beta0)}, respectively,
+\item{\code{r}, \code{c0}}{\code{beta1} and \code{exp(beta0)}, respectively,
 where \code{beta1} and \code{beta0} are the slope and intercept
-of a linear fit to \code{log(cumsum(cases) + 0.1) ~ time[-1]}
+of a linear model fit to \code{log(cumsum(cases) + 0.1)}
 within the first half of the fitting window.
 }
 \item{\code{K}}{\code{sum(cases)}}
 \item{\code{thalf}}{\code{time[peak+1]}}
 \item{\code{p}}{1}
-\item{\code{b}}{1}
 \item{\code{nbdisp}}{1}
+\item{\code{b}}{1}
 }
 }
 \item{\code{log_theta0}}{Log-transformed \code{theta0}. Identical to
-\code{log(theta0)} with \code{"log_"} prepended to the names.
+\code{log(theta0)}, but with \code{"log_"} prepended to the names.
 }
 \item{\code{cum_inc}}{A closure with numeric arguments \code{time}
 and \code{theta} (default is \code{theta0}), evaluating expected
-cumulative incidence at \code{time} using parameter values
-\code{theta}.
-}
-\item{\code{int_inc}}{A closure with numeric arguments \code{time}
-and \code{theta} (default is \code{theta0}), evaluating expected
-interval incidence given \code{time} as interval endpoints.
-Returns \code{diff(cum_inc(time, theta))}, hence the value
-has length \code{length(time)-1}.
+cumulative incidence at \code{time} days using parameter
+vector \code{theta}. Elements must be named as in \code{theta0}.
 }
 \item{\code{call}}{The call to \code{egf_init()}, making the output
 reproducible with \code{eval(call)}.
@@ -163,131 +158,14 @@ reproducible with \code{eval(call)}.
 }
 }
 \description{
-Given an incidence or mortality time series, constructs an
+Given an interval incidence time series, constructs an
 "egf_init" object specifying a fitting window and initial
-estimates of model parameters. Pains are taken to define a
-window and estimates that are reasonable in the absence of
-any user input.
+estimates of model parameters. Attempts are made to define
+a window and estimates that are reasonable in the absence
+of any user input.
 }
 \details{
-\subsection{1. Phenomenological models}{
-
-Let \mjseqn{x(t)} be the expected number of cases observed up to
-\mjseqn{t} days since \code{date[1]} (i.e., expected cumulative incidence),
-and let \mjseqn{x_0 = x(0) > 0}. Ignoring any baseline growth
-(see Details 2), \mjseqn{x(t)} is modeled as an exponential, logistic,
-or Richards curve.
-\subsection{Exponential model}{
-
-If \mjseqn{x(t)} follows
-
-\mjsdeqn{x'(t) = r x(t)\,,\qquad r > 0\,,}
-
-then \mjseqn{x(t)} grows exponentially as
-
-\mjsdeqn{x(t) = x_0 e^{r t}\,.}
-
-Hence the exponential model for \mjseqn{x(t)} requires
-fitting two parameters to observed data: the exponential
-growth rate \mjseqn{r} and initial value \mjseqn{x_0}.
-
-The exponential model ignores depletion of susceptible
-individuals and implies continuous exponential growth
-in \mjseqn{x(t)}. Hence it will only agree with epidemic
-data during the (typically short) initial exponential
-growth phase. \insertCite{Ma+14;textual}{epigrowthfit}
-show that estimates of \mjseqn{r} are sensitive to the
-choice of fitting window, and that more robust fits to
-the data are likely to obtained with the logistic and
-Richards models, at negligible cost.
-}
-
-\subsection{Logistic model}{
-
-If \mjseqn{x(t)} follows
-
-\mjsdeqn{x'(t) = r x(t) \bigg(1 - \frac{x(t)}{K}\bigg)\,,\qquad r, K > 0\,,}
-
-and if \mjseqn{x_0 \in (0,K)}, then \mjseqn{x(t)} grows as
-
-\mjsdeqn{x(t) = \frac{K}{1 + \big(\frac{K}{x_0} - 1\big) e^{-r t}}}
-
-and increases to \mjseqn{K} as \mjseqn{t \to \infty}.
-The logistic model can be reparametrized as
-
-\mjsdeqn{x(t) = \frac{K}{1 + e^{-r (t - t_\text{half})}}\,,}
-
-where \mjseqn{t_\text{half}} is the time at which
-cumulative incidence attains half its final size,
-satisfying \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
-The reparametrized logistic model requires fitting
-\mjseqn{r}, \mjseqn{K}, and \mjseqn{t_\text{half}}
-to observed data.
-}
-
-\subsection{Richards model}{
-
-If \mjseqn{x(t)} follows
-
-\mjsdeqn{x'(t) = r x(t) \bigg(1 - \bigg(\frac{x(t)}{K}\bigg)^p\bigg)\,,\qquad r, K, p > 0\,,}
-
-and if \mjseqn{x_0 \in (0,K)}, then \mjseqn{x(t)} grows as
-
-\mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + \big(\big(\frac{K}{x_0}\big)^p - 1\big) e^{-r p t} \big\rbrack^{1/p}}}
-
-and increases to \mjseqn{K} as \mjseqn{t \to \infty}.
-The Richards model can be reparametrized as
-
-\mjsdeqn{x(t) = \frac{K}{\big\lbrack 1 + (2^p - 1) e^{-r p (t - t_\text{half}}) \big\rbrack^{1/p}}\,,}
-
-where, as with the logistic model, \mjseqn{t_\text{half}}
-satisfies \mjseqn{x(t_\text{half}) = \frac{K}{2}}.
-The reparametrized logistic model requires fitting
-\mjseqn{r}, \mjseqn{K}, \mjseqn{t_\text{half}}, and \mjseqn{p}
-to observed data.
-}
-
-}
-
-\subsection{2. Baseline growth}{
-
-For many historical epidemics, the observed data are counts
-deaths due to all causes, not only the disease of interest.
-Growth in disease mortality over time can still be understood
-phenomenologically, provided that baseline mortality (deaths
-unrelated to the epidemic) and disease mortality are modeled
-separately. To account for baseline mortality, it is assumed
-that deaths occur at a constant rate \mjseqn{b > 0} in the
-absence of an epidemic. Then, for example, the logistic model
-(see Details 1) becomes
-
-\mjsdeqn{x(t) = b t + \frac{K}{1 + \big(\frac{K}{x_0} - 1\big) e^{-r t}}\,,}
-
-where \mjseqn{x(t)} is to be interpreted as expected
-cumulative mortality instead of expected cumulative incidence.
-Accounting for baseline mortality requires that \mjseqn{b} is
-fit in addition to the other model parameters.
-}
-
-\subsection{3. Observation model}{
-
-Let \mjseqn{Y(t_1,t_2)} be the number of cases observed between times
-\mjseqn{t_1} and \mjseqn{t_2 > t_1} (i.e., observed interval incidence).
-\mjseqn{Y(t_1,t_2)} is modeled as either a Poisson-distributed random
-variable with mean \mjseqn{x(t_2) - x(t_1)},
-
-\mjsdeqn{Y(t_1,t_2) \sim \mathrm{Poisson}\big(x(t_2) - x(t_1)\big)\,,}
-
-or as negative binomial-distributed random variable with mean
-\mjseqn{x(t_2) - x(t_1)} and dispersion \mjseqn{k > 0},
-
-\mjsdeqn{Y(t_1,t_2) \sim \mathrm{NegativeBinomial}\big(x(t_2) - x(t_1), k\big)\,.}
-
-The negative binomial observation model requires that \mjseqn{k} is fit
-in addition to the other model parameters.
-}
-
-\subsection{4. Fitting window selection}{
+\subsection{1. Fitting window selection}{
 
 The "fitting window" is the subset of \code{cases} used
 when fitting model parameters to the data. It ends
@@ -319,6 +197,15 @@ such that \code{cases[first] = 0} and \code{first < peak-min_wlen+1},
 then \code{first} is increased by one until \code{cases[first] > 0}
 or \code{first = peak-min_wlen+1}.
 }
+
+\subsection{2. Models}{
+
+A full description of the models of expected cumulative
+incidence and observed interval incidence, specified by
+\code{curve}, \code{distr}, and \code{include_baseline}, can be found
+in the package vignette, accessible with
+\code{vignette("epigrowthfit-vignette")}.
+}
 }
 \examples{
 data(canadacovid)
@@ -332,12 +219,11 @@ x <- egf_init(
 print(x)
 coef(x, log = FALSE)
 coef(x, log = TRUE)
-time_obs <- as.numeric(ontario$date - ontario$date[1])
+time_obs <- x$time
 time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
 predict(x, time = time_pred)
-simulate(x, nsim = 4, time = time_obs)
-plot(x, inc = "interval")
 plot(x, inc = "cumulative")
+plot(x, inc = "interval")
 
 }
 \references{
