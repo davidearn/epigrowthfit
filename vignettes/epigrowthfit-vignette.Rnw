@@ -262,9 +262,9 @@ remotes::install_github("davidearn/epigrowthfit",
 )
 library(epigrowthfit)
 @
-%
+
 A list of data sets and functions exported by \pkg{epigrowthfit}
-can be retrieved with \fun{data} and \fun{ls}.
+can be retrieved using \fun{data} and \fun{ls}.
 
 <<namespace1>>=
 # Data sets
@@ -273,12 +273,18 @@ can be retrieved with \fun{data} and \fun{ls}.
 # Functions
 (fnames <- setdiff(ls("package:epigrowthfit"), dnames))
 @
+%
+Functions \fun{egf_init} and \fun{egf} do all of the work in fitting
+models of epidemic growth. They define the \code{egf_init} and
+\code{egf} classes, for which there are a number of useful S3 methods
+(see below). The remaining functions enable estimation of parameters
+that are not explicitly fitted, from fitted initial exponential growth
+rates $r$. These include the
+epidemic doubling time,
+basic reproduction number, and
+epidemic final size (see \cref{sec:extras}).
 
-Functions \fun{egf_init} and \fun{egf} do all of the work in
-fitting models of epidemic growth. They define the \code{egf_init}
-and \code{egf} classes, for which there are a number of useful
-S3 methods. A list of implemented S3 methods can retrieved as
-follows.
+A list of implemented S3 methods can retrieved as follows.
 
 <<namespace2>>=
 (mnames <- setdiff(ls(getNamespace("epigrowthfit")), c(dnames, fnames)))
@@ -288,14 +294,10 @@ These should not be called directly, as S3 methods are found
 automatically by R when the corresponding generic functions
 (the names before the dot) are called. For example, if
 \code{`9plot`9(x)} is run and \code{x} is an \code{egf} object,
-then R evaluates \code{`9plot.egf`9(x)}. \fun{egf_init}, \fun{egf},
-and the associated methods are demonstrated in \cref{sec:ontario}.
+then R evaluates \code{`9plot.egf`9(x)}.
 
-The exported functions apart from \fun{egf_init} and \fun{egf}
-enable estimation of additional epidemic parameters, including
-the basic reproduction number $\R_0$, from initial epidemic
-growth rates $r$ (see \cref{sec:extras}). These functions are
-demonstrated in \cref{sec:ontario-extras}.
+\cref{sec:ontario} demonstrates the entire \pkg{epigrowthfit}
+machinery for a COVID-19 data set from Ontario, Canada.
 
 
 \subsection{Documentation}
@@ -473,7 +475,7 @@ c'(t) = r c(t)\bigg(1 - \frac{c(t)}{K}\bigg)\,,\qquad r, K > 0\,,
 \end{equation}
 \end{linenomath}
 %
-and if $c_0 \in (0,K)$, then $c(t)$ grows logistically
+and if $c_0 \in (0,K)$, then $c(t)$ grows logistically as
 %
 \begin{linenomath}
 \begin{equation}
@@ -682,7 +684,7 @@ were recorded as deaths due to pneumonia. In this setting, one can
 attempt to make inferences about influenza spread from aggregates
 of pneumonia and influenza deaths.
 
-Growth in disease mortality over time can understood from multiple
+Growth in disease mortality over time can be understood from multiple
 causes mortality provided that disease deaths and deaths from
 other causes (baseline mortality) are modeled separately. To account
 for baseline mortality, one can assume that deaths due to causes
@@ -697,10 +699,10 @@ c(t) = b t + \frac{K}{1 + e^{-r (t - \thalf)}}\,,
 \end{equation}
 \end{linenomath}
 %
-where $c(t)$ is to be interpreted as expected cumulative multiple
-causes mortality rather than expected cumulative disease mortality.
-Accounting for baseline mortality in this way requires that $b$ is
-fit in addition to other model parameters.
+where $c(t)$ is to be interpreted as cumulative multiple causes
+mortality rather than cumulative disease mortality. Accounting for
+baseline mortality in this way requires that $b$ is fit in addition
+to other model parameters.
 
 \cref{fig:models-baseline} displays the effect of baseline growth
 on the logistic curve.
@@ -830,9 +832,9 @@ The basic reproduction number of an infectious disease, commonly denoted
 by $\R_0$, is the number of people that an infected person is expected
 to infect in an otherwise completely susceptible population. Wallinga
 and Lipsitch~\cite[Eq 2.7]{WallLips07} showed that $\R_0$ is determined
-by the initial exponential growth rate $r$ and the distribution of
-the disease generation interval $\tau_g$, the time from infection of
-a primary case to infection of a secondary case in a chain of
+by the initial exponential growth rate $r$ and the distribution of the
+disease generation interval $\tau_\text{gen}$, the time from infection
+of a primary case to infection of a secondary case in a chain of
 transmission:
 %
 \begin{linenomath}
@@ -842,7 +844,7 @@ transmission:
 \end{equation}
 \end{linenomath}
 %
-where $g$ is the density function of $\tau_g$.
+where $g$ is the density function of $\tau_\text{gen}$.
 
 In the special case where
 %
@@ -854,7 +856,7 @@ In the special case where
   on the interval $(\tau_{i-1},\tau_i]$ for $i = 1,\ldots,m$,
 \end{enumerate}
 %
-\cref{eq:R0-general} yields~\cite[Eq 3.6]{WallLips07}
+\cref{eq:R0-general} yields
 %
 \begin{linenomath}
 \begin{equation}
@@ -865,14 +867,15 @@ In the special case where
 %
 This special case arises when $g$ is an empirical distribution,
 and $p_i$ is the observed relative frequency of
-$\tau_g \in (\tau_{i-1},\tau_i]$. \pkg{epigrowthfit} function
-\fun{compute_R0} evaluates the right-hand side of \cref{eq:R0}
-for given $r$, $\tau_i$, and $p_i$, allowing users who have
-estimated $r$ using the package's fitting machinery to also
-estimate $\R_0$. See \cref{sec:ontario-R0} for an example.
+$\tau_\text{gen} \in (\tau_{i-1},\tau_i]$~\cite[Eq 3.6]{WallLips07}.
+\pkg{epigrowthfit} function \fun{compute_R0} evaluates the
+right-hand side of \cref{eq:R0} for given $r$, $\tau_i$, and $p_i$,
+allowing users who have estimated $r$ using the package's fitting
+machinery to also estimate $\R_0$. See \cref{sec:ontario-R0} for
+an example.
 
 The special case described above also arises when one assumes
-that the latent
+that the latent%
 \footnote{The latent period is the time from infection to onset
 of infectiousness.}
 and infectious%
@@ -884,11 +887,11 @@ density functions of $\tau_\text{lat}$ and $\tau_\text{inf}$,
 and let $F_\text{inf} = \int f_\text{inf}$ be the distribution
 function corresponding to $f_\text{inf}$.
 Assuming that infectiousness is constant over the infectious
-period, Svensson~\cite[\S 5.1]{Sven07} gives
+period, Svensson~\cite[\S 5.1]{Sven07} showed that
 %
 \begin{linenomath}
 \begin{equation}
-g = f_\text{lat} * f_\text{wait}\,,\qquad f_\text{wait} = \mathbbm{1}_{(0,\infty)} \frac{1 - F_\text{inf}}{\mathbbm{E}[\tau_\text{inf}]}\,.
+g = f_\text{lat} * f_\text{wait}\,,\qquad f_\text{wait} = \scalebox{1.1}{$\mathbbm{1}$}_{(0,\infty)} \frac{1 - F_\text{inf}}{\mathbbm{E}[\tau_\text{inf}]}\,.
 \end{equation}
 \end{linenomath}
 %
@@ -897,27 +900,26 @@ Here, $f_\text{wait}$ is the density function of the infectious
 transmission. One can show that if $f_\text{lat}$ and $f_\text{inf}$
 have discrete support, then $g$ satisfies the conditions under which
 \cref{eq:R0} is valid. \pkg{epigrowthfit} functions \fun{dgi} and
-\fun{pgi} evaluate the density and distribution functions of $\tau_g$
-implied by distributions of $\tau_\text{lat}$ and $\tau_\text{inf}$
-supported on the integers (\ie $1,2,\ldots$ days). These are helpful
-if one wants to use \fun{compute_R0} and has latent and infectious
-period distributions, but not the corresponding generation interval
-distribution.
+\fun{pgi} evaluate the density and distribution functions of
+$\tau_\text{gen}$ implied by distributions of $\tau_\text{lat}$ and
+$\tau_\text{inf}$ supported on the integers (\ie $1,2,\ldots$ days).
+These are helpful if one wants to use \fun{compute_R0} and
+has latent and infectious period distributions, but not the
+corresponding generation interval distribution.
 
 
 \subsection{Epidemic final size}
 \label{sec:final-size}
 
-Once one has compute $\R_0$ from $r$ (see \cref{sec:R0}),
-one can compute the expected epidemic final size $Z$ from
-$\R_0$. $Z$ is the proportion of the population expected
-to be infected over the course of the epidemic, and is
-obtained from $\R_0$ as
+Once one has computed $\R_0$ as a function of $r$ (see \cref{sec:R0}),
+one can compute the expected epidemic final size $Z$ as a function of
+$\R_0$. $Z$ is the proportion of the population expected to be infected
+over the course of the epidemic, and is obtained from $\R_0$ as
 %
 \begin{linenomath}
 \begin{equation}
 \label{eq:final-size-general}
-Z = S_0 + \frac{1}{\R_0} W\big[-\R_0 S_0 e^{-\R_0 (S_0 + I_0)} \big]\,,
+Z = S_0 + \frac{1}{\R_0} W\big(-\R_0 S_0 e^{-\R_0 (S_0 + I_0)} \big)\,,
 \end{equation}
 \end{linenomath}
 %
@@ -932,18 +934,18 @@ and \cref{eq:final-size-general} simplifies to
 \begin{linenomath}
 \begin{equation}
 \label{eq:final-size}
-Z = 1 + \frac{1}{\R_0} W\big[-\R_0 e^{-\R_0} \big]\,.
+Z = 1 + \frac{1}{\R_0} W\big(-\R_0 e^{-\R_0} \big)\,.
 \end{equation}
 \end{linenomath}
 %
 Ma and Earn~\cite{MaEarn06} discuss the history and generality
 of \cref{eq:final-size-general} and show that it is valid for
 a large class of epidemic models, including the SIR model with
-any number of infectious stages and arbitrarily distributed
-infectious stage durations. \pkg{epigrowthfit} function
-\fun{compute_final_size} evaluates the right-hand side of
-\cref{eq:final-size-general} for given $\R_0$, $S_0$ and $I_0$.
-See \cref{sec:ontario-final-size} for an example.
+multiple infectious stages and arbitrarily distributed infectious
+stage durations. \pkg{epigrowthfit} function \fun{compute_final_size}
+evaluates the right-hand side of \cref{eq:final-size-general}
+for given $\R_0$, $S_0$ and $I_0$. See \cref{sec:ontario-final-size}
+for an example.
 
 
 \section{Example: COVID-19 in Ontario, Canada}
@@ -1156,8 +1158,8 @@ predict(init, time = init$time[1:10])
 %
 Here, \code{int_inc} is simply \code{`9diff`9(cum_inc)}, the
 interval incidence time series associated with \code{cum_inc}.
-(This means that \code{`9length`9(int_inc)} is one less than
-\code{`9length`9(cum_inc)}.)
+This means that \code{`9length`9(int_inc)} is
+\code{`9length`9(cum_inc)-`11`1}.
 
 Finally, element \code{call} is the call to \fun{egf_init},
 so that the returned \code{egf_init} object is reproducible
@@ -1276,9 +1278,10 @@ Once again, $r$ is expressed in units per day and $\thalf$ in days.
 
 Element \code{nll} is the negative log likelihood of
 \code{log_theta_hat}.%
-\footnote{Recall from \cref{sec:mle} that parameters are all fit on
-an unconstrained logarithmic scale. As a result, the negative log
-likelihood is defined as a function of the log-transformed parameters.}
+\footnote{Recall from \cref{sec:mle} that \pkg{epigrowthfit} fits
+all model parameters on an unconstrained logarithmic scale.
+As a result, it defines the negative log likelihood as a function
+of the log-transformed parameters.}
 Elements \code{nll_fn} and \code{nll_gr} are closures taking a single
 numeric argument \code{log_theta} (default is \code{log_theta_hat})
 specifying log-transformed parameter values in the order used by
@@ -1342,13 +1345,13 @@ Once again, \code{int_inc} is simply \code{`9diff`9(cum_inc)},
 the interval incidence time series associated with \code{cum_inc}.
 
 Elements \code{madf_out} and \code{optim_out} save the output
-of \pkg{TMB} function \fun{MakeADFun} and the optimizer from
-\pkg{stats} specified by \fun{egf} argument \code{method}
+of \pkg{TMB} function \fun{MakeADFun} and the \pkg{stats}
+optimizer specified by \fun{egf} argument \code{method}
 (\fun{nlminb}, \fun{nlm}, or \fun{optim}). These are retained
 in the \code{egf} object to allow the user to diagnose poor
-fits, as well as warnings and errors issued by the optimizer.
-For details, consult the relevant documentation (\eg by running
-\code{?TMB::MakeADFun}).
+fits and warnings and errors issued by the optimizer.
+For details, consult the relevant documentation
+(\eg by running \code{?TMB::MakeADFun}).
 
 Finally, element \code{call} contains the call to \fun{egf}.
 The \fun{egf} object is reproducible with \code{`9eval`9(call)}.
@@ -1403,7 +1406,7 @@ typically what you want.
 sim <- simulate(fit, nsim = 6, seed = 1257)
 @
 %
-\fun{simulate} returns a list ontaining a copy of argument
+\fun{simulate} returns a list containing a copy of argument
 \code{time}, as well as two matrices \code{int_inc} and \code{cum_inc}.
 
 <<ontario-fit-simulate-2>>=
@@ -1417,7 +1420,7 @@ observed between \code{time[i]} and \code{time[i+`11`1]} in
 simulation \code{j}. Each element of row vector \code{int_inc[i, ]}
 is sampled independently from a Poisson or negative binomial
 distribution (depending on \code{object$init$distr}, in this case
-\code{`2"nbinom"`2}) with mean
+\code{`2"nbinom"`2}) with mean equal to
 \code{`9predict`9(object, time)$int_inc[i]}.
 The negative binomial dispersion parameter, if used, takes
 its fitted value \code{object$theta_hat[[`2"nbdisp"`2]]}.
@@ -1484,13 +1487,12 @@ title(ylab = "interval incidence")
 Here, we demonstrate \pkg{epigrowthfit} functions
 \fun{compute_doubling_time}, \fun{compute_R0}, and
 \fun{compute_final_size}, which can be used to compute
-important epidemic parameters (see \cref{sec:extras})
+salient epidemic parameters (see \cref{sec:extras})
 from initial exponential growth rates $r$. We will
-make use of the \code{egf_init} object \code{init}
-and \code{egf} object \code{fit} that were obtained
-in \cref{sec:ontario-init,sec:ontario-fit}. These
-contain our initial and final estimates of $r$
-for the Ontario data.
+make use of the \code{egf_init} and \code{egf} objects
+obtained in \cref{sec:ontario-init,sec:ontario-fit},
+namely \code{init} and \code{fit}. These contain our
+initial and final estimates of $r$ for the Ontario data.
 
 
 \subsubsection{Doubling time}
@@ -1498,18 +1500,18 @@ for the Ontario data.
 
 \fun{compute_doubling_time} is a generic function taking a single
 argument \code{x}, which can be a numeric vector listing initial
-exponential growth rates $r$ in units day$^{-1}$, an \code{egf}
-object, or an \code{egf_init} object. If \code{x} is a numeric vector,
-then it returns \code{`9log`9(`12`1) / x}, a numeric vector listing
+exponential growth rates $r$ in units day$^{-1}$, an \code{egf_init}
+object, or an \code{egf} object. If \code{x} is a numeric vector,
+then it returns \code{`9log`9(`12`1)/x}, a numeric vector listing
 doubling times in days corresponding to the elements of \code{x}.
-If \code{x} is an \code{egf} object, then it extracts the fitted
-value of $r$ from the object and returns the corresponding doubling
-time, \ie it returns
-\code{`9log`9(`12`1) / object$theta_hat[[`2"r"`2]]}.
-Finally, if \code{x} is an \code{egf_init} object, then it extracts
+If \code{x} is an \code{egf_init} object, then it extracts the
+fitted value of $r$ from the object and returns the corresponding
+doubling time, \ie it returns
+\code{`9log`9(`12`1)/object$theta0[[`2"r"`2]]}.
+Finally, if \code{x} is an \code{egf} object, then it extracts
 the initial value of $r$ from the object and returns the corresponding
 doubling time, \ie it returns
-\code{`9log`9(`12`1) / object$theta0[[`2"r"`2]]}.
+\code{`9log`9(`12`1)/object$theta_hat[[`2"r"`2]]}.
 
 <<ontario-doubling-time-1>>=
 compute_doubling_time(10^(-2:0)) # method for class "numeric"
@@ -1533,10 +1535,9 @@ Function \fun{compute_R0} takes numeric arguments \code{x},
 day$^{-1}$, $\tau_i$ in units days, and $p_i$, respectively.
 It is vectorized in \code{x}, so \code{x} can have length
 greater than 1. Alternatively, \code{x} can be an \code{egf_init}
-or \code{egf} object, in which a value for $r$ is taken from
-\code{object$theta0[[`2"r"`2]]} or \code{object$theta_hat[[`2"r"`2]]},
-respectively.
-
+or \code{egf} object, in which case a value for $r$ is
+taken from \code{object$theta0[[`2"r"`2]]} or
+\code{object$theta_hat[[`2"r"`2]]}, respectively.
 \code{probs} must have length \code{`9length`9(breaks)-`11`1},
 and \code{probs[i]} should define the probability that the
 generation interval is between \code{breaks[i]} and
@@ -1548,12 +1549,12 @@ Here, for clarity, we do the normalization up front.}
 
 For the purpose of demonstration, we assume that the generation
 interval in days follows a log-normal distribution with parameters
-$\mu = \log 5$ and $\sigma = 0.25$, truncated at 10
+$\mu = \log 5$ and $\sigma^2 = 0.25^2$, truncated at 10
 (see \cref{fig:dlnorm}).%
-\footnote{A log-normal distribution with parameters $\mu$ and $\sigma$
-is the distribution of the natural logarithm of a normally distributed
-random variable with mean $\mu$ and variance $\sigma^2$,
-\ie the distribution of $Y = \log(X)$,
+\footnote{A log-normal distribution with parameters $\mu$ and
+$\sigma^2$ is the distribution of the natural logarithm of a
+normally distributed random variable with mean $\mu$ and variance
+$\sigma^2$, \ie it is the distribution of $Y = \log(X)$,
 where $X \sim \mathrm{Normal(\mu,\sigma^2)}$.}
 Then the probability $p_i$ that the generation interval is between
 $i-1$ and $i$ days is given by
@@ -1569,11 +1570,10 @@ We calculate these $p_i$ as follows, using \pkg{stats} function
 <<ontario-R0-1>>=
 breaks <- 0:10
 probs <- diff(plnorm(breaks, meanlog = log(5), sdlog = 0.25))
-probs <- probs / plnorm(10, meanlog = log(5), sdlog = 0.25)
+probs <- probs / sum(probs)
 @
 %
-Passing \code{breaks} and \code{probs} to \fun{compute_R0},
-we obtain values for $\R_0$ as follows.
+We are now equipped to call \fun{compute_R0}.
 
 <<ontario-R0-2>>=
 compute_R0(10^(-2:0), breaks, probs) # method for class "numeric"
@@ -1599,7 +1599,7 @@ plot.window(xlim = c(0, end+1), ylim = c(0, max(fx) * 1.04),
             xaxs = "i", yaxs = "i")
 lines(x, fx, lwd = 3, col = "grey80")
 box(bty = "l")
-axis(side = 1)
+axis(side = 1, at = 0:10)
 axis(side = 2)
 title(xlab = "value", line = 2)
 title(ylab = "probability density")
@@ -1610,21 +1610,23 @@ title(ylab = "probability density")
 \label{sec:ontario-final-size}
 
 \fun{compute_final_size} uses \cref{eq:final-size-general}
-to calculate the expected epidemic final size $Z$ as a function
-the basic reproduction number $\R_0$ and initial susceptible and
-infected proportions $S_0,I_0 \in [0,1]$. Accordingly, it takes
-numeric arguments \code{R0}, \code{S0}, and \code{I0}.
-\fun{compute_final_size} is vectorized; its arguments
-are recycled up to the length of the longest argument.
+to calculate the expected epidemic final size $Z$ as a
+function of the basic reproduction number $\R_0$ and the initial
+susceptible and infected proportions $S_0,I_0 \in [0,1]$.
+Accordingly, it takes numeric arguments \code{R0}, \code{S0},
+and \code{I0}. \fun{compute_final_size} is vectorized in every
+argument. To make this possible, \code{R0}, \code{S0}, and
+\code{I0} are recycled up to the length of the longest of the
+three vectors, and $Z$ is computed element-wise.
 
 Below, we accept the defaults for \code{S0} and \code{I0},
-which are 1 and 0.
+which are 1 and 0. This default is valid for epidemics seeded
+in a large population by one infected individual.
 
 <<ontario-final-size-1>>=
 R0 <- 10^seq(0, 1, by = 0.05)
 compute_final_size(R0)
 @
-
 
 \section{Missing functionality (to be implemented soon)}
 
