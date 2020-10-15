@@ -89,10 +89,6 @@ NULL
 #' @rdname egf_init-methods
 #' @export
 print.egf_init <- function(x, ...) {
-  if (!inherits(x, "egf_init")) {
-    stop("`x` must be an \"egf_init\" object.")
-  }
-
   cstr <- switch(x$curve,
     exponential = "an exponential model",
     logistic    = "a logistic model",
@@ -123,9 +119,6 @@ print.egf_init <- function(x, ...) {
 #' @rdname egf_init-methods
 #' @export
 coef.egf_init <- function(object, log = FALSE, ...) {
-  if (!inherits(object, "egf_init")) {
-    stop("`object` must be an \"egf_init\" object.")
-  }
   if (!is.logical(log) || length(log) != 1 || is.na(log)) {
     stop("`log` must be `TRUE` or `FALSE`.")
   }
@@ -140,9 +133,6 @@ coef.egf_init <- function(object, log = FALSE, ...) {
 #' @rdname egf_init-methods
 #' @export
 predict.egf_init <- function(object, time = object$time, ...) {
-  if (!inherits(object, "egf_init")) {
-    stop("`object` must be an \"egf_init\" object.")
-  }
   if (!is.numeric(time) || length(time) == 0) {
     stop("`time` must be numeric and have nonzero length.")
   } else if (anyNA(time)) {
@@ -163,12 +153,9 @@ predict.egf_init <- function(object, time = object$time, ...) {
 #' @import graphics
 #' @importFrom stats median
 plot.egf_init <- function(x, inc = "cumulative", tol = 0.025, ...) {
-  if (!inherits(x, "egf_init")) {
-    stop("`x` must be an \"egf_init\" object.")
-  }
   if (!is.character(inc) || length(inc) != 1 ||
         !inc %in% c("interval", "cumulative")) {
-    stop("`inc` must be \"interval\" or \"cumulative\".")
+    stop("`inc` must be one of \"interval\", \"cumulative\".")
   }
   if (inc == "interval") {
     if (!is.numeric(tol) || length(tol) != 1 || !isTRUE(tol >= 0)) {

@@ -8,7 +8,7 @@ Define a fitting window and initial parameter estimates}
 egf_init(
   date,
   cases,
-  curve = "logistic",
+  curve = "richards",
   distr = "nbinom",
   include_baseline = FALSE,
   theta0 = NULL,

@@ -116,10 +116,6 @@ NULL
 #' @rdname egf-methods
 #' @export
 print.egf <- function(x, ...) {
-  if (!inherits(x, "egf")) {
-    stop("`x` must be an \"egf\" object.")
-  }
-
   cstr <- switch(x$init$curve,
     exponential = "an exponential model",
     logistic    = "a logistic model",
@@ -150,9 +146,6 @@ print.egf <- function(x, ...) {
 #' @rdname egf-methods
 #' @export
 coef.egf <- function(object, log = FALSE, ...) {
-  if (!inherits(object, "egf")) {
-    stop("`object` must be an \"egf\" object.")
-  }
   if (!is.logical(log) || length(log) != 1 || is.na(log)) {
     stop("`log` must be `TRUE` or `FALSE`.")
   }
@@ -167,9 +160,6 @@ coef.egf <- function(object, log = FALSE, ...) {
 #' @rdname egf-methods
 #' @export
 predict.egf <- function(object, time = object$init$time, ...) {
-  if (!inherits(object, "egf")) {
-    stop("`object` must be an \"egf\" object.")
-  }
   if (!is.numeric(time) || length(time) == 0) {
     stop("`time` must be numeric and have nonzero length.")
   } else if (anyNA(time)) {
@@ -190,9 +180,6 @@ predict.egf <- function(object, time = object$init$time, ...) {
 #' @importFrom stats rpois rnbinom
 simulate.egf <- function(object, nsim = 1, seed = NULL,
                          time = object$init$time, ...) {
-  if (!inherits(object, "egf")) {
-    stop("`object` must be an \"egf\" object.")
-  }
   if (!is.numeric(time) || length(time) < 2) {
     stop("`time` must be numeric and have length 2 or greater.")
   } else if (anyNA(time)) {
@@ -203,10 +190,8 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
   if (!is.numeric(nsim) || length(nsim) != 1 || !isTRUE(nsim >= 1)) {
     stop("`nsim` must be a positive integer.")
   }
-  if (!is.null(seed)) {
-    if (!is.null(numeric) && (!is.numeric(seed) || !is.finite(seed[1]))) {
-      stop("`seed` must be `NULL` or an integer.")
-    }
+  if (!is.null(seed) && (!is.numeric(seed) || !is.finite(seed[1]))) {
+    stop("`seed` must be `NULL` or an integer.")
   }
 
   cum_inc <- object$cum_inc(time)
@@ -232,12 +217,9 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
 #' @import graphics
 #' @importFrom stats median
 plot.egf <- function(x, inc = "cumulative", tol = 0.025, ...) {
-  if (!inherits(x, "egf")) {
-    stop("`x` must be an \"egf\" object.")
-  }
   if (!is.character(inc) || length(inc) != 1 ||
         !inc %in% c("interval", "cumulative")) {
-    stop("`inc` must be \"interval\" or \"cumulative\".")
+    stop("`inc` must be one of \"interval\", \"cumulative\".")
   }
   if (inc == "interval") {
     if (!is.numeric(tol) || length(tol) != 1 || !isTRUE(tol >= 0)) {

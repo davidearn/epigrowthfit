@@ -2,43 +2,65 @@
 % Please edit documentation in R/compute_R0.R
 \name{compute_R0}
 \alias{compute_R0}
+\alias{compute_R0.numeric}
+\alias{compute_R0.egf_init}
+\alias{compute_R0.egf}
 \title{\loadmathjax
 Compute the basic reproduction number}
 \usage{
-compute_R0(r, breaks, probs)
+compute_R0(x, breaks, probs)
+
+\method{compute_R0}{numeric}(x, breaks, probs)
+
+\method{compute_R0}{egf_init}(x, breaks, probs)
+
+\method{compute_R0}{egf}(x, breaks, probs)
 }
 \arguments{
-\item{r}{A numeric vector listing values for the initial
-growth rate expressed per day.}
+\item{x}{\mjseqn{\lbrace\,r\,\rbrace}
+A numeric vector listing values for the initial exponential
+growth rate expressed per day. Alternatively, an "egf_init"
+or "egf" object.}
 
-\item{breaks}{A numeric vector of length 2 or greater
-listing increasing break points, in days, in the support
-of the generation interval density.}
+\item{breaks}{\mjseqn{\lbrace\,t_i\,\rbrace}
+A numeric vector of length 2 or greater listing increasing
+break points, in days, in the support of the generation
+interval distribution.}
 
-\item{probs}{A numeric vector with length \code{length(breaks)-1}.
-\code{probs[i]} is the probability that the generation interval
-is between \code{break[i]} days and \code{break[i+1]} days. Replaced
-with \code{probs / sum(probs)} in the event that \code{sum(probs) != 1}.}
+\item{probs}{\mjseqn{\lbrace\,p_i\,\rbrace}
+A numeric vector with length \code{length(breaks)-1}. \code{probs[i]}
+is the probability that the generation interval is between
+\code{break[i]} days and \code{break[i+1]} days. Replaced with
+\code{probs / sum(probs)} in the event that \code{sum(probs) != 1}.}
 }
 \value{
-A numeric vector \code{x} of length \code{length(r)}. \code{x[i]} is the
-basic reproduction number corresponding to initial growth rate
-\code{r[i]}. See Details.
+The method for class "numeric" returns a numeric vector
+of length \code{length(x)}, whose \code{i}th element is the basic
+reproduction number corresponding to initial exponential
+growth rate \code{x[i]}. See Details.
+
+The method for class "egf_init" applies the method for
+class "numeric" to \code{x$theta0[["r"]]}.
+
+The method for class "egf" applies the method for
+class "numeric" to \code{x$theta_hat[["r"]]}.
 }
 \description{
-Given an initial growth rate and a generation interval
-distribution, compute the basic reproduction number.
+Compute the basic reproduction number corresponding
+to an initial exponential growth rate and a binned
+generation interval distribution.
 }
 \details{
-Let \mjseqn{t_1 < \cdots < t_\ell} be the break points specified
-by \code{breaks}. For \mjseqn{i \in \lbrace 1,\ldots,\ell-1 \rbrace},
-let \mjseqn{p_i} be the probability specified by \code{probs[i]} that
-the generation interval is in the interval \mjseqn{(t_i,t_{i+1}\rbrack}.
+Let \mjseqn{t_0 < \cdots < t_m} be the break points specified
+by \code{breaks}. For \mjseqn{i \in \lbrace 1,\ldots,m \rbrace},
+let \mjseqn{p_i} be the probability specified by \code{probs[i]}
+that the generation interval is in the interval
+\mjseqn{(t_{i-1},t_i\rbrack}.
 Section 3(d) in \insertCite{WallLips07;textual}{epigrowthfit}
 gives the basic reproduction number as a function of initial
-growth rate \mjseqn{r}:
+exponential growth rate \mjseqn{r}:
 
-\mjsdeqn{\out{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{\ell-1} \frac{p_i (e^{-r t_i} - e^{-r t_{i+1}})}{t_{i+1} - t_i} \bigg\rbrace \right.\,.}}
+\mjsdeqn{\out{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}}
 }
 \examples{
 data(plague_latent_period)
@@ -55,7 +77,7 @@ probs <- diff(pgi(breaks, lat, inf))
 
 R0 <- compute_R0(r, breaks, probs)
 plot(r, R0, las = 1,
-  xlab = "initial growth rate, per day",
+  xlab = "initial exponential growth rate, per day",
   ylab = "basic reproduction number"
 )
 

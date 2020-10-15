@@ -13,8 +13,8 @@ a fitting window, and initial parameter estimates.
 See \code{\link[=egf_init]{egf_init()}}.}
 
 \item{method}{One of \code{"nlminb"}, \code{"nlm"}, \code{"Nelder-Mead"},
-\code{"BFGS"}, \code{"L-BFGS-S"}, and \code{"CG"}, indicating the algorithm
-used to minimize the negative log likelihood function.}
+\code{"BFGS"}, \code{"L-BFGS-S"}, and \code{"CG"},
+indicating an optimization algorithm.}
 
 \item{...}{Additional arguments to \code{\link[stats:nlminb]{nlminb()}},
 \code{\link[stats:nlm]{nlm()}}, or \code{\link[stats:optim]{optim()}}.}

@@ -204,7 +204,7 @@
 #' @import stats
 egf_init <- function(date,
                      cases,
-                     curve = "logistic",
+                     curve = "richards",
                      distr = "nbinom",
                      include_baseline = FALSE,
                      theta0 = NULL,
@@ -217,32 +217,28 @@ egf_init <- function(date,
 
   if (!is.character(curve) || length(curve) != 1 ||
         !curve %in% c("exponential", "logistic", "richards")) {
-    stop("`curve` must be an element of ",
-         "`c(\"exponential\", \"logistic\", \"richards\")`.")
+    stop("`curve` must be one of ",
+         "\"exponential\", \"logistic\", \"richards\".")
   }
   if (!is.character(distr) || length(distr) != 1 ||
         !distr %in% c("nbinom", "pois")) {
-    stop("`distr` must be an element of `c(\"nbinom\", \"pois\")`.")
+    stop("`distr` must be one of \"nbinom\", \"pois\".")
   }
   if (!is.logical(include_baseline) || length(include_baseline) != 1 ||
         is.na(include_baseline)) {
-    stop("`include_baseline` must be `TRUE` or `FALSE`.")
+    stop("`include_baseline` must be one of TRUE, FALSE.")
   }
   npar <- switch(curve, exponential = 2, logistic = 3, richards = 4) +
     (distr == "nbinom") + include_baseline
   pe <- 1 * (curve %in% c("logistic", "richards"))
-  if (missing(cases)) {
-    stop("Missing argument `cases`.")
-  } else if (!is.numeric(cases) || length(cases) < npar) {
-    stop("`cases` must be numeric and have length no less than ", npar, ".")
+  if (!is.numeric(cases) || length(cases) < npar) {
+    stop("`cases` must be numeric and have length ", npar, " or greater.")
   } else if (!all(is.finite(cases)) || !all(cases >= 0)) {
     stop("`cases` must not contain missing, infinite, or negative values.")
   }
-  if (missing(date)) {
-    stop("Missing argument `date`.")
-  } else if (!inherits(date, "Date") || length(date) != length(cases)+1) {
+  if (!inherits(date, "Date") || length(date) != length(cases)+1) {
     stop("`date` must be of class \"Date\" and have length `length(cases)+1`.")
-  } else if (any(is.na(date))) {
+  } else if (anyNA(date)) {
     stop("`date` must not contain missing values.")
   } else if (!all(diff(date) > 0)) {
     stop("`date` must be increasing.")
@@ -325,7 +321,7 @@ egf_init <- function(date,
   }
 
 
-  ### PARAMETER ESTIMATES ############################################
+  ### INITIAL PARAMETER ESTIMATES ####################################
 
   ## Parameters that `theta0` must specify
   par <- switch(curve,

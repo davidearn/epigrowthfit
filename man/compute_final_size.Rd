@@ -5,39 +5,50 @@
 \title{\loadmathjax
 Compute the expected epidemic final size}
 \usage{
-compute_final_size(R0)
+compute_final_size(R0, S0 = 1, I0 = 0)
 }
 \arguments{
 \item{R0}{A numeric vector listing (non-negative) values
 for the basic reproduction number.}
+
+\item{S0}{A numeric vector listing values in the interval
+[0,1] for the initial susceptible proportion.}
+
+\item{I0}{A numeric vector listing values in the interval
+[0,1] for the initial infected proportion.}
 }
 \value{
-A numeric vector \code{x} of length \code{length(R0)}. \code{x[i]} is the
-expected epidemic final size implied by basic reproduction number
-\code{R0[i]}. See Details.
+A numeric vector listing epidemic final sizes. See Details.
+
+The arguments are recycled up to the length of longest argument,
+hence the length of the output is this maximum length.
 }
 \description{
 Computes, as a function of the basic reproduction number,
 the proportion of the population expected to be infected
-over the course of an epidemic in which the entire population
-is initially susceptible.
+over the course of an epidemic.
 }
 \details{
 The basic reproduction number \mjseqn{\mathcal{R}_0} defines
 the expected epidemic final size \mjseqn{Z \in \lbrack 0,1 \rbrack}
 
-\mjsdeqn{Z = 1 - e^{-\mathcal{R}_0 Z}\,.}
+\mjsdeqn{Z = S_0 \big(1 - e^{-\mathcal{R}_0 (Z + I_0)}\big)\,,}
 
-\insertCite{MaEarn06;textual}{epigrowthfit} review and extend
-earlier work showing that this relation is valid for a large
-class of epidemic models, including SEIR models with arbitrarily
-distributed infectious periods.
+where \mjseqn{S_0,I_0 \in \lbrack 0,1 \rbrack} are the
+proportion of the population that is susceptible and
+infected, respectively, at the start of the epidemic.
 
-The explicit solution for \mjseqn{Z} in terms of \mjseqn{\mathcal{R}_0}
-involves the non-elementary
+\insertCite{MaEarn06;textual}{epigrowthfit} discuss the history
+and generality of this relation and show that it is valid for
+a large class of epidemic models, including the SIR model with
+multiple infectious stages and arbitrarily distributed stage
+durations.
+
+The explicit solution for \mjseqn{Z} in terms of
+\mjseqn{\mathcal{R}_0} involves the non-elementary
 \href{https://en.wikipedia.org/wiki/Lambert_W_function}{Lambert W function}:
 
-\mjsdeqn{Z(\mathcal{R}_0) = 1 + \frac{1}{\mathcal{R}_0} W(-\mathcal{R}_0 e^{-\mathcal{R}_0})\,.}
+\mjsdeqn{Z(\mathcal{R}_0) = S_0 + \frac{1}{\mathcal{R}_0} W\big\lbrack-\mathcal{R}_0 S_0 e^{-\mathcal{R}_0 (S_0 + I_0)}\big\rbrack\,.}
 }
 \examples{
 R0 <- seq(0, 40, by = 0.2)

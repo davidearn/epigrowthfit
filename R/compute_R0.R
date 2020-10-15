@@ -2,34 +2,47 @@
 #' Compute the basic reproduction number
 #'
 #' @description
-#' Given an initial growth rate and a generation interval
-#' distribution, compute the basic reproduction number.
+#' Compute the basic reproduction number corresponding
+#' to an initial exponential growth rate and a binned
+#' generation interval distribution.
 #'
-#' @param r A numeric vector listing values for the initial
-#'   growth rate expressed per day.
-#' @param breaks A numeric vector of length 2 or greater
-#'   listing increasing break points, in days, in the support
-#'   of the generation interval density.
-#' @param probs A numeric vector with length `length(breaks)-1`.
-#'   `probs[i]` is the probability that the generation interval
-#'   is between `break[i]` days and `break[i+1]` days. Replaced
-#'   with `probs / sum(probs)` in the event that `sum(probs) != 1`.
+#' @param x \mjseqn{\lbrace\,r\,\rbrace}
+#'   A numeric vector listing values for the initial exponential
+#'   growth rate expressed per day. Alternatively, an "egf_init"
+#'   or "egf" object.
+#' @param breaks \mjseqn{\lbrace\,t_i\,\rbrace}
+#'   A numeric vector of length 2 or greater listing increasing
+#'   break points, in days, in the support of the generation
+#'   interval distribution.
+#' @param probs \mjseqn{\lbrace\,p_i\,\rbrace}
+#'   A numeric vector with length `length(breaks)-1`. `probs[i]`
+#'   is the probability that the generation interval is between
+#'   `break[i]` days and `break[i+1]` days. Replaced with
+#'   `probs / sum(probs)` in the event that `sum(probs) != 1`.
 #'
 #' @return
-#' A numeric vector `x` of length `length(r)`. `x[i]` is the
-#' basic reproduction number corresponding to initial growth rate
-#' `r[i]`. See Details.
+#' The method for class "numeric" returns a numeric vector
+#' of length `length(x)`, whose `i`th element is the basic
+#' reproduction number corresponding to initial exponential
+#' growth rate `x[i]`. See Details.
+#'
+#' The method for class "egf_init" applies the method for
+#' class "numeric" to `x$theta0[["r"]]`.
+#'
+#' The method for class "egf" applies the method for
+#' class "numeric" to `x$theta_hat[["r"]]`.
 #'
 #' @details
-#' Let \mjseqn{t_1 < \cdots < t_\ell} be the break points specified
-#' by `breaks`. For \mjseqn{i \in \lbrace 1,\ldots,\ell-1 \rbrace},
-#' let \mjseqn{p_i} be the probability specified by `probs[i]` that
-#' the generation interval is in the interval \mjseqn{(t_i,t_{i+1}\rbrack}.
+#' Let \mjseqn{t_0 < \cdots < t_m} be the break points specified
+#' by `breaks`. For \mjseqn{i \in \lbrace 1,\ldots,m \rbrace},
+#' let \mjseqn{p_i} be the probability specified by `probs[i]`
+#' that the generation interval is in the interval
+#' \mjseqn{(t_{i-1},t_i\rbrack}.
 #' Section 3(d) in \insertCite{WallLips07;textual}{epigrowthfit}
 #' gives the basic reproduction number as a function of initial
-#' growth rate \mjseqn{r}:
+#' exponential growth rate \mjseqn{r}:
 #'
-#' \mjsdeqn{\out{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{\ell-1} \frac{p_i (e^{-r t_i} - e^{-r t_{i+1}})}{t_{i+1} - t_i} \bigg\rbrace \right.\,.}}
+#' \mjsdeqn{\out{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}}
 #'
 #' @references
 #' \insertRef{WallLips07}{epigrowthfit}
@@ -52,29 +65,20 @@
 #'
 #' R0 <- compute_R0(r, breaks, probs)
 #' plot(r, R0, las = 1,
-#'   xlab = "initial growth rate, per day",
+#'   xlab = "initial exponential growth rate, per day",
 #'   ylab = "basic reproduction number"
 #' )
 #'
 #' @export
-compute_R0 <- function(r, breaks, probs) {
-  if (missing(r)) {
-    stop("Missing argument `r`.")
-  } else if (!is.numeric(r) || length(r) == 0) {
-    stop("`r` must be numeric and have nonzero length.")
-  }
-  if (missing(breaks)) {
-    stop("Missing argument `breaks`.")
-  } else if (!is.numeric(breaks) || length(breaks) < 2) {
+compute_R0 <- function(x, breaks, probs) {
+  if (!is.numeric(breaks) || length(breaks) < 2) {
     stop("`breaks` must be numeric and have length 2 or greater.")
   } else if (!isTRUE(all(breaks >= 0))) {
     stop("Elements of `breaks` must be non-negative.")
   } else if (!all(diff(breaks) > 0)) {
     stop("`breaks` must be increasing.")
   }
-  if (missing(probs)) {
-    stop("Missing argument `probs`.")
-  } else if (!is.numeric(probs) || length(probs) != length(breaks) - 1) {
+  if (!is.numeric(probs) || length(probs) != length(breaks) - 1) {
     stop("`probs` must be numeric with length `length(breaks)-1`.")
   } else if (!all(is.finite(probs)) || any(probs < 0)) {
     stop("`probs` must not contain missing, infinite, or negative values.")
@@ -82,15 +86,32 @@ compute_R0 <- function(r, breaks, probs) {
     stop("`probs` must have at least one positive element.")
   }
 
-  if (length(r) == 1) {
-    if (!is.finite(r)) {
-      return(NA)
-    }
-    x1 <- exp(-r * breaks[-length(breaks)])
-    x2 <- exp(-r * breaks[-1])
-    d <- diff(breaks)
-    r / sum(probs * (x1 - x2) / d)
+  UseMethod("compute_R0", x)
+}
+
+#' @rdname compute_R0
+#' @export
+compute_R0.numeric <- function(x, breaks, probs) {
+  if (length(x) > 1) {
+    sapply(x, compute_R0, breaks = breaks, probs = probs)
   } else {
-    sapply(r, compute_R0, breaks = breaks, probs = probs)
+    e1 <- exp(-x * breaks[-length(breaks)])
+    e2 <- exp(-x * breaks[-1])
+    d <- diff(breaks)
+    x / sum(probs * (e1 - e2) / d)
   }
+}
+
+#' @rdname compute_R0
+#' @export
+compute_R0.egf_init <- function(x, breaks, probs) {
+  x <- x$theta0[["r"]]
+  compute_R0(x, breaks, probs)
+}
+
+#' @rdname compute_R0
+#' @export
+compute_R0.egf <- function(x, breaks, probs) {
+  x <- x$theta_hat[["r"]]
+  compute_R0(x, breaks, probs)
 }

@@ -13,8 +13,8 @@
 #'   a fitting window, and initial parameter estimates.
 #'   See [egf_init()].
 #' @param method One of `"nlminb"`, `"nlm"`, `"Nelder-Mead"`,
-#'   `"BFGS"`, `"L-BFGS-S"`, and `"CG"`, indicating the algorithm
-#'   used to minimize the negative log likelihood function.
+#'   `"BFGS"`, `"L-BFGS-S"`, and `"CG"`,
+#'   indicating an optimization algorithm.
 #' @param ... Additional arguments to [`nlminb()`][stats::nlminb()],
 #'   [`nlm()`][stats::nlm()], or [`optim()`][stats::optim()].
 #'
@@ -93,12 +93,11 @@
 #' @importFrom TMB MakeADFun
 #' @useDynLib epigrowthfit
 egf <- function(init, method = "nlminb", ...) {
-  if (missing(init)) {
-    stop("Missing argument `init`.")
-  } else if (!inherits(init, "egf_init")) {
+  if (!inherits(init, "egf_init")) {
     stop("`init` must be an \"egf_init\" object.")
   }
-  valid_methods <- c("nlminb", "nlm", "Nelder-Mead", "BFGS", "L-BFGS-S", "CG")
+  valid_methods <- c("nlminb", "nlm", "Nelder-Mead",
+                     "BFGS", "L-BFGS-S", "CG")
   if (!is.character(method) || length(method) != 1 ||
         !method %in% valid_methods) {
     warning("Invalid `method`, using `\"nlminb\"` instead.",
