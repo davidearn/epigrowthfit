@@ -36,6 +36,7 @@
 \AtEndDocument{%
   \bibliographystyle{vancouver}
   \bibliography{epigrowthfit-vignette}
+  \addcontentsline{toc}{section}{References}
 }
 
 % Math
