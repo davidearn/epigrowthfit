@@ -152,7 +152,8 @@ predict.egf_init <- function(object, time = object$time, ...) {
 #' @export
 #' @import graphics
 #' @importFrom stats median
-plot.egf_init <- function(x, inc = "cumulative", tol = 0.025, ...) {
+plot.egf_init <- function(x, inc = "cumulative", tol = 0.025,
+                          xlim=NULL, ylim=NULL, ...) {
   if (!is.character(inc) || length(inc) != 1 ||
         !inc %in% c("interval", "cumulative")) {
     stop("`inc` must be one of \"interval\", \"cumulative\".")
@@ -179,7 +180,7 @@ plot.egf_init <- function(x, inc = "cumulative", tol = 0.025, ...) {
   l <- x$last
   wgrid <- seq(x$time[f+1], x$time[l+1], by = 1)
   pred <- predict(x, wgrid)
-  xlim <- c(0, max(x$time) * 1.04)
+  if (is.null(xlim)) xlim <- c(0, max(x$time) * 1.04)
   xlab <- paste("days since", as.character(x$date[1]))
   ylab <- "cases"
 
@@ -187,7 +188,7 @@ plot.egf_init <- function(x, inc = "cumulative", tol = 0.025, ...) {
 
   ## Cumulative incidence
   if (inc == "cumulative") {
-    ylim <- c(10^-0.2, max(c(data$cum_inc, pred$cum_inc)) * 10^0.2)
+    if (is.null(ylim)) ylim <- c(10^-0.2, max(c(data$cum_inc, pred$cum_inc)) * 10^0.2)
     yax_at <- 10^(0:max(floor(log10(c(data$cum_inc, pred$cum_inc)))))
     yax_labels <- parse(text = paste0("10^", log10(yax_at)))
     data$cum_inc[data$cum_inc == 0] <- ylim[1]
@@ -204,7 +205,7 @@ plot.egf_init <- function(x, inc = "cumulative", tol = 0.025, ...) {
 
   ## Interval incidence
   } else if (inc == "interval") {
-    ylim <- c(10^-0.2, max(c(data$int_inc, pred$int_inc)) * 10^0.2)
+    if (is.null(ylim)) ylim <- c(10^-0.2, max(c(data$int_inc, pred$int_inc)) * 10^0.2)
     yax_at <- 10^(0:max(floor(log10(c(data$int_inc, pred$int_inc)))))
     yax_labels <- parse(text = paste0("10^", log10(yax_at)))
     data$int_inc[data$int_inc == 0] <- ylim[1]

@@ -896,17 +896,19 @@ g = f_\text{lat} * f_\text{wait}\,,\qquad f_\text{wait} = \scalebox{1.1}{$\mathb
 \end{equation}
 \end{linenomath}
 %
-Here, $f_\text{wait}$ is the density function of the infectious
-\emph{waiting time}, the time from onset of infectiousness to
-transmission. One can show that if $f_\text{lat}$ and $f_\text{inf}$
+Here, $*$ denotes
+\href{https://en.wikipedia.org/wiki/Convolution}{convolution} and
+$f_\text{wait}$ is the density function of the infectious
+\emph{waiting time} (the time from onset of infectiousness to
+transmission). One can show that if $f_\text{lat}$ and $f_\text{inf}$
 have discrete support, then $g$ satisfies the conditions under which
 \cref{eq:R0} is valid. \pkg{epigrowthfit} functions \fun{dgi} and
 \fun{pgi} evaluate the density and distribution functions of
 $\tau_\text{gen}$ implied by distributions of $\tau_\text{lat}$ and
-$\tau_\text{inf}$ supported on the integers (\ie $1,2,\ldots$ days).
-These are helpful if one wants to use \fun{compute_R0} and
-has latent and infectious period distributions, but not the
-corresponding generation interval distribution.
+$\tau_\text{inf}$ supported on the positive integers (\ie $1,2,\ldots$
+days).  These are helpful if one wants to use \fun{compute_R0} and has
+latent and infectious period distributions, but not the corresponding
+generation interval distribution.
 
 
 \subsection{Epidemic final size}
@@ -999,8 +1001,8 @@ sum(is.na(ontario$new_confirmations)) # check that no NA remain
 Just removing a date with a missing value is sufficient only if the
 missing number of cases is carried over to the next observation time.
 Here, we assume that this is true, but if that is not the case, then
-imputation is necessary unless the missing number is expected to be
-negligible.
+\href{https://en.wikipedia.org/wiki/Imputation_(statistics)}{imputation}
+is necessary unless the missing number is expected to be negligible.
 
 
 \subsection{Initializing the fitting machinery with \tops{\protect\fun{egf_init}}{egf\_init()}}
@@ -1044,18 +1046,19 @@ employed by \pkg{epigrowthfit} (see \cref{sec:mle}) are iterative and
 require an initial estimate $\vec{\theta}^{(0)}$ of parameter vector
 $\vec{\theta}$. The exact choice of $\vec{\theta}^{(0)}$ is typically
 not critical, but a good initial guess can promote convergence.
-Reasonable initial estimates of $r$ and $c_0$ are $\beta_1$ and
-$e^{\beta_0}$, respectively, where $\beta_1$ and $\beta_0$ are
-the slope and intercept of a linear model fit to the logarithm of
-cumulative incidence, using only observations in the fitting window.
-If the interval incidence curve is roughly symmetric, then an estimate
-of $\thalf$ is supplied by the time of its peak. Certainly, $K$ should
-be no less than the number of cases observed to date and no more than
-the population size. When fitting a Richards model, one can initially
-assume a logistic model by estimating that $p$ is 1. When including
-baseline growth in a model (see \cref{sec:models-baseline}), one can
-use the average mortality rate in the years preceding and following
-the epidemic as an initial estimate of $b$.
+Reasonable initial estimates of $r$ and $c_0$ [\cref{eq:exponential}]
+are $\beta_1$ and $e^{\beta_0}$, respectively, where $\beta_1$ and
+$\beta_0$ are the slope and intercept of a linear model fit to the
+logarithm of cumulative incidence, using only observations in the
+fitting window.  If the interval incidence curve is roughly symmetric,
+then an estimate of $\thalf$ [\cref{eq:logistic}] is supplied by the
+time of its peak. $K$ should be taken to be no less than the number of
+cases observed to date and no more than the population size. When
+fitting a Richards model \eqref{eq:richards}, one can initially assume
+a logistic model \eqref{eq:logistic} by estimating that $p$ is 1. When
+including baseline growth in a model (see \cref{sec:models-baseline}),
+one can use the average mortality rate in the years preceding and
+following the epidemic as an initial estimate of $b$.
 
 With the exception of $b$, \fun{egf_init} employs these initial
 estimates (taking the lower bound on $K$) by default. For simplicity,
@@ -1137,10 +1140,10 @@ function and an environment binding free variables. By this
 definition, every \code{function} object in R is a closure,
 because every \code{function} object \code{f} is associated
 with an enclosing environment, namely \code{`9environment`9(f)}.
-
+%%
 However, in this vignette, the word ``closure'' refers
 specifically to any function whose enclosing environment
-is the execution environment of another function ---that is,
+is the execution environment of another function---that is,
 any function defined inside another function.}
 %
 taking numeric arguments \code{time} and \code{theta} (defaults

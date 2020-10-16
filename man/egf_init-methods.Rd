@@ -14,7 +14,7 @@
 
 \method{predict}{egf_init}(object, time = object$time, ...)
 
-\method{plot}{egf_init}(x, inc = "cumulative", tol = 0.025, ...)
+\method{plot}{egf_init}(x, inc = "cumulative", tol = 0.025, xlim = NULL, ylim = NULL, ...)
 }
 \arguments{
 \item{x, object}{An "egf_init" object.}
