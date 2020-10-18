@@ -17,12 +17,14 @@
 
 \method{simulate}{egf}(object, nsim = 1, seed = NULL, time = object$init$time, ...)
 
-\method{plot}{egf}(x, inc = "cumulative", tol = 0.025, ...)
+\method{plot}{egf}(x, inc = "cumulative", tol = 0, ...)
 }
 \arguments{
 \item{x, object}{An "egf" object.}
 
-\item{...}{Unused optional arguments.}
+\item{...}{Optional arguments. Used only by the \code{plot} method
+to specify graphical parameters. Currently, only \code{xlim} and
+\code{ylim} are implemented. Any additional parameters will be ignored.}
 
 \item{log}{A logical scalar. If \code{TRUE}, then parameter values are
 log-transformed.}
@@ -35,7 +37,7 @@ The simulate method requires \code{length(time) >= 2}.}
 
 \item{seed}{An integer specifying a seed for RNG, otherwise \code{NULL}.}
 
-\item{inc}{One of \code{"interval"} and \code{"cumulative"},
+\item{inc}{One of \code{"cumulative"} and \code{"interval"},
 indicating a type of incidence to plot.}
 
 \item{tol}{A non-negative number used only if \code{inc = "interval"}.
@@ -56,6 +58,7 @@ The \code{predict} method returns a list with numeric elements:
 
 \describe{
 \item{\code{time}}{Matches argument.}
+\item{\code{refdate}}{Matches \code{object$init$date[1]}.}
 \item{\code{cum_inc}}{Expected cumulative incidence at time points
 \code{time}, conditional on parameter vector \code{object$theta_hat}.
 Equal to \code{object$cum_inc(time)}.
@@ -67,10 +70,12 @@ if \code{length(time) >= 2} and omitted otherwise.
 }
 }
 
-The \code{simulate} method returns a list with numeric elements:
+The \code{simulate} method returns an "egf_sim" object,
+which is a list with elements:
 
 \describe{
 \item{\code{time}}{Matches argument.}
+\item{\code{refdate}}{Matches \code{object$init$date[1]}.}
 \item{\code{int_inc}}{A matrix with \code{length(time)-1} rows and \code{nsim}
 columns, such that \code{int_inc[i, j]} is the number of cases
 observed between \code{time[i]} and \code{time[i+1]} in simulation \code{j}
@@ -88,6 +93,7 @@ where \code{c0 = predict(object, time)$cum_inc[1]} is the expected
 value of cumulative incidence at \code{time[1]} conditional on
 parameter vector \code{object$theta_hat}.
 }
+\item{\code{fit}}{Matches \code{object}.}
 }
 
 The \code{plot} method returns \code{NULL} invisibly.
@@ -101,7 +107,7 @@ Methods for "egf" objects returned by \code{\link[=egf]{egf()}}.
 The bottom axis measures the number of days since \code{x$init$date[1]}.
 The left axis measures interval or cumulative incidence
 (depending on \code{inc}) on a log scale. Zeros are plotted as if
-they were 10^(-0.2), and are therefore distinguished from
+they were \code{10^(-0.2)}, and are therefore distinguished from
 nonzero counts, which are always at least 1.
 
 Observed data, specified by \code{x$init$time} and either \code{x$init$cases}
@@ -130,9 +136,10 @@ may vary from the predicted curve not due to chance, but because
 they represent a count over fewer or more days than the typical
 observation interval, namely \code{median(diff(time))}. Observations
 for which \code{diff(time)} differs from \code{median(diff(time))} are
-highlighted according to argument \code{tol}.
+highlighted according to argument \code{tol} and labeled with the
+value of \code{diff(time)}.
 }
 }
 \seealso{
-\code{\link[=egf]{egf()}}
+\code{\link[=egf]{egf()}}, \link[=egf_sim-methods]{methods for class "egf_sim"}
 }

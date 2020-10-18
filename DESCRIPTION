@@ -16,10 +16,10 @@ Imports:
     knitr (>= 1.29),
     mathjaxr (>= 1.0-1),
     Rdpack (>= 0.7),
-    emdbook (>= 1.3.12)
-Suggests:
-    shape,
+    emdbook (>= 1.3.12),
     scales
+Suggests:
+    shape
 LinkingTo:
     TMB,
     RcppEigen

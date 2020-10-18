@@ -11,7 +11,7 @@
 #'   The simulate method requires `length(time) >= 2`.
 #' @param nsim A positive integer specifying a number of simulations.
 #' @param seed An integer specifying a seed for RNG, otherwise `NULL`.
-#' @param inc One of `"interval"` and `"cumulative"`,
+#' @param inc One of `"cumulative"` and `"interval"`,
 #'   indicating a type of incidence to plot.
 #' @param tol A non-negative number used only if `inc = "interval"`.
 #'   `x$init$cases[i]` is highlighted if
@@ -20,7 +20,9 @@
 #'   `m = median(diff(x$init$time))`.
 #'   Assign 0 to ensure that all deviations from `m` are highlighted.
 #'   Assign `Inf` to disable highlighting.
-#' @param ... Unused optional arguments.
+#' @param ... Optional arguments. Used only by the `plot` method
+#'   to specify graphical parameters. Currently, only `xlim` and
+#'   `ylim` are implemented. Any additional parameters will be ignored.
 #'
 #' @return
 #' The `print` method returns `x` invisibly.
@@ -32,6 +34,7 @@
 #'
 #' \describe{
 #'   \item{`time`}{Matches argument.}
+#'   \item{`refdate`}{Matches `object$init$date[1]`.}
 #'   \item{`cum_inc`}{Expected cumulative incidence at time points
 #'     `time`, conditional on parameter vector `object$theta_hat`.
 #'     Equal to `object$cum_inc(time)`.
@@ -43,10 +46,12 @@
 #'   }
 #' }
 #'
-#' The `simulate` method returns a list with numeric elements:
+#' The `simulate` method returns an "egf_sim" object,
+#' which is a list with elements:
 #'
 #' \describe{
 #'   \item{`time`}{Matches argument.}
+#'   \item{`refdate`}{Matches `object$init$date[1]`.}
 #'   \item{`int_inc`}{A matrix with `length(time)-1` rows and `nsim`
 #'     columns, such that `int_inc[i, j]` is the number of cases
 #'     observed between `time[i]` and `time[i+1]` in simulation `j`
@@ -64,6 +69,7 @@
 #'     value of cumulative incidence at `time[1]` conditional on
 #'     parameter vector `object$theta_hat`.
 #'   }
+#'   \item{`fit`}{Matches `object`.}
 #' }
 #'
 #' The `plot` method returns `NULL` invisibly.
@@ -74,7 +80,7 @@
 #' The bottom axis measures the number of days since `x$init$date[1]`.
 #' The left axis measures interval or cumulative incidence
 #' (depending on `inc`) on a log scale. Zeros are plotted as if
-#' they were 10^(-0.2), and are therefore distinguished from
+#' they were `10^(-0.2)`, and are therefore distinguished from
 #' nonzero counts, which are always at least 1.
 #'
 #' Observed data, specified by `x$init$time` and either `x$init$cases`
@@ -106,9 +112,10 @@
 #' they represent a count over fewer or more days than the typical
 #' observation interval, namely `median(diff(time))`. Observations
 #' for which `diff(time)` differs from `median(diff(time))` are
-#' highlighted according to argument `tol`.
+#' highlighted according to argument `tol` and labeled with the
+#' value of `diff(time)`.
 #'
-#' @seealso [egf()]
+#' @seealso [egf()], [methods for class "egf_sim"][egf_sim-methods]
 #'
 #' @name egf-methods
 NULL
@@ -121,11 +128,17 @@ print.egf <- function(x, ...) {
     logistic    = "a logistic model",
     richards    = "a Richards model"
   )
-  bstr <- if (x$init$include_baseline) "with a linear baseline and" else "with"
+  bstr <- if (x$init$include_baseline) {
+    "with a linear baseline and"
+  } else {
+    "with"
+  }
   dstr <- switch(x$init$distr,
     poisson = "Poisson-distributed observations.",
     nbinom  = "negative binomial observations."
   )
+  uvec <- c(r = "per day", thalf = "days", b = "per day")
+  uvec <- uvec[names(uvec) %in% names(x$theta_hat)]
   f <- x$init$first
   l <- x$init$last
   cat("This \"egf\" object fits", cstr, "\n")
@@ -140,6 +153,12 @@ print.egf <- function(x, ...) {
   cat("Fitted parameter estimates:\n")
   cat("\n")
   print(x$theta_hat)
+  cat("\n")
+  cat("Units:\n")
+  cat("\n")
+  print(uvec, quote = FALSE)
+  cat("\n")
+  cat("Negative log likelihood:", x$nll, "\n")
   invisible(x)
 }
 
@@ -168,7 +187,11 @@ predict.egf <- function(object, time = object$init$time, ...) {
     stop("`time` must be increasing.")
   }
 
-  out <- list(time = time, cum_inc = object$cum_inc(time))
+  out <- list(
+    time = time,
+    refdate = object$init$date[1],
+    cum_inc = object$cum_inc(time)
+  )
   if (length(time) > 1) {
     out$int_inc = diff(out$cum_inc)
   }
@@ -194,8 +217,11 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
     stop("`seed` must be `NULL` or an integer.")
   }
 
+  ## Predicted curves
   cum_inc <- object$cum_inc(time)
   int_inc <- diff(cum_inc)
+
+  ## Simulated curves
   if (object$init$distr == "pois") {
     set.seed(seed)
     sim <- replicate(nsim, rpois(int_inc, lambda = int_inc))
@@ -205,18 +231,21 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
     sim <- replicate(nsim, rnbinom(int_inc, mu = int_inc, size = k))
   }
 
-  list(
+  out <- list(
     time = time,
+    refdate = object$init$date[1],
+    cum_inc = cum_inc[1] + apply(rbind(0, sim), 2, cumsum),
     int_inc = sim,
-    cum_inc = cum_inc[1] + apply(rbind(0, sim), 2, cumsum)
+    fit = object
   )
+  structure(out, class = c("egf_sim", "list"))
 }
 
 #' @rdname egf-methods
 #' @export
 #' @import graphics
 #' @importFrom stats median
-plot.egf <- function(x, inc = "cumulative", tol = 0.025, ...) {
+plot.egf <- function(x, inc = "cumulative", tol = 0, ...) {
   if (!is.character(inc) || length(inc) != 1 ||
         !inc %in% c("interval", "cumulative")) {
     stop("`inc` must be one of \"interval\", \"cumulative\".")
@@ -227,62 +256,97 @@ plot.egf <- function(x, inc = "cumulative", tol = 0.025, ...) {
     }
   }
 
+
+  ### SET UP ###########################################################
+
+  ## Optional graphical parameters
+  dots <- list(...)
+
+  ## Observed data
   data <- data.frame(
     time = x$init$time[-1],
-    int_inc = x$init$cases,
-    cum_inc = cumsum(x$init$cases)
+    cum_inc = cumsum(x$init$cases),
+    int_inc = x$init$cases
   )
-  data$dt <- diff(x$init$time)
-  m <- median(data$dt)
-  dt_min <- (1 - tol) * m
-  dt_max <- (1 + tol) * m
-  dt_enum <- 1 + 1 * (data$dt < dt_min) + 2 * (data$dt > dt_max)
-  data$bg <- c("#DDDDDD", "#FFFFFF", "#882255")[dt_enum]
-  data$col <- c("#BBBBBB", "#882255", "#882255")[dt_enum]
+
+  ## Predicted curve
   f <- x$init$first
   l <- x$init$last
   wgrid <- seq(x$init$time[f+1], x$init$time[l+1], by = 1)
-  pred <- predict(x, wgrid)
-  xlim <- c(0, max(x$init$time) * 1.04)
+  wpred <- predict(x, wgrid)[c("time", "cum_inc", "int_inc")]
+  wpred$int_inc <- c(NA, wpred$int_inc)
+
+  ## A way to avoid conditional `if (inc = ...) ... else ...`
+  varname <- substr(inc, start = 1, stop = 3) # first three characters
+  varname <- paste0(varname, "_inc")
+  formula <- as.formula(paste(varname, "~ time"))
+
+  ## Axis titles
   xlab <- paste("days since", as.character(x$init$date[1]))
-  ylab <- "cases"
+  ylab <- paste(inc, "incidence")
+
+  ## Axis limits (x)
+  xmin <- 0
+  xmax <- max(x$init$time, na.rm = TRUE) * 1.04
+  xlim <- if ("xlim" %in% names(dots)) dots$xlim else c(xmin, xmax)
+
+  ## Axis limits (y)
+  ymin <- 10^-0.2
+  ymax <- max(data[[varname]], wpred[[varname]], na.rm = TRUE) * 10^0.2
+  ylim <- if ("ylim" %in% names(dots)) dots$ylim else c(ymin, ymax)
+  data[[varname]][data[[varname]] == 0] <- ymin # set zeros to `ymin`
+
+  ## Axis ticks (y)
+  yaxis_at <- 10^(0:floor(log10(ymax)))
+  yaxis_labels <- parse(text = paste0("10^", log10(yaxis_at)))
+
+  ## Point and line styles
+  points_bg_main <- "#DDDDDD"
+  points_bg_ltm <- "#FFFFFF"
+  points_bg_gtm <- "#882255"
+  points_col_main <- "#BBBBBB"
+  points_col_ltm <- "#882255"
+  points_col_gtm <- "#882255"
+  text_col <- "#BBBBBB"
+  lines_col <- "#44AA99"
+  if (inc == "cumulative") {
+    data$points_bg <- points_bg_main
+    data$points_col <- points_bg_main
+  } else if (inc == "interval") {
+    data$dt <- diff(x$init$time)
+    m <- median(data$dt)
+    dt_min <- (1 - tol) * m
+    dt_max <- (1 + tol) * m
+    dt_enum <- 1 + 1 * (data$dt < dt_min) + 2 * (data$dt > dt_max)
+    data$points_bg <- c(points_bg_main, points_bg_ltm, points_bg_gtm)[dt_enum]
+    data$points_col <- c(points_col_main, points_col_ltm, points_col_gtm)[dt_enum]
+  }
+
+
+  ### PLOT #############################################################
 
   op <- par(mar = c(5, 4, 4, 8) + 0.1, las = 1, mgp = c(3, 0.7, 0))
+  on.exit(par(op))
+  plot.new()
+  plot.window(xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i", log = "y")
 
-  ## Cumulative incidence
-  if (inc == "cumulative") {
-    ylim <- c(10^-0.2, max(c(data$cum_inc, pred$cum_inc)) * 10^0.2)
-    yax_at <- 10^(0:max(floor(log10(c(data$cum_inc, pred$cum_inc)))))
-    yax_labels <- parse(text = paste0("10^", log10(yax_at)))
-    data$cum_inc[data$cum_inc == 0] <- ylim[1]
+  ## Axes
+  box(bty = "l")
+  axis(side = 1)
+  axis(side = 2, at = yaxis_at, labels = yaxis_labels)
 
-    plot.new()
-    plot.window(xlim = xlim, ylim = ylim,
-                xaxs = "i", yaxs = "i", log = "y")
-    axis(side = 1)
-    axis(side = 2, at = yax_at, labels = yax_labels)
-    box(bty = "l")
-    points(cum_inc ~ time, data = data, xpd = NA,
-           pch = 21, bg = "#DDDDDD", col = "#BBBBBB")
-    lines(pred$time, pred$cum_inc, lwd = 3, col = "#44AA99")
-
-    ## Interval incidence
-  } else if (inc == "interval") {
-    ylim <- c(10^-0.2, max(c(data$int_inc, pred$int_inc)) * 10^0.2)
-    yax_at <- 10^(0:max(floor(log10(c(data$int_inc, pred$int_inc)))))
-    yax_labels <- parse(text = paste0("10^", log10(yax_at)))
-    data$int_inc[data$int_inc == 0] <- ylim[1]
-
-    plot.new()
-    plot.window(xlim = xlim, ylim = ylim,
-                xaxs = "i", yaxs = "i", log = "y")
-    axis(side = 1)
-    axis(side = 2, at = yax_at, labels = yax_labels)
-    box(bty = "l")
-    points(int_inc ~ time, data = data, xpd = NA,
-           pch = 21, bg = data$bg, col = data$col)
-    lines(pred$time[-1], pred$int_inc, lwd = 3, col = "#44AA99")
+  ## Observed data
+  xpd <- !any(c("xlim", "ylim") %in% names(dots))
+  points(formula, data = data, xpd = xpd,
+         pch = 21, bg = data$points_bg, col = data$points_col)
+  if (inc == "interval") {
+    text(int_inc ~ time, data = data, subset = (dt_enum != 1),
+         labels = dt, pos = 3, offset = 0.3,
+         cex = 0.7, font = 2, col = text_col)
   }
+
+  ## Predicted curve
+  lines(formula, data = wpred, lwd = 3, col = lines_col)
 
   ## Fitting window
   abline(v = x$init$time[c(f,l)+1], lty = 2, col = "#555555")
@@ -291,11 +355,11 @@ plot.egf <- function(x, inc = "cumulative", tol = 0.025, ...) {
   title(xlab = xlab)
   title(ylab = ylab)
   cstr <- x$init$curve
-  substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1))
+  substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1)) # capitalize first letter
   title(main = paste(cstr, "model of", inc, "incidence\n(fitted)"),
         cex.main = 0.9)
 
-  ## Initial parameter estimates
+  ## Parameter estimates
   pstr1 <- paste0(names(x$theta_hat), " = ")
   pstr2 <- round(x$theta_hat, digits = 4)
   if ("K" %in% names(x$theta_hat)) {
@@ -309,34 +373,29 @@ plot.egf <- function(x, inc = "cumulative", tol = 0.025, ...) {
   text(px, py, paste(pstr2, collapse = "\n"),
        adj = c(0, 0), xpd = NA, cex = 0.7)
 
-  ## Legend
+  ## Legend (beware: many ugly hacks here)
   lx <- par("usr")[2] + 0.02 * diff(par("usr")[1:2])
   ly <- 10^(par("usr")[4] - 0.02 * diff(par("usr")[3:4]))
   if (inc == "cumulative") {
-    legend(x = lx, y = ly,
-           xpd = NA, bty = "n", cex = 0.7, seg.len = 1,
-           pch = c(21, NA),
-           pt.bg = c("#DDDDDD", NA),
-           lty = c(NA, 1),
-           lwd = c(NA, 3),
-           col = c("#BBBBBB", "#44AA99"),
-           legend = c("obs", "pred")
-    )
+    lstr <- c("obs", NA, NA, "pred")
+    index <- c(TRUE, FALSE, FALSE, TRUE)
   } else if (inc == "interval") {
-    legend(x = lx, y = ly,
-           xpd = NA, bty = "n", cex = 0.7, seg.len = 1,
-           pch = c(21, 21, 21, NA),
-           pt.bg = c("#DDDDDD", "#FFFFFF", "#882255", NA),
-           lty = c(NA, NA, NA, 1),
-           lwd = c(NA, NA, NA, 3),
-           col = c("#BBBBBB", "#882255", "#882255", "#44AA99"),
-           legend = c("obs, dt ~ median",
-                      "obs, dt < median",
-                      "obs, dt > median",
-                      "pred")
-    )
+    lstr1 <- paste0("'", c("obs,", "obs,", "obs,", "pred,"), "'")
+    cond <- (all(data$dt[dt_enum == 1] == m))
+    rel <- c((if(cond) "=" else "~"), "<", ">", "=")
+    mstr <- paste0(m, " day", if (m > 1) "s" else "")
+    lstr2 <- paste0("'t ", rel, " ", mstr, "'")
+    lstr <- parse(text = paste(lstr1, "~ Delta *", lstr2))
+    index <- c(TRUE, any(dt_enum == 2), any(dt_enum == 3), TRUE)
   }
+  legend(x = lx, y = ly,
+         xpd = NA, bty = "n", cex = 0.7, seg.len = 1,
+         legend = lstr[index],
+         pch = c(21, 21, 21, NA)[index],
+         pt.bg = c(points_bg_main, points_bg_ltm, points_bg_gtm, NA)[index],
+         lty = c(NA, NA, NA, 1)[index],
+         lwd = c(NA, NA, NA, 3)[index],
+         col = c(points_col_main, points_col_ltm, points_col_gtm, lines_col)[index])
 
-  par(op)
   invisible(NULL)
 }

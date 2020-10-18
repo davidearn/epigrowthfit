@@ -34,15 +34,15 @@ to \code{log(theta_hat)} but with \code{"log_"} prepended to the names.
 \item{\code{nll}}{A numeric scalar giving the negative log likelihood
 of \code{log_theta_hat}.
 }
-\item{\code{nll_fn}}{A closure with a numeric argument \code{log_theta}
-specifying a log-transformed parameter vector (default
-is \code{log_theta_hat}). Returns the negative log likelihood
-function evaluated at \code{log_theta}.
+\item{\code{nll_func}}{A closure with a numeric argument \code{log_theta}
+specifying a log-transformed parameter vector (default is
+\code{log_theta_hat}). Returns the negative log likelihood function
+evaluated at \code{log_theta}.
 }
-\item{\code{nll_gr}}{A closure with a numeric argument \code{log_theta}
-specifying a log-transformed parameter vector (default
-is \code{log_theta_hat}). Returns the gradient of the negative
-log likelihood with respect to log-transformed parameters
+\item{\code{nll_grad}}{A closure with a numeric argument \code{log_theta}
+specifying a log-transformed parameter vector (default is
+\code{log_theta_hat}). Returns the gradient of the negative log
+likelihood with respect to log-transformed parameters
 evaluated at \code{log_theta}.
 }
 \item{\code{cum_inc}}{A closure with numeric arguments \code{time}
@@ -83,12 +83,14 @@ x <- egf(init)
 print(x)
 coef(x, log = FALSE)
 coef(x, log = TRUE)
-time_obs <- init$time
-time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
-predict(x, time = time_pred)
-simulate(x, nsim = 5, time = time_obs)
 plot(x, inc = "cumulative")
 plot(x, inc = "interval")
+time_obs <- init$time
+time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
+pred <- predict(x, time = time_pred)
+sim <- simulate(x, nsim = 5, time = time_obs)
+plot(sim, inc = "cumulative")
+plot(sim, inc = "interval")
 
 }
 \references{

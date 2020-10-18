@@ -33,15 +33,15 @@
 #'   \item{`nll`}{A numeric scalar giving the negative log likelihood
 #'     of `log_theta_hat`.
 #'   }
-#'   \item{`nll_fn`}{A closure with a numeric argument `log_theta`
-#'     specifying a log-transformed parameter vector (default
-#'     is `log_theta_hat`). Returns the negative log likelihood
-#'     function evaluated at `log_theta`.
+#'   \item{`nll_func`}{A closure with a numeric argument `log_theta`
+#'     specifying a log-transformed parameter vector (default is
+#'     `log_theta_hat`). Returns the negative log likelihood function
+#'     evaluated at `log_theta`.
 #'   }
-#'   \item{`nll_gr`}{A closure with a numeric argument `log_theta`
-#'     specifying a log-transformed parameter vector (default
-#'     is `log_theta_hat`). Returns the gradient of the negative
-#'     log likelihood with respect to log-transformed parameters
+#'   \item{`nll_grad`}{A closure with a numeric argument `log_theta`
+#'     specifying a log-transformed parameter vector (default is
+#'     `log_theta_hat`). Returns the gradient of the negative log
+#'     likelihood with respect to log-transformed parameters
 #'     evaluated at `log_theta`.
 #'   }
 #'   \item{`cum_inc`}{A closure with numeric arguments `time`
@@ -74,12 +74,14 @@
 #' print(x)
 #' coef(x, log = FALSE)
 #' coef(x, log = TRUE)
-#' time_obs <- init$time
-#' time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
-#' predict(x, time = time_pred)
-#' simulate(x, nsim = 5, time = time_obs)
 #' plot(x, inc = "cumulative")
 #' plot(x, inc = "interval")
+#' time_obs <- init$time
+#' time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
+#' pred <- predict(x, time = time_pred)
+#' sim <- simulate(x, nsim = 5, time = time_obs)
+#' plot(sim, inc = "cumulative")
+#' plot(sim, inc = "interval")
 #'
 #' @references
 #' \insertRef{Ma+14}{epigrowthfit}
@@ -175,10 +177,10 @@ egf <- function(init, method = "nlminb", ...) {
   ## Define wrappers for the negative log likelihood
   ## function and its gradient to circumvent unexpected
   ## super assignment in definition
-  nll_fn <- function(log_theta = log_theta_hat) {
+  nll_func <- function(log_theta = log_theta_hat) {
     madf_out$fn(log_theta)
   }
-  nll_gr <- function(log_theta = log_theta_hat) {
+  nll_grad <- function(log_theta = log_theta_hat) {
     madf_out$gr(log_theta)
   }
 
@@ -199,8 +201,8 @@ egf <- function(init, method = "nlminb", ...) {
     theta_hat = theta_hat,
     log_theta_hat = log_theta_hat,
     nll = nll,
-    nll_fn = nll_fn,
-    nll_gr = nll_gr,
+    nll_func = nll_func,
+    nll_grad = nll_grad,
     cum_inc = cum_inc,
     madf_out = madf_out,
     optim_out = optim_out,

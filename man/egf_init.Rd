@@ -219,11 +219,11 @@ x <- egf_init(
 print(x)
 coef(x, log = FALSE)
 coef(x, log = TRUE)
+plot(x, inc = "cumulative")
+plot(x, inc = "interval")
 time_obs <- x$time
 time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
 predict(x, time = time_pred)
-plot(x, inc = "cumulative")
-plot(x, inc = "interval")
 
 }
 \references{

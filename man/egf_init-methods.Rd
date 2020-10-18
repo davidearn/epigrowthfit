@@ -14,7 +14,7 @@
 
 \method{predict}{egf_init}(object, time = object$time, ...)
 
-\method{plot}{egf_init}(x, inc = "cumulative", tol = 0.025, xlim = NULL, ylim = NULL, ...)
+\method{plot}{egf_init}(x, inc = "cumulative", tol = 0, ...)
 }
 \arguments{
 \item{x, object}{An "egf_init" object.}
@@ -27,7 +27,7 @@ log-transformed.}
 \item{time}{A numeric vector listing increasing time points in days
 since \code{object$date[1]}. Missing values are not tolerated.}
 
-\item{inc}{One of \code{"interval"} and \code{"cumulative"},
+\item{inc}{One of \code{"cumulative"} and \code{"interval"},
 indicating a type of incidence to plot.}
 
 \item{tol}{A non-negative number used only if \code{inc = "interval"}.
@@ -48,6 +48,7 @@ The \code{predict} method returns a list with numeric elements:
 
 \describe{
 \item{\code{time}}{Matches argument.}
+\item{\code{refdate}}{Matches \code{object$date[1]}.}
 \item{\code{cum_inc}}{Expected cumulative incidence at time points
 \code{time}, conditional on parameter vector \code{object$theta0}.
 Equal to \code{object$cum_inc(time)}.
@@ -70,7 +71,7 @@ Methods for "egf_init" objects returned by \code{\link[=egf_init]{egf_init()}}.
 The bottom axis measures the number of days since \code{x$date[1]}.
 The left axis measures interval or cumulative incidence
 (depending on \code{inc}) on a log scale. Zeros are plotted as if
-they were 10^(-0.2), and are therefore distinguished from
+they were \code{10^(-0.2)}, and are therefore distinguished from
 nonzero counts, which are always at least 1.
 
 Observed data, specified by \code{x$time} and either \code{x$cases} or
@@ -98,7 +99,8 @@ may vary from the predicted curve not due to chance, but because
 they represent a count over fewer or more days than the typical
 observation interval, namely \code{median(diff(time))}. Observations
 for which \code{diff(time)} differs from \code{median(diff(time))} are
-highlighted according to argument \code{tol}.
+highlighted according to argument \code{tol} and labeled with the
+value of \code{diff(time)}.
 }
 }
 \seealso{
