@@ -279,7 +279,7 @@ plot.egf_init <- function(x, inc = "cumulative", tol = 0, ...) {
   title(ylab = ylab)
   cstr <- x$curve
   substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1)) # capitalize first letter
-  title(main = paste(cstr, "model of", inc, "incidence\n(fitted)"),
+  title(main = paste(cstr, "model of", inc, "incidence\n(initial guess)"),
         cex.main = 0.9)
 
   ## Parameter estimates
