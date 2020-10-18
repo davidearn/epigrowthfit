@@ -1495,16 +1495,14 @@ initial and final estimates of $r$ for the Ontario data.
 argument \code{x}, which can be a numeric vector listing initial
 exponential growth rates $r$ in units day$^{-1}$, an \code{egf_init}
 object, or an \code{egf} object. If \code{x} is a numeric vector,
-then it returns \code{`9log`9(`12`1)/x}, a numeric vector listing
-doubling times in days corresponding to the elements of \code{x}.
-If \code{x} is an \code{egf_init} object, then it extracts the
-fitted value of $r$ from the object and returns the corresponding
-doubling time, \ie it returns
-\code{`9log`9(`12`1)/object$theta0[[`2"r"`2]]}.
-Finally, if \code{x} is an \code{egf} object, then it extracts
-the initial value of $r$ from the object and returns the corresponding
-doubling time, \ie it returns
-\code{`9log`9(`12`1)/object$theta_hat[[`2"r"`2]]}.
+then it returns a \code{doubling_time} object---a numeric vector
+listing doubling times in corresponding to the elements of \code{x},
+with a \fun{print} method that specifies the units (always days).
+If \code{x} is an \code{egf_init} object, then it applies the
+method for numeric vectors to the initial value of $r$, namely
+\code{x$theta0[[`2"r"`2]]}. If \code{x} is an \code{egf} object,
+then it applies the method for numeric vectors to the \emph{fitted}
+value of $r$, namely \code{x$theta_hat[[`2"r"`2]]}.
 
 <<ontario-doubling-time-1>>=
 compute_doubling_time(10^(-2:0)) # method for class "numeric"
