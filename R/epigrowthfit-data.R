@@ -323,3 +323,51 @@ NULL
 #'
 #' @name plague_infectious_period
 "plague_infectious_period"
+
+#' Generation interval distribution (COVID-19)
+#'
+#' @description
+#' A gamma distribution of the COVID-19 generation interval
+#' fitted to data from a cluster of 45 cases in Tianjin, China.
+#'
+#' @format
+#' A list with 4 elements:
+#'
+#' \describe{
+#'   \item{`shape`}{
+#'     Estimated shape parameter. See [`dgamma()`][stats::dgamma()].
+#'   }
+#'   \item{`scale`}{
+#'     Estimated scale parameter. See [`dgamma()`][stats::dgamma()].
+#'   }
+#'   \item{`breaks`}{
+#'     An integer vector listing numbers of days. Equal to `0:20`.
+#'   }
+#'   \item{`probs`}{
+#'     A numeric vector of length `length(breaks-1)`. `probs[i]`
+#'     is the probability that the generation interval is between
+#'     `breaks[i]` and `breaks[i+1]` days, conditional on the
+#'     fitted generation interval distribution.
+#'     Equal to `diff(pgamma(breaks, shape = shape, scale = scale))`.
+#'   }
+#' }
+#'
+#' @source
+#' `shape` and `scale` were computed from the mean and standard
+#' deviation reported in \insertCite{Gany+20;textual}{epigrowthfit},
+#' Table 4, Scenario 2.
+#'
+#' @references
+#' \insertRef{Gany+20}{epigrowthfit}
+#'
+#' @usage data(plague_infectious_period)
+#' @examples
+#' data(covid_generation_interval)
+#' x <- 10^seq(-2, log10(20), length.out = 150)
+#' fx <- with(covid_generation_interval,
+#'   dgamma(x, shape = shape, scale = scale)
+#' )
+#' plot(x, fx, type = "l", ylim = c(0, max(fx[-1])))
+#'
+#' @name covid_generation_interval
+"covid_generation_interval"

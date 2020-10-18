@@ -1523,7 +1523,7 @@ $p_i$ defining a binned generation interval distribution
 
 Function \fun{compute_R0} takes numeric arguments \code{x},
 \code{breaks}, and \code{probs}, specifying $r$ in units
-day$^{-1}$, $\tau_i$ in units days, and $p_i$, respectively.
+day$^{-1}$, $\tau_i$ in days, and $p_i$, respectively.
 It is vectorized in \code{x}, so \code{x} can have length
 greater than 1. Alternatively, \code{x} can be an \code{egf_init}
 or \code{egf} object, in which case a value for $r$ is
@@ -1535,64 +1535,65 @@ generation interval is between \code{breaks[i]} and
 \code{breaks[i+1]} days.%
 \footnote{It is actually sufficient for \code{probs} to give
 probability \emph{weights}, because \fun{compute_R0} normalizes
-for you, \ie it assigns \code{probs <- probs / `9sum`9(probs)}.
-internally. Here, for clarity, we do the normalization up front.}
+for you, \ie it assigns \code{probs <- probs / `9sum`9(probs)}
+internally.}
 
 For the purpose of demonstration, we assume that the generation
-interval in days follows a log-normal distribution with parameters
-$\mu = \log 5$ and $\sigma^2 = 0.25^2$, truncated at 10
-(see \cref{fig:dlnorm}).%
-\footnote{A log-normal distribution with parameters $\mu$ and
-$\sigma^2$ is the distribution of the natural logarithm of a
-normally distributed random variable with mean $\mu$ and variance
-$\sigma^2$, \ie it is the distribution of $Y = \log(X)$,
-where $X \sim \mathrm{Normal(\mu,\sigma^2)}$.}
-Then the probability $p_i$ that the generation interval is between
-$i-1$ and $i$ days is given by
-%
-\begin{equation}
-p_i = \frac{F(i) - F(i-1)}{F(10)}\,,\qquad i = 1,\ldots,10\,,
-\end{equation}
-%
-where $F$ is the untruncated log-normal distribution function.
-We calculate these $p_i$ as follows, using \pkg{stats} function
-\fun{plnorm} to evaluate $F$.
+interval in days follows the
+\href{https://en.wikipedia.org/wiki/Gamma_distribution}{gamma distribution}
+fitted by Ganyani \etal~\cite{Gany+20} to line list data from
+the COVID-19 epidemic in Tianjin, China (see \cref{fig:dgamma}).
+\pkg{epigrowthfit} data set \code{covid_generation_interval} supplies
+the parameters of this distribution,
+called \code{shape} and \code{scale}, and values for \code{breaks} and
+\code{probs} that can be passed directly to \fun{compute_R0}.
 
 <<ontario-R0-1>>=
-breaks <- 0:10
-probs <- diff(plnorm(breaks, meanlog = log(5), sdlog = 0.25))
-probs <- probs / sum(probs)
+data(covid_generation_interval)
+covid_generation_interval
+@
+%
+Note that \code{probs} is reproduced by evaluating the
+gamma distribution function at \code{breaks} with \pkg{stats}
+function \fun{pgamma}, then differencing the result:
+
+<<ontario-R0-2>>=
+## Temporarily add list to search path
+attach(covid_generation_interval, name = "tmp")
+
+identical(probs, diff(pgamma(breaks, shape = shape, scale = scale)))
 @
 %
 We are now equipped to call \fun{compute_R0}.
 
-<<ontario-R0-2>>=
+<<ontario-R0-3>>=
 compute_R0(10^(-2:0), breaks, probs) # method for class "numeric"
 compute_R0(init, breaks, probs) # method for class "egf_init"
 compute_R0(fit, breaks, probs) # method for class "egf"
+
+## Remove list from search path
+detach("tmp")
 @
 
-<<dlnorm, fig.height=2.5, fig.cap=paste0("The density function of a random variable whose distribution is $\\mathrm{Lognormal}(\\mu = \\log ", exp_mu, ", \\sigma^2 = ", sigma, "^2)$ and truncated at ", end, "."), echo=FALSE>>=
-end <- 10
-x <- seq(0, end, by = 0.2)
-mu <- log(5)
-exp_mu <- exp(mu)
-sigma <- 0.25
-Fend <- plnorm(end, meanlog = mu, sdlog = sigma)
-fx <- dlnorm(x, meanlog = mu, sdlog = sigma) / Fend
+<<dgamma, fig.height=2.5, fig.cap="Estimated distribution of the COVID-19 generation interval in days, from Ganyani \\etal~\\cite{Gany+20}, Table 4, Scenario 2. The mean, 2.57 days, is indicated with a dashed line.", echo=FALSE>>=
+x <- 10^seq(-1, log10(20), length.out = 150)
+fx <- with(covid_generation_interval,
+  dgamma(x, shape = shape, scale = scale)
+)
 
 ## Setup
 par(mar = c(3, 4, 1, 1), mgp = c(3, 0.7, 0), las = 1)
 
 ## Plot
 plot.new()
-plot.window(xlim = c(0, end+1), ylim = c(0, max(fx) * 1.04),
+plot.window(xlim = range(x), ylim = c(0, max(fx[-1]) * 1.04),
             xaxs = "i", yaxs = "i")
 lines(x, fx, lwd = 3, col = "grey80")
+abline(v = with(covid_generation_interval, shape * scale), lty = 2)
 box(bty = "l")
-axis(side = 1, at = 0:10)
+axis(side = 1)
 axis(side = 2)
-title(xlab = "value", line = 2)
+title(xlab = "generation interval, days", line = 2)
 title(ylab = "probability density")
 @
 

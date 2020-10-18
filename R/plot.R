@@ -28,7 +28,7 @@ daxis <- function(d) {
     stop("`d` must be increasing.")
   }
 
-  r <- as.numeric(diff(range(date)))
+  r <- as.numeric(diff(range(d)))
   chard <- as.character(d)
   ymd <- matrix(unlist(strsplit(chard, "-")), ncol = 3, byrow = TRUE)
 }
