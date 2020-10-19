@@ -17,14 +17,29 @@
 
 \method{simulate}{egf}(object, nsim = 1, seed = NULL, time = object$init$time, ...)
 
-\method{plot}{egf}(x, inc = "cumulative", tol = 0, ...)
+\method{plot}{egf}(
+  x,
+  inc = "cumulative",
+  add = FALSE,
+  annotate = TRUE,
+  tol = 0,
+  polygon_style = list(col = "#DDCC7740", border = NA),
+  line_style = list(lty = 1, lwd = 3, col = "#44AA99"),
+  point_style1 = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
+  point_style2 = list(pch = 1, col = "#882255", bg = NA, cex = 1),
+  point_style3 = list(pch = 16, col = "#882255", bg = NA, cex = 1),
+  text_style = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
+  ...
+)
 }
 \arguments{
 \item{x, object}{An "egf" object.}
 
 \item{...}{Optional arguments. Used only by the \code{plot} method
-to specify graphical parameters. Currently, only \code{xlim} and
-\code{ylim} are implemented. Any additional parameters will be ignored.}
+to specify graphical parameter. See \code{\link[base:plot]{plot()}}
+and \code{\link[graphics:par]{par()}}. Currently, only \code{xlim}, \code{ylim},
+\code{xlab}, \code{ylab}, and \code{main} are implemented. Any additional
+parameters will be ignored.}
 
 \item{log}{A logical scalar. If \code{TRUE}, then parameter values are
 log-transformed.}
@@ -40,13 +55,47 @@ The simulate method requires \code{length(time) >= 2}.}
 \item{inc}{One of \code{"cumulative"} and \code{"interval"},
 indicating a type of incidence to plot.}
 
+\item{add}{A logical scalar. If \code{TRUE}, then the fitting window
+and predicted curve are added to the current graphics device,
+and nothing else is done.}
+
+\item{annotate}{A logical scalar. If \code{TRUE}, then a legend and
+a list of parameter values are added to the right margin.
+Ignored if \code{add = TRUE}.}
+
 \item{tol}{A non-negative number used only if \code{inc = "interval"}.
-\code{x$init$cases[i]} is highlighted if
-\code{diff(x$init$time)[i] < (1-tol)*m} or
-\code{diff(x$init$time)[i] > (1+tol)*m}, where
-\code{m = median(diff(x$init$time))}.
+\code{x$init$cases[i]} is highlighted according to
+\code{point_style2} if \code{diff(x$init$time)[i] < (1-tol)*m} and
+\code{point_style3} if \code{diff(x$init$time)[i] > (1+tol)*m},
+where \code{m = median(diff(x$init$time))}. In both cases,
+the value of \code{diff(x$init$time)[i]} is printed above the point.
 Assign 0 to ensure that all deviations from \code{m} are highlighted.
 Assign \code{Inf} to disable highlighting.}
+
+\item{polygon_style}{A named list of arguments to
+\code{\link[graphics:polygon]{polygon()}}, affecting the appearance
+of the fitting window. Currently, only \code{col} and \code{border} are
+implemented.}
+
+\item{line_style}{A named list of arguments to
+\code{\link[graphics:lines]{lines()}}, affecting the appearance
+of the predicted curve. Currently, only \code{lty}, \code{lwd}, and \code{col}
+are implemented.}
+
+\item{point_style1}{A named list of arguments to
+\code{\link[graphics:points]{points()}}, affecting the appearance
+of the observed data. Currently, only \code{pch}, \code{col}, \code{bg} and \code{cex}
+are implemented.}
+
+\item{point_style2, point_style3}{Alternatives to \code{point_style1}
+used for highlighting certain points when \code{inc = "interval"}.
+See argument \code{tol}.}
+
+\item{text_style}{A named list of arguments to
+\code{\link[graphics:text]{text()}}, affecting the appearance
+of text printed above highlighted points. See argument \code{tol}.
+Currently, only \code{pos}, \code{offset}, \code{col}, \code{cex}, and \code{font}
+are implemented.}
 }
 \value{
 The \code{print} method returns \code{x} invisibly.
@@ -105,32 +154,36 @@ Methods for "egf" objects returned by \code{\link[=egf]{egf()}}.
 \subsection{Plot elements}{
 
 The bottom axis measures the number of days since \code{x$init$date[1]}.
-The left axis measures interval or cumulative incidence
-(depending on \code{inc}) on a log scale. Zeros are plotted as if
-they were \code{10^(-0.2)}, and are therefore distinguished from
-nonzero counts, which are always at least 1.
+The left axis measures interval or cumulative incidence (depending
+on \code{inc}) on a log scale. Zeros are plotted as if they were \code{10^-0.2},
+and are therefore distinguished from nonzero counts, which are always
+at least 1.
 
 Observed data, specified by \code{x$init$time} and either \code{x$init$cases}
 or \code{cumsum(x$init$cases)} (depending on \code{inc}), are plotted as
 points. \code{cases[i]} gives the number of cases observed between
 \code{time[i]} and \code{time[i+1]}, and \code{cumsum(cases)[i]} the number
-observed between \code{time[1]} and \code{time[i+1]}. Both are plotted at
-\code{time[i+1]}.
+observed between \code{time[1]} and \code{time[i+1]}. Both are plotted
+at \code{time[i+1]}.
 
-The left and right endpoints of the fitting window, specified by
-indices \code{x$init$first} and \code{x$init$last}, are displayed as vertical
-lines at \code{time[first+1]} and \code{time[last+1]} (adding one since \code{first}
+The fitting window, specified by indices \code{x$init$first} and
+\code{x$init$last}, is displayed as a filled rectangle behind the
+other plot elements. The left and right boundaries occur at
+\code{time[first+1]} and \code{time[last+1]} (adding one since \code{first}
 and \code{last} index \code{cases}, and \code{length(time) = length(cases)+1}).
 
 The incidence curve predicted by fitted parameter estimates
-\code{x$theta_hat} is plotted as a teal line on grid points
-\code{wgrid = seq(time[first+1], time[last+1], by = m)},
-where \code{m = 1} for cumulative incidence and
-where \code{m = median(diff(time))} for interval incidence
-(to ensure that the curve has the correct scale; see below).
+\code{x$theta_hat} is displayed as a line supported on grid points
+\code{wgrid = seq(time[first+1], time[last+1], by = m)}, where
+\code{m = 1} for cumulative incidence and \code{m = median(diff(time))}
+for interval incidence (to ensure that the curve has the
+correct scale; see below). The predicted curve is obtained
+with \code{predict(x, wgrid)}. If \code{add = FALSE} and \code{annotate = TRUE},
+then the fitted parameter estimates \code{x$theta_hat} are printed
+at the bottom of the right margin.
 
-Careful interpretation of observed interval incidence is required
-if the plotted time series is not equally spaced, as \code{cases}
+Careful interpretation of interval incidence is required if
+the plotted time series is not equally spaced, because \code{cases}
 roughly scales with \code{diff(time)}. That is, certain observations
 may vary from the predicted curve not due to chance, but because
 they represent a count over fewer or more days than the typical

@@ -1183,7 +1183,7 @@ the main components of an \code{egf_init} object. It takes an
 argument \code{inc} indicating the type of incidence to plot:
 \code{`2"cumulative"`2} (default) or \code{`2"interval"`2}.
 
-<<ontario-init-plot-1, fig.height=7, fig.cap='Result of \\code{`9plot`9(init, inc)}: \\textbf{[Top]} cumulative incidence (\\code{inc = `2"cumulative"`2}) and \\textbf{[Bottom]} interval incidence (\\code{inc = `2"interval"`2}). Points are observed incidence. Lines are expected incidence conditional on initial parameter estimates listed at the bottom of the right margin. Initial parameter estimates are guesses, hence the lines are \\emph{not} fitted to the data. Incidence is plotted on a logarithmic scale, with zeros plotted directly on the horizontal axis. Vertical dashed lines indicate the selected fitting window. For interval incidence, a coloured point at time $t_i$ indicates that the observation interval $t_i-t_{i-1}$ differs from the median observation interval (in this case 1 day).'>>=
+<<ontario-init-plot-1, fig.height=7, fig.cap='Result of \\code{`9plot`9(init, inc)}: \\textbf{[Top]} cumulative incidence (\\code{inc = `2"cumulative"`2}) and \\textbf{[Bottom]} interval incidence (\\code{inc = `2"interval"`2}). Points are observed incidence. Lines are expected incidence conditional on initial parameter estimates listed at the bottom of the right margin. Initial parameter estimates are guesses, hence the lines are \\emph{not} fitted to the data. Incidence is plotted on a logarithmic scale, with zeros plotted directly on the horizontal axis. The shaded rectangle displays the selected fitting window. For interval incidence, a coloured point at time $t_i$ indicates that the observation interval $t_i-t_{i-1}$ differs from the median observation interval (in this case 1 day).'>>=
 par(mfrow = c(2, 1)) # create a two-panel plot
 plot(init, inc = "cumulative")
 plot(init, inc = "interval")
@@ -1384,7 +1384,7 @@ replicate the methods for class \code{egf_init}
 and printed is no longer an initial guess but a fit to the data
 obtained by an optimization algorithm.
 
-<<ontario-fit-plot-1, fig.height=7, fig.cap='Result of \\code{`9plot`9(fit, inc)}: \\textbf{[Top]} cumulative incidence (\\code{inc = `2"cumulative"`2}) and \\textbf{[Bottom]} interval incidence (\\code{inc = `2"interval"`2}). Points are observed incidence. Lines are expected incidence conditional on fitted parameter estimates listed at the bottom of the right margin. Incidence is plotted on a logarithmic scale, with zeros plotted directly on the horizontal axis. Vertical dashed lines indicate the selected fitting window. For interval incidence, a coloured point at time $t_i$ indicates that the observation interval $t_i-t_{i-1}$ differs from the median observation interval (in this case 1 day).'>>=
+<<ontario-fit-plot-1, fig.height=7, fig.cap='Result of \\code{`9plot`9(fit, inc)}: \\textbf{[Top]} cumulative incidence (\\code{inc = `2"cumulative"`2}) and \\textbf{[Bottom]} interval incidence (\\code{inc = `2"interval"`2}). Points are observed incidence. Lines are expected incidence conditional on fitted parameter estimates listed at the bottom of the right margin. Incidence is plotted on a logarithmic scale, with zeros plotted directly on the horizontal axis. The shaded rectangle displays the selected fitting window. For interval incidence, a coloured point at time $t_i$ indicates that the observation interval $t_i-t_{i-1}$ differs from the median observation interval (in this case 1 day).'>>=
 par(mfrow = c(2, 1)) # create a two-panel plot
 plot(fit, inc = "cumulative")
 plot(fit, inc = "interval")
@@ -1398,13 +1398,12 @@ Comparing \cref{fig:ontario-init-plot-1,fig:ontario-fit-plot-1}
 shows that the fit is much better than the initial guess (as one
 might hope!).
 
-If you would like to hand-craft a plot (\eg one with a different
-colour palette or without annotation), then do not rely on the
-\fun{plot} method for \code{egf} objects. You can retrieve the
-interval incidence data from \code{init} elements \code{date}
-and \code{cases}, and you can evaluate the fitted cumulative
-incidence curve at desired time points using the \fun{predict}
-method for \code{egf} objects (see \cref{sec:ontario-fit}).
+The \fun{plot} methods for classes \code{egf_init} and \code{egf}
+take a number of optional arguments allowing for easy customization
+of various plot elements (\eg line type, width, and colour). For a
+complete list of available options, run \code{?`2"egf_init-methods"`2}
+or \code{?`2"egf-methods"`2}.
+
 
 \subsection{Simulating the fitted model}
 \label{sec:ontario-fit-simulate}
