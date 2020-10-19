@@ -234,7 +234,7 @@ plot.egf_init <- function(x, inc = "cumulative", tol = 0, ...) {
   lines_col <- "#44AA99"
   if (inc == "cumulative") {
     data$points_bg <- points_bg_main
-    data$points_col <- points_bg_main
+    data$points_col <- points_col_main
   } else if (inc == "interval") {
     data$dt <- diff(x$time)
     m <- median(data$dt)
@@ -262,7 +262,7 @@ plot.egf_init <- function(x, inc = "cumulative", tol = 0, ...) {
   xpd <- !any(c("xlim", "ylim") %in% names(dots))
   points(formula, data = data, xpd = xpd,
          pch = 21, bg = data$points_bg, col = data$points_col)
-  if (inc == "interval") {
+  if (inc == "interval" && any(dt_enum != 1)) {
     text(int_inc ~ time, data = data, subset = (dt_enum != 1),
          labels = dt, pos = 3, offset = 0.3,
          cex = 0.7, font = 2, col = text_col)
@@ -305,7 +305,7 @@ plot.egf_init <- function(x, inc = "cumulative", tol = 0, ...) {
   } else if (inc == "interval") {
     lstr1 <- paste0("'", c("obs,", "obs,", "obs,", "pred,"), "'")
     cond <- (all(data$dt[dt_enum == 1] == m))
-    rel <- c((if(cond) "=" else "~"), "<", ">", "=")
+    rel <- c(if(cond) "=" else "~", "<", ">", "=")
     mstr <- paste0(m, " day", if (m > 1) "s" else "")
     lstr2 <- paste0("'t ", rel, " ", mstr, "'")
     lstr <- parse(text = paste(lstr1, "~ Delta *", lstr2))
