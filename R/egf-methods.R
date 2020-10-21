@@ -298,7 +298,7 @@ plot.egf <- function(x, inc = "interval",
   ylab <- if ("ylab" %in% names(dots)) dots$ylab else paste(inc, "incidence")
   cstr <- x$init$curve
   substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1)) # capitalize first letter
-  main <- if ("main" %in% names(dots)) dots$main else paste(cstr, "model of", inc, "incidence\n(initial guess)")
+  main <- if ("main" %in% names(dots)) dots$main else paste(cstr, "model of", inc, "incidence\n(fitted)")
 
   ## Axis limits (x)
   xmin <- 0
