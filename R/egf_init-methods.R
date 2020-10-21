@@ -367,6 +367,7 @@ plot.egf_init <- function(x, inc = "interval", xty = "Date",
     l <- list(
       formula = int_inc ~ time,
       data = data,
+      labels = data$dt,
       subset = (dt_enum != 1) & (if (add) windex else TRUE)
     )
     do.call(text, c(l, text_style))
