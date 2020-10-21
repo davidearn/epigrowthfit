@@ -66,11 +66,12 @@
 #' @details
 #' ## Plot elements
 #'
-#' The bottom axis measures the number of days since `x$init$date[1]`.
-#' The left axis measures interval or cumulative incidence (depending
-#' on `inc`) on a log scale. Zeros are plotted as if they were
-#' `10^-0.2`, and are therefore distinguished from nonzero counts,
-#' which are always at least 1.
+#' If `xty = "Date"`, then the bottom axis displays the dates specified
+#' by `x$init$date`. If `xty = "numeric"`, then the bottom axis measures
+#' the number of days since `x$init$date[1]`. The left axis measures
+#' interval or cumulative incidence (depending on `inc`) on a log scale.
+#' Zeros are plotted as if they were `10^-0.2`, and are therefore
+#' distinguished from nonzero counts, which are always at least 1.
 #'
 #' Observed data, specified by `x$init$time` and either `x$init$cases`
 #' or `cumsum(x$init$cases)` (depending on `inc`), are plotted as
@@ -236,8 +237,9 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
 #' @export
 #' @import graphics
 #' @importFrom stats median
-plot.egf <- function(x, inc = "interval",
+plot.egf <- function(x, inc = "interval", xty = "Date",
                      add = FALSE, annotate = TRUE, tol = 0,
+                     daxis_style = list(tcl = -0.2, line = c(0.05, 1), col.axis = c("black", "black"), cex.axis = c(0.7, 0.85)),
                      polygon_style = list(col = "#DDCC7740", border = NA),
                      line_style = list(lty = 1, lwd = 3, col = "#44AA99"),
                      point_style_main = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
@@ -248,6 +250,10 @@ plot.egf <- function(x, inc = "interval",
   if (!is.character(inc) || length(inc) != 1 ||
         !inc %in% c("interval", "cumulative")) {
     stop("`inc` must be one of \"interval\", \"cumulative\".")
+  }
+  if (!is.character(xty) || length(xty) != 1 ||
+      !xty %in% c("Date", "numeric")) {
+    stop("`inc` must be one of \"Date\", \"numeric\".")
   }
   if (!is.logical(add) || length(add) != 1 || is.na(add)) {
     stop("`add` must be `TRUE` or `FALSE`.")
@@ -260,7 +266,7 @@ plot.egf <- function(x, inc = "interval",
       stop("`tol` must be a non-negative number.")
     }
   }
-  l <- list(polygon_style, line_style, text_style,
+  l <- list(daxis_style, polygon_style, line_style, text_style,
             point_style_main, point_style_short, point_style_long)
   if (!all(sapply(l, is.list))) {
     stop("All \"_style\" arguments must be lists.")
@@ -294,7 +300,13 @@ plot.egf <- function(x, inc = "interval",
   formula <- as.formula(paste(varname, "~ time"))
 
   ## Titles
-  xlab <- if ("xlab" %in% names(dots)) dots$xlab else paste("days since", as.character(x$init$date[1]))
+  if ("xlab" %in% names(dots)) {
+    xlab <- dots$xlab
+  } else if (xty == "Date") {
+    xlab <- "date"
+  } else if (xty == "numeric") {
+    xlab <- paste("days since", as.character(x$init$date[1]))
+  }
   ylab <- if ("ylab" %in% names(dots)) dots$ylab else paste(inc, "incidence")
   cstr <- x$init$curve
   substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1)) # capitalize first letter
@@ -355,8 +367,16 @@ plot.egf <- function(x, inc = "interval",
 
   ## Axes
   if (!add) {
-    box(bty = "l")
-    axis(side = 1)
+    if (xty == "Date") {
+      l <- list(
+        t0 = par("usr")[1],
+        t1 = par("usr")[2],
+        refdate = x$init$date[1]
+      )
+      do.call(daxis, c(l, daxis_style))
+    } else if (xty == "numeric") {
+      axis(side = 1)
+    }
     axis(side = 2, at = yaxis_at, labels = yaxis_labels)
   }
 

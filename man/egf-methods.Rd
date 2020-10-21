@@ -20,9 +20,12 @@
 \method{plot}{egf}(
   x,
   inc = "interval",
+  xty = "Date",
   add = FALSE,
   annotate = TRUE,
   tol = 0,
+  daxis_style = list(tcl = -0.2, line = c(0.05, 1), col.axis = c("black", "black"),
+    cex.axis = c(0.7, 0.85)),
   polygon_style = list(col = "#DDCC7740", border = NA),
   line_style = list(lty = 1, lwd = 3, col = "#44AA99"),
   point_style_main = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
@@ -55,6 +58,9 @@ The simulate method requires \code{length(time) >= 2}.}
 \item{inc}{One of \code{"cumulative"} and \code{"interval"},
 indicating a type of incidence to plot.}
 
+\item{xty}{One of \code{"Date"} and \code{"numeric"}, indicating a type of
+horizontal axis.}
+
 \item{add}{A logical scalar. If \code{TRUE}, then the fitting window
 and predicted curve (and nothing else) are added to the current
 graphics device.}
@@ -70,6 +76,9 @@ if \code{diff(time)[i] > (1+tol)*m}, where \code{m = median(diff(time))}.
 In both cases, the value of \code{diff(time)[i]} is printed above
 the point. Assign 0 to ensure that all deviations from \code{m} are
 highlighted. Assign \code{Inf} to disable highlighting.}
+
+\item{daxis_style}{A named list of arguments to \code{\link[=daxis]{daxis()}},
+affecting the appearance of the bottom axis if \code{xty = "date"}.}
 
 \item{polygon_style}{A named list of arguments to
 \code{\link[graphics:polygon]{polygon()}}, affecting the appearance
@@ -154,11 +163,12 @@ Methods for "egf" objects returned by \code{\link[=egf]{egf()}}.
 \details{
 \subsection{Plot elements}{
 
-The bottom axis measures the number of days since \code{x$init$date[1]}.
-The left axis measures interval or cumulative incidence (depending
-on \code{inc}) on a log scale. Zeros are plotted as if they were
-\code{10^-0.2}, and are therefore distinguished from nonzero counts,
-which are always at least 1.
+If \code{xty = "Date"}, then the bottom axis displays the dates specified
+by \code{x$init$date}. If \code{xty = "numeric"}, then the bottom axis measures
+the number of days since \code{x$init$date[1]}. The left axis measures
+interval or cumulative incidence (depending on \code{inc}) on a log scale.
+Zeros are plotted as if they were \code{10^-0.2}, and are therefore
+distinguished from nonzero counts, which are always at least 1.
 
 Observed data, specified by \code{x$init$time} and either \code{x$init$cases}
 or \code{cumsum(x$init$cases)} (depending on \code{inc}), are plotted as
