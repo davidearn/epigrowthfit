@@ -34,12 +34,12 @@
 #' @details
 #' The date axis consists of minor and major axes.
 #' Let `w` be the difference between the first and last date in days,
-#' If `w <= 224` (roughly 7.47 months), then days are placed on the
-#' minor axis, months are placed on the major axis, and years are
-#' not shown. Otherwise, if `w <= 3*365` (3 years), then months are
-#' placed on the minor axis, years are placed on the major axis, and
-#' days are not shown. Otherwise (i.e., if `w > 3*365`), then years
-#' are placed on the minor axis, and days and months are not shown.
+#' If `w <= 210` (7 months), then days are placed on the minor axis,
+#' months are placed on the major axis, and years are not shown.
+#' Otherwise, if `w <= 3*365` (3 years), then months are placed on
+#' the minor axis, years are placed on the major axis, and days are
+#' not shown. Otherwise (i.e., if `w > 3*365`), then years are placed
+#' on the minor axis, and days and months are not shown.
 #'
 #' The spacing of days, months, and years in each of these cases
 #' varies with `w` to prevent overcrowding. How the spacing varies
@@ -100,14 +100,14 @@ daxis <- function(t0 = par("usr")[1],
   }
   ceiling_y <- function(date) {
     y <- ymd(date, 1) + ifelse(ymd(date, 2) == 1 & ymd(date, 3) == 1, 0, 1)
-    from <- as.Date(paste(y, 1, 1, sep = "-"))
+    as.Date(paste(y, 1, 1, sep = "-"))
   }
   ceiling_m <- function(date) {
     y <- ymd(date, 1)
     m <- ymd(date, 2) + ifelse(ymd(date, 3) == 1, 0, 1)
     y <- ifelse(m > 12, y + 1, y)
     m <- ifelse(m > 12, 1, m)
-    from <- as.Date(paste(y, m, 1, sep = "-"))
+    as.Date(paste(y, m, 1, sep = "-"))
   }
   minor_axis <- function() {
     axis(side = 1, at = t0 + at, labels = labels,
@@ -125,9 +125,9 @@ daxis <- function(t0 = par("usr")[1],
 
   ### PLOT #############################################################
 
-  if (w <= 224) {
+  if (w <= 210) {
     ## Days
-    by <- c(1, 2, 4, 7, 14)[w <= c(14, 28, 56, 112, 224)][1]
+    by <- c(1, 2, 4, 7, 14)[w <= c(14, 28, 56, 112, 210)][1]
     at_date <- seq(d0, d1, by = by)
     at <- as.numeric(at_date - d0)
     labels <- ymd(at_date, 3)
@@ -136,7 +136,7 @@ daxis <- function(t0 = par("usr")[1],
     ## Months
     if (ymd(d0, 2) == ymd(d1, 2)) {
       at_date <- d0
-      at <- as.numeric(at_date - d0)
+      at <- 0
     } else {
       at_date <- seq(ceiling_m(d0), d1, by = "month")
       at <- as.numeric(at_date - d0)
@@ -157,11 +157,16 @@ daxis <- function(t0 = par("usr")[1],
     minor_axis()
 
     ## Years
-    at_date <- seq(ceiling_y(d0), d1, by = "year")
-    at <- as.numeric(at_date - d0)
-    if (at[1] > w / 8) {
-      at_date <- c(d0, at_date)
-      at <- c(0, at)
+    if (ymd(d0, 1) == ymd(d1, 1)) {
+      at_date <- d0
+      at <- 0
+    } else {
+      at_date <- seq(ceiling_y(d0), d1, by = "year")
+      at <- as.numeric(at_date - d0)
+      if (at[1] > w / 8) {
+        at_date <- c(d0, at_date)
+        at <- c(0, at)
+      }
     }
     labels <- ymd(at_date, 1)
     major_axis()

@@ -234,10 +234,12 @@ plot.egf_init <- function(x, inc = "interval", xty = "Date",
       stop("`tol` must be a non-negative number.")
     }
   }
-  l <- list(daxis_style, polygon_style, line_style, text_style,
-            point_style_main, point_style_short, point_style_long)
-  if (!all(sapply(l, is.list))) {
-    stop("All \"_style\" arguments must be lists.")
+  ln <- grep("_style", names(formals(plot.egf_init)), value = TRUE)
+  for (a in ln) {
+    l <- get(a)
+    if (!is.list(l)) {
+      stop("All \"_style\" arguments must be lists.")
+    }
   }
 
 
@@ -296,7 +298,7 @@ plot.egf_init <- function(x, inc = "interval", xty = "Date",
   yaxis_labels <- parse(text = paste0("10^", log10(yaxis_at)))
 
   ## Styles
-  for (a in grep("_style", names(formals(plot.egf_init)), value = TRUE)) {
+  for (a in ln) {
     l1 <- eval(formals(plot.egf_init)[[a]]) # default style
     l2 <- get(a) # passed style
     inter <- intersect(names(l1), names(l2))

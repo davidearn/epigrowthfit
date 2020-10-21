@@ -55,12 +55,12 @@ use within
 \details{
 The date axis consists of minor and major axes.
 Let \code{w} be the difference between the first and last date in days,
-If \code{w <= 224} (roughly 7.47 months), then days are placed on the
-minor axis, months are placed on the major axis, and years are
-not shown. Otherwise, if \code{w <= 3*365} (3 years), then months are
-placed on the minor axis, years are placed on the major axis, and
-days are not shown. Otherwise (i.e., if \code{w > 3*365}), then years
-are placed on the minor axis, and days and months are not shown.
+If \code{w <= 210} (7 months), then days are placed on the minor axis,
+months are placed on the major axis, and years are not shown.
+Otherwise, if \code{w <= 3*365} (3 years), then months are placed on
+the minor axis, years are placed on the major axis, and days are
+not shown. Otherwise (i.e., if \code{w > 3*365}), then years are placed
+on the minor axis, and days and months are not shown.
 
 The spacing of days, months, and years in each of these cases
 varies with \code{w} to prevent overcrowding. How the spacing varies
