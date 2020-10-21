@@ -16,15 +16,15 @@
 
 \method{plot}{egf_init}(
   x,
-  inc = "cumulative",
+  inc = "interval",
   add = FALSE,
   annotate = TRUE,
   tol = 0,
   polygon_style = list(col = "#DDCC7740", border = NA),
   line_style = list(lty = 1, lwd = 3, col = "#44AA99"),
-  point_style1 = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
-  point_style2 = list(pch = 1, col = "#882255", bg = NA, cex = 1),
-  point_style3 = list(pch = 16, col = "#882255", bg = NA, cex = 1),
+  point_style_main = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
+  point_style_short = list(pch = 1, col = "#882255", bg = NA, cex = 1),
+  point_style_long = list(pch = 16, col = "#882255", bg = NA, cex = 1),
   text_style = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
   ...
 )
@@ -33,7 +33,7 @@
 \item{x, object}{An "egf_init" object.}
 
 \item{...}{Optional arguments. Used only by the \code{plot} method
-to specify graphical parameter. See \code{\link[base:plot]{plot()}}
+to specify graphical parameters. See \code{\link[base:plot]{plot()}}
 and \code{\link[graphics:par]{par()}}. Currently, only \code{xlim}, \code{ylim},
 \code{xlab}, \code{ylab}, and \code{main} are implemented. Any additional
 parameters will be ignored.}
@@ -48,21 +48,20 @@ since \code{object$date[1]}. Missing values are not tolerated.}
 indicating a type of incidence to plot.}
 
 \item{add}{A logical scalar. If \code{TRUE}, then the fitting window
-and predicted curve are added to the current graphics device,
-and nothing else is done.}
+and predicted curve (and nothing else) are added to the current
+graphics device.}
 
 \item{annotate}{A logical scalar. If \code{TRUE}, then a legend and
-a list of parameter values are added to the right margin.
+a list of parameter estimates are added to the right margin.
 Ignored if \code{add = TRUE}.}
 
 \item{tol}{A non-negative number used only if \code{inc = "interval"}.
-\code{x$init$cases[i]} is highlighted according to
-\code{point_style2} if \code{diff(x$init$time)[i] < (1-tol)*m} and
-\code{point_style3} if \code{diff(x$init$time)[i] > (1+tol)*m},
-where \code{m = median(diff(x$init$time))}. In both cases,
-the value of \code{diff(x$init$time)[i]} is printed above the point.
-Assign 0 to ensure that all deviations from \code{m} are highlighted.
-Assign \code{Inf} to disable highlighting.}
+\code{cases[i]} is highlighted according to \code{point_style_short} if
+\code{diff(time)[i] < (1-tol)*m} and according to \code{point_style_long}
+if \code{diff(time)[i] > (1+tol)*m}, where \code{m = median(diff(time))}.
+In both cases, the value of \code{diff(time)[i]} is printed above
+the point. Assign 0 to ensure that all deviations from \code{m} are
+highlighted. Assign \code{Inf} to disable highlighting.}
 
 \item{polygon_style}{A named list of arguments to
 \code{\link[graphics:polygon]{polygon()}}, affecting the appearance
@@ -74,14 +73,13 @@ implemented.}
 of the predicted curve. Currently, only \code{lty}, \code{lwd}, and \code{col}
 are implemented.}
 
-\item{point_style1}{A named list of arguments to
+\item{point_style_main}{A named list of arguments to
 \code{\link[graphics:points]{points()}}, affecting the appearance
 of the observed data. Currently, only \code{pch}, \code{col}, \code{bg} and \code{cex}
 are implemented.}
 
-\item{point_style2, point_style3}{Alternatives to \code{point_style1}
-used for highlighting certain points when \code{inc = "interval"}.
-See argument \code{tol}.}
+\item{point_style_short, point_style_long}{Alternatives to \code{point_style_main} used to highlight
+certain points when \code{inc = "interval"}. See argument \code{tol}.}
 
 \item{text_style}{A named list of arguments to
 \code{\link[graphics:text]{text()}}, affecting the appearance
@@ -102,11 +100,11 @@ The \code{predict} method returns a list with numeric elements:
 \item{\code{refdate}}{Matches \code{object$date[1]}.}
 \item{\code{cum_inc}}{Expected cumulative incidence at time points
 \code{time}, conditional on parameter vector \code{object$theta0}.
-Equal to \code{object$cum_inc(time)}.
+Equal to \code{object$eval_cum_inc(time)}.
 }
 \item{\code{int_inc}}{Expected interval incidence given interval
 endpoints \code{time}, conditional on parameter vector
-\code{object$theta0}. Equal to \code{diff(object$cum_inc(time))}
+\code{object$theta0}. Equal to \code{diff(object$eval_cum_inc(time))}
 if \code{length(time) >= 2} and omitted otherwise.
 }
 }
@@ -119,34 +117,29 @@ Methods for "egf_init" objects returned by \code{\link[=egf_init]{egf_init()}}.
 \details{
 \subsection{Plot elements}{
 
-The bottom axis measures the number of days since \code{x$date[1]}.
-The left axis measures interval or cumulative incidence (depending
-on \code{inc}) on a log scale. Zeros are plotted as if they were \code{10^-0.2},
-and are therefore distinguished from nonzero counts, which are always
-at least 1.
+The bottom axis measures the number of days since \code{x$date[1]}. The
+left axis measures interval or cumulative incidence (depending on
+\code{inc}) on a log scale. Zeros are plotted as if they were \code{10^-0.2},
+and are therefore distinguished from nonzero counts, which are
+always at least 1.
 
-Observed data, specified by \code{x$time} and either \code{x$cases}
-or \code{cumsum(x$cases)} (depending on \code{inc}), are plotted as
-points. \code{cases[i]} gives the number of cases observed between
-\code{time[i]} and \code{time[i+1]}, and \code{cumsum(cases)[i]} the number
-observed between \code{time[1]} and \code{time[i+1]}. Both are plotted
-at \code{time[i+1]}.
+Observed data, specified by \code{x$time} and either \code{x$cases} or
+\code{cumsum(x$cases)} (depending on \code{inc}), are plotted as points.
+\code{cases[i]} gives the number of cases observed between \code{time[i]}
+and \code{time[i+1]}, and \code{cumsum(cases)[i]} the number observed
+between \code{time[1]} and \code{time[i+1]}. Both are plotted at \code{time[i+1]}.
 
-The fitting window, specified by indices \code{x$first} and
-\code{x$last}, is displayed as a filled rectangle behind the
-other plot elements. The left and right boundaries occur at
-\code{time[first+1]} and \code{time[last+1]} (adding one since \code{first}
-and \code{last} index \code{cases}, and \code{length(time) = length(cases)+1}).
+The fitting window, specified by indices \code{x$first} and \code{x$last}, is
+displayed as a shaded rectangle behind the other plot elements. The
+left and right boundaries occur at \code{time[first]} and \code{time[last+1]}.
 
 The incidence curve predicted by initial parameter estimates
 \code{x$theta0} is displayed as a line supported on grid points
-\code{wgrid = seq(time[first+1], time[last+1], by = m)}, where
-\code{m = 1} for cumulative incidence and \code{m = median(diff(time))}
-for interval incidence (to ensure that the curve has the
-correct scale; see below). The predicted curve is obtained
-with \code{predict(x, wgrid)}. If \code{add = FALSE} and \code{annotate = TRUE},
-then the fitted parameter estimates \code{x$theta0} are printed
-at the bottom of the right margin.
+\code{wgrid = seq(time[first], time[last+1], by)}, where \code{by = 1}
+for cumulative incidence and \code{by = median(diff(time))} for
+interval incidence (to ensure that the curve has the correct
+scale; see below). The predicted curve is obtained with
+\code{predict(x, wgrid)}.
 
 Careful interpretation of interval incidence is required if
 the plotted time series is not equally spaced, because \code{cases}
@@ -157,6 +150,10 @@ observation interval, namely \code{median(diff(time))}. Observations
 for which \code{diff(time)} differs from \code{median(diff(time))} are
 highlighted according to argument \code{tol} and labeled with the
 value of \code{diff(time)}.
+
+If \code{add = FALSE} and \code{annotate = TRUE}, then a legend and the
+initial parameter estimates \code{x$theta0} are printed in the right
+margin.
 }
 }
 \seealso{

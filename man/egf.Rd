@@ -20,11 +20,10 @@ indicating an optimization algorithm.}
 \code{\link[stats:nlm]{nlm()}}, or \code{\link[stats:optim]{optim()}}.}
 }
 \value{
-An "egf" object. A list with elements:
+An "egf" object. A list containing copies of arguments
+\code{init} and \code{method}, with these additional elements:
 
 \describe{
-\item{\code{init}}{Matches argument.}
-\item{\code{method}}{Matches argument.}
 \item{\code{theta_hat}}{A named numeric vector giving the optimizer's
 approximation of the maximum likelihood parameter vector.
 }
@@ -45,7 +44,7 @@ specifying a log-transformed parameter vector (default is
 likelihood with respect to log-transformed parameters
 evaluated at \code{log_theta}.
 }
-\item{\code{cum_inc}}{A closure with numeric arguments \code{time}
+\item{\code{eval_cum_inc}}{A closure with numeric arguments \code{time}
 and \code{theta} (default is \code{theta_hat}), evaluating expected
 cumulative incidence at \code{time} days using parameter
 vector \code{theta}. Elements must be named as in \code{theta_hat}.
@@ -57,8 +56,8 @@ vector \code{theta}. Elements must be named as in \code{theta_hat}.
 \code{\link[stats:optim]{optim()}},
 depending on \code{method}.
 }
-\item{\code{call}}{The call to \code{egf()}, making the output
-reproducible with \code{eval(call)}.
+\item{\code{call}}{The call to \code{egf()}, allowing the output to
+be updated using \code{\link[stats:update]{update()}}.
 }
 }
 }
@@ -76,21 +75,21 @@ ontario <- na.omit(subset(canadacovid, province == "ON"))
 init <- egf_init(
   date = ontario$date,
   cases = ontario$new_confirmations[-1],
-  curve = "richards",
+  curve = "logistic",
   distr = "nbinom"
 )
 x <- egf(init)
 print(x)
 coef(x, log = FALSE)
 coef(x, log = TRUE)
-plot(x, inc = "cumulative")
 plot(x, inc = "interval")
+plot(x, inc = "cumulative")
 time_obs <- init$time
 time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
 pred <- predict(x, time = time_pred)
 sim <- simulate(x, nsim = 5, time = time_obs)
-plot(sim, inc = "cumulative")
 plot(sim, inc = "interval")
+plot(sim, inc = "cumulative")
 
 }
 \references{

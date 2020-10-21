@@ -17,3 +17,5 @@
 #' @importFrom Rdpack reprompt
 #' @importFrom mathjaxr preview_rd
 NULL
+
+.egf_env <- new.env(parent = emptyenv())

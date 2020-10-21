@@ -94,7 +94,7 @@ eval_model <- function(time, curve, include_baseline = FALSE, theta) {
 
   with(as.list(theta[par]), {
     x <- switch(curve,
-      exponential = x0 * exp(r * time),
+      exponential = c0 * exp(r * time),
       logistic = K / (1 + exp(-r * (time - thalf))),
       richards = K / (1 + (2^p - 1) * exp(-r * p * (time - thalf)))^(1 / p)
     )

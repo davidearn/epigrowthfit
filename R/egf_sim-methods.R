@@ -8,11 +8,13 @@
 #'   indicating a type of incidence to plot.
 #' @param alpha A number in \[0,1\] indicating an alpha level.
 #'   Determines the transparency of plotted simulations
-#'   (0=invisible, 1=opaque). More simulations require more
-#'   transparency.
+#'   (0=invisible, 1=opaque). More simulations tend to require
+#'   more transparency.
 #' @param ... Optional arguments. Used only by the `plot` method
-#'   to specify graphical parameters. Currently, only `xlim` and
-#'   `ylim` are implemented. Any additional parameters will be ignored.
+#'   to specify graphical parameters. See [`plot()`][base::plot()]
+#'   and [`par()`][graphics::par()]. Currently, only `xlim` and
+#'   `ylim` are implemented. Any additional parameters will be
+#'   ignored.
 #'
 #' @return
 #' The `plot` method returns `NULL` invisibly.
@@ -21,16 +23,18 @@
 #' ## Plot elements
 #'
 #' The bottom axis measures the number of days since
-#' `x$fit$init$date[1]`. The left axis measures interval or cumulative
-#' incidence (depending on `inc`).
+#' `x$object$init$date[1]`. The left axis measures
+#' interval or cumulative incidence (depending on `inc`).
 #'
-#' Simulations are obtained as the columns of `x$cum_inc` or `x$int_inc`
-#' (depending on `inc`), and are plotted in grey with transparency
-#' at the time points given by `x$time` or `x$time[-1]`, respectively.
+#' Simulations are obtained as the columns of `x$cum_inc`
+#' or `x$int_inc` (depending on `inc`). They are plotted
+#' in grey with transparency at the time points given by
+#' `x$time` or `x$time[-1]`, respectively.
 #'
-#' The predicted curve is obtained as `pred$cum_inc` or `pred$int_inc`
-#' (depending on `inc`), where `pred = predict(x$fit, time = x$time)`,
-#' and is plotted in teal without transparency.
+#' The predicted curve is obtained as `pred$cum_inc`
+#' or `pred$int_inc` (depending on `inc`),
+#' where `pred = predict(x$object, time = x$time)`.
+#' It is plotted in teal without transparency.
 #'
 #' @seealso [simulate.egf()]
 #' @name egf_sim-methods
@@ -60,7 +64,7 @@ plot.egf_sim <- function(x, inc = "cumulative", alpha = 0.5, ...) {
   x$int_inc <- rbind(NA, x$int_inc)
 
   ## Predicted curves
-  pred <- predict(x$fit, time = x$time)[c("time", "cum_inc", "int_inc")]
+  pred <- predict(x$object, time = x$time)[c("time", "cum_inc", "int_inc")]
   pred$int_inc <- c(NA, pred$int_inc)
 
   ## A way to avoid conditional `if (inc = ...) ... else ...`
@@ -68,7 +72,7 @@ plot.egf_sim <- function(x, inc = "cumulative", alpha = 0.5, ...) {
   varname <- paste0(varname, "_inc")
 
   ## Axis titles
-  xlab <- paste("days since", as.character(x$fit$init$date[1]))
+  xlab <- paste("days since", as.character(x$object$init$date[1]))
   ylab <- paste(inc, "incidence")
 
   ## Axis limits (x)
@@ -96,7 +100,7 @@ plot.egf_sim <- function(x, inc = "cumulative", alpha = 0.5, ...) {
   ## Simulated data
   for (j in 1:ncol(x[[varname]])) {
     lines(x$time, x[[varname]][, j],
-          lwd = 2, col = scales::alpha(lines_col_sim, alpha = alpha))
+          lwd = 2, col = alpha(lines_col_sim, alpha = alpha))
   }
 
   ## Predicted curves

@@ -15,12 +15,14 @@ indicating a type of incidence to plot.}
 
 \item{alpha}{A number in [0,1] indicating an alpha level.
 Determines the transparency of plotted simulations
-(0=invisible, 1=opaque). More simulations require more
-transparency.}
+(0=invisible, 1=opaque). More simulations tend to require
+more transparency.}
 
 \item{...}{Optional arguments. Used only by the \code{plot} method
-to specify graphical parameters. Currently, only \code{xlim} and
-\code{ylim} are implemented. Any additional parameters will be ignored.}
+to specify graphical parameters. See \code{\link[base:plot]{plot()}}
+and \code{\link[graphics:par]{par()}}. Currently, only \code{xlim} and
+\code{ylim} are implemented. Any additional parameters will be
+ignored.}
 }
 \value{
 The \code{plot} method returns \code{NULL} invisibly.
@@ -32,16 +34,18 @@ Methods for "egf_sim" objects returned by \code{\link[=simulate.egf]{simulate.eg
 \subsection{Plot elements}{
 
 The bottom axis measures the number of days since
-\code{x$fit$init$date[1]}. The left axis measures interval or cumulative
-incidence (depending on \code{inc}).
+\code{x$object$init$date[1]}. The left axis measures
+interval or cumulative incidence (depending on \code{inc}).
 
-Simulations are obtained as the columns of \code{x$cum_inc} or \code{x$int_inc}
-(depending on \code{inc}), and are plotted in grey with transparency
-at the time points given by \code{x$time} or \code{x$time[-1]}, respectively.
+Simulations are obtained as the columns of \code{x$cum_inc}
+or \code{x$int_inc} (depending on \code{inc}). They are plotted
+in grey with transparency at the time points given by
+\code{x$time} or \code{x$time[-1]}, respectively.
 
-The predicted curve is obtained as \code{pred$cum_inc} or \code{pred$int_inc}
-(depending on \code{inc}), where \code{pred = predict(x$fit, time = x$time)},
-and is plotted in teal without transparency.
+The predicted curve is obtained as \code{pred$cum_inc}
+or \code{pred$int_inc} (depending on \code{inc}),
+where \code{pred = predict(x$object, time = x$time)}.
+It is plotted in teal without transparency.
 }
 }
 \seealso{

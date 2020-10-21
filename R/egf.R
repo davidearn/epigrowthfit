@@ -19,11 +19,10 @@
 #'   [`nlm()`][stats::nlm()], or [`optim()`][stats::optim()].
 #'
 #' @return
-#' An "egf" object. A list with elements:
+#' An "egf" object. A list containing copies of arguments
+#' `init` and `method`, with these additional elements:
 #'
 #' \describe{
-#'   \item{`init`}{Matches argument.}
-#'   \item{`method`}{Matches argument.}
 #'   \item{`theta_hat`}{A named numeric vector giving the optimizer's
 #'     approximation of the maximum likelihood parameter vector.
 #'   }
@@ -44,7 +43,7 @@
 #'     likelihood with respect to log-transformed parameters
 #'     evaluated at `log_theta`.
 #'   }
-#'   \item{`cum_inc`}{A closure with numeric arguments `time`
+#'   \item{`eval_cum_inc`}{A closure with numeric arguments `time`
 #'     and `theta` (default is `theta_hat`), evaluating expected
 #'     cumulative incidence at `time` days using parameter
 #'     vector `theta`. Elements must be named as in `theta_hat`.
@@ -56,8 +55,8 @@
 #'     [`optim()`][stats::optim()],
 #'     depending on `method`.
 #'   }
-#'   \item{`call`}{The call to `egf()`, making the output
-#'     reproducible with `eval(call)`.
+#'   \item{`call`}{The call to `egf()`, allowing the output to
+#'     be updated using [`update()`][stats::update()].
 #'   }
 #' }
 #'
@@ -67,21 +66,21 @@
 #' init <- egf_init(
 #'   date = ontario$date,
 #'   cases = ontario$new_confirmations[-1],
-#'   curve = "richards",
+#'   curve = "logistic",
 #'   distr = "nbinom"
 #' )
 #' x <- egf(init)
 #' print(x)
 #' coef(x, log = FALSE)
 #' coef(x, log = TRUE)
-#' plot(x, inc = "cumulative")
 #' plot(x, inc = "interval")
+#' plot(x, inc = "cumulative")
 #' time_obs <- init$time
 #' time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
 #' pred <- predict(x, time = time_pred)
 #' sim <- simulate(x, nsim = 5, time = time_obs)
-#' plot(sim, inc = "cumulative")
 #' plot(sim, inc = "interval")
+#' plot(sim, inc = "cumulative")
 #'
 #' @references
 #' \insertRef{Ma+14}{epigrowthfit}
@@ -98,33 +97,30 @@ egf <- function(init, method = "nlminb", ...) {
   if (!inherits(init, "egf_init")) {
     stop("`init` must be an \"egf_init\" object.")
   }
-  valid_methods <- c("nlminb", "nlm", "Nelder-Mead",
-                     "BFGS", "L-BFGS-S", "CG")
-  if (!is.character(method) || length(method) != 1 ||
-        !method %in% valid_methods) {
-    warning("Invalid `method`, using `\"nlminb\"` instead.",
-            call. = FALSE)
+  valid_methods <- c("nlminb", "nlm", "Nelder-Mead", "BFGS", "L-BFGS-S", "CG")
+  if (!is.character(method) || length(method) != 1 || !method %in% valid_methods) {
+    warning("Invalid `method`, using `\"nlminb\"` instead.", call. = FALSE)
     method <- "nlminb"
   }
 
   ## Construct a call to `MakeADFun()`
-  f <- init$first
-  l <- init$last
+  first <- init$first
+  last <- init$last
   madf_data <- list(
-    t = init$time[f:(l+1)],
-    x = init$cases[f:l],
+    t = init$time[first:(last+1)] - init$time[first],
+    x = init$cases[first:last],
     curve_flag = match(init$curve, c("exponential", "logistic", "richards")) - 1,
     baseline_flag = 1 * init$include_baseline,
     distr_flag = match(init$distr, c("pois", "nbinom")) - 1,
     method = method
   )
-  par <- paste0("log_", c("r", "c0", "K", "thalf", "p", "nbdisp", "b"))
+  log_par <- paste0("log_", c("r", "c0", "K", "thalf", "p", "nbdisp", "b"))
   madf_parameters <- as.list(init$log_theta0)
-  par_unused <- setdiff(par, names(madf_parameters))
-  madf_parameters[par_unused] <- NA_real_
+  log_par_unused <- setdiff(log_par, names(madf_parameters))
+  madf_parameters[log_par_unused] <- NA_real_
   madf_map <- setNames(
-    replicate(length(par_unused), factor(NA), simplify = FALSE),
-    par_unused
+    replicate(length(log_par_unused), factor(NA), simplify = FALSE),
+    log_par_unused
   )
 
   ## Call `MakeADFun()` to define the negative log likelihood
@@ -184,14 +180,18 @@ egf <- function(init, method = "nlminb", ...) {
     madf_out$gr(log_theta)
   }
 
-  ## Define a closure that evaluates expected cumulative incidence
-  ## at desired time points
-  cum_inc <- function(time, theta = theta_hat) {
-    eval_model(time,
+  ## Define a closure that evaluates expected
+  ## cumulative incidence at desired time points
+  eval_cum_inc <- function(time, theta = theta_hat) {
+    ## Baseline for wave
+    c1 <- if (first > 1) sum(init$cases[1:(first-1)]) else 0
+    ## Excess following growth model
+    c2 <- eval_model(time - init$time[first],
       curve = init$curve,
       include_baseline = init$include_baseline,
       theta = theta
     )
+    c1 + c2
   }
 
 
@@ -203,7 +203,7 @@ egf <- function(init, method = "nlminb", ...) {
     nll = nll,
     nll_func = nll_func,
     nll_grad = nll_grad,
-    cum_inc = cum_inc,
+    eval_cum_inc = eval_cum_inc,
     madf_out = madf_out,
     optim_out = optim_out,
     call = match.call()
