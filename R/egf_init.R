@@ -7,17 +7,16 @@
 #' estimates of model parameters. Attempts are made to define
 #' a window and estimates that are reasonable in the absence
 #' of any user input, but the default behaviour is not robust,
-#' and it is likely that some optional arguments must be set
-#' explicitly.
+#' and it is likely that optional arguments must be set explicitly.
 #'
 #' @param date A Date vector listing increasing time points.
 #'   Should start at or before the date of the first observed case
 #'   in an epidemic.
 #' @param cases A numeric vector with length `length(date)-1`.
 #'   `cases[i]` is the number of cases observed between `date[i]`
-#'   and `date[i+1]`. Here, "cases" can mean infections,
-#'   reported infections, or reported deaths (either disease deaths or
-#'   deaths due to multiple causes including the disease of interest).
+#'   and `date[i+1]`. Here, "cases" can mean infections, reported
+#'   infections, or reported deaths (either disease deaths or deaths
+#'   due to multiple causes including the disease of interest).
 #'   Missing values are not tolerated.
 #' @param curve One of `"exponential"`, `"logistic"`, and `"richards"`,
 #'   indicating a model of expected cumulative incidence. See Details 1.
@@ -36,11 +35,9 @@
 #'     }
 #'     \item{`c0`}{\mjseqn{\lbrace\,c_0\,\rbrace}
 #'       Expected cumulative incidence on `date[first]`.
-#'       Here, "cumulative incidence" refers to the number of cases
-#'       observed since the start of the epidemic wave (i.e., since
-#'       `date[first]`), which is not necessarily the number of
-#'       cases observed since the start of the epidemic (i.e., since
-#'       `date[1]`). Used only if `curve = "exponential"`.
+#'       (Here, "cumulative incidence" refers to the number of cases
+#'       observed since `date[first]`, not necessarily `date[1]`.)
+#'       Used only if `curve = "exponential"`.
 #'     }
 #'     \item{`K`}{\mjseqn{\lbrace\,K\,\rbrace}
 #'       Expected epidemic final size. This is the expected number
@@ -89,7 +86,7 @@
 #' @param min_wlen,max_wlen Integers indicating the minimum
 #'   and maximum number of observations in the fitting window.
 #'   Along with `last`, these determine the range of integers
-#'   considered for `first` if `first` and `wlen` are `NULL`.
+#'   allowed for `first` if `wlen` is not set explicitly.
 #'   If `cases` describes just one epidemic wave, then the
 #'   default values are typically acceptable. If `cases` spans
 #'   multiple epidemic waves, then `max_wlen` should be set
@@ -108,12 +105,13 @@
 #'     Otherwise, the result of an internal selection algorithm.
 #'     See Details 2.
 #'   }
-#'   \item{`theta0`}{A named numeric vector whose elements are
-#'     the subset of `r`, `c0`, `K`, `thalf`, `p`, `b`, and
-#'     `nbdisp` relevant to `curve`, `distr`, and `include_baseline`.
-#'     Values from the argument are retained if they are positive
-#'     numbers and discarded otherwise. Parameters not specified
-#'     in the argument are assigned their default value:
+#'   \item{`theta0`}{A named numeric vector whose elements
+#'     are the subset of `r`, `c0`, `K`, `thalf`, `p`, `b`,
+#'     and `nbdisp` relevant to `curve`, `include_baseline`,
+#'     and `distr`. Values from the argument are retained
+#'     if they are positive numbers and discarded otherwise.
+#'     Parameters not specified in the argument are assigned
+#'     their default value:
 #'     \describe{
 #'       \item{`r`, `c0`}{`beta1` and `exp(beta0)`, respectively,
 #'         where `beta1` and `beta0` are the slope and intercept
@@ -128,19 +126,15 @@
 #'       \item{`nbdisp`}{1}
 #'       \item{`b`}{1}
 #'     }
-#'     Can be extracted with `coef(object, log = FALSE)`.
 #'   }
 #'   \item{`log_theta0`}{Log-transformed `theta0`. Identical to
 #'     `log(theta0)`, but with `"log_"` prepended to the names.
-#'     Can be extracted with `coef(object, log = TRUE)`.
 #'   }
 #'   \item{`eval_cum_inc`}{A closure with numeric arguments
 #'     `time` and `theta` (default is `theta0`) evaluating
 #'     expected cumulative incidence at `time` days using
 #'     parameter vector `theta`. Elements of `theta` must be
-#'     named as in `theta0`. `predict(object, time)` wraps
-#'     `eval_cum_inc(time, theta = theta0)` and provides
-#'     additional useful information.
+#'     named as in `theta0`.
 #'   }
 #'   \item{`call`}{The call to `egf_init()`, allowing the output
 #'     to be updated using [`update()`][stats::update()].
@@ -167,49 +161,49 @@
 #' the fitting window should start at the point in the
 #' focal wave at which `cases` begins growing roughly
 #' exponentially. This is precisely the point at which
-#' `log(cases)` becomes roughly linear. Where the
+#' `log(cases))` becomes roughly linear. Where the
 #' fitting window should end depends on the cumulative
 #' incidence curve being fit to the data.
 #' If `curve = "exponential"`, then the window should
 #' end at the point in the focal wave at which `cases`
-#' stops growing exponentially. This is the point at
-#' which `log(cases)` *stops* being linear.
-#' If `curve = "logistic"` or `curve = "richards"`, then
+#' stops growing exponentially. This is precisely the
+#' point at which `log(cases)` stops being linear. If
+#' `curve = "logistic"` or `curve = "richards"`, then
 #' the fitting window should end near the peak in `cases`
 #' during the focal wave. If the wave is incomplete and
 #' the peak has not yet occurred (e.g., when fitting in
-#' real time, during a growing epidemic), then the window
-#' should simply end at `cases[length(cases)]`.
+#' real time), then the window should simply end at
+#' `cases[length(cases)]`.
 #'
 #' The default behaviour of `egf_init()` tries to make
 #' usage with `curve = "logistic"` and `curve = "richards"`
 #' (which should be preferred in practice over
-#' `curve = "exponential"`) as simple as possible
-#' by reducing the need for user input. Specifically, if
+#' `curve = "exponential"`) as simple as possible by
+#' reducing the need for user input. Specifically, if
 #' `last` is not set explicitly, then it is set by default
 #' to `min(length(cases), peak+1)`, ensuring that the
 #' fitting window ends near the peak in `cases` during
 #' the focal wave. If `first` is not set explicitly but
 #' `wlen` is, then `first` is set to `max(1, last-wlen+1)`.
-#' It neither `first` nor `wlen` is set explicitly, then
+#' It neither `first` not `wlen` is set explicitly, then
 #' `egf_init()` attempts to choose `first` such that
 #' `cases[first]` occurs at the "base" of the focal wave,
 #' an approximation of the point at which `cases` begins
 #' growing exponentially. This selection is made as follows:
 #'
 #' First, constraints on `first` are determined according
-#' to `last`, `min_wlen` and `max_wlen`. The length
-#' `wlen = last-first+1` of the fitting window is
+#' to `last` and arguments `min_wlen` and `max_wlen`. The
+#' length `wlen = last-first+1` of the fitting window is
 #' constrained to be at least `min_wlen` at most `max_wlen`.
 #' This means that `first` must satisfy
 #' `first >= last-max_wlen+1` and `first <= last-min_wlen+1`.
 #' The default values of `min_wlen` and `max_wlen` make the
 #' range of valid integers as large as possible. This is
-#' typically acceptable when `cases` describes just one
-#' epidemic wave. However, when `cases` spans multiple waves,
-#' it is necessary to set `max_wlen` so that the minimum
-#' allowed value of `first` indexes a point before exponential
-#' growth begins in the focal wave, but after any previous waves.
+#' typically fine when `cases` describes just one epidemic
+#' wave. However, when `cases` spans multiple waves, it is
+#' necessary to set `max_wlen` so that the minimum allowed
+#' value of `first` indexes a point before exponential growth
+#' begins in the focal wave, but after any previous waves.
 #'
 #' Second, `m = min(cases[(last-max_wlen+1):(last-min_wlen+1)])`
 #' is computed. Provided `max_wlen` is set appropriately, this
@@ -227,6 +221,11 @@
 #' provided that this assignment does not cause `first` to exceed
 #' the maximum allowed value, namely `last-min_wlen+1`.
 #'
+#' The window selection algorithm described here is not appropriate
+#' for `curve = "exponential"`. When fitting an exponential model,
+#' `first` and `last` should be set manually, following the advice
+#' of the first paragraph.
+#'
 #' @examples
 #' data(canadacovid)
 #' ontario <- na.omit(subset(canadacovid, province == "ON"))
@@ -239,11 +238,11 @@
 #' print(x)
 #' coef(x, log = FALSE)
 #' coef(x, log = TRUE)
+#' plot(x, inc = "interval")
+#' plot(x, inc = "cumulative")
 #' time_obs <- x$time
 #' time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
 #' pred <- predict(x, time = time_pred)
-#' plot(x, inc = "interval")
-#' plot(x, inc = "cumulative")
 #'
 #' @references
 #' \insertRef{Ma+14}{epigrowthfit}

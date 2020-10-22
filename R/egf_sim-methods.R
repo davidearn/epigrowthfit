@@ -43,8 +43,8 @@ NULL
 #' @rdname egf_sim-methods
 #' @export
 #' @import graphics
-plot.egf_sim <- function(x, inc = "cumulative",
-                         col_pred = "#44AA99", col_sim = "#BBBBBB66", ...) {
+#' @importFrom scales alpha
+plot.egf_sim <- function(x, inc = "cumulative", alpha = 0.5, ...) {
   if (!is.character(inc) || length(inc) != 1 ||
         !inc %in% c("interval", "cumulative")) {
     stop("`inc` must be one of \"interval\", \"cumulative\".")
@@ -85,6 +85,10 @@ plot.egf_sim <- function(x, inc = "cumulative",
   ymax <- max(x[[varname]], pred[[varname]], na.rm = TRUE) * 1.04
   ylim <- if ("ylim" %in% names(dots)) dots$ylim else c(ymin, ymax)
 
+  ## Line styles
+  lines_col_sim <- "#BBBBBB"
+  lines_col_pred <- "#44AA99"
+
 
   ### PLOT #############################################################
 
@@ -95,11 +99,12 @@ plot.egf_sim <- function(x, inc = "cumulative",
 
   ## Simulated data
   for (j in 1:ncol(x[[varname]])) {
-    lines(x$time, x[[varname]][, j], lwd = 2, col = col_sim)
+    lines(x$time, x[[varname]][, j],
+          lwd = 2, col = alpha(lines_col_sim, alpha = alpha))
   }
 
   ## Predicted curves
-  lines(pred$time, pred[[varname]], lwd = 3, col = col_pred)
+  lines(pred$time, pred[[varname]], lwd = 3, col = lines_col_pred)
 
   ## Axes
   box(bty = "l")

@@ -239,7 +239,8 @@ package_list <- c(
   "TMB",     # automatic differentiation of objective functions
   "emdbook", # tools for ecological modeling
   "knitr",   # integration of R code and LaTeX
-  "shape"    # arrows in plots
+  "shape",   # arrows in plots
+  "scales"   # colour transparency in plots
 )
 print(installed.packages()[package_list, "Version"], quote = FALSE)
 library(epigrowthfit)
@@ -313,6 +314,7 @@ vignette("epigrowthfit-vignette")
 ?data_set_name          # data set "data_set_name"
 ?function_name          # function "function_name"
 ?"class_name-methods"   # S3 methods for class "class_name"
+                        # ("egf_init" or "egf")
 @
 
 
@@ -1520,17 +1522,17 @@ value of expected cumulative incidence at \code{time[`11`1]}.
 lapply(sim[c("time", "int_inc", "cum_inc")], head)
 @
 
-The \fun{plot} method for class \code{egf_sim} plots the predicted curve
-on top of the simulated time series. Optional arguments \code{col_pred}
-and \code{col_sim} can be used to specify alternative colours, which may
-be desirable when the number of simulations is large and greater
-transparency is required to properly visualize their distribution
-(see, for example, function \fun{alpha} in the \pkg{scales} package).
+The \fun{plot} method for class \code{egf_sim} plots the simulated
+time series in transparent grey and the predicted curve in colour.
+It takes an optional argument \code{alpha}, whose value---a number
+between 0 and 1 (default is 0.5)---controls the transparency. A
+number closer to 0 (more transparency) tends to be desirable when
+the number of simulations is large.
 
 <<ontario-fit-simulate-4, fig.height=2.5, fig.cap='Result of \\code{`9plot`9(sim, inc)}: \\textbf{[Left]} cumulative incidence (\\code{inc = `2"cumulative"`2}) and \\textbf{[Right]} interval incidence (\\code{inc = `2"interval"`2}). Simulated time series are plotted in grey with transparency. Predicted curves are plotted in colour.'>>=
 par(mfrow = c(1, 2))
-plot(sim, inc = "cumulative")
-plot(sim, inc = "interval")
+plot(sim, inc = "cumulative", alpha = 0.5)
+plot(sim, inc = "interval", alpha = 0.3)
 @
 
 
