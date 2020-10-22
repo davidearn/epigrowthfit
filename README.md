@@ -29,7 +29,7 @@ additional R packages
 as well as a full distribution of
 [LaTeX](https://www.latex-project.org/).
 Windows users require an installation of
-[Rtools] (https://cran.r-project.org/bin/windows/Rtools/)
+[Rtools](https://cran.r-project.org/bin/windows/Rtools/)
 compatible with their version of R and must add Rtools
 to their search path. For R version 4.0.0 or greater,
 this can be done by running
