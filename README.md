@@ -39,7 +39,7 @@ writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")
 ```
 
 then restarting R, as explained
-[here] (https://cran.r-project.org/bin/windows/Rtools/).
+[here](https://cran.r-project.org/bin/windows/Rtools/).
 For older R versions, this can be done by running
 
 ```r
