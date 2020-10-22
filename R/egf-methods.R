@@ -237,7 +237,7 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
 #' @export
 #' @import graphics
 #' @importFrom stats median
-plot.egf <- function(x, inc = "interval", xty = "Date",
+plot.egf <- function(x, inc = "interval", xty = "Date", log = TRUE,
                      add = FALSE, annotate = TRUE, tol = 0,
                      daxis_style = list(tcl = -0.2, line = c(0.05, 1), col.axis = c("black", "black"), cex.axis = c(0.7, 0.85)),
                      polygon_style = list(col = "#DDCC7740", border = NA),
@@ -255,6 +255,9 @@ plot.egf <- function(x, inc = "interval", xty = "Date",
       !xty %in% c("Date", "numeric")) {
     stop("`inc` must be one of \"Date\", \"numeric\".")
   }
+  if (!is.logical(log) || length(log) != 1 || is.na(log)) {
+    stop("`log` must be `TRUE` or `FALSE`.")
+  }
   if (!is.logical(add) || length(add) != 1 || is.na(add)) {
     stop("`add` must be `TRUE` or `FALSE`.")
   }
@@ -266,9 +269,9 @@ plot.egf <- function(x, inc = "interval", xty = "Date",
       stop("`tol` must be a non-negative number.")
     }
   }
-  ln <- grep("_style", names(formals(plot.egf_init)), value = TRUE)
-  for (a in ln) {
-    l <- get(a)
+  ss <- grep("_style", names(formals(plot.egf_init)), value = TRUE)
+  for (s in ss) {
+    l <- get(s)
     if (!is.list(l)) {
       stop("All \"_style\" arguments must be lists.")
     }
@@ -320,22 +323,29 @@ plot.egf <- function(x, inc = "interval", xty = "Date",
   xlim <- if ("xlim" %in% names(dots)) dots$xlim else c(xmin, xmax)
 
   ## Axis limits (y)
-  ymin <- 10^-0.2
-  ymax <- max(data[[varname]]) * 10^0.2
+  if (log) {
+    ymin <- 10^-0.2
+    ymax <- max(data[[varname]]) * 10^0.2
+    data[[varname]][data[[varname]] == 0] <- ymin # set zeros to `ymin`
+    logstr <- "y"
+  } else {
+    ymin <- 0
+    ymax <- max(data[[varname]]) * 1.04
+    logstr <- ""
+  }
   ylim <- if ("ylim" %in% names(dots)) dots$ylim else c(ymin, ymax)
-  data[[varname]][data[[varname]] == 0] <- ymin # set zeros to `ymin`
 
   ## Axis ticks (y)
   yaxis_at <- 10^(0:floor(log10(ymax)))
   yaxis_labels <- parse(text = paste0("10^", log10(yaxis_at)))
 
   ## Styles
-  for (a in ln) {
-    l1 <- eval(formals(plot.egf_init)[[a]]) # default style
-    l2 <- get(a) # passed style
+  for (s in ss) {
+    l1 <- eval(formals(plot.egf_init)[[s]]) # default style
+    l2 <- get(s) # passed style
     inter <- intersect(names(l1), names(l2))
     l1[inter] <- l2[inter]
-    assign(a, l1)
+    assign(s, l1)
   }
 
   ## Style for each point
@@ -387,7 +397,7 @@ plot.egf <- function(x, inc = "interval", xty = "Date",
   for (ps in point_style_list) {
     l <- list(
       formula = formula,
-      data = data,
+      data = data$dt,
       subset = (data$point_style == ps) & (if (add) windex else TRUE),
       xpd = !any(c("xlim", "ylim") %in% names(dots))
     )
@@ -399,7 +409,7 @@ plot.egf <- function(x, inc = "interval", xty = "Date",
     l <- list(
       formula = int_inc ~ time,
       data = data,
-      labels = data$dt,
+      labels = dt,
       subset = (dt_enum != 1) & (if (add) windex else TRUE)
     )
     do.call(text, c(l, text_style))

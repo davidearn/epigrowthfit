@@ -7,8 +7,8 @@
 #' [`plot.egf_init()`][egf_init-methods] and
 #' [`plot.egf()`][egf_init-methods].
 #'
-#' @param t0 Left endpoint of the axis in user coordinates.
-#' @param t1 Right endpoint of the axis in user coordinates.
+#' @param left Left endpoint of the axis in user coordinates.
+#' @param right Right endpoint of the axis in user coordinates.
 #' @param refdate A Date scalar. `t0` and `t1` represent a number of
 #'   days since this date.
 #' @param tcl A numeric scalar. Passed to [`axis()`][graphics::axis()]
@@ -32,18 +32,25 @@
 #' Returns `NULL` invisibly.
 #'
 #' @details
-#' The date axis consists of minor and major axes.
-#' Let `w` be the difference between the first and last date in days,
-#' If `w <= 210` (7 months), then days are placed on the minor axis,
-#' months are placed on the major axis, and years are not shown.
-#' Otherwise, if `w <= 3*365` (3 years), then months are placed on
-#' the minor axis, years are placed on the major axis, and days are
-#' not shown. Otherwise (i.e., if `w > 3*365`), then years are placed
-#' on the minor axis, and days and months are not shown.
+#' The date axis consists of minor and major axes. The content
+#' of these axes depends greatly on `w = round(right-left)`,
+#' roughly the difference between the first and last date in days.
 #'
-#' The spacing of days, months, and years in each of these cases
-#' varies with `w` to prevent overcrowding. How the spacing varies
-#' with `w` is defined internally.
+#' If `w <= 210` (7 months), then days are placed on the minor
+#' axis, months are placed on the major axis, and years are not
+#' shown. The spacing of the minor axis in days is the value of
+#' `c(1, 2, 4, 7, 14)[w <= c(14, 28, 56, 112, 210)][1]`. Hence,
+#' for example, if `w` is greater than 112 and less than or equal
+#' to 210, then the spacing is 14-daily.
+#'
+#' Otherwise, if `w <= 3*365` (3 years), then months are placed
+#' on the minor axis, years are placed on the major axis, and days
+#' are not shown. The spacing of the minor axis in months is the
+#' value of `c(1, 2, 3)[w <= c(1, 2, 3) * 365][1]`.
+#'
+#' Otherwise (i.e., if `w > 3*365`), years are placed on the minor
+#' axis, and days and months are not shown. The spacing of the
+#' minor axis is the value of `ceiling(ceiling(w / 365) / 7)`.
 #'
 #' All nonzero lengths of `line`, `cex.axis`, and `col.axis`
 #' are tolerated. Vectors of length 1 are recycled. Only the
@@ -52,9 +59,7 @@
 #' @keywords internal
 #' @export
 #' @importFrom graphics axis
-daxis <- function(t0 = par("usr")[1],
-                  t1 = par("usr")[2],
-                  refdate,
+daxis <- function(left, right, refdate,
                   tcl = -0.2,
                   line = c(0.05, 1),
                   col.axis = c("black", "black"),
@@ -87,8 +92,8 @@ daxis <- function(t0 = par("usr")[1],
 
   ### SET UP ###########################################################
 
-  t0 <- ceiling(t0)
-  t1 <- floor(t1)
+  t0 <- ceiling(left)
+  t1 <- floor(right)
   d0 <- refdate + t0
   d1 <- refdate + t1
   w <- max(1, as.numeric(d1 - d0))
