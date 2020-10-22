@@ -387,7 +387,7 @@ plot.egf <- function(x, inc = "interval", xty = "Date",
   for (ps in point_style_list) {
     l <- list(
       formula = formula,
-      data = data$dt,
+      data = data,
       subset = (data$point_style == ps) & (if (add) windex else TRUE),
       xpd = !any(c("xlim", "ylim") %in% names(dots))
     )
@@ -399,7 +399,7 @@ plot.egf <- function(x, inc = "interval", xty = "Date",
     l <- list(
       formula = int_inc ~ time,
       data = data,
-      labels = dt,
+      labels = data$dt,
       subset = (dt_enum != 1) & (if (add) windex else TRUE)
     )
     do.call(text, c(l, text_style))
