@@ -5,7 +5,7 @@
 \alias{plot.egf_sim}
 \title{Methods for class "egf_sim"}
 \usage{
-\method{plot}{egf_sim}(x, inc = "cumulative", alpha = 0.5, ...)
+\method{plot}{egf_sim}(x, inc = "cumulative", col_pred = "#44AA99", col_sim = "#BBBBBB66", ...)
 }
 \arguments{
 \item{x}{An "egf_sim" object.}
@@ -13,16 +13,15 @@
 \item{inc}{One of \code{"cumulative"} and \code{"interval"},
 indicating a type of incidence to plot.}
 
-\item{alpha}{A number in [0,1] indicating an alpha level.
-Determines the transparency of plotted simulations
-(0=invisible, 1=opaque). More simulations tend to require
-more transparency.}
+\item{col_pred, col_sim}{Character scalars specifying colours
+for the predicted incidence curve and simulated incidence
+time series.}
 
 \item{...}{Optional arguments. Used only by the \code{plot} method
-to specify graphical parameters. See \code{\link[base:plot]{plot()}}
-and \code{\link[graphics:par]{par()}}. Currently, only \code{xlim} and
-\code{ylim} are implemented. Any additional parameters will be
-ignored.}
+to specify graphical parameters. Currently, only \code{xlim} and
+\code{ylim} are implemented. Further arguments are ignored.
+See \code{\link[graphics:plot.default]{plot()}} and \code{\link[graphics:par]{par()}}
+for a catalogue of graphical parameters.}
 }
 \value{
 The \code{plot} method returns \code{NULL} invisibly.
@@ -36,16 +35,9 @@ Methods for "egf_sim" objects returned by \code{\link[=simulate.egf]{simulate.eg
 The bottom axis measures the number of days since
 \code{x$object$init$date[1]}. The left axis measures
 interval or cumulative incidence (depending on \code{inc}).
-
 Simulations are obtained as the columns of \code{x$cum_inc}
-or \code{x$int_inc} (depending on \code{inc}). They are plotted
-in grey with transparency at the time points given by
-\code{x$time} or \code{x$time[-1]}, respectively.
-
-The predicted curve is obtained as \code{pred$cum_inc}
-or \code{pred$int_inc} (depending on \code{inc}),
-where \code{pred = predict(x$object, time = x$time)}.
-It is plotted in teal without transparency.
+or \code{x$int_inc}. The predicted curve is obtained as
+\code{pred$cum_inc} or \code{pred$int_inc}.
 }
 }
 \seealso{

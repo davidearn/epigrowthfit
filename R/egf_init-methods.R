@@ -204,7 +204,6 @@ predict.egf_init <- function(object, time = object$time, ...) {
 #' @export
 #' @import graphics
 #' @importFrom stats median
-#' @importFrom scales alpha
 plot.egf_init <- function(x, inc = "interval", xty = "Date",
                           add = FALSE, annotate = TRUE, tol = 0,
                           daxis_style = list(tcl = -0.2, line = c(0.05, 1), col.axis = c("black", "black"), cex.axis = c(0.7, 0.85)),

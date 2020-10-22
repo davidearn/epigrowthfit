@@ -6,15 +6,14 @@
 #' @param x An "egf_sim" object.
 #' @param inc One of `"cumulative"` and `"interval"`,
 #'   indicating a type of incidence to plot.
-#' @param alpha A number in \[0,1\] indicating an alpha level.
-#'   Determines the transparency of plotted simulations
-#'   (0=invisible, 1=opaque). More simulations tend to require
-#'   more transparency.
+#' @param col_pred,col_sim Character scalars specifying colours
+#'   for the predicted incidence curve and simulated incidence
+#'   time series.
 #' @param ... Optional arguments. Used only by the `plot` method
-#'   to specify graphical parameters. See [`plot()`][base::plot()]
-#'   and [`par()`][graphics::par()]. Currently, only `xlim` and
-#'   `ylim` are implemented. Any additional parameters will be
-#'   ignored.
+#'   to specify graphical parameters. Currently, only `xlim` and
+#'   `ylim` are implemented. Further arguments are ignored.
+#'   See [`plot()`][graphics::plot()] and [`par()`][graphics::par()]
+#'   for a catalogue of graphical parameters.
 #'
 #' @return
 #' The `plot` method returns `NULL` invisibly.
@@ -25,16 +24,9 @@
 #' The bottom axis measures the number of days since
 #' `x$object$init$date[1]`. The left axis measures
 #' interval or cumulative incidence (depending on `inc`).
-#'
 #' Simulations are obtained as the columns of `x$cum_inc`
-#' or `x$int_inc` (depending on `inc`). They are plotted
-#' in grey with transparency at the time points given by
-#' `x$time` or `x$time[-1]`, respectively.
-#'
-#' The predicted curve is obtained as `pred$cum_inc`
-#' or `pred$int_inc` (depending on `inc`),
-#' where `pred = predict(x$object, time = x$time)`.
-#' It is plotted in teal without transparency.
+#' or `x$int_inc`. The predicted curve is obtained as
+#' `pred$cum_inc` or `pred$int_inc`.
 #'
 #' @seealso [simulate.egf()]
 #' @name egf_sim-methods
@@ -48,10 +40,6 @@ plot.egf_sim <- function(x, inc = "cumulative",
   if (!is.character(inc) || length(inc) != 1 ||
         !inc %in% c("interval", "cumulative")) {
     stop("`inc` must be one of \"interval\", \"cumulative\".")
-  }
-  if (!is.numeric(alpha) || length(alpha) != 1 ||
-        !isTRUE(alpha >= 0 && alpha <= 1)) {
-    stop("`alpha` must be a number in [0,1].")
   }
 
 
