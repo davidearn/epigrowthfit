@@ -253,7 +253,7 @@ library(epigrowthfit)
 \subsubsection{Dependencies}
 
 \pkg{epigrowthfit} depends on an installation of
-\href{https://www.r-project.org/}{R} Version 3.5.0 or greater
+\href{https://www.r-project.org/}{R} 3.5.0 or greater
 and R package \cran{TMB}, and imports from R packages
 \cran{mathjaxr}, \cran{Rdpack}, and \cran{emdbook}.
 Building this vignette requires additional R packages
@@ -265,10 +265,8 @@ Windows users require an installation of
 compatible with their version of R. Rtools is needed to build
 from source R packages that use C++ code, and \pkg{epigrowthfit}
 is such a package. Once installed, Rtools must be added to
-the search path. Users with Rtools 40%
-\footnote{As of October 20, 2020, Rtools 40 is the newest version
-of Rtools, compatible with R Version 4.0.0 or greater.}
-can accomplish this by running
+the search path. Users with Rtools 40 (compatible with R 4.0.0
+or greater) can accomplish this by running
 
 <<rtools-1, eval=FALSE>>=
 write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
@@ -280,39 +278,8 @@ write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
 %
 then restarting R, as explained
 \href{https://cran.r-project.org/bin/windows/Rtools/}{here}.
-Older versions of Rtools are typically installed to
-\code{C:\\Rtools}. Users with one of these versions can run
-
-<<rtools-2, eval=FALSE>>=
-write('PATH="C:\\Rtools\\bin;${PATH}"',
-  file = "~/.Renviron",
-  append = TRUE,
-  sep = "\n"
-)
-@
-%
-replacing the substring \code{C:\\\\Rtools} if necessary.
-Finally, at least one Windows user running Rtools 40 has
-encountered the following install-time error:
-
-<<rtools-3, eval=FALSE, highlight=FALSE>>=
-C:/Rtools/mingw_64/bin/g++: No such file or directory
-@
-%
-Compiler \code{g++} was not found because \code{C:\\Rtools}
-was not the path to Rtools 40. The error was resolved after
-running
-
-<<rtools-4, eval=FALSE>>=
-write('BINPATH="${RTOOLS40_HOME}\\mingw${WIN}\\bin"',
-  file = "~/.Renviron",
-  append = TRUE,
-  sep = "\n"
-)
-@
-%
-and restarting R, as this specified the correct path to the
-compiler.
+Rtools 35 (compatible with R 3.3.0--3.6.3)\ldots
+\mikael{Consistent installation instructions for Rtools 35?}
 
 \subsubsection{Installing from the remote repository}
 

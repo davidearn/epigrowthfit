@@ -14,7 +14,7 @@ Earn DJD, Ma J, Poinar HN, Dushoff J, Bolker BM (2020). “Acceleration of plagu
 
 **epigrowthfit** depends on an installation of
 [R](https://www.r-project.org/)
-version 3.5.0 or greater and R package
+3.5.0 or greater and R package
 [**TMB**](https://CRAN.R-project.org/package=TMB),
 and imports from R packages
 [**mathjaxr**](https://CRAN.R-project.org/package=mathjaxr),
@@ -34,7 +34,7 @@ compatible with their version of R. Rtools is needed to
 build from source R packages that use C++ code, and
 **epigrowthfit** is such a package. Once installed, Rtools
 must be added to the search path. Users with Rtools 40
-(compatible with R Version 4.0.0 or greater) can accomplish
+(compatible with R 4.0.0 or greater) can accomplish
 this by running
 
 ```r
@@ -47,38 +47,9 @@ write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
 
 then restarting R, as explained
 [here](https://cran.r-project.org/bin/windows/Rtools/).
-Older versions of Rtools are typically installed to
-`C:\Rtools`. Users with one of these versions can run
+Rtools 35 (compatible with R 3.3.0--3.6.3)...
 
-```r
-write('PATH="C:\\Rtools\\bin;${PATH}"',
-  file = "~/.Renviron",
-  append = TRUE,
-  sep = "\n"
-)
-```
-
-replacing the substring `C:\\Rtools` if necessary.
-Finally, at least one Windows user running Rtools 40
-has encountered the following install-time error:
-
-```
-C:/Rtools/mingw_64/bin/g++: No such file or directory
-```
-
-Compiler `g++` was not found because `C:\Rtools` was not
-the path to Rtools 40. The error was resolved after running
-
-```r
-write('BINPATH="${RTOOLS40_HOME}\\mingw${WIN}\\bin"',
-  file = "~/.Renviron",
-  append = TRUE,
-  sep = "\n"
-)
-```
-
-and restarting R, as this specified the correct path
-to the compiler.
+[Consistent installation instructions for Rtools 35?]
 
 ### Installing from the remote repository
 
