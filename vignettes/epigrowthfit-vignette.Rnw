@@ -295,7 +295,7 @@ replacing the substring \code{C:\\\\Rtools} if necessary.
 Finally, at least one Windows user running Rtools 40 has
 encountered the following install-time error:
 
-<<rtools-3, eval=FALSE, highlight=FALSE>>
+<<rtools-3, eval=FALSE, highlight=FALSE>>=
 C:/Rtools/mingw_64/bin/g++: No such file or directory
 @
 %
