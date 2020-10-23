@@ -69,7 +69,7 @@ C:/Rtools/mingw_64/bin/g++: No such file or directory
 Compiler `g++` was not found because `C:\Rtools` was not
 the path to Rtools 40. The error was resolved after running
 
-```
+```r
 write('BINPATH="${RTOOLS40_HOME}\\mingw${WIN}\\bin"',
   file = "~/.Renviron",
   append = TRUE,
