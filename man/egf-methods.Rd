@@ -21,7 +21,7 @@
   x,
   inc = "interval",
   xty = "Date",
-  log = FALSE,
+  log = TRUE,
   add = FALSE,
   annotate = TRUE,
   tol = 0,

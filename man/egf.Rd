@@ -87,7 +87,7 @@ plot(x, inc = "cumulative")
 time_obs <- init$time
 time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
 pred <- predict(x, time = time_pred)
-sim <- simulate(x, nsim = 5, time = time_obs)
+sim <- simulate(x, nsim = 6, time = time_obs)
 plot(sim, inc = "interval")
 plot(sim, inc = "cumulative")
 
