@@ -219,7 +219,7 @@ predict.egf_init <- function(object, time = object$time, ...) {
 #' @export
 #' @import graphics
 #' @importFrom stats median
-plot.egf_init <- function(x, inc = "interval", xty = "Date", log = FALSE,
+plot.egf_init <- function(x, inc = "interval", xty = "Date", log = TRUE,
                           add = FALSE, annotate = TRUE, tol = 0,
                           date_style = list(tcl = -0.2, line = c(0.05, 1), col.axis = c("black", "black"), cex.axis = c(0.7, 0.85)),
                           window_style = list(col = "#DDCC7740", border = NA),
