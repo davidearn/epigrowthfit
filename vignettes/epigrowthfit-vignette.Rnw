@@ -262,28 +262,57 @@ Building this vignette requires additional R packages
 
 Windows users require an installation of
 \href{https://cran.r-project.org/bin/windows/Rtools/}{Rtools}
-compatible with their version of R. Once installed, Rtools
-must be added to the search path. With Rtools 40, this can be
-done by running
+compatible with their version of R. Rtools is needed to build
+from source R packages that use C++ code, and \pkg{epigrowthfit}
+is such a package. Once installed, Rtools must be added to
+the search path. Users with Rtools 40%
+\footnote{As of October 20, 2020, Rtools 40 is the newest version
+of Rtools, compatible with R Version 4.0.0 greater.}
+can accomplish this by running
 
 <<rtools-1, eval=FALSE>>=
-writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
-  con = "~/.Renviron"
+write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
 )
 @
 %
 then restarting R, as explained
 \href{https://cran.r-project.org/bin/windows/Rtools/}{here}.
-With older versions of Rtools, the following line of code
-should work instead, assuming that Rtools was installed to
-\code{C:\\Rtools}.
+Older versions of Rtools are typically installed to
+\code{C:\\Rtools}. Users with one of these versions can run
 
 <<rtools-2, eval=FALSE>>=
-writeLines('PATH="C:\\Rtools\\bin;${PATH}"',
-  con = "~/.Renviron"
+write('PATH="C:\\Rtools\\bin;${PATH}"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
 )
 @
+%
+replacing the substring \code{C:\\\\Rtools} if necessary.
+Finally, at least one Windows user running Rtools 40 has
+encountered the following install-time error:
 
+<<rtools-3, eval=FALSE, highlight=FALSE>>
+C:/Rtools/mingw_64/bin/g++: No such file or directory
+@
+%
+Compiler \code{g++} was not found because \code{C:\\Rtools}
+was not the path to Rtools 40. The error was resolved after
+running
+
+<<rtools-4, eval=FALSE>>=
+write('BINPATH="${RTOOLS40_HOME}\\mingw${WIN}\\bin"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
+)
+@
+%
+and restarting R, as this specified the correct path to the
+compiler.
 
 \subsubsection{Installing from the remote repository}
 

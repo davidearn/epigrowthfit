@@ -30,23 +30,55 @@ distribution.
 
 Windows users require an installation of
 [Rtools](https://cran.r-project.org/bin/windows/Rtools/)
-compatible with their version of R. Once installed, Rtools
-must be added to the search path. With Rtools 40, this can
-be done by running
+compatible with their version of R. Rtools is needed to
+build from source R packages that use C++ code, and
+**epigrowthfit** is such a package. Once installed, Rtools
+must be added to the search path. Users with Rtools 40
+(compatible with R Version 4.0.0 or greater) can accomplish
+this by running
 
 ```r
-writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")
+write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
+)
 ```
 
 then restarting R, as explained
 [here](https://cran.r-project.org/bin/windows/Rtools/).
-With older versions of Rtools, the following line of code
-should work instead, assuming that Rtools was installed to
-`C:\Rtools`.
+Older versions of Rtools are typically installed to
+`C:\Rtools`. Users with one of these versions can run
 
 ```r
-writeLines('PATH="C:\\Rtools\\bin;${PATH}"', con = "~/.Renviron")
+write('PATH="C:\\Rtools\\bin;${PATH}"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
+)
 ```
+
+replacing the substring `C:\\Rtools` if necessary.
+Finally, at least one Windows user running Rtools 40
+has encountered the following install-time error:
+
+```
+C:/Rtools/mingw_64/bin/g++: No such file or directory
+```
+
+Compiler `g++` was not found because `C:\Rtools` was not
+the path to Rtools 40. The error was resolved after running
+
+```
+write('BINPATH="${RTOOLS40_HOME}\\mingw${WIN}\\bin"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
+)
+```
+
+and restarting R, as this specified the correct path
+to the compiler.
 
 ### Installing from the remote repository
 
