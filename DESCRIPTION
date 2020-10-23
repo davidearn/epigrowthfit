@@ -10,7 +10,7 @@ Authors@R: c(
 Description:
     Tools for estimating parameters associated with initial epidemic growth.
 Depends:
-    R (>= 3.3.0),
+    R (>= 3.5.0),
     TMB
 Imports:
     mathjaxr (>= 1.0-1),

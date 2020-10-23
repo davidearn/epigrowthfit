@@ -253,7 +253,7 @@ library(epigrowthfit)
 \subsubsection{Dependencies}
 
 \pkg{epigrowthfit} depends on an installation of
-\href{https://www.r-project.org/}{R} Version 3.3.0 or greater
+\href{https://www.r-project.org/}{R} Version 3.5.0 or greater
 and R package \cran{TMB}, and imports from R packages
 \cran{mathjaxr}, \cran{Rdpack}, and \cran{emdbook}.
 Building this vignette requires additional R packages

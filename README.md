@@ -14,7 +14,7 @@ Earn DJD, Ma J, Poinar HN, Dushoff J, Bolker BM (2020). “Acceleration of plagu
 
 **epigrowthfit** depends on an installation of
 [R](https://www.r-project.org/)
-version 3.3.0 or greater and R package
+version 3.5.0 or greater and R package
 [**TMB**](https://CRAN.R-project.org/package=TMB),
 and imports from R packages
 [**mathjaxr**](https://CRAN.R-project.org/package=mathjaxr),
