@@ -5,3 +5,6 @@
 *.pdf
 *.o
 *.so
+*~
+.Rhistory
+*/.Rhistory
