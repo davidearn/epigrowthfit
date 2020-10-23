@@ -9,14 +9,12 @@ all: clean install
 
 fancy: clean install check
 
-basic:
-	$(R) --no-echo -e 'devtools::document(".")'
-	$(R) CMD build --no-manual .
-	$(R) CMD INSTALL $(TARBALL)
-
-install: build
+install: deps build
 	export NOT_CRAN=true
 	$(R) CMD INSTALL ../$(TARBALL)
+
+deps:
+	$(R) --no-echo -e 'devtools::install_deps(".", dependencies = TRUE)'
 
 build: $(TARBALL)
 
