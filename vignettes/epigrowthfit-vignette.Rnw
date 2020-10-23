@@ -275,15 +275,14 @@ writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
 then restarting R, as explained
 \href{https://cran.r-project.org/bin/windows/Rtools/}{here}.
 With older versions of Rtools, the following line of code
-should work instead:
+should work instead, assuming that Rtools was installed to
+\code{C:\\Rtools}.
 
 <<rtools-2, eval=FALSE>>=
 writeLines('PATH="C:\\Rtools\\bin;${PATH}"',
   con = "~/.Renviron"
 )
 @
-%
-assuming that Rtools was installed to \code{C:\\Rtools}.
 
 
 \subsubsection{From the remote repository}

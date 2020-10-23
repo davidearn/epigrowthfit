@@ -41,13 +41,12 @@ writeLines('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"', con = "~/.Renviron")
 then restarting R, as explained
 [here](https://cran.r-project.org/bin/windows/Rtools/).
 With older versions of Rtools, the following line of code
-should work instead:
+should work instead, assuming that Rtools was installed to
+`C:\Rtools`.
 
 ```r
 writeLines('PATH="C:\\Rtools\\bin;${PATH}"', con = "~/.Renviron")
 ```
-
-assuming that Rtools was installed to `C:\Rtools`.
 
 ### From the remote repository
 
