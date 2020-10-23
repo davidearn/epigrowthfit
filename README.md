@@ -76,7 +76,7 @@ many LaTeX packages must also be installed, set
 ### From a local repository
 
 If you have cloned **epigrowthfit** from GitHub, then you can install
-it on the command line from your local repository. Locall installation
+it on the command line from your local repository. Local installation
 requires R package
 [**devtools**](https://CRAN.R-project.org/package=devtools):
 
@@ -86,7 +86,7 @@ if (!require(devtools)) {
 }
 ```
 
-Rnter the `devel` branch of the repository with
+Enter the `devel` branch of the repository with
 `git checkout devel`, then run `make` in the root directory,
 namely `epigrowthfit/`. This will install **epigrowthfit**
 and its dependencies and build the vignette. You can verify
