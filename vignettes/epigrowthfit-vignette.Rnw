@@ -108,7 +108,7 @@
 \makeatother
 
 % Ref hyperlinks
-\usepackage[colorlinks=true,allcolors=magenta]{hyperref}
+\usepackage[colorlinks=true,linkcolor=magenta,citecolor=green,urlcolor=blue]{hyperref}
 \usepackage[nameinlink,capitalize]{cleveref}
 % equation
 \crefformat{equation}{#2Eq~#1#3}
