@@ -267,7 +267,7 @@ from source R packages that use C++ code, and \pkg{epigrowthfit}
 is such a package. Once installed, Rtools must be added to
 the search path. Users with Rtools 40%
 \footnote{As of October 20, 2020, Rtools 40 is the newest version
-of Rtools, compatible with R Version 4.0.0 greater.}
+of Rtools, compatible with R Version 4.0.0 or greater.}
 can accomplish this by running
 
 <<rtools-1, eval=FALSE>>=
