@@ -6,12 +6,13 @@
 #' @param x An "egf_sim" object.
 #' @param inc One of `"cumulative"` and `"interval"`,
 #'   indicating a type of incidence to plot.
-#' @param col_pred,col_sim Character scalars specifying colours
-#'   for the predicted incidence curve and simulated incidence
-#'   time series.
+#' @param col_sim,col_pred Character or numeric scalars specifying
+#'   colours for simulated incidence time series and predicted incidence
+#'   curves, respectively.
 #' @param ... Optional arguments. Used only by the `plot` method
-#'   to specify graphical parameters. Currently, only `xlim` and
-#'   `ylim` are implemented. Further arguments are ignored.
+#'   to specify graphical parameters. Currently, only `xlim`,
+#'   `ylim`, `xlab`, `ylab`, and `main` are implemented. Further
+#'   arguments are ignored.
 #'   See [`plot()`][graphics::plot()] and [`par()`][graphics::par()]
 #'   for a catalogue of graphical parameters.
 #'
@@ -22,11 +23,15 @@
 #' ## Plot elements
 #'
 #' The bottom axis measures the number of days since
-#' `x$object$init$date[1]`. The left axis measures
-#' interval or cumulative incidence (depending on `inc`).
-#' Simulations are obtained as the columns of `x$cum_inc`
-#' or `x$int_inc`. The predicted curve is obtained as
-#' `pred$cum_inc` or `pred$int_inc`.
+#' `x$object$init$date[1]`. The left axis measures interval
+#' or cumulative incidence (depending on `inc`). The predicted
+#' incidence curve is obtained as `pred$cum_inc` or `pred$int_inc`,
+#' where `pred = predict(x$object, time = x$time)`. The simulated
+#' incidence time series are obtained as the columns of `x$cum_inc`
+#' or `x$int_inc`. These are plotted together behind the predicted
+#' incidence curve. To help visualize the distribution of simulated
+#' incidence at a given time, assign `col_sim` a sufficiently
+#' transparent colour.
 #'
 #' @seealso [simulate.egf()]
 #' @name egf_sim-methods
@@ -51,7 +56,7 @@ plot.egf_sim <- function(x, inc = "cumulative",
   ## Simulated data
   x$int_inc <- rbind(NA, x$int_inc)
 
-  ## Predicted curves
+  ## Predicted curve
   pred <- predict(x$object, time = x$time)[c("time", "cum_inc", "int_inc")]
   pred$int_inc <- c(NA, pred$int_inc)
 
@@ -59,25 +64,52 @@ plot.egf_sim <- function(x, inc = "cumulative",
   varname <- substr(inc, start = 1, stop = 3) # first three characters
   varname <- paste0(varname, "_inc")
 
-  ## Axis titles
-  xlab <- paste("days since", as.character(x$object$init$date[1]))
-  ylab <- paste(inc, "incidence")
+  ## Titles
+  if ("xlab" %in% names(dots)) {
+    xlab <- dots$xlab
+  } else {
+    xlab <- paste("days since", as.character(x$object$init$date[1]))
+  }
+  if ("ylab" %in% names(dots)) {
+    ylab <- dots$ylab
+  } else {
+    ylab <- paste(inc, "incidence")
+  }
+  cstr <- x$object$init$curve
+  substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1)) # capitalize first letter
+  if ("main" %in% names(dots)) {
+    main <- dots$main
+  } else {
+    main <- paste0(cstr, " model of ", inc, " incidence\n",
+                   "(", ncol(x[[varname]]), " simulations)")
+  }
 
   ## Axis limits (x)
-  xmin <- 0
-  xmax <- max(x$time, na.rm = TRUE) * 1.04
-  xlim <- if ("xlim" %in% names(dots)) dots$xlim else c(xmin, xmax)
+  if ("xlim" %in% names(dots)) {
+    xlim <- dots$xlim
+  } else {
+    xmin <- 0
+    xmax <- max(x$time) * 1.04
+    xlim <- c(xmin, xmax)
+  }
 
   ## Axis limits (y)
-  ymin <- 0
-  ymax <- max(x[[varname]], pred[[varname]], na.rm = TRUE) * 1.04
-  ylim <- if ("ylim" %in% names(dots)) dots$ylim else c(ymin, ymax)
+  if ("ylim" %in% names(dots)) {
+    ylim <- dots$ylim
+  } else {
+    ymin <- 0
+    ymax <- max(x[[varname]], na.rm = TRUE) * 1.04
+    ylim <- c(ymin, ymax)
+  }
 
 
   ### PLOT #############################################################
 
-  op <- par(mar = c(3, 5, 1, 2), las = 1, mgp = c(3, 0.7, 0))
-  on.exit(par(op))
+  op <- par(
+    mar = c(4, 5, 2.7, 0.5) + 0.1,
+    las = 1,
+    mgp = c(3, 0.7, 0)
+  )
   plot.new()
   plot.window(xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i")
 
@@ -89,14 +121,40 @@ plot.egf_sim <- function(x, inc = "cumulative",
   ## Predicted curves
   lines(pred$time, pred[[varname]], lwd = 3, col = col_pred)
 
-  ## Axes
+  ## Box
   box(bty = "l")
-  axis(side = 1)
-  axis(side = 2)
+
+  ## Axis (x)
+  axis(side = 1, cex.axis = 0.85)
+
+  ## Axis (y)
+  yax_at <- axTicks(side = 2)
+  if (max(yax_at) < 1e05) {
+    yax_labels <- TRUE
+    digits <- 0
+  } else {
+    mp <- matrix(unlist(strsplit(sprintf("%.6e", yax_at), "e")),
+                 ncol = 2, byrow = TRUE)
+    digits <- max(nchar(sub("0+$", "", mp[, 1]))) - 2
+    man <- sprintf(paste0("%.", digits, "e"), as.numeric(mp[, 1]))
+    pow <- as.character(as.numeric(mp[, 2]))
+    if (all(as.numeric(man) %in% c(0, 1))) {
+      yax_labels <- parse(text = paste0("10^", pow))
+    } else {
+      yax_labels <- parse(text = paste0(man, " %*% 10^", pow))
+    }
+    if (0 %in% yax_at) {
+      yax_labels[yax_at == 0] <- expression(0)
+    }
+  }
+  axis(side = 2, at = yax_at, labels = yax_labels,
+       cex.axis = if (digits > 1) 0.65 else 0.85)
 
   ## Titles
-  title(xlab = xlab, line = 2)
-  title(ylab = ylab, line = 3.8)
+  title(xlab = xlab, line = 3)
+  title(ylab = ylab, line = 4)
+  title(main = main, line = 1, cex.main = 0.9)
 
+  par(op)
   invisible(NULL)
 }

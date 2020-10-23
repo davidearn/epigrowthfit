@@ -21,12 +21,13 @@
   x,
   inc = "interval",
   xty = "Date",
+  log = FALSE,
   add = FALSE,
   annotate = TRUE,
   tol = 0,
-  daxis_style = list(tcl = -0.2, line = c(0.05, 1), col.axis = c("black", "black"),
+  date_style = list(tcl = -0.2, line = c(0.05, 1), col.axis = c("black", "black"),
     cex.axis = c(0.7, 0.85)),
-  polygon_style = list(col = "#DDCC7740", border = NA),
+  window_style = list(col = "#DDCC7740", border = NA),
   line_style = list(lty = 1, lwd = 3, col = "#44AA99"),
   point_style_main = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
   point_style_short = list(pch = 1, col = "#882255", bg = NA, cex = 1),
@@ -39,13 +40,16 @@
 \item{x, object}{An "egf" object.}
 
 \item{...}{Optional arguments. Used only by the \code{plot} method
-to specify graphical parameters. See \code{\link[base:plot]{plot()}}
-and \code{\link[graphics:par]{par()}}. Currently, only \code{xlim}, \code{ylim},
-\code{xlab}, \code{ylab}, and \code{main} are implemented. Any additional
-parameters will be ignored.}
+to specify graphical parameters. Currently, only \code{xlim},
+\code{ylim}, \code{xlab}, \code{ylab}, and \code{main} are implemented. Further
+arguments are ignored.
+See \code{\link[graphics:plot.default]{plot()}} and \code{\link[graphics:par]{par()}}
+for a catalogue of graphical parameters.}
 
-\item{log}{A logical scalar. If \code{TRUE}, then parameter values are
-log-transformed.}
+\item{log}{A logical scalar. For the \code{coef} method, if \code{TRUE},
+then parameter estimates are log-transformed. For the plot
+method, if \code{TRUE}, then incidence is displayed on a
+logarithmic scale.}
 
 \item{time}{A numeric vector listing increasing time points in days
 since \code{object$init$date[1]}. Missing values are not tolerated.
@@ -58,18 +62,17 @@ The simulate method requires \code{length(time) >= 2}.}
 \item{inc}{One of \code{"cumulative"} and \code{"interval"},
 indicating a type of incidence to plot.}
 
-\item{xty}{One of \code{"Date"} and \code{"numeric"}, indicating a type of
-horizontal axis.}
+\item{xty}{One of \code{"Date"} and \code{"numeric"}, indicating
+a type of horizontal axis.}
 
 \item{add}{A logical scalar. If \code{TRUE}, then the fitting window
-and predicted curve (and nothing else) are added to the current
-graphics device.}
+and predicted curve are added to the current graphics device,
+presumably started by a previous invocation of the plot method.}
 
 \item{annotate}{A logical scalar. If \code{TRUE}, then a legend and
-a list of parameter estimates are added to the right margin.
-Ignored if \code{add = TRUE}.}
+a list of parameter estimates are displayed in the right margin.}
 
-\item{tol}{A non-negative number used only if \code{inc = "interval"}.
+\item{tol}{A non-negative number, used only if \code{inc = "interval"}.
 \code{cases[i]} is highlighted according to \code{point_style_short} if
 \code{diff(time)[i] < (1-tol)*m} and according to \code{point_style_long}
 if \code{diff(time)[i] > (1+tol)*m}, where \code{m = median(diff(time))}.
@@ -77,10 +80,11 @@ In both cases, the value of \code{diff(time)[i]} is printed above
 the point. Assign 0 to ensure that all deviations from \code{m} are
 highlighted. Assign \code{Inf} to disable highlighting.}
 
-\item{daxis_style}{A named list of arguments to \code{\link[=daxis]{daxis()}},
+\item{date_style}{A named list of arguments to \code{\link[=daxis]{daxis()}}
+(a subset of \code{tcl}, \code{line}, \code{col.axis}, and \code{cex.axis}),
 affecting the appearance of the bottom axis if \code{xty = "date"}.}
 
-\item{polygon_style}{A named list of arguments to
+\item{window_style}{A named list of arguments to
 \code{\link[graphics:polygon]{polygon()}}, affecting the appearance
 of the fitting window. Currently, only \code{col} and \code{border} are
 implemented.}
@@ -164,31 +168,38 @@ Methods for "egf" objects returned by \code{\link[=egf]{egf()}}.
 \subsection{Plot elements}{
 
 If \code{xty = "Date"}, then the bottom axis displays the dates specified
-by \code{x$init$date}. If \code{xty = "numeric"}, then the bottom axis measures
-the number of days since \code{x$init$date[1]}. The left axis measures
-interval or cumulative incidence (depending on \code{inc}) on a log scale.
-Zeros are plotted as if they were \code{10^-0.2}, and are therefore
+by \code{x$init$date}. If \code{xty = "numeric"}, then the bottom axis displays
+the number of days since \code{x$init$date[1]}. Regardless of \code{xty},
+numeric coordinates are used, hence the left and right boundaries of
+the plot region are specified by \code{range(x$init$time)}.
+
+The left axis measures interval or cumulative incidence (depending
+on \code{inc}). When incidence is displayed on a logarithmic scale, zeros
+are plotted as a positive number less than 1. They are therefore
 distinguished from nonzero counts, which are always at least 1.
 
-Observed data, specified by \code{x$init$time} and either \code{x$init$cases}
+Observed data, specified by \code{x$init$date} and either \code{x$init$cases}
 or \code{cumsum(x$init$cases)} (depending on \code{inc}), are plotted as
 points. \code{cases[i]} gives the number of cases observed between
-\code{time[i]} and \code{time[i+1]}, and \code{cumsum(cases)[i]} the number
-observed between \code{time[1]} and \code{time[i+1]}. Both are plotted at
+\code{date[i]} and \code{date[i+1]}, and \code{cumsum(cases)[i]} the number
+observed between \code{date[1]} and \code{date[i+1]}. Both are plotted at
 \code{time[i+1]}.
 
 The fitting window, specified by indices \code{x$init$first} and
 \code{x$init$last}, is displayed as a shaded rectangle behind the other
 plot elements. The left and right boundaries occur at \code{time[first]}
-and \code{time[last+1]}.
+and \code{time[last+1]}. (\code{cases[first]} is a count from \code{time[first]}
+to \code{time[first+1]}, and \code{cases[last]} is a count from \code{time[last]}
+to \code{time[last+1]}. Hence the fitting window starts at \code{time[first]}
+and ends at \code{time[last+1]}.)
 
 The incidence curve predicted by fitted parameter estimates
 \code{x$theta_hat} is displayed as a line supported on grid points
 \code{wgrid = seq(time[first], time[last+1], by)}, where \code{by = 1}
 for cumulative incidence and \code{by = median(diff(time))} for
-interval incidence (to ensure that the curve has the correct
-scale; see below). The predicted curve is obtained with
-\code{predict(x, wgrid)}.
+interval incidence (ensuring that the interval incidence
+curve has the correct scale; see below). The predicted curve
+is obtained with \code{predict(x, wgrid)}.
 
 Careful interpretation of interval incidence is required if
 the plotted time series is not equally spaced, because \code{cases}
@@ -200,9 +211,9 @@ for which \code{diff(time)} differs from \code{median(diff(time))} are
 highlighted according to argument \code{tol} and labeled with the
 value of \code{diff(time)}.
 
-If \code{add = FALSE} and \code{annotate = TRUE}, then a legend and the
-fitted parameter estimates \code{x$theta_hat} are printed in the right
-margin.
+If \code{annotate = TRUE} and \code{add = FALSE}, then a legend and the
+initial parameter estimates \code{x$theta_hat} are displayed in the
+right margin.
 }
 }
 \seealso{

@@ -27,9 +27,9 @@ in an epidemic.}
 
 \item{cases}{A numeric vector with length \code{length(date)-1}.
 \code{cases[i]} is the number of cases observed between \code{date[i]}
-and \code{date[i+1]}. Here, "cases" can mean infections, reported
-infections, or reported deaths (either disease deaths or deaths
-due to multiple causes including the disease of interest).
+and \code{date[i+1]}. Here, "cases" can mean infections,
+reported infections, or reported deaths (either disease deaths or
+deaths due to multiple causes including the disease of interest).
 Missing values are not tolerated.}
 
 \item{curve}{One of \code{"exponential"}, \code{"logistic"}, and \code{"richards"},
@@ -52,9 +52,11 @@ Initial exponential growth rate expressed per day.
 }
 \item{\code{c0}}{\mjseqn{\lbrace\,c_0\,\rbrace}
 Expected cumulative incidence on \code{date[first]}.
-(Here, "cumulative incidence" refers to the number of cases
-observed since \code{date[first]}, not necessarily \code{date[1]}.)
-Used only if \code{curve = "exponential"}.
+Here, "cumulative incidence" refers to the number of cases
+observed since the start of the epidemic wave (i.e., since
+\code{date[first]}), which is not necessarily the number of
+cases observed since the start of the epidemic (i.e., since
+\code{date[1]}). Used only if \code{curve = "exponential"}.
 }
 \item{\code{K}}{\mjseqn{\lbrace\,K\,\rbrace}
 Expected epidemic final size. This is the expected number
@@ -108,7 +110,7 @@ parameters in the model being fit. See Details 2.}
 \item{min_wlen, max_wlen}{Integers indicating the minimum
 and maximum number of observations in the fitting window.
 Along with \code{last}, these determine the range of integers
-allowed for \code{first} if \code{wlen} is not set explicitly.
+considered for \code{first} if \code{first} and \code{wlen} are \code{NULL}.
 If \code{cases} describes just one epidemic wave, then the
 default values are typically acceptable. If \code{cases} spans
 multiple epidemic waves, then \code{max_wlen} should be set
@@ -127,13 +129,12 @@ Equal to \code{as.numeric(date - date[1])}.
 Otherwise, the result of an internal selection algorithm.
 See Details 2.
 }
-\item{\code{theta0}}{A named numeric vector whose elements
-are the subset of \code{r}, \code{c0}, \code{K}, \code{thalf}, \code{p}, \code{b},
-and \code{nbdisp} relevant to \code{curve}, \code{include_baseline},
-and \code{distr}. Values from the argument are retained
-if they are positive numbers and discarded otherwise.
-Parameters not specified in the argument are assigned
-their default value:
+\item{\code{theta0}}{A named numeric vector whose elements are
+the subset of \code{r}, \code{c0}, \code{K}, \code{thalf}, \code{p}, \code{b}, and
+\code{nbdisp} relevant to \code{curve}, \code{distr}, and \code{include_baseline}.
+Values from the argument are retained if they are positive
+numbers and discarded otherwise. Parameters not specified
+in the argument are assigned their default value:
 \describe{
 \item{\code{r}, \code{c0}}{\code{beta1} and \code{exp(beta0)}, respectively,
 where \code{beta1} and \code{beta0} are the slope and intercept
@@ -148,15 +149,19 @@ the corresponding time points are taken to be
 \item{\code{nbdisp}}{1}
 \item{\code{b}}{1}
 }
+Can be extracted with \code{coef(object, log = FALSE)}.
 }
 \item{\code{log_theta0}}{Log-transformed \code{theta0}. Identical to
 \code{log(theta0)}, but with \code{"log_"} prepended to the names.
+Can be extracted with \code{coef(object, log = TRUE)}.
 }
 \item{\code{eval_cum_inc}}{A closure with numeric arguments
 \code{time} and \code{theta} (default is \code{theta0}) evaluating
 expected cumulative incidence at \code{time} days using
 parameter vector \code{theta}. Elements of \code{theta} must be
-named as in \code{theta0}.
+named as in \code{theta0}. \code{predict(object, time)} wraps
+\code{eval_cum_inc(time, theta = theta0)} and provides
+additional useful information.
 }
 \item{\code{call}}{The call to \code{egf_init()}, allowing the output
 to be updated using \code{\link[stats:update]{update()}}.
@@ -169,7 +174,8 @@ Given an interval incidence time series, constructs an
 estimates of model parameters. Attempts are made to define
 a window and estimates that are reasonable in the absence
 of any user input, but the default behaviour is not robust,
-and it is likely that optional arguments must be set explicitly.
+and it is likely that some optional arguments must be set
+explicitly.
 }
 \details{
 \subsection{1. Models}{
@@ -192,49 +198,49 @@ than one wave. Regardless of the model being fit,
 the fitting window should start at the point in the
 focal wave at which \code{cases} begins growing roughly
 exponentially. This is precisely the point at which
-\verb{log(cases))} becomes roughly linear. Where the
+\code{log(cases)} becomes roughly linear. Where the
 fitting window should end depends on the cumulative
 incidence curve being fit to the data.
 If \code{curve = "exponential"}, then the window should
 end at the point in the focal wave at which \code{cases}
-stops growing exponentially. This is precisely the
-point at which \code{log(cases)} stops being linear. If
-\code{curve = "logistic"} or \code{curve = "richards"}, then
+stops growing exponentially. This is the point at
+which \code{log(cases)} \emph{stops} being linear.
+If \code{curve = "logistic"} or \code{curve = "richards"}, then
 the fitting window should end near the peak in \code{cases}
 during the focal wave. If the wave is incomplete and
 the peak has not yet occurred (e.g., when fitting in
-real time), then the window should simply end at
-\code{cases[length(cases)]}.
+real time, during a growing epidemic), then the window
+should simply end at \code{cases[length(cases)]}.
 
 The default behaviour of \code{egf_init()} tries to make
 usage with \code{curve = "logistic"} and \code{curve = "richards"}
 (which should be preferred in practice over
-\code{curve = "exponential"}) as simple as possible by
-reducing the need for user input. Specifically, if
+\code{curve = "exponential"}) as simple as possible
+by reducing the need for user input. Specifically, if
 \code{last} is not set explicitly, then it is set by default
 to \code{min(length(cases), peak+1)}, ensuring that the
 fitting window ends near the peak in \code{cases} during
 the focal wave. If \code{first} is not set explicitly but
 \code{wlen} is, then \code{first} is set to \code{max(1, last-wlen+1)}.
-It neither \code{first} not \code{wlen} is set explicitly, then
+It neither \code{first} nor \code{wlen} is set explicitly, then
 \code{egf_init()} attempts to choose \code{first} such that
 \code{cases[first]} occurs at the "base" of the focal wave,
 an approximation of the point at which \code{cases} begins
 growing exponentially. This selection is made as follows:
 
 First, constraints on \code{first} are determined according
-to \code{last} and arguments \code{min_wlen} and \code{max_wlen}. The
-length \code{wlen = last-first+1} of the fitting window is
+to \code{last}, \code{min_wlen} and \code{max_wlen}. The length
+\code{wlen = last-first+1} of the fitting window is
 constrained to be at least \code{min_wlen} at most \code{max_wlen}.
 This means that \code{first} must satisfy
 \code{first >= last-max_wlen+1} and \code{first <= last-min_wlen+1}.
 The default values of \code{min_wlen} and \code{max_wlen} make the
 range of valid integers as large as possible. This is
-typically fine when \code{cases} describes just one epidemic
-wave. However, when \code{cases} spans multiple waves, it is
-necessary to set \code{max_wlen} so that the minimum allowed
-value of \code{first} indexes a point before exponential growth
-begins in the focal wave, but after any previous waves.
+typically acceptable when \code{cases} describes just one
+epidemic wave. However, when \code{cases} spans multiple waves,
+it is necessary to set \code{max_wlen} so that the minimum
+allowed value of \code{first} indexes a point before exponential
+growth begins in the focal wave, but after any previous waves.
 
 Second, \code{m = min(cases[(last-max_wlen+1):(last-min_wlen+1)])}
 is computed. Provided \code{max_wlen} is set appropriately, this
@@ -251,11 +257,6 @@ is such that \code{cases[first] = 0}. In this situation, \code{egf_init()}
 enforces \code{cases[first] > 0} by assigning \code{first <- first + 1},
 provided that this assignment does not cause \code{first} to exceed
 the maximum allowed value, namely \code{last-min_wlen+1}.
-
-The window selection algorithm described here is not appropriate
-for \code{curve = "exponential"}. When fitting an exponential model,
-\code{first} and \code{last} should be set manually, following the advice
-of the first paragraph.
 }
 }
 \examples{
@@ -270,11 +271,11 @@ x <- egf_init(
 print(x)
 coef(x, log = FALSE)
 coef(x, log = TRUE)
-plot(x, inc = "interval")
-plot(x, inc = "cumulative")
 time_obs <- x$time
 time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
 pred <- predict(x, time = time_pred)
+plot(x, inc = "interval")
+plot(x, inc = "cumulative")
 
 }
 \references{

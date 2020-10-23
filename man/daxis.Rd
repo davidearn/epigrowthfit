@@ -5,8 +5,8 @@
 \title{Annotate a date axis}
 \usage{
 daxis(
-  t0 = par("usr")[1],
-  t1 = par("usr")[2],
+  left,
+  right,
   refdate,
   tcl = -0.2,
   line = c(0.05, 1),
@@ -15,9 +15,9 @@ daxis(
 )
 }
 \arguments{
-\item{t0}{Left endpoint of the axis in user coordinates.}
+\item{left}{Left endpoint of the axis in user coordinates.}
 
-\item{t1}{Right endpoint of the axis in user coordinates.}
+\item{right}{Right endpoint of the axis in user coordinates.}
 
 \item{refdate}{A Date scalar. \code{t0} and \code{t1} represent a number of
 days since this date.}
@@ -53,18 +53,25 @@ use within
 \code{\link[=egf_init-methods]{plot.egf()}}.
 }
 \details{
-The date axis consists of minor and major axes.
-Let \code{w} be the difference between the first and last date in days,
-If \code{w <= 210} (7 months), then days are placed on the minor axis,
-months are placed on the major axis, and years are not shown.
-Otherwise, if \code{w <= 3*365} (3 years), then months are placed on
-the minor axis, years are placed on the major axis, and days are
-not shown. Otherwise (i.e., if \code{w > 3*365}), then years are placed
-on the minor axis, and days and months are not shown.
+The date axis consists of minor and major axes. The content
+of these axes depends greatly on \code{w = round(right-left)},
+roughly the difference between the first and last date in days.
 
-The spacing of days, months, and years in each of these cases
-varies with \code{w} to prevent overcrowding. How the spacing varies
-with \code{w} is defined internally.
+If \code{w <= 210} (7 months), then days are placed on the minor
+axis, months are placed on the major axis, and years are not
+shown. The spacing of the minor axis in days is the value of
+\code{c(1, 2, 4, 7, 14)[w <= c(14, 28, 56, 112, 210)][1]}. Hence,
+for example, if \code{w} is greater than 112 and less than or equal
+to 210, then the spacing is 14-daily.
+
+Otherwise, if \code{w <= 3*365} (3 years), then months are placed
+on the minor axis, years are placed on the major axis, and days
+are not shown. The spacing of the minor axis in months is the
+value of \code{c(1, 2, 3)[w <= c(1, 2, 3) * 365][1]}.
+
+Otherwise (i.e., if \code{w > 3*365}), years are placed on the minor
+axis, and days and months are not shown. The spacing of the
+minor axis is the value of \code{ceiling(ceiling(w / 365) / 7)}.
 
 All nonzero lengths of \code{line}, \code{cex.axis}, and \code{col.axis}
 are tolerated. Vectors of length 1 are recycled. Only the
