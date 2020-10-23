@@ -48,7 +48,7 @@ should work instead, assuming that Rtools was installed to
 writeLines('PATH="C:\\Rtools\\bin;${PATH}"', con = "~/.Renviron")
 ```
 
-### From the remote repository
+### Installing from the remote repository
 
 **epigrowthfit** can be installed from this GitHub repository
 using function `install_github()` from the
@@ -73,7 +73,7 @@ can add a few minutes to the installation time if
 many LaTeX packages must also be installed, set
 `dependencies = NA` and `build_vignettes = FALSE`.
 
-### From a local repository
+### Installing from a local repository
 
 If you have cloned **epigrowthfit** from GitHub, then you can install
 it on the command line from your local repository. Local installation

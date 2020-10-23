@@ -285,7 +285,7 @@ writeLines('PATH="C:\\Rtools\\bin;${PATH}"',
 @
 
 
-\subsubsection{From the remote repository}
+\subsubsection{Installing from the remote repository}
 
 \pkg{epigrowthfit} can be installed from a
 \href{https://github.com/davidearn/epigrowthfit/}{GitHub} repository
@@ -309,7 +309,7 @@ installation time if many \LaTeX\ packages must also be installed, set
 \code{dependencies = `1NA`1} and \code{build_vignettes = `1FALSE`1}.
 
 
-\subsubsection{From a local repository}
+\subsubsection{Installing from a local repository}
 
 If you have cloned \pkg{epigrowthfit} from
 \href{https://github.com/davidearn/epigrowthfit/}{GitHub},
