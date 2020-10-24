@@ -1,10 +1,12 @@
 ^epigrowthfit\.Rproj$
 ^\.Rproj\.user$
 ^old$
-^ref$
-^data-raw$
+^sandbox$
 ^scrap$
+^ref$
+^ontario$
+^data-raw$
 ^Makefile$
 ^TODO\.md$
-^debug$
-sandbox/
+^data/old_plague_latent_period\.RData$
+^data/old_plague_infectious_period\.RData$

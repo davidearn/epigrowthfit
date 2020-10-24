@@ -263,9 +263,9 @@ Building this vignette requires additional R packages
 Windows users require an installation of
 \href{https://cran.r-project.org/bin/windows/Rtools/}{Rtools}
 compatible with their version of R. Rtools is needed to build
-from source R packages that use C++ code, and \pkg{epigrowthfit}
-is such a package. Once installed, Rtools must be added to
-the search path. Users with Rtools 40 (compatible with R 4.0.0
+from source R packages R packages like \pkg{epigrowthfit} that
+rely on compiled C++ code. Once installed, Rtools must be added
+to \code{PATH}. Users with Rtools 40 (compatible with R 4.0.0
 or greater) can accomplish this by running
 
 <<rtools-1, eval=FALSE>>=
@@ -276,10 +276,25 @@ write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
 )
 @
 %
-then restarting R, as explained
-\href{https://cran.r-project.org/bin/windows/Rtools/}{here}.
-Rtools 35 (compatible with R 3.3.0--3.6.3)\ldots
-\mikael{Consistent installation instructions for Rtools 35?}
+then restarting R. Users with Rtools 35 (compatible with R 3.3.0--3.6.3)
+must set both \code{PATH} and \code{BINPREF} by running
+
+<<rtools-2, eval=FALSE>>=
+write('PATH="C:\\Rtools\\bin;${PATH}"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
+)
+
+write('BINPREF="C:\\Rtools\\mingw_${WIN}\\bin"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
+)
+@
+%
+then restarting R. The above assumes that Rtools 35 was installed to
+\code{C:\\Rtools}, typically the default location.
 
 \subsubsection{Installing from the remote repository}
 
@@ -320,9 +335,9 @@ if (!require(devtools)) {
 %
 Enter the \code{devel} branch of the repository with
 \code{git checkout devel}, then run \code{make} in the
-the root directory, namely \code{epigrowthfit/}. This
-will install \pkg{epigrowthfit} and its dependencies
-and build this vignette. You can verify that the installation
+root directory, namely \code{epigrowthfit/}. This will
+install \pkg{epigrowthfit} and its dependencies and
+build this vignette. You can verify that the installation
 was successful by running \code{(`9require`9(epigrowthfit))}
 in R.
 

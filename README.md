@@ -31,9 +31,9 @@ distribution.
 Windows users require an installation of
 [Rtools](https://cran.r-project.org/bin/windows/Rtools/)
 compatible with their version of R. Rtools is needed to
-build from source R packages that use C++ code, and
-**epigrowthfit** is such a package. Once installed, Rtools
-must be added to the search path. Users with Rtools 40
+build from source R packages like **epigrowthfit** that
+rely on compiled C++ code. Once installed, Rtools must be
+added to `PATH`. Users with Rtools 40
 (compatible with R 4.0.0 or greater) can accomplish
 this by running
 
@@ -45,11 +45,26 @@ write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
 )
 ```
 
-then restarting R, as explained
-[here](https://cran.r-project.org/bin/windows/Rtools/).
-Rtools 35 (compatible with R 3.3.0--3.6.3)...
+then restarting R. Users with Rtools 35 (compatible with R 3.3.0--3.6.3)
+must set both `PATH` and `BINPREF` by running
 
-[Consistent installation instructions for Rtools 35?]
+```r
+write('PATH="C:\\Rtools\\bin;${PATH}"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
+)
+
+write('BINPREF="C:\\Rtools\\mingw_${WIN}\\bin"',
+  file = "~/.Renviron",
+  append = TRUE,
+  sep = "\n"
+)
+```
+
+then restarting R. The above assumes that Rtools 35 was installed to
+`C:\Rtools`, typically the default location.
+
 
 ### Installing from the remote repository
 
