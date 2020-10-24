@@ -45,8 +45,8 @@ write('PATH="${RTOOLS40_HOME}\\usr\\bin;${PATH}"',
 )
 ```
 
-then restarting R. Users with Rtools 35 (compatible with R 3.3.0--3.6.3)
-must set both `PATH` and `BINPREF` by running
+then restarting R. Users with Rtools 35 (compatible with
+R 3.3.0&ndash;3.6.3) must set both `PATH` and `BINPREF` by running
 
 ```r
 write('PATH="C:\\Rtools\\bin;${PATH}"',
