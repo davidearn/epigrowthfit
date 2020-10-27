@@ -11,7 +11,7 @@ egf_init(
   curve = "logistic",
   distr = "nbinom",
   include_baseline = FALSE,
-  theta0 = NULL,
+  theta_init = NULL,
   peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
   last = min(length(cases), peak + 1),
   first = NULL,
@@ -43,7 +43,7 @@ the model of expected cumulative incidence will include
 a linear baseline. Assign \code{TRUE} if \code{cases} counts deaths
 due to multiple causes and \code{FALSE} otherwise. See Details 1.}
 
-\item{theta0}{A named numeric vector specifying positive
+\item{theta_init}{A named numeric vector specifying positive
 initial estimates of relevant model parameters:
 
 \describe{
@@ -82,7 +82,7 @@ Used only if \code{distr = "nbinom"}.
 }
 }
 
-\code{theta0} can be \code{NULL} or a vector specifying a subset
+\code{theta_init} can be \code{NULL} or a vector specifying a subset
 of the relevant parameters. Unspecified parameters are
 set internally. See Value.}
 
@@ -129,7 +129,7 @@ Equal to \code{as.numeric(date - date[1])}.
 Otherwise, the result of an internal selection algorithm.
 See Details 2.
 }
-\item{\code{theta0}}{A named numeric vector whose elements are
+\item{\code{theta_init}}{A named numeric vector whose elements are
 the subset of \code{r}, \code{c0}, \code{K}, \code{thalf}, \code{p}, \code{b}, and
 \code{nbdisp} relevant to \code{curve}, \code{distr}, and \code{include_baseline}.
 Values from the argument are retained if they are positive
@@ -151,16 +151,16 @@ the corresponding time points are taken to be
 }
 Can be extracted with \code{coef(object, log = FALSE)}.
 }
-\item{\code{log_theta0}}{Log-transformed \code{theta0}. Identical to
-\code{log(theta0)}, but with \code{"log_"} prepended to the names.
+\item{\code{log_theta_init}}{Log-transformed \code{theta_init}. Identical to
+\code{log(theta_init)}, but with \code{"log_"} prepended to the names.
 Can be extracted with \code{coef(object, log = TRUE)}.
 }
 \item{\code{eval_cum_inc}}{A closure with numeric arguments
-\code{time} and \code{theta} (default is \code{theta0}) evaluating
+\code{time} and \code{theta} (default is \code{theta_init}) evaluating
 expected cumulative incidence at \code{time} days using
 parameter vector \code{theta}. Elements of \code{theta} must be
-named as in \code{theta0}. \code{predict(object, time)} wraps
-\code{eval_cum_inc(time, theta = theta0)} and provides
+named as in \code{theta_init}. \code{predict(object, time)} wraps
+\code{eval_cum_inc(time, theta = theta_init)} and provides
 additional useful information.
 }
 \item{\code{call}}{The call to \code{egf_init()}, allowing the output

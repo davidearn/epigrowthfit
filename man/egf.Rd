@@ -5,16 +5,19 @@
 \title{\loadmathjax
 Fit a model of epidemic growth}
 \usage{
-egf(init, method = "nlminb", ...)
+egf(init, method = "nlminb", nbdisp_tol = 100, ...)
 }
 \arguments{
 \item{init}{An "egf_init" object specifying epidemic data,
-a fitting window, and initial parameter estimates.
-See \code{\link[=egf_init]{egf_init()}}.}
+a fitting window, and initial parameter estimates. See \code{\link[=egf_init]{egf_init()}}.}
 
 \item{method}{One of \code{"nlminb"}, \code{"nlm"}, \code{"Nelder-Mead"},
 \code{"BFGS"}, \code{"L-BFGS-S"}, and \code{"CG"},
 indicating an optimization algorithm.}
+
+\item{nbdisp_tol}{A positive number defining a threshold on
+the fitted value of the negative binomial dispersion parameter.
+Used only if \code{init$distr = "nbinom"}. See Details.}
 
 \item{...}{Additional arguments to \code{\link[stats:nlminb]{nlminb()}},
 \code{\link[stats:nlm]{nlm()}}, or \code{\link[stats:optim]{optim()}}.}
@@ -24,30 +27,30 @@ An "egf" object. A list containing copies of arguments
 \code{init} and \code{method}, with these additional elements:
 
 \describe{
-\item{\code{theta_hat}}{A named numeric vector giving the optimizer's
+\item{\code{theta_fit}}{A named numeric vector giving the optimizer's
 approximation of the maximum likelihood parameter vector.
 }
-\item{\code{log_theta_hat}}{Log-transformed \code{theta_hat}. Identical
-to \code{log(theta_hat)} but with \code{"log_"} prepended to the names.
+\item{\code{log_theta_fit}}{Log-transformed \code{theta_fit}. Identical
+to \code{log(theta_fit)} but with \code{"log_"} prepended to the names.
 }
 \item{\code{nll}}{A numeric scalar giving the negative log likelihood
-of \code{log_theta_hat}.
+of \code{log_theta_fit}.
 }
 \item{\code{nll_func}}{A closure with a numeric argument \code{log_theta}
 specifying a log-transformed parameter vector (default is
-\code{log_theta_hat}). Returns the negative log likelihood function
+\code{log_theta_fit}). Returns the negative log likelihood function
 evaluated at \code{log_theta}.
 }
 \item{\code{nll_grad}}{A closure with a numeric argument \code{log_theta}
 specifying a log-transformed parameter vector (default is
-\code{log_theta_hat}). Returns the gradient of the negative log
-likelihood with respect to log-transformed parameters
-evaluated at \code{log_theta}.
+\code{log_theta_fit}). Returns the gradient of the negative log
+likelihood with respect to log-transformed parameters evaluated
+at \code{log_theta}.
 }
 \item{\code{eval_cum_inc}}{A closure with numeric arguments \code{time}
-and \code{theta} (default is \code{theta_hat}), evaluating expected
+and \code{theta} (default is \code{theta_fit}), evaluating expected
 cumulative incidence at \code{time} days using parameter
-vector \code{theta}. Elements must be named as in \code{theta_hat}.
+vector \code{theta}. Elements must be named as in \code{theta_fit}.
 }
 \item{\code{madf_out}}{The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.}
 \item{\code{optim_out}}{The list output of
@@ -55,6 +58,11 @@ vector \code{theta}. Elements must be named as in \code{theta_hat}.
 \code{\link[stats:nlm]{nlm()}}, or
 \code{\link[stats:optim]{optim()}},
 depending on \code{method}.
+}
+\item{\code{nbdisp_flag}}{A logical scalar. If \code{TRUE}, then the fitted
+value of the negative binomial dispersion parameter
+(i.e., \code{theta_fit[["nbdisp"]]}) exceeds the threshold defined
+by \code{nbdisp_tol}. Omitted if \code{init$distr != "nbinom"}. See Details.
 }
 \item{\code{call}}{The call to \code{egf()}, allowing the output to
 be updated using \code{\link[stats:update]{update()}}.
@@ -66,8 +74,18 @@ Minimizes the negative log likelihood of an epidemic growth model
 using \code{\link[stats:nlminb]{nlminb()}}, \code{\link[stats:nlm]{nlm()}}, or
 one of the routines provided through \code{\link[stats:optim]{optim()}}.
 The negative log likelihood function is written as a C++ template,
-and its gradient with respect to log-transformed parameters is
-defined by automatic differentiation using package \pkg{TMB}.
+and its gradient with respect to log-transformed parameters
+is defined by automatic differentiation using package \pkg{TMB}.
+}
+\details{
+If \code{theta_fit[["nbdisp"]]} exceeds \code{nbdisp_tol} times
+\code{max(diff(eval_cum_inc(init$time[init$first:(init$last+1)])))},
+then \code{egf()} will issue a warning suggesting to refit
+using a Poisson model by running
+\code{update(object, init = update(init, distr = "pois"))},
+where \code{object} is the "egf" object returned by \code{egf()}.
+This behaviour is discussed in the package vignette,
+accessible with \code{vignette("epigrowthfit-vignette")}.
 }
 \examples{
 data(canadacovid)

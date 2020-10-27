@@ -29,7 +29,7 @@
 #'   highlighted. Assign `Inf` to disable highlighting.
 #' @param date_style A named list of arguments to [daxis()]
 #'   (a subset of `tcl`, `line`, `col.axis`, and `cex.axis`),
-#'   affecting the appearance of the bottom axis if `xty = "date"`.
+#'   affecting the appearance of the bottom axis if `xty = "Date"`.
 #' @param window_style A named list of arguments to
 #'   [`polygon()`][graphics::polygon()], affecting the appearance
 #'   of the fitting window. Currently, only `col` and `border` are
@@ -60,8 +60,8 @@
 #' @return
 #' The `print` method returns `x` invisibly.
 #'
-#' The `coef` method returns `object$theta0` if `log = FALSE`
-#' and `object$log_theta0` if `log = TRUE`.
+#' The `coef` method returns `object$theta_init` if `log = FALSE`
+#' and `object$log_theta_init` if `log = TRUE`.
 #'
 #' The `predict` method returns a list with numeric elements:
 #'
@@ -69,12 +69,12 @@
 #'   \item{`time`}{Matches argument.}
 #'   \item{`refdate`}{Matches `object$date[1]`.}
 #'   \item{`cum_inc`}{Expected cumulative incidence at time points
-#'     `time`, conditional on parameter vector `object$theta0`.
+#'     `time`, conditional on parameter vector `object$theta_init`.
 #'     Equal to `object$eval_cum_inc(time)`.
 #'   }
 #'   \item{`int_inc`}{Expected interval incidence given interval
 #'     endpoints `time`, conditional on parameter vector
-#'     `object$theta0`. Equal to `diff(object$eval_cum_inc(time))`
+#'     `object$theta_init`. Equal to `diff(object$eval_cum_inc(time))`
 #'     if `length(time) >= 2` and omitted otherwise.
 #'   }
 #' }
@@ -110,7 +110,7 @@
 #' and ends at `time[last+1]`.)
 #'
 #' The incidence curve predicted by initial parameter estimates
-#' `x$theta0` is displayed as a line supported on grid points
+#' `x$theta_init` is displayed as a line supported on grid points
 #' `wgrid = seq(time[first], time[last+1], by)`, where `by = 1`
 #' for cumulative incidence and `by = median(diff(time))` for
 #' interval incidence (ensuring that the interval incidence
@@ -128,7 +128,7 @@
 #' value of `diff(time)`.
 #'
 #' If `annotate = TRUE` and `add = FALSE`, then a legend and the
-#' initial parameter estimates `x$theta0` are displayed in the
+#' initial parameter estimates `x$theta_init` are displayed in the
 #' right margin.
 #'
 #' @seealso [egf_init()]
@@ -154,21 +154,19 @@ print.egf_init <- function(x, ...) {
     nbinom  = "negative binomial observations."
   )
   uvec <- c(r = "per day", thalf = "days", b = "per day")
-  uvec <- uvec[names(uvec) %in% names(x$theta0)]
-  first <- x$first
-  last <- x$last
+  uvec <- uvec[names(uvec) %in% names(x$theta_init)]
   cat("Pass this \"egf_init\" object to `egf()` to fit", cstr, "\n")
   cat(bstr, dstr, "\n")
   cat("\n")
   cat("Fitting window:\n")
   cat("\n")
-  cat("index   ", first, ":", last, "\n", sep = "")
-  cat(" date   (", as.character(x$date[first]), ", ", as.character(x$date[last+1]), "]\n", sep = "")
-  cat("cases   ", sum(x$cases[first:last]), " of ", sum(x$cases), "\n", sep = "")
+  cat("index   ", x$first, ":", x$last, "\n", sep = "")
+  cat(" date   (", as.character(x$date[x$first]), ", ", as.character(x$date[x$last+1]), "]\n", sep = "")
+  cat("cases   ", sum(x$cases[x$first:x$last]), " of ", sum(x$cases), "\n", sep = "")
   cat("\n")
   cat("Initial parameter estimates:\n")
   cat("\n")
-  print(x$theta0)
+  print(x$theta_init)
   cat("\n")
   cat("Units:\n")
   cat("\n")
@@ -184,9 +182,9 @@ coef.egf_init <- function(object, log = FALSE, ...) {
   }
 
   if (log) {
-    object$log_theta0
+    object$log_theta_init
   } else {
-    object$theta0
+    object$theta_init
   }
 }
 
@@ -230,11 +228,11 @@ plot.egf_init <- function(x, inc = "interval", xty = "Date", log = TRUE,
                           text_style = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
                           ...) {
   if (!is.character(inc) || length(inc) != 1 ||
-        !inc %in% c("interval", "cumulative")) {
+      !inc %in% c("interval", "cumulative")) {
     stop("`inc` must be one of \"interval\", \"cumulative\".")
   }
   if (!is.character(xty) || length(xty) != 1 ||
-        !xty %in% c("Date", "numeric")) {
+      !tolower(xty) %in% c("date", "numeric")) {
     stop("`xty` must be one of \"Date\", \"numeric\".")
   }
   if (!is.logical(log) || length(log) != 1 || is.na(log)) {
@@ -296,7 +294,7 @@ plot.egf_init <- function(x, inc = "interval", xty = "Date", log = TRUE,
   ## Titles
   if ("xlab" %in% names(dots)) {
     xlab <- dots$xlab
-  } else if (xty == "Date") {
+  } else if (tolower(xty) == "date") {
     xlab <- "date"
   } else if (xty == "numeric") {
     xlab <- paste("days since", as.character(x$date[1]))
@@ -376,7 +374,7 @@ plot.egf_init <- function(x, inc = "interval", xty = "Date", log = TRUE,
     box(bty = "l")
 
     ## Axis (x)
-    if (xty == "Date") {
+    if (tolower(xty) == "date") {
       l <- list(
         left = par("usr")[1],
         right = par("usr")[2],
@@ -448,9 +446,9 @@ plot.egf_init <- function(x, inc = "interval", xty = "Date", log = TRUE,
 
     if (annotate) {
       ## Parameter estimates
-      pstr1 <- paste0(names(x$theta0), " = ")
-      pstr2 <- round(x$theta0, digits = 4)
-      if ("K" %in% names(x$theta0)) {
+      pstr1 <- paste0(names(x$theta_init), " = ")
+      pstr2 <- round(x$theta_init, digits = 4)
+      if ("K" %in% names(x$theta_init)) {
         pstr2[["K"]] <- round(pstr2[["K"]])
       }
       px <- par("usr")[2] + 0.02 * diff(par("usr")[1:2])

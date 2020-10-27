@@ -1,0 +1,147 @@
+\documentclass[12pt]{article}
+
+\usepackage[top=1in,bottom=1.5in,left=1in,right=1in]{geometry}
+\usepackage{amsmath,bbm}
+\allowdisplaybreaks
+\usepackage[colorlinks=true,allcolors=magenta]{hyperref}
+
+\begin{document}
+\setlength{\parskip}{3mm}
+\setlength{\parindent}{7mm}
+
+\section{Exponential model}
+
+The differential equation is
+%
+\begin{equation}
+  c'(s) = r c(s)\,,
+\end{equation}
+%
+and can be rewritten as
+%
+\begin{equation}
+  \label{eq:exponential-integrand}
+  \frac{1}{c(s)} c'(s) = -r\,.
+\end{equation}
+%
+Integrating \eqref{eq:exponential-integrand} from $s = 0$ to $s = t$:
+%
+\begin{equation}
+  \log|c(t)| - \log|c(0)|
+  = \log\bigg|\frac{c(t)}{c(0)}\bigg|
+  = \log\bigg(\frac{c(t)}{c(0)}\bigg)
+  = -rt\,.
+\end{equation}
+%
+Solving for $c(t)$:
+%
+\begin{equation}
+  \label{eq:exponential}
+  c(t) = c(0) e^{-r t}\,.
+\end{equation}
+
+
+\section{Logistic model}
+
+The differential equation is
+%
+\begin{equation}
+  c'(s) = r c(s) \bigg(1 - \frac{c(s)}{K}\bigg)\,,
+\end{equation}
+%
+and can be rewritten as
+%
+\begin{equation}
+  \label{eq:logistic-integrand}
+  \bigg(\frac{1}{c(s) - K} - \frac{1}{c(s)}\bigg) c'(s) = -r\,.
+\end{equation}
+%
+Integrating \eqref{eq:logistic-integrand} from $s = 0$ to $s = t$:
+%
+\begin{equation}
+  \begin{aligned}
+    &\log|c(t) - K| - \log|c(t)| - \log|c(0) - K| + \log|c(0)| \\
+    &= \log\bigg|\frac{c(0) (c(t) - K)}{c(t) (c(0) - K)}\bigg| \\
+    &= \log\bigg(\frac{c(0) (c(t) - K)}{c(t) (c(0) - K)}\bigg) \\
+    &= -rt\,.
+  \end{aligned}
+\end{equation}
+%
+Solving for $c(t)$:
+%
+\begin{equation}
+  \label{eq:logistic}
+  c(t) = \frac{K}{1 + \big(\frac{K}{c(0)} - 1\big) e^{-r t}}\,.
+\end{equation}
+
+\subsection{Reparametrization}
+
+Solving $c(t_\text{half}) = \frac{K}{2}$ for $\frac{K}{c(0)}$:
+%
+\begin{equation}
+  \label{eq:logistic-thalf}
+  \frac{K}{2} = \frac{K}{1 + \big(\frac{K}{c(0)} - 1\big) e^{-r t_\text{half}}}
+  \implies \frac{K}{c(0)} = e^{r t_\text{half}} + 1\,.
+\end{equation}
+%
+Substituting \eqref{eq:logistic-thalf} in \eqref{eq:logistic}:
+%
+\begin{equation}
+  c(t) = \frac{K}{1 + e^{-r (t - t_\text{half})}}\,.
+\end{equation}
+
+\section{Richards model}
+
+The differential equation is
+%
+\begin{equation}
+  c'(s) = r c(s) \bigg(1 - \bigg(\frac{c(s)}{K}\bigg)^p\bigg)\,,
+\end{equation}
+%
+and can be rewritten as
+%
+\begin{equation}
+  \label{eq:richards-integrand}
+  \bigg(\frac{1}{c(s) (c(s)^p - K^p)}\bigg) c'(s) = -\frac{r}{K^p}\,.
+\end{equation}
+%
+One can verify that
+%
+\begin{equation}
+  \int \frac{1}{x (x^p - a^p)}\,\text{d}x = \frac{1}{p a^p} \log\bigg|\frac{a^p}{x^p} - 1\bigg|\,.
+\end{equation}
+%
+Integrating \eqref{eq:richards-integrand} from $s = 0$ to $s = t$:
+%
+\begin{equation}
+  \begin{aligned}
+    &\frac{1}{p K^p} \Bigg(\log\bigg|\frac{K^p}{c(t)^p} - 1\bigg| - \log\bigg|\frac{K^p}{c(0)^p} - 1\bigg|\Bigg) \\
+    &= \frac{1}{p K^p} \log\Bigg|\frac{\frac{K^p}{c(t)^p} - 1}{\frac{K^p}{c(0)^p} - 1}\Bigg| \\
+    &= \frac{1}{p K^p} \log\Bigg(\frac{\frac{K^p}{c(t)^p} - 1}{\frac{K^p}{c(0)^p} - 1}\Bigg) \\
+    &= -\frac{r}{K^p}t\,.
+  \end{aligned}
+\end{equation}
+%
+Solving for $c(t)$:
+%
+\begin{equation}
+  \label{eq:richards}
+  c(t) = \frac{K}{\big[1 + \big(\big(\frac{K}{c(0)}\big)^p - 1\big) e^{-r p t}\big]^{1/p}}\,.
+\end{equation}
+
+\subsection{Reparametrization}
+
+Solving $c(t_\text{half}) = \frac{K}{2}$ for $\big(\frac{K}{c(0)}\big)^p$:
+%
+\begin{equation}
+  \label{eq:richards-thalf}
+  \frac{K}{2} = \frac{K}{\big[1 + \big(\big(\frac{K}{c(0)}\big)^p - 1\big) e^{-r p t_\text{half}}\big]^{1/p}} \implies \bigg(\frac{K}{c(0)}\bigg)^p = 1 + (2^p - 1) e^{r p t_\text{half}}\,.
+\end{equation}
+%
+Substituting \eqref{eq:richards-thalf} in \eqref{eq:richards}:
+%
+\begin{equation}
+  c(t) = \frac{K}{\big[1 + (2^p - 1) e^{-r p (t - t_\text{half})}\big]^{1/p}}\,.
+\end{equation}
+
+\end{document}

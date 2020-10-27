@@ -50,6 +50,5 @@ clean:
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
 	$(MAKE) -C vignettes clean
-
-new: clean
 	$(MAKE) -C src clean
+	$(MAKE) -C scrap clean

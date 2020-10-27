@@ -27,7 +27,7 @@
 #'   the model of expected cumulative incidence will include
 #'   a linear baseline. Assign `TRUE` if `cases` counts deaths
 #'   due to multiple causes and `FALSE` otherwise. See Details 1.
-#' @param theta0 A named numeric vector specifying positive
+#' @param theta_init A named numeric vector specifying positive
 #'   initial estimates of relevant model parameters:
 #'
 #'   \describe{
@@ -66,7 +66,7 @@
 #'     }
 #'   }
 #'
-#'   `theta0` can be `NULL` or a vector specifying a subset
+#'   `theta_init` can be `NULL` or a vector specifying a subset
 #'   of the relevant parameters. Unspecified parameters are
 #'   set internally. See Value.
 #' @param peak An integer in `seq_along(cases)` indexing a
@@ -108,7 +108,7 @@
 #'     Otherwise, the result of an internal selection algorithm.
 #'     See Details 2.
 #'   }
-#'   \item{`theta0`}{A named numeric vector whose elements are
+#'   \item{`theta_init`}{A named numeric vector whose elements are
 #'     the subset of `r`, `c0`, `K`, `thalf`, `p`, `b`, and
 #'     `nbdisp` relevant to `curve`, `distr`, and `include_baseline`.
 #'     Values from the argument are retained if they are positive
@@ -130,16 +130,16 @@
 #'     }
 #'     Can be extracted with `coef(object, log = FALSE)`.
 #'   }
-#'   \item{`log_theta0`}{Log-transformed `theta0`. Identical to
-#'     `log(theta0)`, but with `"log_"` prepended to the names.
+#'   \item{`log_theta_init`}{Log-transformed `theta_init`. Identical to
+#'     `log(theta_init)`, but with `"log_"` prepended to the names.
 #'     Can be extracted with `coef(object, log = TRUE)`.
 #'   }
 #'   \item{`eval_cum_inc`}{A closure with numeric arguments
-#'     `time` and `theta` (default is `theta0`) evaluating
+#'     `time` and `theta` (default is `theta_init`) evaluating
 #'     expected cumulative incidence at `time` days using
 #'     parameter vector `theta`. Elements of `theta` must be
-#'     named as in `theta0`. `predict(object, time)` wraps
-#'     `eval_cum_inc(time, theta = theta0)` and provides
+#'     named as in `theta_init`. `predict(object, time)` wraps
+#'     `eval_cum_inc(time, theta = theta_init)` and provides
 #'     additional useful information.
 #'   }
 #'   \item{`call`}{The call to `egf_init()`, allowing the output
@@ -258,7 +258,7 @@ egf_init <- function(date,
                      curve = "logistic",
                      distr = "nbinom",
                      include_baseline = FALSE,
-                     theta0 = NULL,
+                     theta_init = NULL,
                      peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
                      last = min(length(cases), peak + 1),
                      first = NULL,
@@ -322,10 +322,10 @@ egf_init <- function(date,
     stop("`first` must be `NULL` or an element of `",
          "1:(last-", npar - 1, ")`.")
   }
-  if (!is.null(theta0) && (!is.numeric(theta0) || is.null(names(theta0)))) {
-    warning("`theta0` is not a named numeric vector, setting `theta0 = NULL`.",
+  if (!is.null(theta_init) && (!is.numeric(theta_init) || is.null(names(theta_init)))) {
+    warning("`theta_init` is not a named numeric vector, setting `theta_init = NULL`.",
             call. = FALSE)
-    theta0 <- NULL
+    theta_init <- NULL
   }
 
 
@@ -347,7 +347,7 @@ egf_init <- function(date,
 
   ### INITIAL PARAMETER ESTIMATES ####################################
 
-  ## Parameters that `theta0` must specify
+  ## Parameters that `theta_init` must specify
   par <- switch(curve,
     exponential = c("r", "c0"),
     logistic    = c("r", "K", "thalf"),
@@ -360,22 +360,22 @@ egf_init <- function(date,
     par <- c(par, "b")
   }
 
-  ## Initialize `theta0` if necessary
-  if (is.null(theta0)) {
-    theta0 <- numeric(0)
+  ## Initialize `theta_init` if necessary
+  if (is.null(theta_init)) {
+    theta_init <- numeric(0)
   }
 
-  ## Dispense with unwanted elements of `theta0`
-  l <- length(theta0)
-  theta0 <- theta0[names(theta0) %in% par]
-  theta0 <- theta0[is.finite(theta0) & theta0 > 0]
-  if (length(theta0) < l) {
-    warning("Discarding extraneous and improperly defined elements of `theta0`.",
+  ## Dispense with unwanted elements of `theta_init`
+  l <- length(theta_init)
+  theta_init <- theta_init[names(theta_init) %in% par]
+  theta_init <- theta_init[is.finite(theta_init) & theta_init > 0]
+  if (length(theta_init) < l) {
+    warning("Discarding extraneous and improperly defined elements of `theta_init`.",
             call. = FALSE)
   }
 
-  ## Parameters that `theta0` does not specify
-  par_missing <- setdiff(par, names(theta0))
+  ## Parameters that `theta_init` does not specify
+  par_missing <- setdiff(par, names(theta_init))
 
   ## Fit a linear model to log cumulative incidence
   ## in the first half of the fitting window
@@ -398,13 +398,13 @@ egf_init <- function(date,
     b      = 1
   )
 
-  ## Take from `val` what is missing in `theta0`
-  theta0[par_missing] <- val[par_missing]
-  theta0 <- theta0[par]
+  ## Take from `val` what is missing in `theta_init`
+  theta_init[par_missing] <- val[par_missing]
+  theta_init <- theta_init[par]
 
   ## Define a closure that evaluates expected
   ## cumulative incidence at desired time points
-  eval_cum_inc <- function(time, theta = theta0) {
+  eval_cum_inc <- function(time, theta = theta_init) {
     ## Wave baseline
     c1 <- if (first > 1) sum(cases[1:(first-1)]) else 0
     ## Cumulative incidence above wave baseline
@@ -426,8 +426,8 @@ egf_init <- function(date,
     curve = curve,
     distr = distr,
     include_baseline = include_baseline,
-    theta0 = theta0,
-    log_theta0 = setNames(log(theta0), paste0("log_", names(theta0))),
+    theta_init = theta_init,
+    log_theta_init = setNames(log(theta_init), paste0("log_", names(theta_init))),
     eval_cum_inc = eval_cum_inc,
     call = match.call()
   )

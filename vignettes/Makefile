@@ -3,6 +3,7 @@ R = R
 NAME = epigrowthfit-vignette
 
 build: $(NAME).pdf
+	$(R) --no-echo -e 'tools::compactPDF("$<", gs_quality = "ebook")'
 	rm -rf cache figure
 	rm -f *.{bbl,blg,log,out,synctex.gz,tex,toc,aux}
 

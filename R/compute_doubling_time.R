@@ -18,10 +18,10 @@
 #' to initial exponential growth rate `x[i]`. See Details.
 #'
 #' The method for class "egf_init" applies the method for
-#' class "numeric" to `x$theta0[["r"]]`.
+#' class "numeric" to `x$theta_init[["r"]]`.
 #'
 #' The method for class "egf" applies the method for
-#' class "numeric" to `x$theta_hat[["r"]]`.
+#' class "numeric" to `x$theta_fit[["r"]]`.
 #'
 #' @details
 #' The epidemic doubling time is the time required for cumulative
@@ -60,13 +60,13 @@ compute_doubling_time.numeric <- function(x) {
 #' @rdname compute_doubling_time
 #' @export
 compute_doubling_time.egf_init <- function(x) {
-  x <- x$theta0[["r"]]
+  x <- x$theta_init[["r"]]
   compute_doubling_time(x)
 }
 
 #' @rdname compute_doubling_time
 #' @export
 compute_doubling_time.egf <- function(x) {
-  r <- x$theta_hat[["r"]]
+  r <- x$theta_fit[["r"]]
   compute_doubling_time(r)
 }

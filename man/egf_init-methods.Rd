@@ -75,7 +75,7 @@ highlighted. Assign \code{Inf} to disable highlighting.}
 
 \item{date_style}{A named list of arguments to \code{\link[=daxis]{daxis()}}
 (a subset of \code{tcl}, \code{line}, \code{col.axis}, and \code{cex.axis}),
-affecting the appearance of the bottom axis if \code{xty = "date"}.}
+affecting the appearance of the bottom axis if \code{xty = "Date"}.}
 
 \item{window_style}{A named list of arguments to
 \code{\link[graphics:polygon]{polygon()}}, affecting the appearance
@@ -104,8 +104,8 @@ are implemented.}
 \value{
 The \code{print} method returns \code{x} invisibly.
 
-The \code{coef} method returns \code{object$theta0} if \code{log = FALSE}
-and \code{object$log_theta0} if \code{log = TRUE}.
+The \code{coef} method returns \code{object$theta_init} if \code{log = FALSE}
+and \code{object$log_theta_init} if \code{log = TRUE}.
 
 The \code{predict} method returns a list with numeric elements:
 
@@ -113,12 +113,12 @@ The \code{predict} method returns a list with numeric elements:
 \item{\code{time}}{Matches argument.}
 \item{\code{refdate}}{Matches \code{object$date[1]}.}
 \item{\code{cum_inc}}{Expected cumulative incidence at time points
-\code{time}, conditional on parameter vector \code{object$theta0}.
+\code{time}, conditional on parameter vector \code{object$theta_init}.
 Equal to \code{object$eval_cum_inc(time)}.
 }
 \item{\code{int_inc}}{Expected interval incidence given interval
 endpoints \code{time}, conditional on parameter vector
-\code{object$theta0}. Equal to \code{diff(object$eval_cum_inc(time))}
+\code{object$theta_init}. Equal to \code{diff(object$eval_cum_inc(time))}
 if \code{length(time) >= 2} and omitted otherwise.
 }
 }
@@ -157,7 +157,7 @@ to \code{time[last+1]}. Hence the fitting window starts at \code{time[first]}
 and ends at \code{time[last+1]}.)
 
 The incidence curve predicted by initial parameter estimates
-\code{x$theta0} is displayed as a line supported on grid points
+\code{x$theta_init} is displayed as a line supported on grid points
 \code{wgrid = seq(time[first], time[last+1], by)}, where \code{by = 1}
 for cumulative incidence and \code{by = median(diff(time))} for
 interval incidence (ensuring that the interval incidence
@@ -175,7 +175,7 @@ highlighted according to argument \code{tol} and labeled with the
 value of \code{diff(time)}.
 
 If \code{annotate = TRUE} and \code{add = FALSE}, then a legend and the
-initial parameter estimates \code{x$theta0} are displayed in the
+initial parameter estimates \code{x$theta_init} are displayed in the
 right margin.
 }
 }

@@ -14,11 +14,12 @@ a reference date.}
 \item{curve}{One of \code{"exponential"}, \code{"logistic"}, and \code{"richards"},
 indicating a model of expected cumulative incidence.}
 
-\item{include_baseline}{A logical scalar. If \code{TRUE}, then the
-cumulative incidence model will include a linear term \mjseqn{b t}.}
+\item{include_baseline}{A logical scalar. If \code{TRUE}, then
+the model of expected cumulative incidence will include
+a linear baseline.}
 
-\item{theta}{A named numeric vector listing positive values for all
-relevant model parameters:
+\item{theta}{A named numeric vector listing positive values
+for all relevant model parameters:
 
 \describe{
 \item{\code{r}}{\mjseqn{\lbrace\,r\,\rbrace}
@@ -26,18 +27,16 @@ Initial exponential growth rate expressed per day.
 }
 \item{\code{c0}}{\mjseqn{\lbrace\,c_0\,\rbrace}
 Expected cumulative incidence on the reference date.
-This is the expected number of cases observed up to
-the reference date. Used only if \code{curve = "exponential"}.
+Used only if \code{curve = "exponential"}.
 }
 \item{\code{K}}{\mjseqn{\lbrace\,K\,\rbrace}
-Expected epidemic final size. This is expected number
-of cases observed over the full course of the epidemic.
+Expected epidemic final size.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
 \item{\code{thalf}}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
-Time at which the epidemic is expected to attain half its
-final size, expressed as a (possibly non-integer) number
-of days since the reference date.
+Time at which the epidemic is expected to attain half
+its final size, expressed as a number of days since the
+reference date.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
 \item{\code{p}}{\mjseqn{\lbrace\,p\,\rbrace}
@@ -50,12 +49,12 @@ Used only if \code{include_baseline = TRUE}.
 }}
 }
 \value{
-A numeric vector with length \code{length(time)} such that \code{cum_inc[i]}
-is the expected number of cases observed up to \code{time[i]}.
+A numeric vector with length \code{length(time)} whose \code{i}th
+element is expected cumulative incidence at \code{time[i]}.
 }
 \description{
-Evaluates expected cumulative incidence at desired time points,
-conditional on a model and a vector of model parameters.
+Evaluates expected cumulative incidence at desired time points
+a vector of model parameters.
 }
 \details{
 A full description of the models of expected cumulative

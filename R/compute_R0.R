@@ -27,10 +27,10 @@
 #' growth rate `x[i]`. See Details.
 #'
 #' The method for class "egf_init" applies the method for
-#' class "numeric" to `x$theta0[["r"]]`.
+#' class "numeric" to `x$theta_init[["r"]]`.
 #'
 #' The method for class "egf" applies the method for
-#' class "numeric" to `x$theta_hat[["r"]]`.
+#' class "numeric" to `x$theta_fit[["r"]]`.
 #'
 #' @details
 #' Let \mjseqn{t_0 < \cdots < t_m} be the break points specified
@@ -105,13 +105,13 @@ compute_R0.numeric <- function(x, breaks, probs) {
 #' @rdname compute_R0
 #' @export
 compute_R0.egf_init <- function(x, breaks, probs) {
-  x <- x$theta0[["r"]]
+  x <- x$theta_init[["r"]]
   compute_R0(x, breaks, probs)
 }
 
 #' @rdname compute_R0
 #' @export
 compute_R0.egf <- function(x, breaks, probs) {
-  x <- x$theta_hat[["r"]]
+  x <- x$theta_fit[["r"]]
   compute_R0(x, breaks, probs)
 }

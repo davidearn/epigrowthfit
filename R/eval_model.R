@@ -2,17 +2,18 @@
 #' Evaluate expected cumulative incidence
 #'
 #' @description
-#' Evaluates expected cumulative incidence at desired time points,
-#' conditional on a model and a vector of model parameters.
+#' Evaluates expected cumulative incidence at desired time points
+#' a vector of model parameters.
 #'
 #' @param time A numeric vector listing time points in days since
 #'   a reference date.
 #' @param curve One of `"exponential"`, `"logistic"`, and `"richards"`,
 #'   indicating a model of expected cumulative incidence.
-#' @param include_baseline A logical scalar. If `TRUE`, then the
-#'   cumulative incidence model will include a linear term \mjseqn{b t}.
-#' @param theta A named numeric vector listing positive values for all
-#'   relevant model parameters:
+#' @param include_baseline A logical scalar. If `TRUE`, then
+#'   the model of expected cumulative incidence will include
+#'   a linear baseline.
+#' @param theta A named numeric vector listing positive values
+#'   for all relevant model parameters:
 #'
 #'   \describe{
 #'     \item{`r`}{\mjseqn{\lbrace\,r\,\rbrace}
@@ -20,18 +21,16 @@
 #'     }
 #'     \item{`c0`}{\mjseqn{\lbrace\,c_0\,\rbrace}
 #'       Expected cumulative incidence on the reference date.
-#'       This is the expected number of cases observed up to
-#'       the reference date. Used only if `curve = "exponential"`.
+#'       Used only if `curve = "exponential"`.
 #'     }
 #'     \item{`K`}{\mjseqn{\lbrace\,K\,\rbrace}
-#'       Expected epidemic final size. This is expected number
-#'       of cases observed over the full course of the epidemic.
+#'       Expected epidemic final size.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
 #'     \item{`thalf`}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
-#'       Time at which the epidemic is expected to attain half its
-#'       final size, expressed as a (possibly non-integer) number
-#'       of days since the reference date.
+#'       Time at which the epidemic is expected to attain half
+#'       its final size, expressed as a number of days since the
+#'       reference date.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
 #'     \item{`p`}{\mjseqn{\lbrace\,p\,\rbrace}
@@ -44,8 +43,8 @@
 #'   }
 #'
 #' @return
-#' A numeric vector with length `length(time)` such that `cum_inc[i]`
-#' is the expected number of cases observed up to `time[i]`.
+#' A numeric vector with length `length(time)` whose `i`th
+#' element is expected cumulative incidence at `time[i]`.
 #'
 #' @details
 #' A full description of the models of expected cumulative
@@ -55,27 +54,21 @@
 #'
 #' @export
 eval_model <- function(time, curve, include_baseline = FALSE, theta) {
-  if (missing(time)) {
-    stop("Missing argument `time`.")
-  } else if (!is.numeric(time)) {
+  if (!is.numeric(time)) {
     stop("`time` must be numeric.")
   } else if (isTRUE(any(diff(time) < 0))) {
     stop("`time[!is.na(time)]` must be increasing.")
   }
-  if (missing(curve)) {
-    stop("Missing argument `curve`.")
-  } else if (!is.character(curve) || length(curve) != 1 ||
-               !curve %in% c("exponential", "logistic", "richards")) {
+  if (!is.character(curve) || length(curve) != 1 ||
+      !curve %in% c("exponential", "logistic", "richards")) {
     stop("`curve` must be an element of ",
          "`c(\"exponential\", \"logistic\", \"richards\")`.")
   }
   if (!is.logical(include_baseline) || length(include_baseline) != 1 ||
-        is.na(include_baseline)) {
+      is.na(include_baseline)) {
     stop("`include_baseline` must be `TRUE` or `FALSE`.")
   }
-  if (missing(theta)) {
-    stop("Missing argument `theta`.")
-  } else if (!is.numeric(theta) || is.null(names(theta))) {
+  if (!is.numeric(theta) || is.null(names(theta))) {
     stop("`theta` must be a named numeric vector.")
   }
   par <- switch(curve,

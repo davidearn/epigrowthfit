@@ -6,7 +6,7 @@ epidemic growth. Methods are adapted from Ma *et al*. (2014) and Earn *et al*
 
 [Ma J, Dushoff J, Bolker BM, Earn DJD (2014). “Estimating initial epidemic growth rates.” *Bulletin of Mathematical Biology*, **76**, 245-260.](https://davidearn.mcmaster.ca/publications/MaEtAl2014)
 
-Earn DJD, Ma J, Poinar HN, Dushoff J, Bolker BM (2020). “Acceleration of plague outbreaks in the second pandemic.” *Proceedings of the National Academy of Sciences USA*, in press.
+[Earn DJD, Ma J, Poinar HN, Dushoff J, Bolker BM (2020). “Acceleration of plague outbreaks in the second pandemic.” *Proceedings of the National Academy of Sciences USA*.](https://davidearn.mcmaster.ca/publications/EarnEtAl2020)
 
 ## Package installation
 
@@ -74,7 +74,7 @@ using function `install_github()` from the
 package:
 
 ```r
-if (!require(remotes)) {
+if (!require("remotes")) {
   install.packages("remotes")
 }
 remotes::install_github("davidearn/epigrowthfit",
@@ -99,7 +99,7 @@ requires R package
 [**devtools**](https://CRAN.R-project.org/package=devtools):
 
 ```r
-if (!require(devtools)) {
+if (!require("devtools")) {
   install.packages("devtools")
 }
 ```
@@ -116,7 +116,7 @@ that the installation was successful by running
 Package documentation can be accessed as follows:
 
 ```r
-library(epigrowthfit)
+library("epigrowthfit")
 
 ## This vignette
 vignette("epigrowthfit-vignette")

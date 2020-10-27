@@ -14,8 +14,8 @@
 #' @return
 #' The `print` method returns `x` invisibly.
 #'
-#' The `coef` method returns `object$theta_hat` if `log = FALSE`
-#' and `object$log_theta_hat` if `log = TRUE`.
+#' The `coef` method returns `object$theta_fit` if `log = FALSE`
+#' and `object$log_theta_fit` if `log = TRUE`.
 #'
 #' The `predict` method returns a list with numeric elements:
 #'
@@ -23,12 +23,12 @@
 #'   \item{`time`}{Matches argument.}
 #'   \item{`refdate`}{Matches `object$init$date[1]`.}
 #'   \item{`cum_inc`}{Expected cumulative incidence at time points
-#'     `time`, conditional on parameter vector `object$theta_hat`.
+#'     `time`, conditional on parameter vector `object$theta_fit`.
 #'     Equal to `object$eval_cum_inc(time)`.
 #'   }
 #'   \item{`int_inc`}{Expected interval incidence given interval
 #'     endpoints `time`, conditional on parameter vector
-#'     `object$theta_hat`. Equal to `diff(object$eval_cum_inc(time))`
+#'     `object$theta_fit`. Equal to `diff(object$eval_cum_inc(time))`
 #'     if `length(time) >= 2` and omitted otherwise.
 #'   }
 #' }
@@ -46,7 +46,7 @@
 #'     Poisson or negative binomial distribution (depending on
 #'     `object$init$distr`) with mean `predict(object, time)$int_inc[i]`.
 #'     The negative binomial dispersion parameter is taken from
-#'     `object$theta_hat[["nbdisp"]]`.
+#'     `object$theta_fit[["nbdisp"]]`.
 #'   }
 #'   \item{`cum_inc`}{A matrix with `length(time)` rows and `nsim`
 #'     columns, such that `cum_inc[i, j]` is the number of cases
@@ -54,7 +54,7 @@
 #'     `cum_inc[, j]` is computed as `c0 + cumsum(c(0, int_inc[, j]))`,
 #'     where `c0 = predict(object, time)$cum_inc[1]` is the expected
 #'     value of cumulative incidence at `time[1]` conditional on
-#'     parameter vector `object$theta_hat`.
+#'     parameter vector `object$theta_fit`.
 #'   }
 #'   \item{`object`}{Matches argument.}
 #' }
@@ -91,7 +91,7 @@
 #' and ends at `time[last+1]`.)
 #'
 #' The incidence curve predicted by fitted parameter estimates
-#' `x$theta_hat` is displayed as a line supported on grid points
+#' `x$theta_fit` is displayed as a line supported on grid points
 #' `wgrid = seq(time[first], time[last+1], by)`, where `by = 1`
 #' for cumulative incidence and `by = median(diff(time))` for
 #' interval incidence (ensuring that the interval incidence
@@ -109,7 +109,7 @@
 #' value of `diff(time)`.
 #'
 #' If `annotate = TRUE` and `add = FALSE`, then a legend and the
-#' initial parameter estimates `x$theta_hat` are displayed in the
+#' initial parameter estimates `x$theta_fit` are displayed in the
 #' right margin.
 #'
 #' @seealso [egf()], [methods for class "egf_sim"][egf_sim-methods]
@@ -136,7 +136,7 @@ print.egf <- function(x, ...) {
     nbinom  = "negative binomial observations."
   )
   uvec <- c(r = "per day", thalf = "days", b = "per day")
-  uvec <- uvec[names(uvec) %in% names(x$theta_hat)]
+  uvec <- uvec[names(uvec) %in% names(x$theta_fit)]
   cat("This \"egf\" object fits", cstr, "\n")
   cat(bstr, dstr, "\n")
   cat("\n")
@@ -148,7 +148,7 @@ print.egf <- function(x, ...) {
   cat("\n")
   cat("Fitted parameter estimates:\n")
   cat("\n")
-  print(x$theta_hat)
+  print(x$theta_fit)
   cat("\n")
   cat("Units:\n")
   cat("\n")
@@ -166,9 +166,9 @@ coef.egf <- function(object, log = FALSE, ...) {
   }
 
   if (log) {
-    object$log_theta_hat
+    object$log_theta_fit
   } else {
-    object$theta_hat
+    object$theta_fit
   }
 }
 
@@ -222,7 +222,7 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
     set.seed(seed)
     sim <- replicate(nsim, rpois(int_inc, lambda = int_inc))
   } else if (object$init$distr == "nbinom") {
-    nbdisp <- object$theta_hat[["nbdisp"]]
+    nbdisp <- object$theta_fit[["nbdisp"]]
     set.seed(seed)
     sim <- replicate(nsim, rnbinom(int_inc, mu = int_inc, size = nbdisp))
   }
@@ -256,7 +256,7 @@ plot.egf <- function(x, inc = "interval", xty = "Date", log = TRUE,
     stop("`inc` must be one of \"interval\", \"cumulative\".")
   }
   if (!is.character(xty) || length(xty) != 1 ||
-      !xty %in% c("Date", "numeric")) {
+      !tolower(xty) %in% c("date", "numeric")) {
     stop("`xty` must be one of \"Date\", \"numeric\".")
   }
   if (!is.logical(log) || length(log) != 1 || is.na(log)) {
@@ -318,7 +318,7 @@ plot.egf <- function(x, inc = "interval", xty = "Date", log = TRUE,
   ## Titles
   if ("xlab" %in% names(dots)) {
     xlab <- dots$xlab
-  } else if (xty == "Date") {
+  } else if (tolower(xty) == "date") {
     xlab <- "date"
   } else if (xty == "numeric") {
     xlab <- paste("days since", as.character(x$init$date[1]))
@@ -402,7 +402,7 @@ plot.egf <- function(x, inc = "interval", xty = "Date", log = TRUE,
     box(bty = "l")
 
     ## Axis (x)
-    if (xty == "Date") {
+    if (tolower(xty) == "date") {
       l <- list(
         left = par("usr")[1],
         right = par("usr")[2],
@@ -474,9 +474,9 @@ plot.egf <- function(x, inc = "interval", xty = "Date", log = TRUE,
 
     if (annotate) {
       ## Parameter estimates
-      pstr1 <- paste0(names(x$theta_hat), " = ")
-      pstr2 <- round(x$theta_hat, digits = 4)
-      if ("K" %in% names(x$theta_hat)) {
+      pstr1 <- paste0(names(x$theta_fit), " = ")
+      pstr2 <- round(x$theta_fit, digits = 4)
+      if ("K" %in% names(x$theta_fit)) {
         pstr2[["K"]] <- round(pstr2[["K"]])
       }
       px <- par("usr")[2] + 0.02 * diff(par("usr")[1:2])

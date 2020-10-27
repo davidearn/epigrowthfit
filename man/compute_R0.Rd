@@ -40,10 +40,10 @@ reproduction number corresponding to initial exponential
 growth rate \code{x[i]}. See Details.
 
 The method for class "egf_init" applies the method for
-class "numeric" to \code{x$theta0[["r"]]}.
+class "numeric" to \code{x$theta_init[["r"]]}.
 
 The method for class "egf" applies the method for
-class "numeric" to \code{x$theta_hat[["r"]]}.
+class "numeric" to \code{x$theta_fit[["r"]]}.
 }
 \description{
 Compute the basic reproduction number corresponding

@@ -82,7 +82,7 @@ highlighted. Assign \code{Inf} to disable highlighting.}
 
 \item{date_style}{A named list of arguments to \code{\link[=daxis]{daxis()}}
 (a subset of \code{tcl}, \code{line}, \code{col.axis}, and \code{cex.axis}),
-affecting the appearance of the bottom axis if \code{xty = "date"}.}
+affecting the appearance of the bottom axis if \code{xty = "Date"}.}
 
 \item{window_style}{A named list of arguments to
 \code{\link[graphics:polygon]{polygon()}}, affecting the appearance
@@ -114,8 +114,8 @@ are implemented.}
 \value{
 The \code{print} method returns \code{x} invisibly.
 
-The \code{coef} method returns \code{object$theta_hat} if \code{log = FALSE}
-and \code{object$log_theta_hat} if \code{log = TRUE}.
+The \code{coef} method returns \code{object$theta_fit} if \code{log = FALSE}
+and \code{object$log_theta_fit} if \code{log = TRUE}.
 
 The \code{predict} method returns a list with numeric elements:
 
@@ -123,12 +123,12 @@ The \code{predict} method returns a list with numeric elements:
 \item{\code{time}}{Matches argument.}
 \item{\code{refdate}}{Matches \code{object$init$date[1]}.}
 \item{\code{cum_inc}}{Expected cumulative incidence at time points
-\code{time}, conditional on parameter vector \code{object$theta_hat}.
+\code{time}, conditional on parameter vector \code{object$theta_fit}.
 Equal to \code{object$eval_cum_inc(time)}.
 }
 \item{\code{int_inc}}{Expected interval incidence given interval
 endpoints \code{time}, conditional on parameter vector
-\code{object$theta_hat}. Equal to \code{diff(object$eval_cum_inc(time))}
+\code{object$theta_fit}. Equal to \code{diff(object$eval_cum_inc(time))}
 if \code{length(time) >= 2} and omitted otherwise.
 }
 }
@@ -146,7 +146,7 @@ of \code{nsim}. Row vector \code{int_inc[i, ]} is sampled from a
 Poisson or negative binomial distribution (depending on
 \code{object$init$distr}) with mean \code{predict(object, time)$int_inc[i]}.
 The negative binomial dispersion parameter is taken from
-\code{object$theta_hat[["nbdisp"]]}.
+\code{object$theta_fit[["nbdisp"]]}.
 }
 \item{\code{cum_inc}}{A matrix with \code{length(time)} rows and \code{nsim}
 columns, such that \code{cum_inc[i, j]} is the number of cases
@@ -154,7 +154,7 @@ observed up to \code{time[i]} in simulation \code{j}. Column vector
 \code{cum_inc[, j]} is computed as \code{c0 + cumsum(c(0, int_inc[, j]))},
 where \code{c0 = predict(object, time)$cum_inc[1]} is the expected
 value of cumulative incidence at \code{time[1]} conditional on
-parameter vector \code{object$theta_hat}.
+parameter vector \code{object$theta_fit}.
 }
 \item{\code{object}}{Matches argument.}
 }
@@ -194,7 +194,7 @@ to \code{time[last+1]}. Hence the fitting window starts at \code{time[first]}
 and ends at \code{time[last+1]}.)
 
 The incidence curve predicted by fitted parameter estimates
-\code{x$theta_hat} is displayed as a line supported on grid points
+\code{x$theta_fit} is displayed as a line supported on grid points
 \code{wgrid = seq(time[first], time[last+1], by)}, where \code{by = 1}
 for cumulative incidence and \code{by = median(diff(time))} for
 interval incidence (ensuring that the interval incidence
@@ -212,7 +212,7 @@ highlighted according to argument \code{tol} and labeled with the
 value of \code{diff(time)}.
 
 If \code{annotate = TRUE} and \code{add = FALSE}, then a legend and the
-initial parameter estimates \code{x$theta_hat} are displayed in the
+initial parameter estimates \code{x$theta_fit} are displayed in the
 right margin.
 }
 }
