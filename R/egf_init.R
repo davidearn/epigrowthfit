@@ -47,7 +47,7 @@
 #'       of cases observed over the full course of the epidemic wave.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
-#'     \item{`thalf`}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
+#'     \item{`thalf`}{\mjseqn{\lbrace\,t_\textrm{half}\,\rbrace}
 #'       Time at which the epidemic wave is expected to attain
 #'       half its final size, expressed as a number of days since
 #'       `date[first]`.

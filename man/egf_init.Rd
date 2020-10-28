@@ -63,7 +63,7 @@ Expected epidemic final size. This is the expected number
 of cases observed over the full course of the epidemic wave.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
-\item{\code{thalf}}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
+\item{\code{thalf}}{\mjseqn{\lbrace\,t_\textrm{half}\,\rbrace}
 Time at which the epidemic wave is expected to attain
 half its final size, expressed as a number of days since
 \code{date[first]}.
