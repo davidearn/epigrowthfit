@@ -7,8 +7,6 @@ TARBALL := $(PACKAGE)_$(VERSION).tar.gz
 
 all: clean install
 
-fancy: clean install check
-
 install: deps build
 	export NOT_CRAN=true
 	$(R) CMD INSTALL ../$(TARBALL)
@@ -18,30 +16,16 @@ deps:
 
 build: $(TARBALL)
 
-$(TARBALL): src/$(PACKAGE).so R/*.R rd DESCRIPTION NAMESPACE
+$(TARBALL): rd DESCRIPTION src/$(PACKAGE).so
 	$(R) CMD build --no-manual .
 	mv $@ ..
 
+rd: R/*.R inst/REFERENCES.bib
+	$(R) --no-echo -e 'devtools::document(".")'
+	sed -i 's/USCORE/_/ g' man/*.Rd
+
 src/$(PACKAGE).so:
 	$(MAKE) -C src
-
-## FIXME: I'm not sure this is right way  to do this? Can't we just have a single target 'doc-update' (or 'rd')?
-
-rd: man/*.Rd
-
-man/*.Rd: R/*.R inst/REFERENCES.bib
-	$(R) --no-echo -e 'devtools::document(".", roclets = "rd")'
-	touch man/*.Rd  ## FIXME: why?
-	sed -i -e 's/USCORE/_/' man/compute_R0.Rd  ## FIXME do this for all .Rd files?
-
-
-DESCRIPTION: R/*.R
-	$(R) --no-echo -e 'devtools::document(".", roclets = "collate")'
-	touch $@
-
-NAMESPACE: R/*.R
-	$(R) --no-echo -e 'devtools::document(".", roclets = "namespace")'
-	touch $@
 
 check:
 	$(R) --no-echo -e 'devtools::check(".")'

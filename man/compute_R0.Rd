@@ -57,10 +57,10 @@ let \mjseqn{p_i} be the probability specified by \code{probs[i]}
 that the generation interval is in the interval
 \mjseqn{\lbrace t_{i-1},t_i \rbrace}.
 Section 3(d) in \insertCite{WallLips07;textual}{epigrowthfit}
-gives the basic reproduction number as a function of initial
-exponential growth rate \mjseqn{r}:
+gives the basic reproduction number \mjseqn{\mathcal{R}_0}
+as a function of the initial exponential growth rate \mjseqn{r}:
 
-\mjdeqn{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}{ASCII}
+\mjsdeqn{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}
 }
 \examples{
 data(plague_latent_period)

@@ -39,10 +39,10 @@
 #' that the generation interval is in the interval
 #' \mjseqn{\lbrace t_{i-1},t_i \rbrace}.
 #' Section 3(d) in \insertCite{WallLips07;textual}{epigrowthfit}
-#' gives the basic reproduction number as a function of initial
-#' exponential growth rate \mjseqn{r}:
+#' gives the basic reproduction number \mjseqn{\mathcal{R}USCORE0}
+#' as a function of the initial exponential growth rate \mjseqn{r}:
 #'
-#' \mjdeqn{\mathcal{R}USCORE0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}{ASCII}
+#' \mjsdeqn{\mathcal{R}USCORE0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}
 #'
 #' @references
 #' \insertRef{WallLips07}{epigrowthfit}

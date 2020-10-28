@@ -54,7 +54,7 @@ element is expected cumulative incidence at \code{time[i]}.
 }
 \description{
 Evaluates expected cumulative incidence at desired time points
-a vector of model parameters.
+conditional on a vector of model parameters.
 }
 \details{
 A full description of the models of expected cumulative

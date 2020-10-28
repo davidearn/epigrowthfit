@@ -57,5 +57,5 @@ plot(r, doubling_time, las = 1,
 
 }
 \seealso{
-\link[=doubling_time-methods]{methods for class "doubling_time"}
+\code{\link[=print.doubling_time]{print.doubling_time()}}
 }

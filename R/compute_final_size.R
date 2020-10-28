@@ -20,7 +20,7 @@
 #' hence the length of the output is this maximum length.
 #'
 #' @details
-#' The basic reproduction number \mjseqn{\mathcal{R}_0} defines
+#' The basic reproduction number \mjseqn{\mathcal{R}USCORE0} defines
 #' the expected epidemic final size \mjseqn{Z \in \lbrack 0,1 \rbrack}
 #  implicitly through the relation
 #'
@@ -37,10 +37,10 @@
 #' durations.
 #'
 #' The explicit solution for \mjseqn{Z} in terms of
-#' \mjseqn{\mathcal{R}_0} involves the non-elementary
+#' \mjseqn{\mathcal{R}USCORE0} involves the non-elementary
 #' [Lambert W function](https://en.wikipedia.org/wiki/Lambert_W_function):
 #'
-#' \mjsdeqn{Z(\mathcal{R}_0) = S_0 + \frac{1}{\mathcal{R}_0} W\big\lbrack-\mathcal{R}_0 S_0 e^{-\mathcal{R}_0 (S_0 + I_0)}\big\rbrack\,.}
+#' \mjsdeqn{Z(\mathcal{R}USCORE0) = S_0 + \frac{1}{\mathcal{R}USCORE0} W\big\lbrack-\mathcal{R}USCORE0 S_0 e^{-\mathcal{R}USCORE0 (S_0 + I_0)}\big\rbrack\,.}
 #'
 #' @references
 #' \insertRef{MaEarn06}{epigrowthfit}

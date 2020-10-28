@@ -39,7 +39,7 @@
 #'   ylab = "doubling time, days"
 #' )
 #'
-#' @seealso [methods for class "doubling_time"][doubling_time-methods]
+#' @seealso [print.doubling_time()]
 #'
 #' @export
 compute_doubling_time <- function(x) {
@@ -49,12 +49,7 @@ compute_doubling_time <- function(x) {
 #' @rdname compute_doubling_time
 #' @export
 compute_doubling_time.numeric <- function(x) {
-  if (length(x) > 1) {
-    out <- sapply(x, compute_doubling_time)
-  } else {
-    out <- log(2) / x
-  }
-  structure(out, class = c("doubling_time", "numeric"))
+  structure(log(2) / x, class = c("doubling_time", "numeric"))
 }
 
 #' @rdname compute_doubling_time

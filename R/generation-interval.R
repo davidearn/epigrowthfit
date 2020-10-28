@@ -71,8 +71,9 @@
 #' @references
 #' \insertRef{Sven07}{epigrowthfit}
 #'
-#' @seealso [compute_R0()] for computing the basic reproduction number
-#'   implied by an initial growth rate and a generation interval distribution
+#' @seealso [compute_R0()]
+#'   for computing the basic reproduction number implied by
+#'   an initial growth rate and a generation interval distribution
 #'
 #' @examples
 #' data(plague_latent_period)

@@ -250,7 +250,8 @@
 #'
 #' \insertRef{Earn+20}{epigrowthfit}
 #'
-#' @seealso [egf()], [methods for class "egf_init"][egf_init-methods]
+#' @seealso [egf()], [coef.egf_init()], [print.egf_init()],
+#'   [predict.egf_init()], [plot.egf_init()]
 #' @export
 #' @import stats
 egf_init <- function(date,

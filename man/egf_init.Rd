@@ -284,5 +284,6 @@ plot(x, inc = "cumulative")
 \insertRef{Earn+20}{epigrowthfit}
 }
 \seealso{
-\code{\link[=egf]{egf()}}, \link[=egf_init-methods]{methods for class "egf_init"}
+\code{\link[=egf]{egf()}}, \code{\link[=coef.egf_init]{coef.egf_init()}}, \code{\link[=print.egf_init]{print.egf_init()}},
+\code{\link[=predict.egf_init]{predict.egf_init()}}, \code{\link[=plot.egf_init]{plot.egf_init()}}
 }

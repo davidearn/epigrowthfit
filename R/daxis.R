@@ -2,10 +2,8 @@
 #'
 #' @description
 #' Labels day, month, and year on a horizontal time axis, taking care
-#' to ensure that labels are nicely spaced. Intended only for internal
-#' use within
-#' [`plot.egf_init()`][egf_init-methods] and
-#' [`plot.egf()`][egf_init-methods].
+#' to ensure that labels are nicely spaced. Intended mainly for internal
+#' use within [plot.egf_init()] and [`plot.egf()`].
 #'
 #' @param left Left endpoint of the axis in user coordinates.
 #' @param right Right endpoint of the axis in user coordinates.

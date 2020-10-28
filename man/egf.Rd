@@ -116,5 +116,6 @@ plot(sim, inc = "cumulative")
 \insertRef{Earn+20}{epigrowthfit}
 }
 \seealso{
-\code{\link[=egf_init]{egf_init()}}, \link[=egf-methods]{methods for class "egf"}
+\code{\link[=egf_init]{egf_init()}}, \code{\link[=confint.egf]{confint.egf()}}, \code{\link[=coef.egf]{coef.egf()}}, \code{\link[=print.egf]{print.egf()}},
+\code{\link[=predict.egf]{predict.egf()}}, \code{\link[=simulate.egf]{simulate.egf()}}, \code{\link[=plot.egf]{plot.egf()}}
 }

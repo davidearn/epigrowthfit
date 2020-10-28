@@ -3,7 +3,7 @@
 #'
 #' @description
 #' Evaluates expected cumulative incidence at desired time points
-#' a vector of model parameters.
+#' conditional on a vector of model parameters.
 #'
 #' @param time A numeric vector listing time points in days since
 #'   a reference date.

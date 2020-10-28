@@ -392,10 +392,10 @@ Package documentation can be accessed as follows:
 vignette("epigrowthfit-vignette")
 
 ## Help pages
-?"epigrowthfit-package" # package
-?data_set_name          # data set "data_set_name"
-?function_name          # function "function_name"
-?"class_name-methods"   # S3 methods for class "class_name"
+?"epigrowthfit-package"  # package
+?data_set_name           # data set "data_set_name"
+?function_name           # function "function_name"
+?generic_name.class_name # S3 methods for class "class_name"
 @
 
 
@@ -1676,8 +1676,7 @@ might hope!).
 The \fun{plot} methods for classes \code{egf_init} and \code{egf}
 take a number of optional arguments allowing for easy customization
 of various plot elements (\eg line type, width, and colour). For a
-complete list of available options, run \code{?`2"egf_init-methods"`2}
-or \code{?`2"egf-methods"`2}.
+complete list of available options, run \code{?plot.egf}.
 
 
 \subsection{Simulating the fitted model}

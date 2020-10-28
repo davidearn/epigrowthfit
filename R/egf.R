@@ -104,8 +104,8 @@
 #'
 #' \insertRef{Earn+20}{epigrowthfit}
 #'
-#' @seealso [egf_init()], [methods for class "egf"][egf-methods]
-#'
+#' @seealso [egf_init()], [confint.egf()], [coef.egf()], [print.egf()],
+#'   [predict.egf()], [simulate.egf()], [plot.egf()]
 #' @export
 #' @import stats
 #' @importFrom TMB MakeADFun

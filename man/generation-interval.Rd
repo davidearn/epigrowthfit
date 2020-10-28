@@ -106,6 +106,7 @@ plot(x, Fx, las = 1, xlab = "number of days", ylab = "distribution function")
 \insertRef{Sven07}{epigrowthfit}
 }
 \seealso{
-\code{\link[=compute_R0]{compute_R0()}} for computing the basic reproduction number
-implied by an initial growth rate and a generation interval distribution
+\code{\link[=compute_R0]{compute_R0()}}
+for computing the basic reproduction number implied by
+an initial growth rate and a generation interval distribution
 }

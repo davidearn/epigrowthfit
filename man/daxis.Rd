@@ -47,10 +47,8 @@ Returns \code{NULL} invisibly.
 }
 \description{
 Labels day, month, and year on a horizontal time axis, taking care
-to ensure that labels are nicely spaced. Intended only for internal
-use within
-\code{\link[=egf_init-methods]{plot.egf_init()}} and
-\code{\link[=egf_init-methods]{plot.egf()}}.
+to ensure that labels are nicely spaced. Intended mainly for internal
+use within \code{\link[=plot.egf_init]{plot.egf_init()}} and \code{\link[=plot.egf]{plot.egf()}}.
 }
 \details{
 The date axis consists of minor and major axes. The content
