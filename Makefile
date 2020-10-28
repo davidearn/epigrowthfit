@@ -25,11 +25,15 @@ $(TARBALL): src/$(PACKAGE).so R/*.R rd DESCRIPTION NAMESPACE
 src/$(PACKAGE).so:
 	$(MAKE) -C src
 
+## FIXME: I'm not sure this is right way  to do this? Can't we just have a single target 'doc-update' (or 'rd')?
+
 rd: man/*.Rd
 
 man/*.Rd: R/*.R inst/REFERENCES.bib
 	$(R) --no-echo -e 'devtools::document(".", roclets = "rd")'
-	touch man/*.Rd
+	touch man/*.Rd  ## FIXME: why?
+	sed -i -e 's/USCORE/_/' man/compute_R0.Rd  ## FIXME do this for all .Rd files?
+
 
 DESCRIPTION: R/*.R
 	$(R) --no-echo -e 'devtools::document(".", roclets = "collate")'

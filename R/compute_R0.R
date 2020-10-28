@@ -42,9 +42,7 @@
 #' gives the basic reproduction number as a function of initial
 #' exponential growth rate \mjseqn{r}:
 #'
-# %% FIXME Roxygen gets confused and tries to translate \mathcal{R}_0 to \mathcal{R}\emph 0 ???
-#' 
-#' \mjdeqn{\mathcal{R}0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}{ASCII}
+#' \mjdeqn{\mathcal{R}USCORE0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}{ASCII}
 #'
 #' @references
 #' \insertRef{WallLips07}{epigrowthfit}

@@ -60,7 +60,7 @@ Section 3(d) in \insertCite{WallLips07;textual}{epigrowthfit}
 gives the basic reproduction number as a function of initial
 exponential growth rate \mjseqn{r}:
 
-\mjdeqn{\mathcal{R}0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}{ASCII}
+\mjdeqn{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}{ASCII}
 }
 \examples{
 data(plague_latent_period)
