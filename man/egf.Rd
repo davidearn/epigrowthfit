@@ -9,18 +9,18 @@ egf(init, method = "nlminb", nbdisp_tol = 100, ...)
 }
 \arguments{
 \item{init}{An "egf_init" object specifying epidemic data,
-a fitting window, and initial parameter estimates. See \code{\link[=egf_init]{egf_init()}}.}
+a fitting window, and initial parameter estimates.
+See \code{\link[=egf_init]{egf_init()}}.}
 
-\item{method}{One of \code{"nlminb"}, \code{"nlm"}, \code{"Nelder-Mead"},
-\code{"BFGS"}, \code{"L-BFGS-S"}, and \code{"CG"},
-indicating an optimization algorithm.}
+\item{method}{One of \code{"nlminb"}, \code{"nlm"}, \code{"Nelder-Mead"}, \code{"BFGS"},
+\code{"L-BFGS-S"}, and \code{"CG"}, indicating an optimization algorithm.}
 
-\item{nbdisp_tol}{A positive number defining a threshold on
-the fitted value of the negative binomial dispersion parameter.
+\item{nbdisp_tol}{A positive number defining a threshold on the
+fitted value of the negative binomial dispersion parameter.
 Used only if \code{init$distr = "nbinom"}. See Details.}
 
-\item{...}{Additional arguments to \code{\link[stats:nlminb]{nlminb()}},
-\code{\link[stats:nlm]{nlm()}}, or \code{\link[stats:optim]{optim()}}.}
+\item{...}{Additional arguments to \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}},
+or \code{\link[stats:optim]{stats::optim()}}.}
 }
 \value{
 An "egf" object. A list containing copies of arguments
@@ -53,33 +53,33 @@ cumulative incidence at \code{time} days using parameter
 vector \code{theta}. Elements must be named as in \code{theta_fit}.
 }
 \item{\code{madf_out}}{The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.}
-\item{\code{optim_out}}{The list output of
-\code{\link[stats:nlminb]{nlminb()}},
-\code{\link[stats:nlm]{nlm()}}, or
-\code{\link[stats:optim]{optim()}},
-depending on \code{method}.
+\item{\code{optim_out}}{The list output of \code{\link[stats:nlminb]{stats::nlminb()}},
+\code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}, depending on \code{method}.
 }
-\item{\code{nbdisp_flag}}{A logical scalar. If \code{TRUE}, then the fitted
-value of the negative binomial dispersion parameter
+\item{\code{large_nbdisp_flag}}{A logical scalar. If \code{TRUE}, then
+the fitted value of the negative binomial dispersion parameter
 (i.e., \code{theta_fit[["nbdisp"]]}) exceeds the threshold defined
-by \code{nbdisp_tol}. Omitted if \code{init$distr != "nbinom"}. See Details.
+by \code{nbdisp_tol}. Omitted if \code{init$distr != "nbinom"}.
+See Details.
 }
 \item{\code{call}}{The call to \code{egf()}, allowing the output to
-be updated using \code{\link[stats:update]{update()}}.
+be updated using \code{\link[stats:update]{stats::update()}}.
 }
 }
 }
 \description{
 Minimizes the negative log likelihood of an epidemic growth model
-using \code{\link[stats:nlminb]{nlminb()}}, \code{\link[stats:nlm]{nlm()}}, or
-one of the routines provided through \code{\link[stats:optim]{optim()}}.
-The negative log likelihood function is written as a C++ template,
-and its gradient with respect to log-transformed parameters
-is defined by automatic differentiation using package \pkg{TMB}.
+using \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, of one of the routines
+provided through \code{\link[stats:optim]{stats::optim()}}. The negative log likelihood
+function is written as a C++ template, and its gradient with
+respect to log-transformed parameters is defined by automatic
+differentiation using package \pkg{TMB}.
 }
 \details{
-If \code{theta_fit[["nbdisp"]]} exceeds \code{nbdisp_tol} times
-\code{max(diff(eval_cum_inc(init$time[init$first:(init$last+1)])))},
+If \code{theta_fit[["nbdisp"]]} exceeds
+
+\code{nbdisp_tol * max(diff(eval_cum_inc(init$time[init$first:(init$last+1)])))}
+
 then \code{egf()} will issue a warning suggesting to refit
 using a Poisson model by running
 \code{update(object, init = update(init, distr = "pois"))},

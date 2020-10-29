@@ -22,28 +22,22 @@ a linear baseline.}
 for all relevant model parameters:
 
 \describe{
-\item{\code{r}}{\mjseqn{\lbrace\,r\,\rbrace}
-Initial exponential growth rate expressed per day.
-}
-\item{\code{c0}}{\mjseqn{\lbrace\,c_0\,\rbrace}
-Expected cumulative incidence on the reference date.
+\item{\code{r}}{Initial exponential growth rate, expressed per day.}
+\item{\code{c0}}{Expected cumulative incidence on the reference date.
 Used only if \code{curve = "exponential"}.
 }
-\item{\code{K}}{\mjseqn{\lbrace\,K\,\rbrace}
-Expected epidemic final size.
+\item{\code{K}}{Expected epidemic final size.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
-\item{\code{thalf}}{\mjseqn{\lbrace\,t_\text{half}\,\rbrace}
-Time at which the epidemic is expected to attain half
-its final size, expressed as a number of days since the
+\item{\code{thalf}}{Time at which the epidemic is expected to attain
+half its final size, expressed as a number of days since the
 reference date.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
-\item{\code{p}}{\mjseqn{\lbrace\,p\,\rbrace}
-Richards shape parameter. Used only if \code{curve = "richards"}.
+\item{\code{p}}{Richards shape parameter.
+Used only if \code{curve = "richards"}.
 }
-\item{\code{b}}{\mjseqn{\lbrace\,b\,\rbrace}
-Baseline linear growth rate expressed per day.
+\item{\code{b}}{Baseline linear growth rate, expressed per day.
 Used only if \code{include_baseline = TRUE}.
 }
 }}

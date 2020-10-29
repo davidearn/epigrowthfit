@@ -2,8 +2,7 @@
 % Please edit documentation in R/egf_init.R
 \name{egf_init}
 \alias{egf_init}
-\title{\loadmathjax
-Define a fitting window and initial parameter estimates}
+\title{Define a fitting window and initial parameter estimates}
 \usage{
 egf_init(
   date,
@@ -47,37 +46,30 @@ due to multiple causes and \code{FALSE} otherwise. See Details 1.}
 initial estimates of relevant model parameters:
 
 \describe{
-\item{\code{r}}{\mjseqn{\lbrace\,r\,\rbrace}
-Initial exponential growth rate expressed per day.
-}
-\item{\code{c0}}{\mjseqn{\lbrace\,c_0\,\rbrace}
-Expected cumulative incidence on \code{date[first]}.
+\item{\code{r}}{Initial exponential growth rate, expressed per day.}
+\item{\code{c0}}{Expected cumulative incidence on \code{date[first]}.
 Here, "cumulative incidence" refers to the number of cases
 observed since the start of the epidemic wave (i.e., since
 \code{date[first]}), which is not necessarily the number of
 cases observed since the start of the epidemic (i.e., since
 \code{date[1]}). Used only if \code{curve = "exponential"}.
 }
-\item{\code{K}}{\mjseqn{\lbrace\,K\,\rbrace}
-Expected epidemic final size. This is the expected number
-of cases observed over the full course of the epidemic wave.
+\item{\code{K}}{Expected epidemic final size. This is the expected
+number of cases observed over the full course of the epidemic
+wave. Used only if \code{curve \%in\% c("logistic", "richards")}.
+}
+\item{\code{thalf}}{Time at which the epidemic wave is expected
+to attain half its final size, expressed as a number of days
+since \code{date[first]}.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
-\item{\code{thalf}}{\mjseqn{\lbrace\,t_\textrm{half}\,\rbrace}
-Time at which the epidemic wave is expected to attain
-half its final size, expressed as a number of days since
-\code{date[first]}.
-Used only if \code{curve \%in\% c("logistic", "richards")}.
+\item{\code{p}}{Richards shape parameter.
+Used only if \code{curve = "richards"}.
 }
-\item{\code{p}}{\mjseqn{\lbrace\,p\,\rbrace}
-Richards shape parameter. Used only if \code{curve = "richards"}.
-}
-\item{\code{b}}{\mjseqn{\lbrace\,b\,\rbrace}
-Baseline linear growth rate expressed per day.
+\item{\code{b}}{Baseline linear growth rate, expressed per day.
 Used only if \code{include_baseline = TRUE}.
 }
-\item{\code{nbdisp}}{\mjseqn{\lbrace\,k\,\rbrace}
-Negative binomial dispersion parameter.
+\item{\code{nbdisp}}{Negative binomial dispersion parameter.
 Used only if \code{distr = "nbinom"}.
 }
 }
@@ -164,7 +156,7 @@ named as in \code{theta_init}. \code{predict(object, time)} wraps
 additional useful information.
 }
 \item{\code{call}}{The call to \code{egf_init()}, allowing the output
-to be updated using \code{\link[stats:update]{update()}}.
+to be updated using \code{\link[stats:update]{stats::update()}}.
 }
 }
 }

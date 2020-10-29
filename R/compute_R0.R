@@ -6,15 +6,15 @@
 #' to an initial exponential growth rate and a binned
 #' generation interval distribution.
 #'
-#' @param x \mjseqn{\lbrace\,r\,\rbrace}
+#' @param x
 #'   A numeric vector listing values for the initial exponential
-#'   growth rate expressed per day. Alternatively, an "egf_init"
+#'   growth rate, expressed per day. Alternatively, an "egf_init"
 #'   or "egf" object.
-#' @param breaks \mjseqn{\lbrace\,t_i\,\rbrace}
+#' @param breaks
 #'   A numeric vector of length 2 or greater listing increasing
-#'   break points, in days, in the support of the generation
-#'   interval distribution.
-#' @param probs \mjseqn{\lbrace\,p_i\,\rbrace}
+#'   break points \mjseqn{t_i}, in days, in the support of the
+#'   generation interval distribution.
+#' @param probs
 #'   A numeric vector with length `length(breaks)-1`. `probs[i]`
 #'   is the probability that the generation interval is between
 #'   `break[i]` days and `break[i+1]` days. Replaced with
@@ -38,7 +38,7 @@
 #' let \mjseqn{p_i} be the probability specified by `probs[i]`
 #' that the generation interval is in the interval
 #' \mjseqn{\lbrace t_{i-1},t_i \rbrace}.
-#' Section 3(d) in \insertCite{WallLips07;textual}{epigrowthfit}
+#' Section 3d in \insertCite{WallLips07;textual}{epigrowthfit}
 #' gives the basic reproduction number \mjseqn{\mathcal{R}USCORE0}
 #' as a function of the initial exponential growth rate \mjseqn{r}:
 #'

@@ -8,14 +8,13 @@
 A data frame with 12 rows and 2 variables:
 
 \describe{
-\item{\code{days}}{[integer] Infectious period in days, from 1 to 12.}
-\item{\code{relfreq}}{[numeric] Observed relative frequency
-out of 225 cases.
-}
+\item{\code{days}}{Infectious period in days, from 1 to 12.}
+\item{\code{relfreq}}{Observed relative frequency out of 225 cases.}
 }
 }
 \source{
-Obtained from Figure 1B in \insertCite{GaniLeac04;textual}{epigrowthfit}.
+Obtained from Figure 1B in
+\insertCite{GaniLeac04;textual}{epigrowthfit}.
 }
 \usage{
 data(plague_infectious_period)

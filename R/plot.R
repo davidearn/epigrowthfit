@@ -27,8 +27,8 @@
 #' @param ... Optional arguments specifying additional
 #'   graphical parameters. Currently, only `xlim`, `ylim`,
 #'   `xlab`, `ylab`, and `main` are implemented.
-#'   See [`plot()`][graphics::plot()] and [`par()`][graphics::par()]
-#'   for a catalogue of graphical parameters.
+#'   See [graphics::plot()] and [graphics::par()] for a catalogue
+#'   of graphical parameters.
 #'
 #' @return
 #' `NULL` (invisibly).
@@ -103,26 +103,26 @@
 #'     affecting the appearance of the bottom axis if `xty = "date"`.
 #'   }
 #'   \item{`points_main`}{
-#'     A named list of arguments to [`points()`][graphics::points()],
-#'     affecting the appearance of the observed data. Currently, only
-#'     `pch`, `col`, `bg` and `cex` are implemented.
+#'     A named list of arguments to [graphics::points()],
+#'     affecting the appearance of the observed data. Currently,
+#'     only `pch`, `col`, `bg` and `cex` are implemented.
 #'   }
 #'   \item{`points_short`,`points_long`}{
 #'     Alternatives to `points_main` used to highlight certain
 #'     points when `inc = "interval"` (see argument `tol`).
 #'   }
 #'   \item{`lines`}{
-#'     A named list of arguments to [`lines()`][graphics::lines()],
+#'     A named list of arguments to [graphics::lines()],
 #'     affecting the appearance of the predicted incidence curve.
 #'     Currently, only `lty`, `lwd`, and `col` are implemented.
 #'   }
 #'   \item{`window`,`confband`}{
-#'     Named lists of arguments to [`polygon()`][graphics::polygon()],
+#'     Named lists of arguments to [graphics::polygon()],
 #'     affecting the appearance of the fitting window and confidence
 #'     bands. Currently, only `col` and `border` are implemented.
 #'   }
 #'   \item{`text_hl`,`text_dbl`}{
-#'     Named lists of arguments to [`text()`][graphics::text()],
+#'     Named lists of arguments to [graphics::text()],
 #'     affecting the appearance of text above highlighted points
 #'     (see argument `tol`) and text giving doubling times.
 #'     Currently, only `pos`, `offset`, `col`, `cex`, and `font`

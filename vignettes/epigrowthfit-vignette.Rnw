@@ -1630,14 +1630,14 @@ and warnings and errors issued by the optimizer. For details,
 consult the relevant documentation
 (\eg by running \code{?TMB::MakeADFun}).
 
-Element \code{nbdisp_flag}, present only if
+Element \code{large_nbdisp_flag}, present only if
 \code{init$distr = `2"nbinom`2"} as in this example,
 is a logical scalar indicating whether $k$ in the fitted model
 (\ie \code{theta_fit[[`2"nbdisp"`2]]}) exceeds the threshold
 defined by argument \code{nbdisp_tol} (see above).
 
 <<ontario-fit-7>>=
-fit$nbdisp_flag
+fit$large_nbdisp_flag
 @
 
 Finally, element \code{call} is the call to \fun{egf},

@@ -6,10 +6,9 @@
 #' to an initial exponential growth rate and a binned
 #' generation interval distribution.
 #'
-#' @param x \mjseqn{\lbrace\,r\,\rbrace}
-#'   A numeric vector listing values for the initial exponential
-#'   growth rate expressed per day. Alternatively, an "egf_init"
-#'   or "egf" object.
+#' @param x A numeric vector listing values for the initial
+#'   exponential growth rate expressed per day. Alternatively,
+#'   an "egf_init" or "egf" object.
 #'
 #' @return
 #' The method for class "numeric" returns a "doubling_time"

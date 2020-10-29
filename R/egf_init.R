@@ -1,4 +1,3 @@
-#' \loadmathjax
 #' Define a fitting window and initial parameter estimates
 #'
 #' @description
@@ -31,37 +30,30 @@
 #'   initial estimates of relevant model parameters:
 #'
 #'   \describe{
-#'     \item{`r`}{\mjseqn{\lbrace\,r\,\rbrace}
-#'       Initial exponential growth rate expressed per day.
-#'     }
-#'     \item{`c0`}{\mjseqn{\lbrace\,c_0\,\rbrace}
-#'       Expected cumulative incidence on `date[first]`.
+#'     \item{`r`}{Initial exponential growth rate, expressed per day.}
+#'     \item{`c0`}{Expected cumulative incidence on `date[first]`.
 #'       Here, "cumulative incidence" refers to the number of cases
 #'       observed since the start of the epidemic wave (i.e., since
 #'       `date[first]`), which is not necessarily the number of
 #'       cases observed since the start of the epidemic (i.e., since
 #'       `date[1]`). Used only if `curve = "exponential"`.
 #'     }
-#'     \item{`K`}{\mjseqn{\lbrace\,K\,\rbrace}
-#'       Expected epidemic final size. This is the expected number
-#'       of cases observed over the full course of the epidemic wave.
+#'     \item{`K`}{Expected epidemic final size. This is the expected
+#'       number of cases observed over the full course of the epidemic
+#'       wave. Used only if `curve %in% c("logistic", "richards")`.
+#'     }
+#'     \item{`thalf`}{Time at which the epidemic wave is expected
+#'       to attain half its final size, expressed as a number of days
+#'       since `date[first]`.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
-#'     \item{`thalf`}{\mjseqn{\lbrace\,t_\textrm{half}\,\rbrace}
-#'       Time at which the epidemic wave is expected to attain
-#'       half its final size, expressed as a number of days since
-#'       `date[first]`.
-#'       Used only if `curve %in% c("logistic", "richards")`.
+#'     \item{`p`}{Richards shape parameter.
+#'       Used only if `curve = "richards"`.
 #'     }
-#'     \item{`p`}{\mjseqn{\lbrace\,p\,\rbrace}
-#'       Richards shape parameter. Used only if `curve = "richards"`.
-#'     }
-#'     \item{`b`}{\mjseqn{\lbrace\,b\,\rbrace}
-#'       Baseline linear growth rate expressed per day.
+#'     \item{`b`}{Baseline linear growth rate, expressed per day.
 #'       Used only if `include_baseline = TRUE`.
 #'     }
-#'     \item{`nbdisp`}{\mjseqn{\lbrace\,k\,\rbrace}
-#'       Negative binomial dispersion parameter.
+#'     \item{`nbdisp`}{Negative binomial dispersion parameter.
 #'       Used only if `distr = "nbinom"`.
 #'     }
 #'   }
@@ -143,7 +135,7 @@
 #'     additional useful information.
 #'   }
 #'   \item{`call`}{The call to `egf_init()`, allowing the output
-#'     to be updated using [`update()`][stats::update()].
+#'     to be updated using [stats::update()].
 #'   }
 #' }
 #'

@@ -24,7 +24,7 @@
 #' the expected epidemic final size \mjseqn{Z \in \lbrack 0,1 \rbrack}
 #  implicitly through the relation
 #'
-#' \mjsdeqn{Z = S_0 \big(1 - e^{-\mathcal{R}_0 (Z + I_0)}\big)\,,}
+#' \mjsdeqn{Z = S_0 \big(1 - e^{-\mathcal{R}USCORE0 (Z + I_0)}\big)\,,}
 #'
 #' where \mjseqn{S_0,I_0 \in \lbrack 0,1 \rbrack} are the
 #' proportion of the population that is susceptible and

@@ -9,22 +9,22 @@
 #' @param right Right endpoint of the axis in user coordinates.
 #' @param refdate A Date scalar. `t0` and `t1` represent a number of
 #'   days since this date.
-#' @param tcl A numeric scalar. Passed to [`axis()`][graphics::axis()]
-#'   argument `tcl` when creating the minor axis. Defines tick length.
-#'   See [`par()`][graphics::par()].
+#' @param tcl A numeric scalar. Passed to [graphics::axis()] argument
+#'   `tcl` when creating the minor axis. Defines tick length.
+#'   See [graphics::par()].
 #' @param line A numeric vector of length 2. Elements are passed
-#'   to [`axis()`][graphics::axis()] argument `mgp` (the second
-#'   component) when creating the minor and major axes,
-#'   respectively. Defines the distance between the axis and
-#'   the top of tick labels. See [`par()`][graphics::par()].
+#'   to [graphics::axis()] argument `mgp` (the second component)
+#'   when creating the minor and major axes, respectively. Defines
+#'   the distance between the axis and the top of tick labels.
+#'   See [`par()`][graphics::par()].
 #' @param col.axis A numeric or character vector of length 2.
-#'   Elements are passed to [`axis()`][graphics::axis()] argument
-#'   `col.axis` when creating the minor and major axes, respectively.
-#'   Defines the colour of tick labels. See [`par()`][graphics::par()].
+#'   Elements are passed to [graphics::axis()] argument `col.axis`
+#'   when creating the minor and major axes, respectively. Defines
+#'   the colour of tick labels. See [graphics::par()].
 #' @param cex.axis A numeric vector of length 2. Elements are
-#'   passed to [`axis()`][graphics::axis()] argument `cex.axis`
-#'   when creating the minor and major axes, respectively.
-#'   Defines the size of tick labels. See [`par()`][graphics::par()].
+#'   passed to [graphics::axis()] argument `cex.axis` when creating
+#'   the minor and major axes, respectively. Defines the size of
+#'   tick labels. See [graphics::par()].
 #'
 #' @return
 #' Returns `NULL` invisibly.

@@ -9,10 +9,10 @@ A list with 4 elements:
 
 \describe{
 \item{\code{shape}}{
-Estimated shape parameter. See \code{\link[stats:GammaDist]{dgamma()}}.
+Estimated shape parameter. See \code{\link[stats:GammaDist]{stats::dgamma()}}.
 }
 \item{\code{scale}}{
-Estimated scale parameter. See \code{\link[stats:GammaDist]{dgamma()}}.
+Estimated scale parameter. See \code{\link[stats:GammaDist]{stats::dgamma()}}.
 }
 \item{\code{breaks}}{
 An integer vector listing numbers of days. Equal to \code{0:20}.
@@ -35,8 +35,8 @@ Table 4, Scenario 2.
 data(plague_infectious_period)
 }
 \description{
-A gamma distribution of the COVID-19 generation interval
-fitted to data from a cluster of 45 cases in Tianjin, China.
+Gamma distribution of the COVID-19 generation interval fitted
+to data from a cluster of 45 cases in Tianjin, China.
 }
 \examples{
 data(covid_generation_interval)

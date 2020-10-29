@@ -8,33 +8,33 @@
 A data frame with 246 rows and 5 variables:
 
 \describe{
-\item{\code{date}}{[Date] Date, weekly within each level of
-\code{outbreak} with longer gaps between outbreaks.
+\item{\code{date}}{Date, weekly within each level of \code{outbreak}
+with longer gaps between outbreaks.
 }
-\item{\code{time}}{[numeric] Decimal date, equal to year plus
-fraction of year. The fraction is 0 on January 1, 1/365
-or 1/366 on January 2, and so on.
+\item{\code{time}}{Decimal date, equal to year plus fraction of year.
+The fraction is 0 on January 1, 1/365 or 1/366 on January 2,
+and so on.
 }
-\item{\code{wills}}{[numeric] Count of wills written. Within
-a given level of \code{outbreak}, \code{wills[i]} is the number
-of wills written between \code{date[i-1]+1} and \code{date[i]}.
+\item{\code{wills}}{Count of wills written. Within a given level of
+\code{outbreak}, \code{wills[i]} is the number of wills written between
+\code{date[i-1]+1} and \code{date[i]}.
 }
-\item{\code{outbreak}}{[ordered factor, 4 levels] Outbreak label,
-partitioning the time series into distinct plague outbreaks.
-Levels are named roughly according to the years in which
-the outbreaks took place: 1348, 1361, 1368, and 1375.
+\item{\code{outbreak}}{Outbreak label, partitioning the time series
+into distinct plague outbreaks. Levels are named roughly
+according to the years in which the outbreaks took place:
+1348, 1361, 1368, and 1375.
 }
-\item{\code{severity}}{[ordered factor, 2 levels] Severity label,
-classifying outbreaks as \code{"minor"} or \code{"major"}. All 14th
-century outbreaks are classified as major, only because
-the data are too sparse to distinguish between minor and
-major outbreaks (in contrast with wills probated in the
-\link[=canterbury]{Prerogative Court of Canterbury}).
+\item{\code{severity}}{Severity label, classifying outbreaks as
+\code{"minor"} or \code{"major"}. All 14th century outbreaks are classified
+as major, only because the data are too sparse to distinguish
+between minor and major outbreaks (in contrast with wills
+probated in the \link[=canterbury]{Prerogative Court of Canterbury}).
 }
 }
 }
 \source{
-These data were transcribed from \insertCite{Shar89;textual}{epigrowthfit}.
+These data were transcribed from
+\insertCite{Shar89;textual}{epigrowthfit}.
 }
 \usage{
 data(husting)

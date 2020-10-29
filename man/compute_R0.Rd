@@ -17,18 +17,15 @@ compute_R0(x, breaks, probs)
 \method{compute_R0}{egf}(x, breaks, probs)
 }
 \arguments{
-\item{x}{\mjseqn{\lbrace\,r\,\rbrace}
-A numeric vector listing values for the initial exponential
-growth rate expressed per day. Alternatively, an "egf_init"
+\item{x}{A numeric vector listing values for the initial exponential
+growth rate, expressed per day. Alternatively, an "egf_init"
 or "egf" object.}
 
-\item{breaks}{\mjseqn{\lbrace\,t_i\,\rbrace}
-A numeric vector of length 2 or greater listing increasing
-break points, in days, in the support of the generation
-interval distribution.}
+\item{breaks}{A numeric vector of length 2 or greater listing increasing
+break points \mjseqn{t_i}, in days, in the support of the
+generation interval distribution.}
 
-\item{probs}{\mjseqn{\lbrace\,p_i\,\rbrace}
-A numeric vector with length \code{length(breaks)-1}. \code{probs[i]}
+\item{probs}{A numeric vector with length \code{length(breaks)-1}. \code{probs[i]}
 is the probability that the generation interval is between
 \code{break[i]} days and \code{break[i+1]} days. Replaced with
 \code{probs / sum(probs)} in the event that \code{sum(probs) != 1}.}
@@ -56,7 +53,7 @@ by \code{breaks}. For \mjseqn{i \in \lbrace 1,\ldots,m \rbrace},
 let \mjseqn{p_i} be the probability specified by \code{probs[i]}
 that the generation interval is in the interval
 \mjseqn{\lbrace t_{i-1},t_i \rbrace}.
-Section 3(d) in \insertCite{WallLips07;textual}{epigrowthfit}
+Section 3d in \insertCite{WallLips07;textual}{epigrowthfit}
 gives the basic reproduction number \mjseqn{\mathcal{R}_0}
 as a function of the initial exponential growth rate \mjseqn{r}:
 

@@ -8,27 +8,26 @@
 A data frame with 1343 rows and 5 variables:
 
 \describe{
-\item{\code{date}}{[Date] Date, weekly within each level of
-\code{outbreak} with longer gaps between outbreaks.
+\item{\code{date}}{Date, weekly within each level of \code{outbreak}
+with longer gaps between outbreaks.
 }
-\item{\code{time}}{[numeric] Decimal date, equal to year plus
-fraction of year. The fraction is 0 on January 1, 1/365
-or 1/366 on January 2, and so on.
+\item{\code{time}}{Decimal date, equal to year plus fraction of year.
+The fraction is 0 on January 1, 1/365 or 1/366 on January 2,
+and so on.
 }
-\item{\code{wills}}{[numeric] Count of wills written. Within
-a given level of \code{outbreak}, \code{wills[i]} is the number
-of wills written between \code{date[i-1]+1} and \code{date[i]}.
+\item{\code{wills}}{Count of wills written. Within a given level of
+\code{outbreak}, \code{wills[i]} is the number of wills written between
+\code{date[i-1]+1} and \code{date[i]}.
 }
-\item{\code{outbreak}}{[ordered factor, 24 levels] Outbreak label,
-partitioning the time series into distinct plague outbreaks.
-Levels are named roughly according to the years in which
-the outbreaks took place: 1563, 1578, ..., 1647, and 1665
-(the Great Plague of London).
+\item{\code{outbreak}}{Outbreak label, partitioning the time series
+into distinct plague outbreaks. Levels are named roughly
+according to the years in which the outbreaks took place:
+1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 }
-\item{\code{severity}}{[ordered factor, 2 levels] Severity label,
-classifying outbreaks as \code{"minor"} or \code{"major"}. An outbreak
-is classified as major if and only if plague deaths per week
-per 1000 individuals exceeded 5 at least once.
+\item{\code{severity}}{Severity label, classifying outbreaks as
+\code{"minor"} or \code{"major"}. An outbreak is classified as major
+if and only if plague deaths per week per 1000 individuals
+exceeded 5 at least once.
 }
 }
 }
@@ -41,8 +40,9 @@ using this
 data(canterbury)
 }
 \description{
-Weekly counts of wills probated in the Prerogative Court of Canterbury
-during 24 plague epidemics in 16th and 17th century London.
+Weekly counts of wills probated in the Prerogative Court of
+Canterbury during 24 plague epidemics in 16th and 17th century
+London.
 }
 \examples{
 data(canterbury)

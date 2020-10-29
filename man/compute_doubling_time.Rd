@@ -17,10 +17,9 @@ compute_doubling_time(x)
 \method{compute_doubling_time}{egf}(x)
 }
 \arguments{
-\item{x}{\mjseqn{\lbrace\,r\,\rbrace}
-A numeric vector listing values for the initial exponential
-growth rate expressed per day. Alternatively, an "egf_init"
-or "egf" object.}
+\item{x}{A numeric vector listing values for the initial
+exponential growth rate expressed per day. Alternatively,
+an "egf_init" or "egf" object.}
 }
 \value{
 The method for class "numeric" returns a "doubling_time"

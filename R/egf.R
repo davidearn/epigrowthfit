@@ -3,22 +3,22 @@
 #'
 #' @description
 #' Minimizes the negative log likelihood of an epidemic growth model
-#' using [`nlminb()`][stats::nlminb()], [`nlm()`][stats::nlm()], or
-#' one of the routines provided through [`optim()`][stats::optim()].
-#' The negative log likelihood function is written as a C++ template,
-#' and its gradient with respect to log-transformed parameters
-#' is defined by automatic differentiation using package \pkg{TMB}.
+#' using [stats::nlminb()], [stats::nlm()], of one of the routines
+#' provided through [stats::optim()]. The negative log likelihood
+#' function is written as a C++ template, and its gradient with
+#' respect to log-transformed parameters is defined by automatic
+#' differentiation using package \pkg{TMB}.
 #'
 #' @param init An "egf_init" object specifying epidemic data,
-#'   a fitting window, and initial parameter estimates. See [egf_init()].
-#' @param method One of `"nlminb"`, `"nlm"`, `"Nelder-Mead"`,
-#'   `"BFGS"`, `"L-BFGS-S"`, and `"CG"`,
-#'   indicating an optimization algorithm.
-#' @param nbdisp_tol A positive number defining a threshold on
-#'   the fitted value of the negative binomial dispersion parameter.
+#'   a fitting window, and initial parameter estimates.
+#'   See [egf_init()].
+#' @param method One of `"nlminb"`, `"nlm"`, `"Nelder-Mead"`, `"BFGS"`,
+#'   `"L-BFGS-S"`, and `"CG"`, indicating an optimization algorithm.
+#' @param nbdisp_tol A positive number defining a threshold on the
+#'   fitted value of the negative binomial dispersion parameter.
 #'   Used only if `init$distr = "nbinom"`. See Details.
-#' @param ... Additional arguments to [`nlminb()`][stats::nlminb()],
-#'   [`nlm()`][stats::nlm()], or [`optim()`][stats::optim()].
+#' @param ... Additional arguments to [stats::nlminb()], [stats::nlm()],
+#'   or [stats::optim()].
 #'
 #' @return
 #' An "egf" object. A list containing copies of arguments
@@ -51,25 +51,25 @@
 #'     vector `theta`. Elements must be named as in `theta_fit`.
 #'   }
 #'   \item{`madf_out`}{The list output of [TMB::MakeADFun()].}
-#'   \item{`optim_out`}{The list output of
-#'     [`nlminb()`][stats::nlminb()],
-#'     [`nlm()`][stats::nlm()], or
-#'     [`optim()`][stats::optim()],
-#'     depending on `method`.
+#'   \item{`optim_out`}{The list output of [stats::nlminb()],
+#'     [stats::nlm()], or [stats::optim()], depending on `method`.
 #'   }
-#'   \item{`nbdisp_flag`}{A logical scalar. If `TRUE`, then the fitted
-#'     value of the negative binomial dispersion parameter
+#'   \item{`large_nbdisp_flag`}{A logical scalar. If `TRUE`, then
+#'     the fitted value of the negative binomial dispersion parameter
 #'     (i.e., `theta_fit[["nbdisp"]]`) exceeds the threshold defined
-#'     by `nbdisp_tol`. Omitted if `init$distr != "nbinom"`. See Details.
+#'     by `nbdisp_tol`. Omitted if `init$distr != "nbinom"`.
+#'     See Details.
 #'   }
 #'   \item{`call`}{The call to `egf()`, allowing the output to
-#'     be updated using [`update()`][stats::update()].
+#'     be updated using [stats::update()].
 #'   }
 #' }
 #'
 #' @details
-#' If `theta_fit[["nbdisp"]]` exceeds `nbdisp_tol` times
-#' `max(diff(eval_cum_inc(init$time[init$first:(init$last+1)])))`,
+#' If `theta_fit[["nbdisp"]]` exceeds
+#'
+#' `nbdisp_tol * max(diff(eval_cum_inc(init$time[init$first:(init$last+1)])))`
+#'
 #' then `egf()` will issue a warning suggesting to refit
 #' using a Poisson model by running
 #' `update(object, init = update(init, distr = "pois"))`,
@@ -216,14 +216,14 @@ egf <- function(init, method = "nlminb", nbdisp_tol = 100, ...) {
   }
 
   ## Warn if `nbdisp` exceeds threshold
-  nbdisp_flag <- FALSE
+  large_nbdisp_flag <- FALSE
   if (init$distr == "nbinom") {
     nbdisp_threshold <- max(diff(eval_cum_inc(init$time[init$first:(init$last+1)])))
     if (theta_fit[["nbdisp"]] > nbdisp_threshold) {
       warning("`nbdisp` exceeds threshold, refit with Poisson by running:\n\n",
               "update(object, init = update(init, distr = \"pois\"))",
               call. = FALSE)
-      nbdisp_flag <- !nbdisp_flag
+      large_nbdisp_flag <- !large_nbdisp_flag
     }
   }
 
@@ -239,11 +239,11 @@ egf <- function(init, method = "nlminb", nbdisp_tol = 100, ...) {
     eval_cum_inc = eval_cum_inc,
     madf_out = madf_out,
     optim_out = optim_out,
-    nbdisp_flag = nbdisp_flag,
+    large_nbdisp_flag = large_nbdisp_flag,
     call = match.call()
   )
   if (init$distr != "nbinom") {
-    out$nbdisp_flag <- NULL
+    out$large_nbdisp_flag <- NULL
   }
   structure(out, class = c("egf", "list"))
 }

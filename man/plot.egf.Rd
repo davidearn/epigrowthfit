@@ -65,8 +65,8 @@ plot elements (see Details 2).}
 \item{...}{Optional arguments specifying additional
 graphical parameters. Currently, only \code{xlim}, \code{ylim},
 \code{xlab}, \code{ylab}, and \code{main} are implemented.
-See \code{\link[graphics:plot.default]{plot()}} and \code{\link[graphics:par]{par()}}
-for a catalogue of graphical parameters.}
+See \code{\link[graphics:plot.default]{graphics::plot()}} and \code{\link[graphics:par]{graphics::par()}} for a catalogue
+of graphical parameters.}
 }
 \value{
 \code{NULL} (invisibly).
@@ -145,26 +145,26 @@ A named list of arguments to \code{\link[=daxis]{daxis()}}
 affecting the appearance of the bottom axis if \code{xty = "date"}.
 }
 \item{\code{points_main}}{
-A named list of arguments to \code{\link[graphics:points]{points()}},
-affecting the appearance of the observed data. Currently, only
-\code{pch}, \code{col}, \code{bg} and \code{cex} are implemented.
+A named list of arguments to \code{\link[graphics:points]{graphics::points()}},
+affecting the appearance of the observed data. Currently,
+only \code{pch}, \code{col}, \code{bg} and \code{cex} are implemented.
 }
 \item{\code{points_short},\code{points_long}}{
 Alternatives to \code{points_main} used to highlight certain
 points when \code{inc = "interval"} (see argument \code{tol}).
 }
 \item{\code{lines}}{
-A named list of arguments to \code{\link[graphics:lines]{lines()}},
+A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}},
 affecting the appearance of the predicted incidence curve.
 Currently, only \code{lty}, \code{lwd}, and \code{col} are implemented.
 }
 \item{\code{window},\code{confband}}{
-Named lists of arguments to \code{\link[graphics:polygon]{polygon()}},
+Named lists of arguments to \code{\link[graphics:polygon]{graphics::polygon()}},
 affecting the appearance of the fitting window and confidence
 bands. Currently, only \code{col} and \code{border} are implemented.
 }
 \item{\code{text_hl},\code{text_dbl}}{
-Named lists of arguments to \code{\link[graphics:text]{text()}},
+Named lists of arguments to \code{\link[graphics:text]{graphics::text()}},
 affecting the appearance of text above highlighted points
 (see argument \code{tol}) and text giving doubling times.
 Currently, only \code{pos}, \code{offset}, \code{col}, \code{cex}, and \code{font}
