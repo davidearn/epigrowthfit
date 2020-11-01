@@ -9,8 +9,8 @@
 \arguments{
 \item{object}{An "egf" object.}
 
-\item{parm}{An element of \code{names(object$theta_fit)}
-indicating a parameter on which a confidence interval is desired.}
+\item{parm}{An element of \code{names(object$theta_fit)} indicating
+a parameter for which to compute a confidence interval.}
 
 \item{level}{A number in the interval [0,1] indicating a
 confidence level.}

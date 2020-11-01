@@ -6,8 +6,8 @@
 #' the proportion of the population expected to be infected
 #' over the course of an epidemic.
 #'
-#' @param R0 A numeric vector listing (non-negative) values
-#'   for the basic reproduction number.
+#' @param R0 A numeric vector listing non-negative values for
+#'   the basic reproduction number.
 #' @param S0 A numeric vector listing values in the interval
 #'   \[0,1\] for the initial susceptible proportion.
 #' @param I0 A numeric vector listing values in the interval
@@ -46,34 +46,43 @@
 #' \insertRef{MaEarn06}{epigrowthfit}
 #'
 #' @examples
-#' R0 <- seq(0, 40, by = 0.2)
+#' R0 <- 10^seq(-3, log10(40), length.out = 150)
 #' final_size <- compute_final_size(R0)
 #' plot(R0, final_size, type = "l", las = 1, ylab = "final size")
 #'
 #' @export
 #' @importFrom emdbook lambertW
 compute_final_size <- function(R0, S0 = 1, I0 = 0) {
-  if (!is.numeric(R0) || length(R0) == 0) {
-    stop("`R0` must be numeric and have nonzero length.")
-  } else if (any(is.infinite(R0)) || isTRUE(any(R0 < 0))) {
-    stop("`R0` must not contain infinite or negative values.")
+  for (a in c("R0", "S0", "I0")) {
+    x <- get(a, inherits = FALSE)
+    check(x,
+      what = "numeric",
+      len = c(1, Inf),
+      sprintf("`%s` must be numeric and have nonzero length.", a)
+    )
+    if (a == "R0") {
+      check(x,
+        val = c(0, Inf),
+        sprintf("Elements of `%s` must be non-negative.", a)
+      )
+    } else if (a %in% c("S0", "I0")) {
+      check(x,
+        val = c(0, 1),
+        sprintf("Elements of `%s` must be in the interval [0,1].", a)
+      )
+    }
   }
-  if (!is.numeric(S0) || length(S0) == 0) {
-    stop("`S0` must be numeric and have nonzero length.")
-  } else if (isFALSE(all(S0 >= 0 & S0 <= 1))) {
-    stop("Elements of `S0` must be in the interval [0,1].")
-  }
-  if (!is.numeric(I0) || length(I0) == 0) {
-    stop("`I0` must be numeric and have nonzero length.")
-  } else if (isFALSE(all(I0 >= 0 & I0 <= 1))) {
-    stop("Elements of `I0` must be in the interval [0,1].")
-  } else if (isFALSE(all(S0 + I0 <= 1))) {
-    stop("Elements of `S0 + I0` must be in the interval [0,1].")
-  }
+  len <- max(length(R0), length(S0), length(I0))
+  R0 <- rep(R0, length.out = len)
+  S0 <- rep(S0, length.out = len)
+  I0 <- rep(I0, length.out = len)
+  check(S0 + I0,
+    val = c(0, 1),
+    sprintf("Elements of `S0 + I0` must be in the interval [0,1].")
+  )
 
-  l <- max(length(R0), length(S0), length(I0))
-  R0 <- rep(R0, length.out = l)
-  S0 <- rep(S0, length.out = l)
-  I0 <- rep(I0, length.out = l)
-  S0 + (1 / R0) * lambertW(-R0 * S0 * exp(-R0 * (S0 + I0)))
+  out <- S0 + (1 / R0) * lambertW(-R0 * S0 * exp(-R0 * (S0 + I0)))
+  out <- ifelse(R0 == 0, 0, out)
+  out <- ifelse(is.infinite(R0), S0, out)
+  out
 }

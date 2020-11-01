@@ -79,7 +79,7 @@ In this case, one can show that
 \mjtdeqn{f_\textrm{gen}(t) = \left\lbrace \begin{array}{l@{\qquad}ll} 0\,, & t \in (-\infty,1\rbrack\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m,\lceil t \rceil-1 \rbrace} p_i\,, & t \in (1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m, \lceil t \rceil-1 \rbrace} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \big(\lbrack 2,m+1 \rbrack \cap \mathrm{Z}\big) \cup (m+1,\infty)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1 \rbrack \setminus \mathrm{Z}\,. \end{array} \right.}{f_\textrm{gen}(t) = \begin{cases} 0\,, & t \in (-\infty,1\rbrack\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m,\lceil t \rceil-1 \rbrace} p_i\,, & t \in (1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m, \lceil t \rceil-1 \rbrace} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \big(\lbrack 2,m+1 \rbrack \cap \unicode{x2124}\big) \cup (m+1,\infty)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1 \rbrack \setminus \unicode{x2124}\,. \end{cases}}{LaTeX}
 
 Note that \mjseqn{f_\textrm{gen}} is supported on the interval
-\mjseqn{(1,m+n\rbrack} and constant on the interval \mjseqn{(i,i+1)}
+\mjseqn{(1,m+n)} and constant on the interval \mjseqn{(i,i+1)}
 for all integers \mjseqn{i}. Hence the probability that
 \mjseqn{\tau_\textrm{gen} \in (i,i+1\rbrack} is simply
 
@@ -98,10 +98,11 @@ data(plague_infectious_period)
 inf <- plague_infectious_period$relfreq
 n <- length(inf)
 
-## For some reason, the density function
-## is not left- or right-continuous at the
-## integers ... ignore the integers for now
-x <- seq(0, m+n+1, by = 0.02) # support is actually (1,m+n]
+## FIXME:
+## For some reason, the density function is not
+## left- or right-continuous at the integers ...
+## ignore the integers for now
+x <- seq(0, m+n+1, by = 0.02)
 is_non_integer <- x \%\% 1 > 0
 xx <- x[is_non_integer]
 fx <- dgi(xx, lat, inf)

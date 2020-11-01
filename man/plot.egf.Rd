@@ -69,7 +69,10 @@ See \code{\link[graphics:plot.default]{graphics::plot()}} and \code{\link[graphi
 of graphical parameters.}
 }
 \value{
-\code{NULL} (invisibly).
+\code{plot.egf_init()} and \code{plot.egf()} return \code{NULL} (invisibly).
+
+\code{get_style_default()} returns a list of lists specifying the
+default appearance of all (modifiable) plot elements.
 }
 \description{
 Methods for plotting objects of class "egf_init" or "egf".
@@ -141,7 +144,7 @@ subset of the elements below.
 \describe{
 \item{\code{date}}{
 A named list of arguments to \code{\link[=daxis]{daxis()}}
-(a subset of \code{tcl}, \code{line}, \code{col.axis}, and \code{cex.axis}),
+(a subset of \code{tcl}, \code{mgp2}, \code{col.axis}, and \code{cex.axis}),
 affecting the appearance of the bottom axis if \code{xty = "date"}.
 }
 \item{\code{points_main}}{
@@ -149,7 +152,7 @@ A named list of arguments to \code{\link[graphics:points]{graphics::points()}},
 affecting the appearance of the observed data. Currently,
 only \code{pch}, \code{col}, \code{bg} and \code{cex} are implemented.
 }
-\item{\code{points_short},\code{points_long}}{
+\item{\code{points_short}, \code{points_long}}{
 Alternatives to \code{points_main} used to highlight certain
 points when \code{inc = "interval"} (see argument \code{tol}).
 }
@@ -158,12 +161,12 @@ A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}},
 affecting the appearance of the predicted incidence curve.
 Currently, only \code{lty}, \code{lwd}, and \code{col} are implemented.
 }
-\item{\code{window},\code{confband}}{
+\item{\code{window}, \code{confband}}{
 Named lists of arguments to \code{\link[graphics:polygon]{graphics::polygon()}},
 affecting the appearance of the fitting window and confidence
 bands. Currently, only \code{col} and \code{border} are implemented.
 }
-\item{\code{text_hl},\code{text_dbl}}{
+\item{\code{text_hl}, \code{text_dbl}}{
 Named lists of arguments to \code{\link[graphics:text]{graphics::text()}},
 affecting the appearance of text above highlighted points
 (see argument \code{tol}) and text giving doubling times.

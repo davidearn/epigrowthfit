@@ -23,9 +23,12 @@ NULL
 #' @rdname coef.egf
 #' @export
 coef.egf_init <- function(object, log = FALSE, ...) {
-  if (!is.logical(log) || length(log) != 1 || is.na(log)) {
-    stop("`log` must be `TRUE` or `FALSE`.")
-  }
+  check(log,
+    what = "logical",
+    len = 1,
+    opt = c(TRUE, FALSE),
+    "`log` must be `TRUE` or `FALSE`."
+  )
 
   if (log) {
     object$log_theta_init
@@ -37,9 +40,12 @@ coef.egf_init <- function(object, log = FALSE, ...) {
 #' @rdname coef.egf
 #' @export
 coef.egf <- function(object, log = FALSE, ...) {
-  if (!is.logical(log) || length(log) != 1 || is.na(log)) {
-    stop("`log` must be `TRUE` or `FALSE`.")
-  }
+  check(log,
+    what = "logical",
+    len = 1,
+    opt = c(TRUE, FALSE),
+    "`log` must be `TRUE` or `FALSE`."
+  )
 
   if (log) {
     object$log_theta_fit

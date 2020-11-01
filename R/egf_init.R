@@ -11,8 +11,8 @@
 #'
 #' @param date A Date vector listing increasing time points.
 #'   Should start at or before the date of the first observed case
-#'   in an epidemic.
-#' @param cases A numeric vector with length `length(date)-1`.
+#'   in an epidemic wave.
+#' @param cases A numeric vector of length `length(date)-1`.
 #'   `cases[i]` is the number of cases observed between `date[i]`
 #'   and `date[i+1]`. Here, "cases" can mean infections,
 #'   reported infections, or reported deaths (either disease deaths or
@@ -61,31 +61,20 @@
 #'   `theta_init` can be `NULL` or a vector specifying a subset
 #'   of the relevant parameters. Unspecified parameters are
 #'   set internally. See Value.
-#' @param peak An integer in `seq_along(cases)` indexing a
-#'   peak in `cases`. If `cases` describes just one epidemic
-#'   wave, then the default value is typically acceptable.
-#'   If `cases` spans multiple waves, then `peak` should be
-#'   set explicitly, as its default value may not locate the
-#'   peak in the focal wave.
-#' @param last An integer in `seq_along(cases)`. The last
-#'   observation in the fitting window will be `cases[last]`.
+#' @param peak,first,last Integers in `seq_along(cases)` indexing
+#'   a peak in `cases` (`peak`) and endpoints of the fitting window
+#'   (`first`, `last`). Alternatively, Dates between `min(date)`
+#'   and `max(date)` or characters coercible to such a Date via
+#'   `as.Date(x)` (e.g., "YYYY-MM-DD"). In this case, coercion
+#'   from Date to index is done by `which.min(abs(date[-1] - x))`.
+#'   If `NULL` (default), then an index is chosen internally.
+#'   The default behaviour generates reasonable fitting windows
+#'   only in special cases, and so should be accepted with caution.
 #'   See Details 2.
-#' @param first An integer in `seq_along(cases)`, or `NULL`.
-#'   If non-`NULL`, then the first observation in the fitting
-#'   window will be `cases[first]`. If `NULL`, then `first`
-#'   is chosen internally according to `wlen`, and otherwise
-#'   according to `min_wlen` and `max_wlen`. See Details 2.
-#' @param wlen An integer indicating the number of observations
-#'   in the fitting window. Must be at least the number of
-#'   parameters in the model being fit. See Details 2.
-#' @param min_wlen,max_wlen Integers indicating the minimum
-#'   and maximum number of observations in the fitting window.
-#'   Along with `last`, these determine the range of integers
-#'   considered for `first` if `first` and `wlen` are `NULL`.
-#'   If `cases` describes just one epidemic wave, then the
-#'   default values are typically acceptable. If `cases` spans
-#'   multiple epidemic waves, then `max_wlen` should be set
-#'   explicitly. See Details 2.
+#' @param min_first,max_first Bounds on `first` used when `first`
+#'   is chosen internally. Like `first`, can be integer, Date,
+#'   or character. If `NULL` (default), then the least strict
+#'   bounds are used internally. See Details 2.
 #'
 #' @return
 #' An "egf_init" object. A list containing copies of arguments
@@ -96,9 +85,11 @@
 #'   \item{`time`}{Time as a number of days since `date[1]`.
 #'     Equal to `as.numeric(date - date[1])`.
 #'   }
-#'   \item{`first`}{A copy of the argument if set explicitly.
-#'     Otherwise, the result of an internal selection algorithm.
-#'     See Details 2.
+#'   \item{`first`, `last`}{Integers in `seq_along(cases)` such
+#'     that the first and last observations in the fitting window
+#'     are `cases[first]` and `cases[last]`. (This means that the
+#'     fitting window includes cases observed between `date[first]`
+#'     and `date[last+1]`.)
 #'   }
 #'   \item{`theta_init`}{A named numeric vector whose elements are
 #'     the subset of `r`, `c0`, `K`, `thalf`, `p`, `b`, and
@@ -110,7 +101,7 @@
 #'       \item{`r`, `c0`}{`beta1` and `exp(beta0)`, respectively,
 #'         where `beta1` and `beta0` are the slope and intercept
 #'         of a linear model fit to the first half of
-#'         `log(cumsum(cases[first:last]) + 0.1)`, where
+#'         `log(cumsum(cases[first:last]) + 1)`, where
 #'         the corresponding time points are taken to be
 #'         `time[(first:last)+1] - time[first]`.
 #'       }
@@ -122,8 +113,8 @@
 #'     }
 #'     Can be extracted with `coef(object, log = FALSE)`.
 #'   }
-#'   \item{`log_theta_init`}{Log-transformed `theta_init`. Identical to
-#'     `log(theta_init)`, but with `"log_"` prepended to the names.
+#'   \item{`log_theta_init`}{Log-transformed `theta_init`. Identical
+#'     to `log(theta_init)`, but with `"log_"` prepended to the names.
 #'     Can be extracted with `coef(object, log = TRUE)`.
 #'   }
 #'   \item{`eval_cum_inc`}{A closure with numeric arguments
@@ -175,65 +166,67 @@
 #'
 #' The default behaviour of `egf_init()` tries to make
 #' usage with `curve = "logistic"` and `curve = "richards"`
-#' (which should be preferred in practice over
-#' `curve = "exponential"`) as simple as possible
-#' by reducing the need for user input. Specifically, if
-#' `last` is not set explicitly, then it is set by default
-#' to `min(length(cases), peak+1)`, ensuring that the
-#' fitting window ends near the peak in `cases` during
-#' the focal wave. If `first` is not set explicitly but
-#' `wlen` is, then `first` is set to `max(1, last-wlen+1)`.
-#' It neither `first` nor `wlen` is set explicitly, then
-#' `egf_init()` attempts to choose `first` such that
-#' `cases[first]` occurs at the "base" of the focal wave,
-#' an approximation of the point at which `cases` begins
-#' growing exponentially. This selection is made as follows:
+#' (which should be preferred in practice over `curve = "exponential"`)
+#' as simple as possible by reducing the need for user input.
 #'
-#' First, constraints on `first` are determined according
-#' to `last`, `min_wlen` and `max_wlen`. The length
-#' `wlen = last-first+1` of the fitting window is
-#' constrained to be at least `min_wlen` at most `max_wlen`.
-#' This means that `first` must satisfy
-#' `first >= last-max_wlen+1` and `first <= last-min_wlen+1`.
-#' The default values of `min_wlen` and `max_wlen` make the
-#' range of valid integers as large as possible. This is
-#' typically acceptable when `cases` describes just one
-#' epidemic wave. However, when `cases` spans multiple waves,
-#' it is necessary to set `max_wlen` so that the minimum
-#' allowed value of `first` indexes a point before exponential
-#' growth begins in the focal wave, but after any previous waves.
+#' If `peak = NULL`, then `peak` is set to `which.max(cases)`
+#' internally. This default should be accepted only if `cases`
+#' gives data for exactly one epidemic wave and only if `cases`
+#' is close to smooth. Otherwise, `peak` should be set explicitly.
+#' [smooth_cases()] can be used to find candidate values for `peak`.
 #'
-#' Second, `m = min(cases[(last-max_wlen+1):(last-min_wlen+1)])`
-#' is computed. Provided `max_wlen` is set appropriately, this
-#' value can be described as the minimum of `cases` in the trough
-#' between the focal wave and the previous wave (or the start of
-#' the time series, if the focal wave is the first or only wave).
+#' If `last = NULL`, then `last` is set to
+#' `max(length(cases), peak+1)` internally.
+#' If `peak < npar-1`, where `npar` is the number of
+#' model parameters, then `peak` is replaced with
+#' `npar-1+which.max(cases[npar:length(cases)])`
+#' for the purpose of defining `last`, ensuring that
+#' `last` is at least `npar`. If `peak` is specified
+#' appropriately, then this default ensures that the
+#' fitting window ends at the peak in the focal wave.
 #'
-#' Finally, `first` is set to the greatest integer `i` in
-#' `(last-max_wlen+1):(last-min_wlen+1)` such that `cases[i] = m`.
+#' If `first = NULL`, then `first` is set to
+#' `max_first-which.min(cases[max_first:min_first])+1` internally.
+#' This is the greatest index `i` in `min_first:max_first` satisfying
+#' `cases[i] = min(cases[min_first:max_first])`. This default should
+#' be accepted only if `min_first` points to the peak of the wave
+#' before the focal wave (or to the start of the epidemic, if the
+#' focal wave is the first wave) and only if `cases` is close to
+#' smooth. If these conditions hold, then the chosen `first` will
+#' point to the "base" of the focal wave, an approximation of the
+#' time when `cases` begins to grow exponentially. Otherwise,
+#' `first` should be set explicitly. [smooth_cases()] can
+#' (and should) be used to find candidate values for `first`.
 #'
-#' If `m = 0`, which typically arises when the focal wave is the
-#' first wave in the epidemic, then the selected index `first`
-#' is such that `cases[first] = 0`. In this situation, `egf_init()`
-#' enforces `cases[first] > 0` by assigning `first <- first + 1`,
-#' provided that this assignment does not cause `first` to exceed
-#' the maximum allowed value, namely `last-min_wlen+1`.
+#' If `min_first = NULL`, then `min_wlen` is set to 1 internally.
+#' If `max_first = NULL`, then `max_wlen` is set to `last-npar+1`
+#' internally. These defaults allow the fitting window to contain
+#' anywhere between `npar` and `last` observations. The default
+#' for `min_first` should be accepted only if the focal wave is
+#' the first wave. Otherwise, it should be set explicitly to point
+#' to the peak of the wave before the focal wave.
 #'
 #' @examples
 #' data(canadacovid)
 #' ontario <- na.omit(subset(canadacovid, province == "ON"))
+#' sc <- smooth_cases(
+#'   date = ontario$date,
+#'   cases = ontario$new_confirmations[-1],
+#'   log = TRUE,
+#'   spar = seq(0.55, 0.9, by = 0.05)
+#' )
+#' plot(sc)
 #' x <- egf_init(
 #'   date = ontario$date,
 #'   cases = ontario$new_confirmations[-1],
 #'   curve = "logistic",
-#'   distr = "nbinom"
+#'   distr = "nbinom",
+#'   peak = 57 # based on `spar = 0.7`
 #' )
 #' print(x)
 #' coef(x, log = FALSE)
 #' coef(x, log = TRUE)
-#' time_obs <- x$time
-#' time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
-#' pred <- predict(x, time = time_pred)
+#' predict(x)
 #' plot(x, inc = "interval")
 #' plot(x, inc = "cumulative")
 #'
@@ -242,8 +235,7 @@
 #'
 #' \insertRef{Earn+20}{epigrowthfit}
 #'
-#' @seealso [egf()], [coef.egf_init()], [print.egf_init()],
-#'   [predict.egf_init()], [plot.egf_init()]
+#' @seealso [smooth_cases()], [egf()], [plot.egf_init()]
 #' @export
 #' @import stats
 egf_init <- function(date,
@@ -252,93 +244,155 @@ egf_init <- function(date,
                      distr = "nbinom",
                      include_baseline = FALSE,
                      theta_init = NULL,
-                     peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
-                     last = min(length(cases), peak + 1),
+                     peak = NULL,
+                     last = NULL,
                      first = NULL,
-                     wlen = NULL,
-                     min_wlen = 6,
-                     max_wlen = last) {
-  ### VALIDATE INPUT #################################################
+                     min_first = NULL,
+                     max_first = NULL) {
+  ### VALIDATE MODEL ###################################################
 
-  ## FIXME: Move cumbersome checks into a `validate_args()` function
-  fails <- function(x, what = NULL, len = NULL, rel = "==", opt = NULL) {
-    if (what == "numeric") {
-      what <- c("numeric", "integer")
-    }
-    passes <-
-      (is.null(what) || inherits(x, what)) &&
-      (is.null(len) || match.fun(rel)(length(x), len)) &&
-      (is.null(opt) || x %in% opt)
-    !passes
-  }
-  if (fails(curve, "character", 1, opt = c("exponential", "logistic", "richards"))) {
-    stop("`curve` must be one of \"exponential\", \"logistic\", \"richards\".")
-  }
-  if (fails(distr, "character", 1, opt = c("nbinom", "pois"))) {
-    stop("`distr` must be one of \"nbinom\", \"pois\".")
-  }
-  if (fails(include_baseline, "logical", 1, opt = c(TRUE, FALSE))) {
-    stop("`include_baseline` must be one of TRUE, FALSE.")
-  }
+  check(curve,
+    what = "character",
+    len = 1,
+    opt = c("exponential", "logistic", "richards"),
+    "`curve` must be one of ",
+    "\"exponential\", \"logistic\", \"richards\"."
+  )
+  check(distr,
+    what = "character",
+    len = 1,
+    opt = c("nbinom", "pois"),
+    "`distr` must be one of \"nbinom\", \"pois\"."
+  )
+  check(include_baseline,
+    what = "logical",
+    len = 1,
+    opt = c(TRUE, FALSE),
+    "`include_baseline` must be TRUE or FALSE."
+  )
+
+
+  ### VALIDATE DATA ####################################################
+
   npar <- switch(curve, exponential = 2, logistic = 3, richards = 4) +
     (distr == "nbinom") + include_baseline
-  if (fails(cases, "numeric", npar, ">=")) {
-    stop("`cases` must be numeric and have length ", npar, " or greater.")
-  } else if (!all(is.finite(cases)) || !all(cases >= 0)) {
-    stop("`cases` must not contain missing, infinite, or negative values.")
-  }
-  if (fails(date, "Date", length(cases) + 1)) {
-    stop("`date` must be of class \"Date\" and have length `length(cases)+1`.")
-  } else if (anyNA(date)) {
-    stop("`date` must not contain missing values.")
-  } else if (!all(diff(date) > 0)) {
-    stop("`date` must be increasing.")
-  }
-  if (fails(peak, "numeric", 1, opt = 1:length(cases))) {
-    stop("`peak` must be an element of `1:length(cases)`.")
-  }
-  if (fails(last, "numeric", 1, opt = npar:length(cases))) {
-    stop("`last` must be an element of `", npar, ":length(cases)`.")
-  }
-  if (is.null(first)) {
-    if (is.null(wlen)) {
-      if (fails(min_wlen, "numeric", 1, opt = npar:last)) {
-        stop("`min_wlen` must be an element of `", npar, ":last`.")
-      }
-      if (fails(max_wlen, "numeric", 1, opt = min_wlen:last)) {
-        stop("`max_wlen` must be an element of `min_wlen:last`.")
-      }
-    } else if (fails(wlen, "numeric", 1, opt = npar:last)) {
-      stop("`wlen` must be an element of `", npar, ":last`.")
+
+  check(date,
+    what = "Date",
+    len = c(npar + 1, Inf),
+    "`date` must be of class \"Date\" and have ",
+    "length ", npar + 1, "or greater."
+  )
+  check(date,
+    no = anyNA,
+    "`date` must not have missing values."
+  )
+  check(date,
+    yes = function(x) all(diff(x) > 0),
+    "`date` must be increasing."
+  )
+  check(cases,
+    what = "numeric",
+    len = length(date) - 1,
+    "`cases` must be numeric and have length `length(date)-1`."
+  )
+  check(cases,
+    val = c(0, Inf),
+    yes = function(x) all(is.finite(x)),
+    "`cases` must not contain missing, infinite, or negative values."
+  )
+
+
+  ### SELECT/VALIDATE FITTING WINDOW ###################################
+
+  ## Converts numeric/Date/character value of `peak`, etc.
+  ## to an integer indexing `cases`
+  ndc_to_index <- function(name) {
+    x <- get(name, envir = parent.frame(), inherits = FALSE)
+    check(x,
+      what = c("numeric", "Date", "character"),
+      len = 1,
+      "`", name, "` must have class ",
+      "\"numeric\", \"Date\", or \"character\" and length 1."
+    )
+    if (is.numeric(x)) {
+      check(x,
+        val = c(1, length(cases)),
+        "Numeric `", name, "` must not be less than 1 ",
+        "or greater than `length(cases)`."
+      )
+      x <- as.integer(x)
+    } else if (inherits(x, "Date")) {
+      check(x,
+        opt = seq(min(date), max(date), by = 1),
+        "Date `", name, "` must not be earlier than `min(date)` ",
+        "or later than `max(date)`."
+      )
+      x <- which.min(abs(date[-1] - x))
+    } else if (is.character(x)) {
+      x <- try(as.Date(x), silent = TRUE)
+      check(x,
+        not = "try-error",
+        opt = seq(min(date), max(date), by = 1),
+        "Character `", name, "` must be coercible ",
+        "to Date between `min(date)` and `max(date)`."
+      )
+      x <- which.min(abs(date[-1] - x))
     }
-  } else if (fails(first, "numeric", 1, opt = 1:(last-npar+1))) {
-    stop("`first` must be `NULL` or an element of `",
-         "1:(last-", npar - 1, ")`.")
-  }
-  if (!is.null(theta_init) && (!is.numeric(theta_init) || is.null(names(theta_init)))) {
-    warning("`theta_init` is not a named numeric vector, setting `theta_init = NULL`.",
-            call. = FALSE)
-    theta_init <- NULL
+    x
   }
 
+  ## Default `peak` is (smallest) index of maximum of `cases`
+  if (is.null(peak)) {
+    peak <- which.max(cases)
+  } else {
+    peak <- ndc_to_index("peak")
+  }
 
-  ### FITTING WINDOW #################################################
-
-  if (is.null(first)) {
-    if (is.null(wlen)) {
-      min_first <- last - max_wlen + 1
-      max_first <- last - min_wlen + 1
-      first <- max_first - which.min(cases[max_first:min_first]) + 1
-      if (cases[first] == 0 && first < max_first) {
-        first <- first + 1
-      }
+  ## Default `last` is `peak+1`, but must be careful to
+  ## enforce `last >= npar` and `last <= length(cases)`
+  if (is.null(last)) {
+    if (peak < npar - 1) {
+      peak_excl_start <- npar - 1 + which.max(cases[npar:length(cases)])
+      last <- min(length(cases), peak_excl_start + 1)
     } else {
-      first <- last - wlen + 1
+      last <- min(length(cases), peak + 1)
     }
+  } else {
+    last <- max(npar, ndc_to_index("last"))
+  }
+
+  ## Default `first` is (greatest) index of minimum of
+  ## `cases[min_first:max_first]`, but must be careful to
+  ## enforce `1 <= min_first <= max_first <= last-npar+1`
+  if (is.null(first)) {
+    if (is.null(min_first)) {
+      min_first <- 1
+    } else {
+      min_first <- min(last - npar + 1, ndc_to_index("min_first"))
+    }
+    if (is.null(max_first)) {
+      max_first <- last - npar + 1
+    } else {
+      max_first <- max(min_first, ndc_to_index("max_first"))
+    }
+    first <- max_first - which.min(cases[max_first:min_first]) + 1
+  } else {
+    first <- min(last - npar + 1, ndc_to_index("first"))
   }
 
 
-  ### INITIAL PARAMETER ESTIMATES ####################################
+  ### VALIDATE/SELECT INITIAL PARAMETER ESTIMATES ######################
+
+  if (is.null(theta_init)) {
+    theta_init <- numeric(0)
+  } else {
+    check(theta_init,
+      what = "numeric",
+      no = function(x) is.null(names(x)),
+      "`theta_init` must be a named numeric vector or `NULL`."
+    )
+  }
 
   ## Parameters that `theta_init` must specify
   par <- switch(curve,
@@ -353,19 +407,19 @@ egf_init <- function(date,
     par <- c(par, "b")
   }
 
-  ## Initialize `theta_init` if necessary
-  if (is.null(theta_init)) {
-    theta_init <- numeric(0)
-  }
-
   ## Dispense with unwanted elements of `theta_init`
-  l <- length(theta_init)
-  theta_init <- theta_init[names(theta_init) %in% par]
-  theta_init <- theta_init[is.finite(theta_init) & theta_init > 0]
-  if (length(theta_init) < l) {
-    warning("Discarding extraneous and improperly defined elements of `theta_init`.",
+  theta_init_strict <- theta_init[
+    names(theta_init) %in% par &
+    is.finite(theta_init) &
+    theta_init > 0
+  ]
+  if (length(theta_init_strict) < length(theta_init)) {
+    rm_names <- setdiff(names(theta_init), names(theta_init_strict))
+    warning("Discarding user-specified elements of `theta_init`:\n",
+            paste(rm_names, collapse = ", "),
             call. = FALSE)
   }
+  theta_init <- theta_init_strict
 
   ## Parameters that `theta_init` does not specify
   par_missing <- setdiff(par, names(theta_init))
@@ -376,7 +430,7 @@ egf_init <- function(date,
   time <- as.numeric(date - date[1])
   lm_data <- data.frame(
     x = time[(first:last)+1] - time[first],
-    y = log(cumsum(cases[first:last]) + 0.1)
+    y = log(cumsum(cases[first:last]) + 1)
   )
   lm_coef <- coef(lm(y ~ x, data = lm_data, subset = 1:m))
 
@@ -426,3 +480,5 @@ egf_init <- function(date,
   )
   structure(out, class = c("egf_init", "list"))
 }
+
+

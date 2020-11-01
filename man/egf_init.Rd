@@ -11,20 +11,19 @@ egf_init(
   distr = "nbinom",
   include_baseline = FALSE,
   theta_init = NULL,
-  peak = min_wlen - 1 + which.max(cases[min_wlen:length(cases)]),
-  last = min(length(cases), peak + 1),
+  peak = NULL,
+  last = NULL,
   first = NULL,
-  wlen = NULL,
-  min_wlen = 6,
-  max_wlen = last
+  min_first = NULL,
+  max_first = NULL
 )
 }
 \arguments{
 \item{date}{A Date vector listing increasing time points.
 Should start at or before the date of the first observed case
-in an epidemic.}
+in an epidemic wave.}
 
-\item{cases}{A numeric vector with length \code{length(date)-1}.
+\item{cases}{A numeric vector of length \code{length(date)-1}.
 \code{cases[i]} is the number of cases observed between \code{date[i]}
 and \code{date[i+1]}. Here, "cases" can mean infections,
 reported infections, or reported deaths (either disease deaths or
@@ -78,35 +77,21 @@ Used only if \code{distr = "nbinom"}.
 of the relevant parameters. Unspecified parameters are
 set internally. See Value.}
 
-\item{peak}{An integer in \code{seq_along(cases)} indexing a
-peak in \code{cases}. If \code{cases} describes just one epidemic
-wave, then the default value is typically acceptable.
-If \code{cases} spans multiple waves, then \code{peak} should be
-set explicitly, as its default value may not locate the
-peak in the focal wave.}
-
-\item{last}{An integer in \code{seq_along(cases)}. The last
-observation in the fitting window will be \code{cases[last]}.
+\item{peak, first, last}{Integers in \code{seq_along(cases)} indexing
+a peak in \code{cases} (\code{peak}) and endpoints of the fitting window
+(\code{first}, \code{last}). Alternatively, Dates between \code{min(date)}
+and \code{max(date)} or characters coercible to such a Date via
+\code{as.Date(x)} (e.g., "YYYY-MM-DD"). In this case, coercion
+from Date to index is done by \code{which.min(abs(date[-1] - x))}.
+If \code{NULL} (default), then an index is chosen internally.
+The default behaviour generates reasonable fitting windows
+only in special cases, and so should be accepted with caution.
 See Details 2.}
 
-\item{first}{An integer in \code{seq_along(cases)}, or \code{NULL}.
-If non-\code{NULL}, then the first observation in the fitting
-window will be \code{cases[first]}. If \code{NULL}, then \code{first}
-is chosen internally according to \code{wlen}, and otherwise
-according to \code{min_wlen} and \code{max_wlen}. See Details 2.}
-
-\item{wlen}{An integer indicating the number of observations
-in the fitting window. Must be at least the number of
-parameters in the model being fit. See Details 2.}
-
-\item{min_wlen, max_wlen}{Integers indicating the minimum
-and maximum number of observations in the fitting window.
-Along with \code{last}, these determine the range of integers
-considered for \code{first} if \code{first} and \code{wlen} are \code{NULL}.
-If \code{cases} describes just one epidemic wave, then the
-default values are typically acceptable. If \code{cases} spans
-multiple epidemic waves, then \code{max_wlen} should be set
-explicitly. See Details 2.}
+\item{min_first, max_first}{Bounds on \code{first} used when \code{first}
+is chosen internally. Like \code{first}, can be integer, Date,
+or character. If \code{NULL} (default), then the least strict
+bounds are used internally. See Details 2.}
 }
 \value{
 An "egf_init" object. A list containing copies of arguments
@@ -117,9 +102,11 @@ with these additional elements:
 \item{\code{time}}{Time as a number of days since \code{date[1]}.
 Equal to \code{as.numeric(date - date[1])}.
 }
-\item{\code{first}}{A copy of the argument if set explicitly.
-Otherwise, the result of an internal selection algorithm.
-See Details 2.
+\item{\code{first}, \code{last}}{Integers in \code{seq_along(cases)} such
+that the first and last observations in the fitting window
+are \code{cases[first]} and \code{cases[last]}. (This means that the
+fitting window includes cases observed between \code{date[first]}
+and \code{date[last+1]}.)
 }
 \item{\code{theta_init}}{A named numeric vector whose elements are
 the subset of \code{r}, \code{c0}, \code{K}, \code{thalf}, \code{p}, \code{b}, and
@@ -131,7 +118,7 @@ in the argument are assigned their default value:
 \item{\code{r}, \code{c0}}{\code{beta1} and \code{exp(beta0)}, respectively,
 where \code{beta1} and \code{beta0} are the slope and intercept
 of a linear model fit to the first half of
-\code{log(cumsum(cases[first:last]) + 0.1)}, where
+\code{log(cumsum(cases[first:last]) + 1)}, where
 the corresponding time points are taken to be
 \code{time[(first:last)+1] - time[first]}.
 }
@@ -143,8 +130,8 @@ the corresponding time points are taken to be
 }
 Can be extracted with \code{coef(object, log = FALSE)}.
 }
-\item{\code{log_theta_init}}{Log-transformed \code{theta_init}. Identical to
-\code{log(theta_init)}, but with \code{"log_"} prepended to the names.
+\item{\code{log_theta_init}}{Log-transformed \code{theta_init}. Identical
+to \code{log(theta_init)}, but with \code{"log_"} prepended to the names.
 Can be extracted with \code{coef(object, log = TRUE)}.
 }
 \item{\code{eval_cum_inc}}{A closure with numeric arguments
@@ -206,66 +193,68 @@ should simply end at \code{cases[length(cases)]}.
 
 The default behaviour of \code{egf_init()} tries to make
 usage with \code{curve = "logistic"} and \code{curve = "richards"}
-(which should be preferred in practice over
-\code{curve = "exponential"}) as simple as possible
-by reducing the need for user input. Specifically, if
-\code{last} is not set explicitly, then it is set by default
-to \code{min(length(cases), peak+1)}, ensuring that the
-fitting window ends near the peak in \code{cases} during
-the focal wave. If \code{first} is not set explicitly but
-\code{wlen} is, then \code{first} is set to \code{max(1, last-wlen+1)}.
-It neither \code{first} nor \code{wlen} is set explicitly, then
-\code{egf_init()} attempts to choose \code{first} such that
-\code{cases[first]} occurs at the "base" of the focal wave,
-an approximation of the point at which \code{cases} begins
-growing exponentially. This selection is made as follows:
+(which should be preferred in practice over \code{curve = "exponential"})
+as simple as possible by reducing the need for user input.
 
-First, constraints on \code{first} are determined according
-to \code{last}, \code{min_wlen} and \code{max_wlen}. The length
-\code{wlen = last-first+1} of the fitting window is
-constrained to be at least \code{min_wlen} at most \code{max_wlen}.
-This means that \code{first} must satisfy
-\code{first >= last-max_wlen+1} and \code{first <= last-min_wlen+1}.
-The default values of \code{min_wlen} and \code{max_wlen} make the
-range of valid integers as large as possible. This is
-typically acceptable when \code{cases} describes just one
-epidemic wave. However, when \code{cases} spans multiple waves,
-it is necessary to set \code{max_wlen} so that the minimum
-allowed value of \code{first} indexes a point before exponential
-growth begins in the focal wave, but after any previous waves.
+If \code{peak = NULL}, then \code{peak} is set to \code{which.max(cases)}
+internally. This default should be accepted only if \code{cases}
+gives data for exactly one epidemic wave and only if \code{cases}
+is close to smooth. Otherwise, \code{peak} should be set explicitly.
+\code{\link[=smooth_cases]{smooth_cases()}} can be used to find candidate values for \code{peak}.
 
-Second, \code{m = min(cases[(last-max_wlen+1):(last-min_wlen+1)])}
-is computed. Provided \code{max_wlen} is set appropriately, this
-value can be described as the minimum of \code{cases} in the trough
-between the focal wave and the previous wave (or the start of
-the time series, if the focal wave is the first or only wave).
+If \code{last = NULL}, then \code{last} is set to
+\code{max(length(cases), peak+1)} internally.
+If \code{peak < npar-1}, where \code{npar} is the number of
+model parameters, then \code{peak} is replaced with
+\code{npar-1+which.max(cases[npar:length(cases)])}
+for the purpose of defining \code{last}, ensuring that
+\code{last} is at least \code{npar}. If \code{peak} is specified
+appropriately, then this default ensures that the
+fitting window ends at the peak in the focal wave.
 
-Finally, \code{first} is set to the greatest integer \code{i} in
-\code{(last-max_wlen+1):(last-min_wlen+1)} such that \code{cases[i] = m}.
+If \code{first = NULL}, then \code{first} is set to
+\code{max_first-which.min(cases[max_first:min_first])+1} internally.
+This is the greatest index \code{i} in \code{min_first:max_first} satisfying
+\code{cases[i] = min(cases[min_first:max_first])}. This default should
+be accepted only if \code{min_first} points to the peak of the wave
+before the focal wave (or to the start of the epidemic, if the
+focal wave is the first wave) and only if \code{cases} is close to
+smooth. If these conditions hold, then the chosen \code{first} will
+point to the "base" of the focal wave, an approximation of the
+time when \code{cases} begins to grow exponentially. Otherwise,
+\code{first} should be set explicitly. \code{\link[=smooth_cases]{smooth_cases()}} can
+(and should) be used to find candidate values for \code{first}.
 
-If \code{m = 0}, which typically arises when the focal wave is the
-first wave in the epidemic, then the selected index \code{first}
-is such that \code{cases[first] = 0}. In this situation, \code{egf_init()}
-enforces \code{cases[first] > 0} by assigning \code{first <- first + 1},
-provided that this assignment does not cause \code{first} to exceed
-the maximum allowed value, namely \code{last-min_wlen+1}.
+If \code{min_first = NULL}, then \code{min_wlen} is set to 1 internally.
+If \code{max_first = NULL}, then \code{max_wlen} is set to \code{last-npar+1}
+internally. These defaults allow the fitting window to contain
+anywhere between \code{npar} and \code{last} observations. The default
+for \code{min_first} should be accepted only if the focal wave is
+the first wave. Otherwise, it should be set explicitly to point
+to the peak of the wave before the focal wave.
 }
 }
 \examples{
 data(canadacovid)
 ontario <- na.omit(subset(canadacovid, province == "ON"))
+sc <- smooth_cases(
+  date = ontario$date,
+  cases = ontario$new_confirmations[-1],
+  log = TRUE,
+  spar = seq(0.55, 0.9, by = 0.05)
+)
+plot(sc)
 x <- egf_init(
   date = ontario$date,
   cases = ontario$new_confirmations[-1],
   curve = "logistic",
-  distr = "nbinom"
+  distr = "nbinom",
+  peak = 57 # based on `spar = 0.7`
 )
 print(x)
 coef(x, log = FALSE)
 coef(x, log = TRUE)
-time_obs <- x$time
-time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
-pred <- predict(x, time = time_pred)
+predict(x)
 plot(x, inc = "interval")
 plot(x, inc = "cumulative")
 
@@ -276,6 +265,5 @@ plot(x, inc = "cumulative")
 \insertRef{Earn+20}{epigrowthfit}
 }
 \seealso{
-\code{\link[=egf]{egf()}}, \code{\link[=coef.egf_init]{coef.egf_init()}}, \code{\link[=print.egf_init]{print.egf_init()}},
-\code{\link[=predict.egf_init]{predict.egf_init()}}, \code{\link[=plot.egf_init]{plot.egf_init()}}
+\code{\link[=smooth_cases]{smooth_cases()}}, \code{\link[=egf]{egf()}}, \code{\link[=plot.egf_init]{plot.egf_init()}}
 }

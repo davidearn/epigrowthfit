@@ -822,7 +822,7 @@ Accounting for baseline mortality as in \cref{eq:logistic-baseline}
 requires that $b$ is fit in addition to other model parameters.%
 \footnote{\cref{eq:logistic-baseline} models baseline mortality as
 linear in time. This formulation is valid for short time scales
-(\eg an epidemic occurring over less that one year), over which
+(\eg an epidemic occurring over less than one year), over which
 the mortality rate is roughly constant. On longer time scales,
 more sophisticated models of baseline mortality with multiple
 parameters can be considered. For an early example,
@@ -1253,10 +1253,10 @@ it is typically best for the window to end at the time when
 interval incidence stops growing exponentially (\ie when the
 logarithm of interval incidence stops being linear).
 
-Regardless of the model being fit, one may need to experiment with
-different fitting windows. Optional \fun{egf_init} arguments
-\code{peak}, \code{last}, \code{first}, \code{wlen}, \code{min_wlen},
-and \code{max_wlen} can be set explicitly to override the default
+Regardless of the model being fit, one may need to experiment
+with different fitting windows. Optional \fun{egf_init} arguments
+\code{peak}, \code{last}, \code{first}, \code{min_first}, and
+\code{max_first} can be set explicitly to override the default
 window selection algorithm. In fact, setting these arguments
 explicitly will be \textbf{necessary} if the interval incidence
 time series given to \fun{egf_init} spans multiple epidemic waves.

@@ -8,8 +8,7 @@ Evaluate expected cumulative incidence}
 eval_model(time, curve, include_baseline = FALSE, theta)
 }
 \arguments{
-\item{time}{A numeric vector listing time points in days since
-a reference date.}
+\item{time}{A numeric vector listing time points in days.}
 
 \item{curve}{One of \code{"exponential"}, \code{"logistic"}, and \code{"richards"},
 indicating a model of expected cumulative incidence.}
@@ -23,15 +22,14 @@ for all relevant model parameters:
 
 \describe{
 \item{\code{r}}{Initial exponential growth rate, expressed per day.}
-\item{\code{c0}}{Expected cumulative incidence on the reference date.
+\item{\code{c0}}{Expected cumulative incidence at \code{time = 0}.
 Used only if \code{curve = "exponential"}.
 }
 \item{\code{K}}{Expected epidemic final size.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
-\item{\code{thalf}}{Time at which the epidemic is expected to attain
-half its final size, expressed as a number of days since the
-reference date.
+\item{\code{thalf}}{Time in days at which the epidemic is expected
+to attain half its final size.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
 \item{\code{p}}{Richards shape parameter.

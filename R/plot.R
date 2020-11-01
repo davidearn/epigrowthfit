@@ -31,7 +31,10 @@
 #'   of graphical parameters.
 #'
 #' @return
-#' `NULL` (invisibly).
+#' `plot.egf_init()` and `plot.egf()` return `NULL` (invisibly).
+#'
+#' `get_style_default()` returns a list of lists specifying the
+#' default appearance of all (modifiable) plot elements.
 #'
 #' @details
 #' ## 1. Plot elements
@@ -99,7 +102,7 @@
 #' \describe{
 #'   \item{`date`}{
 #'     A named list of arguments to [daxis()]
-#'     (a subset of `tcl`, `line`, `col.axis`, and `cex.axis`),
+#'     (a subset of `tcl`, `mgp2`, `col.axis`, and `cex.axis`),
 #'     affecting the appearance of the bottom axis if `xty = "date"`.
 #'   }
 #'   \item{`points_main`}{
@@ -107,7 +110,7 @@
 #'     affecting the appearance of the observed data. Currently,
 #'     only `pch`, `col`, `bg` and `cex` are implemented.
 #'   }
-#'   \item{`points_short`,`points_long`}{
+#'   \item{`points_short`, `points_long`}{
 #'     Alternatives to `points_main` used to highlight certain
 #'     points when `inc = "interval"` (see argument `tol`).
 #'   }
@@ -116,12 +119,12 @@
 #'     affecting the appearance of the predicted incidence curve.
 #'     Currently, only `lty`, `lwd`, and `col` are implemented.
 #'   }
-#'   \item{`window`,`confband`}{
+#'   \item{`window`, `confband`}{
 #'     Named lists of arguments to [graphics::polygon()],
 #'     affecting the appearance of the fitting window and confidence
 #'     bands. Currently, only `col` and `border` are implemented.
 #'   }
-#'   \item{`text_hl`,`text_dbl`}{
+#'   \item{`text_hl`, `text_dbl`}{
 #'     Named lists of arguments to [graphics::text()],
 #'     affecting the appearance of text above highlighted points
 #'     (see argument `tol`) and text giving doubling times.
@@ -164,31 +167,41 @@ plot.egf_init <- function(x, inc = "interval", xty = "date", log = TRUE,
 plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
                      add = FALSE, annotate = FALSE, tol = 0,
                      style = get_style_default(x), ...) {
-  if (!is.character(inc) || length(inc) != 1 ||
-      !inc %in% c("interval", "cumulative")) {
-    stop("`inc` must be one of \"interval\", \"cumulative\".")
-  }
-  if (!is.character(xty) || length(xty) != 1 ||
-      !xty %in% c("date", "numeric")) {
-    stop("`xty` must be one of \"date\", \"numeric\".")
-  }
-  if (!is.logical(log) || length(log) != 1 || is.na(log)) {
-    stop("`log` must be `TRUE` or `FALSE`.")
-  }
-  if (!is.logical(add) || length(add) != 1 || is.na(add)) {
-    stop("`add` must be `TRUE` or `FALSE`.")
-  }
-  if (!is.logical(annotate) || length(annotate) != 1 || is.na(annotate)) {
-    stop("`annotate` must be `TRUE` or `FALSE`.")
+  check(inc,
+    what = "character",
+    len = 1,
+    opt = c("interval", "cumulative"),
+    "`inc` must be one of \"interval\", \"cumulative\"."
+  )
+  check(xty,
+    what = "character",
+    len = 1,
+    opt = c("date", "numeric"),
+    "`xty` must be one of \"date\", \"numeric\"."
+  )
+  for (a in c("log", "add", "annotate")) {
+    a_val <- get(a, inherits = FALSE)
+    check(a_val,
+      what = "logical",
+      len = 1,
+      opt = c(TRUE, FALSE),
+      sprintf("`%s` must be TRUE or FALSE.", a)
+    )
   }
   if (inc == "interval") {
-    if (!is.numeric(tol) || length(tol) != 1 || !isTRUE(tol >= 0)) {
-      stop("`tol` must be a non-negative number.")
-    }
+    check(tol,
+      what = "numeric",
+      len = 1,
+      val = c(0, Inf),
+      no = is.na,
+      "`tol` must be a non-negative number."
+    )
   }
-  if (!is.list(style) || is.null(names(style))) {
-    stop("`style` must be a named list.")
-  }
+  check(style,
+    what = "list",
+    no = function(x) is.null(names(x)),
+    "`style` must be a named list."
+  )
 
 
   ### SET UP ###########################################################
@@ -459,12 +472,9 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
 #' @keywords internal
 #' @export
 get_style_default <- function(x) {
-  if (!is.character(x)) {
-    x <- class(x)
-  }
-  if (any(x %in% c("egf_init", "egf"))) {
+  if (inherits(x, c("egf_init", "egf"))) {
     list(
-      date = list(tcl = -0.2, line = c(0.05, 1), col.axis = c("black", "black"), cex.axis = c(0.7, 0.85)),
+      date = list(tcl = -0.2, mgp2 = c(0.05, 1), col.axis = c("black", "black"), cex.axis = c(0.7, 0.85)),
       points_main = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
       points_short = list(pch = 1, col = "#882255", bg = NA, cex = 1),
       points_long = list(pch = 16, col = "#882255", bg = NA, cex = 1),
@@ -518,10 +528,12 @@ get_style_default <- function(x) {
 #' @import graphics
 plot.egf_sim <- function(x, inc = "cumulative",
                          col_pred = "#44AA99", col_sim = "#BBBBBB66", ...) {
-  if (!is.character(inc) || length(inc) != 1 ||
-      !inc %in% c("interval", "cumulative")) {
-    stop("`inc` must be one of \"interval\", \"cumulative\".")
-  }
+  check(inc,
+    what = "character",
+    len = 1,
+    opt = c("interval", "cumulative"),
+    "`inc` must be one of \"interval\", \"cumulative\"."
+  )
 
 
   ### SET UP ###########################################################
@@ -635,4 +647,92 @@ plot.egf_sim <- function(x, inc = "cumulative",
   invisible(NULL)
 }
 
+#' Plot smoothed incidence data
+#'
+#' @description
+#' A method for plotting objects of class "smooth_cases".
+#'
+#' @param x A "smooth_cases" object.
+#' @param ... Unused optional arguments.
+#'
+#' @return
+#' `NULL` (invisibly).
+#'
+#' @details
+#' ## Plot elements
+#' There is one panel for each element of `x$spar`. The bottom axis
+#' measures time as a number of days since `x$date[1]`. The left axis
+#' measures interval incidence, log(1+x)-transformed if `x$log = TRUE`.
+#' Plotted as points are the interval incidence data specified by
+#' `x$date` and `x$cases`. Plotted as a solid line is a cubic spline
+#' fit to the (possibly transformed) data using [stats::smooth.spline()].
+#' The spline in panel `i` is specified by `x$ss[[i]]` and uses
+#' smoothing parameter `x$spar[i]`. Dotted lines are drawn at peaks
+#' (red) and troughs (blue) in the spline. These lines are labeled in
+#' the top margin with the index of `cases` corresponding to the time
+#' of the peak or trough in the spline.
+#'
+#' @export
+#' @import graphics
+plot.smooth_cases <- function(x, ...) {
+  object <- x
+  op <- par(
+    mfrow = if (length(object$spar) < 4) c(1, 1) else c(2, 2),
+    mar = c(3, 4, 3, 1) + 0.5
+  )
+  on.exit(par(op))
+
+  data <- data.frame(
+    x = object$time[-1],
+    y = if (object$log) log10(1 + object$cases) else object$cases
+  )
+  xlim <- range(object$time)
+  ylim <- c(0, max(data$y) * 1.04)
+  xlab <- paste("days since", object$date[1])
+  ylab <- if (object$log) expression(log[10] * "(1+cases)") else "cases"
+  col_points <- "#CCCCCC"
+  col_peaks <- "#BB5566"
+  col_troughs <- "#004488"
+
+  for (i in seq_along(object$spar)) {
+    peaks <- object$peaks[[i]]
+    troughs <- object$troughs[[i]]
+    x_peaks <- data$x[peaks]
+    x_troughs <- data$x[troughs]
+    mgp2_peaks <- if (length(troughs) > 0) 0.6 else 0
+    mgp2_troughs <- 0
+
+    plot.new()
+    plot.window(xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i")
+    points(y ~ x, data = data, col = col_points)
+    lines(y ~ x, data = predict(object$ss[[i]]), lwd = 2)
+    abline(v = x_peaks, lty = 3, col = col_peaks)
+    abline(v = x_troughs, lty = 3, col = col_troughs)
+    box(bty = "l")
+    axis(side = 1, mgp = c(3, 0.7, 0), gap.axis = 0, cex.axis = 0.9)
+    axis(side = 2, mgp = c(3, 0.7, 0), las = 1, cex.axis = 0.9)
+    if (length(x_peaks) > 0) {
+      axis(side = 3, at = x_peaks, labels = peaks,
+           tick = FALSE, mgp = c(3, mgp2_peaks, 0), gap.axis = 0,
+           col.axis = col_peaks, cex.axis = 0.7)
+      axis(side = 3, at = 0, labels = "peak index:",
+           tick = FALSE, mgp = c(3, mgp2_peaks, 0), hadj = 1,
+           col.axis = col_peaks, cex.axis = 0.7)
+    }
+    if (length(x_troughs) > 0) {
+      axis(side = 3, at = x_troughs, labels = troughs,
+           tick = FALSE, mgp = c(3, mgp2_troughs, 0), gap.axis = 0,
+           col.axis = col_troughs, cex.axis = 0.7)
+      axis(side = 3, at = 0, labels = "trough index:",
+           tick = FALSE, mgp = c(3, mgp2_troughs, 0), hadj = 1,
+           col.axis = col_troughs, cex.axis = 0.7)
+    }
+    title(xlab = xlab, line = 2)
+    title(ylab = ylab, line = 2)
+    title(main = sprintf("spar = %.3f", object$spar[i]),
+          line = 2, cex.main = 0.9)
+  }
+
+  invisible(NULL)
+}
 

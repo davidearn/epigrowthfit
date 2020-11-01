@@ -5,8 +5,8 @@
 #' of model parameters specified by "egf" objects.
 #'
 #' @param object An "egf" object.
-#' @param parm An element of `names(object$theta_fit)`
-#'   indicating a parameter on which a confidence interval is desired.
+#' @param parm An element of `names(object$theta_fit)` indicating
+#'   a parameter for which to compute a confidence interval.
 #' @param level A number in the interval \[0,1\] indicating a
 #'   confidence level.
 #' @param method One of `"linear"`, `"uniroot"`, and `"wald"`
@@ -32,6 +32,25 @@ confint.egf <- function(object,
                         level = 0.95,
                         method = "linear",
                         ...) {
+  check(parm,
+    what = "character",
+    len = 1,
+    opt = names(object$theta_fit),
+    "`parm` must be an element of `names(object$theta_fit)`."
+  )
+  check(level,
+    what = "numeric",
+    len = 1,
+    val = c(0, 1),
+    "`level` must be a number in the interval [0,1]."
+  )
+  check(method,
+    what = "character",
+    len = 1,
+    opt = c("linear", "uniroot", "wald"),
+    "`method` must be one of \"linear\", \"uniroot\", \"wald\"."
+  )
+
   sdr <- summary(sdreport(object$madf_out), select = "fixed")
   log_parm <- paste0("log_", parm)
   if (method == "linear") {

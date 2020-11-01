@@ -34,17 +34,24 @@ NULL
 #' @rdname predict.egf
 #' @export
 predict.egf_init <- function(object, time = object$time, ...) {
-  if (!is.numeric(time) || length(time) == 0) {
-    stop("`time` must be numeric and have nonzero length.")
-  } else if (anyNA(time)) {
-    stop("`time` must not have missing values.")
-  } else if (!all(diff(time) > 0)) {
-    stop("`time` must be increasing.")
-  } else if (any(time < object$time[object$first] |
-                 time > object$time[object$last+1])) {
-    warning("There are elements of `time` outside of the fitting window.",
-            call. = FALSE)
-  }
+  check(time,
+    what = "numeric",
+    len = c(1, Inf),
+    "`time` must be numeric and have nonzero length."
+  )
+  check(time,
+    no = anyNA,
+    "`time` must not have missing values."
+  )
+  check(time,
+    yes = function(x) all(diff(x) > 0),
+    "`time` must be increasing."
+  )
+  check(time,
+    val = object$time[c(object$first, object$last+1)],
+    action = "warn",
+    "There are elements of `time` outside of the fitting window."
+  )
 
   out <- list(
     time = time,
@@ -60,18 +67,24 @@ predict.egf_init <- function(object, time = object$time, ...) {
 #' @rdname predict.egf
 #' @export
 predict.egf <- function(object, time = object$init$time, ...) {
-  if (!is.numeric(time) || length(time) == 0) {
-    stop("`time` must be numeric and have nonzero length.")
-  } else if (anyNA(time)) {
-    stop("`time` must not have missing values.")
-  } else if (!all(diff(time) > 0)) {
-    stop("`time` must be increasing.")
-  } else if (any(time < object$init$time[object$init$first] |
-                 time > object$init$time[object$init$last+1])) {
-    warning("There are elements of `time` outside of the fitting window.",
-            call. = FALSE)
-  }
-
+  check(time,
+    what = "numeric",
+    len = c(1, Inf),
+    "`time` must be numeric and have nonzero length."
+  )
+  check(time,
+    no = anyNA,
+    "`time` must not have missing values."
+  )
+  check(time,
+    yes = function(x) all(diff(x) > 0),
+    "`time` must be increasing."
+  )
+  check(time,
+    val = object$init$time[c(object$init$first, object$init$last+1)],
+    action = "warn",
+    "There are elements of `time` outside of the fitting window."
+  )
 
   out <- list(
     time = time,

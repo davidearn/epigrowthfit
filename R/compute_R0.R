@@ -71,20 +71,25 @@
 #'
 #' @export
 compute_R0 <- function(x, breaks, probs) {
-  if (!is.numeric(breaks) || length(breaks) < 2) {
-    stop("`breaks` must be numeric and have length 2 or greater.")
-  } else if (!isTRUE(all(breaks >= 0))) {
-    stop("Elements of `breaks` must be non-negative.")
-  } else if (!all(diff(breaks) > 0)) {
-    stop("`breaks` must be increasing.")
-  }
-  if (!is.numeric(probs) || length(probs) != length(breaks) - 1) {
-    stop("`probs` must be numeric with length `length(breaks)-1`.")
-  } else if (!all(is.finite(probs)) || any(probs < 0)) {
-    stop("`probs` must not contain missing, infinite, or negative values.")
-  } else if (all(probs == 0)) {
-    stop("`probs` must have at least one positive element.")
-  }
+  check(breaks,
+    what = "numeric",
+    len = c(2, Inf),
+    "`breaks` must be numeric and have length 2 or greater."
+  )
+  check(probs,
+    what = "numeric",
+    len = length(breaks) - 1,
+    "`breaks` must be numeric and have length `length(breaks)-1`."
+  )
+  check(probs,
+    val = c(0, Inf),
+    yes = function(x) all(is.finite(x)),
+    "`probs` must not contain missing, infinite, or negative values."
+  )
+  check(probs,
+    no = function(x) all(x == 0),
+    "`probs` must have at least one positive element."
+  )
 
   UseMethod("compute_R0", x)
 }
@@ -93,13 +98,12 @@ compute_R0 <- function(x, breaks, probs) {
 #' @export
 compute_R0.numeric <- function(x, breaks, probs) {
   if (length(x) > 1) {
-    sapply(x, compute_R0, breaks = breaks, probs = probs)
-  } else {
-    e1 <- exp(-x * breaks[-length(breaks)])
-    e2 <- exp(-x * breaks[-1])
-    d <- diff(breaks)
-    x / sum(probs * (e1 - e2) / d)
+    return(sapply(x, compute_R0, breaks = breaks, probs = probs))
   }
+  e1 <- exp(-x * breaks[-length(breaks)])
+  e2 <- exp(-x * breaks[-1])
+  d <- diff(breaks)
+  x / sum(probs * (e1 - e2) / d)
 }
 
 #' @rdname compute_R0

@@ -8,8 +8,8 @@ Compute the expected epidemic final size}
 compute_final_size(R0, S0 = 1, I0 = 0)
 }
 \arguments{
-\item{R0}{A numeric vector listing (non-negative) values
-for the basic reproduction number.}
+\item{R0}{A numeric vector listing non-negative values for
+the basic reproduction number.}
 
 \item{S0}{A numeric vector listing values in the interval
 [0,1] for the initial susceptible proportion.}
@@ -51,7 +51,7 @@ The explicit solution for \mjseqn{Z} in terms of
 \mjsdeqn{Z(\mathcal{R}_0) = S_0 + \frac{1}{\mathcal{R}_0} W\big\lbrack-\mathcal{R}_0 S_0 e^{-\mathcal{R}_0 (S_0 + I_0)}\big\rbrack\,.}
 }
 \examples{
-R0 <- seq(0, 40, by = 0.2)
+R0 <- 10^seq(-3, log10(40), length.out = 150)
 final_size <- compute_final_size(R0)
 plot(R0, final_size, type = "l", las = 1, ylab = "final size")
 

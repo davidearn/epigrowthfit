@@ -111,19 +111,28 @@
 #' @importFrom TMB MakeADFun
 #' @useDynLib epigrowthfit
 egf <- function(init, method = "nlminb", nbdisp_tol = 100, ...) {
-  if (!inherits(init, "egf_init")) {
-    stop("`init` must be an \"egf_init\" object.")
-  }
-  m <- c("nlminb", "nlm", "Nelder-Mead", "BFGS", "L-BFGS-S", "CG")
-  if (!is.character(method) || length(method) != 1 || !method %in% m) {
-    warning("Invalid `method`, using `\"nlminb\"` instead.", call. = FALSE)
+  check(init,
+    what = "egf_init",
+    "`init` must be an \"egf_init\" object."
+  )
+  ch <- check(method,
+    what = "character",
+    len = 1,
+    opt = c("nlminb", "nlm", "Nelder-Mead", "BFGS", "L-BFGS-S", "CG"),
+    action = "warn",
+    "Invalid `method`, using `\"nlminb\"` instead."
+  )
+  if (!ch) {
     method <- "nlminb"
   }
   if (init$distr == "nbinom") {
-    if (!is.numeric(nbdisp_tol) || length(nbdisp_tol) != 1 ||
-        !isTRUE(nbdisp_tol > 0)) {
-      stop("`nbdisp_tol` must be a positive number.")
-    }
+    check(nbdisp_tol,
+      what = "numeric",
+      len = 1,
+      val = c(0, Inf),
+      no = is.na,
+      "`nbdisp_tol` must be a non-negative number."
+    )
   }
 
   ## Construct a call to `MakeADFun()`
@@ -218,7 +227,8 @@ egf <- function(init, method = "nlminb", nbdisp_tol = 100, ...) {
   ## Warn if `nbdisp` exceeds threshold
   large_nbdisp_flag <- FALSE
   if (init$distr == "nbinom") {
-    nbdisp_threshold <- max(diff(eval_cum_inc(init$time[init$first:(init$last+1)])))
+    mu <- diff(eval_cum_inc(init$time[init$first:(init$last+1)]))
+    nbdisp_threshold <- max(mu)
     if (theta_fit[["nbdisp"]] > nbdisp_threshold) {
       warning("`nbdisp` exceeds threshold, refit with Poisson by running:\n\n",
               "update(object, init = update(init, distr = \"pois\"))",

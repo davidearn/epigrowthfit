@@ -23,8 +23,9 @@ $(TARBALL): rd DESCRIPTION src/$(PACKAGE).so
 
 rd: R/*.R inst/REFERENCES.bib
 	$(R) --no-echo -e 'devtools::document(".")'
-	sed -i 's/USCORE/_/ g' man/*.Rd
-	sed -i 's/\\text{/\\textrm{/ g' man/*.Rd
+	sed -i.bak 's/USCORE/_/ g' man/*.Rd 
+	sed -i.bak 's/\\text{/\\textrm{/ g' man/*.Rd
+	rm man/*.Rd.bak # `sed -i` without suffix is not portable to macOS
 
 src/$(PACKAGE).so:
 	$(MAKE) -C src

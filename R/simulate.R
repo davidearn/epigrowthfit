@@ -49,18 +49,32 @@ NULL
 #' @importFrom stats rpois rnbinom
 simulate.egf <- function(object, nsim = 1, seed = NULL,
                          time = object$init$time, ...) {
-  if (!is.numeric(time) || length(time) < 2) {
-    stop("`time` must be numeric and have length 2 or greater.")
-  } else if (anyNA(time)) {
-    stop("`time` must not have missing values.")
-  } else if (!all(diff(time) > 0)) {
-    stop("`time` must be increasing.")
-  }
-  if (!is.numeric(nsim) || length(nsim) != 1 || !isTRUE(nsim >= 1)) {
-    stop("`nsim` must be a positive integer.")
-  }
-  if (!is.null(seed) && (!is.numeric(seed) || !is.finite(seed[1]))) {
-    stop("`seed` must be `NULL` or an integer.")
+  check(time,
+    what = "numeric",
+    len = c(2, Inf),
+    "`time` must be numeric and have length 2 or greater."
+  )
+  check(time,
+    no = list(anyNA),
+    "`time` must not have missing values."
+  )
+  check(time,
+    yes = function(x) all(diff(x) > 0),
+    "`time` must be increasing."
+  )
+  check(nsim,
+    what = "numeric",
+    len = 1,
+    val = c(1, Inf),
+    yes = function(x) is.finite(x),
+    "`nsim` must be a positive integer."
+  )
+  if (!is.null(seed)) {
+    check(seed,
+      what = "numeric",
+      yes = function(x) is.finite(x[1]),
+      "`seed` must be `NULL` or an integer."
+    )
   }
 
   ## Predicted curves

@@ -5,8 +5,7 @@
 #' Evaluates expected cumulative incidence at desired time points
 #' conditional on a vector of model parameters.
 #'
-#' @param time A numeric vector listing time points in days since
-#'   a reference date.
+#' @param time A numeric vector listing time points in days.
 #' @param curve One of `"exponential"`, `"logistic"`, and `"richards"`,
 #'   indicating a model of expected cumulative incidence.
 #' @param include_baseline A logical scalar. If `TRUE`, then
@@ -17,15 +16,14 @@
 #'
 #'   \describe{
 #'     \item{`r`}{Initial exponential growth rate, expressed per day.}
-#'     \item{`c0`}{Expected cumulative incidence on the reference date.
+#'     \item{`c0`}{Expected cumulative incidence at `time = 0`.
 #'       Used only if `curve = "exponential"`.
 #'     }
 #'     \item{`K`}{Expected epidemic final size.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
-#'     \item{`thalf`}{Time at which the epidemic is expected to attain
-#'       half its final size, expressed as a number of days since the
-#'       reference date.
+#'     \item{`thalf`}{Time in days at which the epidemic is expected
+#'       to attain half its final size.
 #'       Used only if `curve %in% c("logistic", "richards")`.
 #'     }
 #'     \item{`p`}{Richards shape parameter.
@@ -48,23 +46,23 @@
 #'
 #' @export
 eval_model <- function(time, curve, include_baseline = FALSE, theta) {
-  if (!is.numeric(time)) {
-    stop("`time` must be numeric.")
-  } else if (isTRUE(any(diff(time) < 0))) {
-    stop("`time[!is.na(time)]` must be increasing.")
-  }
-  if (!is.character(curve) || length(curve) != 1 ||
-      !curve %in% c("exponential", "logistic", "richards")) {
-    stop("`curve` must be an element of ",
-         "`c(\"exponential\", \"logistic\", \"richards\")`.")
-  }
-  if (!is.logical(include_baseline) || length(include_baseline) != 1 ||
-      is.na(include_baseline)) {
-    stop("`include_baseline` must be `TRUE` or `FALSE`.")
-  }
-  if (!is.numeric(theta) || is.null(names(theta))) {
-    stop("`theta` must be a named numeric vector.")
-  }
+  check(time,
+    what = "numeric",
+    "`time` must be numeric."
+  )
+  check(curve,
+    what = "character",
+    len = 1,
+    opt = c("exponential", "logistic", "richards"),
+    "`curve` must be one of ",
+    "\"exponential\", \"logistic\", \"richards\"."
+  )
+  check(include_baseline,
+    what = "logical",
+    len = 1,
+    opt = c(TRUE, FALSE),
+    "`include_baseline` must be TRUE or FALSE."
+  )
   par <- switch(curve,
     exponential = c("r", "c0"),
     logistic    = c("r", "K", "thalf"),
@@ -73,11 +71,16 @@ eval_model <- function(time, curve, include_baseline = FALSE, theta) {
   if (include_baseline) {
     par <- c(par, "b")
   }
-  if (!all(par %in% names(theta))) {
-    stop("`theta` must specify all model parameters.")
-  } else if (!all(is.finite(theta[par])) || !all(theta[par] > 0)) {
-    stop("`theta` must specify positive values for all model parameters.")
-  }
+  check(theta,
+    what = "numeric",
+    no = function(x) is.null(names(x)),
+    "`theta` must be a named numeric vector."
+  )
+  check(theta[par],
+    yes = function(x) all(is.finite(x) & x > 0),
+    "`theta` must specify finite positive values for:\n",
+    paste(par, collapse = ", ")
+  )
 
   with(as.list(theta[par]), {
     x <- switch(curve,

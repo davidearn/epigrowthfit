@@ -66,7 +66,7 @@
 #' \mjtdeqn{f_\text{gen}(t) = \left\lbrace \begin{array}{l@{\qquad}ll} 0\,, & t \in (-\infty,1\rbrack\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m,\lceil t \rceil-1 \rbrace} p_i\,, & t \in (1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m, \lceil t \rceil-1 \rbrace} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \big(\lbrack 2,m+1 \rbrack \cap \mathrm{Z}\big) \cup (m+1,\infty)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1 \rbrack \setminus \mathrm{Z}\,. \end{array} \right.}{f_\text{gen}(t) = \begin{cases} 0\,, & t \in (-\infty,1\rbrack\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m,\lceil t \rceil-1 \rbrace} p_i\,, & t \in (1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m, \lceil t \rceil-1 \rbrace} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \big(\lbrack 2,m+1 \rbrack \cap \unicode{x2124}\big) \cup (m+1,\infty)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1 \rbrack \setminus \unicode{x2124}\,. \end{cases}}{LaTeX}
 #'
 #' Note that \mjseqn{f_\text{gen}} is supported on the interval
-#' \mjseqn{(1,m+n\rbrack} and constant on the interval \mjseqn{(i,i+1)}
+#' \mjseqn{(1,m+n)} and constant on the interval \mjseqn{(i,i+1)}
 #' for all integers \mjseqn{i}. Hence the probability that
 #' \mjseqn{\tau_\text{gen} \in (i,i+1\rbrack} is simply
 #'
@@ -92,10 +92,11 @@
 #' inf <- plague_infectious_period$relfreq
 #' n <- length(inf)
 #'
-#' ## For some reason, the density function
-#' ## is not left- or right-continuous at the
-#' ## integers ... ignore the integers for now
-#' x <- seq(0, m+n+1, by = 0.02) # support is actually (1,m+n]
+#' ## FIXME:
+#' ## For some reason, the density function is not
+#' ## left- or right-continuous at the integers ...
+#' ## ignore the integers for now
+#' x <- seq(0, m+n+1, by = 0.02)
 #' is_non_integer <- x %% 1 > 0
 #' xx <- x[is_non_integer]
 #' fx <- dgi(xx, lat, inf)
@@ -109,26 +110,31 @@ NULL
 #' @rdname generation-interval
 #' @export
 dgi <- function(x, lat, inf) {
-  if (missing(x)) {
-    stop("Missing argument `x`.")
-  } else if (!is.numeric(x) || length(x) == 0) {
-    stop("`x` must be numeric and have nonzero length.")
+  check(x,
+    what = "numeric",
+    len = c(1, Inf),
+    "`x` must be numeric and have nonzero length."
+  )
+  for (a in c("lat", "inf")) {
+    a_val <- get(a, inherits = FALSE)
+    check(a_val,
+      what = "numeric",
+      len = c(1, Inf),
+      sprintf("`%s` must be numeric and have nonzero length.", a)
+    )
+    check(a_val,
+      val = c(0, Inf),
+      yes = function(x) all(is.finite(x)),
+      sprintf("`%s` must not contain missing, infinite, or negative values.", a)
+    )
+    check(a_val,
+      no = function(x) all(x == 0),
+      sprintf("`%s` must have at least one positive element.", a)
+    )
   }
-  if (missing(lat)) {
-    stop("Missing argument `lat`.")
-  } else if (!is.numeric(lat) || length(lat) == 0) {
-    stop("`lat` must be numeric and have nonzero length.")
-  } else if (!all(is.finite(lat)) || any(lat < 0)) {
-    stop("`lat` must not contain missing, infinite, or negative values.")
-  } else if (all(lat == 0)) {
-    stop("`lat` must have at least one positive element.")
-  }
-  if (!is.numeric(inf) || length(inf) == 0) {
-    stop("`inf` must be numeric and have nonzero length.")
-  } else if (!all(is.finite(inf)) || any(inf < 0)) {
-    stop("`inf` must not contain missing, infinite, or negative values.")
-  } else if (all(inf == 0)) {
-    stop("`inf` must have at least one positive element.")
+
+  if (length(x) > 1) {
+    return(sapply(x, dgi, lat = lat, inf = inf))
   }
 
   lat <- lat / sum(lat)
@@ -137,14 +143,14 @@ dgi <- function(x, lat, inf) {
   n <- length(inf)
   re <- 1 / sum((1:n) * inf)
 
-  if (length(x) == 1) {
-    if (!is.finite(x)) {
-      NA
-    } else if (x <= 1) {
-      0
-    } else if (x < 2) {
-      re * sum(lat[1:min(m, ceiling(x)-1)])
-    } else if (x %% 1 == 0 || x > m + 1) {
+  if (is.na(x)) {
+    NA
+  } else if (x <= 1) {
+    0
+  } else if (x < 2) {
+    re * sum(lat[1:min(m, ceiling(x)-1)])
+  } else if (x < m + n) {
+    if (x %% 1 == 0 || x > m + 1) {
       s <- 0
       for (i in 1:min(m, ceiling(x)-1)) {
         s <- s + lat[i] * (1 - sum(inf[1:min(n, floor(x)-i)]))
@@ -158,53 +164,37 @@ dgi <- function(x, lat, inf) {
       re * (lat[ceiling(x)-1] + s)
     }
   } else {
-    sapply(x, dgi, lat = lat, inf = inf)
+    0
   }
 }
 
 #' @rdname generation-interval
 #' @export
 pgi <- function(x, lat, inf) {
-  if (missing(x)) {
-    stop("Missing argument `x`.")
-  } else if (!is.numeric(x) || length(x) == 0) {
-    stop("`x` must be numeric and have nonzero length.")
-  }
-  if (missing(lat)) {
-    stop("Missing argument `lat`.")
-  } else if (!is.numeric(lat) || length(lat) == 0) {
-    stop("`lat` must be numeric and have nonzero length.")
-  } else if (!all(is.finite(lat)) || any(lat < 0)) {
-    stop("`lat` must not contain missing, infinite, or negative values.")
-  } else if (all(lat == 0)) {
-    stop("`lat` must have at least one positive element.")
-  }
-  if (!is.numeric(inf) || length(inf) == 0) {
-    stop("`inf` must be numeric and have nonzero length.")
-  } else if (!all(is.finite(inf)) || any(inf < 0)) {
-    stop("`inf` must not contain missing, infinite, or negative values.")
-  } else if (all(inf == 0)) {
-    stop("`inf` must have at least one positive element.")
+  check(x,
+    what = "numeric",
+    len = c(1, Inf),
+    "`x` must be numeric and have nonzero length."
+  )
+
+  if (length(x) > 1) {
+    return(sapply(x, pgi, lat = lat, inf = inf))
   }
 
   m <- length(lat)
   n <- length(inf)
 
-  if (length(x) == 1) {
-    if (!is.finite(x)) {
-      NA
-    } else if (x <= 1) {
-      0
-    } else if (x <= 2) {
-      (x - 1) * dgi(1.5, lat, inf)
-    } else if (x <= m + n) {
-      i <- ceiling(x) - 1
-      j <- 1:(i-1)
-      (x - i) * dgi(i + 0.5, lat, inf) + sum(dgi(j + 0.5, lat, inf))
-    } else {
-      1
-    }
+  if (is.na(x)) {
+    NA
+  } else if (x <= 1) {
+    0
+  } else if (x <= 2) {
+    (x - 1) * dgi(1.5, lat, inf)
+  } else if (x < m + n) {
+    i <- ceiling(x) - 1
+    j <- 1:(i-1)
+    (x - i) * dgi(i + 0.5, lat, inf) + sum(dgi(j + 0.5, lat, inf))
   } else {
-    sapply(x, pgi, lat = lat, inf = inf)
+    1
   }
 }
