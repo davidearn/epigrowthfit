@@ -21,8 +21,8 @@ A method for plotting objects of class "smooth_cases".
 \subsection{Plot elements}{
 
 There is one panel for each element of \code{x$spar}. The bottom axis
-measures time as a number of days since \code{x$date[1]}. The left axis
-measures interval incidence, log(1+x)-transformed if \code{x$log = TRUE}.
+displays the dates specified by \code{x$date}. The left axis measures
+interval incidence, log(1+x)-transformed if \code{x$log = TRUE}.
 Plotted as points are the interval incidence data specified by
 \code{x$date} and \code{x$cases}. Plotted as a solid line is a cubic spline
 fit to the (possibly transformed) data using \code{\link[stats:smooth.spline]{stats::smooth.spline()}}.

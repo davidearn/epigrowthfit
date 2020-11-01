@@ -661,8 +661,8 @@ plot.egf_sim <- function(x, inc = "cumulative",
 #' @details
 #' ## Plot elements
 #' There is one panel for each element of `x$spar`. The bottom axis
-#' measures time as a number of days since `x$date[1]`. The left axis
-#' measures interval incidence, log(1+x)-transformed if `x$log = TRUE`.
+#' displays the dates specified by `x$date`. The left axis measures
+#' interval incidence, log(1+x)-transformed if `x$log = TRUE`.
 #' Plotted as points are the interval incidence data specified by
 #' `x$date` and `x$cases`. Plotted as a solid line is a cubic spline
 #' fit to the (possibly transformed) data using [stats::smooth.spline()].
@@ -688,7 +688,7 @@ plot.smooth_cases <- function(x, ...) {
   )
   xlim <- range(object$time)
   ylim <- c(0, max(data$y) * 1.04)
-  xlab <- paste("days since", object$date[1])
+  xlab <- "date"
   ylab <- if (object$log) expression(log[10] * "(1+cases)") else "cases"
   col_points <- "#CCCCCC"
   col_peaks <- "#BB5566"
@@ -709,8 +709,14 @@ plot.smooth_cases <- function(x, ...) {
     abline(v = x_peaks, lty = 3, col = col_peaks)
     abline(v = x_troughs, lty = 3, col = col_troughs)
     box(bty = "l")
-    axis(side = 1, mgp = c(3, 0.7, 0), gap.axis = 0, cex.axis = 0.9)
-    axis(side = 2, mgp = c(3, 0.7, 0), las = 1, cex.axis = 0.9)
+    l <- list(
+      left = par("usr")[1],
+      right = par("usr")[2],
+      refdate = x$init$date[1]
+    )
+    daxis(left = par("usr")[1], right = par("usr")[2],
+          refdate = object$date[1], cex.axis = c(0.7, 0.85))
+    axis(side = 2, mgp = c(3, 0.7, 0), las = 1, cex.axis = 0.85)
     if (length(x_peaks) > 0) {
       axis(side = 3, at = x_peaks, labels = peaks,
            tick = FALSE, mgp = c(3, mgp2_peaks, 0), gap.axis = 0,

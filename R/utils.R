@@ -189,21 +189,18 @@ daxis <- function(left, right, refdate,
     m <- ifelse(m > 12, 1, m)
     as.Date(paste(y, m, 1, sep = "-"))
   }
-  for (a in c("mgp2", "col.axis", "cex.axis")) {
-    x <- get(a)
-    if (length(x) == 1) {
-      assign(a, rep(x, 2))
-    }
-  }
+  mgp2 <- rep(mgp2, length.out = 2)
+  col.axis <- rep(col.axis, length.out = 2)
+  cex.axis <- rep(cex.axis, length.out = 2)
   minor_axis <- function() {
     axis(side = 1, at = t0 + at, labels = labels,
-         tcl = tcl, mgp = c(3, mgp2[1], 0),
+         tcl = tcl, mgp = c(3, mgp2[1], 0), gap.axis = 0,
          cex.axis = cex.axis[1], col.axis = col.axis[1])
     invisible(NULL)
   }
   major_axis <- function() {
     axis(side = 1, at = t0 + at, labels = labels,
-         tick = FALSE, mgp = c(3, mgp2[2], 0),
+         tick = FALSE, mgp = c(3, mgp2[2], 0), gap.axis = 0,
          cex.axis = cex.axis[2], col.axis = col.axis[2])
     invisible(NULL)
   }
