@@ -748,7 +748,7 @@ or more explicitly as
 \begin{equation}
 \label{eq:nbinom-pmf}
 f_i(j;\vec{\xi},k)
-= \frac{\Gamma(k + j)}{j! \Gamma(k)} \bigg(\frac{k}{k + \mu_i(\vec{\xi})}\bigg)^k \bigg(\frac{\mu_i(\xi)}{k + \mu_i(\xi)}\bigg)^j\,\qquad j = 0,1,\ldots
+= \frac{\Gamma(k + j)}{j! \Gamma(k)} \bigg(\frac{k}{k + \mu_i(\vec{\xi})}\bigg)^k \bigg(\frac{\mu_i(\vec{\xi})}{k + \mu_i(\vec{\xi})}\bigg)^j\,\qquad j = 0,1,\ldots
 \end{equation}
 \end{linenomath}
 

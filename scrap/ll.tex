@@ -1,15 +1,91 @@
 \documentclass[12pt]{article}
 
 \usepackage[top=1in,bottom=1.5in,left=1in,right=1in]{geometry}
-\usepackage{amsmath,bbm}
+\usepackage{amsmath,bm}
 \allowdisplaybreaks
 \usepackage[colorlinks=true,allcolors=magenta]{hyperref}
+\renewcommand{\vec}[1]{\bm{\mathrm{#1}}}
 
 \begin{document}
 \setlength{\parskip}{3mm}
 \setlength{\parindent}{7mm}
 
 \section{Likelihood function}
+
+Let $c(t;\vec{\xi})$ denote expected cumulative incidence at time $t$
+conditional on model parameters $\vec{\xi}$. Assume interval break
+points $t_0 < t_1 < \cdots < t_n$,
+and let $\mu_i(\vec{\xi}) = c(t_i;\vec{\xi}) - c(t_{i-1};\vec{\xi})$
+for $i = 1,\ldots,n$. Here, $\mu_i(\vec{\xi})$ is the expected number
+of cases observed between times $t_{i-1}$ and $t_i$. If the actual number
+$X_i$ of cases observed between times $t_{i-1}$ and $t_i$ follows a negative
+binomial distribution with mean $\mu_i(\vec{\xi})$ and dispersion $k > 0$,
+%
+\begin{equation}
+  \label{eq:nbinom}
+  X_i \sim \mathrm{NegativeBinomial}(\mu_i,k)\,,
+\end{equation}
+%
+and if the set $\{X_i\}_{i=1}^{n}$ is mutually independent, then the
+likelihood of model $\vec{\theta} = (\vec{\xi},k)$ given data
+$\vec{x} = \{x_i\}_{i=1}^{n}$ is
+%
+\begin{equation}
+  \label{eq:likelihood}
+  \mathcal{L}(\vec{\theta}|\vec{x}) = \prod_{i=1}^{n} f_i(x_i;\vec{\theta})\,,
+\end{equation}
+%
+where $f_i(j;\vec{\theta})$ denotes the probability mass function of $X_i$
+conditional on model $\vec{\theta}$, evaluated at integer $j$,
+%
+\begin{equation}
+  \label{eq:nbinom-pmf}
+  f_i(j;\vec{\theta})
+  = \frac{\Gamma(k + j)}{j! \Gamma(k)} \bigg(\frac{k}{k + \mu_i(\vec{\xi})}\bigg)^k \bigg(\frac{\mu_i(\vec{\xi})}{k + \mu_i(\vec{\xi})}\bigg)^j\,\qquad j = 0,1,\ldots\,.
+\end{equation}
+%
+Substituting \eqref{eq:nbinom-pmf} in \eqref{eq:nbinom} and taking the
+logarithm of both sides yields the negative log likelihood
+%
+\begin{equation}
+  \label{eq:nll}
+  \begin{aligned}
+    -\ell(\vec{\theta}|\vec{x})
+    &= -\log \mathcal{L}(\vec{\theta}|\vec{x}) \\
+    &= -\sum_{i=1}^{n} \log f_i(x_i;\vec{\theta}) \\
+    &= -\sum_{i=1}^{n} \log \bigg[ \frac{\Gamma(k + x_i)}{x_i! \Gamma(k)} \bigg( \frac{k}{k + \mu_i(\vec{\xi})} \bigg)^{k} \bigg( \frac{\mu_i(\vec{\xi})}{k + \mu_i(\vec{\xi})} \bigg)^{x_i} \bigg] \\
+    &= -\sum_{i=1}^{n} \Big\{ \log \Gamma(k + x_i) - \sum_{j=1}^{x_i} \log j - \log \Gamma(k) \\
+    &\hspace{1in} + k \log k - k \log (k + \mu_i(\vec{\xi})) + x_i \log \mu_i(\vec{\xi}) - x_i \log (k + \mu_i(\vec{\xi})) \Big\}\,.
+  \end{aligned}
+\end{equation}
+
+\section{Likelihood gradient}
+
+The derivative of $-\ell$ with respect to $\vec{\xi}$ is
+%
+\begin{equation}
+  \begin{aligned}
+    -\frac{\partial \ell}{\partial \vec{\xi}}(\vec{\xi},k|\vec{x})
+    &= -\sum_{i=1}^{n} \bigg\{ -\frac{k \frac{\partial \mu_i}{\partial \vec{\xi}}(\vec{\xi})}{k + \mu_i(\vec{\xi})} + \frac{x_i \frac{\partial \mu_i}{\partial \vec{\xi}}(\vec{\xi})}{\mu_i(\vec{\xi})} - \frac{x_i \frac{\partial \mu_i}{\partial \vec{\xi}}(\vec{\xi})}{k + \mu_i(\vec{\xi})} \bigg\} \\
+    &= -\sum_{i=1}^{n} \frac{\partial \mu_i}{\partial \vec{\xi}}(\vec{\xi}) \bigg\{\frac{x_i}{\mu_i(\vec{\xi})} - \frac{k + x_i}{k + \mu_i(\vec{\xi})} \bigg\} \\
+    &= -\sum_{i=1}^{n}\frac{\partial \mu_i}{\partial \vec{\xi}}(\vec{\xi})\cdot\frac{x_i - \mu_i(\vec{\xi})}{\mu_i(\vec{\xi})}\cdot\frac{k}{k + \mu_i(\vec{\xi})}\,.
+  \end{aligned}
+\end{equation}
+%
+The derivative of $-\ell$ with respect to $k$ is
+%
+\begin{equation}
+  -\frac{\partial \ell}{\partial k}(\vec{\xi},k|\vec{x})
+  = -\sum_{i=1}^{n} \bigg\{ \psi^{(0)}(k + x_i) - \psi^{(0)}(k) + 1 + \log k - \log (k + \mu_i(\vec{\xi})) - \frac{k + x_i}{k + \mu_i(\vec{\xi})} \bigg\}\,,
+\end{equation}
+%
+where $\psi^{(0)}$ denotes the polygamma function of order 0
+(or digamma function).
+
+\section{Likelihood Hessian}
+
+
+
 
 
 
