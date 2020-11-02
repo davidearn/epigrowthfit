@@ -30,10 +30,10 @@ that \code{sum(inf) != 1}.}
 \value{
 A numeric vector with length \code{length(x)}.
 For \code{dgi()}, the \code{i}th element is the generation interval
-density function (see \mjseqn{f_\textrm{gen}} in Details)
+density function (see \mjseqn{f_\text{gen}} in Details)
 evaluated at \code{x[i]}.
 For \code{pgi()}, the \code{i}th element is the generation interval
-distribution function (see \mjseqn{F_\textrm{gen}} in Details)
+distribution function (see \mjseqn{F_\text{gen}} in Details)
 evaluated at \code{x[i]}.
 }
 \description{
@@ -44,50 +44,50 @@ period and infectious waiting time are independent and (ii) that
 infectiousness is constant over the infectious period.
 }
 \details{
-Let \mjseqn{\tau_\textrm{lat}} and \mjseqn{\tau_\textrm{inf}} be
-the latent and infectious periods, let \mjseqn{f_\textrm{lat}}
-and \mjseqn{f_\textrm{inf}} be their density functions, and let
-\mjseqn{F_\textrm{lat}} and \mjseqn{F_\textrm{inf}} be their
-distribution functions. Suppose \mjseqn{f_\textrm{lat}} and
-\mjseqn{f_\textrm{inf}} are supported on
+Let \mjseqn{\tau_\text{lat}} and \mjseqn{\tau_\text{inf}} be
+the latent and infectious periods, let \mjseqn{f_\text{lat}}
+and \mjseqn{f_\text{inf}} be their density functions, and let
+\mjseqn{F_\text{lat}} and \mjseqn{F_\text{inf}} be their
+distribution functions. Suppose \mjseqn{f_\text{lat}} and
+\mjseqn{f_\text{inf}} are supported on
 \mjseqn{\lbrace 1,\ldots,m \rbrace} days
 and \mjseqn{\lbrace 1,\ldots,n \rbrace} days, respectively,
 so that
 
-\mjtdeqn{\begin{array}{r@{}ll} f_\textrm{lat}(t) &= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr f_\textrm{inf}(t) & {}= \sum_{i=1}^{n} q_i \delta(t - i)\,, \end{array}}{\begin{align} f_\textrm{lat}(t) & {}= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr f_\textrm{inf}(t) &= \sum_{i=1}^{n} q_i \delta(t - i)\,, \end{align}}{LaTeX}
+\mjtdeqn{\begin{array}{r@{}ll} f_\text{lat}(t) &= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr f_\text{inf}(t) & {}= \sum_{i=1}^{n} q_i \delta(t - i)\,, \end{array}}{\begin{align} f_\text{lat}(t) & {}= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr f_\text{inf}(t) &= \sum_{i=1}^{n} q_i \delta(t - i)\,, \end{align}}{LaTeX}
 
 where \mjseqn{p_i,q_i \in \lbrack 0,1 \rbrack},
 \mjseqn{\sum_{i=1}^{m} p_i = \sum_{i=1}^{n} q_i = 1}
 and \mjseqn{\delta} is the Dirac delta.
 
-Let \mjseqn{\tau_\textrm{wait}} be the infectious waiting time and
-\mjseqn{f_\textrm{wait}} its density. Then the generation interval
-is \mjseqn{\tau_\textrm{gen} = \tau_\textrm{lat} + \tau_\textrm{wait}}
+Let \mjseqn{\tau_\text{wait}} be the infectious waiting time and
+\mjseqn{f_\text{wait}} its density. Then the generation interval
+is \mjseqn{\tau_\text{gen} = \tau_\text{lat} + \tau_\text{wait}}
 and has density function
-\mjseqn{f_\textrm{gen} = f_\textrm{lat} * f_\textrm{wait}},
-assuming independence of \mjseqn{\tau_\textrm{lat}} and
-\mjseqn{\tau_\textrm{wait}}.
+\mjseqn{f_\text{gen} = f_\text{lat} * f_\text{wait}},
+assuming independence of \mjseqn{\tau_\text{lat}} and
+\mjseqn{\tau_\text{wait}}.
 
 Equation 5.7 of \insertCite{Sven07;textual}{epigrowthfit}
-gives an expression for \mjseqn{f_\textrm{wait}}, assuming
+gives an expression for \mjseqn{f_\text{wait}}, assuming
 that infectiousness is constant over the infectious period:
 
-\mjtdeqn{f_\textrm{wait} = \mathrm{1}_{(0,\infty)} \frac{1 - F_\textrm{inf}}{\mathrm{E}\lbrack \tau_\textrm{inf} \rbrack}\,.}{f_\textrm{wait} = \unicode{x1D7D9}_{(0,\infty)} \frac{1 - F_\textrm{inf}}{\unicode{x1D53C}\lbrack \tau_\textrm{inf} \rbrack}\,.}{LaTeX}
+\mjtdeqn{f_\text{wait} = \mathrm{1}USCORE{(0,\infty)} \frac{1 - F_\text{inf}}{\mathrm{E}\lbrack \tau_\text{inf} \rbrack}\,.}{f_\text{wait} = \unicode{x1D7D9}USCORE{(0,\infty)} \frac{1 - F_\text{inf}}{\unicode{x1D53C}\lbrack \tau_\text{inf} \rbrack}\,.}{LaTeX}
 
 In this case, one can show that
 
-\mjtdeqn{f_\textrm{gen}(t) = \left\lbrace \begin{array}{l@{\qquad}ll} 0\,, & t \in (-\infty,1\rbrack\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m,\lceil t \rceil-1 \rbrace} p_i\,, & t \in (1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m, \lceil t \rceil-1 \rbrace} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \big(\lbrack 2,m+1 \rbrack \cap \mathrm{Z}\big) \cup (m+1,\infty)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1 \rbrack \setminus \mathrm{Z}\,. \end{array} \right.}{f_\textrm{gen}(t) = \begin{cases} 0\,, & t \in (-\infty,1\rbrack\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m,\lceil t \rceil-1 \rbrace} p_i\,, & t \in (1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m, \lceil t \rceil-1 \rbrace} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \big(\lbrack 2,m+1 \rbrack \cap \unicode{x2124}\big) \cup (m+1,\infty)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1 \rbrack \setminus \unicode{x2124}\,. \end{cases}}{LaTeX}
+\mjtdeqn{f_\text{gen}(t) = \left\lbrace \begin{array}{l@{\qquad}ll} 0\,, & t \in (-\infty,1)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} p_1\,, & t \in \lbrack 1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lfloor t \rfloor} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{m} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \lbrack m+1,m+n)\,, \cr 0\,, & t \in \lbrack m+n,\infty)\,. \end{array} \right.}{f_\text{gen}(t) = \begin{cases} 0\,, & t \in (-\infty,1)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} p_1\,, & t \in \lbrack 1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lfloor t \rfloor} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{m} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \lbrack m+1,m+n)\,, \cr 0\,, & t \in \lbrack m+n,\infty)\,. \end{cases}}{LaTeX}
 
-Note that \mjseqn{f_\textrm{gen}} is supported on the interval
+Note that \mjseqn{f_\text{gen}} is supported on the interval
 \mjseqn{(1,m+n)} and constant on the interval \mjseqn{(i,i+1)}
 for all integers \mjseqn{i}. Hence the probability that
-\mjseqn{\tau_\textrm{gen} \in (i,i+1\rbrack} is simply
+\mjseqn{\tau_\text{gen} \in (i,i+1\rbrack} is simply
 
-\mjsdeqn{g_i = \int_{i}^{i+1} f_\textrm{gen}(s)\,\textrm{d}s = \int_{i}^{i+1} f_\textrm{gen}(i+1/2)\,\textrm{d}s = f_\textrm{gen}(i+1/2)\,.}
+\mjsdeqn{g_i = \int_{i}^{i+1} f_\text{gen}(s)\,\text{d}s = \int_{i}^{i+1} f_\text{gen}(i+1/2)\,\text{d}s = f_\text{gen}(i+1/2)\,.}
 
-Then the distribution function of \mjseqn{\tau_\textrm{gen}} is
+Then the distribution function of \mjseqn{\tau_\text{gen}} is
 
-\mjtdeqn{F_\textrm{gen}(t) = \int_{-\infty}^{t} f_\textrm{gen}(s)\,\textrm{d}s = \left\lbrace \begin{array}{l@{\qquad}ll} 0\,, & t \in (-\infty,1\rbrack\,, \cr (t - 1) g_1\,, & t \in (1,2\rbrack\,, \cr (t - i) g_i + \sum_{j=1}^{i-1} g_j\,, & t \in (i,i+1\rbrack\,,\quad i \in \lbrace 2,\ldots,m+n-1 \rbrace\,, \cr 1\,, & t \in (m+n,\infty)\,. \end{array} \right.}{\begin{align} F_\textrm{gen}(t) &= \int_{-\infty}^{t} f_\textrm{gen}(s)\,\textrm{d}s \cr &= \begin{cases} 0\,, & t \in (-\infty,1\rbrack\,, \cr (t - 1) g_1\,, & t \in (1,2\rbrack\,, \cr (t - i) g_i + \sum_{j=1}^{i-1} g_j\,, & t \in (i,i+1\rbrack\,,\quad i \in \lbrace 2,\ldots,m+n-1 \rbrace\,, \cr 1\,, & t \in (m+n,\infty)\,. \end{cases} \end{align}}{LaTeX}
+\mjtdeqn{F_\text{gen}(t) = \int_{-\infty}^{t} f_\text{gen}(s)\,\text{d}s = \left\lbrace \begin{array}{l@{\qquad}ll} 0\,, & t \in (-\infty,1\rbrack\,, \cr (t - 1) g_1\,, & t \in (1,2\rbrack\,, \cr (t - i) g_i + \sum_{j=1}^{i-1} g_j\,, & t \in (i,i+1\rbrack\,,\quad i \in \lbrace 2,\ldots,m+n-1 \rbrace\,, \cr 1\,, & t \in (m+n,\infty)\,. \end{array} \right.}{\begin{align} F_\text{gen}(t) &= \int_{-\infty}^{t} f_\text{gen}(s)\,\text{d}s \cr &= \begin{cases} 0\,, & t \in (-\infty,1\rbrack\,, \cr (t - 1) g_1\,, & t \in (1,2\rbrack\,, \cr (t - i) g_i + \sum_{j=1}^{i-1} g_j\,, & t \in (i,i+1\rbrack\,,\quad i \in \lbrace 2,\ldots,m+n-1 \rbrace\,, \cr 1\,, & t \in (m+n,\infty)\,. \end{cases} \end{align}}{LaTeX}
 }
 \examples{
 data(plague_latent_period)
@@ -98,17 +98,18 @@ data(plague_infectious_period)
 inf <- plague_infectious_period$relfreq
 n <- length(inf)
 
-## FIXME:
-## For some reason, the density function is not
-## left- or right-continuous at the integers ...
-## ignore the integers for now
 x <- seq(0, m+n+1, by = 0.02)
-is_non_integer <- x \%\% 1 > 0
-xx <- x[is_non_integer]
-fx <- dgi(xx, lat, inf)
+fx <- dgi(x, lat, inf)
 Fx <- pgi(x, lat, inf)
-plot(xx, fx, las = 1, xlab = "number of days", ylab = "density function")
-plot(x, Fx, las = 1, xlab = "number of days", ylab = "distribution function")
+
+plot(x, fx, cex = 0.1, las = 1,
+  xlab = "number of days",
+  ylab = "density function"
+)
+plot(x, Fx, type = "l", las = 1,
+  xlab = "number of days",
+  ylab = "distribution function"
+)
 
 }
 \references{

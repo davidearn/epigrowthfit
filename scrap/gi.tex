@@ -5,26 +5,39 @@
 \allowdisplaybreaks
 \usepackage[colorlinks=true,allcolors=magenta]{hyperref}
 
+\newcommand{\tlat}{\tau_\text{lat}}
+\newcommand{\tinf}{\tau_\text{inf}}
+\newcommand{\twait}{\tau_\text{wait}}
+\newcommand{\tgen}{\tau_\text{gen}}
+\renewcommand{\flat}{f_\text{lat}}
+\newcommand{\finf}{f_\text{inf}}
+\newcommand{\fwait}{f_\text{wait}}
+\newcommand{\fgen}{f_\text{gen}}
+\newcommand{\Flat}{F_\text{lat}}
+\newcommand{\Finf}{F_\text{inf}}
+\newcommand{\Fwait}{F_\text{wait}}
+\newcommand{\Fgen}{F_\text{gen}}
+
 \begin{document}
 \setlength{\parskip}{3mm}
 \setlength{\parindent}{7mm}
 
 \section{Generation interval distribution}
 
-Let $X$ and $Y$ be the latent%
+Let $\tlat$ and $\tinf$ be the latent%
 \footnote{Time from infection to onset of infectiousness.}
 and infectious%
 \footnote{Time from onset of infectiousness to recovery.}
-periods, let $f_X$ and $f_Y$ be their density functions,
-and let $F_X$ and $F_Y$ be their distribution functions.
-Suppose $f_X$ and $f_Y$ are supported on $\{1,\ldots,m\}$
+periods, let $\flat$ and $\finf$ be their density functions,
+and let $\Flat$ and $\Finf$ be their distribution functions.
+Suppose $\flat$ and $\finf$ are supported on $\{1,\ldots,m\}$
 days and $\{1,\ldots,n\}$ days respectively, so that
 %
 \begin{subequations}
   \begin{align}
-    f_X(t) &= \sum_{i=1}^{m} p_i \delta(t - i)\,, \label{eq:fX} \\
-    F_X(t) &= \begin{cases} 0\,, & t < 1\,, \\ \sum\limits_{i=1}^{\min\{m,\lfloor t \rfloor\}} p_i\,, & t \geq 1\,, \end{cases} \\ 
-    \mathbbm{E}[X] &= \sum_{i=1}^{m} i p_i\,,
+    \flat(t) &= \sum_{i=1}^{m} p_i \delta(t - i)\,, \label{eq:fX} \\
+    \Flat(t) &= \begin{cases} 0\,, & t < 1\,, \\ \sum\limits_{i=1}^{\min\{m,\lfloor t \rfloor\}} p_i\,, & t \geq 1\,, \end{cases} \\ 
+    \mathbbm{E}[\tlat] &= \sum_{i=1}^{m} i p_i\,,
   \end{align}
 \end{subequations}
 %
@@ -32,159 +45,114 @@ and
 %
 \begin{subequations}
   \begin{align}
-    f_Y(t) &= \sum_{i=1}^{n} q_i \delta(t - i)\,, \\
-    F_Y(t) &= \begin{cases} 0\,, & t < 1\,, \\ \sum\limits_{i=1}^{\min\{n,\lfloor t \rfloor\}} q_i\,, & t \geq 1\,, \end{cases} \label{eq:FY} \\
-    \mathbbm{E}[Y] &= \sum_{i=1}^{n} i q_i\,,
+    \finf(t) &= \sum_{i=1}^{n} q_i \delta(t - i)\,, \\
+    \Finf(t) &= \begin{cases} 0\,, & t < 1\,, \\ \sum\limits_{i=1}^{\min\{n,\lfloor t \rfloor\}} q_i\,, & t \geq 1\,, \end{cases} \label{eq:FY} \\
+    \mathbbm{E}[\tinf] &= \sum_{i=1}^{n} i q_i\,,
   \end{align}
 \end{subequations}
 %
 where $p_i,q_i \in [0,1]$, $\sum_{i=1}^{m} p_i = \sum_{i=1}^{n} q_i = 1$,
 and $\delta$ is the Dirac delta.
 
-Let $W$ be the infectious waiting time%
+Let $\twait$ be the infectious waiting time%
 \footnote{Time from onset of infectiousness to transmission.}
-and $f_W$ its density. Then the generation interval%
+and $\fwait$ its density. Then the generation interval%
 \footnote{Time from infection to transmission.}
-is $Z = X + W$ and has density $f_Z = f_X * f_W$
-(assuming independence of $X$ and $W$).
+is $\tgen = \tlat + \twait$ and has density $\fgen = \flat * \fwait$
+(assuming independence of $\tlat$ and $\twait$).
 From \eqref{eq:fX}, we obtain
 %
 \begin{equation}
   \label{eq:fZ}
   \begin{aligned}
-    f_Z(t)
-    &= (f_X * f_W(t) \\
-    &= \int_{-\infty}^{\infty} f_X(a) f_W(t - a)\,\text{d}a \\
-    &= \sum_{i=1}^{m} p_i \int_{-\infty}^{\infty} \delta(a - i) f_W(t - a)\,\text{d}a \\
-    &= \sum_{i=1}^{m} p_i f_W(t - i)\,.
+    \fgen(t)
+    &= (\flat * \fwait(t) \\
+    &= \int_{-\infty}^{\infty} \flat(a) \fwait(t - a)\,\text{d}a \\
+    &= \sum_{i=1}^{m} p_i \int_{-\infty}^{\infty} \delta(a - i) \fwait(t - a)\,\text{d}a \\
+    &= \sum_{i=1}^{m} p_i \fwait(t - i)\,.
   \end{aligned}
 \end{equation}
 %
-Equation 5.7 in Svensson (2007) gives an expression for $f_W$,
+Equation 5.7 in Svensson (2007) gives an expression for $\fwait$,
 assuming that infectiousness is constant over an infectious period:%
-\footnote{Equation 5.7 in Svensson (2007) ignores the $t \leq 0$ case.}
+\footnote{Equation 5.7 in Svensson (2007) ignores the $t < 0$ case.}
 %
 \begin{equation}
   \label{eq:fW}
-  f_W(t) = \begin{cases} 0\,, & t \leq 0\,, \\ \frac{1 - F_Y(t)}{\mathrm{E}[Y]}\,, & t > 0\,. \end{cases}
+  \fwait(t) = \begin{cases} 0\,, & t < 0\,, \\ \frac{1 - \Finf(t)}{\mathrm{E}[\tinf]}\,, & t \geq 0\,. \end{cases}
 \end{equation}
 %
-If $t \leq 1$, then $t - i \leq 0$ for all $i \geq 1$. Hence
-$f_W(t - i) = 0$ for all $i \geq 1$, and \eqref{eq:fZ} gives
-$f_Z(t) = 0$. If $t > 1$, then $t - i \leq 0$ for all
-$i \geq t$. Hence $f_W(t - i) = 0$ for all $i \geq t$, and
-\eqref{eq:fZ} can be rewritten as
+By \eqref{eq:fW}, $\fwait(t - i) = 0$ for all integers
+$i > \lfloor t \rfloor$, because $t - i < 0$ for all
+integers $i > \lfloor t \rfloor$. Hence substituting
+\eqref{eq:fW} in \eqref{eq:fZ} yields
 %
 \begin{equation}
-  \begin{aligned}
-    \label{eq:fZ-tgt0}
-    f_Z(t)
-    &= \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i f_W(t - i) \\
-    &= \mathbbm{E}[Y]^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i (1 - F_Y(t - i))\,.
-  \end{aligned}
-\end{equation}
-%
-If $1 < t < 2$, then $t - i < 1$ for all $i \geq 1$. Hence
-$F_Y(t - i) = 0$ for all $i \geq 1$, and \eqref{eq:fZ-tgt0}
-simplifies to
-%
-\begin{equation}
-  f_Z(t) = \mathbbm{E}[Y]^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i\,.
-\end{equation}
-%
-If $t \geq 2$, then \eqref{eq:fZ-tgt0} can be rewritten in
-one of two ways:
-
-\begin{itemize}
-  %
-  \item If $t$ is an integer \textit{or} $t > m + 1$, then
-    %
-    \begin{equation*}
-      i \leq \min\{m,\lceil t \rceil-1\} \leq t-1 \qquad\implies\qquad t-i \geq 1\,.
-    \end{equation*}
-    %
-    Substituting \eqref{eq:FY} in \eqref{eq:fZ-tgt0} yields
-    %
-    \begin{equation}
-      f_Z(t) = \mathbbm{E}[Y]^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i \bigg(1   - \sum_{j=1}^{\min\{n,\lfloor t \rfloor-i\}} q_j\bigg)\,.
-    \end{equation}
-    %
-  \item If $t$ is not an integer \textit{and} $t < m + 1$, then
-    %
-    \begin{equation*}
-      i \leq \min\{m,\lceil t \rceil-1\} = \lceil t \rceil-1\,.
-    \end{equation*}
-    %
-    Noting that
-    %
-    \begin{equation*}
-      \lfloor t \rfloor-1 < t-1 < \lceil t \rceil-1\,,
-    \end{equation*}
-    %
-    we have
-    %
-    \begin{equation*}
-      t-i \geq 1 \qquad\Longleftrightarrow\qquad i \leq \lfloor t \rfloor-1\,.
-    \end{equation*}
-    %
-    That is, in \eqref{eq:fZ-tgt0}, $t-i \geq 1$ for all indices $i$
-    up to $\lfloor t \rfloor-1$, but not for $i = \lceil t \rceil-1$.
-    Substituting \eqref{eq:FY} in \eqref{eq:fZ-tgt0} yields
-    %
-    \begin{equation}
-      f_Z(t) = \mathbbm{E}[Y]^{-1} \bigg(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \bigg(1 - \sum_{j=1}^{\min\{n,\lfloor t \rfloor-i\}} q_j\bigg)\bigg)\,.
-    \end{equation}
-    %
-\end{itemize}
-%
-In summary, the forward generation interval $Z$ has density
-%
-\begin{equation}
-  f_Z(t) = 
-  \begin{cases}
-    0\,, & t \in (-\infty,1]\,, \\
-    %
-    \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i\,, & t \in (1,2)\,, \\
-    %
-    \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\{m, \lceil t \rceil-1\}} p_i \big(1   - \sum_{j=1}^{\min\{n,\lfloor t \rfloor-i\}} q_j\big)\,, & t \in \big([2,m+1] \cap \mathbbm{Z}\big) \cup (m+1,\infty)\,, \\
-    \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\{n,\lfloor t \rfloor-i\}} q_j\big)\big)\,, & t \in [2,m+1] \setminus \mathbbm{Z}\,.
+  \label{eq:fZ-tgt0}
+  \fgen(t) = \begin{cases}
+    0\,,
+      & t < 1\,, \\
+    \mathbbm{E}[\tinf]^{-1} \sum_{i=1}^{\min\{m, \lfloor t \rfloor\}} p_i (1 - \Finf(t - i))\,,
+      & t \geq 1\,.
   \end{cases}
 \end{equation}
-
-Note that $f_Z$ is supported on the interval $(1,m+n)$ and constant
-on the interval $(i,i+1)$ for all integers $i$. Hence the probability
-that $Z \in (i,i+1]$ is simply
+%
+By \eqref{eq:FY}, $\Finf(t - i) = 0$ for all integers
+$i \geq \lfloor t \rfloor$, because $t - i < 1$ for all
+integers $i \geq \lfloor t \rfloor$. Hence substituting
+\eqref{eq:FY} in \eqref{eq:fZ-tgt0} yields
 %
 \begin{equation}
-    z_i = \int_{i}^{i+1} f_Z(s)\,\text{d}s = \int_{i}^{i+1} f_Z(i+\tfrac{1}{2})\,\text{d}s = f_Z(i+\tfrac{1}{2})\,.
+  \fgen(t) = \begin{cases}
+    0\,,
+      & t \in (-\infty,1)\,, \\
+    \mathbbm{E}[\tinf]^{-1} p_1\,,
+      & t \in [1,2)\,, \\
+    \mathbbm{E}[\tinf]^{-1} \big(p_{\lfloor t \rfloor} + \sum_{i=1}^{\lfloor t \rfloor - 1} p_i \big(1 - \sum_{j=1}^{\min\{n,\lfloor t \rfloor - i\}} q_j\big)\big)\,,
+      & t \in [2,m+1)\,, \\
+    \mathbbm{E}[\tinf]^{-1} \sum_{i=1}^{m} p_i \big(1 - \sum_{j=1}^{\min\{n,\lfloor t \rfloor - i\}} q_j\big)\,,
+      & t \in [m+1,m+n)\,, \\
+    0\,,
+      & t \in [m+n,\infty)\,.
+  \end{cases}
 \end{equation}
 %
-Then the distribution function of $Z$ is
+Note that $\fgen$ is supported on the interval $[1,m+n)$. Furthermore,
+it is constant on the interval $(i,i+1)$ for all integers $i$. Hence
+the probability that $\tgen \in (i,i+1)$ is simply
+%
+\begin{equation}
+    g_i = \int_{i}^{i+1} \fgen(s)\,\text{d}s = \int_{i}^{i+1} \fgen(i+\tfrac{1}{2})\,\text{d}s = \fgen(i+\tfrac{1}{2})\,.
+\end{equation}
+%
+Then the distribution function of $\tgen$ is
 %
 \begin{equation}
   \begin{aligned}
-    F_Z(t)
-    &= \int_{\infty}^{t} f_Z(s)\,\text{d}t \\
+    \Fgen(t)
+    &= \int_{\infty}^{t} \fgen(s)\,\text{d}t \\
     &= \begin{cases}
       0\,, & t \in (-\infty,1]\,, \\
-      (t-1) z_1\,, & t \in (1,2]\,, \\
-      (t-i) z_i + \sum_{j=1}^{i-1} z_j\,, & t \in (i,i+1]\,,\qquad i \in \{2,\ldots,m+n\}\,, \\
-      1\,, & t \in (m+n,\infty)\,.
+      (t-1) g_1\,, & t \in (1,2]\,, \\
+      (t-i) g_i + \sum_{j=1}^{i-1} g_j\,, & t \in (i,i+1]\,,\qquad i \in \{2,\ldots,m+n-1\}\,, \\
+      1\,, & t \in (m+n,\infty)\,,
     \end{cases}
   \end{aligned}
 \end{equation}
+%
+where the third case can be ignored if $m = n = 1$.
 
             
 \section{Basic reproduction number}
 
 Eq 3.6 in Wallinga and Lipsitch (2007) gives an expression for 
-$\mathcal{R}_0$, conditional on $f_Z$ and an initial growth rate $r$:
+$\mathcal{R}_0$, conditional on $\fgen$ and an initial growth rate $r$:
 %
 \begin{equation}
   \begin{aligned}
     \mathcal{R}_0
-    &= \left. r \middle/ \bigg\{\sum_{i=1}^{m+n-1} \frac{z_i (e^{-r i} - e^{-r (i+1)})}{(i+1) - i}\bigg\} \right. \\
-    &= \left. r \middle/ \bigg\{\sum_{i=1}^{m+n-1} z_i (e^{-r i} - e^{-r (i+1)})\bigg\} \right.\,.
+    &= \left. r \middle/ \bigg\{\sum_{i=1}^{m+n-1} \frac{g_i (e^{-r i} - e^{-r (i+1)})}{(i+1) - i}\bigg\} \right. \\
+    &= \left. r \middle/ \bigg\{\sum_{i=1}^{m+n-1} g_i (e^{-r i} - e^{-r (i+1)})\bigg\} \right.\,.
    \end{aligned}
 \end{equation}
 

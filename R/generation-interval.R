@@ -63,7 +63,7 @@
 #'
 #' In this case, one can show that
 #'
-#' \mjtdeqn{f_\text{gen}(t) = \left\lbrace \begin{array}{l@{\qquad}ll} 0\,, & t \in (-\infty,1\rbrack\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m,\lceil t \rceil-1 \rbrace} p_i\,, & t \in (1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m, \lceil t \rceil-1 \rbrace} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \big(\lbrack 2,m+1 \rbrack \cap \mathrm{Z}\big) \cup (m+1,\infty)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1 \rbrack \setminus \mathrm{Z}\,. \end{array} \right.}{f_\text{gen}(t) = \begin{cases} 0\,, & t \in (-\infty,1\rbrack\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m,\lceil t \rceil-1 \rbrace} p_i\,, & t \in (1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{\min\lbrace m, \lceil t \rceil-1 \rbrace} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \big(\lbrack 2,m+1 \rbrack \cap \unicode{x2124}\big) \cup (m+1,\infty)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lceil t \rceil-1} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1 \rbrack \setminus \unicode{x2124}\,. \end{cases}}{LaTeX}
+#' \mjtdeqn{f_\text{gen}(t) = \left\lbrace \begin{array}{l@{\qquad}ll} 0\,, & t \in (-\infty,1)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} p_1\,, & t \in \lbrack 1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lfloor t \rfloor} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{m} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \lbrack m+1,m+n)\,, \cr 0\,, & t \in \lbrack m+n,\infty)\,. \end{array} \right.}{f_\text{gen}(t) = \begin{cases} 0\,, & t \in (-\infty,1)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} p_1\,, & t \in \lbrack 1,2)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \big(p_{\lfloor t \rfloor} + \sum_{i=1}^{\lfloor t \rfloor-1} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\big)\,, & t \in \lbrack 2,m+1)\,, \cr \big(\sum_{i=1}^{n} i q_i\big)^{-1} \sum_{i=1}^{m} p_i \big(1 - \sum_{j=1}^{\min\lbrace n,\lfloor t \rfloor-i \rbrace} q_j\big)\,, & t \in \lbrack m+1,m+n)\,, \cr 0\,, & t \in \lbrack m+n,\infty)\,. \end{cases}}{LaTeX}
 #'
 #' Note that \mjseqn{f_\text{gen}} is supported on the interval
 #' \mjseqn{(1,m+n)} and constant on the interval \mjseqn{(i,i+1)}
@@ -92,17 +92,18 @@
 #' inf <- plague_infectious_period$relfreq
 #' n <- length(inf)
 #'
-#' ## FIXME:
-#' ## For some reason, the density function is not
-#' ## left- or right-continuous at the integers ...
-#' ## ignore the integers for now
 #' x <- seq(0, m+n+1, by = 0.02)
-#' is_non_integer <- x %% 1 > 0
-#' xx <- x[is_non_integer]
-#' fx <- dgi(xx, lat, inf)
+#' fx <- dgi(x, lat, inf)
 #' Fx <- pgi(x, lat, inf)
-#' plot(xx, fx, las = 1, xlab = "number of days", ylab = "density function")
-#' plot(x, Fx, las = 1, xlab = "number of days", ylab = "distribution function")
+#'
+#' plot(x, fx, cex = 0.1, las = 1,
+#'   xlab = "number of days",
+#'   ylab = "density function"
+#' )
+#' plot(x, Fx, type = "l", las = 1,
+#'   xlab = "number of days",
+#'   ylab = "distribution function"
+#' )
 #'
 #' @name generation-interval
 NULL
@@ -145,24 +146,22 @@ dgi <- function(x, lat, inf) {
 
   if (is.na(x)) {
     NA
-  } else if (x <= 1) {
+  } else if (x < 1) {
     0
   } else if (x < 2) {
-    re * sum(lat[1:min(m, ceiling(x)-1)])
-  } else if (x < m + n) {
-    if (x %% 1 == 0 || x > m + 1) {
-      s <- 0
-      for (i in 1:min(m, ceiling(x)-1)) {
-        s <- s + lat[i] * (1 - sum(inf[1:min(n, floor(x)-i)]))
-      }
-      re * s
-    } else {
-      s <- 0
-      for (i in 1:(floor(x)-1)) {
-        s <- s + lat[i] * (1 - sum(inf[1:min(n, floor(x)-i)]))
-      }
-      re * (lat[ceiling(x)-1] + s)
+    re * lat[1]
+  } else if (x < m + 1) {
+    s <- 0
+    for (i in 1:(floor(x)-1)) {
+      s <- s + lat[i] * (1 - sum(inf[1:min(n, floor(x)-i)]))
     }
+    re * (lat[floor(x)] + s)
+  } else if (x < m + n) {
+    s <- 0
+    for (i in 1:m) {
+      s <- s + lat[i] * (1 - sum(inf[1:min(n, floor(x)-i)]))
+    }
+    re * s
   } else {
     0
   }
@@ -190,7 +189,7 @@ pgi <- function(x, lat, inf) {
     0
   } else if (x <= 2) {
     (x - 1) * dgi(1.5, lat, inf)
-  } else if (x < m + n) {
+  } else if (x <= m + n) {
     i <- ceiling(x) - 1
     j <- 1:(i-1)
     (x - i) * dgi(i + 0.5, lat, inf) + sum(dgi(j + 0.5, lat, inf))
