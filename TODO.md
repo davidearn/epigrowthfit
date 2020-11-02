@@ -9,7 +9,6 @@
 * Write tests
 
 ## Math
-* GI stuff ... issues with GI density at the integers,
-  differences with JD's code
+* GI stuff ... different from JD's code?
 * Reparametrization not completely consistent with
   Smirnova et al., who eliminate K with a scaling
