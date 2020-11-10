@@ -4,28 +4,17 @@
 #include "distr_enum.h"
 
 /* TODO:
-- fit multiple time series with random effects (latent variables)
+- fit multiple time series with mixed effects (latent variables)
 - compare fits to cumulative/interval incidence
 - regularization? priors? 
 */
 
-/* Wrap body of second loop in `if (!isNA(x(i))) { }` 
-   if you decide to remove check for NA on R side
-   https://github.com/kaskr/adcomp/issues/59
+// https://github.com/kaskr/adcomp/issues/59
 template<class Type>
 bool isNA(Type x)
 {
     return R_IsNA(asDouble(x));
 }
-*/
-
-/* Use if you decide to compute log cumulative incidence
-template<class Type>
-Type dpois_robust(Type x, Type log_lambda)
-{
-    return x * log_lambda - exp(log_lambda) - lfactorial(x);
-}
-*/
 
 // https://kaskr.github.io/adcomp/Introduction.html
 template<class Type>
@@ -74,16 +63,16 @@ Type objective_function<Type>::operator() ()
     {
         switch (curve_flag)
         {
-        case exponential:
-            cum_inc(i) = c0 * exp(r * t(i));
-            break;
-        case logistic:
-            cum_inc(i) = K / (Type(1) + exp(-r * (t(i) - thalf)));
-            break;
-        case richards:
-            cum_inc(i) = K / pow(Type(1) + (pow(Type(2), p) - Type(1)) *
-                exp(-r * p * (t(i) - thalf)), 1 / p);
-            break;
+            case exponential:
+	        cum_inc(i) = c0 * exp(r * t(i));
+		break;
+            case logistic:
+	        cum_inc(i) = K / (Type(1) + exp(-r * (t(i) - thalf)));
+		break;
+            case richards:
+	        cum_inc(i) = K / pow(Type(1) + (pow(Type(2), p) - Type(1)) *
+                    exp(-r * p * (t(i) - thalf)), 1 / p);
+		break;
         }
 
         if (baseline_flag == 1)
@@ -95,20 +84,23 @@ Type objective_function<Type>::operator() ()
     // Compute interval incidence and increment negative log likelihood
     for (int i = 0; i < x.size(); i++)
     {
-        int_inc(i) = cum_inc(i + 1) - cum_inc(i);
-        log_int_inc(i) = log(int_inc(i));
-
-        switch (distr_flag)
+        if (!isNA(x(i)))
         {
-        case pois:
-            nll -= dpois(x(i), int_inc(i), true);
-            break;
-        case nbinom:
-            log_nbxsvar = Type(2) * log_int_inc(i) - log_nbdisp;
-            nll -= dnbinom_robust(x(i), log_int_inc(i), log_nbxsvar, true);
-            break;
-	}
-    }
+            int_inc(i) = cum_inc(i + 1) - cum_inc(i);
+            log_int_inc(i) = log(int_inc(i));
 
+            switch (distr_flag)
+            {
+                case pois:
+		    nll -= dpois(x(i), int_inc(i), true);
+		    break;
+                case nbinom:
+		    log_nbxsvar = Type(2) * log_int_inc(i) - log_nbdisp;
+		    nll -= dnbinom_robust(x(i), log_int_inc(i), log_nbxsvar, true);
+		    break;
+	    }
+        }
+    }
+    
     return nll;   
 }

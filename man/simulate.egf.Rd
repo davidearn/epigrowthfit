@@ -4,7 +4,13 @@
 \alias{simulate.egf}
 \title{Simulate models of epidemic growth}
 \usage{
-\method{simulate}{egf}(object, nsim = 1, seed = NULL, time = object$init$time, ...)
+\method{simulate}{egf}(
+  object,
+  nsim = 1,
+  seed = NULL,
+  time = with(object$init, time[first:last]),
+  ...
+)
 }
 \arguments{
 \item{object}{An "egf" object.}
@@ -13,11 +19,9 @@
 
 \item{seed}{An integer specifying a seed for RNG, otherwise \code{NULL}.}
 
-\item{time}{A numeric vector listing increasing time points,
-expressed as numbers of days since \code{object$date[1]}
-for "egf_init" objects and since \code{object$init$date[1]}
-for "egf" objects. Missing values are not tolerated and
-\code{length(time) >= 2} is required.}
+\item{time}{A numeric vector of length 2 or greater listing increasing
+time points. Times must be expressed as numbers of days since
+\code{with(object$init, date[first])}.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -26,23 +30,22 @@ An "egf_sim" object. A list with elements:
 
 \describe{
 \item{\code{time}}{Matches argument.}
-\item{\code{refdate}}{Matches \code{object$init$date[1]}.}
-\item{\code{int_inc}}{A matrix with \code{length(time)-1} rows and \code{nsim}
-columns, such that \code{int_inc[i, j]} is the number of cases
-observed between \code{time[i]} and \code{time[i+1]} in simulation \code{j}
-of \code{nsim}. Row vector \code{int_inc[i, ]} is sampled from a
-Poisson or negative binomial distribution (depending on
-\code{object$init$distr}) with mean \code{predict(object, time)$int_inc[i]}.
-The negative binomial dispersion parameter is taken from
+\item{\code{refdate}}{Matches \code{with(object$init, date[first])}.}
+\item{\code{int_inc}}{
+A matrix with \code{length(time)} rows and \code{nsim} columns.
+\code{int_inc[1, j]} is \code{NA} for all \code{j}. For \code{i > 1}, \code{int_inc[i, j]}
+is the number of cases observed between \code{time[i]} and \code{time[i-1]}
+in simulation \code{j} of \code{nsim}, sampled from a Poisson or negative
+binomial distribution (depending on \code{object$init$distr}) with
+mean \code{diff(object$eval_cum_inc(time[c(i-1, i)]))}. If the latter,
+then the negative binomial dispersion parameter is taken from
 \code{object$theta_fit[["nbdisp"]]}.
 }
-\item{\code{cum_inc}}{A matrix with \code{length(time)} rows and \code{nsim}
-columns, such that \code{cum_inc[i, j]} is the number of cases
-observed up to \code{time[i]} in simulation \code{j}. Column vector
-\code{cum_inc[, j]} is computed as \code{c0 + cumsum(c(0, int_inc[, j]))},
-where \code{c0 = predict(object, time)$cum_inc[1]} is the expected
-value of cumulative incidence at \code{time[1]} conditional on
-parameter vector \code{object$theta_fit}.
+\item{\code{cum_inc}}{
+A matrix with \code{length(time)} rows and \code{nsim} columns.
+\code{cum_inc[i, j]} is the number of cases observed up to \code{time[i]}
+in simulation \code{j}. Column vector \code{cum_inc[, j]} is computed as
+\code{object$eval_cum_inc(time[1]) + cumsum(c(0, int_inc[-1, j]))}.
 }
 \item{\code{object}}{Matches argument.}
 }

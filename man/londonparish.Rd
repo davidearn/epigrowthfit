@@ -8,31 +8,34 @@
 A data frame with 1320 rows and 5 variables:
 
 \describe{
-\item{\code{date}}{Date, weekly within each level of \code{outbreak}
-with longer gaps between outbreaks.
+\item{\code{date}}{
+Date, weekly within each level of \code{outbreak} with longer gaps
+between outbreaks.
 }
-\item{\code{time}}{Decimal date, equal to year plus fraction of year.
-The fraction is 0 on January 1, 1/365 or 1/366 on January 2,
-and so on.
+\item{\code{time}}{
+Decimal date, equal to year plus fraction of year. The fraction
+is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
 }
-\item{\code{burials}}{Count of burials. Within a given level of
-\code{outbreak}, \code{burials[i]} is the number of burials registered
-between \code{date[i-1]+1} and \code{date[i]}.
+\item{\code{burials}}{
+Count of burials. Within a given level of \code{outbreak},
+\code{burials[i]} is the number of burials registered between
+\code{date[i-1]} and \code{date[i]}.
 }
-\item{\code{outbreak}}{Outbreak label, partitioning the time series
-into distinct plague outbreaks. Levels are named roughly
-according to the years in which the outbreaks took place:
+\item{\code{outbreak}}{
+Outbreak label, partitioning the time series into distinct
+plague outbreaks. Levels are named roughly according to the
+years in which the outbreaks took place:
 1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 }
-\item{\code{severity}}{Severity label, classifying outbreaks as
-\code{"minor"} or \code{"major"}. An outbreak is classified as major
-if and only if plague deaths per week per 1000 individuals
-exceeded 5 at least once.
+\item{\code{severity}}{
+Severity label, classifying outbreaks as \code{"minor"} or \code{"major"}.
+An outbreak is classified as major if and only if plague deaths
+per week per 1000 individuals exceeded 5 at least once.
 }
 }
 }
 \source{
-These data were obtained by
+These data were retrieved by
 \insertCite{Cumm+16;textual}{epigrowthfit}
 with permission from
 \href{https://www.ancestry.com/}{Ancestry.com}.

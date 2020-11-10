@@ -5,17 +5,18 @@
 \alias{predict.egf_init}
 \title{Evaluate models of epidemic growth}
 \usage{
-\method{predict}{egf_init}(object, time = object$time, ...)
+\method{predict}{egf_init}(object, time = with(object, time[first:last]), ...)
 
-\method{predict}{egf}(object, time = object$init$time, ...)
+\method{predict}{egf}(object, time = with(object$init, time[first:last]), ...)
 }
 \arguments{
 \item{object}{An "egf_init" or "egf" object.}
 
-\item{time}{A numeric vector listing increasing time points,
-expressed as numbers of days since \code{object$date[1]}
-for "egf_init" objects and since \code{object$init$date[1]}
-for "egf" objects. Missing values are not tolerated.}
+\item{time}{A numeric vector listing increasing time points.
+Times must be expressed as numbers of days since
+\code{with(object, date[first])} for "egf_init" objects
+and since
+\code{with(object$init, date[first])} for "egf" objects.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -24,13 +25,17 @@ A list with numeric elements:
 
 \describe{
 \item{\code{time}}{Matches argument.}
-\item{\code{refdate}}{Matches \code{object$date[1]} or \code{object$init$date[1]}.}
-\item{\code{cum_inc}}{Expected cumulative incidence at time points
-\code{time}. Equal to \code{object$eval_cum_inc(time)}.
+\item{\code{refdate}}{
+Matches \code{with(object, date[first])}
+or \code{with(object$init, date[first])}.
 }
-\item{\code{int_inc}}{Expected interval incidence given interval
-endpoints \code{time}. Equal to \code{diff(object$eval_cum_inc(time))}
-if \code{length(time) >= 2} and omitted otherwise.
+\item{\code{cum_inc}}{
+Expected cumulative incidence at time points \code{time}.
+Equal to \code{object$eval_cum_inc(time)}.
+}
+\item{\code{int_inc}}{
+Expected interval incidence given interval endpoints \code{time}.
+Equal to \code{c(NA, diff(cum_inc))}.
 }
 }
 }

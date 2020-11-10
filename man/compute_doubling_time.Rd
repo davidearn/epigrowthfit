@@ -17,15 +17,16 @@ compute_doubling_time(x)
 \method{compute_doubling_time}{egf}(x)
 }
 \arguments{
-\item{x}{A numeric vector listing values for the initial
-exponential growth rate expressed per day. Alternatively,
-an "egf_init" or "egf" object.}
+\item{x}{A numeric vector listing values for the initial exponential
+growth rate expressed per day. Alternatively, an "egf_init"
+or "egf" object.}
 }
 \value{
 The method for class "numeric" returns a "doubling_time"
-object, a numeric vector of length \code{length(x)} whose
-\code{i}th element is the doubling time in days corresponding
-to initial exponential growth rate \code{x[i]}. See Details.
+object, which is a numeric vector of length \code{length(x)}
+whose \code{i}th element is the doubling time in days
+corresponding to initial exponential growth rate \code{x[i]}.
+See Details.
 
 The method for class "egf_init" applies the method for
 class "numeric" to \code{x$theta_init[["r"]]}.
@@ -46,15 +47,12 @@ initial exponential growth rate \mjseqn{r} is
 \mjseqn{\frac{\log 2}{r}}.
 }
 \examples{
-r <- seq(0, 1, by = 0.02)
+r <- 10^seq(-2, 0, length.out = 150)
 doubling_time <- compute_doubling_time(r)
-print(doubling_time)
+print(doubling_time) ## FIXME: implement [, [[, [<-, [[<- methods
 plot(r, doubling_time, las = 1,
   xlab = "initial exponential growth rate, per day",
   ylab = "doubling time, days"
 )
 
-}
-\seealso{
-\code{\link[=print.doubling_time]{print.doubling_time()}}
 }

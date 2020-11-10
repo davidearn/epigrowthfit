@@ -11,11 +11,11 @@
 #'
 #' \insertRef{Earn+20}{epigrowthfit}
 #'
+#' @name epigrowthfit-package
 #' @docType package
 #' @keywords internal
-#' @name epigrowthfit-package
 #' @importFrom Rdpack reprompt
 #' @importFrom mathjaxr preview_rd
 NULL
 
-.egf_env <- new.env(parent = emptyenv())
+.epigrowthfit <- new.env(parent = emptyenv())

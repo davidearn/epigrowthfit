@@ -8,7 +8,7 @@
 #'
 #' @param x
 #'   A numeric vector listing values for the initial exponential
-#'   growth rate, expressed per day. Alternatively, an "egf_init"
+#'   growth rate expressed per day. Alternatively, an "egf_init"
 #'   or "egf" object.
 #' @param breaks
 #'   A numeric vector of length 2 or greater listing increasing
@@ -97,6 +97,9 @@ compute_R0 <- function(x, breaks, probs) {
 #' @rdname compute_R0
 #' @export
 compute_R0.numeric <- function(x, breaks, probs) {
+  if (length(x) == 0) {
+    return(numeric(0))
+  }
   if (length(x) > 1) {
     return(sapply(x, compute_R0, breaks = breaks, probs = probs))
   }

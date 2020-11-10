@@ -14,7 +14,7 @@ documentation.
 \describe{
 \item{\code{\link{canadacovid}}}{
 Daily confirmations of COVID-19 in Canadian provinces and
-territories from February 14, 2020 to June 21, 2020.
+territories up to November 8, 2020.
 }
 \item{\code{\link{husting}}}{
 Weekly counts of wills probated in the Court of Husting

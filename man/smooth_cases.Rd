@@ -2,67 +2,83 @@
 % Please edit documentation in R/smooth_cases.R
 \name{smooth_cases}
 \alias{smooth_cases}
+\alias{smooth_cases.default}
+\alias{smooth_cases.egf_init}
+\alias{smooth_cases.egf}
 \title{Fit cubic splines to interval incidence}
 \usage{
-smooth_cases(date, cases, log = TRUE, spar = seq(0.55, 0.9, by = 0.05), ...)
+smooth_cases(object = NULL, date, cases, log = TRUE, spar = 0.5, ...)
+
+\method{smooth_cases}{default}(object, date, cases, log, spar, ...)
+
+\method{smooth_cases}{egf_init}(object, date, cases, log, spar, ...)
+
+\method{smooth_cases}{egf}(object, date, cases, log, spar, ...)
 }
 \arguments{
-\item{date}{A Date vector listing increasing time points.
-Should start at or before the date of the first observed case
-in an epidemic wave.}
+\item{object}{An "egf_init" or "egf" object, in which case \code{date} and \code{cases}
+are ignored, or \code{NULL}, in which case \code{date} and \code{cases} are
+required.}
 
-\item{cases}{A numeric vector of length \code{length(date)-1}.
-\code{cases[i]} is the number of cases observed between \code{date[i]}
-and \code{date[i+1]}. Here, "cases" can mean infections,
-reported infections, or reported deaths (either disease deaths or
-deaths due to multiple causes including the disease of interest).
-Missing values are not tolerated.}
+\item{date}{A Date vector of length 5 or greater listing increasing time
+points. Should start at or before the date of the first observed
+case in an epidemic wave.}
 
-\item{log}{A logical scalar. If \code{TRUE}, then \code{log10(1+cases)} is
-smoothed instead of \code{cases}.}
+\item{cases}{A numeric vector of length \code{length(date)}. For \code{i > 1}, \code{cases[i]}
+must specify the number of cases observed between \code{date[i-1]} and
+\code{date[i]}. \code{cases[1]} is ignored. Missing values are tolerated
+unless \code{sum(!is.na(cases[-1])) < 4}.}
 
-\item{spar}{A numeric vector with elements in the interval (0,1].
-Degree of smoothing increases with \code{spar} (smoothing parameter).
-See \code{\link[stats:smooth.spline]{stats::smooth.spline()}}.}
+\item{log}{A logical scalar. If \code{TRUE}, then \code{log10(1+cases)} is smoothed
+instead of \code{cases}.}
+
+\item{spar}{A number in the interval (0,1]. Degree of smoothing increases
+with \code{spar} (smoothing parameter). See \code{\link[stats:smooth.spline]{stats::smooth.spline()}}.}
 
 \item{...}{Optional arguments to \code{\link[stats:smooth.spline]{stats::smooth.spline()}}.}
 }
 \value{
-A "smooth_cases" object. A list containing copies of arguments
-\code{date}, \code{cases}, \code{log}, and \code{spar}, with these additional elements:
+The default method returns a "smooth_cases" object, which is
+a list containing copies of arguments \code{date}, \code{cases}, \code{log},
+and \code{spar}, with these additional elements:
 
 \describe{
-\item{\code{time}}{Time as a number of days since \code{date[1]}.
-Equal to \code{as.numeric(date - date[1])}.
+\item{\code{ss}}{
+The list output of \code{\link[stats:smooth.spline]{stats::smooth.spline()}}.
 }
-\item{\code{ss}}{A list of \code{length(spar)} "smoothing.spline" objects,
-giving the list output of \code{\link[stats:smooth.spline]{stats::smooth.spline()}} for each
-element of \code{spar}.
-}
-\item{\code{peaks}}{An integer vector indexing peaks in \code{cases} or
-\code{log10(1+cases)}.
-}
-\item{\code{troughs}}{An integer vector indexing troughs in \code{cases} or
-\code{log10(1+cases)}.
+\item{\code{peaks}, \code{troughs}}{
+Integer vectors indexing dates of peaks and troughs,
+respectively, in the cubic spline specified by \code{ss}.
+Dates are obtained as \code{date[peaks]} and \code{date[troughs]}.
 }
 }
+
+The method for class "egf_init" applies the default method
+to \code{date = object$date} and \code{cases = object$cases}.
+
+The method for class "egf" applies the default method
+to \code{date = object$init$date} and \code{cases = object$init$cases}.
 }
 \description{
-Fits cubic splines of varying smoothness to an interval incidence
-time series using \code{\link[stats:smooth.spline]{stats::smooth.spline()}}, and looks for local
-extrema by checking where the first derivative changes sign.
-Intended for use in conjunction with \code{\link[=plot.smooth_cases]{plot.smooth_cases()}}
-and \code{\link[=egf_init]{egf_init()}}, to make the process of selecting fitting windows
-more robust to noise.
+Fits a cubic spline to an interval incidence time series
+using \code{\link[stats:smooth.spline]{stats::smooth.spline()}}, then looks for local extrema
+by checking when the first derivative changes sign. Intended
+for use in conjunction with \code{\link[=egf_init]{egf_init()}} to facilitate
+fitting window selection.
+}
+\details{
+A cubic spline is fit to \code{x = as.numeric(date[-1]-date[1])} and
+\code{y = cases[-1]} or \code{y = log(1+cases[-1])}. The points are weighted
+by \code{diff(date)} to account for possibly unequal spacing.
 }
 \examples{
 data(canadacovid)
-ontario <- na.omit(subset(canadacovid, province == "ON"))
+ontario <- subset(canadacovid, province == "ON")
 x <- smooth_cases(
   date = ontario$date,
-  cases = ontario$new_confirmations[-1],
+  cases = ontario$new_confirmed,
   log = TRUE,
-  spar = seq(0.55, 0.9, by = 0.05)
+  spar = 0.7
 )
 plot(x)
 

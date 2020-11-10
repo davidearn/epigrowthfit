@@ -4,13 +4,16 @@
 #' A method for obtaining confidence intervals on point estimates
 #' of model parameters specified by "egf" objects.
 #'
-#' @param object An "egf" object.
-#' @param parm An element of `names(object$theta_fit)` indicating
-#'   a parameter for which to compute a confidence interval.
-#' @param level A number in the interval \[0,1\] indicating a
-#'   confidence level.
-#' @param method One of `"linear"`, `"uniroot"`, and `"wald"`
-#'   indicating a method with which to compute the confidence interval.
+#' @param object
+#'   An "egf" object.
+#' @param parm
+#'   An element of `names(object$theta_fit)` indicating a
+#'   parameter for which to compute a confidence interval.
+#' @param level
+#'   A number in the interval \[0,1\] indicating a confidence level.
+#' @param method
+#'   One of `"linear"`, `"uniroot"`, and `"wald"` indicating
+#'   a method with which to compute the confidence interval.
 #' @param ... Unused optional arguments.
 #'
 #' @return
@@ -70,6 +73,7 @@ confint.egf <- function(object,
     ese <- sdr[log_parm, c("Estimate", "Std. Error")]
     log_lu <- ese[1] + c(-1, 1) * sqrt(q) * ese[2]
   }
+
   setNames(exp(log_lu), c("lower", "upper"))
 }
 

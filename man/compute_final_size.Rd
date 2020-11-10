@@ -8,8 +8,8 @@ Compute the expected epidemic final size}
 compute_final_size(R0, S0 = 1, I0 = 0)
 }
 \arguments{
-\item{R0}{A numeric vector listing non-negative values for
-the basic reproduction number.}
+\item{R0}{A numeric vector listing non-negative values
+for the basic reproduction number.}
 
 \item{S0}{A numeric vector listing values in the interval
 [0,1] for the initial susceptible proportion.}
@@ -18,10 +18,9 @@ the basic reproduction number.}
 [0,1] for the initial infected proportion.}
 }
 \value{
-A numeric vector listing epidemic final sizes. See Details.
-
-The arguments are recycled up to the length of longest argument,
-hence the length of the output is this maximum length.
+A numeric vector of length \code{len} listing epidemic final sizes,
+where \code{len} is the length of the longest argument. (Arguments
+are recycled up to this length.) See Details.
 }
 \description{
 Computes, as a function of the basic reproduction number,
@@ -51,9 +50,12 @@ The explicit solution for \mjseqn{Z} in terms of
 \mjsdeqn{Z(\mathcal{R}_0) = S_0 + \frac{1}{\mathcal{R}_0} W\big\lbrack-\mathcal{R}_0 S_0 e^{-\mathcal{R}_0 (S_0 + I_0)}\big\rbrack\,.}
 }
 \examples{
-R0 <- 10^seq(-3, log10(40), length.out = 150)
+R0 <- 10^seq(-3, log10(10), length.out = 150)
 final_size <- compute_final_size(R0)
-plot(R0, final_size, type = "l", las = 1, ylab = "final size")
+plot(R0, final_size, type = "l", las = 1,
+  xlab = "basic reproduction number",
+  ylab = "final size"
+)
 
 }
 \references{

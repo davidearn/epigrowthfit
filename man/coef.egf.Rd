@@ -12,17 +12,19 @@
 \arguments{
 \item{object}{An "egf_init" or "egf" object.}
 
-\item{log}{A logical scalar. If \code{TRUE}, then parameter estimates
-are log-transformed.}
+\item{log}{A logical scalar. If \code{TRUE}, then parameter estimates are
+log-transformed.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-For class "egf_init", \code{object$theta_init} if \code{log = FALSE}
-and \code{object$log_theta_init} if \code{log = TRUE}.
+The method for class "egf_init" returns
+\code{object$theta_init} if \code{log = FALSE} and
+\code{object$log_theta_init} if \code{log = TRUE}.
 
-For class "egf", \code{object$theta_fit} if \code{log = FALSE}
-and \code{object$log_theta_fit} if \code{log = TRUE}.
+The method for class "egf" returns
+\code{object$theta_fit} if \code{log = FALSE} and
+\code{object$log_theta_fit} if \code{log = TRUE}.
 }
 \description{
 Methods for extracting estimates of model parameters from objects

@@ -13,29 +13,31 @@ eval_model(time, curve, include_baseline = FALSE, theta)
 \item{curve}{One of \code{"exponential"}, \code{"logistic"}, and \code{"richards"},
 indicating a model of expected cumulative incidence.}
 
-\item{include_baseline}{A logical scalar. If \code{TRUE}, then
-the model of expected cumulative incidence will include
-a linear baseline.}
+\item{include_baseline}{A logical scalar. If \code{TRUE}, then the model of expected
+cumulative incidence will include a linear baseline.}
 
-\item{theta}{A named numeric vector listing positive values
-for all relevant model parameters:
+\item{theta}{A named numeric vector listing positive values for all
+relevant model parameters:
 
 \describe{
 \item{\code{r}}{Initial exponential growth rate, expressed per day.}
-\item{\code{c0}}{Expected cumulative incidence at \code{time = 0}.
+\item{\code{c0}}{
+Expected cumulative incidence at 0 days.
 Used only if \code{curve = "exponential"}.
 }
-\item{\code{K}}{Expected epidemic final size.
+\item{\code{K}}{
+Expected epidemic final size.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
-\item{\code{thalf}}{Time in days at which the epidemic is expected
+\item{\code{thalf}}{
+Time in days at which the epidemic is expected
 to attain half its final size.
 Used only if \code{curve \%in\% c("logistic", "richards")}.
 }
 \item{\code{p}}{Richards shape parameter.
 Used only if \code{curve = "richards"}.
 }
-\item{\code{b}}{Baseline linear growth rate, expressed per day.
+\item{\code{b}}{Baseline linear growth rate expressed per day.
 Used only if \code{include_baseline = TRUE}.
 }
 }}
@@ -49,8 +51,8 @@ Evaluates expected cumulative incidence at desired time points
 conditional on a vector of model parameters.
 }
 \details{
-A full description of the models of expected cumulative
-incidence specified by \code{curve} and \code{include_baseline}
-can be found in the package vignette, accessible with
+A full description of the models of expected cumulative incidence
+specified by arguments \code{curve} and \code{include_baseline} can be found
+in the package vignette, accessible with
 \code{vignette("epigrowthfit-vignette")}.
 }

@@ -8,18 +8,19 @@
 #' period and infectious waiting time are independent and (ii) that
 #' infectiousness is constant over the infectious period.
 #'
-#' @param x A numeric vector listing values for the generation interval
-#'   as a number of days.
-#' @param lat A numeric vector listing the probability
-#'   \mjseqn{p_i} that the latent period is \mjseqn{i} days,
+#' @param x
+#'   A numeric vector listing values for the generation interval
+#'   in days.
+#' @param lat
+#'   A numeric vector listing the probability \mjseqn{p_i}
+#'   that the latent period is \mjseqn{i} days,
 #'   for all \mjseqn{i \in \lbrace 1,\ldots,m \rbrace}.
-#'   Replaced with `lat / sum(lat)` in the event that
-#'   `sum(lat) != 1`.
-#' @param inf A numeric vector listing the probability
-#'   \mjseqn{q_i} that the infectious period is \mjseqn{i} days,
+#'   Replaced with `lat / sum(lat)` in the event that `sum(lat) != 1`.
+#' @param inf
+#'   A numeric vector listing the probability \mjseqn{q_i}
+#'   that the infectious period is \mjseqn{i} days,
 #'   for all \mjseqn{i \in \lbrace 1,\ldots,n \rbrace}.
-#'   Replaced with `inf / sum(inf)` in the event
-#'   that `sum(inf) != 1`.
+#'   Replaced with `inf / sum(inf)` in the event that `sum(inf) != 1`.
 #'
 #' @return
 #' A numeric vector with length `length(x)`.
@@ -80,8 +81,6 @@
 #' \insertRef{Sven07}{epigrowthfit}
 #'
 #' @seealso [compute_R0()]
-#'   for computing the basic reproduction number implied by
-#'   an initial growth rate and a generation interval distribution
 #'
 #' @examples
 #' data(plague_latent_period)
@@ -93,10 +92,10 @@
 #' n <- length(inf)
 #'
 #' x <- seq(0, m+n+1, by = 0.02)
-#' fx <- dgi(x, lat, inf)
+#' fx <- dgi(x, lat, inf) # FIXME: very slow, should vectorize
 #' Fx <- pgi(x, lat, inf)
 #'
-#' plot(x, fx, cex = 0.1, las = 1,
+#' plot(x, fx, type = "l", las = 1,
 #'   xlab = "number of days",
 #'   ylab = "density function"
 #' )
@@ -113,8 +112,7 @@ NULL
 dgi <- function(x, lat, inf) {
   check(x,
     what = "numeric",
-    len = c(1, Inf),
-    "`x` must be numeric and have nonzero length."
+    "`x` must be numeric."
   )
   for (a in c("lat", "inf")) {
     a_val <- get(a, inherits = FALSE)
@@ -134,6 +132,9 @@ dgi <- function(x, lat, inf) {
     )
   }
 
+  if (length(x) == 0) {
+    return(numeric(0))
+  }
   if (length(x) > 1) {
     return(sapply(x, dgi, lat = lat, inf = inf))
   }
@@ -172,10 +173,12 @@ dgi <- function(x, lat, inf) {
 pgi <- function(x, lat, inf) {
   check(x,
     what = "numeric",
-    len = c(1, Inf),
-    "`x` must be numeric and have nonzero length."
+    "`x` must be numeric."
   )
 
+  if (length(x) == 0) {
+    return(numeric(0))
+  }
   if (length(x) > 1) {
     return(sapply(x, pgi, lat = lat, inf = inf))
   }

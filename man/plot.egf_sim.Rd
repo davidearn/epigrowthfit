@@ -12,14 +12,13 @@
 \item{inc}{One of \code{"cumulative"} and \code{"interval"},
 indicating a type of incidence to plot.}
 
-\item{col_sim, col_pred}{Character or numeric scalars specifying
-colours for simulated and predicted incidence curves, respectively.}
+\item{col_sim, col_pred}{Character or numeric scalars specifying colours
+for simulated and predicted incidence curves, respectively.}
 
-\item{...}{Optional arguments specifying additional
-graphical parameters. Currently, only \code{xlim}, \code{ylim},
-\code{xlab}, \code{ylab}, and \code{main} are implemented.
-See \code{\link[graphics:plot.default]{plot()}} and \code{\link[graphics:par]{par()}}
-for a catalogue of graphical parameters.}
+\item{...}{Optional arguments specifying additional graphical parameters.
+Currently, only \code{xlim}, \code{ylim}, \code{xlab}, \code{ylab}, and \code{main} are
+implemented. See \code{\link[graphics:plot.default]{graphics::plot()}} and \code{\link[graphics:par]{graphics::par()}} for
+a catalogue of graphical parameters.}
 }
 \value{
 \code{NULL} (invisibly).
@@ -32,15 +31,19 @@ by objects of class "egf_sim".
 \subsection{Plot elements}{
 
 The bottom axis measures the number of days since
-\code{x$object$init$date[1]}. The left axis measures interval
-or cumulative incidence (depending on \code{inc}). The predicted
-incidence curve is obtained as \code{pred$cum_inc} or \code{pred$int_inc},
-where \code{pred = predict(x$object, time = x$time)}. The simulated
-incidence curves are obtained as the columns of \code{x$cum_inc} or
-\code{x$int_inc}. These are plotted together behind the predicted
-incidence curve. To help visualize the distribution of simulated
-incidence at a given time, assign \code{col_sim} a sufficiently
-transparent colour.
+\code{with(x$object$init, date[first])}.
+The left axis measures interval or cumulative incidence
+(depending on \code{inc}).
+
+The predicted incidence curve is obtained as \code{pred$cum_inc} or
+\code{pred$int_inc}, where \code{pred = predict(x$object, time = x$time)}.
+
+The simulated incidence curves are obtained as the columns of
+\code{x$cum_inc} or \code{x$int_inc}. These are plotted together behind
+the predicted incidence curve.
+
+To help visualize the distribution of simulated incidence at a
+given time, assign \code{col_sim} a sufficiently transparent colour.
 }
 }
 \seealso{

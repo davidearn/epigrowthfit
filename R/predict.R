@@ -4,25 +4,33 @@
 #' Methods for evaluating incidence models specified
 #' by objects of class "egf_init" or "egf".
 #'
-#' @param object An "egf_init" or "egf" object.
-#' @param time A numeric vector listing increasing time points,
-#'   expressed as numbers of days since `object$date[1]`
-#'   for "egf_init" objects and since `object$init$date[1]`
-#'   for "egf" objects. Missing values are not tolerated.
-#' @param ... Unused optional arguments.
+#' @param object
+#'   An "egf_init" or "egf" object.
+#' @param time
+#'   A numeric vector listing increasing time points.
+#'   Times must be expressed as numbers of days since
+#'   `with(object, date[first])` for "egf_init" objects
+#'   and since
+#'   `with(object$init, date[first])` for "egf" objects.
+#' @param ...
+#'   Unused optional arguments.
 #'
 #' @return
 #' A list with numeric elements:
 #'
 #' \describe{
 #'   \item{`time`}{Matches argument.}
-#'   \item{`refdate`}{Matches `object$date[1]` or `object$init$date[1]`.}
-#'   \item{`cum_inc`}{Expected cumulative incidence at time points
-#'     `time`. Equal to `object$eval_cum_inc(time)`.
+#'   \item{`refdate`}{
+#'     Matches `with(object, date[first])`
+#'     or `with(object$init, date[first])`.
 #'   }
-#'   \item{`int_inc`}{Expected interval incidence given interval
-#'     endpoints `time`. Equal to `diff(object$eval_cum_inc(time))`
-#'     if `length(time) >= 2` and omitted otherwise.
+#'   \item{`cum_inc`}{
+#'     Expected cumulative incidence at time points `time`.
+#'     Equal to `object$eval_cum_inc(time)`.
+#'   }
+#'   \item{`int_inc`}{
+#'     Expected interval incidence given interval endpoints `time`.
+#'     Equal to `c(NA, diff(cum_inc))`.
 #'   }
 #' }
 
@@ -33,7 +41,9 @@ NULL
 
 #' @rdname predict.egf
 #' @export
-predict.egf_init <- function(object, time = object$time, ...) {
+predict.egf_init <- function(object,
+                             time = with(object, time[first:last]),
+                             ...) {
   check(time,
     what = "numeric",
     len = c(1, Inf),
@@ -48,25 +58,26 @@ predict.egf_init <- function(object, time = object$time, ...) {
     "`time` must be increasing."
   )
   check(time,
-    val = object$time[c(object$first, object$last+1)],
+    val = with(object, time[c(first, last)]),
     action = "warn",
     "There are elements of `time` outside of the fitting window."
   )
 
-  out <- list(
+  cum_inc_pred <- object$eval_cum_inc(time)
+  int_inc_pred <- diff(cum_inc_pred)
+  list(
     time = time,
-    refdate = object$date[1],
-    cum_inc = object$eval_cum_inc(time)
+    refdate = with(object, date[first]),
+    cum_inc = cum_inc_pred,
+    int_inc = c(NA, int_inc_pred)
   )
-  if (length(time) > 1) {
-    out$int_inc = diff(out$cum_inc)
-  }
-  out
 }
 
 #' @rdname predict.egf
 #' @export
-predict.egf <- function(object, time = object$init$time, ...) {
+predict.egf <- function(object,
+                        time = with(object$init, time[first:last]),
+                        ...) {
   check(time,
     what = "numeric",
     len = c(1, Inf),
@@ -81,18 +92,17 @@ predict.egf <- function(object, time = object$init$time, ...) {
     "`time` must be increasing."
   )
   check(time,
-    val = object$init$time[c(object$init$first, object$init$last+1)],
+    val = with(object$init, time[c(first, last)]),
     action = "warn",
     "There are elements of `time` outside of the fitting window."
   )
 
-  out <- list(
+  cum_inc_pred <- object$eval_cum_inc(time)
+  int_inc_pred <- diff(cum_inc_pred)
+  list(
     time = time,
-    refdate = object$init$date[1],
-    cum_inc = object$eval_cum_inc(time)
+    refdate = with(object$init, date[first]),
+    cum_inc = cum_inc_pred,
+    int_inc = c(NA, int_inc_pred)
   )
-  if (length(time) > 1) {
-    out$int_inc = diff(out$cum_inc)
-  }
-  out
 }

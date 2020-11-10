@@ -14,7 +14,7 @@
   add = FALSE,
   annotate = FALSE,
   tol = 0,
-  style = get_style_default(x),
+  style = get_style_default(),
   ...
 )
 
@@ -26,11 +26,11 @@
   add = FALSE,
   annotate = FALSE,
   tol = 0,
-  style = get_style_default(x),
+  style = get_style_default(),
   ...
 )
 
-get_style_default(x)
+get_style_default()
 }
 \arguments{
 \item{x}{An "egf_init" or "egf" object.}
@@ -38,35 +38,34 @@ get_style_default(x)
 \item{inc}{One of \code{"cumulative"} and \code{"interval"},
 indicating a type of incidence to plot.}
 
-\item{xty}{One of \code{"Date"} and \code{"numeric"},
+\item{xty}{One of \code{"date"} and \code{"numeric"},
 indicating how time is displayed on the bottom axis.}
 
-\item{log}{A logical scalar. If \code{TRUE}, then incidence
-is displayed on a logarithmic scale on the left axis.}
+\item{log}{A logical scalar. If \code{TRUE}, then incidence is displayed
+on a logarithmic scale on the left axis.}
 
-\item{add}{A logical scalar. If \code{TRUE}, then plot elements are
-added to the current graphics device, which is assumed to
-have been started by a previous invocation of the plot method.}
+\item{add}{A logical scalar. If \code{TRUE}, then plot elements are added
+to the current graphics device, which is assumed to have
+been started by a previous invocation of the plot method.}
 
-\item{annotate}{A logical scalar. If \code{TRUE}, then a legend and
-a list of parameter estimates are displayed in the right margin.}
+\item{annotate}{A logical scalar. If \code{TRUE}, then a legend and a list of
+parameter estimates are displayed in the right margin.}
 
 \item{tol}{A non-negative number, used only if \code{inc = "interval"}.
-\code{cases[i]} is highlighted according to \code{style$points_short} if
-\code{diff(time)[i] < (1-tol)*m} and according to \code{style$points_long}
-if \code{diff(time)[i] > (1+tol)*m}, where \code{m = median(diff(time))}.
-In both cases, the value of \code{diff(time)[i]} is printed above
+\code{cases[-1]} is highlighted according to \code{style$points_short}
+if \code{diff(date) < (1-tol)*m} and according to \code{style$points_long}
+if \code{diff(date) > (1+tol)*m}, where \code{m = median(diff(date))}.
+In both cases, the value of \code{diff(date)} is printed above
 the point. Assign 0 to ensure that all deviations from \code{m}
 are highlighted. Assign \code{Inf} to disable highlighting.}
 
-\item{style}{A list of lists defining the appearance of various
-plot elements (see Details 2).}
+\item{style}{A list of lists defining the appearance of various plot elements.
+See Details 2.}
 
-\item{...}{Optional arguments specifying additional
-graphical parameters. Currently, only \code{xlim}, \code{ylim},
-\code{xlab}, \code{ylab}, and \code{main} are implemented.
-See \code{\link[graphics:plot.default]{graphics::plot()}} and \code{\link[graphics:par]{graphics::par()}} for a catalogue
-of graphical parameters.}
+\item{...}{Optional arguments specifying additional graphical parameters.
+Currently, only \code{xlim}, \code{ylim}, \code{xlab}, \code{ylab}, and \code{main} are
+implemented. See \code{\link[graphics:plot.default]{graphics::plot()}} and \code{\link[graphics:par]{graphics::par()}} for
+a catalogue of graphical parameters.}
 }
 \value{
 \code{plot.egf_init()} and \code{plot.egf()} return \code{NULL} (invisibly).
@@ -83,56 +82,52 @@ Methods for plotting objects of class "egf_init" or "egf".
 \emph{Below, \code{date}, \code{time}, \code{cases}, \code{first}, \code{last}, \code{theta_init},
 and \code{theta_fit} refer to the so-named elements of \code{x} or \code{x$init}.}
 
-If \code{xty = "date"}, then the bottom axis displays the dates specified
-by \code{date}. If \code{xty = "numeric"}, then the bottom axis displays the
-number of days since \code{date[1]}. Regardless of \code{xty},
-numeric coordinates are used, hence the left and right boundaries of
-the plot region are defined by \code{range(time)}.
+If \code{xty = "date"}, then the bottom axis is a calendar with ticks at
+equally spaced Dates. If \code{xty = "numeric"}, then the bottom axis
+measures the number of days since \code{date[1]}. Regardless of \code{xty},
+Dates \code{d} are assigned numeric user coordinates \code{d - date[1]}.
 
 The left axis measures interval or cumulative incidence (depending
 on \code{inc}). When incidence is displayed on a logarithmic scale, zeros
 are plotted as a positive number less than 1. They are therefore
 distinguished from nonzero counts, which are always at least 1.
 
-Observed data, specified by \code{date} and either \code{cases} or
-\code{cumsum(cases)} (depending on \code{inc}), are plotted as points.
-\code{cases[i]} gives the number of cases observed between \code{date[i]}
-and \code{date[i+1]}, while \code{cumsum(cases)[i]} gives the number
+Observed data, specified by \code{date} and either \code{cases[-1]} or
+\code{cumsum(cases[-1])} (depending on \code{inc}), are plotted as points.
+\code{cases[-1][i]} gives the number of cases observed between \code{date[i]}
+and \code{date[i+1]}, while \code{cumsum(cases[-1])[i]} gives the number
 observed between \code{date[1]} and \code{date[i+1]}. Both are plotted
-at \code{time[i+1]}.
+at coordinate \code{date[i+1]-date[1]}.
 
-The fitting window, specified by indices \code{first} and \code{last} of
-\code{cases}, is displayed as a shaded rectangle behind the other plot
-elements. The left and right boundaries occur at \code{time[first]}
-and \code{time[last+1]}. (\code{cases[first]} is a count from \code{time[first]}
-to \code{time[first+1]}, and \code{cases[last]} is a count from \code{time[last]}
-to \code{time[last+1]}. Hence the fitting window starts at \code{time[first]}
-and ends at \code{time[last+1]}.)
+The fitting window is displayed as a shaded rectangle behind the
+other plot elements. The left and right boundaries are \code{date[first]}
+and \code{date[last]}.
 
 The incidence curve predicted by parameter estimates \code{theta_init}
-or \code{theta_fit} (depending on the plot method) is displayed as a line
-supported on grid points \code{wgrid = seq(time[first], time[last+1], by)},
-where \code{by = 1} for cumulative incidence and \code{by = median(diff(time))}
+or \code{theta_fit} (depending on \code{class(x)}) is displayed as a line
+supported on grid points \code{wgrid = seq(date[first], date[last], by)},
+where \code{by = 1} for cumulative incidence and \code{by = median(diff(date))}
 for interval incidence (ensuring that the interval incidence curve
 has the correct scale; see below). The predicted curve is obtained
-with \code{predict(x, time = wgrid)}.
+with \code{predict(x, time = as.integer(wgrid - date[first]))}.
 
 Careful interpretation of interval incidence is required if the
 plotted time series is not equally spaced, because \code{cases} roughly
-scales with \code{diff(time)}. That is, certain observations may vary
+scales with \code{diff(date)}. That is, certain observations may vary
 from the predicted curve not due to chance, but because they
 represent a count over fewer or more days than the typical
-observation interval, namely \code{median(diff(time))}. Observations for
-which \code{diff(time)} differs from \code{median(diff(time))} are highlighted
-according to argument \code{tol} and labeled with the value of \code{diff(time)}.
+observation interval, namely \code{median(diff(date))}. Observations for
+which \code{diff(date)} differs from \code{median(diff(date))} are highlighted
+according to argument \code{tol} and labeled with the value of \code{diff(date)}.
 
 If \code{annotate = TRUE} and \code{add = FALSE}, then a legend and the
 parameter estimates \code{theta_init} or \code{theta_fit} (depending on
-the plot method) are displayed in the right margin.
+the \code{class(x)}) are displayed in the right margin.
 
 The plot method for class "egf" displays, in addition,
 the doubling time associated with the "egf" object and
-the associated 95\% confidence interval.
+the associated 95\% confidence interval, obtained with
+\code{compute_doubling_time(rev(unname(confint(x))))}.
 }
 
 \subsection{2. Customization}{
@@ -143,7 +138,7 @@ subset of the elements below.
 
 \describe{
 \item{\code{date}}{
-A named list of arguments to \code{\link[=daxis]{daxis()}}
+A named list of arguments to internal function \code{daxis()}
 (a subset of \code{tcl}, \code{mgp2}, \code{col.axis}, and \code{cex.axis}),
 affecting the appearance of the bottom axis if \code{xty = "date"}.
 }
@@ -177,7 +172,7 @@ are implemented. \code{text_dbl} can further specify coordinates
 }
 
 List elements not specified by \code{style} are taken from
-\code{get_style_default(x)}.
+\code{get_style_default()}.
 }
 }
 \seealso{

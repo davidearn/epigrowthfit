@@ -13,19 +13,17 @@ pgi(x, lat, inf)
 }
 \arguments{
 \item{x}{A numeric vector listing values for the generation interval
-as a number of days.}
+in days.}
 
-\item{lat}{A numeric vector listing the probability
-\mjseqn{p_i} that the latent period is \mjseqn{i} days,
+\item{lat}{A numeric vector listing the probability \mjseqn{p_i}
+that the latent period is \mjseqn{i} days,
 for all \mjseqn{i \in \lbrace 1,\ldots,m \rbrace}.
-Replaced with \code{lat / sum(lat)} in the event that
-\code{sum(lat) != 1}.}
+Replaced with \code{lat / sum(lat)} in the event that \code{sum(lat) != 1}.}
 
-\item{inf}{A numeric vector listing the probability
-\mjseqn{q_i} that the infectious period is \mjseqn{i} days,
+\item{inf}{A numeric vector listing the probability \mjseqn{q_i}
+that the infectious period is \mjseqn{i} days,
 for all \mjseqn{i \in \lbrace 1,\ldots,n \rbrace}.
-Replaced with \code{inf / sum(inf)} in the event
-that \code{sum(inf) != 1}.}
+Replaced with \code{inf / sum(inf)} in the event that \code{sum(inf) != 1}.}
 }
 \value{
 A numeric vector with length \code{length(x)}.
@@ -99,10 +97,10 @@ inf <- plague_infectious_period$relfreq
 n <- length(inf)
 
 x <- seq(0, m+n+1, by = 0.02)
-fx <- dgi(x, lat, inf)
+fx <- dgi(x, lat, inf) # FIXME: very slow, should vectorize
 Fx <- pgi(x, lat, inf)
 
-plot(x, fx, cex = 0.1, las = 1,
+plot(x, fx, type = "l", las = 1,
   xlab = "number of days",
   ylab = "density function"
 )
@@ -117,6 +115,4 @@ plot(x, Fx, type = "l", las = 1,
 }
 \seealso{
 \code{\link[=compute_R0]{compute_R0()}}
-for computing the basic reproduction number implied by
-an initial growth rate and a generation interval distribution
 }

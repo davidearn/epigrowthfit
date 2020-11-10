@@ -6,45 +6,56 @@
 #' Simplifies the task of validating atomic vector arguments of
 #' functions.
 #'
-#' @param x An atomic vector.
-#' @param ... Zero or more objects coercible to character,
-#'   which are pasted without separator to generate
-#'   an error or warning message (depending on `action`).
-#' @param what A character vector listing object classes.
-#'   Check fails if `x` does not inherit from one of these classes.
-#' @param not A character vector listing object classes.
-#'   Check fails if `x` inherits from one of these classes.
-#' @param len A numeric vector. If `length(len) = 1`, then check
-#'   fails if `length(x) != len`. If `length(len) > 1`, then check
+#' @param x
+#'   An atomic vector.
+#' @param ...
+#'   Zero or more objects coercible to character, which are
+#'   pasted together without separator to generate an error
+#'   or warning message (depending on `action`).
+#' @param what
+#'   A character vector listing object classes. Check fails
+#'   if `x` does not inherit from one of these classes.
+#' @param not
+#'   A character vector listing object classes. Check fails
+#'   if `x` inherits from one of these classes.
+#' @param len
+#'   A numeric vector. If `length(len) = 1`, then check fails
+#'   if `length(x) != len`. If `length(len) > 1`, then check
 #'   fails if `length(x) < len[1]` or `length(x) > len[2]`.
-#' @param opt An atomic vector listing accepted values for `x[i]`.
+#' @param opt
+#'   An atomic vector indicating acceptable values for `x[i]`.
 #'   Check fails if `!all(x %in% opt)`.
-#' @param val A numeric vector indicating endpoints for the interval
-#'   of acceptable values for `x[i]`, assuming that `x` is numeric.
-#'   Whether the endpoints are included in this interval is determined
-#'   by `rel`.
+#' @param val
+#'   A numeric vector indicating endpoints for an interval
+#'   of acceptable values for `x[i]`, assuming that `x` is
+#'   numeric. Whether the endpoints are included in this
+#'   interval is determined by `rel`.
 #'   If `length(val) = 1`, then check fails if
 #'   `!all(x == val, na.rm = TRUE)`.
 #'   If `length(val) > 1` and (for example) `rel = c(">=", "<=")`,
 #'   then check fails if
 #'   `!all(x >= val[1] & x <= val[2], na.rm = TRUE)`.
-#' @param rel A character vector of length 2 such that
+#' @param rel
+#'   A character vector of length 2 such that
 #'   `rel[1] %in% c(">", ">=")` and `rel[2] %in% c("<", "<=")`.
-#' @param yes A function or list of functions of one argument returning
-#'   either `TRUE` or `FALSE`. Check fails if any of these functions
-#'   return `FALSE` when applied to `x`.
-#' @param no A function or list of functions of one argument returning
-#'   either `TRUE` or `FALSE`. Check fails if any of these functions
-#'   return `TRUE` when applied to `x`.
-#' @param action One of `"stop"`, `"warning"`, and `"nothing"`,
-#'   indicating how check failure should be handled.
+#' @param yes
+#'   A function or list of functions of one argument returning
+#'   either `TRUE` or `FALSE`. Check fails if any return `FALSE`
+#'   `FALSE` when applied to `x`.
+#' @param no
+#'   A function or list of functions of one argument returning
+#'   either `TRUE` or `FALSE`. Check fails if any return `TRUE`
+#'   when applied to `x`.
+#' @param action
+#'   One of `"stop"`, `"warning"`, and `"nothing"`, indicating
+#'   how check failure should be handled.
 #'
 #' @return
 #' `TRUE` if check passes and `FALSE` otherwise.
 #'
 #' @details
 #' Checks are performed in the order of `names(formals(check))`.
-#' If `what` fails then `not` won't be checked. If `not` fails,
+#' If `what` fails then `not` will not be checked. If `not` fails,
 #' then `len` won't be checked (and so on).
 #'
 #' Ironically, no checks on the input are performed, so use with
@@ -56,7 +67,6 @@
 #' returns `TRUE`.
 #'
 #' @keywords internal
-#' @export
 check <- function(x, ..., what = NULL, not = NULL, len = NULL,
                   opt = NULL, val = NULL, rel = c(">=", "<="),
                   yes = NULL, no = NULL,
@@ -93,38 +103,153 @@ check <- function(x, ..., what = NULL, not = NULL, len = NULL,
     (is.null(yes) || all(sapply(yes, function(f) f(x)))) &&
     ## Check value: fails functions `no`
     (is.null(no) || all(!sapply(no, function(f) f(x))))
-  if (!isTRUE(passes) && action %in% c("stop", "warning")) {
+  if (!isTRUE(passes) && action != "nothing") {
     do.call(action, list(..., call. = FALSE))
   }
   passes
 }
 
+#' Get number of days since a date
+#'
+#' @description
+#' Subtracts a Date scalar from a Date vector and returns the
+#' result as an integer vector instead of a "difftime" object.
+#'
+#' @param date
+#'   A Date vector.
+#' @param since
+#'   A Date scalar.
+#'
+#' @return
+#' An integer vector giving the number of days between `date`
+#' and `since`. Equal to `as.integer(date - since)`.
+#'
+#' @keywords internal
+days <- function(date, since = as.Date("1970-01-01")) {
+  as.integer(date - since)
+}
+
+#' Difference a vector of dates
+#'
+#' @description
+#' Takes differences of a Date vector and returns the
+#' result as an integer vector instead of a "difftime" object.
+#'
+#' @param date
+#'   A Date vector.
+#' @param lag,differences
+#'   Arguments to [diff.Date()].
+#'
+#' @return
+#' An integer vector listing the desired differences in days.
+#' Equal to `as.integer(diff(date, lag, differences))`.
+#'
+#' @keywords internal
+ddiff <- function(date, lag = 1, differences = 1) {
+  as.integer(diff(date, lag, differences))
+}
+
+#' Decompose a vector of dates
+#'
+#' @description
+#' Extracts year, month, and day from a Date vector.
+#'
+#' @param date
+#'   A Date vector.
+#' @param which
+#'   A subset of `c(1, 2, 3)` indicating which of
+#'   year, month, and day should be returned.
+#'
+#' @return
+#' `imat[, which]`, where `imat` is an integer matrix with
+#' `length(date)` rows and 3 columns listing year, month,
+#' and day, respectively, for each Date in `date`.
+#'
+#' @keywords internal
+ymd <- function(date, which = 1:3) {
+  if (length(date) == 0) {
+    return(integer(length(which)))
+  }
+  cmat <- matrix(unlist(strsplit(as.character(date), "-")),
+                 ncol = 3, byrow = TRUE)
+  imat <- apply(cmat, 2, as.integer)
+  if (is.null(dim(imat))) imat[which] else imat[, which]
+}
+
+#' Get ceiling of a date
+#'
+#' @description
+#' Rounds each Date in a Date vector to the next first-of-the-month
+#' or first-of-the-year.
+#'
+#' @param date
+#'   A Date vector.
+#'
+#' @return
+#' A Date vector of length `length(date)`.
+#' For `dceiling_m()`, elements are firsts-of-the-month ("YYYY-MM-01").
+#' For `dceiling_y()`, elements are firsts-of-the-year ("YYYY-01-01").
+#'
+#' @name dceiling
+#' @keywords internal
+NULL
+
+#' @rdname dceiling
+#' @keywords internal
+dceiling_m <- function(date) {
+  if (length(date) == 0) {
+    return(integer(0))
+  }
+  y <- ymd(date, 1)
+  m <- ymd(date, 2) + ifelse(ymd(date, 3) == 1, 0, 1)
+  y <- ifelse(m > 12, y + 1, y)
+  m <- ifelse(m > 12, 1, m)
+  as.Date(paste(y, m, 1, sep = "-"))
+}
+
+#' @rdname dceiling
+#' @keywords internal
+dceiling_y <- function(date) {
+  if (length(date) == 0) {
+    return(integer(0))
+  }
+  y <- ymd(date, 1) + ifelse(ymd(date, 2) == 1 & ymd(date, 3) == 1, 0, 1)
+  as.Date(paste(y, 1, 1, sep = "-"))
+}
+
 #' Annotate a date axis
 #'
 #' @description
-#' Labels day, month, and year on a bottom axis, taking care to ensure
-#' that labels are nicely spaced.
+#' Labels day, month, and year on a bottom axis, taking care
+#' to ensure that labels are nicely spaced.
 #'
-#' @param left Left endpoint of the bottom axis in user coordinates.
-#' @param right Right endpoint of the bottom axis in user coordinates.
-#' @param refdate A Date scalar. `t0` and `t1` represent a number of
-#'   days since this date.
-#' @param tcl A numeric scalar. Passed to [graphics::axis()] argument
+#' @param left
+#'   Left endpoint of the bottom axis in user coordinates.
+#' @param right
+#'   Right endpoint of the bottom axis in user coordinates.
+#' @param refdate
+#'   A Date scalar. `t0` and `t1` represent numbers of days
+#'   since this date.
+#' @param tcl
+#'   A numeric scalar. Passed to [graphics::axis()] argument
 #'   `tcl` when creating the minor axis. Defines tick length.
 #'   See [graphics::par()].
-#' @param mgp2 A numeric vector of length 2. Elements are passed
-#'   to [graphics::axis()] argument `mgp` (the second component)
-#'   when creating the minor and major axes, respectively. Defines
-#'   the distance between the axis and the top of tick labels.
-#'   See [graphics::par()].
-#' @param col.axis A numeric or character vector of length 2.
-#'   Elements are passed to [graphics::axis()] argument `col.axis`
-#'   when creating the minor and major axes, respectively. Defines
+#' @param mgp2
+#'   A numeric vector of length 2. Elements are passed to
+#'   [graphics::axis()] argument `mgp` (the second component)
+#'   when creating the minor and major axes, respectively.
+#'   Defines the line to which the tops of tick labels are
+#'   aligned. See [graphics::par()].
+#' @param col.axis
+#'   A numeric or character vector of length 2. Elements are
+#'   passed to [graphics::axis()] argument `col.axis` when
+#'   creating the minor and major axes, respectively. Defines
 #'   the colour of tick labels. See [graphics::par()].
-#' @param cex.axis A numeric vector of length 2. Elements are
-#'   passed to [graphics::axis()] argument `cex.axis` when creating
-#'   the minor and major axes, respectively. Defines the size of
-#'   tick labels. See [graphics::par()].
+#' @param cex.axis
+#'   A numeric vector of length 2. Elements are passed to
+#'   [graphics::axis()] argument `cex.axis` when creating
+#'   the minor and major axes, respectively. Defines the
+#'   size of tick labels. See [graphics::par()].
 #'
 #' @return
 #' Returns `NULL` invisibly.
@@ -134,7 +259,7 @@ check <- function(x, ..., what = NULL, not = NULL, len = NULL,
 #' a number of days since `refdate`.
 #'
 #' The date axis consists of minor and major axes. The content
-#' of these axes depends entirely on `w = round(right-left)`,
+#' of these axes depends entirely on `w = floor(right)-ceiling(left)`,
 #' the rounded difference between the extreme times in days.
 #'
 #' If `w <= 210` (7 months), then days are placed on the minor
@@ -158,7 +283,6 @@ check <- function(x, ..., what = NULL, not = NULL, len = NULL,
 #' first two elements of vectors of length 3 or greater are used.
 #'
 #' @keywords internal
-#' @export
 #' @importFrom graphics axis
 daxis <- function(left, right, refdate,
                   tcl = -0.2,
@@ -171,27 +295,12 @@ daxis <- function(left, right, refdate,
   t1 <- max(ceiling(left), floor(right), t0 + 1)
   d0 <- refdate + t0
   d1 <- refdate + t1
-  w <- as.numeric(d1 - d0)
-  ymd <- function(date, which = 1:3) {
-    cmat <- matrix(unlist(strsplit(as.character(date), "-")),
-                   ncol = 3, byrow = TRUE)
-    nmat <- apply(cmat, 2, as.numeric)
-    if (is.null(dim(nmat))) nmat[which] else nmat[, which]
-  }
-  ceiling_y <- function(date) {
-    y <- ymd(date, 1) + ifelse(ymd(date, 2) == 1 & ymd(date, 3) == 1, 0, 1)
-    as.Date(paste(y, 1, 1, sep = "-"))
-  }
-  ceiling_m <- function(date) {
-    y <- ymd(date, 1)
-    m <- ymd(date, 2) + ifelse(ymd(date, 3) == 1, 0, 1)
-    y <- ifelse(m > 12, y + 1, y)
-    m <- ifelse(m > 12, 1, m)
-    as.Date(paste(y, m, 1, sep = "-"))
-  }
+  w <- as.integer(d1 - d0)
+
   mgp2 <- rep(mgp2, length.out = 2)
   col.axis <- rep(col.axis, length.out = 2)
   cex.axis <- rep(cex.axis, length.out = 2)
+
   minor_axis <- function() {
     axis(side = 1, at = t0 + at, labels = labels,
          tcl = tcl, mgp = c(3, mgp2[1], 0), gap.axis = 0,
@@ -212,7 +321,7 @@ daxis <- function(left, right, refdate,
     ## Days
     by <- c(1, 2, 4, 7, 14)[w <= c(14, 28, 56, 112, 210)][1]
     at_date <- seq(d0, d1, by = by)
-    at <- as.numeric(at_date - d0)
+    at <- as.integer(at_date - d0)
     labels <- ymd(at_date, 3)
     minor_axis()
 
@@ -221,8 +330,8 @@ daxis <- function(left, right, refdate,
       at_date <- d0
       at <- 0
     } else {
-      at_date <- seq(ceiling_m(d0), d1, by = "month")
-      at <- as.numeric(at_date - d0)
+      at_date <- seq(dceiling_m(d0), d1, by = "month")
+      at <- as.integer(at_date - d0)
       if (at[1] > w / 8) {
         at_date <- c(d0, at_date)
         at <- c(0, at)
@@ -234,8 +343,8 @@ daxis <- function(left, right, refdate,
   else if (w <= 3 * 365) {
     ## Months
     by <- c(1, 2, 3)[w <= c(1, 2, 3) * 365][1]
-    at_date <- seq(ceiling_m(d0), d1, by = paste(by, "months"))
-    at <- as.numeric(at_date - d0)
+    at_date <- seq(dceiling_m(d0), d1, by = paste(by, "months"))
+    at <- as.integer(at_date - d0)
     labels <- months(at_date, abbreviate = TRUE)
     minor_axis()
 
@@ -244,8 +353,8 @@ daxis <- function(left, right, refdate,
       at_date <- d0
       at <- 0
     } else {
-      at_date <- seq(ceiling_y(d0), d1, by = "year")
-      at <- as.numeric(at_date - d0)
+      at_date <- seq(dceiling_y(d0), d1, by = "year")
+      at <- as.integer(at_date - d0)
       if (at[1] > w / 8) {
         at_date <- c(d0, at_date)
         at <- c(0, at)
@@ -257,9 +366,9 @@ daxis <- function(left, right, refdate,
     ## Years
     nyear <- ceiling(w / 365)
     by <- ceiling(nyear / 7)
-    at_date <- seq(ceiling_y(d0), d1 + (by + 1) * 365,
+    at_date <- seq(dceiling_y(d0), d1 + (by + 1) * 365,
                    by = paste(by, "years"))
-    at <- as.numeric(at_date - d0)
+    at <- as.integer(at_date - d0)
     n <- length(at)
     at <- c(at, (at[-1] + at[-n]) / 2)
     labels <- c(ymd(at_date, 1), rep(NA, length(at)-n))
@@ -267,4 +376,49 @@ daxis <- function(left, right, refdate,
   }
 
   invisible(NULL)
+}
+
+#' Get nicely formatted tick labels
+#'
+#' @description
+#' Generates "mantissa x 10^power" tick labels for axes.
+#' Intended mainly for count data.
+#'
+#' @param at
+#'   A numeric vector listing tick coordinates, probably
+#'   generated by [graphics::axTicks()].
+#'
+#' @return
+#' An expression vector of length `length(at)` listing
+#' tick labels.
+#'
+#' @keywords internal
+get_labels <- function(at) {
+  ## Exponential notation split into mantissa and power
+  mp <- matrix(unlist(strsplit(sprintf("%.6e", at), "e")),
+               ncol = 2, byrow = TRUE)
+
+  ## Greatest number of digits after mantissa decimal,
+  ## ignoring trailing zeros
+  digits <- max(nchar(sub("0+$", "", mp[, 1]))) - 2
+
+  ## Mantissa reformatted with exactly `digits` digits after decimal
+  man <- sprintf(fmt = paste0("%.", digits, "e"), as.numeric(mp[, 1]))
+
+  ## Power reformatted without leading zeros
+  pow <- as.character(as.numeric(mp[, 2]))
+
+  ## Format nonzero labels as "mantissa x 10^power".
+  ## Shorten to "10^power" if nonzero mantissa is only ever 1.
+  ## Use "0" if mantissa is zero.
+  if (all(as.numeric(man) %in% c(0, 1))) {
+    labels <- parse(text = paste0("10^", pow))
+  } else {
+    labels <- parse(text = paste0(man, " %*% 10^", pow))
+  }
+  if (0 %in% at) {
+    labels[at == 0] <- expression(0)
+  }
+
+  labels
 }

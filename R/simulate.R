@@ -4,38 +4,40 @@
 #' A method for simulating incidence models specified
 #' by objects of class "egf".
 #'
-#' @param object An "egf" object.
-#' @param nsim A positive integer specifying a number of simulations.
-#' @param seed An integer specifying a seed for RNG, otherwise `NULL`.
-#' @param time A numeric vector listing increasing time points,
-#'   expressed as numbers of days since `object$date[1]`
-#'   for "egf_init" objects and since `object$init$date[1]`
-#'   for "egf" objects. Missing values are not tolerated and
-#'   `length(time) >= 2` is required.
-#' @param ... Unused optional arguments.
+#' @param object
+#'   An "egf" object.
+#' @param nsim
+#'   A positive integer specifying a number of simulations.
+#' @param seed
+#'   An integer specifying a seed for RNG, otherwise `NULL`.
+#' @param time
+#'   A numeric vector of length 2 or greater listing increasing
+#'   time points. Times must be expressed as numbers of days since
+#'   `with(object$init, date[first])`.
+#' @param ...
+#'   Unused optional arguments.
 #'
 #' @return
 #' An "egf_sim" object. A list with elements:
 #'
 #' \describe{
 #'   \item{`time`}{Matches argument.}
-#'   \item{`refdate`}{Matches `object$init$date[1]`.}
-#'   \item{`int_inc`}{A matrix with `length(time)-1` rows and `nsim`
-#'     columns, such that `int_inc[i, j]` is the number of cases
-#'     observed between `time[i]` and `time[i+1]` in simulation `j`
-#'     of `nsim`. Row vector `int_inc[i, ]` is sampled from a
-#'     Poisson or negative binomial distribution (depending on
-#'     `object$init$distr`) with mean `predict(object, time)$int_inc[i]`.
-#'     The negative binomial dispersion parameter is taken from
+#'   \item{`refdate`}{Matches `with(object$init, date[first])`.}
+#'   \item{`int_inc`}{
+#'     A matrix with `length(time)` rows and `nsim` columns.
+#'     `int_inc[1, j]` is `NA` for all `j`. For `i > 1`, `int_inc[i, j]`
+#'     is the number of cases observed between `time[i]` and `time[i-1]`
+#'     in simulation `j` of `nsim`, sampled from a Poisson or negative
+#'     binomial distribution (depending on `object$init$distr`) with
+#'     mean `diff(object$eval_cum_inc(time[c(i-1, i)]))`. If the latter,
+#'     then the negative binomial dispersion parameter is taken from
 #'     `object$theta_fit[["nbdisp"]]`.
 #'   }
-#'   \item{`cum_inc`}{A matrix with `length(time)` rows and `nsim`
-#'     columns, such that `cum_inc[i, j]` is the number of cases
-#'     observed up to `time[i]` in simulation `j`. Column vector
-#'     `cum_inc[, j]` is computed as `c0 + cumsum(c(0, int_inc[, j]))`,
-#'     where `c0 = predict(object, time)$cum_inc[1]` is the expected
-#'     value of cumulative incidence at `time[1]` conditional on
-#'     parameter vector `object$theta_fit`.
+#'   \item{`cum_inc`}{
+#'     A matrix with `length(time)` rows and `nsim` columns.
+#'     `cum_inc[i, j]` is the number of cases observed up to `time[i]`
+#'     in simulation `j`. Column vector `cum_inc[, j]` is computed as
+#'     `object$eval_cum_inc(time[1]) + cumsum(c(0, int_inc[-1, j]))`.
 #'   }
 #'   \item{`object`}{Matches argument.}
 #' }
@@ -48,54 +50,65 @@ NULL
 #' @export
 #' @importFrom stats rpois rnbinom
 simulate.egf <- function(object, nsim = 1, seed = NULL,
-                         time = object$init$time, ...) {
+                         time = with(object$init, time[first:last]),
+                         ...) {
   check(time,
     what = "numeric",
     len = c(2, Inf),
     "`time` must be numeric and have length 2 or greater."
   )
   check(time,
-    no = list(anyNA),
+    no = anyNA,
     "`time` must not have missing values."
   )
   check(time,
     yes = function(x) all(diff(x) > 0),
     "`time` must be increasing."
   )
+  check(time,
+    val = with(object$init, time[c(first, last)]),
+    action = "warn",
+    "There are elements of `time` outside of the fitting window."
+  )
   check(nsim,
     what = "numeric",
     len = 1,
     val = c(1, Inf),
-    yes = function(x) is.finite(x),
+    yes = is.finite,
     "`nsim` must be a positive integer."
   )
   if (!is.null(seed)) {
     check(seed,
       what = "numeric",
       yes = function(x) is.finite(x[1]),
-      "`seed` must be `NULL` or an integer."
+      "`seed` must be an integer or `NULL`."
     )
   }
 
   ## Predicted curves
-  cum_inc <- object$eval_cum_inc(time)
-  int_inc <- diff(cum_inc)
+  cum_inc_pred <- object$eval_cum_inc(time)
+  int_inc_pred <- diff(cum_inc_pred)
 
   ## Simulated curves
   if (object$init$distr == "pois") {
     set.seed(seed)
-    sim <- replicate(nsim, rpois(int_inc, lambda = int_inc))
+    int_inc_sim <- replicate(nsim,
+      rpois(n = int_inc_pred, lambda = int_inc_pred)
+    )
   } else if (object$init$distr == "nbinom") {
     nbdisp <- object$theta_fit[["nbdisp"]]
     set.seed(seed)
-    sim <- replicate(nsim, rnbinom(int_inc, mu = int_inc, size = nbdisp))
+    int_inc_sim <- replicate(nsim,
+      rnbinom(n = int_inc_pred, mu = int_inc_pred, size = nbdisp)
+    )
   }
+  cum_inc_sim <- cum_inc_pred[1] + apply(rbind(0, int_inc_sim), 2, cumsum)
 
   out <- list(
     time = time,
-    refdate = object$init$date[1],
-    cum_inc = cum_inc[1] + apply(rbind(0, sim), 2, cumsum),
-    int_inc = sim,
+    refdate = with(object$init, date[first]),
+    cum_inc = cum_inc_sim,
+    int_inc = rbind(NA, int_inc_sim),
     object = object
   )
   structure(out, class = c("egf_sim", "list"))

@@ -5,81 +5,102 @@
 \title{\loadmathjax
 Fit a model of epidemic growth}
 \usage{
-egf(init, method = "nlminb", nbdisp_tol = 100, ...)
+egf(init, method = "nlminb", na_action = "exclude", nbdisp_tol = 100, ...)
 }
 \arguments{
-\item{init}{An "egf_init" object specifying epidemic data,
-a fitting window, and initial parameter estimates.
-See \code{\link[=egf_init]{egf_init()}}.}
+\item{init}{An "egf_init" object specifying epidemic data, a fitting window,
+and initial parameter estimates. See \code{\link[=egf_init]{egf_init()}}.}
 
 \item{method}{One of \code{"nlminb"}, \code{"nlm"}, \code{"Nelder-Mead"}, \code{"BFGS"},
 \code{"L-BFGS-S"}, and \code{"CG"}, indicating an optimization algorithm.}
 
-\item{nbdisp_tol}{A positive number defining a threshold on the
-fitted value of the negative binomial dispersion parameter.
+\item{na_action}{One of \code{"fail"} and \code{"exclude"}, indicating how missing values
+in \code{init$cases} are handled. See Details.}
+
+\item{nbdisp_tol}{A positive number defining a threshold on the fitted value
+of the negative binomial dispersion parameter.
 Used only if \code{init$distr = "nbinom"}. See Details.}
 
 \item{...}{Additional arguments to \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}},
-or \code{\link[stats:optim]{stats::optim()}}.}
+or \code{\link[stats:optim]{stats::optim()}}, depending on \code{method}.}
 }
 \value{
 An "egf" object. A list containing copies of arguments
 \code{init} and \code{method}, with these additional elements:
 
 \describe{
-\item{\code{theta_fit}}{A named numeric vector giving the optimizer's
-approximation of the maximum likelihood parameter vector.
+\item{\code{theta_fit}}{
+A named numeric vector giving the optimizer's approximation
+of the maximum likelihood parameter vector.
 }
-\item{\code{log_theta_fit}}{Log-transformed \code{theta_fit}. Identical
-to \code{log(theta_fit)} but with \code{"log_"} prepended to the names.
+\item{\code{log_theta_fit}}{
+Log-transformed \code{theta_fit}. Identical to \code{log(theta_fit)}
+but with \code{"log_"} prepended to the names.
 }
-\item{\code{nll}}{A numeric scalar giving the negative log likelihood
-of \code{log_theta_fit}.
+\item{\code{nll}}{
+A numeric scalar giving the negative log likelihood of
+\code{log_theta_fit}.
 }
-\item{\code{nll_func}}{A closure with a numeric argument \code{log_theta}
-specifying a log-transformed parameter vector (default is
-\code{log_theta_fit}). Returns the negative log likelihood function
-evaluated at \code{log_theta}.
+\item{\code{nll_func}}{
+A closure with a numeric argument \code{log_theta} specifying a
+log-transformed parameter vector (default is \code{log_theta_fit}).
+Returns the negative log likelihood function evaluated at
+\code{log_theta}.
 }
-\item{\code{nll_grad}}{A closure with a numeric argument \code{log_theta}
-specifying a log-transformed parameter vector (default is
-\code{log_theta_fit}). Returns the gradient of the negative log
-likelihood with respect to log-transformed parameters evaluated
-at \code{log_theta}.
+\item{\code{nll_grad}}{
+A closure with a numeric argument \code{log_theta} specifying a
+log-transformed parameter vector (default is \code{log_theta_fit}).
+Returns the gradient of the negative log likelihood with
+respect to log-transformed parameters evaluated at \code{log_theta}.
 }
-\item{\code{eval_cum_inc}}{A closure with numeric arguments \code{time}
-and \code{theta} (default is \code{theta_fit}), evaluating expected
-cumulative incidence at \code{time} days using parameter
-vector \code{theta}. Elements must be named as in \code{theta_fit}.
+\item{\code{eval_cum_inc}}{
+A closure with numeric arguments \code{time} and \code{theta}
+(default is \code{theta_fit}) evaluating expected cumulative
+incidence at \code{time} days since \code{init$date[first]} conditional
+on parameter vector \code{theta}. Elements of \code{theta} must be
+named as in \code{theta_fit}. \code{predict(object, time)} can be
+used instead of \code{object$eval_cum_inc(time)}.
 }
 \item{\code{madf_out}}{The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.}
-\item{\code{optim_out}}{The list output of \code{\link[stats:nlminb]{stats::nlminb()}},
-\code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}, depending on \code{method}.
+\item{\code{optim_out}}{
+The list output of \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}},
+or \code{\link[stats:optim]{stats::optim()}}, depending on \code{method}.
 }
-\item{\code{large_nbdisp_flag}}{A logical scalar. If \code{TRUE}, then
-the fitted value of the negative binomial dispersion parameter
+\item{\code{large_nbdisp_flag}}{
+A logical scalar. If \code{TRUE}, then the fitted value of the
+negative binomial dispersion parameter
 (i.e., \code{theta_fit[["nbdisp"]]}) exceeds the threshold defined
 by \code{nbdisp_tol}. Omitted if \code{init$distr != "nbinom"}.
 See Details.
 }
-\item{\code{call}}{The call to \code{egf()}, allowing the output to
-be updated using \code{\link[stats:update]{stats::update()}}.
+\item{\code{call}}{
+The call to \code{egf()}, allowing the output to be updated
+using \code{\link[stats:update]{stats::update()}}.
 }
 }
 }
 \description{
 Minimizes the negative log likelihood of an epidemic growth model
 using \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, of one of the routines
-provided through \code{\link[stats:optim]{stats::optim()}}. The negative log likelihood
-function is written as a C++ template, and its gradient with
-respect to log-transformed parameters is defined by automatic
-differentiation using package \pkg{TMB}.
+provided through \code{\link[stats:optim]{stats::optim()}}. The negative log likelihood as a
+function of log-transformed parameters is written as a C++ template,
+and its derivatives with respect to log-transformed parameters are
+computed by automatic differentiation using package \pkg{TMB}.
 }
 \details{
+The data used in likelihood calculation are specified by
+\code{x = with(init, cases[(first+1):last])}.
+If \code{x} has missing values and \code{na_action = "fail"},
+then \code{egf()} will stop with an error.
+If \code{x} has missing values and \code{na_action = "exclude"},
+then the likelihood function will be defined as a product over
+indices without missing values, unless \code{sum(!is.na(x))}
+is less than the number of model parameters, in which case
+\code{egf()} will stop with an error.
+
 If \code{theta_fit[["nbdisp"]]} exceeds
-
-\code{nbdisp_tol * max(diff(eval_cum_inc(init$time[init$first:(init$last+1)])))}
-
+\code{nbdisp_tol * max(diff(eval_cum_inc(time)))},
+where \code{time = with(init, time[first:last])},
 then \code{egf()} will issue a warning suggesting to refit
 using a Poisson model by running
 \code{update(object, init = update(init, distr = "pois"))},
@@ -89,25 +110,30 @@ accessible with \code{vignette("epigrowthfit-vignette")}.
 }
 \examples{
 data(canadacovid)
-ontario <- na.omit(subset(canadacovid, province == "ON"))
-init <- egf_init(
+ontario <- subset(canadacovid, province == "ON")
+x1 <- egf_init(
   date = ontario$date,
-  cases = ontario$new_confirmations[-1],
+  cases = ontario$new_confirmed,
   curve = "logistic",
-  distr = "nbinom"
+  distr = "nbinom",
+  peak = 76,
+  first = 32
 )
-x <- egf(init)
-print(x)
-coef(x, log = FALSE)
-coef(x, log = TRUE)
-plot(x, inc = "interval")
-plot(x, inc = "cumulative")
-time_obs <- init$time
-time_pred <- seq(min(time_obs), max(time_obs), by = median(diff(time_obs)))
-pred <- predict(x, time = time_pred)
-sim <- simulate(x, nsim = 6, time = time_obs)
-plot(sim, inc = "interval")
-plot(sim, inc = "cumulative")
+x2 <- update(x1, peak = 241, first = 211)
+y1 <- egf(x1)
+y2 <- egf(x2)
+print(y1)
+coef(y1, log = FALSE)
+coef(y1, log = TRUE)
+confint(y1, parm = "r", level = 0.95, method = "linear")
+predict(y1)
+s <- simulate(y1, nsim = 6)
+plot(s, inc = "interval")
+plot(s, inc = "cumulative")
+plot(y1, inc = "interval")
+plot(y2, inc = "interval", add = TRUE)
+plot(y1, inc = "cumulative")
+plot(y2, inc = "cumulative", add = TRUE)
 
 }
 \references{
@@ -116,6 +142,5 @@ plot(sim, inc = "cumulative")
 \insertRef{Earn+20}{epigrowthfit}
 }
 \seealso{
-\code{\link[=egf_init]{egf_init()}}, \code{\link[=confint.egf]{confint.egf()}}, \code{\link[=coef.egf]{coef.egf()}}, \code{\link[=print.egf]{print.egf()}},
-\code{\link[=predict.egf]{predict.egf()}}, \code{\link[=simulate.egf]{simulate.egf()}}, \code{\link[=plot.egf]{plot.egf()}}
+\code{\link[=egf_init]{egf_init()}}, \code{\link[=confint.egf]{confint.egf()}}, \code{\link[=plot.egf]{plot.egf()}}
 }

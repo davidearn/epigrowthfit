@@ -19,42 +19,42 @@ daxis(
 
 \item{right}{Right endpoint of the bottom axis in user coordinates.}
 
-\item{refdate}{A Date scalar. \code{t0} and \code{t1} represent a number of
-days since this date.}
+\item{refdate}{A Date scalar. \code{t0} and \code{t1} represent numbers of days
+since this date.}
 
 \item{tcl}{A numeric scalar. Passed to \code{\link[graphics:axis]{graphics::axis()}} argument
 \code{tcl} when creating the minor axis. Defines tick length.
 See \code{\link[graphics:par]{graphics::par()}}.}
 
-\item{mgp2}{A numeric vector of length 2. Elements are passed
-to \code{\link[graphics:axis]{graphics::axis()}} argument \code{mgp} (the second component)
-when creating the minor and major axes, respectively. Defines
-the distance between the axis and the top of tick labels.
-See \code{\link[graphics:par]{graphics::par()}}.}
+\item{mgp2}{A numeric vector of length 2. Elements are passed to
+\code{\link[graphics:axis]{graphics::axis()}} argument \code{mgp} (the second component)
+when creating the minor and major axes, respectively.
+Defines the line to which the tops of tick labels are
+aligned. See \code{\link[graphics:par]{graphics::par()}}.}
 
-\item{col.axis}{A numeric or character vector of length 2.
-Elements are passed to \code{\link[graphics:axis]{graphics::axis()}} argument \code{col.axis}
-when creating the minor and major axes, respectively. Defines
+\item{col.axis}{A numeric or character vector of length 2. Elements are
+passed to \code{\link[graphics:axis]{graphics::axis()}} argument \code{col.axis} when
+creating the minor and major axes, respectively. Defines
 the colour of tick labels. See \code{\link[graphics:par]{graphics::par()}}.}
 
-\item{cex.axis}{A numeric vector of length 2. Elements are
-passed to \code{\link[graphics:axis]{graphics::axis()}} argument \code{cex.axis} when creating
-the minor and major axes, respectively. Defines the size of
-tick labels. See \code{\link[graphics:par]{graphics::par()}}.}
+\item{cex.axis}{A numeric vector of length 2. Elements are passed to
+\code{\link[graphics:axis]{graphics::axis()}} argument \code{cex.axis} when creating
+the minor and major axes, respectively. Defines the
+size of tick labels. See \code{\link[graphics:par]{graphics::par()}}.}
 }
 \value{
 Returns \code{NULL} invisibly.
 }
 \description{
-Labels day, month, and year on a bottom axis, taking care to ensure
-that labels are nicely spaced.
+Labels day, month, and year on a bottom axis, taking care
+to ensure that labels are nicely spaced.
 }
 \details{
 \code{daxis()} assumes that horizontal user coordinates measure
 a number of days since \code{refdate}.
 
 The date axis consists of minor and major axes. The content
-of these axes depends entirely on \code{w = round(right-left)},
+of these axes depends entirely on \code{w = floor(right)-ceiling(left)},
 the rounded difference between the extreme times in days.
 
 If \code{w <= 210} (7 months), then days are placed on the minor

@@ -4,17 +4,22 @@
 #' Methods for extracting estimates of model parameters from objects
 #' of class "egf_init" or "egf".
 #'
-#' @param object An "egf_init" or "egf" object.
-#' @param log A logical scalar. If `TRUE`, then parameter estimates
-#'   are log-transformed.
-#' @param ... Unused optional arguments.
+#' @param object
+#'   An "egf_init" or "egf" object.
+#' @param log
+#'   A logical scalar. If `TRUE`, then parameter estimates are
+#'   log-transformed.
+#' @param ...
+#'   Unused optional arguments.
 #'
 #' @return
-#' For class "egf_init", `object$theta_init` if `log = FALSE`
-#' and `object$log_theta_init` if `log = TRUE`.
+#' The method for class "egf_init" returns
+#' `object$theta_init` if `log = FALSE` and
+#' `object$log_theta_init` if `log = TRUE`.
 #'
-#' For class "egf", `object$theta_fit` if `log = FALSE`
-#' and `object$log_theta_fit` if `log = TRUE`.
+#' The method for class "egf" returns
+#' `object$theta_fit` if `log = FALSE` and
+#' `object$log_theta_fit` if `log = TRUE`.
 #'
 #' @seealso [egf_init()], [egf()]
 #' @name coef.egf
@@ -26,7 +31,7 @@ coef.egf_init <- function(object, log = FALSE, ...) {
   check(log,
     what = "logical",
     len = 1,
-    opt = c(TRUE, FALSE),
+    no = is.na,
     "`log` must be `TRUE` or `FALSE`."
   )
 
@@ -43,7 +48,7 @@ coef.egf <- function(object, log = FALSE, ...) {
   check(log,
     what = "logical",
     len = 1,
-    opt = c(TRUE, FALSE),
+    no = is.na,
     "`log` must be `TRUE` or `FALSE`."
   )
 

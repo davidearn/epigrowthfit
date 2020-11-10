@@ -6,15 +6,17 @@
 #' to an initial exponential growth rate and a binned
 #' generation interval distribution.
 #'
-#' @param x A numeric vector listing values for the initial
-#'   exponential growth rate expressed per day. Alternatively,
-#'   an "egf_init" or "egf" object.
+#' @param x
+#'   A numeric vector listing values for the initial exponential
+#'   growth rate expressed per day. Alternatively, an "egf_init"
+#'   or "egf" object.
 #'
 #' @return
 #' The method for class "numeric" returns a "doubling_time"
-#' object, a numeric vector of length `length(x)` whose
-#' `i`th element is the doubling time in days corresponding
-#' to initial exponential growth rate `x[i]`. See Details.
+#' object, which is a numeric vector of length `length(x)`
+#' whose `i`th element is the doubling time in days
+#' corresponding to initial exponential growth rate `x[i]`.
+#' See Details.
 #'
 #' The method for class "egf_init" applies the method for
 #' class "numeric" to `x$theta_init[["r"]]`.
@@ -30,15 +32,13 @@
 #' \mjseqn{\frac{\log 2}{r}}.
 #'
 #' @examples
-#' r <- seq(0, 1, by = 0.02)
+#' r <- 10^seq(-2, 0, length.out = 150)
 #' doubling_time <- compute_doubling_time(r)
-#' print(doubling_time)
+#' print(doubling_time) ## FIXME: implement [, [[, [<-, [[<- methods
 #' plot(r, doubling_time, las = 1,
 #'   xlab = "initial exponential growth rate, per day",
 #'   ylab = "doubling time, days"
 #' )
-#'
-#' @seealso [print.doubling_time()]
 #'
 #' @export
 compute_doubling_time <- function(x) {
@@ -61,6 +61,6 @@ compute_doubling_time.egf_init <- function(x) {
 #' @rdname compute_doubling_time
 #' @export
 compute_doubling_time.egf <- function(x) {
-  r <- x$theta_fit[["r"]]
-  compute_doubling_time(r)
+  x <- x$theta_fit[["r"]]
+  compute_doubling_time(x)
 }

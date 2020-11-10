@@ -4,21 +4,24 @@
 #' Converts decimal dates to dates in a way that avoids
 #' truncation by [base::as.Date()]. See Details.
 #'
-#' @param dd A numeric vector listing decimal dates.
+#' @param dd
+#'   A numeric vector listing decimal dates.
 #'
 #' @return
 #' A Date vector with length equal to `length(time)`.
 #'
 #' @details
-#' [lubridate::date_decimal()] converts numeric vectors to POSIXct objects.
-#' The naive way to convert POSIXct objects (storing both date and time) to
-#' Date objects (storing just date) is to apply [base::as.Date()] directly.
-#' However, [base::as.Date.POSIXct()] performs this conversion by "ignoring
-#' the time after midnight in the representation of the time in the specified
-#' time zone". Hence the error will be undesirably large if the time is past
-#' noon. The solution is to round beforehand by applying apply [base::round()]
-#' with argument `units = "days"` before applying [base::as.Date()] to ensure
-#' that date-times are rounded ahead of time.
+#' [lubridate::date_decimal()] converts numeric vectors to POSIXct
+#' objects. The naive way to convert POSIXct objects (storing both
+#' date and time) to Date objects (storing just date) is to apply
+#' [base::as.Date()] directly. However, [base::as.Date.POSIXct()]
+#' performs this conversion by "ignoring the time after midnight
+#' in the representation of the time in the specified time zone".
+#' Hence the error will be undesirably large if the time is past
+#' noon. The solution is to round beforehand by applying apply
+#' [base::round()] with argument `units = "days"` before applying
+#' [base::as.Date()] to ensure that date-times are rounded ahead
+#' of time.
 #'
 #' @examples
 #' datetime_numeric <- 2001.002
@@ -42,18 +45,22 @@ safe_Date <- function(dd) {
 #' data are not equally spaced or the aggregation interval is not an
 #' integer multiple of the observation interval.
 #'
-#' @param date A Date vector listing (increasing) time points.
-#' @param counts A data frame with numeric variables listing counts
-#'   on the given dates, so that `nrow(counts) = length(date)`.
-#'   Each variable defines a time series to be aggregated. Must be
-#'   right-aligned, i.e., `counts[i, ]` must give counts over the
-#'   days from `date[i-1]+1` to `date[i]`. The first row is ignored,
-#'   since `date` provides no information about how to interpret it.
-#' @param aggregation An integer indicating the number of days
-#'   over which to aggregate (e.g., 7 for weekly aggregates).
-#' @param alignment An element of `c("r", "c", "l")` indicating
-#'   how aggregates should be aligned in the returned data frame.
-#'   See Value.
+#' @param date
+#'   A Date vector listing (increasing) time points.
+#' @param counts
+#'   A data frame with numeric variables listing counts on the
+#'   given dates, so that `nrow(counts) = length(date)`. Each
+#'   variable defines a time series to be aggregated. Must be
+#'   right-aligned, i.e., `counts[i, ]` must give counts over
+#'   the days from `date[i-1]+1` to `date[i]`. The first row
+#'   is ignored, since `date` provides no information about how
+#'   it should be interpreted.
+#' @param aggregation
+#'   An integer indicating the number of days over which to aggregate
+#'   (e.g., 7 for weekly aggregates).
+#' @param alignment
+#'   An element of `c("r", "c", "l")` indicating how aggregates
+#'   should be aligned in the returned data frame. See Value.
 #'
 #' @return
 #' A data frame whose first column is a Date vector listing
@@ -64,16 +71,17 @@ safe_Date <- function(dd) {
 #' Let `d` be the date column and `x` any other column. Then:
 #'
 #' \describe{
-#'   \item{`"r"`}{`x[i]` is an aggregate over the days
-#'     from `d[i-1]+1` to `d[i]`.
+#'   \item{`"r"`}{
+#'     `x[i]` is an aggregate over the days from `d[i-1]+1` to `d[i]`.
 #'   }
-#'   \item{`"c"`}{If `aggregation` is odd and equal to `2*m+1`,
-#'     then `x[i]` is an aggregate over the days from `d[i]-m` to `d[i]+m`.
-#'     If `aggregation` is even and equal to `2*n`,
-#'     then `x[i]` is an aggregate over the days from `d[i]-n` to `d[i]+n-1`.
+#'   \item{`"c"`}{
+#'     If `aggregation` is odd and equal to `2*m+1`, then `x[i]`
+#'     is an aggregate over the days from `d[i]-m` to `d[i]+m`.
+#'     If `aggregation` is even and equal to `2*n`, then `x[i]`
+#'     is an aggregate over the days from `d[i]-n` to `d[i]+n-1`.
 #'   }
-#'   \item{`"l"`}{`x[i]` is an aggregate over the days
-#'     from `d[i]` to `d[i+1]-1`.
+#'   \item{`"l"`}{
+#'     `x[i]` is an aggregate over the days from `d[i]` to `d[i+1]-1`.
 #'   }
 #' }
 #'
@@ -100,25 +108,21 @@ aggregate_counts <- function(date,
                              aggregation = 1,
                              alignment = "r") {
   if (!is.numeric(aggregation) || length(aggregation) != 1 ||
-        !isTRUE(aggregation >= 1) || aggregation %% 1 != 0) {
+      !isTRUE(aggregation >= 1) || aggregation %% 1 != 0) {
     stop("`aggregation` must be a positive integer.")
   }
   if (!is.character(alignment) || length(alignment) != 1 ||
       !alignment %in% c("r", "c", "l")) {
     stop("`alignment` must be \"r\", \"c\", or \"l\".")
   }
-  if (missing(date)) {
-    stop("Missing argument `date`.")
-  } else if (!inherits(date, "Date")) {
+  if (!inherits(date, "Date")) {
     stop("`date` must have class \"Date\".")
   } else if (length(date) < aggregation + 1) {
     stop("`length(date)` must be greater than or equal to `aggregation + 1`.")
   } else if (!isTRUE(all(diff(date) > 0))) {
     stop("`date` must be increasing.")
   }
-  if (missing(counts)) {
-    stop("Missing argument `counts`.")
-  } else if (!is.data.frame(counts) || !isTRUE(all(sapply(counts, is.numeric)))) {
+  if (!is.data.frame(counts) || !isTRUE(all(sapply(counts, is.numeric)))) {
     stop("`counts` must be a data frame with numeric variables.")
   } else if (isTRUE(any(counts < 0))) {
     stop("`counts` must not have negative elements.")
@@ -162,21 +166,24 @@ aggregate_counts <- function(date,
 #' Assigns time points in a data frame an outbreak label,
 #' then assigns outbreaks a severity label.
 #'
-#' @param data A data frame with a numeric variable `time`
-#'   listing time points.
-#' @param outbreak_definitions A data frame with variables:
+#' @param data
+#'   A data frame with a numeric variable `time` listing time points.
+#' @param outbreak_definitions
+#'   A data frame with variables:
 #'
 #'   \describe{
-#'     \item{`outbreak`}{<character or numeric> Outbreak labels,
-#'       without duplicates.
+#'     \item{`outbreak`}{
+#'       \[character or numeric\] Outbreak labels, without duplicates.
 #'     }
-#'     \item{`severity`}{<factor> Severity labels, classifying
-#'       each outbreak by its severity (e.g., `"minor"` and `"major"`).
+#'     \item{`severity`}{
+#'       \[factor\] Severity labels, classifying each outbreak by its
+#'       severity (e.g., `"minor"` and `"major"`).
 #'     }
-#'     \item{`start`,`end`}{<numeric> Increasing vectors defining
-#'       the start and end times of each outbreak. To ensure that
-#'       the intervals are mutually disjoint, `c(rbind(start, end))`
-#'       must also be increasing.
+#'     \item{`start`,`end`}{
+#'       \[numeric\] Increasing vectors defining the start and
+#'       end times of each outbreak. To ensure that the intervals
+#'       are mutually disjoint, `c(rbind(start, end))` must also
+#'       be increasing.
 #'     }
 #'   }
 #'
@@ -207,7 +214,7 @@ factor_by_outbreak <- function(data, outbreak_definitions) {
   )
   data$outbreak <- droplevels(data$outbreak, exclude = NA)
   data <- data[!is.na(data$outbreak), ]
-  rownames(data) <- NULL
+  row.names(data) <- NULL
   if (nrow(data) == 0) {
     stop("Union of intervals in `outbreak_definitions`, ",
          "contains 0 elements of `data$time`.")

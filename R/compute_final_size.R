@@ -6,18 +6,20 @@
 #' the proportion of the population expected to be infected
 #' over the course of an epidemic.
 #'
-#' @param R0 A numeric vector listing non-negative values for
-#'   the basic reproduction number.
-#' @param S0 A numeric vector listing values in the interval
+#' @param R0
+#'   A numeric vector listing non-negative values
+#'   for the basic reproduction number.
+#' @param S0
+#'   A numeric vector listing values in the interval
 #'   \[0,1\] for the initial susceptible proportion.
-#' @param I0 A numeric vector listing values in the interval
+#' @param I0
+#'   A numeric vector listing values in the interval
 #'   \[0,1\] for the initial infected proportion.
 #'
 #' @return
-#' A numeric vector listing epidemic final sizes. See Details.
-#'
-#' The arguments are recycled up to the length of longest argument,
-#' hence the length of the output is this maximum length.
+#' A numeric vector of length `len` listing epidemic final sizes,
+#' where `len` is the length of the longest argument. (Arguments
+#' are recycled up to this length.) See Details.
 #'
 #' @details
 #' The basic reproduction number \mjseqn{\mathcal{R}USCORE0} defines
@@ -46,9 +48,12 @@
 #' \insertRef{MaEarn06}{epigrowthfit}
 #'
 #' @examples
-#' R0 <- 10^seq(-3, log10(40), length.out = 150)
+#' R0 <- 10^seq(-3, log10(10), length.out = 150)
 #' final_size <- compute_final_size(R0)
-#' plot(R0, final_size, type = "l", las = 1, ylab = "final size")
+#' plot(R0, final_size, type = "l", las = 1,
+#'   xlab = "basic reproduction number",
+#'   ylab = "final size"
+#' )
 #'
 #' @export
 #' @importFrom emdbook lambertW

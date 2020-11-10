@@ -18,7 +18,7 @@ compute_R0(x, breaks, probs)
 }
 \arguments{
 \item{x}{A numeric vector listing values for the initial exponential
-growth rate, expressed per day. Alternatively, an "egf_init"
+growth rate expressed per day. Alternatively, an "egf_init"
 or "egf" object.}
 
 \item{breaks}{A numeric vector of length 2 or greater listing increasing

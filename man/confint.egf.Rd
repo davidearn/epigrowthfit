@@ -9,14 +9,13 @@
 \arguments{
 \item{object}{An "egf" object.}
 
-\item{parm}{An element of \code{names(object$theta_fit)} indicating
-a parameter for which to compute a confidence interval.}
+\item{parm}{An element of \code{names(object$theta_fit)} indicating a
+parameter for which to compute a confidence interval.}
 
-\item{level}{A number in the interval [0,1] indicating a
-confidence level.}
+\item{level}{A number in the interval [0,1] indicating a confidence level.}
 
-\item{method}{One of \code{"linear"}, \code{"uniroot"}, and \code{"wald"}
-indicating a method with which to compute the confidence interval.}
+\item{method}{One of \code{"linear"}, \code{"uniroot"}, and \code{"wald"} indicating
+a method with which to compute the confidence interval.}
 
 \item{...}{Unused optional arguments.}
 }
