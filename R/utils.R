@@ -92,13 +92,17 @@ check <- function(x, ..., what = NULL, not = NULL, len = NULL,
     ## Check length: equals `len` or in `range(len)`
     (is.null(len) ||
        (length(len) == 1 && length(x) == len) ||
-       (length(len) > 1 && length(x) >= len[1] && length(x) <= len[2])) &&
+       (length(len) > 1 &&
+          length(x) >= len[1] &&
+          length(x) <= len[2])) &&
     ## Check value: is a subset of `opt`
     (is.null(opt) || all(x %in% opt)) &&
     ## Check value: equals `val` or in `range(val)`
     (is.null(val) ||
-       (length(val) == 1 && all(match.fun(rel[1])(x, val[1]), na.rm = TRUE)) ||
-       (length(val) > 1 && all(match.fun(rel[2])(x, val[2]), na.rm = TRUE))) &&
+       (length(val) == 1 && all(x == val, na.rm = TRUE)) ||
+       (length(val) > 1 &&
+          all(match.fun(rel[1])(x, val[1]), na.rm = TRUE) &&
+          all(match.fun(rel[2])(x, val[2]), na.rm = TRUE))) &&
     ## Check value: passes functions `yes`
     (is.null(yes) || all(sapply(yes, function(f) f(x)))) &&
     ## Check value: fails functions `no`

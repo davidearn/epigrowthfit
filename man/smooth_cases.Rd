@@ -51,6 +51,10 @@ Integer vectors indexing dates of peaks and troughs,
 respectively, in the cubic spline specified by \code{ss}.
 Dates are obtained as \code{date[peaks]} and \code{date[troughs]}.
 }
+\item{\code{call}}{
+The call to \code{smooth_cases()}, allowing the output
+to be updated using \code{\link[stats:update]{stats::update()}}.
+}
 }
 
 The method for class "egf_init" applies the default method

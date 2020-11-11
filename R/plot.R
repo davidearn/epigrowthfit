@@ -242,6 +242,11 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
     int_inc = cases,
     dt = c(NA, dt)
   )
+  if (add) {
+    dindex <- TRUE
+  } else {
+    dindex <- (data$time >= t1 - 3 & data$time <= t2 + 3)
+  }
 
   ## Predicted curve
   m <- median(dt)
@@ -363,7 +368,6 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
     y = ylim[c(1, 1, 2, 2)]
   )
   do.call(polygon, c(l, style$window))
-  windex <- (data$time >= t1 - 4 & data$time <= t2 + 4)
 
   if (!add) {
     ## Box
@@ -400,19 +404,20 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
     l <- list(
       formula = formula,
       data = data,
-      subset = (data$pty == pty) & (!add | windex),
+      subset = (data$pty == pty) & dindex,
       xpd = is.null(dots$xlim) && is.null(dots$ylim)
     )
     do.call(points, c(l, style[[paste0("points_", pty)]]))
   }
 
   ## Annotation above exceptional points
-  if (any(dt_enum != 1)) {
+  is_exceptional <- (data$pty != ptys[1] & dindex)
+  if (isTRUE(any(is_exceptional))) {
     l <- list(
       formula = int_inc ~ time,
       data = data,
       labels = data$dt,
-      subset = (dt_enum != 1) & (!add | windex)
+      subset = is_exceptional
     )
     do.call(text, c(l, style$text_hl))
   }

@@ -97,6 +97,16 @@
 #'     Parameters not specified in the argument are assigned their
 #'     default value:
 #'     \describe{
+#'       \item{`r`, `c0`}{
+#'         `beta1` and `exp(beta0)`, respectively,
+#'         where `beta1` and `beta0` are the slope and intercept
+#'         of a linear model fit to `x = time[first+(1:h)]` and
+#'         `y = log(1+cumsum(cases[first+(1:h)]))`, where
+#'         `h = max(2, floor((last-first)/2))`. If either
+#'         of `cases[first+1]` or `cases[first+2]` is `NA`,
+#'         then fitting a linear model to `x` and `y` is
+#'         impossible, and `r` and `c0` default to 0.1 and 1.
+#'       }
 #'       \item{`K`}{`2 * sum(cases[(first+1):peak])`}
 #'       \item{`thalf`}{`time[peak]`}
 #'       \item{`p`}{1}
@@ -231,10 +241,11 @@
 #'   cases = ontario$new_confirmed,
 #'   curve = "logistic",
 #'   distr = "nbinom",
-#'   peak = 76,
-#'   first = 32
+#'   first = 32,
+#'   last = 76,
+#'   peak = 76
 #' )
-#' x2 <- update(x1, peak = 241, first = 211)
+#' x2 <- update(x1, first = 211, last = 236, peak = "2020-10-10")
 #' print(x1)
 #' coef(x1, log = FALSE)
 #' coef(x1, log = TRUE)

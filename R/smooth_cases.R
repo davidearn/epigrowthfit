@@ -43,6 +43,10 @@
 #'     respectively, in the cubic spline specified by `ss`.
 #'     Dates are obtained as `date[peaks]` and `date[troughs]`.
 #'   }
+#'   \item{`call`}{
+#'     The call to `smooth_cases()`, allowing the output
+#'     to be updated using [stats::update()].
+#'   }
 #' }
 #'
 #' The method for class "egf_init" applies the default method
@@ -148,7 +152,8 @@ smooth_cases.default <- function(object, date, cases, log, spar, ...) {
     spar = spar,
     ss = ss,
     peaks = peaks,
-    troughs = troughs
+    troughs = troughs,
+    call = match.call()
   )
   structure(l, class = c("smooth_cases", "list"))
 }

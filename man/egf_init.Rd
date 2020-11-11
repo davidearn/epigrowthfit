@@ -111,6 +111,16 @@ retained if they are positive numbers and discarded otherwise.
 Parameters not specified in the argument are assigned their
 default value:
 \describe{
+\item{\code{r}, \code{c0}}{
+\code{beta1} and \code{exp(beta0)}, respectively,
+where \code{beta1} and \code{beta0} are the slope and intercept
+of a linear model fit to \code{x = time[first+(1:h)]} and
+\code{y = log(1+cumsum(cases[first+(1:h)]))}, where
+\code{h = max(2, floor((last-first)/2))}. If either
+of \code{cases[first+1]} or \code{cases[first+2]} is \code{NA},
+then fitting a linear model to \code{x} and \code{y} is
+impossible, and \code{r} and \code{c0} default to 0.1 and 1.
+}
 \item{\code{K}}{\code{2 * sum(cases[(first+1):peak])}}
 \item{\code{thalf}}{\code{time[peak]}}
 \item{\code{p}}{1}
@@ -253,10 +263,11 @@ x1 <- egf_init(
   cases = ontario$new_confirmed,
   curve = "logistic",
   distr = "nbinom",
-  peak = 76,
-  first = 32
+  first = 32,
+  last = 76,
+  peak = 76
 )
-x2 <- update(x1, peak = 241, first = 211)
+x2 <- update(x1, first = 211, last = 236, peak = "2020-10-10")
 print(x1)
 coef(x1, log = FALSE)
 coef(x1, log = TRUE)
