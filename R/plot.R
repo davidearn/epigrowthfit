@@ -243,9 +243,9 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
     dt = c(NA, dt)
   )
   if (add) {
-    dindex <- TRUE
-  } else {
     dindex <- (data$time >= t1 - 3 & data$time <= t2 + 3)
+  } else {
+    dindex <- TRUE
   }
 
   ## Predicted curve
