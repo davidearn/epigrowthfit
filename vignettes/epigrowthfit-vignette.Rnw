@@ -16,14 +16,7 @@
 \usepackage[T1]{fontenc} % words with accented characters can be hyphenated
 
 % Title page setup
-\usepackage{titling}
-\usepackage{graphicx}
-\makeatletter % defines \thanks without mark
-\def\thanks#1{\protected@xdef\@thanks{\@thanks\protect\footnotetext{#1}}}
-\makeatother
-\pretitle{\begin{center}\includegraphics[height=1.5cm]{logo.pdf}\thanks{Thanks to Julianne Guevara for the logo.}\\[1in]}
-\title{\Large The \textbf{epigrowthfit} package}
-\posttitle{\end{center}}
+\title{\Large The \pkg{epigrowthfit} package}
 \author{Mikael Jagan, Benjamin M.\ Bolker, Junling Ma,\\ David J.\ D.\ Earn, Jonathan Dushoff}
 \date{\today}
 
