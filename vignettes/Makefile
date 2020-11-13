@@ -7,7 +7,7 @@ build: $(NAME).pdf
 	rm -rf cache figure
 	rm -f *.{bbl,blg,log,out,synctex.gz,tex,toc,aux}
 
-$(NAME).pdf: $(NAME).tex $(NAME).bib logo.pdf
+$(NAME).pdf: $(NAME).tex $(NAME).bib logo.png
 	pdflatex -interaction=batchmode $<
 	bibtex $(NAME)
 	pdflatex -interaction=batchmode $<

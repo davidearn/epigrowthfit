@@ -16,10 +16,10 @@
 \usepackage[T1]{fontenc} % words with accented characters can be hyphenated
 
 % Title page setup
-%\usepackage{titling}
-%\usepackage{graphicx}
-%\pretitle{\begin{center}\includegraphics[height=1.5cm]{logo.pdf}\thanks{Thanks to Julianne Guevara for the logo.}\\[1in]}
-%\posttitle{\end{center}}
+\usepackage{titling}
+\usepackage{graphicx}
+\pretitle{\begin{center}\includegraphics[height=1.5cm]{logo.png}\thanks{Thanks to Julianne Guevara for the logo.}\\[1in]}
+\posttitle{\end{center}}
 \title{\Large The \textbf{epigrowthfit} package}
 \author{Mikael Jagan, Benjamin M.\ Bolker, Junling Ma,\\ David J.\ D.\ Earn, Jonathan Dushoff}
 \date{\today}
