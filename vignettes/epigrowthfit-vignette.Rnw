@@ -16,7 +16,15 @@
 \usepackage[T1]{fontenc} % words with accented characters can be hyphenated
 
 % Title page setup
-\title{\Large The \pkg{epigrowthfit} package}
+\usepackage{titling}
+\usepackage{graphicx}
+%\makeatletter % defines \thanks without mark
+%\def\thanks#1{\protected@xdef\@thanks{\@thanks\protect\footnotetext{#1}}}
+%\makeatother
+\pretitle{\begin{center}\includegraphics[height=1.5cm]{logo.pdf}\thanks{Thanks to Julianne Guevara for the logo.}\\[1in]}
+\pretitle{\begin{center}\includegraphics[height=1.5cm]{logo.pdf}\\[1in]}
+\title{\Large The \textbf{epigrowthfit} package}
+%\posttitle{\end{center}}
 \author{Mikael Jagan, Benjamin M.\ Bolker, Junling Ma,\\ David J.\ D.\ Earn, Jonathan Dushoff}
 \date{\today}
 
@@ -379,8 +387,8 @@ A list of implemented S3 methods can retrieved as follows.%
 @
 
 Usage of the \pkg{epigrowthfit} machinery is demonstrated
-in \cref{sec:ontario} demonstrates, where it is applied to
-a COVID-19 data set from Ontario, Canada.
+in \cref{sec:ontario}, where it is applied to a COVID-19
+data set from Ontario, Canada.
 
 
 \subsection{Package documentation}
@@ -525,16 +533,15 @@ causes (see \cref{sec:models-baseline}).
 \subsubsection{Missing data}
 \label{sec:data-missing}
 
-\pkg{epigrowthfit} tolerates missing values in the interval
-incidence time series, except in the extreme case in which
-the number of points to which an epidemic model is fit,
-excluding missing values, is less than the number of model
-parameters (see \cref{sec:mle}). Hence, in practice, users
-are not required to perform
+\pkg{epigrowthfit} tolerates missing values in interval incidence
+time series, except in the extreme case in which the number of
+points to which an epidemic model is fit, excluding missing values,
+is less than the number of model parameters (see \cref{sec:mle}).
+Hence, in practice, users are not required to perform
 \href{https://en.wikipedia.org/wiki/Imputation_(statistics)}{imputation}.
-Nonetheless, it is a good idea to investigate likely causes
-for missingness, as there may be straightforward ways to
-eliminate missing values (see, \eg \cref{sec:data-weekends}).
+Nonetheless, it is a good idea to investigate likely causes for
+missingness, as there may be straightforward ways to eliminate
+missing values (see, \eg \cref{sec:data-weekends}).
 
 
 \subsubsection{Under-reporting on weekends, over-reporting on Mondays}
@@ -1078,7 +1085,7 @@ $\vec{\wh{\theta}}_\text{mle}^*$ is the minimizer of $-\ell^*$.
 \pkg{epigrowthfit} writes $-\ell^*$ in a C++ template and uses
 R package \cran{TMB} to carry out
 \href{https://en.wikipedia.org/wiki/Automatic_differentiation}{automatic differentiation}
-of $-\ell^*$ with respect to $\vec{\wh{\theta}}^*$. It uses
+of $-\ell^*$ with respect to $\vec{\wh{\theta}}^*$. It employs
 gradient-based optimizer \fun{nlminb} (alternatively \fun{nlm}
 or one of the optimizers provided through \fun{optim}) from
 base R package \pkg{stats} to search for
@@ -1089,9 +1096,9 @@ preventing convergence near to $\vec{\wh{\theta}}_\text{mle}^*$.
 Poor fits to the data by \fun{nlminb} are sometimes corrected by
 trying a different optimizer, such as the Nelder-Mead algorithm
 available through \fun{optim}. Nelder-Mead is considered robust,
-but as it makes no use of gradients, it is relatively slow. Speed
-may not be a concern in practice, as the models implemented in
-\pkg{epigrowthfit} have at most six parameters.
+but as it makes no use of gradients, it is relatively slow.
+Speed may not be a concern in practice, as models implemented
+in \pkg{epigrowthfit} have at most six parameters.
 
 
 \section{Choosing a model}
@@ -1253,18 +1260,18 @@ f_\text{gen} = f_\text{lat} * f_\text{wait}\,,\qquad f_\text{wait} = \scalebox{1
 Here, $*$ denotes
 \href{https://en.wikipedia.org/wiki/Convolution}{convolution}
 and $f_\text{wait}$ is the density function of the infectious
-\emph{waiting time} (the time from onset of infectiousness to
-transmission). One can show that if $f_\text{lat}$ and
-$f_\text{inf}$ have discrete support, then $f_\text{gen}$
-satisfies the conditions under which \cref{eq:R0} is valid.
-\pkg{epigrowthfit} functions \fun{dgi} and \fun{pgi} evaluate
-the density and distribution functions of $\tau_\text{gen}$
-implied by distributions of $\tau_\text{lat}$ and
-$\tau_\text{inf}$ supported on the positive integers
-(\ie $1,2,\ldots$ days).  These are helpful if one wants to
-use \fun{compute_R0} and has latent and infectious period
-distributions, but not the corresponding generation interval
-distribution.
+\emph{waiting time} $\tau_\text{wait}$, the time from onset
+of infectiousness to transmission. One can show that if
+$f_\text{lat}$ and $f_\text{inf}$ have discrete support,
+then $f_\text{gen}$ satisfies the conditions under which
+\cref{eq:R0} is valid. \pkg{epigrowthfit} functions \fun{dgi}
+and \fun{pgi} evaluate the density and distribution functions
+of $\tau_\text{gen}$ implied by distributions of
+$\tau_\text{lat}$ and $\tau_\text{inf}$ supported
+on the positive integers (\ie $1,2,\ldots$ days). These are
+helpful if one wants to use \fun{compute_R0} and has latent
+and infectious period distributions, but not the corresponding
+generation interval distribution.
 
 
 \subsection{Epidemic final size}
@@ -1328,12 +1335,12 @@ data(canadacovid)
 @
 %
 You can access documentation for the data set by running
-\code{?canadacovid}, and examine the data frame directly
+\code{?canadacovid} and examine the data frame directly
 as follows.
 
 <<ontario-data-2>>=
 dim(canadacovid) # dimensions
-head(canadacovid, 10) # first 10 rows
+head(canadacovid) # first 6 rows
 sapply(canadacovid, class) # variable classes
 levels(canadacovid$province) # province and territory labels
 @
@@ -1379,7 +1386,7 @@ incidence starts and stops growing exponentially (linearly on a
 logarithmic scale) and the time of peak incidence. Locating these
 times requires some care, especially in noisy or unequally spaced
 time series, for which notions of growth rate and peak are not
-clearly defined. \pkg{epigrowthfit} function \fun{smooth_cases}
+as clearly defined. \pkg{epigrowthfit} function \fun{smooth_cases}
 attempts to simplify this task by fitting a smooth cubic
 \href{https://en.wikipedia.org/wiki/Spline_(mathematics)}{spline}
 to the time series and locating peaks and troughs in the fitted
@@ -1387,9 +1394,8 @@ curve as the times when its first derivative changes sign.
 
 Below, we pass to \fun{smooth_cases} an increasing Date vector
 \code{date} and a numeric vector \code{cases} of the same length,
-together specifying an interval incidence time series (in this
-example, the daily incidence time series in the \code{ontario}
-data frame).%
+together specifying an interval incidence time series---specifically,
+the daily incidence time series in the \code{ontario} data frame.%
 \footnote{
   For \code{i > `11`1}, \code{cases[i]} must specify the number
   of cases observed between \code{date[i-`11`1]} and \code{date[i]}.
@@ -1416,10 +1422,11 @@ sc <- smooth_cases(
 
 Plotting the resulting \code{smooth_cases} object generates
 \cref{fig:ontario-smooth-2}, which shows that \code{spar = `10.7`1}
-produces a reasonable fit to the $\log(1+x)$-transformed Ontario
-data. In practice, obtaining a such a fit can require a coarse
-tuning of \code{spar}. To update the \code{smooth_cases} object,
-one can do \code{sc <- `9update`9(sc, spar = new_value)}.
+produces a reasonable fit to the $\log(1+x)$-transformed Ontario data.
+In practice, obtaining a such a fit can require some coarse tuning of
+\code{spar}. To update a \code{smooth_cases} object with a new value
+for \code{spar},
+do \code{object <- `9update`9(object, spar = new_value)}.
 
 <<ontario-smooth-2, fig.height=3.5, fig.cap="Result of \\code{`9plot`9(sc)}. A cubic spline fit to interval incidence in the \\code{ontario} data frame. Times of peaks and troughs in the fitted curve are listed in the top margin as integer indices of \\fun{smooth_cases} argument \\code{date = ontario$date}.">>=
 plot(sc)
@@ -1450,7 +1457,7 @@ The dates listed in \code{v} were chosen by inspecting
 increases roughly linearly, then interpolating by eye the
 calendar on the bottom axis to find interval endpoints.
 In practice, some iteration with \fun{dline} is typically
-required to settle on reasonable dates.
+required to settle on reasonable endpoints.
 
 
 \subsection{Initializing the fitting machinery with \tops{\protect\fun{egf_init}}{egf\_init()}}
@@ -1696,7 +1703,7 @@ incidence since \code{date[first]} at \code{time} days since
 That is, it evaluates the right-hand side of
 \cref{eq:exponential,eq:logistic,eq:richards}  (\cref{eq:logistic}
 in this example). Since \cref{eq:exponential,eq:logistic,eq:richards}
-model growth \emph{within the fitting window} but not necessarily
+model growth \emph{within} the fitting window but not necessarily
 outside of it, the output of \code{`9eval_cum_inc`9(time, theta)}
 must be interpreted carefully when argument \code{time} contains
 elements less than \code{object$time[object$first]} (zero) or greater
@@ -1733,7 +1740,7 @@ the call to \fun{egf_init}. Its inclusion allows the
 \fun{update}. This is convenient when you want to change the
 fitting window but not the details of the model being fit.
 For example, \code{init2} could have been defined by updating
-the call to \fun{egf_init} that generated \fun{init1}.
+the call to \fun{egf_init} that generated \code{init1}.
 
 <<ontario-init-8>>=
 init2_redo <- update(init1,
@@ -1795,26 +1802,26 @@ maximum likelihood estimates $\vec{\wh{\theta}}_\text{mle}$
 (see \cref{sec:mle}).
 
 The first argument of \fun{egf}, \code{init}, expects an
-\code{egf_init} object. An optional second argument \code{method}
+\code{egf_init} object. The second argument \code{method}
 lets you specify an optimization algorithm. The options are
 \code{`2"nlminb"`2} (default), \code{`2"nlm"`2},
 \code{`2"Nelder-Mead"`2}, \code{`2"BFGS"`2},
 \code{`2"L-BFGS-S"`2}, and \code{`2"CG"`2}.
-An optional third argument \code{na_action} indicates whether
-\fun{egf} should throw an error if it finds missing values in
-the fitting window, or if it should ignore them when calculating
-likelihood (see \cref{sec:mle}). The options are \code{`2"fail"`2}
-and \code{`2"exclude"`2} (default).
-An optional fourth argument \code{nbdisp_tol} defines a threshold
-$\kappa$ (default is 100) on the negative binomial dispersion
-parameter $k$. If $k > \kappa \max_i \{\mu_i\}$ in the fitted
-model, then \fun{egf} will issue a warning suggesting to refit
-using a Poisson model (see \cref{sec:choosing}).
-Further optional arguments will be passed directly to \fun{nlminb},
-\fun{nlm}, or \fun{optim}, depending on \code{method}.
-Below, we pass \code{init1} and \code{init2}, in turn,
-to \fun{egf}, each time accepting the defaults for
-\code{method}, \code{na_action}, and \code{nbdisp_tol}.
+The third argument \code{na_action} indicates whether \fun{egf}
+should throw an error if it finds missing values in the fitting
+window, or otherwise ignore them when calculating likelihoods
+(see \cref{sec:mle}). The options are \code{`2"fail"`2} and
+\code{`2"exclude"`2} (default). An optional fourth argument
+\code{nbdisp_tol} defines a threshold $\kappa$ (default is 100)
+on the negative binomial dispersion parameter $k$.
+If $k > \kappa \max_i \{\mu_i\}$ in the fitted model,
+then \fun{egf} will issue a warning suggesting to refit using
+a Poisson model (see \cref{sec:choosing}). Further optional
+arguments will be passed directly to \fun{nlminb}, \fun{nlm},
+or \fun{optim}, depending on \code{method}. Below, we pass
+\code{init1} and \code{init2}, in turn, to \fun{egf}, each
+time accepting the defaults for \code{method}, \code{na_action},
+and \code{nbdisp_tol}.
 
 <<ontario-fit-1>>=
 fit1 <- egf(init1)
@@ -1935,8 +1942,8 @@ fit1$large_nbdisp_flag
 Finally, element \code{call} saves the call to \fun{egf},
 allowing one to repeat the call with different arguments
 using \pkg{stats} function \fun{update}. For example,
-one can check whether a different optimization algorithm
-arrives at a similar fit as follows.
+one can verify whether a different optimization algorithm
+arrives at a different fit as follows.
 
 <<ontario-fit-8>>=
 fit1_redo <- update(fit1, method = "Nelder-Mead")
@@ -1973,14 +1980,16 @@ fit1 # same as `print(fit1)`
 
 \subsubsection{Exceptional points in interval incidence plots}
 
-Plots of interval incidence by \fun{plot.egf_init} and \fun{plot.egf}
+Plots of interval incidence
+by \fun{plot.egf_init} (see \cref{fig:ontario-init-plot-1})
+and \fun{plot.egf} (see \cref{fig:ontario-fit-plot-1})
 should be interpreted with care. The displayed curve is supported on
 a grid of equally spaced time points, and the spacing chosen is the
 median observation interval. However, the displayed data may not be
-equally spaced. This is not the case in the Ontario data, which are
-equally spaced, but it is the case in the Alberta data, in which most
-observations are counts over one day, but some are counts over longer
-intervals.
+equally spaced. This is not the case in the Ontario data, which
+\emph{are} equally spaced, but it is the case in the Alberta data,
+in which most observations are counts over one day, but some are
+counts over longer intervals.
 
 <<ontario-unequal-spacing-1>>=
 alberta <- subset(canadacovid, province == "AB")
@@ -1998,22 +2007,54 @@ Counts over fewer or more days than the median observation interval
 will tend to deviate from the plotted curve not due to chance, but
 due to scale. These exceptional counts should be noted when visually
 assessing whether the plotted curve fits the data. The \fun{plot}
-method for class \code{egf_init} highlights exceptional counts
-according to optional argument \code{tol} (run \code{?plot.egf_init}
-for details), though this feature is not demonstrated in
-\cref{fig:ontario-init-plot-1}, where the points are in fact
-equally spaced.
+method for classes \code{egf_init} and \code{egf} highlight exceptional
+counts according to optional argument \code{tol}, though this
+feature is not demonstrated in \cref{fig:ontario-init-plot-1} or in
+\cref{fig:ontario-fit-plot-1}, which show the equally spaced Ontario
+data.
 
 
 \subsubsection{Customizing plots}
 
 The \fun{plot} methods for classes \code{egf_init} and \code{egf}
-take a number of optional arguments allowing for easy customization
-of various plot elements (\eg line type, width, and colour). For a
-complete list of available options, run \code{?plot.egf}.
+takes an optional argument \code{style} allowing for easy customization
+of various plot elements (\eg line type, width, and colour).
+In addition to \code{style}, one can set \code{xlim}, \code{ylim},
+\code{xlab}, \code{ylab}, and \code{main} to adjust the axis limits,
+axis titles, and plot title. (Conveniently, for \code{xlim}, you can
+specify a date range instead of numeric coordinates.) For a complete
+list of available options, run \code{?plot.egf}.
+
+To demonstrate some of what is possible, we will recreate the bottom
+panel of \cref{fig:ontario-fit-plot-1}, zooming in on the first wave.
+
+<<ontario-custom-plot-1, fig.height=3.5, fig.cap="Customization of the bottom panel of \\cref{fig:ontario-fit-plot-1}, showing only the first wave.">>=
+plot(fit1, inc = "interval",
+  xlim = c("2020-03-01", "2020-04-19"),
+  xlab = "",
+  ylab = "daily confirmations",
+  main = "COVID-19 in Ontario, Canada",
+  style = list(
+    points_main = list(pch = 18, col = "plum", cex = 1.5),
+    lines = list(col = "seagreen", lwd = 4, lty = 2),
+    window = NULL,
+    date = list(
+      mgp2 = c(0.3, 2),
+      cex.axis = c(0.85, 1.15),
+      col.axis = c("black", "red")
+    ),
+    text_dbl = list(
+      x = "2020-04-14", y = 10, adj = 1,
+      col = "steelblue", cex = 1.25, font = 2
+    )
+  )
+)
+@
 
 
 \subsection{Confidence intervals on parameter estimates}
+
+Under construction. For now, take a look at \code{?confint.egf}.
 
 
 \subsection{Simulating the fitted model}
@@ -2033,7 +2074,7 @@ to make simulations reproducible. You can specify time points with
 optional argument \code{time}, but the default,
 \code{`9with`9(object$init, time[first:last])}, is typically what
 you want, as it matches the time points in your simulations to the
-time points in the fitting window.
+time points in your data, restricted to the fitting window.
 
 <<ontario-fit-simulate-1>>=
 sim <- simulate(fit1, nsim = 6, seed = 1257)
@@ -2112,10 +2153,10 @@ then it returns a \code{doubling_time} object---a numeric vector
 listing doubling times in corresponding to the elements of \code{x},
 with a \fun{print} method that specifies the units (always days).
 If \code{x} is an \code{egf_init} object, then it applies the
-method for numeric vectors to the initial value of $r$, namely
+method for numeric vectors to the initial estimate of $r$, namely
 \code{x$theta_init[[`2"r"`2]]}. If \code{x} is an \code{egf} object,
 then it applies the method for numeric vectors to the \emph{fitted}
-value of $r$, namely \code{x$theta_fit[[`2"r"`2]]}.
+estimate of $r$, namely \code{x$theta_fit[[`2"r"`2]]}.
 
 <<ontario-doubling-time-1>>=
 compute_doubling_time(10^(-2:0)) # method for class "numeric"

@@ -34,9 +34,10 @@
 #'   See Details 2.
 #' @param ...
 #'   Optional arguments specifying additional graphical parameters.
-#'   Currently, only `xlim`, `ylim`, `xlab`, `ylab`, and `main` are
-#'   implemented. See [graphics::plot()] and [graphics::par()] for
-#'   a catalogue of graphical parameters.
+#'   Currently, only `xlim`, `ylim`, `xlab`, `ylab`, and `main`
+#'   are implemented. `xlim` can be numeric, Date, or character
+#'   coercible to Date with `as.Date(xlim)`. See [graphics::plot()]
+#'   and [graphics::par()] for a catalogue of graphical parameters.
 #'
 #' @return
 #' `plot.egf_init()` and `plot.egf()` return `NULL` (invisibly).
@@ -113,20 +114,25 @@
 #'     A named list of arguments to [graphics::points()],
 #'     affecting the appearance of the observed data. Currently,
 #'     only `pch`, `col`, `bg` and `cex` are implemented.
+#'     Set to `NULL` to suppress.
 #'   }
 #'   \item{`points_short`, `points_long`}{
 #'     Alternatives to `points_main` used to highlight certain
 #'     points when `inc = "interval"` (see argument `tol`).
+#'     Set to `NULL` to suppress.
+#'
 #'   }
 #'   \item{`lines`}{
 #'     A named list of arguments to [graphics::lines()],
 #'     affecting the appearance of the predicted incidence curve.
 #'     Currently, only `lty`, `lwd`, and `col` are implemented.
+#'     Set to `NULL` to suppress.
 #'   }
 #'   \item{`window`, `confband`}{
 #'     Named lists of arguments to [graphics::polygon()],
 #'     affecting the appearance of the fitting window and confidence
 #'     bands. Currently, only `col` and `border` are implemented.
+#'     Set to `NULL` to suppress.
 #'   }
 #'   \item{`text_hl`, `text_dbl`}{
 #'     Named lists of arguments to [graphics::text()],
@@ -134,7 +140,9 @@
 #'     (see argument `tol`) and text giving doubling times.
 #'     Currently, only `pos`, `offset`, `col`, `cex`, and `font`
 #'     are implemented. `text_dbl` can further specify coordinates
-#'     `x` and `y`.
+#'     `x` and `y` and alignment `adj`, and `x` can be numeric,
+#'     Date, or character coercible to Date with `as.Date(x)`.
+#'     Set to `NULL` to suppress.
 #'   }
 #' }
 #'
@@ -171,6 +179,9 @@ plot.egf_init <- function(x, inc = "interval", xty = "date", log = TRUE,
 plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
                      add = FALSE, annotate = FALSE, tol = 0,
                      style = get_style_default(), ...) {
+  ## Optional graphical parameters
+  dots <- list(...)
+
   check(inc,
     what = "character",
     len = 1,
@@ -219,9 +230,6 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
 
   ## Flag for "egf_init" objects
   init_flag <- !is.null(attr(x, "init_flag"))
-
-  ## Optional graphical parameters
-  dots <- list(...)
 
   ## Convenience
   date <- x$init$date
@@ -305,6 +313,12 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
     xlim <- c(xmin, xmax)
   } else {
     xlim <- dots$xlim
+    if (is.character(xlim)) {
+      xlim <- as.Date(xlim)
+    }
+    if (inherits(xlim, "Date")) {
+      xlim <- days(xlim, since = d0)
+    }
   }
 
   ## Axis limits (y)
@@ -321,9 +335,12 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   for (pe in names(s)) {
     if (!pe %in% names(style)) {
       next
+    } else if (is.null(style[[pe]])) {
+      s[pe] <- list(NULL)
+    } else {
+      gp <- intersect(names(s[[pe]]), names(style[[pe]]))
+      s[[pe]][gp] <- style[[pe]][gp]
     }
-    gp <- intersect(names(s[[pe]]), names(style[[pe]]))
-    s[[pe]][gp] <- style[[pe]][gp]
   }
   style <- s
 
@@ -363,11 +380,14 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   }
 
   ## Fitting window
-  l <- list(
-    x = c(t1, t2, t2, t1),
-    y = ylim[c(1, 1, 2, 2)]
-  )
-  do.call(polygon, c(l, style$window))
+  s <- style$window
+  if (!is.null(s)) {
+    l <- list(
+      x = c(t1, t2, t2, t1),
+      y = ylim[c(1, 1, 2, 2)]
+    )
+    do.call(polygon, c(l, s))
+  }
 
   if (!add) {
     ## Box
@@ -401,33 +421,41 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
 
   ## Observed data
   for (pty in ptys) {
-    l <- list(
-      formula = formula,
-      data = data,
-      subset = (data$pty == pty) & dindex,
-      xpd = is.null(dots$xlim) && is.null(dots$ylim)
-    )
-    do.call(points, c(l, style[[paste0("points_", pty)]]))
+    s <- style[[paste0("points_", pty)]]
+    if (!is.null(s)) {
+      l <- list(
+        formula = formula,
+        data = data,
+        subset = (data$pty == pty) & dindex,
+        xpd = is.null(dots$xlim) && is.null(dots$ylim)
+      )
+      do.call(points, c(l, s))
+    }
   }
 
   ## Annotation above exceptional points
+  s <- style$text_hl
   is_exceptional <- (data$pty != ptys[1] & dindex)
-  if (isTRUE(any(is_exceptional))) {
+  if (!is.null(s) && isTRUE(any(is_exceptional))) {
     l <- list(
       formula = int_inc ~ time,
       data = data,
       labels = data$dt,
       subset = is_exceptional
     )
-    do.call(text, c(l, style$text_hl))
+    do.call(text, c(l, s))
   }
 
   ## Predicted curve
-  l <- list(formula = formula, data = wpred)
-  do.call(lines, c(l, style$lines))
+  s <- style$lines
+  if (!is.null(s)) {
+    l <- list(formula = formula, data = wpred)
+    do.call(lines, c(l, s))
+  }
 
   ## Doubling time
-  if (!init_flag && inc == "interval") {
+  s <- style$text_dbl
+  if (!is.null(s) && !init_flag && inc == "interval") {
     estimate <- compute_doubling_time(x)
     sink(nullfile())
     ci <- confint(x, parm = "r", level = 0.95, method = "linear")
@@ -438,18 +466,24 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
       estimate, ci[1], ci[2]
     )
     wrange <- range(wpred$int_inc, na.rm = TRUE)
-    if (is.na(style$text_dbl$y)) {
+    if (is.na(s$y)) {
       if (log) {
-        style$text_dbl$y <- wrange[1] * 10^(0.25 * diff(log10(wrange)))
+        s$y <- wrange[1] * 10^(0.25 * diff(log10(wrange)))
       } else {
-        style$text_dbl$y <- wrange[1] + 0.25 * diff(wrange)
+        s$y <- wrange[1] + 0.25 * diff(wrange)
       }
     }
-    if (is.na(style$text_dbl$x)) {
-      style$text_dbl$x <- min(wpred$time[wpred$int_inc > style$text_dbl$y], na.rm = TRUE)
+    if (is.character(s$x)) {
+      s$x <- as.Date(s$x)
+    }
+    if (inherits(s$x, "Date")) {
+      s$x <- days(s$x, since = d0)
+    }
+    if (is.na(s$x)) {
+      s$x <- min(wpred$time[wpred$int_inc > s$y], na.rm = TRUE)
     }
     l <- list(labels = dblstr, xpd = NA)
-    do.call(text, c(l, style$text_dbl))
+    do.call(text, c(l, s))
   }
 
   if (!add) {
@@ -524,7 +558,7 @@ get_style_default <- function() {
     window = list(col = "#DDCC7740", border = NA),
     confband = list(col = "#44AA9940", border = NA),
     text_hl = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
-    text_dbl = list(x = NA, y = NA, pos = 4, offset = 0.8, col = "black", cex = 0.7, font = 1)
+    text_dbl = list(x = NA, y = NA, adj = c(0, 0.5), pos = NULL, offset = 1, col = "black", cex = 0.7, font = 1)
   )
 }
 
