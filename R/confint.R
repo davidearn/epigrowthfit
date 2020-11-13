@@ -7,8 +7,9 @@
 #' @param object
 #'   An "egf" object.
 #' @param parm
-#'   An element of `names(object$theta_fit)` indicating a
-#'   parameter for which to compute a confidence interval.
+#'   An element of `names(object$theta_fit)`, or otherwise
+#'   `"doubling_time"`, indicating a parameter for which to
+#'   compute a confidence interval.
 #' @param level
 #'   A number in the interval \[0,1\] indicating a confidence level.
 #' @param method
@@ -31,15 +32,16 @@ NULL
 #' @import stats
 #' @import TMB
 confint.egf <- function(object,
-                        parm = "r",
+                        parm = "doubling_time",
                         level = 0.95,
                         method = "linear",
                         ...) {
   check(parm,
     what = "character",
     len = 1,
-    opt = names(object$theta_fit),
-    "`parm` must be an element of `names(object$theta_fit)`."
+    opt = c("doubling_time", names(object$theta_fit)),
+    "`parm` must be an element of `names(object$theta_fit)`\n",
+    "or \"doubling_time\"."
   )
   check(level,
     what = "numeric",
@@ -53,6 +55,12 @@ confint.egf <- function(object,
     opt = c("linear", "uniroot", "wald"),
     "`method` must be one of \"linear\", \"uniroot\", \"wald\"."
   )
+
+  if (parm == "doubling_time") {
+    ci <- confint(object, parm = "r", level = level, method = method)
+    ci <- setNames(rev(compute_doubling_time(ci)), names(ci))
+    return(ci)
+  }
 
   sdr <- summary(sdreport(object$madf_out), select = "fixed")
   log_parm <- paste0("log_", parm)

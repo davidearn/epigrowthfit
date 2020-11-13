@@ -4,13 +4,14 @@
 \alias{confint.egf}
 \title{Confidence intervals on point estimates}
 \usage{
-\method{confint}{egf}(object, parm = "r", level = 0.95, method = "linear", ...)
+\method{confint}{egf}(object, parm = "doubling_time", level = 0.95, method = "linear", ...)
 }
 \arguments{
 \item{object}{An "egf" object.}
 
-\item{parm}{An element of \code{names(object$theta_fit)} indicating a
-parameter for which to compute a confidence interval.}
+\item{parm}{An element of \code{names(object$theta_fit)}, or otherwise
+\code{"doubling_time"}, indicating a parameter for which to
+compute a confidence interval.}
 
 \item{level}{A number in the interval [0,1] indicating a confidence level.}
 

@@ -460,9 +460,12 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   if (!is.null(s) && !init_flag && inc == "interval") {
     estimate <- compute_doubling_time(x)
     sink(nullfile())
-    ci <- confint(x, parm = "r", level = 0.95, method = "linear")
+    ci <- confint(x,
+      parm = "doubling_time",
+      level = 0.95,
+      method = "linear"
+    )
     sink(NULL)
-    ci <- rev(unname(compute_doubling_time(ci)))
     dblstr <- sprintf(
       "doubling time:\n%.1f (%.1f, %.1f) days",
       estimate, ci[1], ci[2]
