@@ -7,7 +7,7 @@ build: $(NAME).pdf
 	rm -rf cache figure
 	rm -f *.{bbl,blg,log,out,synctex.gz,tex,toc,aux}
 
-$(NAME).pdf: $(NAME).tex $(NAME).bib
+$(NAME).pdf: $(NAME).tex $(NAME).bib logo.pdf
 	pdflatex -interaction=batchmode $<
 	bibtex $(NAME)
 	pdflatex -interaction=batchmode $<
@@ -19,7 +19,7 @@ $(NAME).tex: $(NAME).Rnw knit_theme.css
 all: $(NAME).pdf
 
 new: clean
-	rm -rf cache figure *.{aux,pdf}
+	rm -rf cache figure $(NAME).{aux,pdf}
 
 clean:
 	rm -f *.{bbl,blg,log,out,synctex.gz,tex,toc}
