@@ -147,40 +147,42 @@ affecting the appearance of the bottom axis if \code{xty = "date"}.
 A named list of arguments to \code{\link[graphics:points]{graphics::points()}},
 affecting the appearance of the observed data. Currently,
 only \code{pch}, \code{col}, \code{bg} and \code{cex} are implemented.
-Set to \code{NULL} to suppress.
 }
 \item{\code{points_short}, \code{points_long}}{
 Alternatives to \code{points_main} used to highlight certain
 points when \code{inc = "interval"} (see argument \code{tol}).
-Set to \code{NULL} to suppress.
-
 }
 \item{\code{lines}}{
 A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}},
 affecting the appearance of the predicted incidence curve.
 Currently, only \code{lty}, \code{lwd}, and \code{col} are implemented.
-Set to \code{NULL} to suppress.
 }
 \item{\code{window}, \code{confband}}{
 Named lists of arguments to \code{\link[graphics:polygon]{graphics::polygon()}},
 affecting the appearance of the fitting window and confidence
 bands. Currently, only \code{col} and \code{border} are implemented.
-Set to \code{NULL} to suppress.
 }
 \item{\code{text_hl}, \code{text_dbl}}{
 Named lists of arguments to \code{\link[graphics:text]{graphics::text()}},
 affecting the appearance of text above highlighted points
 (see argument \code{tol}) and text giving doubling times.
 Currently, only \code{pos}, \code{offset}, \code{col}, \code{cex}, and \code{font}
-are implemented. \code{text_dbl} can further specify coordinates
-\code{x} and \code{y} and alignment \code{adj}, and \code{x} can be numeric,
-Date, or character coercible to Date with \code{as.Date(x)}.
-Set to \code{NULL} to suppress.
+are implemented. \code{text_dbl} can further specify \code{adj} and
+coordinates \code{x} and \code{y}. \code{x} can be numeric, Date, or
+character coercible to Date with \code{as.Date(x)}. \code{y} must be
+numeric.
 }
 }
 
 List elements not specified by \code{style} are taken from
 \code{get_style_default()}.
+
+With the exception of \code{date}, assigning \code{NULL} to any of
+the above possible \code{style} elements (instead of a named list)
+will suppress the corresponding plot element.
+Setting \code{points_main} to \code{NULL} will only suppress points
+that are not normally highlighted. To suppress all points,
+set argument \code{tol} to \code{Inf} as well.
 }
 }
 \seealso{

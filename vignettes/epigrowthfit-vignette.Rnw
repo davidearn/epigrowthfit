@@ -1774,7 +1774,7 @@ plot(init1, inc = "interval")
 plot(init2, inc = "interval", add = TRUE)
 @
 %
-Do not be alarmed if the curves in an \code{egf_init} plot do not
+Don't be alarmed if the curves in an \code{egf_init} plot do not
 fit the data particularly well, as in \cref{fig:ontario-init-plot-1}.
 Poor fits are to be expected from crude initial estimates of model
 parameters. An \code{egf_init} plot should be used mainly as a final

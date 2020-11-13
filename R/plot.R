@@ -114,40 +114,42 @@
 #'     A named list of arguments to [graphics::points()],
 #'     affecting the appearance of the observed data. Currently,
 #'     only `pch`, `col`, `bg` and `cex` are implemented.
-#'     Set to `NULL` to suppress.
 #'   }
 #'   \item{`points_short`, `points_long`}{
 #'     Alternatives to `points_main` used to highlight certain
 #'     points when `inc = "interval"` (see argument `tol`).
-#'     Set to `NULL` to suppress.
-#'
 #'   }
 #'   \item{`lines`}{
 #'     A named list of arguments to [graphics::lines()],
 #'     affecting the appearance of the predicted incidence curve.
 #'     Currently, only `lty`, `lwd`, and `col` are implemented.
-#'     Set to `NULL` to suppress.
 #'   }
 #'   \item{`window`, `confband`}{
 #'     Named lists of arguments to [graphics::polygon()],
 #'     affecting the appearance of the fitting window and confidence
 #'     bands. Currently, only `col` and `border` are implemented.
-#'     Set to `NULL` to suppress.
 #'   }
 #'   \item{`text_hl`, `text_dbl`}{
 #'     Named lists of arguments to [graphics::text()],
 #'     affecting the appearance of text above highlighted points
 #'     (see argument `tol`) and text giving doubling times.
 #'     Currently, only `pos`, `offset`, `col`, `cex`, and `font`
-#'     are implemented. `text_dbl` can further specify coordinates
-#'     `x` and `y` and alignment `adj`, and `x` can be numeric,
-#'     Date, or character coercible to Date with `as.Date(x)`.
-#'     Set to `NULL` to suppress.
+#'     are implemented. `text_dbl` can further specify `adj` and
+#'     coordinates `x` and `y`. `x` can be numeric, Date, or
+#'     character coercible to Date with `as.Date(x)`. `y` must be
+#'     numeric.
 #'   }
 #' }
 #'
 #' List elements not specified by `style` are taken from
 #' `get_style_default()`.
+#'
+#' With the exception of `date`, assigning `NULL` to any of
+#' the above possible `style` elements (instead of a named list)
+#' will suppress the corresponding plot element.
+#' Setting `points_main` to `NULL` will only suppress points
+#' that are not normally highlighted. To suppress all points,
+#' set argument `tol` to `Inf` as well.
 #'
 #' @seealso [egf_init()], [egf()]
 #' @name plot.egf
@@ -335,7 +337,7 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   for (pe in names(s)) {
     if (!pe %in% names(style)) {
       next
-    } else if (is.null(style[[pe]])) {
+    } else if (is.null(style[[pe]]) && pe != "date") {
       s[pe] <- list(NULL)
     } else {
       gp <- intersect(names(s[[pe]]), names(style[[pe]]))
