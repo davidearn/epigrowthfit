@@ -1311,6 +1311,12 @@ for given $\R_0$, $S_0$ and $I_0$. See \cref{sec:ontario-final-size}
 for an example.
 
 
+\section{Confidence intervals}
+\label{sec:ci}
+
+Under construction. For now, take a look at \code{?confint.egf}.
+
+
 \section{Example: COVID-19 in Ontario, Canada}
 \label{sec:ontario}
 
