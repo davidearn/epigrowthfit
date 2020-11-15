@@ -119,7 +119,7 @@
 #' print(y1)
 #' coef(y1, log = FALSE)
 #' coef(y1, log = TRUE)
-#' confint(y1, parm = "doubling_time", level = 0.95, method = "linear")
+#' confint(y1, level = 0.95, method = "linear", trace = FALSE)
 #' predict(y1)
 #' s <- simulate(y1, nsim = 6)
 #' plot(s, inc = "interval")

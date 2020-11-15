@@ -2,38 +2,45 @@
 % Please edit documentation in R/confint.R
 \name{confint.egf}
 \alias{confint.egf}
-\title{Confidence intervals on point estimates}
+\title{Compute confidence intervals on point estimates}
 \usage{
-\method{confint}{egf}(object, parm = "doubling_time", level = 0.95, method = "linear", ...)
+\method{confint}{egf}(
+  object,
+  parm = NULL,
+  level = 0.95,
+  method = "linear",
+  breaks = NULL,
+  probs = NULL,
+  ...
+)
 }
 \arguments{
 \item{object}{An "egf" object.}
 
-\item{parm}{An element of \code{names(object$theta_fit)}, or otherwise
-\code{"doubling_time"}, indicating a parameter for which to
-compute a confidence interval.}
+\item{parm}{A subset of \code{c("R0", "doubling_time", names(object$theta_fit))}
+listing parameters. \code{NULL} is equivalent to the entire set,
+with \code{"R0"} excluded if either of \code{breaks} and \code{probs} is \code{NULL}.}
 
 \item{level}{A number in the interval [0,1] indicating a confidence level.}
 
 \item{method}{One of \code{"linear"}, \code{"uniroot"}, and \code{"wald"} indicating
-a method with which to compute the confidence interval.}
+a method for computing the confidence interval.}
 
-\item{...}{Optional arguments to \code{\link[TMB:tmbprofile]{TMB::tmbprofile()}} or \code{\link[TMB:tmbroot]{TMB::tmbroot()}}.}
+\item{breaks, probs}{Arguments to \code{\link[=compute_R0]{compute_R0()}} specifying a binned generation interval
+distribution. Necessary if \code{"R0" \%in\% parm} and unused otherwise.}
+
+\item{...}{Optional arguments to \code{\link[TMB:tmbprofile]{TMB::tmbprofile()}} or \code{\link[TMB:tmbroot]{TMB::tmbroot()}},
+used if \code{method = "linear"} or \code{method = "uniroot"}, respectively.}
 }
 \value{
-For \code{parm != "doubling_time"}, a numeric vector of the form
-\code{c(estimate = e, lower = a, upper = b)}, where \code{a} and \code{b}
-are the left and right endpoints of the confidence interval
-specified by \code{parm}, \code{level}, and \code{method}, and \code{e} is the
-estimate \code{object$theta_fit[[parm]]}.
-
-For \code{parm = "doubling_time"},
-the result of \code{log(2) / ci[c(1, 3, 2)]},
-where \code{ci = confint(object, parm = "r", level, method, ...)}.
+If \code{length(parm) = 1}, then a numeric vector of the form
+\code{c(estimate, lower, upper)}.
+If \code{length(parm) > 1}, then a data frame of the form
+\code{data.frame(estimate, lower, upper, row.names = parm)}.
 }
 \description{
-A method for obtaining confidence intervals on point estimates
-of model parameters specified by "egf" objects.
+A method for obtaining confidence intervals on point
+estimates of model parameters from "egf" objects.
 }
 \seealso{
 \code{\link[=egf]{egf()}}, \code{\link[TMB:tmbprofile]{TMB::tmbprofile()}}, \code{\link[TMB:tmbroot]{TMB::tmbroot()}}

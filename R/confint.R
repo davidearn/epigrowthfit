@@ -1,33 +1,32 @@
-#' Confidence intervals on point estimates
+#' Compute confidence intervals on point estimates
 #'
 #' @description
-#' A method for obtaining confidence intervals on point estimates
-#' of model parameters specified by "egf" objects.
+#' A method for obtaining confidence intervals on point
+#' estimates of model parameters from "egf" objects.
 #'
 #' @param object
 #'   An "egf" object.
 #' @param parm
-#'   An element of `names(object$theta_fit)`, or otherwise
-#'   `"doubling_time"`, indicating a parameter for which to
-#'   compute a confidence interval.
+#'   A subset of `c("R0", "doubling_time", names(object$theta_fit))`
+#'   listing parameters. `NULL` is equivalent to the entire set,
+#'   with `"R0"` excluded if either of `breaks` and `probs` is `NULL`.
 #' @param level
 #'   A number in the interval \[0,1\] indicating a confidence level.
 #' @param method
 #'   One of `"linear"`, `"uniroot"`, and `"wald"` indicating
-#'   a method with which to compute the confidence interval.
+#'   a method for computing the confidence interval.
+#' @param breaks,probs
+#'   Arguments to [compute_R0()] specifying a binned generation interval
+#'   distribution. Necessary if `"R0" %in% parm` and unused otherwise.
 #' @param ...
-#'   Optional arguments to [TMB::tmbprofile()] or [TMB::tmbroot()].
+#'   Optional arguments to [TMB::tmbprofile()] or [TMB::tmbroot()],
+#'   used if `method = "linear"` or `method = "uniroot"`, respectively.
 #'
 #' @return
-#' For `parm != "doubling_time"`, a numeric vector of the form
-#' `c(estimate = e, lower = a, upper = b)`, where `a` and `b`
-#' are the left and right endpoints of the confidence interval
-#' specified by `parm`, `level`, and `method`, and `e` is the
-#' estimate `object$theta_fit[[parm]]`.
-#'
-#' For `parm = "doubling_time"`,
-#' the result of `log(2) / ci[c(1, 3, 2)]`,
-#' where `ci = confint(object, parm = "r", level, method, ...)`.
+#' If `length(parm) = 1`, then a numeric vector of the form
+#' `c(estimate, lower, upper)`.
+#' If `length(parm) > 1`, then a data frame of the form
+#' `data.frame(estimate, lower, upper, row.names = parm)`.
 #'
 #' @seealso [egf()], [TMB::tmbprofile()], [TMB::tmbroot()]
 #' @name confint.egf
@@ -38,17 +37,31 @@ NULL
 #' @import stats
 #' @import TMB
 confint.egf <- function(object,
-                        parm = "doubling_time",
+                        parm = NULL,
                         level = 0.95,
                         method = "linear",
+                        breaks = NULL,
+                        probs = NULL,
                         ...) {
-  check(parm,
-    what = "character",
-    len = 1,
-    opt = c("doubling_time", names(object$theta_fit)),
-    "`parm` must be an element of `names(object$theta_fit)`\n",
-    "or \"doubling_time\"."
-  )
+  opt <- c("doubling_time", names(object$theta_fit))
+  if (!(is.null(breaks) || is.null(probs))) {
+    opt <- c("R0", opt)
+  }
+  if (is.null(parm)) {
+    parm <- opt
+  } else {
+    check(parm,
+      what = "character",
+      len = c(1, Inf),
+      "`parm` must be `NULL` or a nonempty character vector."
+    )
+    check(parm,
+      opt = opt,
+      "Elements of `parm` must be chosen from:\n",
+      paste(sprintf("\"%s\"", opt), collapse = ", ")
+    )
+    parm <- unique(parm)
+  }
   check(level,
     what = "numeric",
     len = 1,
@@ -62,10 +75,19 @@ confint.egf <- function(object,
     "`method` must be one of \"linear\", \"uniroot\", \"wald\"."
   )
 
+  if (length(parm) > 1) {
+    f <- function(x) {
+      confint(object, parm = x, level = level, method = method, ...)
+    }
+    return(t(mapply(f, x = unname(parm))))
+  }
   if (parm == "doubling_time") {
     ci <- confint(object, parm = "r", level = level, method = method, ...)
-    ci <- setNames(compute_doubling_time(ci[c(1, 3, 2)]), names(ci))
-    return(ci)
+    return(setNames(compute_doubling_time(ci[c(1, 3, 2)]), names(ci)))
+  }
+  if (parm == "R0") {
+    ci <- confint(object, parm = "r", level = level, method = method, ...)
+    return(compute_R0(ci, breaks, probs))
   }
 
   sdr <- summary(sdreport(object$madf_out), select = "fixed")

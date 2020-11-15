@@ -2027,6 +2027,18 @@ fit1$nll - fit1_redo$nll
 @
 
 
+\subsection{Confidence intervals on parameter estimates}
+\label{sec:ontario-ci}
+
+Under construction. For now, see below and take a look at
+\code{?confint.egf}.
+
+<<ontario-ci-1>>=
+confint(fit1, level = 0.95, trace = FALSE)
+confint(fit2, level = 0.95, trace = FALSE)
+@
+
+
 \subsection{Plotting and printing \tops{\protect\code{egf}}{egf} objects}
 \label{sec:ontario-fit-plot}
 
@@ -2122,22 +2134,6 @@ plot(fit1,
     )
   )
 )
-@
-
-
-\subsection{Confidence intervals on parameter estimates}
-\label{sec:ontario-ci}
-
-Under construction. For now, see below and take a look at
-\code{?confint.egf}.
-
-<<ontario-ci-1>>=
-pn <- c("doubling_time", names(coef(fit1)))
-f <- function(object, parm) {
-  confint(object, parm, level = 0.95, method = "linear", trace = FALSE)
-}
-t(mapply(f, parm = pn, object = list(fit1)))
-t(mapply(f, parm = pn, object = list(fit2)))
 @
 
 
@@ -2257,18 +2253,16 @@ depends on interval endpoints $\tau_i$ and bin probabilities
 $p_i$ defining a binned generation interval distribution
 (see \cref{sec:R0}).
 
-The default method takes numeric arguments \code{r}, \code{breaks}, and
-\code{probs}, specifying $r$ in units day$^{-1}$, $\tau_i$ in days, and
-$p_i$, respectively. It is vectorized in \code{r}, returning a numeric
-vector of equal length listing corresponding values of $\R_0$.
+The default method takes numeric arguments \code{r}, \code{breaks},
+and \code{probs} specifying $r$ in units day$^{-1}$, $\tau_i$ in days,
+and $p_i$, respectively. It is vectorized in \code{r}, returning a
+numeric vector of equal length listing corresponding values of $\R_0$.
 Alternatively, \code{r} can be an \code{egf_init} or \code{egf} object.
 In this case, the default method is applied to
-\code{r$theta_init[[`2"r"`2]]}
-or \code{r$theta_fit[[`2"r"`2]]}, respectively.
-
-\code{probs} must have length \code{`9length`9(breaks)-`11`1}, and
-\code{probs[i]} should define the probability that the generation
-interval is between \code{breaks[i]} and \code{breaks[i+1]} days.%
+\code{r$theta_init[[`2"r"`2]]} or \code{r$theta_fit[[`2"r"`2]]}, respectively. \code{probs} must have length
+\code{`9length`9(breaks)-`11`1}, and \code{probs[i]}
+should define the probability that the generation interval
+is between \code{breaks[i]} and \code{breaks[i+1]} days.%
 \footnote{
   It is actually sufficient for \code{probs} to give probability
   \emph{weights}, because \fun{compute_R0} normalizes for you,
