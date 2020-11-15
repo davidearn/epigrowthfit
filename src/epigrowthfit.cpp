@@ -9,6 +9,13 @@
 - regularization? priors? 
 */
 
+template<class Type>
+Type dpois_robust(Type x, Type log_lambda, int give_log = 0)
+{
+    Type log_dpois = x * log_lambda - exp(log_lambda) - lfactorial(x);
+    return ( give_log ? log_dpois : exp(log_dpois) );
+}
+
 // https://github.com/kaskr/adcomp/issues/59
 template<class Type>
 bool isNA(Type x)
@@ -20,14 +27,14 @@ bool isNA(Type x)
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-    /*SET UP =================================================================*/
+    // SET UP ==================================================================
 
     // Data
     DATA_VECTOR(t);              // time,  length N+1
     DATA_VECTOR(x);              // cases, length N
-    DATA_INTEGER(curve_flag);    // cum. inc. model     (curve_enum.h)
-    DATA_INTEGER(baseline_flag); // baseline growth     (1=include)
-    DATA_INTEGER(distr_flag);    // observation model   (distr_enum.h)
+    DATA_INTEGER(curve_flag);    // cum. inc. model    (curve_enum.h)
+    DATA_INTEGER(distr_flag);    // observation model  (distr_enum.h)
+    DATA_INTEGER(baseline_flag); // baseline growth    (1=include)
 
     // Parameters
     PARAMETER(log_r);      // log initial growth rate
@@ -37,70 +44,68 @@ Type objective_function<Type>::operator() ()
     PARAMETER(log_p);      // log Richards shape        (richards)
     PARAMETER(log_nbdisp); // log nb dispersion         (nbinom)
     PARAMETER(log_b);      // log baseline growth rate  (baseline_flag)
-
-    // Inverse-link transform parameters
+    
+    // Inverse link-transformed parameters
     Type r = exp(log_r);
-    Type c0 = exp(log_c0);
-    Type K = exp(log_K);
     Type thalf = exp(log_thalf);
     Type p = exp(log_p);
-    Type nbdisp = exp(log_nbdisp);
-    Type b = exp(log_b);
-    Type log_nbxsvar;
+
+    // Other stuff
+    Type log_nbxsvar; // log nb excess variance (nbinom)
     
+    // Fitted curves
+    vector<Type> log_cum_inc(t.size()); // log cumulative incidence, length N+1
+    vector<Type> log_int_inc(x.size()); // log interval incidence,   length N
+
     // Objective function
     Type nll = Type(0);
-    // Fitted curves
-    vector<Type> cum_inc(t.size());     // cumulative incidence,    length N+1
-    vector<Type> int_inc(x.size());     // interval incidence,      length N
-    vector<Type> log_int_inc(x.size()); /* log interval incidence,  length N
 
     
-    /*COMPUTE NEGATIVE LOG LIKELIHOOD ========================================*/
+    // COMPUTE NEGATIVE LOG LIKELIHOOD =========================================
 
-    // Evaluate cumulative incidence at observation times
+    // Evaluate log cumulative incidence at observation times
     for (int i = 0; i < t.size(); i++)
     {
         switch (curve_flag)
         {
-            case exponential:
-	        cum_inc(i) = c0 * exp(r * t(i));
-		break;
-            case logistic:
-	        cum_inc(i) = K / (Type(1) + exp(-r * (t(i) - thalf)));
-		break;
-            case richards:
-	        cum_inc(i) = K / pow(Type(1) + (pow(Type(2), p) - Type(1)) *
-                    exp(-r * p * (t(i) - thalf)), 1 / p);
-		break;
+        case exponential:
+	    log_cum_inc(i) = log_c0 * r * t(i);
+	    break;
+        case logistic:
+	    log_cum_inc(i) = log_K - logspace_add(Type(0), -r * (t(i) - thalf));
+	    break;
+        case richards:
+	    log_cum_inc(i) = log_K - logspace_add(Type(0), logspace_sub(p * log(2), Type(0)) - r * p * (t(i) - thalf)) / p;
+	    break;
         }
 
         if (baseline_flag == 1)
         {
-            cum_inc(i) += b * t(i);
+	    log_cum_inc(i) = logspace_add(log_b + log(t(i)), log_cum_inc(i));
         }
     }
 
-    // Compute interval incidence and increment negative log likelihood
+    // Compute log interval incidence and increment negative log likelihood
     for (int i = 0; i < x.size(); i++)
     {
         if (!isNA(x(i)))
         {
-            int_inc(i) = cum_inc(i + 1) - cum_inc(i);
-            log_int_inc(i) = log(int_inc(i));
+	    log_int_inc(i) = logspace_sub(log_cum_inc(i+1), log_cum_inc(i));
 
             switch (distr_flag)
             {
-                case pois:
-		    nll -= dpois(x(i), int_inc(i), true);
-		    break;
-                case nbinom:
-		    log_nbxsvar = Type(2) * log_int_inc(i) - log_nbdisp;
-		    nll -= dnbinom_robust(x(i), log_int_inc(i), log_nbxsvar, true);
-		    break;
+            case pois:
+	        nll -= dpois_robust(x(i), log_int_inc(i), true);
+		break;
+            case nbinom:
+	        log_nbxsvar = Type(2) * log_int_inc(i) - log_nbdisp;
+		nll -= dnbinom_robust(x(i), log_int_inc(i), log_nbxsvar, true);
+		break;
 	    }
         }
     }
-    
+
+    ADREPORT(log_cum_inc)
+    ADREPORT(log_int_inc)
     return nll;   
 }

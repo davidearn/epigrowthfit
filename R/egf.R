@@ -181,8 +181,8 @@ egf <- function(init, method = "nlminb", na_action = "exclude",
       t = data$time[first:last],
       x = data$cases[(first+1):last],
       curve_flag = match(curve, c("exponential", "logistic", "richards")) - 1,
-      baseline_flag = 1 * include_baseline,
       distr_flag = match(distr, c("pois", "nbinom")) - 1,
+      baseline_flag = 1 * include_baseline,
       method = method
     )
   )
