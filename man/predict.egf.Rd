@@ -5,30 +5,24 @@
 \alias{predict.egf_init}
 \title{Evaluate models of epidemic growth}
 \usage{
-\method{predict}{egf_init}(object, time = with(object, time[first:last]), ...)
+\method{predict}{egf_init}(object, time = with(object, data$time[window]), ...)
 
-\method{predict}{egf}(object, time = with(object$init, time[first:last]), ...)
+\method{predict}{egf}(object, time = with(object, data$time[window]), ...)
 }
 \arguments{
 \item{object}{An "egf_init" or "egf" object.}
 
 \item{time}{A numeric vector listing increasing time points.
 Times must be expressed as numbers of days since
-\code{with(object, date[first])} for "egf_init" objects
-and since
-\code{with(object$init, date[first])} for "egf" objects.}
+\code{with(object, data$date[first])}.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-A list with numeric elements:
+A data frame with numeric variables:
 
 \describe{
 \item{\code{time}}{Matches argument.}
-\item{\code{refdate}}{
-Matches \code{with(object, date[first])}
-or \code{with(object$init, date[first])}.
-}
 \item{\code{cum_inc}}{
 Expected cumulative incidence at time points \code{time}.
 Equal to \code{object$eval_cum_inc(time)}.
@@ -38,10 +32,20 @@ Expected interval incidence given interval endpoints \code{time}.
 Equal to \code{c(NA, diff(cum_inc))}.
 }
 }
+
+Attribute \code{refdate = with(object, data$date[first])} gives
+the reference date from which times in \code{time} are measured.
 }
 \description{
 Methods for evaluating incidence models specified
 by objects of class "egf_init" or "egf".
+}
+\details{
+A warning will be issued if any elements of \code{time} fall
+outside of the fitting window, indicating that the model
+is being extrapolated. To avoid warnings, make sure that
+elements of \code{time} are in the closed interval
+\code{with(object, data$time[c(first, last)])}.
 }
 \seealso{
 \code{\link[=egf_init]{egf_init()}}, \code{\link[=egf]{egf()}}

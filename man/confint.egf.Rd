@@ -18,13 +18,18 @@ compute a confidence interval.}
 \item{method}{One of \code{"linear"}, \code{"uniroot"}, and \code{"wald"} indicating
 a method with which to compute the confidence interval.}
 
-\item{...}{Unused optional arguments.}
+\item{...}{Optional arguments to \code{\link[TMB:tmbprofile]{TMB::tmbprofile()}} or \code{\link[TMB:tmbroot]{TMB::tmbroot()}}.}
 }
 \value{
-A numeric vector of the form \code{c(lower = a, upper = b)},
-where \code{a} and \code{b} are the left and right endpoints of
-the confidence interval specified by \code{parm}, \code{level},
-and \code{method}.
+For \code{parm != "doubling_time"}, a numeric vector of the form
+\code{c(estimate = e, lower = a, upper = b)}, where \code{a} and \code{b}
+are the left and right endpoints of the confidence interval
+specified by \code{parm}, \code{level}, and \code{method}, and \code{e} is the
+estimate \code{object$theta_fit[[parm]]}.
+
+For \code{parm = "doubling_time"},
+the result of \code{log(2) / ci[c(1, 3, 2)]},
+where \code{ci = confint(object, parm = "r", level, method, ...)}.
 }
 \description{
 A method for obtaining confidence intervals on point estimates

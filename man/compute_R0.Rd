@@ -2,24 +2,24 @@
 % Please edit documentation in R/compute_R0.R
 \name{compute_R0}
 \alias{compute_R0}
-\alias{compute_R0.numeric}
+\alias{compute_R0.default}
 \alias{compute_R0.egf_init}
 \alias{compute_R0.egf}
 \title{\loadmathjax
 Compute the basic reproduction number}
 \usage{
-compute_R0(x, breaks, probs)
+compute_R0(r, breaks, probs)
 
-\method{compute_R0}{numeric}(x, breaks, probs)
+\method{compute_R0}{default}(r, breaks, probs)
 
-\method{compute_R0}{egf_init}(x, breaks, probs)
+\method{compute_R0}{egf_init}(r, breaks, probs)
 
-\method{compute_R0}{egf}(x, breaks, probs)
+\method{compute_R0}{egf}(r, breaks, probs)
 }
 \arguments{
-\item{x}{A numeric vector listing values for the initial exponential
-growth rate expressed per day. Alternatively, an "egf_init"
-or "egf" object.}
+\item{r}{A numeric vector listing non-negative values for the initial
+exponential growth rate expressed per day. Alternatively, an
+"egf_init" or "egf" object.}
 
 \item{breaks}{A numeric vector of length 2 or greater listing increasing
 break points \mjseqn{t_i}, in days, in the support of the
@@ -31,16 +31,15 @@ is the probability that the generation interval is between
 \code{probs / sum(probs)} in the event that \code{sum(probs) != 1}.}
 }
 \value{
-The method for class "numeric" returns a numeric vector
-of length \code{length(x)}, whose \code{i}th element is the basic
-reproduction number corresponding to initial exponential
-growth rate \code{x[i]}. See Details.
+The default method returns a numeric vector of length \code{length(r)},
+whose \code{i}th element is the basic reproduction number corresponding
+to initial exponential growth rate \code{r[i]}. See Details.
 
-The method for class "egf_init" applies the method for
-class "numeric" to \code{x$theta_init[["r"]]}.
+The method for class "egf_init" applies the default method to
+\code{r = r$theta_init[["r"]]}.
 
-The method for class "egf" applies the method for
-class "numeric" to \code{x$theta_fit[["r"]]}.
+The method for class "egf" applies the default method to
+\code{r = r$theta_fit[["r"]]}.
 }
 \description{
 Compute the basic reproduction number corresponding
@@ -83,6 +82,5 @@ plot(r, R0, las = 1,
 \insertRef{WallLips07}{epigrowthfit}
 }
 \seealso{
-\code{\link[=compute_final_size]{compute_final_size()}} for computing the expected epidemic
-final size as a function of the basic reproduction number
+\code{\link[=compute_final_size]{compute_final_size()}}
 }

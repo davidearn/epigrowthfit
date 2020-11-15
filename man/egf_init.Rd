@@ -5,6 +5,8 @@
 \title{Define a fitting window and initial parameter estimates}
 \usage{
 egf_init(
+  formula = cases ~ date,
+  data = data.frame(date, cases),
   date,
   cases,
   curve = "logistic",
@@ -15,28 +17,39 @@ egf_init(
   last = NULL,
   first = NULL,
   min_first = NULL,
-  max_first = NULL
+  max_first = NULL,
+  dfmt = "\%Y-\%m-\%d"
 )
 }
 \arguments{
-\item{date}{A Date vector listing increasing time points. Should start at
-or before the date of the first observed case in an epidemic wave.}
+\item{formula}{A formula of the form \code{y ~ x} used to locate an interval incidence
+time series in \code{data}.}
+
+\item{data}{A data frame, list, or environment containing the variables in
+\code{formula}. For \code{formula} of the form \code{y ~ x}, variables \code{x} and \code{y}
+must conform to the constraints on arguments \code{date} and \code{cases},
+respectively.}
+
+\item{date}{A Date vector listing increasing time points, starting at or
+before the date of the first observed case in an epidemic wave.
+Alternatively, a character vector coercible to such a Date
+vector with \code{as.Date(date, tryFormats = dfmt)}. Ignored if
+\code{data} is set explicitly and mandatory otherwise.}
 
 \item{cases}{A numeric vector of length \code{length(date)}. For \code{i > 1}, \code{cases[i]}
 must specify the number of cases observed between \code{date[i-1]} and
-\code{date[i]}. \code{cases[1]} is ignored. Missing values are tolerated but
-affect the behaviour of \code{\link[=plot.egf_init]{plot.egf_init()}}. See Details 4.}
+\code{date[i]}. \code{cases[1]} is ignored. Missing values are tolerated.
+Ignored if \code{data} is set explicitly and mandatory otherwise.}
 
 \item{curve}{One of \code{"exponential"}, \code{"logistic"}, and \code{"richards"}, indicating
-a model of expected cumulative incidence. See Details 1.}
+a model of expected cumulative incidence.}
 
 \item{distr}{One of \code{"pois"} and \code{"nbinom"}, indicating a model of observed
-interval incidence. See Details 1.}
+interval incidence.}
 
 \item{include_baseline}{A logical scalar. If \code{TRUE}, then the model of expected cumulative
 incidence will include a linear baseline. Assign \code{TRUE} if \code{cases}
-counts deaths due to multiple causes and \code{FALSE} otherwise.
-See Details 1.}
+counts deaths due to multiple causes and \code{FALSE} otherwise.}
 
 \item{theta_init}{A named numeric vector specifying positive initial estimates of
 relevant model parameters:
@@ -73,35 +86,45 @@ Used only if \code{distr = "nbinom"}.
 }
 
 \code{theta_init} can be \code{NULL} or a vector specifying a subset of the
-relevant parameters. Unspecified parameters are set internally.
-See Value.}
+relevant parameters. Unspecified parameters are set internally.}
 
-\item{peak, first, last}{Integers in \code{seq_along(date)} indexing the time of a peak in
-\code{cases} (\code{peak}) and endpoints of the fitting window (\code{first},
-\code{last}). Alternatively, Dates between \code{min(date)} and \code{max(date)}
-or characters coercible to such a Date via \code{as.Date()} (e.g.,
-"YYYY-MM-DD"). In this case, coercion from Date to index is done
-by \code{which.min(abs(date - x))}. If \code{NULL} (default), then an index
-is chosen internally. See Details 2 and 3.}
+\item{peak, first, last}{Integers in \code{seq_along(date)} indexing the time of a peak
+in \code{cases} (\code{peak}) or endpoints of the fitting window
+(\code{first}, \code{last}). Alternatively, Dates between \code{min(date)}
+and \code{max(date)} or characters so coercible with
+\code{as.Date(x, tryFormats = dfmt)}. In this case, coercion
+from Date to index is done by \code{which.min(abs(date - x))}.
+If \code{NULL} (default), then an index is chosen internally.}
 
-\item{min_first, max_first}{Bounds on \code{first} used when \code{first} is chosen internally. Like
-\code{first}, can be integer, Date, or character. If \code{NULL} (default),
-then the least strict bounds are used internally. See Details 2
-and 3.}
+\item{min_first, max_first}{Bounds on \code{first} used only if \code{first} is chosen internally.
+Like \code{first}, can be integer, Date, or character. If \code{NULL}
+(default), then the least strict bounds are used internally.}
+
+\item{dfmt}{A character vector listing possible date formats using
+the conversion specifications outlined under \code{\link[base:strptime]{base::strptime()}},
+e.g., \code{"\%Y-\%m-\%d"} (default).}
 }
 \value{
 An "egf_init" object. A list containing copies of arguments
-\code{date}, \code{cases}, \code{last}, \code{curve}, \code{distr}, and \code{include_baseline},
-with these additional elements:
+\code{curve}, \code{distr}, and \code{include_baseline} and these additional
+elements:
 
 \describe{
-\item{\code{first}, \code{last}}{
-Integers in \code{seq_along(date)} such that the endpoints of the
-fitting window are \code{date[first]} and \code{date[last]}.
+\item{\code{data}}{
+A data frame with variables
+\code{date},
+\code{time = as.integer(date - date[first])}, and
+\code{cases}.
+\code{date} and \code{cases} are obtained from \code{data} using \code{formula}.
+Names in \code{formula} are discarded.
 }
-\item{\code{time}}{
-An integer vector giving time as a number of days since
-\code{date[first]}. Equal to \code{as.integer(date - date[first])}.
+\item{\code{window}}{
+An integer vector indexing the elements of \code{date} in the fitting
+window. Equal to \code{first:last}.
+}
+\item{\code{first}, \code{last}}{
+Integers in \code{seq_along(date)}. The endpoints of the fitting
+window are \code{date[first]} and \code{date[last]}.
 }
 \item{\code{theta_init}}{
 A named numeric vector whose elements are the subset of \code{r},
@@ -115,9 +138,9 @@ default value:
 \code{beta1} and \code{exp(beta0)}, respectively,
 where \code{beta1} and \code{beta0} are the slope and intercept
 of a linear model fit to \code{x = time[first+(1:h)]} and
-\code{y = log(1+cumsum(cases[first+(1:h)]))}, where
+\code{y = log1p(cumsum(cases[first+(1:h)]))}, where
 \code{h = max(2, floor((last-first)/2))}. If either
-of \code{cases[first+1]} or \code{cases[first+2]} is \code{NA},
+\code{cases[first+1]} or \code{cases[first+2]} is \code{NA},
 then fitting a linear model to \code{x} and \code{y} is
 impossible, and \code{r} and \code{c0} default to 0.1 and 1.
 }
@@ -139,8 +162,8 @@ A closure with numeric arguments \code{time} and \code{theta}
 (default is \code{theta_init}) evaluating expected cumulative
 incidence at \code{time} days since \code{date[first]} conditional
 on parameter vector \code{theta}. Elements of \code{theta} must be
-named as in \code{theta_init}. \code{predict(object, time)} can be
-used instead of \code{object$eval_cum_inc(time)}.
+named as in \code{theta_init}. \code{predict(object, time)} should
+be used instead of \code{object$eval_cum_inc(time)}.
 }
 \item{\code{call}}{
 The call to \code{egf_init()}, allowing the output to be updated
@@ -155,10 +178,9 @@ given an interval incidence time series. Used to initialize \code{\link[=egf]{eg
 \details{
 \subsection{1. Models}{
 
-A full description of the models of expected cumulative
-incidence and observed interval incidence specified by
-arguments \code{curve}, \code{distr}, and \code{include_baseline} can
-be found in the package vignette, accessible with
+A full description of the models specified by arguments
+\code{curve}, \code{distr}, and \code{include_baseline} can be found in
+the package vignette, accessible with
 \code{vignette("epigrowthfit-vignette")}.
 
 The number \code{npar} of model parameters is given by
@@ -181,13 +203,12 @@ window must not include data from more than one wave. The
 fitting window should start when \code{cases} (restricted to the
 focal wave), begins growing roughly exponentially (linearly
 on a logarithmic scale). When it should end depends on the
-model of expected cumulative incidence being fit to the data.
-If \code{curve = "exponential"}, then the window should end when
+model being fit to the data. If \code{curve = "exponential"},
+then the window should end at or before the time when when
 \code{cases} (restricted to the focal wave) stops growing
 exponentially. If \code{curve \%in\% c("logistic", "richards")},
-then it should end at the time of the peak in \code{cases}
-(during the focal wave) or, if the peak has not yet occurred,
-at \code{date[length(date)]}.
+then it should end between that time and the time of the
+peak in \code{cases} (during the focal wave).
 }
 
 \subsection{3. Default behaviour}{
@@ -200,15 +221,12 @@ set to \code{NULL} (see below) relies on several assumptions.
 It can be expected to define a reasonable fitting window if
 (i) \code{cases} gives data for exactly one epidemic wave,
 (ii) \code{cases} is close to equally spaced, and
-(iii) \code{cases} is close to smooth,
-but if any of these conditions fail to hold,
-then \code{peak}, \code{last}, and \code{first} may need to be set explicitly.
-\code{\link[=smooth_cases]{smooth_cases()}} simplifies this task by fitting cubic splines
-to the data and providing the times of peaks and troughs in
-the fitted curves as indices of \code{date}. The time of the trough
-before the focal wave and the time of the peak in the focal wave
-can be used as (approximate) markers for when the fitting window
-should start and end.
+(iii) \code{cases} is close to smooth.
+If any of these conditions fail to hold, then consider
+setting \code{peak}, \code{last}, and \code{first} explicitly.
+\code{\link[=smooth_cases]{smooth_cases()}} simplifies this task by fitting a cubic spline
+to the data and providing the times of peaks in the fitted curve
+as indices of \code{date}.
 
 If \code{peak = NULL}, then \code{peak} is set to \code{which.max(cases)}
 internally.
@@ -256,16 +274,15 @@ sc <- smooth_cases(
   spar = 0.7
 )
 plot(sc)
-v <- c("2020-03-06", "2020-09-01", "2020-10-01")
+v <- c("2020-03-01", "2020-03-28", "2020-09-01", "2020-09-26")
 dline(v, lty = 2, col = "#CCCCCC")
-x1 <- egf_init(
-  date = ontario$date,
-  cases = ontario$new_confirmed,
+x1 <- egf_init(new_confirmed ~ date,
+  data = ontario,
   curve = "logistic",
   distr = "nbinom",
-  first = 32,
-  last = 76,
-  peak = 76
+  first = 27,
+  last = 77,
+  peak = 77
 )
 x2 <- update(x1, first = 211, last = 236, peak = "2020-10-10")
 print(x1)

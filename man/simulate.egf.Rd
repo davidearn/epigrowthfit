@@ -8,7 +8,7 @@
   object,
   nsim = 1,
   seed = NULL,
-  time = with(object$init, time[first:last]),
+  time = with(object, data$time[first:last]),
   ...
 )
 }
@@ -20,8 +20,8 @@
 \item{seed}{An integer specifying a seed for RNG, otherwise \code{NULL}.}
 
 \item{time}{A numeric vector of length 2 or greater listing increasing
-time points. Times must be expressed as numbers of days since
-\code{with(object$init, date[first])}.}
+time points. Times must be expressed as numbers of days
+since \code{with(object, data$date[first])}.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -30,14 +30,13 @@ An "egf_sim" object. A list with elements:
 
 \describe{
 \item{\code{time}}{Matches argument.}
-\item{\code{refdate}}{Matches \code{with(object$init, date[first])}.}
 \item{\code{int_inc}}{
 A matrix with \code{length(time)} rows and \code{nsim} columns.
 \code{int_inc[1, j]} is \code{NA} for all \code{j}. For \code{i > 1}, \code{int_inc[i, j]}
 is the number of cases observed between \code{time[i]} and \code{time[i-1]}
 in simulation \code{j} of \code{nsim}, sampled from a Poisson or negative
-binomial distribution (depending on \code{object$init$distr}) with
-mean \code{diff(object$eval_cum_inc(time[c(i-1, i)]))}. If the latter,
+binomial distribution (depending on \code{object$distr}) with mean
+\code{diff(object$eval_cum_inc(time[c(i-1, i)]))}. If the latter,
 then the negative binomial dispersion parameter is taken from
 \code{object$theta_fit[["nbdisp"]]}.
 }
@@ -49,10 +48,21 @@ in simulation \code{j}. Column vector \code{cum_inc[, j]} is computed as
 }
 \item{\code{object}}{Matches argument.}
 }
+
+Attribute \code{refdate = with(object, data$date[first])} gives the
+reference date from which times in \code{time} are measured. Attribute
+\code{object} retains the "egf" object for use by \code{\link[=plot.egf_sim]{plot.egf_sim()}}.
 }
 \description{
 A method for simulating incidence models specified
 by objects of class "egf".
+}
+\details{
+A warning will be issued if any elements of \code{time} fall
+outside of the fitting window, indicating that the model
+is being extrapolated. To avoid warnings, make sure that
+elements of \code{time} are in the closed interval
+\code{with(object, data$time[c(first, last)])}.
 }
 \seealso{
 \code{\link[=egf]{egf()}}, \code{\link[=plot.egf_sim]{plot.egf_sim()}}

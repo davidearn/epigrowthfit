@@ -45,9 +45,9 @@
 #' element is expected cumulative incidence at `time[i]`.
 #'
 #' @details
-#' A full description of the models of expected cumulative incidence
-#' specified by arguments `curve` and `include_baseline` can be found
-#' in the package vignette, accessible with
+#' A full description of the models specified by arguments
+#' `curve` and `include_baseline` can be found in
+#' the package vignette, accessible with
 #' `vignette("epigrowthfit-vignette")`.
 #'
 #' @export
@@ -60,8 +60,7 @@ eval_model <- function(time, curve, include_baseline = FALSE, theta) {
     what = "character",
     len = 1,
     opt = c("exponential", "logistic", "richards"),
-    "`curve` must be one of ",
-    "\"exponential\", \"logistic\", \"richards\"."
+    "`curve` must be one of \"exponential\", \"logistic\", \"richards\"."
   )
   check(include_baseline,
     what = "logical",

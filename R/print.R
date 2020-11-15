@@ -44,11 +44,11 @@ print.egf_init <- function(x, ...) {
 
   i1 <- x$first
   i2 <- x$last
-  d1 <- x$date[i1]
-  d2 <- x$date[i2]
-  c1 <- sum(x$cases[(i1+1):i2], na.rm = TRUE)
-  c2 <- sum(x$cases[-1], na.rm = TRUE)
-  nna <- sum(is.na(x$cases[(i1+1):i2]))
+  d1 <- x$data$date[i1]
+  d2 <- x$data$date[i2]
+  c1 <- sum(x$data$cases[(i1+1):i2], na.rm = TRUE)
+  c2 <- sum(x$data$cases[-1], na.rm = TRUE)
+  nna <- sum(is.na(x$data$cases[(i1+1):i2]))
   wstr <- sprintf(
     fmt = paste0(
       "index   %d:%d\n",
@@ -90,18 +90,17 @@ print.egf_init <- function(x, ...) {
 print.egf <- function(x, ...) {
   ### SET UP ###########################################################
 
-  y <- x$init
-  cstr <- switch(y$curve,
+  cstr <- switch(x$curve,
     exponential = "an exponential model",
     logistic    = "a logistic model",
     richards    = "a Richards model"
   )
-  bstr <- if (y$include_baseline) {
+  bstr <- if (x$include_baseline) {
     "a linear baseline and "
   } else {
     ""
   }
-  dstr <- switch(y$distr,
+  dstr <- switch(x$distr,
     poisson = "Poisson-distributed",
     nbinom  = "negative binomial"
   )
@@ -113,13 +112,13 @@ print.egf <- function(x, ...) {
     cstr, bstr, dstr
   )
 
-  i1 <- y$first
-  i2 <- y$last
-  d1 <- y$date[i1]
-  d2 <- y$date[i2]
-  c1 <- sum(y$cases[(i1+1):i2], na.rm = TRUE)
-  c2 <- sum(y$cases[-1], na.rm = TRUE)
-  nna <- sum(is.na(y$cases[(i1+1):i2]))
+  i1 <- x$first
+  i2 <- x$last
+  d1 <- x$data$date[i1]
+  d2 <- x$data$date[i2]
+  c1 <- sum(x$data$cases[(i1+1):i2], na.rm = TRUE)
+  c2 <- sum(x$data$cases[-1], na.rm = TRUE)
+  nna <- sum(is.na(x$data$cases[(i1+1):i2]))
   wstr <- sprintf(
     fmt = paste0(
       "index   %d:%d\n",
@@ -155,6 +154,26 @@ print.egf <- function(x, ...) {
   print(uvec, quote = FALSE)
   cat("\n")
   cat("Negative log likelihood:", x$nll, "\n")
+  invisible(x)
+}
+
+#' Print simulations
+#'
+#' @description
+#' A method for printing objects of class "egf_sim".
+#'
+#' @param x
+#'   An "egf_sim" object.
+#' @param ...
+#'   Unused optional arguments.
+#'
+#' @return
+#' `x` (invisibly).
+#'
+#' @seealso [simulate.egf()]
+#' @export
+print.egf_sim <- function(x, ...) {
+  print(unclass(structure(x, object = NULL)))
   invisible(x)
 }
 

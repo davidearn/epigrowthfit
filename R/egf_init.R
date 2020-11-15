@@ -4,25 +4,35 @@
 #' Defines a fitting window and initial estimates of model parameters
 #' given an interval incidence time series. Used to initialize [egf()].
 #'
+#' @param formula
+#'   A formula of the form `y ~ x` used to locate an interval incidence
+#'   time series in `data`.
+#' @param data
+#'   A data frame, list, or environment containing the variables in
+#'   `formula`. For `formula` of the form `y ~ x`, variables `x` and `y`
+#'   must conform to the constraints on arguments `date` and `cases`,
+#'   respectively.
 #' @param date
-#'   A Date vector listing increasing time points. Should start at
-#'   or before the date of the first observed case in an epidemic wave.
+#'   A Date vector listing increasing time points, starting at or
+#'   before the date of the first observed case in an epidemic wave.
+#'   Alternatively, a character vector coercible to such a Date
+#'   vector with `as.Date(date, tryFormats = dfmt)`. Ignored if
+#'   `data` is set explicitly and mandatory otherwise.
 #' @param cases
 #'   A numeric vector of length `length(date)`. For `i > 1`, `cases[i]`
 #'   must specify the number of cases observed between `date[i-1]` and
-#'   `date[i]`. `cases[1]` is ignored. Missing values are tolerated but
-#'   affect the behaviour of [plot.egf_init()]. See Details 4.
+#'   `date[i]`. `cases[1]` is ignored. Missing values are tolerated.
+#'   Ignored if `data` is set explicitly and mandatory otherwise.
 #' @param curve
 #'   One of `"exponential"`, `"logistic"`, and `"richards"`, indicating
-#'   a model of expected cumulative incidence. See Details 1.
+#'   a model of expected cumulative incidence.
 #' @param distr
 #'   One of `"pois"` and `"nbinom"`, indicating a model of observed
-#'   interval incidence. See Details 1.
+#'   interval incidence.
 #' @param include_baseline
 #'   A logical scalar. If `TRUE`, then the model of expected cumulative
 #'   incidence will include a linear baseline. Assign `TRUE` if `cases`
 #'   counts deaths due to multiple causes and `FALSE` otherwise.
-#'   See Details 1.
 #' @param theta_init
 #'   A named numeric vector specifying positive initial estimates of
 #'   relevant model parameters:
@@ -60,34 +70,43 @@
 #'
 #'   `theta_init` can be `NULL` or a vector specifying a subset of the
 #'   relevant parameters. Unspecified parameters are set internally.
-#'   See Value.
 #' @param peak,first,last
-#'   Integers in `seq_along(date)` indexing the time of a peak in
-#'   `cases` (`peak`) and endpoints of the fitting window (`first`,
-#'   `last`). Alternatively, Dates between `min(date)` and `max(date)`
-#'   or characters coercible to such a Date via `as.Date()` (e.g.,
-#'   "YYYY-MM-DD"). In this case, coercion from Date to index is done
-#'   by `which.min(abs(date - x))`. If `NULL` (default), then an index
-#'   is chosen internally. See Details 2 and 3.
+#'   Integers in `seq_along(date)` indexing the time of a peak
+#'   in `cases` (`peak`) or endpoints of the fitting window
+#'   (`first`, `last`). Alternatively, Dates between `min(date)`
+#'   and `max(date)` or characters so coercible with
+#'   `as.Date(x, tryFormats = dfmt)`. In this case, coercion
+#'   from Date to index is done by `which.min(abs(date - x))`.
+#'   If `NULL` (default), then an index is chosen internally.
 #' @param min_first,max_first
-#'   Bounds on `first` used when `first` is chosen internally. Like
-#'   `first`, can be integer, Date, or character. If `NULL` (default),
-#'   then the least strict bounds are used internally. See Details 2
-#'   and 3.
+#'   Bounds on `first` used only if `first` is chosen internally.
+#'   Like `first`, can be integer, Date, or character. If `NULL`
+#'   (default), then the least strict bounds are used internally.
+#' @param dfmt A character vector listing possible date formats using
+#'   the conversion specifications outlined under [base::strptime()],
+#'   e.g., `"%Y-%m-%d"` (default).
 #'
 #' @return
 #' An "egf_init" object. A list containing copies of arguments
-#' `date`, `cases`, `last`, `curve`, `distr`, and `include_baseline`,
-#' with these additional elements:
+#' `curve`, `distr`, and `include_baseline` and these additional
+#' elements:
 #'
 #' \describe{
-#'   \item{`first`, `last`}{
-#'     Integers in `seq_along(date)` such that the endpoints of the
-#'     fitting window are `date[first]` and `date[last]`.
+#'   \item{`data`}{
+#'     A data frame with variables
+#'     `date`,
+#'     `time = as.integer(date - date[first])`, and
+#'     `cases`.
+#'     `date` and `cases` are obtained from `data` using `formula`.
+#'     Names in `formula` are discarded.
 #'   }
-#'   \item{`time`}{
-#'     An integer vector giving time as a number of days since
-#'     `date[first]`. Equal to `as.integer(date - date[first])`.
+#'   \item{`window`}{
+#'     An integer vector indexing the elements of `date` in the fitting
+#'     window. Equal to `first:last`.
+#'   }
+#'   \item{`first`, `last`}{
+#'     Integers in `seq_along(date)`. The endpoints of the fitting
+#'     window are `date[first]` and `date[last]`.
 #'   }
 #'   \item{`theta_init`}{
 #'     A named numeric vector whose elements are the subset of `r`,
@@ -101,9 +120,9 @@
 #'         `beta1` and `exp(beta0)`, respectively,
 #'         where `beta1` and `beta0` are the slope and intercept
 #'         of a linear model fit to `x = time[first+(1:h)]` and
-#'         `y = log(1+cumsum(cases[first+(1:h)]))`, where
+#'         `y = log1p(cumsum(cases[first+(1:h)]))`, where
 #'         `h = max(2, floor((last-first)/2))`. If either
-#'         of `cases[first+1]` or `cases[first+2]` is `NA`,
+#'         `cases[first+1]` or `cases[first+2]` is `NA`,
 #'         then fitting a linear model to `x` and `y` is
 #'         impossible, and `r` and `c0` default to 0.1 and 1.
 #'       }
@@ -125,8 +144,8 @@
 #'     (default is `theta_init`) evaluating expected cumulative
 #'     incidence at `time` days since `date[first]` conditional
 #'     on parameter vector `theta`. Elements of `theta` must be
-#'     named as in `theta_init`. `predict(object, time)` can be
-#'     used instead of `object$eval_cum_inc(time)`.
+#'     named as in `theta_init`. `predict(object, time)` should
+#'     be used instead of `object$eval_cum_inc(time)`.
 #'   }
 #'   \item{`call`}{
 #'     The call to `egf_init()`, allowing the output to be updated
@@ -137,10 +156,9 @@
 #' @details
 #' ## 1. Models
 #'
-#' A full description of the models of expected cumulative
-#' incidence and observed interval incidence specified by
-#' arguments `curve`, `distr`, and `include_baseline` can
-#' be found in the package vignette, accessible with
+#' A full description of the models specified by arguments
+#' `curve`, `distr`, and `include_baseline` can be found in
+#' the package vignette, accessible with
 #' `vignette("epigrowthfit-vignette")`.
 #'
 #' The number `npar` of model parameters is given by
@@ -162,13 +180,12 @@
 #' fitting window should start when `cases` (restricted to the
 #' focal wave), begins growing roughly exponentially (linearly
 #' on a logarithmic scale). When it should end depends on the
-#' model of expected cumulative incidence being fit to the data.
-#' If `curve = "exponential"`, then the window should end when
+#' model being fit to the data. If `curve = "exponential"`,
+#' then the window should end at or before the time when when
 #' `cases` (restricted to the focal wave) stops growing
 #' exponentially. If `curve %in% c("logistic", "richards")`,
-#' then it should end at the time of the peak in `cases`
-#' (during the focal wave) or, if the peak has not yet occurred,
-#' at `date[length(date)]`.
+#' then it should end between that time and the time of the
+#' peak in `cases` (during the focal wave).
 #'
 #' ## 3. Default behaviour
 #'
@@ -180,15 +197,12 @@
 #' It can be expected to define a reasonable fitting window if
 #' (i) `cases` gives data for exactly one epidemic wave,
 #' (ii) `cases` is close to equally spaced, and
-#' (iii) `cases` is close to smooth,
-#' but if any of these conditions fail to hold,
-#' then `peak`, `last`, and `first` may need to be set explicitly.
-#' [smooth_cases()] simplifies this task by fitting cubic splines
-#' to the data and providing the times of peaks and troughs in
-#' the fitted curves as indices of `date`. The time of the trough
-#' before the focal wave and the time of the peak in the focal wave
-#' can be used as (approximate) markers for when the fitting window
-#' should start and end.
+#' (iii) `cases` is close to smooth.
+#' If any of these conditions fail to hold, then consider
+#' setting `peak`, `last`, and `first` explicitly.
+#' [smooth_cases()] simplifies this task by fitting a cubic spline
+#' to the data and providing the times of peaks in the fitted curve
+#' as indices of `date`.
 #'
 #' If `peak = NULL`, then `peak` is set to `which.max(cases)`
 #' internally.
@@ -234,16 +248,15 @@
 #'   spar = 0.7
 #' )
 #' plot(sc)
-#' v <- c("2020-03-06", "2020-09-01", "2020-10-01")
+#' v <- c("2020-03-01", "2020-03-28", "2020-09-01", "2020-09-26")
 #' dline(v, lty = 2, col = "#CCCCCC")
-#' x1 <- egf_init(
-#'   date = ontario$date,
-#'   cases = ontario$new_confirmed,
+#' x1 <- egf_init(new_confirmed ~ date,
+#'   data = ontario,
 #'   curve = "logistic",
 #'   distr = "nbinom",
-#'   first = 32,
-#'   last = 76,
-#'   peak = 76
+#'   first = 27,
+#'   last = 77,
+#'   peak = 77
 #' )
 #' x2 <- update(x1, first = 211, last = 236, peak = "2020-10-10")
 #' print(x1)
@@ -263,7 +276,9 @@
 #' @seealso [egf()], [smooth_cases()], [plot.egf_init()]
 #' @export
 #' @import stats
-egf_init <- function(date,
+egf_init <- function(formula = cases ~ date,
+                     data = data.frame(date, cases),
+                     date,
                      cases,
                      curve = "logistic",
                      distr = "nbinom",
@@ -273,15 +288,15 @@ egf_init <- function(date,
                      last = NULL,
                      first = NULL,
                      min_first = NULL,
-                     max_first = NULL) {
+                     max_first = NULL,
+                     dfmt = "%Y-%m-%d") {
   ### VALIDATE MODEL ###################################################
 
   check(curve,
     what = "character",
     len = 1,
     opt = c("exponential", "logistic", "richards"),
-    "`curve` must be one of ",
-    "\"exponential\", \"logistic\", \"richards\"."
+    "`curve` must be one of \"exponential\", \"logistic\", \"richards\"."
   )
   check(distr,
     what = "character",
@@ -313,65 +328,87 @@ egf_init <- function(date,
 
   ### VALIDATE DATA ####################################################
 
+  check(formula,
+    what = "formula",
+    len = 3,
+    yes = function(x) is.name(x[[2]]) && is.name(x[[3]]),
+    "`formula` must be a formula of the form `y ~ x`."
+  )
+  check(data,
+    what = c("data.frame", "list", "environment"),
+    "`data` must be a data frame, list, or environment."
+  )
+  dn <- all.vars(formula[[3]])
+  cn <- all.vars(formula[[2]])
+  found <- c(dn, cn) %in% names(data)
+  check(!found,
+    no = any,
+    "`formula` variables not found in `data`:\n",
+    paste(c(dn, cn)[!found], collapse = ", ")
+  )
+  date <- data[[dn]]
+  if (is.character(date)) {
+    date <- try(as.Date(date, tryFormats = dfmt), silent = TRUE)
+  }
   check(date,
     what = "Date",
+    sprintf("`%s` must be of class \"Date\" or so coercible with\n`as.Date(%s, tryFormats = dfmt)`.", dn, dn)
+  )
+  check(date,
     len = c(npar + 1, Inf),
-    "`date` must be of class \"Date\" and have ",
-    "length ", npar + 1, "or greater."
+    sprintf("`%s` must have length %d or greater.", dn, npar + 1)
   )
   check(date,
     no = anyNA,
-    "`date` must not have missing values."
+    sprintf("`%s` must not have missing values.", dn)
   )
   check(date,
     yes = function(x) all(diff(x) > 0),
-    "`date` must be increasing."
+    sprintf("`%s` must be increasing.", dn)
   )
+  cases <- data[[cn]]
   check(cases,
     what = "numeric",
     len = length(date),
-    "`cases` must be numeric and have length `length(date)`."
+    sprintf("`%s` must be numeric and have length `length(%s)`.", cn, dn)
   )
   check(cases[-1],
     val = c(0, Inf),
     rel = c(">=", "<"),
-    "Elements of `cases` must be finite and non-negative."
+    sprintf("Elements of `%s` must be finite and non-negative.", cn)
   )
   cases[1] <- NA
 
 
-  ### SELECT/VALIDATE FITTING WINDOW ###################################
+  ### VALIDATE FITTING WINDOW ##########################################
 
   ## Converts numeric/Date/character value of `peak`, etc.
   ## to integer indexing `date`
-  ndc_to_index <- function(name) {
-    x <- get(name, envir = parent.frame(), inherits = FALSE)
+  ndc_to_index <- function(varname) {
+    x <- get(varname, envir = parent.frame(), inherits = FALSE)
     check(x,
       what = c("numeric", "Date", "character"),
       len = 1,
-      "`", name, "` must have class \"numeric\", \"Date\",\n",
-      "or \"character\" and length 1."
+      sprintf("`%s` must have class \"numeric\", \"Date\",\nor \"character\" and length 1.", varname)
     )
     if (is.numeric(x)) {
       check(x,
         opt = seq_along(date),
-        "Numeric `", name, "` must be an integer in `seq_along(date)."
+        sprintf("Numeric `%s` must be an integer in `seq_along(%s)`.", varname, dn)
       )
       x <- as.integer(x)
     } else if (inherits(x, "Date")) {
       check(x,
         opt = seq(min(date), max(date), by = 1),
-        "Date `", name, "` must not be earlier than `min(date)`\n",
-        "or later than `max(date)`."
+        sprintf("Date `%s` must be between `min(%s)` and `max(%s)`.", varname, dn, dn)
       )
       x <- which.min(abs(date - x))
     } else if (is.character(x)) {
-      x <- try(as.Date(x), silent = TRUE)
+      x <- try(as.Date(x, tryFormats = dfmt), silent = TRUE)
       check(x,
         not = "try-error",
         opt = seq(min(date), max(date), by = 1),
-        "Character `", name, "` must be coercible ",
-        "to Date between `min(date)` and `max(date)`."
+        sprintf("Character `%s` must be coercible to Date\n between `min(%s)` and `max(%s)` with\n`as.Date(%s, tryFormats = dfmt)`.", varname, dn, dn, varname)
       )
       x <- which.min(abs(date - x))
     }
@@ -419,13 +456,12 @@ egf_init <- function(date,
   ## Fitting window must contain at least `npar` observations
   ## after missing values are excluded
   if (sum(!is.na(cases[(first+1):last])) < npar) {
-    warning("Length of `cases[(first+1):last]`, excluding NA,\n",
-            "is less than the number of model parameters.",
-            call. = FALSE)
+    w <- sprintf("Length of `%s[(first+1):last]`, excluding NA,\nis less than the number of model parameters (%d).", cn, npar)
+    warning(w, call. = FALSE)
   }
 
 
-  ### VALIDATE/SELECT INITIAL PARAMETER ESTIMATES ######################
+  ### VALIDATE INITIAL PARAMETER ESTIMATES #############################
 
   if (is.null(theta_init)) {
     theta_init <- numeric(0)
@@ -445,9 +481,8 @@ egf_init <- function(date,
   ]
   if (length(theta_init_strict) < length(theta_init)) {
     rm_names <- setdiff(names(theta_init), names(theta_init_strict))
-    warning("Discarding user-specified elements of `theta_init`:\n",
-            paste(rm_names, collapse = ", "),
-            call. = FALSE)
+    w <- sprintf("Discarding user-specified elements of `theta_init`:\n%s", paste(rm_names, collapse = ", "))
+    warning(w, call. = FALSE)
   }
   theta_init <- theta_init_strict
 
@@ -459,7 +494,7 @@ egf_init <- function(date,
   time <- days(date, since = date[first])
   h <- max(2, floor((last - first) / 2))
   x <- time[first+(1:h)]
-  y <- log(1 + cumsum(cases[first+(1:h)]))
+  y <- log1p(cumsum(cases[first+(1:h)]))
   lm_coef <- try(silent = TRUE, expr = {
     coef(lm(y ~ x, data = data.frame(x, y), na.action = na.omit))
   })
@@ -492,9 +527,8 @@ egf_init <- function(date,
 
 
   out <- list(
-    date = date,
-    time = time,
-    cases = cases,
+    data = data.frame(date, time, cases),
+    window = first:last,
     first = first,
     last = last,
     curve = curve,

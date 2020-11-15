@@ -13,7 +13,7 @@
 indicating a type of incidence to plot.}
 
 \item{col_sim, col_pred}{Character or numeric scalars specifying colours
-for simulated and predicted incidence curves, respectively.}
+for simulated and predicted incidence curves.}
 
 \item{...}{Optional arguments specifying additional graphical parameters.
 Currently, only \code{xlim}, \code{ylim}, \code{xlab}, \code{ylab}, and \code{main} are
@@ -31,12 +31,12 @@ by objects of class "egf_sim".
 \subsection{Plot elements}{
 
 The bottom axis measures the number of days since
-\code{with(x$object$init, date[first])}.
+\code{with(attr(x, "object"), data$date[first])}.
 The left axis measures interval or cumulative incidence
 (depending on \code{inc}).
 
-The predicted incidence curve is obtained as \code{pred$cum_inc} or
-\code{pred$int_inc}, where \code{pred = predict(x$object, time = x$time)}.
+The predicted incidence curve is obtained with
+\code{predict(attr(x, "object"), time = x$time)}.
 
 The simulated incidence curves are obtained as the columns of
 \code{x$cum_inc} or \code{x$int_inc}. These are plotted together behind

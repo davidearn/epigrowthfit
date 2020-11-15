@@ -15,18 +15,20 @@ and initial parameter estimates. See \code{\link[=egf_init]{egf_init()}}.}
 \code{"L-BFGS-S"}, and \code{"CG"}, indicating an optimization algorithm.}
 
 \item{na_action}{One of \code{"fail"} and \code{"exclude"}, indicating how missing values
-in \code{init$cases} are handled. See Details.}
+in the fitting window are handled.}
 
 \item{nbdisp_tol}{A positive number defining a threshold on the fitted value
-of the negative binomial dispersion parameter.
-Used only if \code{init$distr = "nbinom"}. See Details.}
+of the negative binomial dispersion parameter. Used only if
+\code{init$distr = "nbinom"}.}
 
 \item{...}{Additional arguments to \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}},
 or \code{\link[stats:optim]{stats::optim()}}, depending on \code{method}.}
 }
 \value{
-An "egf" object. A list containing copies of arguments
-\code{init} and \code{method}, with these additional elements:
+An "egf" object. A list containing copies of \code{init} elements
+\code{data}, \code{window}, \code{first}, \code{last}, \code{curve}, \code{distr}, and
+\code{include_baseline}; a copy of argument \code{method}; and these
+additional elements:
 
 \describe{
 \item{\code{theta_fit}}{
@@ -56,10 +58,10 @@ respect to log-transformed parameters evaluated at \code{log_theta}.
 \item{\code{eval_cum_inc}}{
 A closure with numeric arguments \code{time} and \code{theta}
 (default is \code{theta_fit}) evaluating expected cumulative
-incidence at \code{time} days since \code{init$date[first]} conditional
+incidence at \code{time} days since \code{data$date[first]} conditional
 on parameter vector \code{theta}. Elements of \code{theta} must be
-named as in \code{theta_fit}. \code{predict(object, time)} can be
-used instead of \code{object$eval_cum_inc(time)}.
+named as in \code{theta_fit}. \code{predict(object, time)} should
+be used instead of \code{object$eval_cum_inc(time)}.
 }
 \item{\code{madf_out}}{The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.}
 \item{\code{optim_out}}{
@@ -67,11 +69,10 @@ The list output of \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stat
 or \code{\link[stats:optim]{stats::optim()}}, depending on \code{method}.
 }
 \item{\code{large_nbdisp_flag}}{
-A logical scalar. If \code{TRUE}, then the fitted value of the
-negative binomial dispersion parameter
-(i.e., \code{theta_fit[["nbdisp"]]}) exceeds the threshold defined
-by \code{nbdisp_tol}. Omitted if \code{init$distr != "nbinom"}.
-See Details.
+A logical scalar. If \code{TRUE}, then the fitted value of
+the negative binomial dispersion parameter
+(i.e., \code{theta_fit[["nbdisp"]]}) exceeds the threshold
+defined by \code{nbdisp_tol}. Omitted if \code{distr != "nbinom"}.
 }
 \item{\code{call}}{
 The call to \code{egf()}, allowing the output to be updated
@@ -81,7 +82,7 @@ using \code{\link[stats:update]{stats::update()}}.
 }
 \description{
 Minimizes the negative log likelihood of an epidemic growth model
-using \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, of one of the routines
+using \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or one of the routines
 provided through \code{\link[stats:optim]{stats::optim()}}. The negative log likelihood as a
 function of log-transformed parameters is written as a C++ template,
 and its derivatives with respect to log-transformed parameters are
@@ -89,43 +90,42 @@ computed by automatic differentiation using package \pkg{TMB}.
 }
 \details{
 The data used in likelihood calculation are specified by
-\code{x = with(init, cases[(first+1):last])}.
+\code{x = with(data, cases[(first+1):last])}.
 If \code{x} has missing values and \code{na_action = "fail"},
 then \code{egf()} will stop with an error.
 If \code{x} has missing values and \code{na_action = "exclude"},
-then the likelihood function will be defined as a product over
-indices without missing values, unless \code{sum(!is.na(x))}
+then the likelihood function will be defined as a product
+over indices without missing values, unless \code{sum(!is.na(x))}
 is less than the number of model parameters, in which case
 \code{egf()} will stop with an error.
 
-If \code{theta_fit[["nbdisp"]]} exceeds
-\code{nbdisp_tol * max(diff(eval_cum_inc(time)))},
-where \code{time = with(init, time[first:last])},
-then \code{egf()} will issue a warning suggesting to refit
-using a Poisson model by running
-\code{update(object, init = update(init, distr = "pois"))},
-where \code{object} is the "egf" object returned by \code{egf()}.
+If \code{distr = "nbinom"} and \code{theta_fit[["nbdisp"]]}
+exceeds \code{nbdisp_tol * max(diff(eval_cum_inc(time)))},
+where \code{time = data$time[first:last]}, then \code{egf()}
+will issue a warning suggesting to refit using a
+Poisson model by running
+\code{update(object, init = update(init, distr = "pois"))}.
 This behaviour is discussed in the package vignette,
 accessible with \code{vignette("epigrowthfit-vignette")}.
 }
 \examples{
 data(canadacovid)
 ontario <- subset(canadacovid, province == "ON")
-x1 <- egf_init(
-  date = ontario$date,
-  cases = ontario$new_confirmed,
+x1 <- egf_init(new_confirmed ~ date,
+  data = ontario,
   curve = "logistic",
   distr = "nbinom",
-  peak = 76,
-  first = 32
+  first = 27,
+  last = 77,
+  peak = 77
 )
-x2 <- update(x1, peak = 241, first = 211)
+x2 <- update(x1, first = 211, last = 236, peak = "2020-10-10")
 y1 <- egf(x1)
 y2 <- egf(x2)
 print(y1)
 coef(y1, log = FALSE)
 coef(y1, log = TRUE)
-confint(y1, parm = "r", level = 0.95, method = "linear")
+confint(y1, parm = "doubling_time", level = 0.95, method = "linear")
 predict(y1)
 s <- simulate(y1, nsim = 6)
 plot(s, inc = "interval")

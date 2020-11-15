@@ -1,25 +1,14 @@
 #' Fit cubic splines to interval incidence
 #'
 #' @description
-#' Fits a cubic spline to an interval incidence time series
-#' using [stats::smooth.spline()], then looks for local extrema
-#' by checking when the first derivative changes sign. Intended
-#' for use in conjunction with [egf_init()] to facilitate
-#' fitting window selection.
+#' Fits a cubic spline to an interval incidence time series using
+#' [stats::smooth.spline()], then looks for local extrema by checking
+#' when the first derivative changes sign. Intended for use in
+#' conjunction with [egf_init()] to facilitate fitting window selection.
 #'
-#' @param object
-#'   An "egf_init" or "egf" object, in which case `date` and `cases`
-#'   are ignored, or `NULL`, in which case `date` and `cases` are
-#'   required.
-#' @param date
-#'   A Date vector of length 5 or greater listing increasing time
-#'   points. Should start at or before the date of the first observed
-#'   case in an epidemic wave.
-#' @param cases
-#'   A numeric vector of length `length(date)`. For `i > 1`, `cases[i]`
-#'   must specify the number of cases observed between `date[i-1]` and
-#'   `date[i]`. `cases[1]` is ignored. Missing values are tolerated
-#'   unless `sum(!is.na(cases[-1])) < 4`.
+#' @param formula
+#'   A formula of the form `y ~ x` used to locate an interval incidence
+#'   time series in `data`. Alternatively, an "egf_init" or "egf" object.
 #' @param log
 #'   A logical scalar. If `TRUE`, then `log10(1+cases)` is smoothed
 #'   instead of `cases`.
@@ -28,13 +17,24 @@
 #'   with `spar` (smoothing parameter). See [stats::smooth.spline()].
 #' @param ...
 #'   Optional arguments to [stats::smooth.spline()].
+#' @inheritParams egf_init
 #'
 #' @return
-#' The default method returns a "smooth_cases" object, which is
-#' a list containing copies of arguments `date`, `cases`, `log`,
-#' and `spar`, with these additional elements:
+#' The default method returns a list of class "smooth_cases"
+#' containing copies of arguments `log` and `spar` and these
+#' additional elements:
 #'
 #' \describe{
+#'   \item{`data`}{
+#'     A data frame with variables
+#'     `date`,
+#'     `time = as.integer(date - date[1])`,
+#'     `difftime = c(NA, diff(time))`,
+#'     `cases`, and
+#'     `log1p_cases = log10(1+cases)`.
+#'     `date` and `cases` are obtained from `data` using `formula`.
+#'     Names in `formula` are discarded.
+#'   }
 #'   \item{`ss`}{
 #'     The list output of [stats::smooth.spline()].
 #'   }
@@ -49,33 +49,99 @@
 #'   }
 #' }
 #'
-#' The method for class "egf_init" applies the default method
-#' to `date = object$date` and `cases = object$cases`.
-#'
-#' The method for class "egf" applies the default method
-#' to `date = object$init$date` and `cases = object$init$cases`.
+#' The methods for classes "egf_init" and "egf" apply the default
+#' method with `formula = cases ~ date` and `data = formula$data`.
 #'
 #' @details
-#' A cubic spline is fit to `x = as.numeric(date[-1]-date[1])` and
-#' `y = cases[-1]` or `y = log(1+cases[-1])`. The points are weighted
-#' by `diff(date)` to account for possibly unequal spacing.
+#' A cubic spline is fit to `x = as.integer(date[-1]-date[1])` and
+#' `y = cases[-1]` or `y = log10(1+cases[-1])`, depending on `log`.
+#' The points are weighted by `diff(date)` to account for possibly
+#' unequal spacing.
 #'
 #' @examples
 #' data(canadacovid)
 #' ontario <- subset(canadacovid, province == "ON")
-#' x <- smooth_cases(
-#'   date = ontario$date,
-#'   cases = ontario$new_confirmed,
+#' x <- smooth_cases(new_confirmed ~ date,
+#'   data = ontario,
 #'   log = TRUE,
 #'   spar = 0.7
 #' )
 #' plot(x)
+#' v <- c("2020-03-01", "2020-03-28", "2020-09-01", "2020-09-26")
+#' dline(v, lty = 2, col = "#CCCCCC")
 #'
 #' @seealso [plot.smooth_cases()]
 #' @export
 #' @import stats
-smooth_cases <- function(object = NULL, date, cases,
-                         log = TRUE, spar = 0.5, ...) {
+smooth_cases <- function(formula = cases ~ date, ...) {
+  UseMethod("smooth_cases", formula)
+}
+
+#' @rdname smooth_cases
+#' @export
+#' @importFrom stats smooth.spline predict
+smooth_cases.default <- function(formula = cases ~ date,
+                                 data = data.frame(date, cases),
+                                 date,
+                                 cases,
+                                 log = TRUE,
+                                 spar = 0.5,
+                                 dfmt = "%Y-%m-%d",
+                                 ...) {
+  check(formula,
+    what = "formula",
+    len = 3,
+    yes = function(x) is.name(x[[2]]) && is.name(x[[3]]),
+    "`formula` must be a formula of the form `y ~ x`."
+  )
+  check(data,
+    what = c("data.frame", "list", "environment"),
+    "`data` must be a data frame, list, or environment."
+  )
+  dn <- all.vars(formula[[3]])
+  cn <- all.vars(formula[[2]])
+  found <- c(dn, cn) %in% names(data)
+  check(!found,
+    no = any,
+    "`formula` variables not found in `data`:\n",
+    paste(c(dn, cn)[!found], collapse = ", ")
+  )
+  date <- data[[dn]]
+  if (is.character(date)) {
+    date <- try(as.Date(date, tryFormats = dfmt), silent = TRUE)
+  }
+  check(date,
+    what = "Date",
+    sprintf("`%s` must be of class \"Date\" or so coercible with\n`as.Date(%s, tryFormats = dfmt)`.", dn, dn)
+  )
+  check(date,
+    len = c(5, Inf),
+    sprintf("`%s` must have length 5 or greater.", dn)
+  )
+  check(date,
+    no = anyNA,
+    sprintf("`%s` must not have missing values.", dn)
+  )
+  check(date,
+    yes = function(x) all(diff(x) > 0),
+    sprintf("`%s` must be increasing.", dn)
+  )
+  cases <- data[[cn]]
+  check(cases,
+    what = "numeric",
+    len = length(date),
+    sprintf("`%s` must be numeric and have length `length(%s)`.", cn, dn)
+  )
+  check(cases[-1],
+    val = c(0, Inf),
+    rel = c(">=", "<"),
+    sprintf("Elements of `%s` must be finite and non-negative.", cn)
+  )
+  check(cases[-1],
+    no = function(x) sum(!is.na(x)) < 4,
+    sprintf("`%s[-1]` must have at least 4 elements that are not `NA`.", cn)
+  )
+  cases[1] <- NA
   check(log,
     what = "logical",
     len = 1,
@@ -90,54 +156,19 @@ smooth_cases <- function(object = NULL, date, cases,
     "`spar` must be a number in (0,1]."
   )
 
-  UseMethod("smooth_cases", object)
-}
-
-#' @rdname smooth_cases
-#' @export
-#' @importFrom stats smooth.spline predict
-smooth_cases.default <- function(object, date, cases, log, spar, ...) {
-  check(date,
-    what = "Date",
-    len = c(5, Inf),
-    "`date` must be of class \"Date\" and have length 5 or greater."
-  )
-  check(date,
-    no = anyNA,
-    "`date` must not have missing values."
-  )
-  check(date,
-    yes = function(x) all(diff(x) > 0),
-    "`date` must be increasing."
-  )
-  check(cases,
-    what = "numeric",
-    len = length(date),
-    "`cases` must be numeric and have length `length(date)`."
-  )
-  check(cases[-1],
-    val = c(0, Inf),
-    rel = c(">=", "<"),
-    "Elements of `cases` must be finite and non-negative."
-  )
-  check(cases[-1],
-    no = function(x) sum(!is.na(x)) < 4,
-    "`cases[-1]` must have at least 4 elements that are not `NA`."
-  )
-  cases[1] <- NA
-
   data <- data.frame(
+    date = date,
     time = days(date, since = date[1]),
+    difftime = c(NA, ddiff(date)),
     cases = cases,
-    log_cases = log10(1 + cases),
-    weight = c(NA, ddiff(date))
+    log1p_cases = log10(1 + cases)
   )
-  data <- na.omit(data)
-  varname <- if (log) "log_cases" else "cases"
+  data_na_omit <- na.omit(data)
+  varname <- if (log) "log1p_cases" else "cases"
   ss <- smooth.spline(
-    x = data$time,
-    y = data[[varname]],
-    w = data$weight,
+    x = data_na_omit$time,
+    y = data_na_omit[[varname]],
+    w = data_na_omit$difftime,
     spar = spar,
     ...
   )
@@ -146,8 +177,7 @@ smooth_cases.default <- function(object, date, cases, log, spar, ...) {
   troughs <- 1L + which(diff(sign(dss)) > 0)
 
   l <- list(
-    date = date,
-    cases = cases,
+    data = data,
     log = log,
     spar = spar,
     ss = ss,
@@ -160,16 +190,16 @@ smooth_cases.default <- function(object, date, cases, log, spar, ...) {
 
 #' @rdname smooth_cases
 #' @export
-smooth_cases.egf_init <- function(object, date, cases, log, spar, ...) {
-  date <- object$date
-  cases <- object$cases
-  NextMethod("smooth_cases", object)
+smooth_cases.egf_init <- function(formula, log = TRUE, spar = 0.5, ...) {
+  formula <- cases ~ date
+  data <- formula$data
+  NextMethod("smooth_cases", formula)
 }
 
 #' @rdname smooth_cases
 #' @export
-smooth_cases.egf <- function(object, date, cases, log, spar, ...) {
-  date <- object$init$date
-  cases <- object$init$cases
-  NextMethod("smooth_cases", object)
+smooth_cases.egf <- function(formula, log = TRUE, spar = 0.5, ...) {
+  formula <- cases ~ date
+  data <- formula$data
+  NextMethod("smooth_cases", formula)
 }

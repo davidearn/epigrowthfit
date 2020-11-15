@@ -3,7 +3,7 @@
 #'
 #' @description
 #' Minimizes the negative log likelihood of an epidemic growth model
-#' using [stats::nlminb()], [stats::nlm()], of one of the routines
+#' using [stats::nlminb()], [stats::nlm()], or one of the routines
 #' provided through [stats::optim()]. The negative log likelihood as a
 #' function of log-transformed parameters is written as a C++ template,
 #' and its derivatives with respect to log-transformed parameters are
@@ -17,18 +17,20 @@
 #'   `"L-BFGS-S"`, and `"CG"`, indicating an optimization algorithm.
 #' @param na_action
 #'   One of `"fail"` and `"exclude"`, indicating how missing values
-#'   in `init$cases` are handled. See Details.
+#'   in the fitting window are handled.
 #' @param nbdisp_tol
 #'   A positive number defining a threshold on the fitted value
-#'   of the negative binomial dispersion parameter.
-#'   Used only if `init$distr = "nbinom"`. See Details.
+#'   of the negative binomial dispersion parameter. Used only if
+#'   `init$distr = "nbinom"`.
 #' @param ...
 #'   Additional arguments to [stats::nlminb()], [stats::nlm()],
 #'   or [stats::optim()], depending on `method`.
 #'
 #' @return
-#' An "egf" object. A list containing copies of arguments
-#' `init` and `method`, with these additional elements:
+#' An "egf" object. A list containing copies of `init` elements
+#' `data`, `window`, `first`, `last`, `curve`, `distr`, and
+#' `include_baseline`; a copy of argument `method`; and these
+#' additional elements:
 #'
 #' \describe{
 #'   \item{`theta_fit`}{
@@ -58,10 +60,10 @@
 #'   \item{`eval_cum_inc`}{
 #'     A closure with numeric arguments `time` and `theta`
 #'     (default is `theta_fit`) evaluating expected cumulative
-#'     incidence at `time` days since `init$date[first]` conditional
+#'     incidence at `time` days since `data$date[first]` conditional
 #'     on parameter vector `theta`. Elements of `theta` must be
-#'     named as in `theta_fit`. `predict(object, time)` can be
-#'     used instead of `object$eval_cum_inc(time)`.
+#'     named as in `theta_fit`. `predict(object, time)` should
+#'     be used instead of `object$eval_cum_inc(time)`.
 #'   }
 #'   \item{`madf_out`}{The list output of [TMB::MakeADFun()].}
 #'   \item{`optim_out`}{
@@ -69,11 +71,10 @@
 #'     or [stats::optim()], depending on `method`.
 #'   }
 #'   \item{`large_nbdisp_flag`}{
-#'     A logical scalar. If `TRUE`, then the fitted value of the
-#'     negative binomial dispersion parameter
-#'     (i.e., `theta_fit[["nbdisp"]]`) exceeds the threshold defined
-#'     by `nbdisp_tol`. Omitted if `init$distr != "nbinom"`.
-#'     See Details.
+#'     A logical scalar. If `TRUE`, then the fitted value of
+#'     the negative binomial dispersion parameter
+#'     (i.e., `theta_fit[["nbdisp"]]`) exceeds the threshold
+#'     defined by `nbdisp_tol`. Omitted if `distr != "nbinom"`.
 #'   }
 #'   \item{`call`}{
 #'     The call to `egf()`, allowing the output to be updated
@@ -83,43 +84,42 @@
 #'
 #' @details
 #' The data used in likelihood calculation are specified by
-#' `x = with(init, cases[(first+1):last])`.
+#' `x = with(data, cases[(first+1):last])`.
 #' If `x` has missing values and `na_action = "fail"`,
 #' then `egf()` will stop with an error.
 #' If `x` has missing values and `na_action = "exclude"`,
-#' then the likelihood function will be defined as a product over
-#' indices without missing values, unless `sum(!is.na(x))`
+#' then the likelihood function will be defined as a product
+#' over indices without missing values, unless `sum(!is.na(x))`
 #' is less than the number of model parameters, in which case
 #' `egf()` will stop with an error.
 #'
-#' If `theta_fit[["nbdisp"]]` exceeds
-#' `nbdisp_tol * max(diff(eval_cum_inc(time)))`,
-#' where `time = with(init, time[first:last])`,
-#' then `egf()` will issue a warning suggesting to refit
-#' using a Poisson model by running
-#' `update(object, init = update(init, distr = "pois"))`,
-#' where `object` is the "egf" object returned by `egf()`.
+#' If `distr = "nbinom"` and `theta_fit[["nbdisp"]]`
+#' exceeds `nbdisp_tol * max(diff(eval_cum_inc(time)))`,
+#' where `time = data$time[first:last]`, then `egf()`
+#' will issue a warning suggesting to refit using a
+#' Poisson model by running
+#' `update(object, init = update(init, distr = "pois"))`.
 #' This behaviour is discussed in the package vignette,
 #' accessible with `vignette("epigrowthfit-vignette")`.
 #'
 #' @examples
 #' data(canadacovid)
 #' ontario <- subset(canadacovid, province == "ON")
-#' x1 <- egf_init(
-#'   date = ontario$date,
-#'   cases = ontario$new_confirmed,
+#' x1 <- egf_init(new_confirmed ~ date,
+#'   data = ontario,
 #'   curve = "logistic",
 #'   distr = "nbinom",
-#'   peak = 76,
-#'   first = 32
+#'   first = 27,
+#'   last = 77,
+#'   peak = 77
 #' )
-#' x2 <- update(x1, peak = 241, first = 211)
+#' x2 <- update(x1, first = 211, last = 236, peak = "2020-10-10")
 #' y1 <- egf(x1)
 #' y2 <- egf(x2)
 #' print(y1)
 #' coef(y1, log = FALSE)
 #' coef(y1, log = TRUE)
-#' confint(y1, parm = "r", level = 0.95, method = "linear")
+#' confint(y1, parm = "doubling_time", level = 0.95, method = "linear")
 #' predict(y1)
 #' s <- simulate(y1, nsim = 6)
 #' plot(s, inc = "interval")
@@ -145,23 +145,24 @@ egf <- function(init, method = "nlminb", na_action = "exclude",
     what = "egf_init",
     "`init` must be an \"egf_init\" object."
   )
-  ch <- check(method,
+  ok <- check(method,
     what = "character",
     len = 1,
     opt = c("nlminb", "nlm", "Nelder-Mead", "BFGS", "L-BFGS-S", "CG"),
     action = "warn",
     "Invalid `method`, using \"nlminb\" instead."
   )
-  if (!ch) {
+  if (!ok) {
     method <- "nlminb"
   }
-  ch <- check(na_action,
+  ok <- check(na_action,
     what = "character",
     len = 1,
     opt = c("fail", "exclude"),
+    action = "warn",
     "Invalid `na_action`, using \"exclude\" instead."
   )
-  if (!ch) {
+  if (!ok) {
     na_action <- "exclude"
   }
   if (init$distr == "nbinom") {
@@ -177,8 +178,8 @@ egf <- function(init, method = "nlminb", na_action = "exclude",
   ## Construct `MakeADFun()` input
   madf_data <- with(init,
     list(
-      t = time[first:last],
-      x = cases[(first+1):last],
+      t = data$time[first:last],
+      x = data$cases[(first+1):last],
       curve_flag = match(curve, c("exponential", "logistic", "richards")) - 1,
       baseline_flag = 1 * include_baseline,
       distr_flag = match(distr, c("pois", "nbinom")) - 1,
@@ -288,8 +289,9 @@ egf <- function(init, method = "nlminb", na_action = "exclude",
   }
 
 
-  out <- list(
-    init = init,
+  out1 <- init[c("data", "window", "first", "last",
+                 "curve", "distr", "include_baseline")]
+  out2 <- list(
     method = method,
     theta_fit = theta_fit,
     log_theta_fit = log_theta_fit,
@@ -302,8 +304,8 @@ egf <- function(init, method = "nlminb", na_action = "exclude",
     large_nbdisp_flag = large_nbdisp_flag,
     call = match.call()
   )
-  if (init$distr != "nbinom") {
-    out$large_nbdisp_flag <- NULL
+  if (out1$distr != "nbinom") {
+    out2$large_nbdisp_flag <- NULL
   }
-  structure(out, class = c("egf", "list"))
+  structure(c(out1, out2), class = c("egf", "list"))
 }

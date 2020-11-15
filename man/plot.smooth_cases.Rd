@@ -17,13 +17,13 @@ For \code{dline()}, optional arguments to \code{\link[graphics:abline]{graphics:
 such as \code{lty}, \code{lwd}, and \code{col}. These are recycled
 to the length of \code{v}.}
 
-\item{v}{An integer vector indexing \code{x$date}, indicating that
-vertical lines should be drawn at dates \code{x$date[v]}.
+\item{v}{An integer vector indexing \code{date}, indicating that
+vertical lines should be drawn at dates \code{date[v]}.
 Alternatively, a Date vector with elements between
-\code{min(x$date)} and \code{max(x$date)} or a character vector
-coercible to such a Date vector via \code{as.Date()}
-(e.g., "YYYY-MM-DD"). In this case, coercion from Date
-to index is done by \code{which.min(abs(x$date - v))}.}
+\code{min(date)} and \code{max(date)} or a character vector
+coercible to such a Date vector with \code{as.Date(v)}.
+In this case, coercion from Date to index is done by
+\code{which.min(abs(date - v))}.}
 }
 \value{
 \code{NULL} (invisibly).
@@ -35,17 +35,17 @@ A method for plotting objects of class "smooth_cases".
 \subsection{Plot elements}{
 
 The bottom axis is a calendar with ticks at equally spaced dates.
-Dates \code{d} have numeric user coordinates \code{d - x$date[1]}. The left
-axis measures interval incidence, log(1+x)-transformed if
-\code{x$log = TRUE}.
+Dates \code{d} have numeric user coordinates \code{d - x$data$date[1]}.
+The left axis measures interval incidence, \code{log10(1+x)}-transformed
+if \code{x$log = TRUE}.
 
 Plotted as points are the interval incidence data specified by
-\code{x$date} and \code{x$cases}. Plotted as a solid line is the cubic
-spline fit to the (possibly transformed) data specified by \code{x$ss}.
+\code{x$data$date} and \code{x$data$cases}. Plotted as a solid line is the
+cubic spline fit to the (transformed) data specified by \code{x$ss}.
 
 Dotted lines are drawn at peaks (red) and troughs (blue) in
 the spline. They are labeled in the top margin with the index
-of \code{x$date} corresponding to the approximate date of the peak
-or trough in the spline.
+of \code{x$data$date} corresponding to the approximate date of the
+peak or trough in the spline.
 }
 }

@@ -2,37 +2,36 @@
 % Please edit documentation in R/compute_doubling_time.R
 \name{compute_doubling_time}
 \alias{compute_doubling_time}
-\alias{compute_doubling_time.numeric}
+\alias{compute_doubling_time.default}
 \alias{compute_doubling_time.egf_init}
 \alias{compute_doubling_time.egf}
 \title{\loadmathjax
 Compute the epidemic doubling time}
 \usage{
-compute_doubling_time(x)
+compute_doubling_time(r)
 
-\method{compute_doubling_time}{numeric}(x)
+\method{compute_doubling_time}{default}(r)
 
-\method{compute_doubling_time}{egf_init}(x)
+\method{compute_doubling_time}{egf_init}(r)
 
-\method{compute_doubling_time}{egf}(x)
+\method{compute_doubling_time}{egf}(r)
 }
 \arguments{
-\item{x}{A numeric vector listing values for the initial exponential
-growth rate expressed per day. Alternatively, an "egf_init"
-or "egf" object.}
+\item{r}{A numeric vector listing non-negative values for the initial
+exponential growth rate expressed per day. Alternatively, an
+"egf_init" or "egf" object.}
 }
 \value{
-The method for class "numeric" returns a "doubling_time"
-object, which is a numeric vector of length \code{length(x)}
-whose \code{i}th element is the doubling time in days
-corresponding to initial exponential growth rate \code{x[i]}.
+The default method returns a numeric vector of class "doubling_time"
+and length \code{length(r)} whose \code{i}th element is the doubling time
+in days corresponding to initial exponential growth rate \code{r[i]}.
 See Details.
 
-The method for class "egf_init" applies the method for
-class "numeric" to \code{x$theta_init[["r"]]}.
+The method for class "egf_init" applies the default method to
+\code{r = r$theta_init[["r"]]}.
 
-The method for class "egf" applies the method for
-class "numeric" to \code{x$theta_fit[["r"]]}.
+The method for class "egf" applies the default method to
+\code{r = r$theta_fit[["r"]]}.
 }
 \description{
 Compute the epidemic doubling time corresponding
@@ -40,16 +39,17 @@ to an initial exponential growth rate and a binned
 generation interval distribution.
 }
 \details{
-The epidemic doubling time is the time required for cumulative
-incidence to double at the start of an epidemic when it grows
-roughly exponentially. The doubling time corresponding to an
-initial exponential growth rate \mjseqn{r} is
+The epidemic doubling time is the time required for
+cumulative incidence to increase by a factor of 2
+at the start of an epidemic, when it grows roughly
+exponentially. The doubling time corresponding to
+an initial exponential growth rate \mjseqn{r} is
 \mjseqn{\frac{\log 2}{r}}.
 }
 \examples{
 r <- 10^seq(-2, 0, length.out = 150)
 doubling_time <- compute_doubling_time(r)
-print(doubling_time) ## FIXME: implement [, [[, [<-, [[<- methods
+print(doubling_time)
 plot(r, doubling_time, las = 1,
   xlab = "initial exponential growth rate, per day",
   ylab = "doubling time, days"

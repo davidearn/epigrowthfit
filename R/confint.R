@@ -15,13 +15,19 @@
 #' @param method
 #'   One of `"linear"`, `"uniroot"`, and `"wald"` indicating
 #'   a method with which to compute the confidence interval.
-#' @param ... Unused optional arguments.
+#' @param ...
+#'   Optional arguments to [TMB::tmbprofile()] or [TMB::tmbroot()].
 #'
 #' @return
-#' A numeric vector of the form `c(lower = a, upper = b)`,
-#' where `a` and `b` are the left and right endpoints of
-#' the confidence interval specified by `parm`, `level`,
-#' and `method`.
+#' For `parm != "doubling_time"`, a numeric vector of the form
+#' `c(estimate = e, lower = a, upper = b)`, where `a` and `b`
+#' are the left and right endpoints of the confidence interval
+#' specified by `parm`, `level`, and `method`, and `e` is the
+#' estimate `object$theta_fit[[parm]]`.
+#'
+#' For `parm = "doubling_time"`,
+#' the result of `log(2) / ci[c(1, 3, 2)]`,
+#' where `ci = confint(object, parm = "r", level, method, ...)`.
 #'
 #' @seealso [egf()], [TMB::tmbprofile()], [TMB::tmbroot()]
 #' @name confint.egf
@@ -57,15 +63,14 @@ confint.egf <- function(object,
   )
 
   if (parm == "doubling_time") {
-    ci <- confint(object, parm = "r", level = level, method = method)
-    ci <- setNames(rev(compute_doubling_time(ci)), names(ci))
+    ci <- confint(object, parm = "r", level = level, method = method, ...)
+    ci <- setNames(compute_doubling_time(ci[c(1, 3, 2)]), names(ci))
     return(ci)
   }
 
   sdr <- summary(sdreport(object$madf_out), select = "fixed")
   log_parm <- paste0("log_", parm)
   if (method == "linear") {
-    cat <- function(...) {}
     p <- tmbprofile(object$madf_out, name = log_parm, ...)
     log_lu <- as.numeric(confint(p, level = level))
   } else if (method == "uniroot") {
@@ -82,7 +87,8 @@ confint.egf <- function(object,
     log_lu <- ese[1] + c(-1, 1) * sqrt(q) * ese[2]
   }
 
-  setNames(exp(log_lu), c("lower", "upper"))
+  estimate <- object$theta_fit[[parm]]
+  setNames(c(estimate, exp(log_lu)), c("estimate", "lower", "upper"))
 }
 
 

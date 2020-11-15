@@ -10,7 +10,8 @@
 #'   indicating a type of incidence to plot.
 #' @param xty
 #'   One of `"date"` and `"numeric"`,
-#'   indicating how time is displayed on the bottom axis.
+#'   indicating how time is displayed on the bottom axis
+#'   (calendar or number of days).
 #' @param log
 #'   A logical scalar. If `TRUE`, then incidence is displayed
 #'   on a logarithmic scale on the left axis.
@@ -31,7 +32,6 @@
 #'   are highlighted. Assign `Inf` to disable highlighting.
 #' @param style
 #'   A list of lists defining the appearance of various plot elements.
-#'   See Details 2.
 #' @param ...
 #'   Optional arguments specifying additional graphical parameters.
 #'   Currently, only `xlim`, `ylim`, `xlab`, `ylab`, and `main`
@@ -43,13 +43,13 @@
 #' `plot.egf_init()` and `plot.egf()` return `NULL` (invisibly).
 #'
 #' `get_style_default()` returns a list of lists specifying the
-#' default appearance of all (modifiable) plot elements.
+#' default appearance of all modifiable plot elements.
 #'
 #' @details
 #' ## 1. Plot elements
 #'
-#' *Below, `date`, `time`, `cases`, `first`, `last`, `theta_init`,
-#' and `theta_fit` refer to the so-named elements of `x` or `x$init`.*
+#' *Below, `date`, `cases`, `first`, `last`, `theta_init`, and
+#' `theta_fit` refer to the so-named elements of `x` or `x$data`.*
 #'
 #' If `xty = "date"`, then the bottom axis is a calendar with ticks at
 #' equally spaced Dates. If `xty = "numeric"`, then the bottom axis
@@ -63,10 +63,10 @@
 #'
 #' Observed data, specified by `date` and either `cases[-1]` or
 #' `cumsum(cases[-1])` (depending on `inc`), are plotted as points.
-#' `cases[-1][i]` gives the number of cases observed between `date[i]`
-#' and `date[i+1]`, while `cumsum(cases[-1])[i]` gives the number
-#' observed between `date[1]` and `date[i+1]`. Both are plotted
-#' at coordinate `date[i+1]-date[1]`.
+#' `cases[-1][i]` gives the number of cases observed between
+#' `date[i]` and `date[i+1]`, while `cumsum(cases[-1])[i]` gives
+#' the number observed between `date[1]` and `date[i+1]`. Both are
+#' plotted at coordinate `date[i+1]-date[1]`.
 #'
 #' The fitting window is displayed as a shaded rectangle behind the
 #' other plot elements. The left and right boundaries are `date[first]`
@@ -81,22 +81,23 @@
 #' with `predict(x, time = as.integer(wgrid - date[first]))`.
 #'
 #' Careful interpretation of interval incidence is required if the
-#' plotted time series is not equally spaced, because `cases` roughly
-#' scales with `diff(date)`. That is, certain observations may vary
-#' from the predicted curve not due to chance, but because they
-#' represent a count over fewer or more days than the typical
-#' observation interval, namely `median(diff(date))`. Observations for
-#' which `diff(date)` differs from `median(diff(date))` are highlighted
-#' according to argument `tol` and labeled with the value of `diff(date)`.
+#' plotted time series is not equally spaced, because `cases`
+#' roughly scales with `diff(date)`. That is, certain observations
+#' may vary from the predicted curve not due to chance, but because
+#' they give counts over fewer or more days than the typical
+#' observation interval, namely `median(diff(date))`. Observations
+#' for which `diff(date)` differs from `median(diff(date))` are
+#' highlighted according to argument `tol` and labeled with the
+#' value of `diff(date)`.
 #'
 #' If `annotate = TRUE` and `add = FALSE`, then a legend and the
 #' parameter estimates `theta_init` or `theta_fit` (depending on
-#' the `class(x)`) are displayed in the right margin.
+#' `class(x)`) are displayed in the right margin.
 #'
 #' The plot method for class "egf" displays, in addition,
 #' the doubling time associated with the "egf" object and
 #' the associated 95% confidence interval, obtained with
-#' `compute_doubling_time(rev(unname(confint(x))))`.
+#' `confint(x, parm = "doubling_time", level = 0.95, method = "linear")`.
 #'
 #' ## 2. Customization
 #'
@@ -144,12 +145,13 @@
 #' List elements not specified by `style` are taken from
 #' `get_style_default()`.
 #'
-#' With the exception of `date`, assigning `NULL` to any of
-#' the above possible `style` elements (instead of a named list)
-#' will suppress the corresponding plot element.
-#' Setting `points_main` to `NULL` will only suppress points
-#' that are not normally highlighted. To suppress all points,
-#' set argument `tol` to `Inf` as well.
+#' With the exception of `date`, assigning `NULL` to any
+#' of the above possible `style` elements (instead of a
+#' named list) will suppress the corresponding plot element.
+#' Setting `points_main = NULL` will not suppress points
+#' styled according to `points_short` and `points_long`.
+#' Hence, to suppress all points, it may be necessary to
+#' also set `points_short = NULL` and `points_long = NULL`.
 #'
 #' @seealso [egf_init()], [egf()]
 #' @name plot.egf
@@ -161,12 +163,8 @@ NULL
 plot.egf_init <- function(x, inc = "interval", xty = "date", log = TRUE,
                           add = FALSE, annotate = FALSE, tol = 0,
                           style = get_style_default(), ...) {
-  ## Disguise `x` as an "egf" object to reuse `plot.egf()` machinery
-  x <- list(
-    init = x,
-    theta_fit = x$theta_init,
-    eval_cum_inc = x$eval_cum_inc
-  )
+  ## Reuse `plot.egf()` machinery
+  names(x) <- sub("theta_init", "theta_fit", names(x))
   x <- structure(x, class = c("egf", "list"), init_flag = TRUE)
   plot(x, inc = inc, xty = xty, log = log,
        add = add, annotate = annotate, tol = tol,
@@ -234,10 +232,10 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   init_flag <- !is.null(attr(x, "init_flag"))
 
   ## Convenience
-  date <- x$init$date
-  cases <- x$init$cases
-  i1 <- x$init$first
-  i2 <- x$init$last
+  date <- x$data$date
+  cases <- x$data$cases
+  i1 <- x$first
+  i2 <- x$last
   d0 <- date[1]
   d1 <- date[i1]
   d2 <- date[i2]
@@ -261,7 +259,7 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   ## Predicted curve
   m <- median(dt)
   wgrid <- seq(t1, t2, by = if (inc == "interval") m else 1)
-  wpred <- predict(x, wgrid - t1)[c("time", "cum_inc", "int_inc")]
+  wpred <- predict(x, wgrid - t1)
   wpred$time <- wgrid
   if (i1 > 1) {
     wpred$cum_inc <- sum(cases[2:i1]) + wpred$cum_inc
@@ -297,7 +295,7 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
 
   ## Axis title (main)
   if (is.null(dots$main)) {
-    cstr <- x$init$curve
+    cstr <- x$curve
     substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1))
     paren <- if (init_flag) "initial guess" else "fitted"
     main <- sprintf(
@@ -397,12 +395,13 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
 
     ## Axis (x)
     if (xty == "date") {
+      s <- style$date
       l <- list(
         left = par("usr")[1],
         right = par("usr")[2],
         refdate = d0
       )
-      do.call(daxis, c(l, style$date))
+      do.call(daxis, c(l, s))
     } else if (xty == "numeric") {
       axis(side = 1)
     }
@@ -458,17 +457,15 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   ## Doubling time
   s <- style$text_dbl
   if (!is.null(s) && !init_flag && inc == "interval") {
-    estimate <- compute_doubling_time(x)
-    sink(nullfile())
     ci <- confint(x,
       parm = "doubling_time",
       level = 0.95,
-      method = "linear"
+      method = "linear",
+      trace = FALSE
     )
-    sink(NULL)
     dblstr <- sprintf(
       "doubling time:\n%.1f (%.1f, %.1f) days",
-      estimate, ci[1], ci[2]
+      ci[1], ci[2], ci[3]
     )
     wrange <- range(wpred$int_inc, na.rm = TRUE)
     if (is.na(s$y)) {
@@ -563,7 +560,7 @@ get_style_default <- function() {
     window = list(col = "#DDCC7740", border = NA),
     confband = list(col = "#44AA9940", border = NA),
     text_hl = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
-    text_dbl = list(x = NA, y = NA, adj = c(0, 0.5), pos = NULL, offset = 1, col = "black", cex = 0.7, font = 1)
+    text_dbl = list(x = NA, y = NA, adj = c(0, 0.5), pos = 4, offset = 1, col = "black", cex = 0.7, font = 1)
   )
 }
 
@@ -580,7 +577,7 @@ get_style_default <- function() {
 #'   indicating a type of incidence to plot.
 #' @param col_sim,col_pred
 #'   Character or numeric scalars specifying colours
-#'   for simulated and predicted incidence curves, respectively.
+#'   for simulated and predicted incidence curves.
 #' @param ...
 #'   Optional arguments specifying additional graphical parameters.
 #'   Currently, only `xlim`, `ylim`, `xlab`, `ylab`, and `main` are
@@ -594,12 +591,12 @@ get_style_default <- function() {
 #' ## Plot elements
 #'
 #' The bottom axis measures the number of days since
-#' `with(x$object$init, date[first])`.
+#' `with(attr(x, "object"), data$date[first])`.
 #' The left axis measures interval or cumulative incidence
 #' (depending on `inc`).
 #'
-#' The predicted incidence curve is obtained as `pred$cum_inc` or
-#' `pred$int_inc`, where `pred = predict(x$object, time = x$time)`.
+#' The predicted incidence curve is obtained with
+#' `predict(attr(x, "object"), time = x$time)`.
 #'
 #' The simulated incidence curves are obtained as the columns of
 #' `x$cum_inc` or `x$int_inc`. These are plotted together behind
@@ -627,7 +624,7 @@ plot.egf_sim <- function(x, inc = "cumulative",
   dots <- list(...)
 
   ## Predicted curve
-  pred <- predict(x$object, time = x$time)[c("time", "cum_inc", "int_inc")]
+  pred <- predict(attr(x, "object"), time = x$time)
 
   ## A way to avoid conditional `if (inc = ...) expr1 else expr2`
   varname <- substr(inc, start = 1, stop = 3)
@@ -638,7 +635,7 @@ plot.egf_sim <- function(x, inc = "cumulative",
 
   ## Axis title (x)
   if (is.null(dots$xlab)) {
-    xlab <- paste("days since", as.character(x$refdate))
+    xlab <- paste("days since", as.character(attr(x, "refdate")))
   } else {
     xlab <- dots$xlab
   }
@@ -652,7 +649,7 @@ plot.egf_sim <- function(x, inc = "cumulative",
 
   ## Axis title (main)
   if (is.null(dots$main)) {
-    cstr <- x$object$init$curve
+    cstr <- attr(x, "object")$curve
     substr(cstr, 1, 1) <- toupper(substr(cstr, 1, 1))
     main <- sprintf(
       "%s model of %s incidence\n(%d simulations)",
@@ -740,13 +737,13 @@ plot.egf_sim <- function(x, inc = "cumulative",
 #' @param x
 #'   A "smooth_cases" object.
 #' @param v
-#'   An integer vector indexing `x$date`, indicating that
-#'   vertical lines should be drawn at dates `x$date[v]`.
+#'   An integer vector indexing `date`, indicating that
+#'   vertical lines should be drawn at dates `date[v]`.
 #'   Alternatively, a Date vector with elements between
-#'   `min(x$date)` and `max(x$date)` or a character vector
-#'   coercible to such a Date vector via `as.Date()`
-#'   (e.g., "YYYY-MM-DD"). In this case, coercion from Date
-#'   to index is done by `which.min(abs(x$date - v))`.
+#'   `min(date)` and `max(date)` or a character vector
+#'   coercible to such a Date vector with `as.Date(v)`.
+#'   In this case, coercion from Date to index is done by
+#'   `which.min(abs(date - v))`.
 #' @param ...
 #'   For `plot.smooth_cases()`, unused optional arguments.
 #'   For `dline()`, optional arguments to [graphics::abline()],
@@ -760,18 +757,18 @@ plot.egf_sim <- function(x, inc = "cumulative",
 #' ## Plot elements
 #'
 #' The bottom axis is a calendar with ticks at equally spaced dates.
-#' Dates `d` have numeric user coordinates `d - x$date[1]`. The left
-#' axis measures interval incidence, log(1+x)-transformed if
-#' `x$log = TRUE`.
+#' Dates `d` have numeric user coordinates `d - x$data$date[1]`.
+#' The left axis measures interval incidence, `log10(1+x)`-transformed
+#' if `x$log = TRUE`.
 #'
 #' Plotted as points are the interval incidence data specified by
-#' `x$date` and `x$cases`. Plotted as a solid line is the cubic
-#' spline fit to the (possibly transformed) data specified by `x$ss`.
+#' `x$data$date` and `x$data$cases`. Plotted as a solid line is the
+#' cubic spline fit to the (transformed) data specified by `x$ss`.
 #'
 #' Dotted lines are drawn at peaks (red) and troughs (blue) in
 #' the spline. They are labeled in the top margin with the index
-#' of `x$date` corresponding to the approximate date of the peak
-#' or trough in the spline.
+#' of `x$data$date` corresponding to the approximate date of the
+#' peak or trough in the spline.
 #'
 #' @export
 #' @import graphics
@@ -779,21 +776,16 @@ plot.smooth_cases <- function(x, ...) {
   ### SET UP ###########################################################
 
   ## Observed data
-  data <- data.frame(
-    time = days(x$date, since = x$date[1]),
-    cases = x$cases,
-    log_cases = log10(1 + x$cases)
-  )
-  varname <- if (x$log) "log_cases" else "cases"
+  varname <- if (x$log) "log1p_cases" else "cases"
   formula <- as.formula(paste(varname, "~ time"))
 
   ## Times of peaks and troughs
-  time_peaks <- data$time[x$peaks]
-  time_troughs <- data$time[x$troughs]
+  time_peaks <- x$data$time[x$peaks]
+  time_troughs <- x$data$time[x$troughs]
 
   ## Axis limits
-  xlim <- range(data$time)
-  ymax <- max(data[[varname]], na.rm = TRUE) * 1.04
+  xlim <- range(x$data$time)
+  ymax <- max(x$data[[varname]], na.rm = TRUE) * 1.04
   ylim <- c(0, ymax)
 
   ## Axis titles
@@ -820,19 +812,19 @@ plot.smooth_cases <- function(x, ...) {
   )
   on.exit({
     assign("par.smooth_cases", par("mar", "plt"), envir = .epigrowthfit)
-    assign("date.smooth_cases", x$date, envir = .epigrowthfit)
+    assign("date.smooth_cases", x$data$date, envir = .epigrowthfit)
     par(op)
   })
 
   plot.new()
   plot.window(xlim = xlim, ylim = ylim)
-  points(formula, data = data, col = col_points)
-  lines(y ~ x, data = predict(x$ss, data$time), lwd = 2)
+  points(formula, data = x$data, col = col_points)
+  lines(y ~ x, data = predict(x$ss, x$data$time), lwd = 2)
   abline(v = time_peaks, lty = 3, col = col_peaks)
   abline(v = time_troughs, lty = 3, col = col_troughs)
   box()
   daxis(left = par("usr")[1], right = par("usr")[2],
-        refdate = x$date[1], cex.axis = c(0.7, 0.85))
+        refdate = x$data$date[1], cex.axis = c(0.7, 0.85))
   axis(side = 2, mgp = c(3, 0.7, 0), las = 1, cex.axis = 0.85)
   if (length(x$peaks) > 0) {
     axis(side = 3, at = time_peaks, labels = x$peaks,

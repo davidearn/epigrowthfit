@@ -51,8 +51,8 @@ Evaluates expected cumulative incidence at desired time points
 conditional on a vector of model parameters.
 }
 \details{
-A full description of the models of expected cumulative incidence
-specified by arguments \code{curve} and \code{include_baseline} can be found
-in the package vignette, accessible with
+A full description of the models specified by arguments
+\code{curve} and \code{include_baseline} can be found in
+the package vignette, accessible with
 \code{vignette("epigrowthfit-vignette")}.
 }

@@ -6,10 +6,10 @@
 #' to an initial exponential growth rate and a binned
 #' generation interval distribution.
 #'
-#' @param x
-#'   A numeric vector listing values for the initial exponential
-#'   growth rate expressed per day. Alternatively, an "egf_init"
-#'   or "egf" object.
+#' @param r
+#'   A numeric vector listing non-negative values for the initial
+#'   exponential growth rate expressed per day. Alternatively, an
+#'   "egf_init" or "egf" object.
 #' @param breaks
 #'   A numeric vector of length 2 or greater listing increasing
 #'   break points \mjseqn{t_i}, in days, in the support of the
@@ -21,16 +21,15 @@
 #'   `probs / sum(probs)` in the event that `sum(probs) != 1`.
 #'
 #' @return
-#' The method for class "numeric" returns a numeric vector
-#' of length `length(x)`, whose `i`th element is the basic
-#' reproduction number corresponding to initial exponential
-#' growth rate `x[i]`. See Details.
+#' The default method returns a numeric vector of length `length(r)`,
+#' whose `i`th element is the basic reproduction number corresponding
+#' to initial exponential growth rate `r[i]`. See Details.
 #'
-#' The method for class "egf_init" applies the method for
-#' class "numeric" to `x$theta_init[["r"]]`.
+#' The method for class "egf_init" applies the default method to
+#' \code{r = r$theta_init[["r"]]}.
 #'
-#' The method for class "egf" applies the method for
-#' class "numeric" to `x$theta_fit[["r"]]`.
+#' The method for class "egf" applies the default method to
+#' \code{r = r$theta_fit[["r"]]}.
 #'
 #' @details
 #' Let \mjseqn{t_0 < \cdots < t_m} be the break points specified
@@ -47,8 +46,7 @@
 #' @references
 #' \insertRef{WallLips07}{epigrowthfit}
 #'
-#' @seealso [compute_final_size()] for computing the expected epidemic
-#'   final size as a function of the basic reproduction number
+#' @seealso [compute_final_size()]
 #'
 #' @examples
 #' data(plague_latent_period)
@@ -70,7 +68,7 @@
 #' )
 #'
 #' @export
-compute_R0 <- function(x, breaks, probs) {
+compute_R0 <- function(r, breaks, probs) {
   check(breaks,
     what = "numeric",
     len = c(2, Inf),
@@ -91,34 +89,43 @@ compute_R0 <- function(x, breaks, probs) {
     "`probs` must have at least one positive element."
   )
 
-  UseMethod("compute_R0", x)
+  UseMethod("compute_R0", r)
 }
 
 #' @rdname compute_R0
 #' @export
-compute_R0.numeric <- function(x, breaks, probs) {
-  if (length(x) == 0) {
+compute_R0.default <- function(r, breaks, probs) {
+  check(r,
+    what = "numeric",
+    "`r` must be a numeric vector."
+  )
+  check(r,
+    val = c(0, Inf),
+    "Elements of `r` must be non-negative."
+  )
+
+  if (length(r) == 0) {
     return(numeric(0))
   }
-  if (length(x) > 1) {
-    return(sapply(x, compute_R0, breaks = breaks, probs = probs))
+  if (length(r) > 1) {
+    return(sapply(r, compute_R0, breaks = breaks, probs = probs))
   }
-  e1 <- exp(-x * breaks[-length(breaks)])
-  e2 <- exp(-x * breaks[-1])
+  e1 <- exp(-r * breaks[-length(breaks)])
+  e2 <- exp(-r * breaks[-1])
   d <- diff(breaks)
-  x / sum(probs * (e1 - e2) / d)
+  r / sum(probs * (e1 - e2) / d)
 }
 
 #' @rdname compute_R0
 #' @export
-compute_R0.egf_init <- function(x, breaks, probs) {
-  x <- x$theta_init[["r"]]
-  compute_R0(x, breaks, probs)
+compute_R0.egf_init <- function(r, breaks, probs) {
+  r <- r$theta_init[["r"]]
+  NextMethod("compute_R0", r)
 }
 
 #' @rdname compute_R0
 #' @export
-compute_R0.egf <- function(x, breaks, probs) {
-  x <- x$theta_fit[["r"]]
-  compute_R0(x, breaks, probs)
+compute_R0.egf <- function(r, breaks, probs) {
+  r <- r$theta_fit[["r"]]
+  NextMethod("compute_R0", r)
 }

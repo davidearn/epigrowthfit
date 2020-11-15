@@ -7,27 +7,44 @@
 \alias{smooth_cases.egf}
 \title{Fit cubic splines to interval incidence}
 \usage{
-smooth_cases(object = NULL, date, cases, log = TRUE, spar = 0.5, ...)
+smooth_cases(formula = cases ~ date, ...)
 
-\method{smooth_cases}{default}(object, date, cases, log, spar, ...)
+\method{smooth_cases}{default}(
+  formula = cases ~ date,
+  data = data.frame(date, cases),
+  date,
+  cases,
+  log = TRUE,
+  spar = 0.5,
+  dfmt = "\%Y-\%m-\%d",
+  ...
+)
 
-\method{smooth_cases}{egf_init}(object, date, cases, log, spar, ...)
+\method{smooth_cases}{egf_init}(formula, log = TRUE, spar = 0.5, ...)
 
-\method{smooth_cases}{egf}(object, date, cases, log, spar, ...)
+\method{smooth_cases}{egf}(formula, log = TRUE, spar = 0.5, ...)
 }
 \arguments{
-\item{object}{An "egf_init" or "egf" object, in which case \code{date} and \code{cases}
-are ignored, or \code{NULL}, in which case \code{date} and \code{cases} are
-required.}
+\item{formula}{A formula of the form \code{y ~ x} used to locate an interval incidence
+time series in \code{data}. Alternatively, an "egf_init" or "egf" object.}
 
-\item{date}{A Date vector of length 5 or greater listing increasing time
-points. Should start at or before the date of the first observed
-case in an epidemic wave.}
+\item{...}{Optional arguments to \code{\link[stats:smooth.spline]{stats::smooth.spline()}}.}
+
+\item{data}{A data frame, list, or environment containing the variables in
+\code{formula}. For \code{formula} of the form \code{y ~ x}, variables \code{x} and \code{y}
+must conform to the constraints on arguments \code{date} and \code{cases},
+respectively.}
+
+\item{date}{A Date vector listing increasing time points, starting at or
+before the date of the first observed case in an epidemic wave.
+Alternatively, a character vector coercible to such a Date
+vector with \code{as.Date(date, tryFormats = dfmt)}. Ignored if
+\code{data} is set explicitly and mandatory otherwise.}
 
 \item{cases}{A numeric vector of length \code{length(date)}. For \code{i > 1}, \code{cases[i]}
 must specify the number of cases observed between \code{date[i-1]} and
-\code{date[i]}. \code{cases[1]} is ignored. Missing values are tolerated
-unless \code{sum(!is.na(cases[-1])) < 4}.}
+\code{date[i]}. \code{cases[1]} is ignored. Missing values are tolerated.
+Ignored if \code{data} is set explicitly and mandatory otherwise.}
 
 \item{log}{A logical scalar. If \code{TRUE}, then \code{log10(1+cases)} is smoothed
 instead of \code{cases}.}
@@ -35,14 +52,26 @@ instead of \code{cases}.}
 \item{spar}{A number in the interval (0,1]. Degree of smoothing increases
 with \code{spar} (smoothing parameter). See \code{\link[stats:smooth.spline]{stats::smooth.spline()}}.}
 
-\item{...}{Optional arguments to \code{\link[stats:smooth.spline]{stats::smooth.spline()}}.}
+\item{dfmt}{A character vector listing possible date formats using
+the conversion specifications outlined under \code{\link[base:strptime]{base::strptime()}},
+e.g., \code{"\%Y-\%m-\%d"} (default).}
 }
 \value{
-The default method returns a "smooth_cases" object, which is
-a list containing copies of arguments \code{date}, \code{cases}, \code{log},
-and \code{spar}, with these additional elements:
+The default method returns a list of class "smooth_cases"
+containing copies of arguments \code{log} and \code{spar} and these
+additional elements:
 
 \describe{
+\item{\code{data}}{
+A data frame with variables
+\code{date},
+\code{time = as.integer(date - date[1])},
+\code{difftime = c(NA, diff(time))},
+\code{cases}, and
+\code{log1p_cases = log10(1+cases)}.
+\code{date} and \code{cases} are obtained from \code{data} using \code{formula}.
+Names in \code{formula} are discarded.
+}
 \item{\code{ss}}{
 The list output of \code{\link[stats:smooth.spline]{stats::smooth.spline()}}.
 }
@@ -57,34 +86,32 @@ to be updated using \code{\link[stats:update]{stats::update()}}.
 }
 }
 
-The method for class "egf_init" applies the default method
-to \code{date = object$date} and \code{cases = object$cases}.
-
-The method for class "egf" applies the default method
-to \code{date = object$init$date} and \code{cases = object$init$cases}.
+The methods for classes "egf_init" and "egf" apply the default
+method with \code{formula = cases ~ date} and \code{data = formula$data}.
 }
 \description{
-Fits a cubic spline to an interval incidence time series
-using \code{\link[stats:smooth.spline]{stats::smooth.spline()}}, then looks for local extrema
-by checking when the first derivative changes sign. Intended
-for use in conjunction with \code{\link[=egf_init]{egf_init()}} to facilitate
-fitting window selection.
+Fits a cubic spline to an interval incidence time series using
+\code{\link[stats:smooth.spline]{stats::smooth.spline()}}, then looks for local extrema by checking
+when the first derivative changes sign. Intended for use in
+conjunction with \code{\link[=egf_init]{egf_init()}} to facilitate fitting window selection.
 }
 \details{
-A cubic spline is fit to \code{x = as.numeric(date[-1]-date[1])} and
-\code{y = cases[-1]} or \code{y = log(1+cases[-1])}. The points are weighted
-by \code{diff(date)} to account for possibly unequal spacing.
+A cubic spline is fit to \code{x = as.integer(date[-1]-date[1])} and
+\code{y = cases[-1]} or \code{y = log10(1+cases[-1])}, depending on \code{log}.
+The points are weighted by \code{diff(date)} to account for possibly
+unequal spacing.
 }
 \examples{
 data(canadacovid)
 ontario <- subset(canadacovid, province == "ON")
-x <- smooth_cases(
-  date = ontario$date,
-  cases = ontario$new_confirmed,
+x <- smooth_cases(new_confirmed ~ date,
+  data = ontario,
   log = TRUE,
   spar = 0.7
 )
 plot(x)
+v <- c("2020-03-01", "2020-03-28", "2020-09-01", "2020-09-26")
+dline(v, lty = 2, col = "#CCCCCC")
 
 }
 \seealso{

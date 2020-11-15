@@ -12,8 +12,8 @@
 #'   An integer specifying a seed for RNG, otherwise `NULL`.
 #' @param time
 #'   A numeric vector of length 2 or greater listing increasing
-#'   time points. Times must be expressed as numbers of days since
-#'   `with(object$init, date[first])`.
+#'   time points. Times must be expressed as numbers of days
+#'   since `with(object, data$date[first])`.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -22,14 +22,13 @@
 #'
 #' \describe{
 #'   \item{`time`}{Matches argument.}
-#'   \item{`refdate`}{Matches `with(object$init, date[first])`.}
 #'   \item{`int_inc`}{
 #'     A matrix with `length(time)` rows and `nsim` columns.
 #'     `int_inc[1, j]` is `NA` for all `j`. For `i > 1`, `int_inc[i, j]`
 #'     is the number of cases observed between `time[i]` and `time[i-1]`
 #'     in simulation `j` of `nsim`, sampled from a Poisson or negative
-#'     binomial distribution (depending on `object$init$distr`) with
-#'     mean `diff(object$eval_cum_inc(time[c(i-1, i)]))`. If the latter,
+#'     binomial distribution (depending on `object$distr`) with mean
+#'     `diff(object$eval_cum_inc(time[c(i-1, i)]))`. If the latter,
 #'     then the negative binomial dispersion parameter is taken from
 #'     `object$theta_fit[["nbdisp"]]`.
 #'   }
@@ -42,6 +41,12 @@
 #'   \item{`object`}{Matches argument.}
 #' }
 #'
+#' Attribute `refdate = with(object, data$date[first])` gives the
+#' reference date from which times in `time` are measured. Attribute
+#' `object` retains the "egf" object for use by [plot.egf_sim()].
+#'
+#' @inherit predict.egf details
+#'
 #' @seealso [egf()], [plot.egf_sim()]
 #' @name simulate.egf
 NULL
@@ -50,7 +55,7 @@ NULL
 #' @export
 #' @importFrom stats rpois rnbinom
 simulate.egf <- function(object, nsim = 1, seed = NULL,
-                         time = with(object$init, time[first:last]),
+                         time = with(object, data$time[first:last]),
                          ...) {
   check(time,
     what = "numeric",
@@ -66,7 +71,7 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
     "`time` must be increasing."
   )
   check(time,
-    val = with(object$init, time[c(first, last)]),
+    val = with(object, data$time[c(first, last)]),
     action = "warn",
     "There are elements of `time` outside of the fitting window."
   )
@@ -80,7 +85,8 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
   if (!is.null(seed)) {
     check(seed,
       what = "numeric",
-      yes = function(x) is.finite(x[1]),
+      len = 1,
+      yes = is.finite,
       "`seed` must be an integer or `NULL`."
     )
   }
@@ -90,12 +96,12 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
   int_inc_pred <- diff(cum_inc_pred)
 
   ## Simulated curves
-  if (object$init$distr == "pois") {
+  if (object$distr == "pois") {
     set.seed(seed)
     int_inc_sim <- replicate(nsim,
       rpois(n = int_inc_pred, lambda = int_inc_pred)
     )
-  } else if (object$init$distr == "nbinom") {
+  } else if (object$distr == "nbinom") {
     nbdisp <- object$theta_fit[["nbdisp"]]
     set.seed(seed)
     int_inc_sim <- replicate(nsim,
@@ -106,10 +112,12 @@ simulate.egf <- function(object, nsim = 1, seed = NULL,
 
   out <- list(
     time = time,
-    refdate = with(object$init, date[first]),
     cum_inc = cum_inc_sim,
-    int_inc = rbind(NA, int_inc_sim),
+    int_inc = rbind(NA, int_inc_sim)
+  )
+  structure(out,
+    class = c("egf_sim", "list"),
+    refdate = with(object, data$date[first]),
     object = object
   )
-  structure(out, class = c("egf_sim", "list"))
 }

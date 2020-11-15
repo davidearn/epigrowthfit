@@ -39,7 +39,8 @@ get_style_default()
 indicating a type of incidence to plot.}
 
 \item{xty}{One of \code{"date"} and \code{"numeric"},
-indicating how time is displayed on the bottom axis.}
+indicating how time is displayed on the bottom axis
+(calendar or number of days).}
 
 \item{log}{A logical scalar. If \code{TRUE}, then incidence is displayed
 on a logarithmic scale on the left axis.}
@@ -59,8 +60,7 @@ In both cases, the value of \code{diff(date)} is printed above
 the point. Assign 0 to ensure that all deviations from \code{m}
 are highlighted. Assign \code{Inf} to disable highlighting.}
 
-\item{style}{A list of lists defining the appearance of various plot elements.
-See Details 2.}
+\item{style}{A list of lists defining the appearance of various plot elements.}
 
 \item{...}{Optional arguments specifying additional graphical parameters.
 Currently, only \code{xlim}, \code{ylim}, \code{xlab}, \code{ylab}, and \code{main}
@@ -72,7 +72,7 @@ and \code{\link[graphics:par]{graphics::par()}} for a catalogue of graphical par
 \code{plot.egf_init()} and \code{plot.egf()} return \code{NULL} (invisibly).
 
 \code{get_style_default()} returns a list of lists specifying the
-default appearance of all (modifiable) plot elements.
+default appearance of all modifiable plot elements.
 }
 \description{
 Methods for plotting objects of class "egf_init" or "egf".
@@ -80,8 +80,8 @@ Methods for plotting objects of class "egf_init" or "egf".
 \details{
 \subsection{1. Plot elements}{
 
-\emph{Below, \code{date}, \code{time}, \code{cases}, \code{first}, \code{last}, \code{theta_init},
-and \code{theta_fit} refer to the so-named elements of \code{x} or \code{x$init}.}
+\emph{Below, \code{date}, \code{cases}, \code{first}, \code{last}, \code{theta_init}, and
+\code{theta_fit} refer to the so-named elements of \code{x} or \code{x$data}.}
 
 If \code{xty = "date"}, then the bottom axis is a calendar with ticks at
 equally spaced Dates. If \code{xty = "numeric"}, then the bottom axis
@@ -95,10 +95,10 @@ distinguished from nonzero counts, which are always at least 1.
 
 Observed data, specified by \code{date} and either \code{cases[-1]} or
 \code{cumsum(cases[-1])} (depending on \code{inc}), are plotted as points.
-\code{cases[-1][i]} gives the number of cases observed between \code{date[i]}
-and \code{date[i+1]}, while \code{cumsum(cases[-1])[i]} gives the number
-observed between \code{date[1]} and \code{date[i+1]}. Both are plotted
-at coordinate \code{date[i+1]-date[1]}.
+\code{cases[-1][i]} gives the number of cases observed between
+\code{date[i]} and \code{date[i+1]}, while \code{cumsum(cases[-1])[i]} gives
+the number observed between \code{date[1]} and \code{date[i+1]}. Both are
+plotted at coordinate \code{date[i+1]-date[1]}.
 
 The fitting window is displayed as a shaded rectangle behind the
 other plot elements. The left and right boundaries are \code{date[first]}
@@ -113,22 +113,23 @@ has the correct scale; see below). The predicted curve is obtained
 with \code{predict(x, time = as.integer(wgrid - date[first]))}.
 
 Careful interpretation of interval incidence is required if the
-plotted time series is not equally spaced, because \code{cases} roughly
-scales with \code{diff(date)}. That is, certain observations may vary
-from the predicted curve not due to chance, but because they
-represent a count over fewer or more days than the typical
-observation interval, namely \code{median(diff(date))}. Observations for
-which \code{diff(date)} differs from \code{median(diff(date))} are highlighted
-according to argument \code{tol} and labeled with the value of \code{diff(date)}.
+plotted time series is not equally spaced, because \code{cases}
+roughly scales with \code{diff(date)}. That is, certain observations
+may vary from the predicted curve not due to chance, but because
+they give counts over fewer or more days than the typical
+observation interval, namely \code{median(diff(date))}. Observations
+for which \code{diff(date)} differs from \code{median(diff(date))} are
+highlighted according to argument \code{tol} and labeled with the
+value of \code{diff(date)}.
 
 If \code{annotate = TRUE} and \code{add = FALSE}, then a legend and the
 parameter estimates \code{theta_init} or \code{theta_fit} (depending on
-the \code{class(x)}) are displayed in the right margin.
+\code{class(x)}) are displayed in the right margin.
 
 The plot method for class "egf" displays, in addition,
 the doubling time associated with the "egf" object and
 the associated 95\% confidence interval, obtained with
-\code{compute_doubling_time(rev(unname(confint(x))))}.
+\code{confint(x, parm = "doubling_time", level = 0.95, method = "linear")}.
 }
 
 \subsection{2. Customization}{
@@ -177,12 +178,13 @@ numeric.
 List elements not specified by \code{style} are taken from
 \code{get_style_default()}.
 
-With the exception of \code{date}, assigning \code{NULL} to any of
-the above possible \code{style} elements (instead of a named list)
-will suppress the corresponding plot element.
-Setting \code{points_main} to \code{NULL} will only suppress points
-that are not normally highlighted. To suppress all points,
-set argument \code{tol} to \code{Inf} as well.
+With the exception of \code{date}, assigning \code{NULL} to any
+of the above possible \code{style} elements (instead of a
+named list) will suppress the corresponding plot element.
+Setting \code{points_main = NULL} will not suppress points
+styled according to \code{points_short} and \code{points_long}.
+Hence, to suppress all points, it may be necessary to
+also set \code{points_short = NULL} and \code{points_long = NULL}.
 }
 }
 \seealso{
