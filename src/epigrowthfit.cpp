@@ -105,7 +105,7 @@ Type objective_function<Type>::operator() ()
         }
     }
 
-    ADREPORT(log_cum_inc)
-    ADREPORT(log_int_inc)
+    //ADREPORT(log_cum_inc)
+    //ADREPORT(log_int_inc)
     return nll;   
 }
