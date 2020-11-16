@@ -54,7 +54,6 @@ write('PATH="C:\\Rtools\\bin;${PATH}"',
   append = TRUE,
   sep = "\n"
 )
-
 write('BINPREF="C:\\Rtools\\mingw_${WIN}\\bin"',
   file = "~/.Renviron",
   append = TRUE,
@@ -63,10 +62,10 @@ write('BINPREF="C:\\Rtools\\mingw_${WIN}\\bin"',
 ```
 
 then restarting R. The above assumes that Rtools 35 was installed to
-`C:\Rtools`, typically the default location.
+`C:\Rtools` (typically the default location).
 
 
-### Installing from the remote repository
+### Installing from GitHub
 
 **epigrowthfit** can be installed from this GitHub repository
 using function `install_github()` from the
@@ -118,12 +117,12 @@ Package documentation can be accessed as follows:
 ```r
 library("epigrowthfit")
 
-## This vignette
+## Vignette
 vignette("epigrowthfit-vignette")
 
 ## Help pages
-?"epigrowthfit-package" # package
-?data_set_name          # data set "data_set_name"
-?function_name          # function "function_name"
-?"class_name-methods"   # S3 methods for class "class_name"
+?"epigrowthfit-package"   # package
+?data_set_name            # data set "data_set_name"
+?function_name            # function "function_name"
+?generic_name.class_name  # S3 methods for class "class_name"
 ```
