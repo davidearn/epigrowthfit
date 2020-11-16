@@ -1,8 +1,8 @@
 #' Compute confidence intervals on point estimates
 #'
 #' @description
-#' A method for obtaining confidence intervals on point
-#' estimates of model parameters from "egf" objects.
+#' A method for obtaining confidence intervals on point estimates
+#' of model parameters.
 #'
 #' @param object
 #'   An "egf" object.
@@ -29,10 +29,6 @@
 #' `data.frame(estimate, lower, upper, row.names = parm)`.
 #'
 #' @seealso [egf()], [TMB::tmbprofile()], [TMB::tmbroot()]
-#' @name confint.egf
-NULL
-
-#' @rdname confint.egf
 #' @export
 #' @import stats
 #' @import TMB
@@ -90,7 +86,6 @@ confint.egf <- function(object,
     return(compute_R0(ci, breaks, probs))
   }
 
-  sdr <- summary(sdreport(object$madf_out), select = "fixed")
   log_parm <- paste0("log_", parm)
   if (method == "linear") {
     p <- tmbprofile(object$madf_out, name = log_parm, ...)
@@ -104,6 +99,7 @@ confint.egf <- function(object,
       )
     )
   } else if (method == "wald") {
+    sdr <- summary(sdreport(object$madf_out), select = "fixed")
     q <- qchisq(level, df = 1)
     ese <- sdr[log_parm, c("Estimate", "Std. Error")]
     log_lu <- ese[1] + c(-1, 1) * sqrt(q) * ese[2]
@@ -113,4 +109,46 @@ confint.egf <- function(object,
   setNames(c(estimate, exp(log_lu)), c("estimate", "lower", "upper"))
 }
 
+#' Compute confidence bands on predicted incidence
+#'
+#' @description
+#' A method for obtaining confidence bands on predicted incidence
+#' curves returned by [predict.egf()]. Requires that standard errors
+#' were computed via `predict.egf(se = TRUE)`.
+#'
+#' @param object
+#'   An "egf_pred" object.
+#' @param parm
+#'   Unused parameter argument.
+#' @param level
+#'   A number in the interval \[0,1\] indicating a confidence level.
+#' @param ...
+#'   Unused optional arguments.
+#'
+#' @return
+#' A list of two data frames of the form
+#' `data.frame(estimate, lower, upper)`,
+#' giving confidence bands on predicted
+#' cumulative and interval incidence, respectively.
+#'
+#' @seealso [predict.egf()]
+#' @export
+#' @importFrom stats qchisq setNames
+confint.egf_pred <- function(object, parm, level = 0.95, ...) {
+  check(level,
+    what = "numeric",
+    len = 1,
+    val = c(0, 1),
+    "`level` must be a number in the interval [0,1]."
+  )
+
+  q <- qchisq(level, df = 1)
+  out <- lapply(object, function(x) {
+    y <- exp(x$estimate + outer(x$se, c(0, -1, 1) * sqrt(q)))
+    y <- as.data.frame(cbind(x$time, y))
+    setNames(y, c("time", "estimate", "lower", "upper"))
+  })
+  names(out) <- sub("log_", "", names(out), fixed = TRUE)
+  structure(out, refdate = attr(object, "refdate"))
+}
 

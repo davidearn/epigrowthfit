@@ -59,9 +59,9 @@ by objects of class "egf".
 }
 \details{
 A warning will be issued if any elements of \code{time} fall
-outside of the fitting window, indicating that the model
-is being extrapolated. To avoid warnings, make sure that
-elements of \code{time} are in the closed interval
+outside of the fitting window, i.e., if \code{predict()} is
+asked to extrapolate the model. To avoid warnings, make
+sure that elements of \code{time} are in the closed interval
 \code{with(object, data$time[c(first, last)])}.
 }
 \seealso{

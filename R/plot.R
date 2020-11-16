@@ -175,7 +175,7 @@ plot.egf_init <- function(x, inc = "interval", xty = "date", log = TRUE,
 #' @rdname plot.egf
 #' @export
 #' @import graphics
-#' @importFrom stats median
+#' @importFrom stats median setNames
 plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
                      add = FALSE, annotate = FALSE, tol = 0,
                      style = get_style_default(), ...) {
@@ -256,15 +256,6 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
     dindex <- TRUE
   }
 
-  ## Predicted curve
-  m <- median(dt)
-  wgrid <- seq(t1, t2, by = if (inc == "interval") m else 1)
-  wpred <- predict(x, wgrid - t1)
-  wpred$time <- wgrid
-  if (i1 > 1) {
-    wpred$cum_inc <- sum(cases[2:i1]) + wpred$cum_inc
-  }
-
   ## A way to avoid conditional `if (inc == ...) expr1 else expr2`
   varname <- substr(inc, start = 1, stop = 3)
   varname <- paste0(varname, "_inc")
@@ -274,6 +265,25 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   ymax <- max(data[[varname]], na.rm = TRUE)
   zero <- if (log) ymax^-0.04 else 0
   data[[varname]][data[[varname]] == 0] <- zero
+
+  ## Predicted curve with confidence band
+  m <- median(dt)
+  wgrid <- seq(t1, t2, by = if (inc == "interval") m else 1)
+  if (init_flag) {
+    wpred <- predict(x, wgrid - t1)
+    if (i1 > 1) {
+      wpred$cum_inc <- sum(cases[2:i1]) + wpred$cum_inc
+    }
+    wband <- data.frame(time = wgrid, estimate = wpred[[varname]])
+  } else {
+    wpred <- predict(x, wgrid - t1, se = TRUE)
+    wband <- confint(wpred, level = 0.95)
+    if (i1 > 1) {
+      wband$cum_inc[, -1] <- sum(cases[2:i1]) + wband$cum_inc[, -1]
+    }
+    wband <- wband[[varname]]
+    wband$time <- wgrid
+  }
 
   ## Axis title (x)
   if (is.null(dots$xlab)) {
@@ -447,27 +457,34 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
     do.call(text, c(l, s))
   }
 
+  ## Confidence band
+  if (!init_flag) {
+    s <- style$confband
+    if (!is.null(s)) {
+      l <- list(
+        x = c(wband$time, rev(wband$time)),
+        y = c(wband$lower, rev(wband$upper))
+      )
+      do.call(polygon, c(l, s))
+    }
+  }
+
   ## Predicted curve
   s <- style$lines
   if (!is.null(s)) {
-    l <- list(formula = formula, data = wpred)
+    l <- list(formula = estimate ~ time, data = wband)
     do.call(lines, c(l, s))
   }
 
   ## Doubling time
   s <- style$text_dbl
   if (!is.null(s) && !init_flag && inc == "interval") {
-    ci <- confint(x,
-      parm = "doubling_time",
-      level = 0.95,
-      method = "linear",
-      trace = FALSE
-    )
+    ci <- confint(x, parm = "doubling_time", level = 0.95, trace = FALSE)
     dblstr <- sprintf(
       "doubling time:\n%.1f (%.1f, %.1f) days",
       ci[1], ci[2], ci[3]
     )
-    wrange <- range(wpred$int_inc, na.rm = TRUE)
+    wrange <- range(wband$estimate, na.rm = TRUE)
     if (is.na(s$y)) {
       if (log) {
         s$y <- wrange[1] * 10^(0.25 * diff(log10(wrange)))
@@ -482,7 +499,7 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
       s$x <- days(s$x, since = d0)
     }
     if (is.na(s$x)) {
-      s$x <- min(wpred$time[wpred$int_inc > s$y], na.rm = TRUE)
+      s$x <- min(wband$time[wband$estimate > s$y], na.rm = TRUE)
     }
     l <- list(labels = dblstr, xpd = NA)
     do.call(text, c(l, s))

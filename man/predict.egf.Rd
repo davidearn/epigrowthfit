@@ -7,7 +7,7 @@
 \usage{
 \method{predict}{egf_init}(object, time = with(object, data$time[window]), ...)
 
-\method{predict}{egf}(object, time = with(object, data$time[window]), ...)
+\method{predict}{egf}(object, time = with(object, data$time[window]), se = FALSE, ...)
 }
 \arguments{
 \item{object}{An "egf_init" or "egf" object.}
@@ -17,9 +17,12 @@ Times must be expressed as numbers of days since
 \code{with(object, data$date[first])}.}
 
 \item{...}{Unused optional arguments.}
+
+\item{se}{A logical scalar. If \code{TRUE}, then standard errors on
+predicted incidence are computed via the delta method.}
 }
 \value{
-A data frame with numeric variables:
+If \code{se = FALSE}, then a data frame with numeric variables:
 
 \describe{
 \item{\code{time}}{Matches argument.}
@@ -33,6 +36,8 @@ Equal to \code{c(NA, diff(cum_inc))}.
 }
 }
 
+If \code{se = TRUE}, then an "egf_pred" object ...
+
 Attribute \code{refdate = with(object, data$date[first])} gives
 the reference date from which times in \code{time} are measured.
 }
@@ -42,9 +47,9 @@ by objects of class "egf_init" or "egf".
 }
 \details{
 A warning will be issued if any elements of \code{time} fall
-outside of the fitting window, indicating that the model
-is being extrapolated. To avoid warnings, make sure that
-elements of \code{time} are in the closed interval
+outside of the fitting window, i.e., if \code{predict()} is
+asked to extrapolate the model. To avoid warnings, make
+sure that elements of \code{time} are in the closed interval
 \code{with(object, data$time[c(first, last)])}.
 }
 \seealso{

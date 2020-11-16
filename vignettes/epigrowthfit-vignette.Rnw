@@ -2121,7 +2121,7 @@ plot(fit1,
   main = "COVID-19 in Ontario, Canada",
   style = list(
     points_main = list(pch = 18, col = "plum", cex = 1.5),
-    lines = list(col = "seagreen", lwd = 4, lty = 2),
+    lines = list(lty = 2, lwd = 4),
     window = NULL,
     date = list(
       mgp2 = c(0.3, 2),

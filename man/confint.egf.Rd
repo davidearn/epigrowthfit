@@ -39,8 +39,8 @@ If \code{length(parm) > 1}, then a data frame of the form
 \code{data.frame(estimate, lower, upper, row.names = parm)}.
 }
 \description{
-A method for obtaining confidence intervals on point
-estimates of model parameters from "egf" objects.
+A method for obtaining confidence intervals on point estimates
+of model parameters.
 }
 \seealso{
 \code{\link[=egf]{egf()}}, \code{\link[TMB:tmbprofile]{TMB::tmbprofile()}}, \code{\link[TMB:tmbroot]{TMB::tmbroot()}}

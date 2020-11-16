@@ -30,11 +30,14 @@ Type objective_function<Type>::operator() ()
     // SET UP ==================================================================
 
     // Data
-    DATA_VECTOR(t);              // time,  length N+1
-    DATA_VECTOR(x);              // cases, length N
+    DATA_VECTOR(t); // time,  length N+1
+    DATA_VECTOR(x); // cases, length N
+
+    // Flags
     DATA_INTEGER(curve_flag);    // cum. inc. model    (curve_enum.h)
     DATA_INTEGER(distr_flag);    // observation model  (distr_enum.h)
     DATA_INTEGER(baseline_flag); // baseline growth    (1=include)
+    DATA_INTEGER(predict_flag);  // predict or fit     (1=predict)
 
     // Parameters
     PARAMETER(log_r);      // log initial growth rate
@@ -53,7 +56,7 @@ Type objective_function<Type>::operator() ()
     // Other stuff
     Type log_nbxsvar; // log nb excess variance (nbinom)
     
-    // Fitted curves
+    // Incidence curves
     vector<Type> log_cum_inc(t.size()); // log cumulative incidence, length N+1
     vector<Type> log_int_inc(x.size()); // log interval incidence,   length N
 
@@ -88,11 +91,11 @@ Type objective_function<Type>::operator() ()
     // Compute log interval incidence and increment negative log likelihood
     for (int i = 0; i < x.size(); i++)
     {
+        log_int_inc(i) = logspace_sub(log_cum_inc(i+1), log_cum_inc(i));
+	
         if (!isNA(x(i)))
         {
-	    log_int_inc(i) = logspace_sub(log_cum_inc(i+1), log_cum_inc(i));
-
-            switch (distr_flag)
+	    switch (distr_flag)
             {
             case pois:
 	        nll -= dpois_robust(x(i), log_int_inc(i), true);
@@ -105,7 +108,51 @@ Type objective_function<Type>::operator() ()
         }
     }
 
-    //ADREPORT(log_cum_inc)
-    //ADREPORT(log_int_inc)
-    return nll;   
+
+    // PREDICT AT NEW TIMES ====================================================
+
+    // FIXME: DRY!
+    if (predict_flag == 1)
+    {
+        // Data
+        DATA_VECTOR(t_new); // time,  length M+1
+	DATA_VECTOR(x_new); // cases, length M
+
+	vector<Type> log_cum_inc_new(t_new.size()); // log cumulative incidence, length M+1
+	vector<Type> log_int_inc_new(x_new.size()); // log interval incidence,   length M
+
+	// Evaluate log cumulative incidence at new times
+	for (int i = 0; i < t_new.size(); i++)
+	{
+	    switch (curve_flag)
+	    {
+	    case exponential:
+	        log_cum_inc_new(i) = log_c0 + r * t_new(i);
+		break;
+	    case logistic:
+	        log_cum_inc_new(i) = log_K - logspace_add(Type(0), -r * (t_new(i) - thalf));
+		break;
+	    case richards:
+	        log_cum_inc_new(i) = log_K - logspace_add(Type(0), logspace_sub(p * log(2), Type(0)) - r * p * (t_new(i) - thalf)) / p;
+		break;
+	    }
+
+	    if (baseline_flag == 1)
+	    {
+	        log_cum_inc_new(i) = logspace_add(log_b + log(t_new(i)), log_cum_inc_new(i));
+	    }
+	}
+
+	// Compute log interval incidence
+	for (int i = 0; i < x_new.size(); i++)
+	{
+	    log_int_inc_new(i) = logspace_sub(log_cum_inc_new(i+1), log_cum_inc_new(i));
+        }
+
+        ADREPORT(log_cum_inc_new)
+	ADREPORT(log_int_inc_new)
+    }
+
+    
+    return nll;
 }

@@ -180,10 +180,10 @@ egf <- function(init, method = "nlminb", na_action = "exclude",
     list(
       t = data$time[first:last],
       x = data$cases[(first+1):last],
-      curve_flag = match(curve, c("exponential", "logistic", "richards")) - 1,
-      distr_flag = match(distr, c("pois", "nbinom")) - 1,
-      baseline_flag = 1 * include_baseline,
-      method = method
+      curve_flag = match(curve, c("exponential", "logistic", "richards")) - 1L,
+      distr_flag = match(distr, c("pois", "nbinom")) - 1L,
+      baseline_flag = 1L * include_baseline,
+      predict_flag = 0L
     )
   )
   log_par <- paste0("log_", c("r", "c0", "K", "thalf", "p", "nbdisp", "b"))
@@ -256,9 +256,8 @@ egf <- function(init, method = "nlminb", na_action = "exclude",
     sub("log_", "", names(log_theta_fit))
   )
 
-  ## Define wrappers for the negative log likelihood
-  ## function and its gradient to circumvent unexpected
-  ## super assignment in definition
+  ## Define wrappers for the negative log likelihood function
+  ## and its gradient to avoid unexpected behaviour
   nll_func <- function(log_theta = log_theta_fit) {
     madf_out$fn(log_theta)
   }
