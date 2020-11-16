@@ -1403,7 +1403,7 @@ data frame. First, some technical notes:
 \begin{itemize}
   \item \code{date} can also be a character vector, provided
     that it is coercible to an increasing Date vector with
-    \code{`9as.Date(date, tryFormats = dfmt)}, where \code{dfmt}
+    \code{`9as.Date`9(date, tryFormats = dfmt)}, where \code{dfmt}
     is an optional character argument to \fun{smooth_cases}
     listing date formats to consider in the conversion.
     By default, \code{dfmt = `2"\%Y-\%m-\%d"`2}, allowing only
