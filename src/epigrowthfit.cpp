@@ -69,7 +69,7 @@ Type objective_function<Type>::operator() ()
         switch (curve_flag)
         {
         case exponential:
-	    log_cum_inc(i) = log_c0 * r * t(i);
+	    log_cum_inc(i) = log_c0 + r * t(i);
 	    break;
         case logistic:
 	    log_cum_inc(i) = log_K - logspace_add(Type(0), -r * (t(i) - thalf));
