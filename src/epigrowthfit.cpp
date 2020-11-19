@@ -47,6 +47,30 @@ Type objective_function<Type>::operator() ()
     PARAMETER(log_p);      // log Richards shape        (richards)
     PARAMETER(log_nbdisp); // log nb dispersion         (nbinom)
     PARAMETER(log_b);      // log baseline growth rate  (baseline_flag)
+
+    // probably makes sense to parameterize this as
+    //  log_r + sd_log_r*eps_log_r(i)
+    // where eps_log_r(i) ~ N(0,1)
+    // *not* log_r + eps_log_r(i);  eps_log_r(i) ~ N(0, sd_log_r)
+    // (if we end up going to tmbstan etc.)
+
+    // as general as possible, for every grouping variable (continent/country)
+    // we will have a *matrix* which is n_grp X n_pars
+    // each row will be MVN(0,C)  where C is the correlation matrix
+    // then we can still say log_r + sd_log_r*epsmat(country(i),0)
+    //  {where the column index is an integer corresponding to a parameter}
+    //  might get a little tricky dealing with models with different numbers
+    // of parameters i.e. {r=0, K=1, nbdisp=2} or {r=0, K=1, p=2, nbdisp=3} ?
+
+    // if we have multiple grouping variables then we might need a list??
+    // does TMB even do lists??
+
+    // in order to know the mapping between parameters and columns of the
+    // matrix I might pass a vector of integers, or even a bunch of separate
+    // integer values r_col, K_col, thalf_col, nbdisp_col ...
+    // log_r + sd_log_r* epsmat(country(i),r_col)
+    
+    // when you get to the end and you want to add the Likelihood(parameters|MVN structure) you would add dmvnorm([row i], mean 0, Correlation matrix)
     
     // Inverse link-transformed parameters
     Type r = exp(log_r);
