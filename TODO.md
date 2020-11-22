@@ -1,9 +1,8 @@
 ## Data
-* Raw data isn't actually raw at the moment
-* Data sources, especially for London Bills
+* Raw data
+* Data sources
 
 ## Code
-* Implement delta method
 * Add random effects
 * Add R back end
 * Write tests
