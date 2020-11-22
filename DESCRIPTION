@@ -1,6 +1,6 @@
 Package: epigrowthfit
 Title: Estimation of Epidemic Growth Rates
-Version: 0.0.0.9000
+Version: 0.8.0
 Authors@R: c(
 	     person("Mikael", "Jagan", email = "mjagan@uwaterloo.ca", role = c("aut", "cre")),
 	     person("Ben", "Bolker", email = "bbolker@mcmaster.ca", role = c("aut")),
