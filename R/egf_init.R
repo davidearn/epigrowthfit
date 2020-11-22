@@ -314,8 +314,8 @@ egf_init <- function(formula = cases ~ date,
   ## Model parameters
   par <- switch(curve,
     exponential = c("r", "c0"),
-    logistic    = c("r", "K", "thalf"),
-    richards    = c("r", "K", "thalf", "p")
+    logistic    = c("r", "thalf", "K"),
+    richards    = c("r", "thalf", "K", "p")
   )
   if (distr == "nbinom") {
     par <- c(par, "nbdisp")

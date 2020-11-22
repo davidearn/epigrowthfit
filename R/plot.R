@@ -106,10 +106,28 @@
 #' subset of the elements below.
 #'
 #' \describe{
-#'   \item{`date`}{
-#'     A named list of arguments to internal function `daxis()`
-#'     (a subset of `tcl`, `mgp2`, `col.axis`, and `cex.axis`),
-#'     affecting the appearance of the bottom axis if `xty = "date"`.
+#'   \item{`box`}{
+#'     A named list of arguments to [graphics::box()], affecting the
+#'     appearance of the box drawn around the plot region. Currently,
+#'     only `bty`, `lty`, `col`, and `lwd` are implemented.
+#'   }
+#'   \item{`xax`, `yax`}{
+#'     Named lists of arguments to [graphics::axis()], affecting
+#'     the appearance of the bottom and left axes. Currently, only
+#'     `tcl`, `mgp2`, `col.axis`, `cex.axis`, and `font.axis` are
+#'     implemented, where `mgp2` is the second component of the
+#'     usual `mgp` argument. If `xty = "date"`, then the appearance
+#'     of the minor (day or month) and major (month or year) bottom
+#'     axes can be controlled separately by assigning vectors of
+#'     length 2 to the elements of `xax`. For example, setting
+#'     `xax = list(col.axis = c("black", "red"))` will make the
+#'     minor axis black and major axis red.
+#'   }
+#'   \item{`xlab`, `ylab`, `main`}{
+#'     Named lists of arguments to [graphics::title()], affecting
+#'     the appearance of axis titles. Currently, only `line`, `adj`,
+#'     `col.lab`, `cex.lab`, `font.lab`,
+#'     `col.main`, `cex.main`, and `font.main` are implemented.
 #'   }
 #'   \item{`points_main`}{
 #'     A named list of arguments to [graphics::points()],
@@ -135,23 +153,22 @@
 #'     affecting the appearance of text above highlighted points
 #'     (see argument `tol`) and text giving doubling times.
 #'     Currently, only `pos`, `offset`, `col`, `cex`, and `font`
-#'     are implemented. `text_dbl` can further specify `adj` and
-#'     coordinates `x` and `y`. `x` can be numeric, Date, or
-#'     character coercible to Date with `as.Date(x)`. `y` must be
-#'     numeric.
+#'     are implemented. `text_dbl` can further specify alignment
+#'     `adj` and coordinates `x` and `y`. `x` can be numeric,
+#'     Date, or character coercible to Date with `as.Date(x)`.
+#'     `y` must be numeric.
 #'   }
 #' }
 #'
 #' List elements not specified by `style` are taken from
 #' `get_style_default()`.
 #'
-#' With the exception of `date`, assigning `NULL` to any
-#' of the above possible `style` elements (instead of a
-#' named list) will suppress the corresponding plot element.
-#' Setting `points_main = NULL` will not suppress points
-#' styled according to `points_short` and `points_long`.
-#' Hence, to suppress all points, it may be necessary to
-#' also set `points_short = NULL` and `points_long = NULL`.
+#' Assigning `NULL` to any of the above possible `style` elements
+#' (instead of a named list) will suppress the corresponding plot
+#' element. Setting `points_main = NULL` will not suppress points
+#' styled according to `points_short` and `points_long`. Hence,
+#' to suppress all points, it may be necessary
+#' to also set `points_short = NULL` and `points_long = NULL`.
 #'
 #' @seealso [egf_init()], [egf()]
 #' @name plot.egf
@@ -164,11 +181,10 @@ plot.egf_init <- function(x, inc = "interval", xty = "date", log = TRUE,
                           add = FALSE, annotate = FALSE, tol = 0,
                           style = get_style_default(), ...) {
   ## Reuse `plot.egf()` machinery
-  names(x) <- sub("theta_init", "theta_fit", names(x))
+  names(x) <- sub("theta_init", "theta_fit", names(x), fixed = TRUE)
   x <- structure(x, class = c("egf", "list"), init_flag = TRUE)
-  plot(x, inc = inc, xty = xty, log = log,
-       add = add, annotate = annotate, tol = tol,
-       style = style, ...)
+  plot(x, inc = inc, xty = xty, log = log, add = add,
+       annotate = annotate, tol = tol, style = style, ...)
   invisible(NULL)
 }
 
@@ -189,7 +205,7 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
     "`inc` must be one of \"interval\", \"cumulative\"."
   )
   if (inc == "cumulative") {
-    check(x$init$cases[-1],
+    check(x$data$cases[-1],
       no = anyNA,
       "Cannot calculate cumulative incidence due to missing values\n",
       "in `cases[-1]`."
@@ -269,14 +285,13 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   ## Predicted curve with confidence band
   m <- median(dt)
   wgrid <- seq(t1, t2, by = if (inc == "interval") m else 1)
+  wpred <- predict(x, wgrid - t1, se = !init_flag)
   if (init_flag) {
-    wpred <- predict(x, wgrid - t1)
     if (i1 > 1) {
       wpred$cum_inc <- sum(cases[2:i1]) + wpred$cum_inc
     }
     wband <- data.frame(time = wgrid, estimate = wpred[[varname]])
   } else {
-    wpred <- predict(x, wgrid - t1, se = TRUE)
     wband <- confint(wpred, level = 0.95)
     if (i1 > 1) {
       wband$cum_inc[, -1] <- sum(cases[2:i1]) + wband$cum_inc[, -1]
@@ -345,7 +360,7 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   for (pe in names(s)) {
     if (!pe %in% names(style)) {
       next
-    } else if (is.null(style[[pe]]) && pe != "date") {
+    } else if (is.null(style[[pe]])) {
       s[pe] <- list(NULL)
     } else {
       gp <- intersect(names(s[[pe]]), names(style[[pe]]))
@@ -375,10 +390,7 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
       bty = "l",
       xaxs = "i",
       yaxs = "i",
-      las = 1,
-      mgp = c(3, 0.7, 0),
-      cex.axis = 0.85,
-      cex.main = 0.9
+      las = 1
     )
     on.exit({
       assign("par.egf", par("mar", "plt"), envir = .epigrowthfit)
@@ -401,33 +413,54 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
 
   if (!add) {
     ## Box
-    box()
+    s <- style$box
+    if (!is.null(s)) {
+      do.call(box, s)
+    }
 
     ## Axis (x)
-    if (xty == "date") {
-      s <- style$date
-      l <- list(
-        left = par("usr")[1],
-        right = par("usr")[2],
-        refdate = d0
-      )
-      do.call(daxis, c(l, s))
-    } else if (xty == "numeric") {
-      axis(side = 1)
+    s <- style$xax
+    if (!is.null(s)) {
+      if (xty == "date") {
+        l <- list(
+          left = par("usr")[1],
+          right = par("usr")[2],
+          refdate = d0
+        )
+        do.call(daxis, c(l, s))
+      } else if (xty == "numeric") {
+        l <- list(side = 1)
+        s$mgp <- c(3, s$mgp2, 0)
+        s$mgp2 <- NULL
+        s$
+        do.call(axis, c(l, s))
+      }
     }
 
     ## Axis (y)
-    yax_at <- axTicks(side = 2)
-    if (max(yax_at) < 1e05) {
-      yax_labels <- TRUE
-      long_yax_labels_flag <- FALSE
-    } else {
-      yax_labels <- get_labels(yax_at)
-      mlw <- max(strwidth(yax_labels, units = "inches", cex = par("cex.axis")))
-      long_yax_labels_flag <- (mlw / par("csi") + par("mgp")[2] > 3.75)
+    s <- style$yax
+    if (!is.null(s)) {
+      yax_at <- axTicks(side = 2)
+      if (max(yax_at) < 1e05) {
+        yax_labels <- TRUE
+        long_yax_labels_flag <- FALSE
+      } else {
+        yax_labels <- get_labels(yax_at)
+        mlw <- max(strwidth(yax_labels, units = "inches", cex = 0.85))
+        long_yax_labels_flag <- (mlw / par("csi") + s$mgp2 > 3.75)
+      }
+      l <- list(
+        side = 2,
+        at = yax_at,
+        labels = yax_labels
+      )
+      s$mgp <- c(3, s$mgp2, 0)
+      s$mgp2 <- NULL
+      if (is.na(s$cex.axis)) {
+        s$cex.axis <- (1 - 0.25 * long_yax_labels_flag) * 0.85
+      }
+      do.call(axis, c(l, s))
     }
-    axis(side = 2, at = yax_at, labels = yax_labels,
-         cex.axis = (1 - 0.25 * long_yax_labels_flag) * par("cex.axis"))
   }
 
   ## Observed data
@@ -437,8 +470,7 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
       l <- list(
         formula = formula,
         data = data,
-        subset = (data$pty == pty) & dindex,
-        xpd = is.null(dots$xlim) && is.null(dots$ylim)
+        subset = (data$pty == pty) & dindex
       )
       do.call(points, c(l, s))
     }
@@ -446,13 +478,12 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
 
   ## Annotation above exceptional points
   s <- style$text_hl
-  is_exceptional <- (data$pty != ptys[1] & dindex)
-  if (!is.null(s) && isTRUE(any(is_exceptional))) {
+  if (!is.null(s)) {
     l <- list(
       formula = int_inc ~ time,
       data = data,
       labels = data$dt,
-      subset = is_exceptional
+      subset = c(NA, (data$pty != ptys[1] & dindex)[-1])
     )
     do.call(text, c(l, s))
   }
@@ -506,10 +537,26 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
   }
 
   if (!add) {
-    ## Titles
-    title(xlab = xlab, line = 3)
-    title(ylab = ylab, line = 4)
-    title(main = main, line = 1)
+    ## Axis title (x)
+    s <- style$xlab
+    if (!is.null(s)) {
+      l <- list(xlab = xlab)
+      do.call(title, c(l, s))
+    }
+
+    ## Axis title (y)
+    s <- style$ylab
+    if (!is.null(s)) {
+      l <- list(ylab = ylab)
+      do.call(title, c(l, s))
+    }
+
+    ## Axis title (main)
+    s <- style$main
+    if (!is.null(s)) {
+      l <- list(main = main)
+      do.call(title, c(l, s))
+    }
 
     if (annotate) {
       ## Parameter estimates
@@ -569,13 +616,18 @@ plot.egf <- function(x, inc = "interval", xty = "date", log = TRUE,
 #' @export
 get_style_default <- function() {
   list(
-    date = list(tcl = -0.2, mgp2 = c(0.05, 1), col.axis = c("black", "black"), cex.axis = c(0.7, 0.85)),
+    box = list(bty = "l", lty = 1, lwd = 1, col = "black"),
+    xax = list(tcl = -0.2, mgp2 = c(0.25, 1.25), col.axis = "black", cex.axis = c(0.85, 1.15), font.axis = 1),
+    yax = list(tcl = -0.5, mgp2 = 0.7, col.axis = "black", cex.axis = NA, font.axis = 1),
+    xlab = list(line = 3, adj = 0.5, col.lab = "black", cex.lab = 1, font.lab = 1),
+    ylab = list(line = 4, adj = 0.5, col.lab = "black", cex.lab = 1, font.lab = 1),
+    main = list(line = 1, adj = 0.5, col.main = "black", cex.main = 1, font.main = 2),
     points_main = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
     points_short = list(pch = 1, col = "#882255", bg = NA, cex = 1),
     points_long = list(pch = 16, col = "#882255", bg = NA, cex = 1),
-    lines = list(lty = 1, lwd = 3, col = "#44AA99"),
+    lines = list(lty = 1, lwd = 2.5, col = "#44AA99"),
     window = list(col = "#DDCC7740", border = NA),
-    confband = list(col = "#44AA9940", border = NA),
+    confband = list(col = "#44AA9960", border = NA),
     text_hl = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
     text_dbl = list(x = NA, y = NA, adj = c(0, 0.5), pos = 4, offset = 1, col = "black", cex = 0.7, font = 1)
   )
@@ -598,8 +650,7 @@ get_style_default <- function() {
 #' @param ...
 #'   Optional arguments specifying additional graphical parameters.
 #'   Currently, only `xlim`, `ylim`, `xlab`, `ylab`, and `main` are
-#'   implemented. See [graphics::plot()] and [graphics::par()] for
-#'   a catalogue of graphical parameters.
+#'   implemented. See [graphics::plot()] for details.
 #'
 #' @return
 #' `NULL` (invisibly).
@@ -841,7 +892,12 @@ plot.smooth_cases <- function(x, ...) {
   abline(v = time_troughs, lty = 3, col = col_troughs)
   box()
   daxis(left = par("usr")[1], right = par("usr")[2],
-        refdate = x$data$date[1], cex.axis = c(0.7, 0.85))
+        refdate = x$data$date[1],
+        tcl = -0.2,
+        mgp2 = c(0.5, 1),
+        col.axis = "black",
+        cex.axis = c(0.85, 1.15),
+        font.axis = c(1, 2))
   axis(side = 2, mgp = c(3, 0.7, 0), las = 1, cex.axis = 0.85)
   if (length(x$peaks) > 0) {
     axis(side = 3, at = time_peaks, labels = x$peaks,

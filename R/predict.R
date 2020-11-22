@@ -99,7 +99,7 @@ predict.egf <- function(object,
         x_new = rep(NA_real_, length(time) - 1)
       )
     )
-    log_par <- paste0("log_", c("r", "c0", "K", "thalf", "p", "nbdisp", "b"))
+    log_par <- paste0("log_", c("r", "c0", "thalf", "K", "p", "nbdisp", "b"))
     madf_parameters <- as.list(object$log_theta_fit)
     log_par_unused <- setdiff(log_par, names(madf_parameters))
     madf_parameters[log_par_unused] <- NA_real_

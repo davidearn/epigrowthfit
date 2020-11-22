@@ -285,12 +285,8 @@ then restarting R. Users with Rtools 35 (compatible with R 3.3.0--3.6.3)
 must set both \code{PATH} and \code{BINPREF} by running
 
 <<rtools-2, eval=FALSE>>=
-write('PATH="C:\\Rtools\\bin;${PATH}"',
-  file = "~/.Renviron",
-  append = TRUE,
-  sep = "\n"
-)
-write('BINPREF="C:\\Rtools\\mingw_${WIN}\\bin"',
+write(c('PATH="C:\\Rtools\\bin;${PATH}"',
+        'BINPREF="C:\\Rtools\\mingw_${WIN}\\bin"'),
   file = "~/.Renviron",
   append = TRUE,
   sep = "\n"
@@ -2120,14 +2116,12 @@ plot(fit1,
   ylab = "daily confirmations",
   main = "COVID-19 in Ontario, Canada",
   style = list(
+    box = list(bty = "o"),
+    main = list(line = 0.2, adj = 0),
+    xax = list(mgp2 = c(0.25, 2), col.axis = c("black", "red")),
+    window = NULL,
     points_main = list(pch = 18, col = "plum", cex = 1.5),
     lines = list(lty = 2, lwd = 4),
-    window = NULL,
-    date = list(
-      mgp2 = c(0.3, 2),
-      cex.axis = c(0.85, 1.15),
-      col.axis = c("black", "red")
-    ),
     text_dbl = list(
       x = "2020-04-14", y = 10, pos = 2, offset = 0,
       col = "steelblue", cex = 1.25, font = 2

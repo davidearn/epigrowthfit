@@ -4,15 +4,7 @@
 \alias{daxis}
 \title{Annotate a date axis}
 \usage{
-daxis(
-  left,
-  right,
-  refdate,
-  tcl = -0.2,
-  mgp2 = c(0.05, 1),
-  col.axis = "black",
-  cex.axis = c(0.7, 0.85)
-)
+daxis(left, right, refdate, tcl, mgp2, col.axis, cex.axis, font.axis)
 }
 \arguments{
 \item{left}{Left endpoint of the bottom axis in user coordinates.}

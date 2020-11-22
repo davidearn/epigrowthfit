@@ -42,8 +42,8 @@ Type objective_function<Type>::operator() ()
     // Parameters
     PARAMETER(log_r);      // log initial growth rate
     PARAMETER(log_c0);     // log initial cum. inc.     (exponential)
-    PARAMETER(log_K);      // log final size            (logistic, richards)
     PARAMETER(log_thalf);  // log time half final size  (logistic, richards)
+    PARAMETER(log_K);      // log final size            (logistic, richards)
     PARAMETER(log_p);      // log Richards shape        (richards)
     PARAMETER(log_nbdisp); // log nb dispersion         (nbinom)
     PARAMETER(log_b);      // log baseline growth rate  (baseline_flag)

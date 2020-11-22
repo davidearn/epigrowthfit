@@ -17,8 +17,7 @@ for simulated and predicted incidence curves.}
 
 \item{...}{Optional arguments specifying additional graphical parameters.
 Currently, only \code{xlim}, \code{ylim}, \code{xlab}, \code{ylab}, and \code{main} are
-implemented. See \code{\link[graphics:plot.default]{graphics::plot()}} and \code{\link[graphics:par]{graphics::par()}} for
-a catalogue of graphical parameters.}
+implemented. See \code{\link[graphics:plot.default]{graphics::plot()}} for details.}
 }
 \value{
 \code{NULL} (invisibly).

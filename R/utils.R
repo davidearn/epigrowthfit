@@ -22,11 +22,12 @@
 #'   A numeric vector. If `length(len) = 1`, then check fails
 #'   if `length(x) != len`. If `length(len) > 1`, then check
 #'   fails if `length(x) < len[1]` or `length(x) > len[2]`.
+#'
 #' @param opt
 #'   An atomic vector indicating acceptable values for `x[i]`.
 #'   Check fails if `!all(x %in% opt)`.
 #' @param val
-#'   A numeric vector indicating endpoints for an interval
+#'   A numeric vector indicating endpoints for the interval
 #'   of acceptable values for `x[i]`, assuming that `x` is
 #'   numeric. Whether the endpoints are included in this
 #'   interval is determined by `rel`.
@@ -39,16 +40,14 @@
 #'   A character vector of length 2 such that
 #'   `rel[1] %in% c(">", ">=")` and `rel[2] %in% c("<", "<=")`.
 #' @param yes
-#'   A function or list of functions of one argument returning
-#'   either `TRUE` or `FALSE`. Check fails if any return `FALSE`
-#'   `FALSE` when applied to `x`.
+#'   A function or list of functions of one argument.
+#'   Check fails if any does not return `TRUE`.
 #' @param no
-#'   A function or list of functions of one argument returning
-#'   either `TRUE` or `FALSE`. Check fails if any return `TRUE`
-#'   when applied to `x`.
+#'   A function or list of functions of one argument.
+#'   Check fails if any does not return `FALSE`.
 #' @param action
-#'   One of `"stop"`, `"warning"`, and `"nothing"`, indicating
-#'   how check failure should be handled.
+#'   One of `"stop"`, `"warning"`, and `"nothing"`,
+#'   indicating how check failure should be handled.
 #'
 #' @return
 #' `TRUE` if check passes and `FALSE` otherwise.
@@ -63,14 +62,14 @@
 #' or that `what` contains `"numeric"`).
 #'
 #' Integer vectors are accepted as numeric vectors when `what`
-#' contains `"numeric"`. Hence `check(1:6, what = "numeric")`
+#' contains `"numeric"`. Hence `check(0L, what = "numeric")`
 #' returns `TRUE`.
 #'
 #' @keywords internal
 check <- function(x, ..., what = NULL, not = NULL, len = NULL,
                   opt = NULL, val = NULL, rel = c(">=", "<="),
                   yes = NULL, no = NULL,
-                  action = c("stop", "warning", "nothing")) {
+                  action = c("stop", "warning", "none")) {
   ## Tolerate integer when checking for numeric
   if ("numeric" %in% what) {
     what <- c(what, "integer")
@@ -82,7 +81,7 @@ check <- function(x, ..., what = NULL, not = NULL, len = NULL,
   if (is.function(no)) {
     no <- list(no)
   }
-  ## Tolerate, e.g., action = "warn"
+  ## Allow partial matching
   action <- match.arg(action)
 
   passes <-
@@ -91,23 +90,23 @@ check <- function(x, ..., what = NULL, not = NULL, len = NULL,
     (is.null(not) || !inherits(x, not)) &&
     ## Check length: equals `len` or in `range(len)`
     (is.null(len) ||
-       (length(len) == 1 && length(x) == len) ||
-       (length(len) > 1 &&
-          length(x) >= len[1] &&
-          length(x) <= len[2])) &&
+       (length(len) == 1L && length(x) == len) ||
+       (length(len) > 1L &&
+          (is.na(len[1L]) || length(x) >= len[1L]) &&
+          (is.na(len[2L]) || length(x) <= len[2L]))) &&
     ## Check value: is a subset of `opt`
     (is.null(opt) || all(x %in% opt)) &&
     ## Check value: equals `val` or in `range(val)`
     (is.null(val) ||
-       (length(val) == 1 && all(x == val, na.rm = TRUE)) ||
-       (length(val) > 1 &&
-          all(match.fun(rel[1])(x, val[1]), na.rm = TRUE) &&
-          all(match.fun(rel[2])(x, val[2]), na.rm = TRUE))) &&
+       (length(val) == 1L && all(x == val, na.rm = TRUE)) ||
+       (length(val) > 1L &&
+          (is.na(val[1L]) || all(match.fun(rel[1L])(x, val[1L]), na.rm = TRUE)) &&
+          (is.na(val[2L]) || all(match.fun(rel[2L])(x, val[2L]), na.rm = TRUE)))) &&
     ## Check value: passes functions `yes`
-    (is.null(yes) || all(sapply(yes, function(f) f(x)))) &&
+    (is.null(yes) || all(sapply(yes, function(f) isTRUE(f(x))))) &&
     ## Check value: fails functions `no`
-    (is.null(no) || all(!sapply(no, function(f) f(x))))
-  if (!isTRUE(passes) && action != "nothing") {
+    (is.null(no) || all(sapply(no, function(f) isFALSE(f(x)))))
+  if (!isTRUE(passes) && action != "none") {
     do.call(action, list(..., call. = FALSE))
   }
   passes
@@ -289,10 +288,7 @@ dceiling_y <- function(date) {
 #' @keywords internal
 #' @importFrom graphics axis
 daxis <- function(left, right, refdate,
-                  tcl = -0.2,
-                  mgp2 = c(0.05, 1),
-                  col.axis = "black",
-                  cex.axis = c(0.7, 0.85)) {
+                  tcl, mgp2, col.axis, cex.axis, font.axis) {
   ### SET UP ###########################################################
 
   t0 <- min(ceiling(left), floor(right))
@@ -304,17 +300,22 @@ daxis <- function(left, right, refdate,
   mgp2 <- rep(mgp2, length.out = 2)
   col.axis <- rep(col.axis, length.out = 2)
   cex.axis <- rep(cex.axis, length.out = 2)
+  font.axis <- rep(font.axis, length.out = 2)
 
   minor_axis <- function() {
     axis(side = 1, at = t0 + at, labels = labels,
-         tcl = tcl, mgp = c(3, mgp2[1], 0), gap.axis = 0,
-         cex.axis = cex.axis[1], col.axis = col.axis[1])
+         tcl = tcl[1], mgp = c(3, mgp2[1], 0), gap.axis = 0,
+         col.axis = col.axis[1],
+         cex.axis = cex.axis[1],
+         font.axis = font.axis[1])
     invisible(NULL)
   }
   major_axis <- function() {
     axis(side = 1, at = t0 + at, labels = labels,
          tick = FALSE, mgp = c(3, mgp2[2], 0), gap.axis = 0,
-         cex.axis = cex.axis[2], col.axis = col.axis[2])
+         col.axis = col.axis[2],
+         cex.axis = cex.axis[2],
+         font.axis = font.axis[2])
     invisible(NULL)
   }
 
@@ -370,8 +371,7 @@ daxis <- function(left, right, refdate,
     ## Years
     nyear <- ceiling(w / 365)
     by <- ceiling(nyear / 7)
-    at_date <- seq(dceiling_y(d0), d1 + (by + 1) * 365,
-                   by = paste(by, "years"))
+    at_date <- seq(dceiling_y(d0), d1 + (by + 1) * 365, by = paste(by, "years"))
     at <- as.integer(at_date - d0)
     n <- length(at)
     at <- c(at, (at[-1] + at[-n]) / 2)

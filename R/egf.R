@@ -186,7 +186,7 @@ egf <- function(init, method = "nlminb", na_action = "exclude",
       predict_flag = 0L
     )
   )
-  log_par <- paste0("log_", c("r", "c0", "K", "thalf", "p", "nbdisp", "b"))
+  log_par <- paste0("log_", c("r", "c0", "thalf", "K", "p", "nbdisp", "b"))
   madf_parameters <- as.list(init$log_theta_init)
   log_par_unused <- setdiff(log_par, names(madf_parameters))
   madf_parameters[log_par_unused] <- NA_real_

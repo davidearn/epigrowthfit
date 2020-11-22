@@ -139,10 +139,28 @@ using argument \code{style}. \code{style} must be a list containing some
 subset of the elements below.
 
 \describe{
-\item{\code{date}}{
-A named list of arguments to internal function \code{daxis()}
-(a subset of \code{tcl}, \code{mgp2}, \code{col.axis}, and \code{cex.axis}),
-affecting the appearance of the bottom axis if \code{xty = "date"}.
+\item{\code{box}}{
+A named list of arguments to \code{\link[graphics:box]{graphics::box()}}, affecting the
+appearance of the box drawn around the plot region. Currently,
+only \code{bty}, \code{lty}, \code{col}, and \code{lwd} are implemented.
+}
+\item{\code{xax}, \code{yax}}{
+Named lists of arguments to \code{\link[graphics:axis]{graphics::axis()}}, affecting
+the appearance of the bottom and left axes. Currently, only
+\code{tcl}, \code{mgp2}, \code{col.axis}, \code{cex.axis}, and \code{font.axis} are
+implemented, where \code{mgp2} is the second component of the
+usual \code{mgp} argument. If \code{xty = "date"}, then the appearance
+of the minor (day or month) and major (month or year) bottom
+axes can be controlled separately by assigning vectors of
+length 2 to the elements of \code{xax}. For example, setting
+\code{xax = list(col.axis = c("black", "red"))} will make the
+minor axis black and major axis red.
+}
+\item{\code{xlab}, \code{ylab}, \code{main}}{
+Named lists of arguments to \code{\link[graphics:title]{graphics::title()}}, affecting
+the appearance of axis titles. Currently, only \code{line}, \code{adj},
+\code{col.lab}, \code{cex.lab}, \code{font.lab},
+\code{col.main}, \code{cex.main}, and \code{font.main} are implemented.
 }
 \item{\code{points_main}}{
 A named list of arguments to \code{\link[graphics:points]{graphics::points()}},
@@ -168,23 +186,22 @@ Named lists of arguments to \code{\link[graphics:text]{graphics::text()}},
 affecting the appearance of text above highlighted points
 (see argument \code{tol}) and text giving doubling times.
 Currently, only \code{pos}, \code{offset}, \code{col}, \code{cex}, and \code{font}
-are implemented. \code{text_dbl} can further specify \code{adj} and
-coordinates \code{x} and \code{y}. \code{x} can be numeric, Date, or
-character coercible to Date with \code{as.Date(x)}. \code{y} must be
-numeric.
+are implemented. \code{text_dbl} can further specify alignment
+\code{adj} and coordinates \code{x} and \code{y}. \code{x} can be numeric,
+Date, or character coercible to Date with \code{as.Date(x)}.
+\code{y} must be numeric.
 }
 }
 
 List elements not specified by \code{style} are taken from
 \code{get_style_default()}.
 
-With the exception of \code{date}, assigning \code{NULL} to any
-of the above possible \code{style} elements (instead of a
-named list) will suppress the corresponding plot element.
-Setting \code{points_main = NULL} will not suppress points
-styled according to \code{points_short} and \code{points_long}.
-Hence, to suppress all points, it may be necessary to
-also set \code{points_short = NULL} and \code{points_long = NULL}.
+Assigning \code{NULL} to any of the above possible \code{style} elements
+(instead of a named list) will suppress the corresponding plot
+element. Setting \code{points_main = NULL} will not suppress points
+styled according to \code{points_short} and \code{points_long}. Hence,
+to suppress all points, it may be necessary
+to also set \code{points_short = NULL} and \code{points_long = NULL}.
 }
 }
 \seealso{

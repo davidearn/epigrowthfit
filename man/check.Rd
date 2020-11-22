@@ -15,7 +15,7 @@ check(
   rel = c(">=", "<="),
   yes = NULL,
   no = NULL,
-  action = c("stop", "warning", "nothing")
+  action = c("stop", "warning", "none")
 )
 }
 \arguments{
@@ -38,7 +38,7 @@ fails if \code{length(x) < len[1]} or \code{length(x) > len[2]}.}
 \item{opt}{An atomic vector indicating acceptable values for \code{x[i]}.
 Check fails if \code{!all(x \%in\% opt)}.}
 
-\item{val}{A numeric vector indicating endpoints for an interval
+\item{val}{A numeric vector indicating endpoints for the interval
 of acceptable values for \code{x[i]}, assuming that \code{x} is
 numeric. Whether the endpoints are included in this
 interval is determined by \code{rel}.
@@ -51,16 +51,14 @@ then check fails if
 \item{rel}{A character vector of length 2 such that
 \code{rel[1] \%in\% c(">", ">=")} and \code{rel[2] \%in\% c("<", "<=")}.}
 
-\item{yes}{A function or list of functions of one argument returning
-either \code{TRUE} or \code{FALSE}. Check fails if any return \code{FALSE}
-\code{FALSE} when applied to \code{x}.}
+\item{yes}{A function or list of functions of one argument.
+Check fails if any does not return \code{TRUE}.}
 
-\item{no}{A function or list of functions of one argument returning
-either \code{TRUE} or \code{FALSE}. Check fails if any return \code{TRUE}
-when applied to \code{x}.}
+\item{no}{A function or list of functions of one argument.
+Check fails if any does not return \code{FALSE}.}
 
-\item{action}{One of \code{"stop"}, \code{"warning"}, and \code{"nothing"}, indicating
-how check failure should be handled.}
+\item{action}{One of \code{"stop"}, \code{"warning"}, and \code{"nothing"},
+indicating how check failure should be handled.}
 }
 \value{
 \code{TRUE} if check passes and \code{FALSE} otherwise.
@@ -81,7 +79,7 @@ care (e.g., if setting \code{val}, then make sure that \code{x} is numeric
 or that \code{what} contains \code{"numeric"}).
 
 Integer vectors are accepted as numeric vectors when \code{what}
-contains \code{"numeric"}. Hence \code{check(1:6, what = "numeric")}
+contains \code{"numeric"}. Hence \code{check(0L, what = "numeric")}
 returns \code{TRUE}.
 }
 \keyword{internal}
