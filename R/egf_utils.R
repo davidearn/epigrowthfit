@@ -154,7 +154,7 @@ make_madf_data <- function(frame, spX, spZ) {
 }
 
 #' @importFrom stats setNames
-make_madf_parameters(madf_data) {
+make_madf_parameters <- function(madf_data) {
   pn <- colnames(madf_data$fid)
   pn0 <- get_par_names()
   pid <- setNames(match(pn0, pn), pn0)
