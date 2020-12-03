@@ -3,7 +3,6 @@
 * Data sources
 
 ## Code
-* Add random effects
 * Add R back end
 * Write tests
 
