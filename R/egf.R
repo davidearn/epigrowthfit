@@ -41,7 +41,7 @@ egf <- function(formula,
     map = madf_map,
     random = madf_random,
     DLL = "epigrowthfit",
-    silent = FALSE
+    silent = TRUE
   )
 
   if (method == "nlminb") {
@@ -51,7 +51,7 @@ egf <- function(formula,
       gradient = madf_out$gr,
       ...
     )
-    log_theta_fit <- optim_out$par
+    par <- optim_out$par
     nll <- optim_out$objective
   } else if (method == "nlm") {
     optim_out <- nlm(
@@ -59,7 +59,7 @@ egf <- function(formula,
       p = madf_out$par,
       ...
     )
-    log_theta_fit <- optim_out$estimate
+    par <- optim_out$estimate
     nll <- optim_out$minimum
   } else {
     optim_out <- optim(
@@ -69,9 +69,25 @@ egf <- function(formula,
       method = method,
       ...
     )
-    log_theta_fit <- optim_out$par
+    par <- optim_out$par
     nll <- optim_out$value
   }
 
-  list(madf_out = madf_out, optim_out = optim_out, nll = nll)
+  out <- list(
+    frame = frame,
+    index = attr(frame, "index"),
+    curve = curve,
+    distr = distr,
+    include_baseline = include_baseline,
+    par0 = madf_out$par,
+    madf_data = madf_data,
+    madf_out = madf_out,
+    optim_out = optim_out,
+    par = par,
+    nll = nll,
+    nll_func = function(par = par) madf_out$fn(par),
+    nll_grad = function(par = par) as.vector(madf_out$gr(par)),
+    call = match.call()
+  )
+  structure(out, class = c("egf", "list"))
 }

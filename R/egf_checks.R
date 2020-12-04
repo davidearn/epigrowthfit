@@ -11,7 +11,7 @@ check_formula <- function(formula) {
 check_fixed <- function(fixed, par_names) {
   p <- length(par_names)
   if (is.null(fixed)) {
-    fixed <- rep(list(as.formula("~1", env = .GlobalEnv)), p)
+    fixed <- rep(list(~1), p)
     names(fixed) <- par_names
     return(fixed)
   }
@@ -32,18 +32,19 @@ check_fixed <- function(fixed, par_names) {
     "If `fixed` is a list, then `names(fixed)` must be a subset\n",
     "of `get_par_names(curve, distr, include_baseline)`."
   )
+  m <- "`fixed` formula must be `~1` or have the form `~f1:...:fn`."
   check(sapply(fixed, length),
     val = 2L,
-    "`fixed` formula must have the form `~rhs`."
+    m
   )
   rhs <- sapply(fixed, function(x) deparse(x[[2]]))
   check(rhs,
     yes = function(x) all(grepl("^(1|([[:alnum:]._]+(:[[:alnum:]._]+)*))$", x)),
-    "`fixed` formula must be `~1` or have the form `~f1:...:fn`."
+    m
   )
 
   ## Fill out and order the list
-  fixed[setdiff(par_names, names(fixed))] <- list(as.formula("~1", env = .GlobalEnv))
+  fixed[setdiff(par_names, names(fixed))] <- list(~1)
   fixed[par_names]
 }
 
@@ -71,16 +72,19 @@ check_random <- function(random, par_names) {
     "If `random` is a list, then `names(random)` must be a subset\n",
     "of `get_par_names(curve, distr, include_baseline)`."
   )
+  m <- paste0(
+    "`random` formula must have the form `~rhs`,\n",
+    "with `rhs` a sum of one or more terms of the form\n",
+    "`(1 | r1:...:rk)`, `(1 | r1/.../rm)`, or `(1 | r1 * ... * rn)`."
+  )
   check(sapply(random, length),
     val = 2L,
-    "`random` formula must have the form `~rhs`."
+    m
   )
   rhs <- sapply(random, function(x) deparse(x[[2]]))
   check(rhs,
     yes = function(x) all(grepl("^(( \\+|- )?\\(1 \\| [[:alnum:]._]+((:[[:alnum:]._]+)*|(/[[:alnum:]._]+)*|(( \\* )[[:alnum:]._]+)*)\\))+$", x)),
-    "`random` formula must have the form `~rhs`,\n",
-    "with `rhs` a sum of one or more terms of the form\n",
-    "`(1 | r1:...:rk)`, `(1 | r1/.../rm)`, or `(1 | r1 * ... * rn)`."
+    m
   )
 
   ## Fill out and order the list
@@ -195,12 +199,13 @@ check_data <- function(formula, data, index,
   )
   factors_split <- lapply(data_split, "[", fn)
   factors_split <- lapply(factors_split, droplevels, exclude = NA)
-  check(do.call(cbind, factors_split),
-    yes = function(x) all(sapply(x, nlevels) == 1L),
-    no = anyNA,
+  check(factors_split,
+    yes = function(x) all(unlist(lapply(x, function(y) sapply(y, nlevels))) == 1L),
+    no = function(x) any(sapply(x, anyNA)),
     "Factors must be constant and without missing values\n",
     "in each level of `index`."
   )
+  row.names(data) <- NULL
 
   structure(data,
     index = index,

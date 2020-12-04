@@ -44,7 +44,7 @@ get_factor <- function(term_label, frame) {
     return(NULL)
   }
   if (term_label == "(1)") {
-    return(factor(integer(nrow(frame))))
+    return(factor(rep("(1)", nrow(frame))))
   }
   interaction(frame[unlist(strsplit(term_label, ":"))], drop = TRUE, sep = ":")
 }
@@ -149,7 +149,7 @@ make_madf_data <- function(frame, spX, spZ) {
     spZ_flag = 1L * spZ,
     predict_flag = 0L
   )
-  l2 <- setNames(as.list(match(pn0, pn) - 1L), sprintf("i_log_%s", pn0))
+  l2 <- setNames(as.list(match(pn0, pn, 0L) - 1L), sprintf("i_log_%s", pn0))
   c(l1, l2)
 }
 
@@ -164,15 +164,14 @@ make_madf_parameters <- function(madf_data) {
   ffr_aug_split <- split(ffr_aug, madf_data$w)
 
   get_naive_log_r_log_c0 <- function(d) {
+    d$x[1L] <- 0L
     h <- max(2, nrow(d) / 2)
     x <- d$t[seq_len(h)]
-    y <- log1p(cumsum(c(0, d$x[-1])[seq_len(h)]))
-    ab <- try(silent = TRUE, expr = {
-      coef(lm(y ~ x, data = data.frame(x, y), na.action = na.omit))
-    })
-    if (inherits(ab, "try-error")) {
-      return(log(c(1, 0.1)))
-    }
+    y <- log1p(cumsum(d$x[seq_len(h)]))
+    ab <- tryCatch(
+      expr = coef(lm(y ~ x, data = data.frame(x, y), na.action = na.omit)),
+      error = function(e) log(c(1, 0.1))
+    )
     c(ab[[1L]], log(ab[[2L]]))
   }
 
@@ -184,14 +183,14 @@ make_madf_parameters <- function(madf_data) {
   log_p <- log_nbdisp <- log_b <- 0 * log_r
 
   pfr <- do.call(cbind, as.list(environment())[sprintf("log_%s", pn)])
-  pfr <- cbind(pfr,
-    do.call(rbind, lapply(ffr_aug_split, "[", 1L, -(1:2), drop = FALSE))
-  )
+  pfr <- cbind(pfr, do.call(rbind, lapply(ffr_aug_split, "[", 1L, -(1:2), drop = FALSE)))
 
   beta <- unlist(lapply(pn, function(s) {
     tl <- names(madf_data$fnl)[pid[s]]
-    ls <- sprintf("log_%s", s)
-    unname(sapply(split(pfr, pfr[[tl]]), function(d) mean(d[[ls]])))
+    s <- sprintf("log_%s", s)
+    m <- unname(sapply(split(pfr, pfr[[tl]]), function(d) mean(d[[s]])))
+    mm <- mean(m)
+    c(mm, m[-length(m)] - mm)
   }))
   if (nrow(madf_data$rid) > 0L) {
     b <- rep(0, sum(madf_data$rnl * rowSums(madf_data$rid)))

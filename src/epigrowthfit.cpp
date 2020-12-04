@@ -1,4 +1,4 @@
-#define TMB_LIB_INIT R_init_epigrowthfit
+// #define TMB_LIB_INIT R_init_epigrowthfit
 #include <TMB.hpp>
 
 template<class Type>
@@ -10,11 +10,10 @@ Type dpois_robust(Type x, Type log_lambda, int give_log = 0)
 
 // https://github.com/kaskr/adcomp/issues/59
 template<class Type>
-bool isNA(Type x)
+bool isNA_real_(Type x)
 {
     return R_IsNA(asDouble(x));
 }
-
 
 
 // https://kaskr.github.io/adcomp/Introduction.html
@@ -118,12 +117,12 @@ Type objective_function<Type>::operator() ()
     matrix<Type> b2_dense(rnl.sum(), np);
 
     // A list of (nlevels(RE i) x np(RE i)) matrices gathering related elements
-    // of vector `b`: rows of each matrix follow a zero-mean multivariate normal
-    // distribution with a common covariance matrix
+    // of vector `b`: rows of each matrix follow a zero-mean, unit-variance
+    // multivariate normal distribution with a common covariance matrix
     vector< matrix<Type> > re_list(rid.rows());
 
-    // A list of covariance matrices corresponding elementwise to `re_list`
-    vector< matrix<Type> > cov_list(rid.rows());
+    // A list of correlation matrices corresponding elementwise to `re_list`
+    vector< matrix<Type> > cor_list(rid.rows());
 	
     // A list of s.d. vectors corresponding elementwise to `re_list`
     vector< vector<Type> > sd_list(rid.rows());
@@ -149,27 +148,27 @@ Type objective_function<Type>::operator() ()
 	REPORT(re_list);
 
 
-	// Form covariance matrices --------------------------------------------
+	// Form correlation matrices -------------------------------------------
 
-	// Covariance matrix in univariate case
-	matrix<Type> cov_list_el(1, 1);
-	cov_list_el(0, 0) = Type(1);
+	// Correlation matrix in univariate case
+	matrix<Type> cor_list_el(1, 1);
+	cor_list_el(0, 0) = Type(1);
 
-	for (int r = 0; r < cov_list.size(); r++) // loop over RE
+	for (int r = 0; r < cor_list.size(); r++) // loop over RE
 	{
-	    // UNSTRUCTURED_CORR() does not tolerate `cor_ltri.size() == 0`
+	    // UNSTRUCTURED_CORR() does not tolerate `ltri.size() == 0`
 	    if (rnp(r) == 1)
 	    {
-		cov_list(r) = cov_list_el;
+		cor_list(r) = cor_list_el;
 		continue;
 	    }
 	    else
 	    {
-		vector<Type> cor_ltri(rnp(r) * (rnp(r) - 1) / 2);
-		cov_list(r) = density::UNSTRUCTURED_CORR(cor_ltri).cov();
+		vector<Type> ltri(rnp(r) * (rnp(r) - 1) / 2);
+		cor_list(r) = density::UNSTRUCTURED_CORR(ltri).cov();
 	    }
 	}
-	REPORT(cov_list);
+	REPORT(cor_list);
 
 
 	// Form scale vectors --------------------------------------------------
@@ -226,122 +225,127 @@ Type objective_function<Type>::operator() ()
 	    Q += Z * b2_dense;
 	}
     }
-
+    REPORT(Q);
+    
 
     // Compute likelihood ======================================================
 
     // Parameter values
-    vector<Type> r(t.size());
+    vector<Type> log_r(t.size());
     vector<Type> log_c0(t.size());
-    vector<Type> thalf(t.size());
+    vector<Type> log_thalf(t.size());
     vector<Type> log_K(t.size());
-    vector<Type> p(t.size());
+    vector<Type> log_p(t.size());
     vector<Type> log_nbdisp(t.size());
     vector<Type> log_b(t.size());
     Type log_nbexcessvar; // excess variance = mean^2/dispersion
 
-    r = Q.col(i_log_r);
-    if (!isNA(i_log_c0))
+    log_r = Q.col(i_log_r);
+    if (i_log_c0 >= 0) // FIXME: isNA_integer_()?
     {
         log_c0 = Q.col(i_log_c0);
     }
     else
     {
-        thalf = Q.col(i_log_thalf);
+        log_thalf = Q.col(i_log_thalf);
         log_K = Q.col(i_log_K);
-	if (!isNA(i_log_p))
-	{
-	    p = Q.col(i_log_p);
-	}
+    	if (i_log_p >= 0)
+    	{
+    	    log_p = Q.col(i_log_p);
+    	}
     }
-    if (!isNA(i_log_nbdisp))
+    if (i_log_nbdisp >= 0)
     {
         log_nbdisp = Q.col(i_log_nbdisp);
     }
-    if (!isNA(i_log_b))
+    if (i_log_b >= 0)
     {
         log_b = Q.col(i_log_b);
     }
+
+    // Inverse-link transformed parameter values
+    // FIXME: vector<Type> r = exp(Q.col(i_log_r));?
+    vector<Type> r = exp(log_r);
+    vector<Type> thalf = exp(log_thalf);
+    vector<Type> p = exp(log_p);
     
     // Incidence curves
     vector<Type> log_cum_inc(t.size());                // log cumulative incidence
     vector<Type> log_int_inc(t.size()-w.maxCoeff()-1); // log interval incidence
 
     // Objective function
-    Type nll = Type(0);
+    Type nll = 0;
 
 
     // Evaluate log cumulative incidence at observation times
     for (int i = 0; i < t.size(); i++)
     {
         // curve="exponential"
-        if (!isNA(i_log_c0))
-	{
-	    log_cum_inc(i) = log_c0(i) + r(i) * t(i);
-	}
-	else
-	{
-	    // curve="logistic"
-	    if (isNA(i_log_p))
-	    {
-	        log_cum_inc(i) = log_K(i) - logspace_add(Type(0), -r(i) * (t(i) - thalf(i)));
-	    }
-	    // curve="richards"
-	    else
-	    {
-		log_cum_inc(i) = log_K(i) - logspace_add(Type(0), logspace_sub(p(i) * log(2), Type(0)) - r(i) * p(i) * (t(i) - thalf(i))) / p(i);
-	    }
+        if (i_log_c0 >= 0)
+    	{
+    	    log_cum_inc(i) = log_c0(i) + r(i) * t(i);
+    	}
+    	else
+    	{
+    	    // curve="logistic"
+    	    if (i_log_p < 0)
+    	    {
+    	        log_cum_inc(i) = log_K(i) - logspace_add(Type(0), -r(i) * (t(i) - thalf(i)));
+    	    }
+    	    // curve="richards"
+    	    else
+    	    {
+    		log_cum_inc(i) = log_K(i) - logspace_add(Type(0), logspace_sub(p(i) * log(2), Type(0)) - r(i) * p(i) * (t(i) - thalf(i))) / p(i);
+    	    }
         }
         // include_baseline=TRUE
-	if (!isNA(i_log_b))
-	{
-	    log_cum_inc(i) = logspace_add(log_b(i) + log(t(i)), log_cum_inc(i));
-	}
+    	if (i_log_b >= 0)
+    	{
+    	    log_cum_inc(i) = logspace_add(log_b(i) + log(t(i)), log_cum_inc(i));
+    	}
     }
+    REPORT(log_cum_inc);
 
     // Compute log interval incidence and increment negative log likelihood
     for (int i = 0, d = 0; i < t.size()-1; i++)
     {
         // First element of `x` in each level of `w` is ignored
         if (w(i) != w(i+1))
-	{
-	    d++;
-	    continue;
-	}
+    	{
+    	    d++;
+    	    continue;
+    	}
 	
         log_int_inc(i-d) = logspace_sub(log_cum_inc(i+1), log_cum_inc(i));
-        if (!isNA(x(i)))
+        if (!isNA_real_(x(i)))
         {
-	    // distr="pois"
-	    if (isNA(i_log_nbdisp))
-	    {
-	        nll -= dpois_robust(x(i+1), log_int_inc(i-d), true);
-	    }
-	    // distr="nbinom"
-	    else
-	    {
-	        log_nbexcessvar = Type(2) * log_int_inc(i-d) - log_nbdisp(i+1);
-		nll -= dnbinom_robust(x(i+1), log_int_inc(i-d), log_nbexcessvar, true);
-	    }
+    	    // distr="pois"
+    	    if (i_log_nbdisp < 0)
+    	    {
+    	        nll -= dpois_robust(x(i+1), log_int_inc(i-d), true);
+    	    }
+    	    // distr="nbinom"
+    	    else
+    	    {
+    	        log_nbexcessvar = Type(2) * log_int_inc(i-d) - log_nbdisp(i+1);
+    		nll -= dnbinom_robust(x(i+1), log_int_inc(i-d), log_nbexcessvar, true);
+    	    }
         }
     }
+    REPORT(log_int_inc);
 
     // Compute parameter joint density and increment negative log likelihood
     if (anyRE)
     {
-	for (int r = 0; r < re_list.size(); r++) // loop over RE
-	{
-	    for (int l = 0; l < rnl(r); l++) // loop over levels
-	    {
-	        nll += density::MVNORM(cov_list(r))(re_list(r).row(l));
-	    }
-	}
+    	for (int r = 0; r < re_list.size(); r++) // loop over RE
+    	{
+    	    for (int l = 0; l < rnl(r); l++) // loop over levels
+    	    {
+    	        nll += density::MVNORM(cor_list(r))(re_list(r).row(l));
+    	    }
+    	}
     }
-
-    REPORT(Q);
-    REPORT(log_cum_inc);
-    REPORT(log_int_inc);
-
+    
 
     // Predict incidence for new data ==========================================
 
@@ -352,94 +356,101 @@ Type objective_function<Type>::operator() ()
         // that new data belong to one group
         DATA_VECTOR(t_new);
         DATA_MATRIX(X_new);
-	DATA_MATRIX(Z_new);
+    	DATA_MATRIX(Z_new);
 
-	// np-vector of parameter values
-	matrix<Type> Q_new(1, np);
-	if (spX_flag == 1)
-	{
-	    Q_new = X_new * beta2_sparse;
-	}
-	else
-	{
-	    Q_new = X_new * beta2_dense;
-	}
+    	// np-vector of parameter values
+    	matrix<Type> Q_new(1, np);
+    	if (spX_flag == 1)
+    	{
+    	    Q_new = X_new * beta2_sparse;
+    	}
+    	else
+    	{
+    	    Q_new = X_new * beta2_dense;
+    	}
 	
-	if (anyRE)
-	{
-	    if (spZ_flag == 1)
-	    {
-	        Q_new += Z_new * b2_sparse;
-	    }
-	    else
-	    {
-	        Q_new += Z_new * b2_dense;
-	    }
-	}
+    	if (anyRE)
+    	{
+    	    if (spZ_flag == 1)
+    	    {
+    	        Q_new += Z_new * b2_sparse;
+    	    }
+    	    else
+    	    {
+    	        Q_new += Z_new * b2_dense;
+    	    }
+    	}
+    	REPORT(Q_new);
 	
-	// Parameter values
-	Type r_new;
-	Type log_c0_new;
-	Type thalf_new;
-	Type log_K_new;
-	Type p_new;
-	Type log_b_new;
+    	// Parameter values
+    	Type r_new;
+    	Type log_c0_new;
+    	Type thalf_new;
+    	Type log_K_new;
+    	Type p_new;
+    	Type log_b_new;
 
-	r_new = exp(Q_new(1, i_log_r));
-	if (!isNA(i_log_c0))
-	{
-	    log_c0_new = Q_new(1, i_log_c0);
-	}
-	else
-	{
-	    thalf_new = exp(Q_new(1, i_log_thalf));
-	    log_K_new = Q_new(1, i_log_K);
-	    if (!isNA(i_log_p))
-	    {
-	        p_new = exp(Q_new(1, i_log_p));
-	    }
-	}
-	if (!isNA(i_log_b))
-	{
-	    log_b_new = Q_new(1, i_log_b);
-	}
+    	r_new = exp(Q_new(1, i_log_r));
+    	if (i_log_c0 >= 0)
+    	{
+    	    log_c0_new = Q_new(1, i_log_c0);
+    	}
+    	else
+    	{
+    	    thalf_new = exp(Q_new(1, i_log_thalf));
+    	    log_K_new = Q_new(1, i_log_K);
+    	    if (i_log_p >= 0)
+    	    {
+    	        p_new = exp(Q_new(1, i_log_p));
+    	    }
+    	}
+    	if (i_log_b >= 0)
+    	{
+    	    log_b_new = Q_new(1, i_log_b);
+    	}
 	
-	// Incidence curves
-	vector<Type> log_cum_inc_new(t_new.size());
-	vector<Type> log_int_inc_new(t_new.size()-1);
+    	// Incidence curves
+    	vector<Type> log_cum_inc_new(t_new.size());
+    	vector<Type> log_int_inc_new(t_new.size()-1);
 
-	// Evaluate log cumulative incidence at new times
-	for (int i = 0; i < t_new.size(); i++)
-	{
-	    if (!isNA(i_log_c0)) // curve="exponential"
-	    {
-		log_cum_inc_new(i) = log_c0_new + r_new * t_new(i);
-	    }
-	    else if (isNA(i_log_p)) // curve="logistic"
-	    {
-		log_cum_inc_new(i) = log_K_new - logspace_add(Type(0), -r_new * (t_new(i) - thalf_new));
-	    }
-	    else // curve="richards"
-	    {
-	        log_cum_inc_new(i) = log_K_new - logspace_add(Type(0), logspace_sub(p_new * log(2), Type(0)) - r_new * p_new * (t_new(i) - thalf_new)) / p_new;
-	    }
-	    if (!isNA(i_log_b)) // include_baseline=TRUE
-	    {
-	        log_cum_inc_new(i) = logspace_add(log_b_new + log(t_new(i)), log_cum_inc_new(i));
-	    }
-	}
+    	// Evaluate log cumulative incidence at new times
+    	for (int i = 0; i < t_new.size(); i++)
+    	{
+	    // curve="exponential"
+    	    if (i_log_c0 >= 0)
+    	    {
+    		log_cum_inc_new(i) = log_c0_new + r_new * t_new(i);
+    	    }
+    	    else
+    	    {
+	        // curve="logistic"
+	        if (i_log_p < 0)
+		{
+		    log_cum_inc_new(i) = log_K_new - logspace_add(Type(0), -r_new * (t_new(i) - thalf_new));
+		}
+		// curve="richards"
+		else
+		{
+		    log_cum_inc_new(i) = log_K_new - logspace_add(Type(0), logspace_sub(p_new * log(2), Type(0)) - r_new * p_new * (t_new(i) - thalf_new)) / p_new;
+		}
+    		
+    	    }
+	    // include_baseline=TRUE
+    	    if (i_log_b >= 0)
+    	    {
+    	        log_cum_inc_new(i) = logspace_add(log_b_new + log(t_new(i)), log_cum_inc_new(i));
+    	    }
+    	}
+	ADREPORT(log_cum_inc_new);
 
         // Compute log interval incidence
-	for (int i = 0; i < t_new.size()-1; i++)
-	{
-	    log_int_inc_new(i) = logspace_sub(log_cum_inc_new(i+1), log_cum_inc_new(i));
+    	for (int i = 0; i < t_new.size()-1; i++)
+    	{
+    	    log_int_inc_new(i) = logspace_sub(log_cum_inc_new(i+1), log_cum_inc_new(i));
         }
-
-	REPORT(Q_new);
-        ADREPORT(log_cum_inc_new);
-	ADREPORT(log_int_inc_new);
+        ADREPORT(log_int_inc_new);
     }
-    
 
+    
     return nll;
 }
