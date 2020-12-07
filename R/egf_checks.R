@@ -2,7 +2,7 @@ check_formula <- function(formula) {
   check(formula,
     what = "formula",
     len = 3L,
-    yes = function(x) grepl("^[[:alpha:].]{1}[[:alnum:]._]* ~ [[:alpha:].]{1}[[:alnum:]._]*$", deparse(x)),
+    passes = function(x) grepl("^[[:alpha:].]{1}[[:alnum:]._]* ~ [[:alpha:].]{1}[[:alnum:]._]*$", deparse(x)),
     "`formula` must be a formula of the form `y ~ x`."
   )
   formula
@@ -22,13 +22,13 @@ check_fixed <- function(fixed, par_names) {
   check(fixed,
     what = "list",
     len = c(1L, NA),
-    yes = function(x) all(sapply(x, inherits, "formula")),
-    "`fixed` must be `NULL`, a formula, or a named list of formula."
+    each_passes = function(x) inherits(x, "formula"),
+    "`fixed` must be NULL, a formula, or a named list of formula."
   )
   check(names(fixed),
     what = "character",
     opt = par_names,
-    no = function(x) any(duplicated(x)),
+    fails = function(x) any(duplicated(x)),
     "If `fixed` is a list, then `names(fixed)` must be a subset\n",
     "of `get_par_names(curve, distr, include_baseline)`."
   )
@@ -39,7 +39,7 @@ check_fixed <- function(fixed, par_names) {
   )
   rhs <- sapply(fixed, function(x) deparse(x[[2]]))
   check(rhs,
-    yes = function(x) all(grepl("^(1|([[:alnum:]._]+(:[[:alnum:]._]+)*))$", x)),
+    passes = function(x) all(grepl("^(1|([[:alnum:]._]+(:[[:alnum:]._]+)*))$", x)),
     m
   )
 
@@ -62,13 +62,13 @@ check_random <- function(random, par_names) {
   check(random,
     what = "list",
     len = c(1L, NA),
-    yes = function(x) all(sapply(x, inherits, "formula")),
-    "`random` must be `NULL`, a formula, or a named list of formula."
+    each_passes = function(x) inherits(x, "formula"),
+    "`random` must be NULL, a formula, or a named list of formula."
   )
   check(names(random),
     what = "character",
     opt = par_names,
-    no = function(x) any(duplicated(x)),
+    fails = function(x) any(duplicated(x)),
     "If `random` is a list, then `names(random)` must be a subset\n",
     "of `get_par_names(curve, distr, include_baseline)`."
   )
@@ -83,7 +83,7 @@ check_random <- function(random, par_names) {
   )
   rhs <- sapply(random, function(x) deparse(x[[2]]))
   check(rhs,
-    yes = function(x) all(grepl("^(( \\+|- )?\\(1 \\| [[:alnum:]._]+((:[[:alnum:]._]+)*|(/[[:alnum:]._]+)*|(( \\* )[[:alnum:]._]+)*)\\))+$", x)),
+    passes = function(x) all(grepl("^(( \\+|- )?\\(1 \\| [[:alnum:]._]+((:[[:alnum:]._]+)*|(/[[:alnum:]._]+)*|(( \\* )[[:alnum:]._]+)*)\\))+$", x)),
     m
   )
 
@@ -109,7 +109,7 @@ check_data <- function(formula, data, index,
   an <- unique(c(dn, cn, fn))
   found <- an %in% names(data)
   if (any(!found)) {
-    stop(call. = FALSE,
+    stop(
       "Variables not found in `data`:\n",
       paste(an[!found], collapse = ", ")
     )
@@ -128,7 +128,7 @@ check_data <- function(formula, data, index,
     sprintf("`%s` must have nonzero length.", dn)
   )
   check(data[[dn]],
-    no = anyNA,
+    fails = anyNA,
     sprintf("`%s` must not have missing values.", dn)
   )
   n <- length(data[[dn]])
@@ -140,7 +140,7 @@ check_data <- function(formula, data, index,
   check(data[[cn]],
     val = c(0, Inf),
     rel = c(">=", "<"),
-    yes = function(x) all(x %% 1 == 0, na.rm = TRUE),
+    passes = function(x) all(x %% 1 == 0, na.rm = TRUE),
     sprintf("Elements of `%s` must be non-negative integers or NA.", cn)
   )
   data[[cn]] <- as.integer(data[[cn]])
@@ -148,7 +148,7 @@ check_data <- function(formula, data, index,
   ## Check that grouping variables are specified correctly
   if (length(fn) > 0L) {
     check(data[fn],
-      yes = function(x) all(sapply(x, is.factor) & sapply(x, length) == n),
+      each_passes = function(x) is.factor(x) && length(x) == n,
       sprintf("Grouping variables must be factors of length `length(%s)`", dn)
     )
     data[fn] <- lapply(data[fn], droplevels, exclude = NA)
@@ -169,7 +169,7 @@ check_data <- function(formula, data, index,
       "`index` must have at least one nonempty level."
     )
     check(na.omit(unclass(index)),
-      yes = function(x) sum(diff(x) != 0L) == nlevels(index) - 1L,
+      passes = function(x) sum(diff(x) != 0L) == nlevels(index) - 1L,
       "Elements of `index` of a given level must be contiguous."
     )
   }
@@ -178,30 +178,30 @@ check_data <- function(formula, data, index,
   data_split <- split(data, index)
   date_split <- lapply(data_split, "[[", dn)
   check(date_split,
-    no = function(x) any(sapply(x, length) < 7L),
+    each_passes = function(x) length(x) >= 7L,
     sprintf("`%s` must have length 7 or greater in each level of `index`.", dn)
   )
   check(date_split,
-    yes = function(x) all(unlist(lapply(x, diff)) > 0),
+    each_passes = function(x) all(diff(x) > 0),
     sprintf("`%s` must be increasing in each level of `index`.", dn)
   )
   cases_split <- lapply(data_split, "[[", cn)
-  cases_split <- lapply(cases_split, "[", -1L)
   if (na_action == "fail") {
     check(cases_split,
-      no = function(x) anyNA(unlist(x)),
+      each_fails = function(x) anyNA(x[-1L]),
       sprintf("There are fitting windows with missing values in `%s`.", cn)
     )
+  } else {
+    check(cases_split,
+      each_passes = function(x) sum(!is.na(x)) >= 7L,
+      sprintf("There are fitting windows with insufficient data in `%s`.", cn)
+    )
   }
-  check(cases_split,
-    no = function(x) any(sapply(x, function(y) sum(!is.na(y)) < 6L)),
-    sprintf("There are fitting windows with insufficient data in `%s`.", cn)
-  )
   factors_split <- lapply(data_split, "[", fn)
   factors_split <- lapply(factors_split, droplevels, exclude = NA)
   check(factors_split,
-    yes = function(x) all(unlist(lapply(x, function(y) sapply(y, nlevels))) == 1L),
-    no = function(x) any(sapply(x, anyNA)),
+    each_passes = function(x) all(sapply(x, nlevels) == 1L),
+    each_fails = anyNA,
     "Factors must be constant and without missing values\n",
     "in each level of `index`."
   )

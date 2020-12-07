@@ -23,9 +23,9 @@ Type objective_function<Type>::operator() ()
     // Set up ==================================================================
 
     // Flags
-    DATA_INTEGER(predict_flag); // predict   (1=predict, 0=fit)
-    DATA_INTEGER(spX_flag);     // sparse X  (1=sparse,  0=dense)
-    DATA_INTEGER(spZ_flag);     // sparse Z  (1=sparse,  0=dense)
+    DATA_INTEGER(spX_flag);     // sparse X  (1=sparse,   0=dense)
+    DATA_INTEGER(spZ_flag);     // sparse Z  (1=sparse,   0=dense)
+    DATA_INTEGER(predict_flag); // predict   (1=predict,  0=fit)
 
     // Data
     // time series
@@ -50,10 +50,10 @@ Type objective_function<Type>::operator() ()
     // Parameters
     // fixed effects
     PARAMETER_VECTOR(beta); // length=sum(nlevels(FE i))
-    // random effects
-    PARAMETER_VECTOR(b);    // length=sum(nlevels(RE i)*np(RE i)) 
     // sd random effects
     PARAMETER_VECTOR(sd_b); // length=sum(np(RE i))
+    // random effects
+    PARAMETER_VECTOR(b);    // length=sum(nlevels(RE i)*np(RE i)) 
 
     // Number of parameters
     int np = rid.cols();
@@ -66,7 +66,7 @@ Type objective_function<Type>::operator() ()
     // NOTE: parameters are constant within but not across fitting windows
 
     // (N x np) matrix of parameter values
-    matrix<Type> Q(t.size(), np);
+    matrix<Type> Y(t.size(), np);
     
     // Fixed effects component:
     // matrix multiply
@@ -91,7 +91,7 @@ Type objective_function<Type>::operator() ()
 	}
         beta2_sparse.makeCompressed();
 	DATA_SPARSE_MATRIX(X);
-	Q = X * beta2_sparse;
+	Y = X * beta2_sparse;
     }
     else
     {
@@ -102,7 +102,7 @@ Type objective_function<Type>::operator() ()
 	    i += fnl(j);
 	}
 	DATA_MATRIX(X);
-	Q = X * beta2_dense;
+	Y = X * beta2_dense;
     }
     
     // Random effects component:
@@ -121,11 +121,12 @@ Type objective_function<Type>::operator() ()
     // multivariate normal distribution with a common covariance matrix
     vector< matrix<Type> > re_list(rid.rows());
 
+    // A list of s.d. vectors corresponding elementwise to `re_list`
+    vector< vector<Type> > sd_list(rid.rows());
+
     // A list of correlation matrices corresponding elementwise to `re_list`
     vector< matrix<Type> > cor_list(rid.rows());
 	
-    // A list of s.d. vectors corresponding elementwise to `re_list`
-    vector< vector<Type> > sd_list(rid.rows());
     
     if (anyRE)
     {
@@ -148,6 +149,17 @@ Type objective_function<Type>::operator() ()
 	REPORT(re_list);
 
 
+	// Form scale vectors --------------------------------------------------
+
+	for (int r = 0, k = 0; r < sd_list.size(); r++)
+	{
+	    vector<Type> sd_list_el = sd_b.segment(k, rnp(r));
+	    sd_list(r) = sd_list_el;
+	    k += rnp(r);
+	}
+	REPORT(sd_list);
+
+	
 	// Form correlation matrices -------------------------------------------
 
 	// Correlation matrix in univariate case
@@ -169,17 +181,6 @@ Type objective_function<Type>::operator() ()
 	    }
 	}
 	REPORT(cor_list);
-
-
-	// Form scale vectors --------------------------------------------------
-
-	for (int r = 0, k = 0; r < sd_list.size(); r++)
-	{
-	    vector<Type> sd_list_el = sd_b.segment(k, rnp(r));
-	    sd_list(r) = sd_list_el;
-	    k += rnp(r);
-	}
-	REPORT(sd_list);
 
 
 	// Construct `b2` ------------------------------------------------------
@@ -204,7 +205,7 @@ Type objective_function<Type>::operator() ()
 	    }
 	    b2_sparse.makeCompressed();
 	    DATA_SPARSE_MATRIX(Z);
-	    Q += Z * b2_sparse;
+	    Y += Z * b2_sparse;
 	}
 	else
 	{
@@ -222,10 +223,10 @@ Type objective_function<Type>::operator() ()
 		i += rnl(r);
 	    }
 	    DATA_MATRIX(Z);
-	    Q += Z * b2_dense;
+	    Y += Z * b2_dense;
 	}
     }
-    REPORT(Q);
+    REPORT(Y);
     
 
     // Compute likelihood ======================================================
@@ -240,37 +241,37 @@ Type objective_function<Type>::operator() ()
     vector<Type> log_b(t.size());
     Type log_nbexcessvar; // excess variance = mean^2/dispersion
 
-    log_r = Q.col(i_log_r);
+    log_r = Y.col(i_log_r);
     if (i_log_c0 >= 0) // FIXME: isNA_integer_()?
     {
-        log_c0 = Q.col(i_log_c0);
+        log_c0 = Y.col(i_log_c0);
     }
     else
     {
-        log_thalf = Q.col(i_log_thalf);
-        log_K = Q.col(i_log_K);
+        log_thalf = Y.col(i_log_thalf);
+        log_K = Y.col(i_log_K);
     	if (i_log_p >= 0)
     	{
-    	    log_p = Q.col(i_log_p);
+    	    log_p = Y.col(i_log_p);
     	}
     }
     if (i_log_nbdisp >= 0)
     {
-        log_nbdisp = Q.col(i_log_nbdisp);
+        log_nbdisp = Y.col(i_log_nbdisp);
     }
     if (i_log_b >= 0)
     {
-        log_b = Q.col(i_log_b);
+        log_b = Y.col(i_log_b);
     }
 
     // Inverse-link transformed parameter values
-    // FIXME: vector<Type> r = exp(Q.col(i_log_r));?
+    // FIXME: vector<Type> r = exp(Y.col(i_log_r));?
     vector<Type> r = exp(log_r);
     vector<Type> thalf = exp(log_thalf);
     vector<Type> p = exp(log_p);
     
     // Incidence curves
-    vector<Type> log_cum_inc(t.size());                // log cumulative incidence
+    vector<Type> log_cum_inc(t.size()); // log cumulative incidence
     vector<Type> log_int_inc(t.size()-w.maxCoeff()-1); // log interval incidence
 
     // Objective function
@@ -351,6 +352,9 @@ Type objective_function<Type>::operator() ()
 
     if (predict_flag == 1)
     {
+        // Flags
+        DATA_INTEGER(se_flag); // report  (1=ADREPORT, 0=REPORT)
+      
         // Data
         // NOTE: X/Z matrices are row vectors because we are enforcing on R side
         // that new data belong to one group
@@ -359,28 +363,28 @@ Type objective_function<Type>::operator() ()
     	DATA_MATRIX(Z_new);
 
     	// np-vector of parameter values
-    	matrix<Type> Q_new(1, np);
+    	matrix<Type> Y_new(1, np);
     	if (spX_flag == 1)
     	{
-    	    Q_new = X_new * beta2_sparse;
+    	    Y_new = X_new * beta2_sparse;
     	}
     	else
     	{
-    	    Q_new = X_new * beta2_dense;
+    	    Y_new = X_new * beta2_dense;
     	}
 	
     	if (anyRE)
     	{
     	    if (spZ_flag == 1)
     	    {
-    	        Q_new += Z_new * b2_sparse;
+    	        Y_new += Z_new * b2_sparse;
     	    }
     	    else
     	    {
-    	        Q_new += Z_new * b2_dense;
+    	        Y_new += Z_new * b2_dense;
     	    }
     	}
-    	REPORT(Q_new);
+    	REPORT(Y_new);
 	
     	// Parameter values
     	Type r_new;
@@ -390,23 +394,23 @@ Type objective_function<Type>::operator() ()
     	Type p_new;
     	Type log_b_new;
 
-    	r_new = exp(Q_new(1, i_log_r));
+        r_new = exp(Y_new(0, i_log_r));
     	if (i_log_c0 >= 0)
     	{
-    	    log_c0_new = Q_new(1, i_log_c0);
+    	    log_c0_new = Y_new(0, i_log_c0);
     	}
     	else
     	{
-    	    thalf_new = exp(Q_new(1, i_log_thalf));
-    	    log_K_new = Q_new(1, i_log_K);
+    	    thalf_new = exp(Y_new(0, i_log_thalf));
+    	    log_K_new = Y_new(0, i_log_K);
     	    if (i_log_p >= 0)
     	    {
-    	        p_new = exp(Q_new(1, i_log_p));
+    	        p_new = exp(Y_new(0, i_log_p));
     	    }
     	}
     	if (i_log_b >= 0)
     	{
-    	    log_b_new = Q_new(1, i_log_b);
+    	    log_b_new = Y_new(0, i_log_b);
     	}
 	
     	// Incidence curves
@@ -441,16 +445,25 @@ Type objective_function<Type>::operator() ()
     	        log_cum_inc_new(i) = logspace_add(log_b_new + log(t_new(i)), log_cum_inc_new(i));
     	    }
     	}
-	ADREPORT(log_cum_inc_new);
 
         // Compute log interval incidence
     	for (int i = 0; i < t_new.size()-1; i++)
     	{
     	    log_int_inc_new(i) = logspace_sub(log_cum_inc_new(i+1), log_cum_inc_new(i));
         }
-        ADREPORT(log_int_inc_new);
-    }
 
+	// Report to R session
+	if (se_flag == 1)
+	{
+	    ADREPORT(log_cum_inc_new);
+	    ADREPORT(log_int_inc_new);
+	}
+	else
+	{
+	    REPORT(log_cum_inc_new);
+	    REPORT(log_int_inc_new);
+	}
+    }
     
     return nll;
 }

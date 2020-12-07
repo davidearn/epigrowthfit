@@ -18,7 +18,7 @@ egf <- function(formula,
   check(include_baseline,
     what = "logical",
     len = 1L,
-    no = is.na,
+    fails = is.na,
     "`include_baseline` must be TRUE or FALSE."
   )
   na_action <- match.arg(na_action)
@@ -31,18 +31,15 @@ egf <- function(formula,
   frame <- check_data(formula, data, index, fixed, random, dfmt, na_action)
 
   madf_data <- make_madf_data(frame, spX, spZ)
-  madf_parameters <- make_madf_parameters(madf_data)
-  madf_map <- make_madf_map(madf_data)
-  madf_random <- make_madf_random(madf_data)
-
-  madf_out <- MakeADFun(
+  madf_args <- list(
     data = madf_data,
-    parameters = madf_parameters,
-    map = madf_map,
-    random = madf_random,
+    parameters = make_madf_parameters(madf_data),
+    map = make_madf_map(madf_data),
+    random = make_madf_random(madf_data),
     DLL = "epigrowthfit",
     silent = TRUE
   )
+  madf_out <- do.call(MakeADFun, madf_args)
 
   if (method == "nlminb") {
     optim_out <- nlminb(
@@ -79,14 +76,14 @@ egf <- function(formula,
     curve = curve,
     distr = distr,
     include_baseline = include_baseline,
-    par0 = madf_out$par,
-    madf_data = madf_data,
+    madf_args = madf_args,
     madf_out = madf_out,
     optim_out = optim_out,
+    par0 = madf_out$par,
     par = par,
     nll = nll,
-    nll_func = function(par = par) madf_out$fn(par),
-    nll_grad = function(par = par) as.vector(madf_out$gr(par)),
+    nll_func = function(theta = theta) madf_out$fn(par),
+    nll_grad = function(theta = theta) as.vector(madf_out$gr(par)),
     call = match.call()
   )
   structure(out, class = c("egf", "list"))

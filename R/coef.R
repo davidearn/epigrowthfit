@@ -1,8 +1,13 @@
-coef.egf <- function(object, ...) {
+coef.egf <- function(object, log = FALSE, ...) {
   dots <- list(...)
   if (length(dots) > 0L) {
+    check(dots,
+      each_passes = is.atomic,
+      "Elements of `list(...)` must be atomic vectors."
+    )
     check(names(dots),
       opt = names(object$frame)[-(1:2)],
+      fails = function(x) any(duplicated(x)),
       "`names(list(...))` must name factors in `object$frame`."
     )
     for (s in names(dots)) {
@@ -13,14 +18,27 @@ coef.egf <- function(object, ...) {
       )
     }
   }
+  check(log,
+    what = "logical",
+    len = c(1L, NA),
+    fails = is.na,
+    "`log` must be TRUE or FALSE."
+  )
 
-  Q <- object$madf_out$report(object$par)$Q
-  colnames(Q) <- sprintf("log_%s", colnames(object$madf_data$fid))
-  d <- data.frame(object$frame[-(1:2)], as.data.frame(Q))
-  d <- do.call(rbind, lapply(split(d, object$index), "[", 1L, ))
-
-  if (length(dots) == 0L) {
-    return(d)
+  Y <- object$madf_out$report(object$par)$Y
+  pn <- get_par_names(object$curve, object$distr, object$include_baseline)
+  if (log) {
+    colnames(Y) <- sprintf("log_%s", pn)
+  } else {
+    Y <- exp(Y)
+    colnames(Y) <- pn
   }
-  d[Reduce("&", lapply(names(dots), function(s) d[[s]] %in% dots[[s]])), ]
+
+  d <- cbind(object$frame[-(1:2)], as.data.frame(Y))
+  d <- d[!duplicated(object$index), ]
+  if (length(dots) > 0L) {
+    d <- d[Reduce("&", lapply(names(dots), function(s) d[[s]] %in% dots[[s]])), ]
+  }
+  row.names(d) <- NULL
+  d
 }

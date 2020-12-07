@@ -193,20 +193,20 @@ make_madf_parameters <- function(madf_data) {
     c(mm, m[-length(m)] - mm)
   }))
   if (nrow(madf_data$rid) > 0L) {
-    b <- rep(0, sum(madf_data$rnl * rowSums(madf_data$rid)))
     sd_b <- rep(1, sum(madf_data$rid))
+    b <- rep(0, sum(madf_data$rnl * rowSums(madf_data$rid)))
   } else {
-    b <- NA_real_
     sd_b <- NA_real_
+    b <- NA_real_
   }
-  list(beta = beta, b = b, sd_b = sd_b)
+  list(beta = beta, sd_b = sd_b, b = b)
 }
 
 make_madf_map <- function(madf_data) {
   if (nrow(madf_data$rid) > 0L) {
     return(list())
   }
-  list(b = factor(NA), sd_b = factor(NA))
+  list(sd_b = factor(NA), b = factor(NA))
 }
 
 make_madf_random <- function(madf_data) {

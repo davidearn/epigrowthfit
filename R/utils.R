@@ -1,9 +1,9 @@
-#' Validate an atomic vector
+#' Validate an object
 #'
 #' @description
 #' Performs checks on objects (usually vectors) and optionally
 #' throws an error if desired conditions are not met. Simplifies
-#' the task of validating atomic vector arguments of functions.
+#' validation of function arguments.
 #'
 #' @param x
 #'   An object.
@@ -40,12 +40,14 @@
 #' @param rel
 #'   A character vector of length 2 such that
 #'   `rel[1] %in% c(">", ">=")` and `rel[2] %in% c("<", "<=")`.
-#' @param yes
-#'   A function or list of functions of one argument.
-#'   Check fails if any does not return `TRUE` when applied to `x`.
-#' @param no
-#'   A function or list of functions of one argument.
-#'   Check fails if any does not return `FALSE` when applied to `x`.
+#' @param passes,fails
+#'   Functions of one argument. Check fails if `passes` does not
+#'   return `TRUE` or `fails` does not return `FALSE` when applied
+#'   to `x`.
+#' @param each_passes,each_fails
+#'   Functions of one argument. Check fails if `each_passes` does not
+#'   return `TRUE` or `each_fails` does not return `FALSE` when applied
+#'   to an element of `x`.
 #' @param action
 #'   One of `"stop"`, `"warning"`, and `"none"`,
 #'   indicating how check failure should be handled.
@@ -68,7 +70,8 @@
 #' @keywords internal
 check <- function(x, ..., what = NULL, not = NULL, len = NULL,
                   opt = NULL, val = NULL, rel = c(">=", "<="),
-                  yes = NULL, no = NULL,
+                  passes = NULL, fails = NULL,
+                  each_passes = NULL, each_fails = NULL,
                   action = c("stop", "warning", "none")) {
   action <- match.arg(action)
 
@@ -76,15 +79,8 @@ check <- function(x, ..., what = NULL, not = NULL, len = NULL,
   if ("numeric" %in% what) {
     what <- c(what, "integer")
   }
-  ## Tolerate function instead of list of functions
-  if (is.function(yes)) {
-    yes <- list(yes)
-  }
-  if (is.function(no)) {
-    no <- list(no)
-  }
 
-  passes <-
+  cond <-
     ## Check class
     (is.null(what) || inherits(x, what)) &&
     (is.null(not) || !inherits(x, not)) &&
@@ -102,12 +98,17 @@ check <- function(x, ..., what = NULL, not = NULL, len = NULL,
        (length(val) > 1L &&
           (is.na(val[1L]) || all(match.fun(rel[1L])(x, val[1L]), na.rm = TRUE)) &&
           (is.na(val[2L]) || all(match.fun(rel[2L])(x, val[2L]), na.rm = TRUE)))) &&
-    ## Check value: passes functions `yes`
-    (is.null(yes) || all(sapply(yes, function(f) isTRUE(f(x))))) &&
-    ## Check value: fails functions `no`
-    (is.null(no) || all(sapply(no, function(f) isFALSE(f(x)))))
-  if (!isTRUE(passes) && action != "none") {
+    ## Check value: function `passes` returns TRUE
+    (is.null(passes) || isTRUE(passes(x))) &&
+    ## Check value: function `fails` returns FALSE
+    (is.null(fails) || isFALSE(fails(x))) &&
+    ## Check elements: function `each_passes` returns TRUE elementwise
+    (is.null(each_passes) || all(sapply(x, function(e) isTRUE(each_passes(e))))) &&
+    ## Check elements: function `each_fails` returns FALSE elementwise
+    (is.null(each_fails) || all(sapply(x, function(e) isFALSE(each_fails(e)))))
+
+  if (!isTRUE(cond) && action != "none") {
     do.call(action, list(..., call. = FALSE))
   }
-  passes
+  cond
 }
