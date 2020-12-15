@@ -1,36 +1,37 @@
-#' @importFrom TMB MakeADFun
+#' @importFrom TMB MakeADFun sdreport
 egf <- function(formula,
-                data = parent.frame(),
-                index = NULL,
                 fixed = NULL,
                 random = NULL,
-                spX = FALSE,
-                spZ = FALSE,
+                data = parent.frame(),
+                index = NULL,
                 curve = c("richards", "logistic", "exponential"),
                 distr = c("nbinom", "pois"),
-                include_baseline = FALSE,
-                na_action = c("exclude", "fail"),
+                excess = FALSE,
                 method = c("nlminb", "nlm", "Nelder-Mead", "BFGS", "CG"),
-                dfmt = "%Y-%m-%d",
+                na_action = c("exclude", "fail"),
+                sparse_X = FALSE,
+                sparse_Z = TRUE,
+                date_format = "%Y-%m-%d",
                 ...) {
   curve <- match.arg(curve)
   distr <- match.arg(distr)
-  check(include_baseline,
-    what = "logical",
-    len = 1L,
-    fails = is.na,
-    "`include_baseline` must be TRUE or FALSE."
+  stop_if_not(
+    inherits(excess, "logical"),
+    length(excess) == 1L,
+    !is.na(excess),
+    m = "`excess` must be TRUE or FALSE."
   )
   na_action <- match.arg(na_action)
   method <- match.arg(method)
 
-  par_names <- get_par_names(curve, distr, include_baseline)
+  par_names <- get_par_names(curve, distr, excess)
   formula <- check_formula(formula)
   fixed <- check_fixed(fixed, par_names)
   random <- check_random(random, par_names)
-  frame <- check_data(formula, data, index, fixed, random, dfmt, na_action)
+  frame <- check_data(formula, fixed, random, data, index,
+                      na_action, date_format)
 
-  madf_data <- make_madf_data(frame, spX, spZ)
+  madf_data <- make_madf_data(frame, sparse_X, sparse_Z)
   madf_args <- list(
     data = madf_data,
     parameters = make_madf_parameters(madf_data),
@@ -48,7 +49,6 @@ egf <- function(formula,
       gradient = madf_out$gr,
       ...
     )
-    par <- optim_out$par
     nll <- optim_out$objective
   } else if (method == "nlm") {
     optim_out <- nlm(
@@ -56,7 +56,6 @@ egf <- function(formula,
       p = madf_out$par,
       ...
     )
-    par <- optim_out$estimate
     nll <- optim_out$minimum
   } else {
     optim_out <- optim(
@@ -66,25 +65,45 @@ egf <- function(formula,
       method = method,
       ...
     )
-    par <- optim_out$par
     nll <- optim_out$value
   }
+
+  par_init <- madf_out$env$par
+  par <- madf_out$env$last.par.best
+  par_info <- get_par_info(par, madf_data, decontr = FALSE)
+  inr <- which(par_info$name != "b")
+
+  nll_func <- evalq(
+    expr = function(x = par) as.numeric(madf_out$fn(x[inr])),
+    envir = list(par = par, inr = inr, fn = madf_out$fn),
+    enclos = baseenv()
+  )
+  nll_grad <- evalq(
+    expr = function(x = par) as.vector(madf_out$gr(x[inr])),
+    envir = list(par = par, inr = inr, gr = madf_out$gr),
+    enclos = baseenv()
+  )
 
   out <- list(
     frame = frame,
     index = attr(frame, "index"),
     curve = curve,
     distr = distr,
-    include_baseline = include_baseline,
+    excess = excess,
     madf_args = madf_args,
     madf_out = madf_out,
+    madf_report = madf_out$report(par),
+    madf_sdreport = sdreport(madf_out),
     optim_out = optim_out,
-    par0 = madf_out$par,
+    par_init = par_init,
     par = par,
+    par_info = par_info,
+    inr = inr,
     nll = nll,
-    nll_func = function(theta = theta) madf_out$fn(par),
-    nll_grad = function(theta = theta) as.vector(madf_out$gr(par)),
+    nll_func = nll_func,
+    nll_grad = nll_grad,
     call = match.call()
   )
-  structure(out, class = c("egf", "list"))
+  class(out) <- c("egf", "list")
+  out
 }

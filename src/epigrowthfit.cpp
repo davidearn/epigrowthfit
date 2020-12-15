@@ -29,15 +29,15 @@ Type objective_function<Type>::operator() ()
 
     // Data
     // time series
-    DATA_VECTOR(t);   // length=N
-    DATA_VECTOR(x);   // length=N
+    DATA_VECTOR(t); // length=N
+    DATA_VECTOR(x); // length=N
     // window
-    DATA_IVECTOR(w);   // length=N,  {0,...,nlevels(w)-1}
+    DATA_IVECTOR(w); // length=N,  {0,...,nlevels(w)-1}
     // nlevels
-    DATA_IVECTOR(fnl);  // length=nFE=np
-    DATA_IVECTOR(rnl);  // length=nRE
+    DATA_IVECTOR(fnl); // length=nFE=np
+    DATA_IVECTOR(rnl); // length=nRE
     // RE indicators
-    DATA_IMATRIX(rid);  // nrow=nRE,  ncol=np,  {0,1}
+    DATA_IMATRIX(rid); // nrow=nRE,  ncol=np,  {0,1}
     // parameter indices
     DATA_INTEGER(i_log_r);
     DATA_INTEGER(i_log_c0);     // !NA  iff  curve="exponential"
@@ -45,7 +45,7 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(i_log_K);      //  NA  iff  curve="exponential"
     DATA_INTEGER(i_log_p);      // !NA  iff  curve="richards"
     DATA_INTEGER(i_log_nbdisp); // !NA  iff  distr="nbinom"
-    DATA_INTEGER(i_log_b);      //  NA  iff  include_baseline=FALSE
+    DATA_INTEGER(i_log_b);      //  NA  iff  excess=FALSE
     
     // Parameters
     // fixed effects
@@ -226,7 +226,26 @@ Type objective_function<Type>::operator() ()
 	    Y += Z * b2_dense;
 	}
     }
-    REPORT(Y);
+
+
+    // Report parameter values in each fitting window ==========================
+    // NOTE: parameters are constant within but not across fitting windows
+
+    matrix<Type> Y_short(w.maxCoeff()+1, Y.cols());
+    Y_short.row(0) = Y.row(0);
+
+    for (int i = 1, j = 1; (i < Y.rows()) && (j < Y_short.rows()); i++)
+    {
+        if (w(i) == w(i-1))
+	{
+	    continue;
+	}
+	Y_short.row(j) = Y.row(i);
+	j++;
+    }
+
+    vector<Type> y = Y_short.vec();
+    ADREPORT(y);
     
 
     // Compute likelihood ======================================================
@@ -299,7 +318,7 @@ Type objective_function<Type>::operator() ()
     		log_cum_inc(i) = log_K(i) - logspace_add(Type(0), logspace_sub(p(i) * log(2), Type(0)) - r(i) * p(i) * (t(i) - thalf(i))) / p(i);
     	    }
         }
-        // include_baseline=TRUE
+        // excess=TRUE
     	if (i_log_b >= 0)
     	{
     	    log_cum_inc(i) = logspace_add(log_b(i) + log(t(i)), log_cum_inc(i));
@@ -384,7 +403,6 @@ Type objective_function<Type>::operator() ()
     	        Y_new += Z_new * b2_dense;
     	    }
     	}
-    	REPORT(Y_new);
 	
     	// Parameter values
     	Type r_new;
@@ -439,7 +457,7 @@ Type objective_function<Type>::operator() ()
 		}
     		
     	    }
-	    // include_baseline=TRUE
+	    // excess=TRUE
     	    if (i_log_b >= 0)
     	    {
     	        log_cum_inc_new(i) = logspace_add(log_b_new + log(t_new(i)), log_cum_inc_new(i));
