@@ -1,6 +1,6 @@
 #' @importFrom TMB tmbroot
 #' @importFrom stats qchisq confint
-#' @importFrom parallel
+#' @importFrom parallel mcmapply makePSOCKcluster clusterMap stopCluster
 confint.egf <- function(object, parm = "r", level = 0.95,
                         method = c("wald", "profile", "uniroot"),
                         grid_len = 12, max_width = 7,
@@ -8,22 +8,25 @@ confint.egf <- function(object, parm = "r", level = 0.95,
                         cores = getOption("egf.cores", 2L),
                         breaks = NULL, probs = NULL, ...) {
   ## FIXME: Simplify string handling, e.g., "log_r" versus "r".
-  pn <- get_par_names(object)
-  pn_nolog <- sub("^log_", "", pn)
-  pn_other <- c("R0", "doubling_time")
+  pn <- colnames(object$madf_args$data$rid)
+  pn0 <- c("R0", "doubling_time", sub("^log_", "", pn))
   stop_if_not(
     is.character(parm),
     length(parm) > 0L,
-    parm %in% c(pn_other, pn_nolog),
+    parm %in% pn0,
     m = paste0(
       "`parm` must be a subset of:\n",
-      paste(sprintf("\"%s\"", c(pn_other, pn_nolog)), collapse = ", ")
+      paste(sprintf("\"%s\"", pn0), collapse = ", ")
     )
   )
   if ("R0" %in% parm && (is.null(breaks) || is.null(probs))) {
     stop("`parm = \"R0\"` requires non-NULL `breaks` and `probs`.\n",
          "See ?compute_R0.")
   }
+  parm0 <- parm
+  parm[parm %in% c("R0", "doubling_time")] <- "r"
+  parm <- sprintf("log_%s", unique(parm))
+
   stop_if_not(
     is.numeric(level),
     length(level) == 1L,
@@ -42,19 +45,13 @@ confint.egf <- function(object, parm = "r", level = 0.95,
     )
   }
 
-  parm0 <- parm
-  parm[parm %in% pn_other] <- "r"
-  parm <- sprintf("log_%s", unique(parm))
-
   if (method == "wald") {
     fr <- object$frame[!duplicated(object$index), -(1:2), drop = FALSE]
-    sdr <- summary(object$madf_sdreport, select = "report")
-    sdr <- sdr[rownames(sdr) == "y", ]
-    e <- matrix(sdr[, "Estimate"], ncol = length(pn))
-    se <- matrix(sdr[, "Std. Error"], ncol = length(pn))
+    estimate <- matrix(object$report$y$estimate, ncol = length(pn))
+    se <- matrix(object$report$y$se, ncol = length(pn))
     q <- qchisq(level, df = 1)
     f <- function(j) {
-      elu <- e[, j] + outer(se[, j], c(0, -1, 1) * sqrt(q))
+      elu <- estimate[, j] + outer(se[, j], c(0, -1, 1) * sqrt(q))
       colnames(elu) <- c("estimate", "lower", "upper")
       elu
     }
@@ -78,10 +75,13 @@ confint.egf <- function(object, parm = "r", level = 0.95,
 
     if (method == "profile") {
       pr <- profile(object,
-                    parm = sub("^log_", "", parm), decontrast = TRUE,
-                    max_level = level + min(0.01, 0.1 * (1 - level)),
-                    grid_len = grid_len,
-                    parallel = parallel, cores = cores)
+        parm = sub("^log_", "", parm),
+        decontrast = TRUE,
+        max_level = level + min(0.01, 0.1 * (1 - level)),
+        grid_len = grid_len,
+        parallel = parallel,
+        cores = cores
+      )
       out <- confint(pr, level = level)[-1L]
     } else if (method == "uniroot") {
       stop_if_not(
@@ -96,8 +96,8 @@ confint.egf <- function(object, parm = "r", level = 0.95,
 
       lin_comb <- make_lin_comb(object, parm, decontrast = TRUE)
       a <- attributes(lin_comb)
-      pin <- droplevels(a$par_info[a$index, -1L])
-      estimate <- as.vector(lin_comb %*% object$par[object$inr])
+      pin <- droplevels(a$par_info[a$index, ])
+      estimate <- as.vector(lin_comb %*% object$par[object$nonrandom])
 
       target <- 0.5 * qchisq(level, df = 1)
       lcl <- lapply(seq_len(nrow(lin_comb)), function(i) lin_comb[i, ])
@@ -120,11 +120,11 @@ confint.egf <- function(object, parm = "r", level = 0.95,
       out <- data.frame(pin, estimate, ci)
     }
   }
+
   i_elu <- length(out) - 2:0 # index of "estimate", "lower", "upper"
   out[i_elu] <- exp(out[i_elu])
   levels(out$par) <- sub("^log_", "", levels(out$par))
 
-  ## Compute "R0" and "doubling_time" given "r"
   if ("R0" %in% parm0) {
     d <- out[out$par == "r", ]
     d[i_elu] <- lapply(d[i_elu], compute_R0, breaks = breaks, probs = probs)
@@ -138,11 +138,9 @@ confint.egf <- function(object, parm = "r", level = 0.95,
     levels(d$par) <- sub("^r$", "doubling_time", levels(d$par))
     out <- rbind(out, d)
   }
-  ## Discard "r" if not desired
   if ("log_r" %in% parm && !"r" %in% parm0) {
     out <- droplevels(out[out$par != "r", ])
   }
-  ## Reorder to match argument
   out <- do.call(rbind, split(out, out$par)[parm0])
 
   row.names(out) <- NULL
@@ -167,7 +165,7 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
     )
   )
 
-  object_split <- split(object, object$index)
+  object_split <- split(object, object$name)
 
   f <- function(d) d[which.min(d[["deviance"]]), "value"]
   estimate <- vapply(object_split, f, numeric(1L))
@@ -182,8 +180,7 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
 
   has_par_info <- ("par" %in% names(object))
   if (has_par_info) {
-    n <- length(object)
-    pin <- object[!duplicated(object$index), -(n - 1:0), drop = FALSE]
+    pin <- object[!duplicated(object$name), -(length(object) - 1:0), drop = FALSE]
     out <- data.frame(pin, estimate, ci)
     row.names(out) <- NULL
   } else {
@@ -195,9 +192,9 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
 }
 
 #' @importFrom stats qchisq
-confint.egf_predict <- function(object, parm, level = 0.95, ...) {
+confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
   stop_if_not(
-    inherits(level, c("integer", "numeric")),
+    is.numeric(level),
     length(level) == 1L,
     !is.na(level),
     level > 0 && level < 1,
@@ -206,12 +203,14 @@ confint.egf_predict <- function(object, parm, level = 0.95, ...) {
 
   q <- qchisq(level, df = 1)
   f <- function(x) {
-    elu <- exp(x$estimate + outer(x$se, c(0, -1, 1) * sqrt(q)))
+    elu <- x$estimate + outer(x$se, c(0, -1, 1) * sqrt(q))
     colnames(elu) <- c("estimate", "lower", "upper")
-    data.frame(time = x$time, elu)
+    data.frame(time = x$time, if (log) elu else exp(elu))
   }
   out <- lapply(object, f)
-  names(out) <- sub("^log_", "", names(out))
+  if (!log) {
+    names(out) <- sub("^log_", "", names(out))
+  }
   attr(out, "refdate") <- attr(object, "refdate")
   attr(out, "level") <- level
   out

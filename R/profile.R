@@ -37,17 +37,17 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     )
   }
 
-  n <- length(fitted$inr)
+  n <- length(fitted$nonrandom)
 
   if (!is.null(index)) {
     stop_if_not(
       is.numeric(index),
       length(index) > 0L,
-      index %in% fitted$inr,
-      m = "`index` must be a subset of `fitted$inr`."
+      index %in% fitted$nonrandom,
+      m = "`index` must be a subset of `fitted$nonrandom`."
     )
     index <- unique(index)
-    pin <- droplevels(fitted$par_info[index, -1L])
+    pin <- droplevels(fitted$par_info[index, ])
     lin_comb <- NULL
   } else if (!is.null(lin_comb)) {
     if (is.vector(lin_comb)) {
@@ -73,7 +73,7 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
       !is.na(decontrast),
       m = "`decontrast` must be TRUE or FALSE."
     )
-    pn <- sub("^log_", "", get_par_names(fitted))
+    pn <- sub("^log_", "", colnames(fitted$madf_args$data$rid))
     stop_if_not(
       is.character(parm),
       length(parm) > 0L,
@@ -89,13 +89,14 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     ## Matrix of linear coefficients if `decontrast = TRUE`,
     ## index vector if `decontrast = FALSE`
     lin_comb <- make_lin_comb(fitted, parm, decontrast)
+
     if (is.vector(lin_comb)) {
       index <- lin_comb
       lin_comb <- NULL
-      pin <- droplevels(fitted$par_info[index, -1L])
+      pin <- droplevels(fitted$par_info[index, ])
     } else {
       a <- attributes(lin_comb)
-      pin <- droplevels(a$par_info[a$index, -1L])
+      pin <- droplevels(a$par_info[a$index, ])
     }
   } else {
     stop("One of `index`, `lin_comb`, and `parm` must be non-NULL.")
@@ -137,22 +138,14 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
   }
 
   nr <- vapply(dl, nrow, integer(1L))
-  ## If user gave `index`    or `parm` and `decontrast = TRUE`
-  if (is.null(lin_comb)) {
-    index_long <- rep(index, nr)
-  ## Otherwise
-  ## If user gave `lin_comb` or `parm` and `decontrast = FALSE`
-  } else {
-    index_long <- rep(seq_len(nrow(lin_comb)), nr) # dummy index
-  }
-
   ## If user gave `lin_comb`
   if (is.null(pin)) {
-    out <- cbind(index = index_long, do.call(rbind, dl))
+    out <- cbind(name = factor(rep(seq_len(nrow(lin_comb)), nr)),
+                 do.call(rbind, dl))
   ## Otherwise
   } else {
-    pin_long <- pin[rep(seq_len(nrow(pin)), nr), ]
-    out <- cbind(index = index_long, pin_long, do.call(rbind, dl))
+    out <- cbind(pin[rep(seq_len(nrow(pin)), nr), ],
+                 do.call(rbind, dl))
   }
 
   row.names(out) <- NULL

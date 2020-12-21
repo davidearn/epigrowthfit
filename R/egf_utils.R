@@ -1,8 +1,4 @@
 get_par_names <- function(curve = NULL, distr = NULL, excess = NULL) {
-  if (inherits(curve, "egf")) {
-    pn <- colnames(curve$madf_args$data$fid)
-    return(pn)
-  }
   if (is.null(curve) && is.null(distr) && is.null(excess)) {
     pn <- c("r", "c0", "thalf", "K", "p", "nbdisp", "b")
   } else {
@@ -25,11 +21,13 @@ get_par_names <- function(curve = NULL, distr = NULL, excess = NULL) {
   sprintf("log_%s", pn)
 }
 
-has_random <- function(madf_data) {
-  if (inherits(madf_data, "egf")) {
-    madf_data <- madf_data$madf_args$data
+has_random <- function(object) {
+  if (inherits(object, "egf")) {
+    n <- nrow(object$madf_args$data$rid)
+  } else {
+    n <- nrow(object$rid)
   }
-  nrow(madf_data$rid) > 0L
+  n > 0L
 }
 
 #' @importFrom stats terms reformulate
@@ -56,67 +54,73 @@ get_factor <- function(term_label, frame) {
   if (term_label == "(1)") {
     return(factor(rep("(1)", nrow(frame))))
   }
-  interaction(frame[unlist(strsplit(term_label, ":"))], drop = TRUE, sep = ":")
+  s <- unlist(strsplit(term_label, ":"))
+  interaction(frame[s], drop = TRUE, sep = ":")
 }
 
 #' @importFrom Matrix sparseMatrix sparse.model.matrix
+#' @importFrom stats model.matrix
 factor_to_matrix <- function(x, sparse, intercept) {
   if (is.null(x)) {
     return(NULL)
   }
   f <- if (intercept) ~x else ~-1 + x
   n <- length(x)
-  l <- nlevels(x)
   if (sparse) {
-    if (l == 1L) {
-      sparseMatrix(seq_len(n), rep(1L, n), x = 1)
+    if (nlevels(x) == 1L) {
+      m <- sparseMatrix(seq_len(n), rep(1L, n), x = 1)
     } else {
-      unname(sparse.model.matrix(f,
+      m <- unname(sparse.model.matrix(f,
         data = list(x = x),
         contrasts.arg = list(x = "contr.sum")
       ))
     }
   } else {
-    if (l == 1L) {
-      matrix(1L, nrow = n, ncol = 1L)
+    if (nlevels(x) == 1L) {
+      m <- matrix(1L, nrow = n, ncol = 1L)
     } else {
-      unname(model.matrix(f,
+      m <- unname(model.matrix(f,
         data = list(x = x),
         contrasts.arg = list(x = "contr.sum")
       ))
     }
   }
+  m
 }
 
-#' @importFrom stats setNames
 make_madf_data <- function(frame, sparse_X, sparse_Z) {
   date_to_integer <- function(x) as.integer(x - min(x))
 
   a <- attributes(frame)
-  date <- frame[, a$date_name]
-  cases <- frame[, a$cases_name]
+  date <- frame[[a$date_name]]
+  cases <- frame[[a$cases_name]]
   time <- unlist(lapply(split(date, a$index), date_to_integer), use.names = FALSE)
   w <- as.integer(a$index) - 1L
+  wl <- as.vector(table(w))
 
   p <- length(a$fixed_term_labels)
   pn <- names(a$fixed_term_labels)
   pn0 <- get_par_names()
 
-  ftl_incl_dupl <- unlist(a$fixed_term_labels, use.names = FALSE)
-  ftl <- unique(ftl_incl_dupl)
-  names(ftl) <- ftl
-  ffr <- data.frame(lapply(ftl, get_factor, frame = frame), check.names = FALSE)
-  fnl <- vapply(ffr, nlevels, integer(1L))[ftl_incl_dupl]
-  fmat <- lapply(ffr, factor_to_matrix, sparse = sparse_X, intercept = TRUE)[ftl_incl_dupl]
-  X <- do.call(cbind, fmat)
-
+  ftl_incl_dupl <- unlist(a$fixed_term_labels, use.names = FALSE) # length `p`
   rtl_incl_dupl <- unlist(a$random_term_labels, use.names = FALSE)
+  ftl <- unique(ftl_incl_dupl)
   rtl <- unique(rtl_incl_dupl)
+  names(ftl) <- ftl
   names(rtl) <- rtl
-  rfr <- data.frame(lapply(rtl, get_factor, frame = frame), check.names = FALSE)
+
+  ## Term labels can be non-syntactic due to colon delimiters
+  ffr <- data.frame(lapply(ftl, get_factor, frame), check.names = FALSE)
+  rfr <- data.frame(lapply(rtl, get_factor, frame), check.names = FALSE)
+
+  fnl <- vapply(ffr, nlevels, integer(1L))[ftl_incl_dupl] # length `p`
   rnl <- vapply(rfr, nlevels, integer(1L))
+
+  fmat <- lapply(ffr, factor_to_matrix, sparse = sparse_X, intercept = TRUE)[ftl_incl_dupl] # length `p`
   rmat <- lapply(rfr, factor_to_matrix, sparse = sparse_Z, intercept = FALSE)
-  if (is.null(rtl)) {
+
+  X <- do.call(cbind, fmat)
+  if (is.null(rtl_incl_dupl)) {
     if (sparse_Z) {
       Z <- sparseMatrix(integer(0L), integer(0L), x = numeric(0L), dims = c(nrow(frame), 0L))
     } else {
@@ -138,7 +142,7 @@ make_madf_data <- function(frame, sparse_X, sparse_Z) {
     rid <- matrix(0L, nrow = length(rtl), ncol = p, dimnames = list(rtl, pn))
     for (i in seq_len(nrow(rid))) { # FIXME: outer(FUN = "%in%")?
       for (j in seq_len(ncol(rid))) {
-        rid[i, j] <- rtl[[i]] %in% a$random_term_labels[[j]]
+        rid[i, j] <- 1L * (rtl[[i]] %in% a$random_term_labels[[j]])
       }
     }
   }
@@ -147,6 +151,7 @@ make_madf_data <- function(frame, sparse_X, sparse_Z) {
     t = time,
     x = cases,
     w = w,
+    wl = wl,
     X = X,
     Z = Z,
     ffr = ffr,
@@ -155,64 +160,71 @@ make_madf_data <- function(frame, sparse_X, sparse_Z) {
     rnl = rnl,
     fid = fid,
     rid = rid,
-    spX_flag = 1L * sparse_X,
-    spZ_flag = 1L * sparse_Z,
+    sparseX_flag = 1L * sparse_X,
+    sparseZ_flag = 1L * sparse_Z,
     predict_flag = 0L
   )
-  l2 <- setNames(as.list(match(pn0, pn, 0L) - 1L), sprintf("i_%s", pn0))
+  l2 <- as.list(match(pn0, pn, 0L) - 1L)
+  names(l2) <- sprintf("j_%s", pn0)
   c(l1, l2)
 }
 
-#' @importFrom stats setNames
 make_madf_parameters <- function(madf_data) {
-  ts_split <- split(data.frame(madf_data[c("t", "x")]), madf_data$w)
+  ts_split  <- split(data.frame(madf_data[c("t", "x")]), madf_data$w)
+  ffr_split <- split(madf_data$ffr, madf_data$w)
 
-  get_log_c0_log_r <- function(d) {
+  get_log_r_log_c0 <- function(d) {
     d$x[1L] <- 0L
     h <- max(2, nrow(d) / 2)
     x <- d$t
     y <- log1p(cumsum(d$x))
     ab <- tryCatch(
-      expr = coef(lm(y ~ x, data = data.frame(x, y), subset = seq_len(h), na.action = na.omit)),
+      coef(lm(y ~ x, data = data.frame(x, y), subset = seq_len(h), na.action = na.omit)),
       error = function(e) c(0, 0.1)
     )
-    c(ab[[1L]], log(ab[[2L]]))
+    c(log(ab[[2L]]), ab[[1L]])
   }
-  log_c0_log_r <- vapply(ts_split, get_log_c0_log_r, numeric(2L))
+  get_log_thalf <- function(d) log(max(d$t))
+  get_log_K     <- function(d) log(2) + log(sum(d$x[-1L], na.rm = TRUE))
 
-  pfr <- data.frame(
-    log_r      = log_c0_log_r[2L, ],
-    log_c0     = log_c0_log_r[1L, ],
-    log_thalf  = vapply(ts_split, function(d) log(max(d$t)), numeric(1L)),
-    log_K      = vapply(ts_split, function(d) log(2) + log(sum(d$x[-1L], na.rm = TRUE)), numeric(1L)),
+  log_r_log_c0 <- vapply(ts_split, get_log_r_log_c0, numeric(2L))
+  log_thalf    <- vapply(ts_split, get_log_thalf,    numeric(1L))
+  log_K        <- vapply(ts_split, get_log_K,        numeric(1L))
+
+  pn <- colnames(madf_data$fid)
+  pl <- list(
+    log_r      = log_r_log_c0[1L, ],
+    log_c0     = log_r_log_c0[2L, ],
+    log_thalf  = log_thalf,
+    log_K      = log_K,
     log_p      = 0,
     log_nbdisp = 0,
     log_b      = 0
   )
-  ffr <- do.call(rbind, lapply(split(madf_data$ffr, madf_data$w), "[", 1L, , drop = FALSE))
-  pn <- colnames(madf_data$fid)
+  pfr <- do.call(data.frame, pl)
+  ffr <- do.call(rbind, lapply(ffr_split, "[", 1L, , drop = FALSE))
 
   beta <- unlist(lapply(pn, function(s) {
     tl <- names(madf_data$fnl)[match(s, pn)]
-    m <- vapply(split(pfr, ffr[[tl]]), function(d) mean(d[[s]]), numeric(1L))
+    m <- vapply(split(pfr[[s]], ffr[[tl]]), mean, numeric(1L))
     mm <- mean(m)
     unname(c(mm, m[-length(m)] - mm))
   }))
   if (has_random(madf_data)) {
-    sd_b <- rep(1, sum(madf_data$rid))
+    sd <- rep(1, sum(madf_data$rid))
     b <- rep(0, sum(madf_data$rnl * rowSums(madf_data$rid)))
   } else {
-    sd_b <- NA_real_
+    sd <- NA_real_
     b <- NA_real_
   }
-  list(beta = beta, sd_b = sd_b, b = b)
+  list(beta = beta, sd = sd, b = b)
 }
 
 make_madf_map <- function(madf_data) {
   if (has_random(madf_data)) {
     return(list())
   }
-  list(sd_b = factor(NA), b = factor(NA))
+  list(sd = factor(NA), b = factor(NA))
 }
 
 make_madf_random <- function(madf_data) {
@@ -222,9 +234,24 @@ make_madf_random <- function(madf_data) {
   NULL
 }
 
-get_par_info <- function(par, madf_data, which = c("beta", "sd_b", "b"),
+#' @importFrom stats setNames
+rename_par <- function(par) {
+  a <- c("beta", "sd", "b")
+  which <- a[a %in% names(par)]
+  ps <- split(par, names(par))[which]
+  f <- function(x, s) setNames(x, sprintf("%s[%d]", s, seq_along(x)))
+  do.call(c, Map(f, x = unname(ps), s = names(ps)))
+}
+
+get_par_info <- function(object,
+                         par = object$par,
+                         madf_data = object$madf_args$data,
+                         which = c("beta", "sd", "b"),
                          decontrast = FALSE) {
-  par <- split(par, names(par))
+  if (!missing(object) && inherits(object, "egf") && !decontrast) {
+    return(object$par_info)
+  }
+
   d <- data.frame(
     name  = character(0),
     par   = character(0),
@@ -235,36 +262,57 @@ get_par_info <- function(par, madf_data, which = c("beta", "sd_b", "b"),
 
   with(madf_data[c("ffr", "fnl", "rfr", "rnl", "rid")], {
     pn <- colnames(rid)
+    ps <- split(par, sub("\\[[0-9]+\\]$", "", names(par)))
+
     if ("beta" %in% which) {
       if (decontrast) {
-        f <- function(x, s) levels(x)
+        extract_index <- function(s) {
+          gsub("^beta\\[([0-9]+)\\]$", "\\1", s)
+        }
+        f <- function(s) {
+          n <- length(s)
+          if (n == 1L) {
+            return(s)
+          }
+          ss <- s
+          ss[-n] <- sprintf("%s+%s", s[1L], s[-1L])
+          ss[n] <- sprintf("%s-sum(beta[%s:%s])", s[1L],  extract_index(s[2L]), extract_index(s[n]))
+          ss
+        }
+        bns <- split(names(ps$beta), rep(seq_along(fnl), fnl))
+        dname <- unlist(lapply(unname(bns), f))
+        dlevel <- unlist(lapply(ffr[names(fnl)], levels))
       } else {
         f <- function(x, s) {
-          c(sprintf(".mean(%s)", s),
-            sprintf(".offset(%s)", levels(x)[-nlevels(x)]))
+          c(sprintf("mean(%s)", s),
+            sprintf("offset(%s)", levels(x)[-nlevels(x)]))
         }
+        dname <- names(ps$beta)
+        dlevel <- unlist(Map(f, ffr[names(fnl)], names(fnl)))
       }
+      dpar <- rep(pn, times = fnl)
+      dterm <- rep(names(fnl), fnl)
       d <- rbind(d, data.frame(
-        name  = rep("beta", length(par$beta)),
-        par   = rep(pn, times = fnl),
-        term  = rep(names(fnl), times = fnl),
-        level = unlist(Map(f, ffr[names(fnl)], names(fnl))),
+        name  = dname,
+        par   = dpar,
+        term  = dterm,
+        level = dlevel,
         stringsAsFactors = TRUE
       ))
     }
     re <- has_random(madf_data)
-    if (re && "sd_b" %in% which) {
+    if (re && "sd" %in% which) {
       d <- rbind(d, data.frame(
-        name  = rep("sd_b", length(par$sd_b)),
+        name  = names(ps$sd),
         par   = rep(pn, nrow(rid))[t(rid) > 0L],
         term  = rep(rownames(rid), rowSums(rid)),
-        level = rep(sprintf(".sd(%s)", rownames(rid)), rowSums(rid)),
+        level = rep(sprintf("sd(%s)", rownames(rid)), rowSums(rid)),
         stringsAsFactors = TRUE
       ))
     }
     if (re && "b" %in% which) {
       d <- rbind(d, data.frame(
-        name  = rep("b", length(par$b)),
+        name  = names(ps$b),
         par   = rep(rep(pn, nrow(rid)), t(rnl * rid)),
         term  = rep(rownames(rid), rowSums(rnl * rid)),
         level = unlist(Map(rep, lapply(rfr[rownames(rid)], levels), rowSums(rid))),
@@ -276,18 +324,28 @@ get_par_info <- function(par, madf_data, which = c("beta", "sd_b", "b"),
   })
 }
 
+split_sdreport <- function(object) {
+  ssdr <- summary(object, select = "report")
+  f <- factor(rownames(ssdr))
+  rownames(ssdr) <- NULL
+  colnames(ssdr) <- c("estimate", "se")
+  split(as.data.frame(ssdr), f)
+}
+
 make_lin_comb <- function(object, parm, decontrast) {
+  l1 <- grepl("^beta\\[", names(object$par))
+  l2 <- grepl("^sd\\[", names(object$par))
+  lp <- (object$par_info$par %in% parm)
+
   if (!decontrast) {
-    index <- which(object$par_info$name != "b" & object$par_info$par %in% parm)
+    index <- which((l1 | l2) & lp)
     return(index)
   }
 
   re <- has_random(object)
-  n <- length(object$inr)
-  l1 <- (object$par_info$name == "beta")
-  l2 <- (object$par_info$name == "sd_b")
+  n <- length(object$nonrandom)
 
-  lcl <- lapply(parm, function(s) {
+  f <- function(s) {
     lp <- (object$par_info$par == s)
     i1 <- which(l1 & lp)
     i2 <- which(l2 & lp)
@@ -304,14 +362,11 @@ make_lin_comb <- function(object, parm, decontrast) {
     }
 
     list(lc = lc, i = c(i1, i2))
-  })
+  }
 
+  lcl <- lapply(parm, f)
   lin_comb <- do.call(rbind, lapply(lcl, "[[", "lc"))
   index <- do.call(c, lapply(lcl, "[[", "i"))
-  par_info <- get_par_info(
-    par = object$par,
-    madf_data = object$madf_args$data,
-    decontrast = TRUE
-  )
+  par_info <- get_par_info(object, decontrast = TRUE)
   structure(lin_comb, index = index, par_info = par_info)
 }

@@ -68,20 +68,28 @@ egf <- function(formula,
     nll <- optim_out$value
   }
 
-  par_init <- madf_out$env$par
-  par <- madf_out$env$last.par.best
-  par_info <- get_par_info(par, madf_data, decontr = FALSE)
-  inr <- which(par_info$name != "b")
+  par_init <- rename_par(madf_out$env$par)
+  par <- rename_par(madf_out$env$last.par.best)
+  par_info <- get_par_info(par = par, madf_data = madf_data)
+  nonrandom <- grep("^b\\[", names(par), invert = TRUE)
 
+  ## Store only necessary variables in environment(f)
   nll_func <- evalq(
-    expr = function(x = par) as.numeric(madf_out$fn(x[inr])),
-    envir = list(par = par, inr = inr, fn = madf_out$fn),
+    expr = function(x = par) as.numeric(fn(x[nonrandom])),
+    envir = list(par = par, nonrandom = nonrandom, fn = madf_out$fn),
     enclos = baseenv()
   )
   nll_grad <- evalq(
-    expr = function(x = par) as.vector(madf_out$gr(x[inr])),
-    envir = list(par = par, inr = inr, gr = madf_out$gr),
+    expr = function(x = par) as.vector(gr(x[nonrandom])),
+    envir = list(par = par, nonrandom = nonrandom, gr = madf_out$gr),
     enclos = baseenv()
+  )
+
+  sdr <- sdreport(madf_out)
+  report <- c(
+    madf_out$report(par),
+    list(cov = sdr$cov.fixed),
+    split_sdreport(sdr)
   )
 
   out <- list(
@@ -92,13 +100,12 @@ egf <- function(formula,
     excess = excess,
     madf_args = madf_args,
     madf_out = madf_out,
-    madf_report = madf_out$report(par),
-    madf_sdreport = sdreport(madf_out),
     optim_out = optim_out,
     par_init = par_init,
     par = par,
     par_info = par_info,
-    inr = inr,
+    nonrandom = nonrandom,
+    report = report,
     nll = nll,
     nll_func = nll_func,
     nll_grad = nll_grad,

@@ -20,19 +20,18 @@ coef.egf <- function(object, log = TRUE, ...) {
     m = "`log` must be TRUE or FALSE."
   )
 
-  pn <- get_par_names(object)
-  sdr <- summary(object$madf_sdreport, select = "report")
-  Y <- matrix(sdr[rownames(sdr) == "y", 1L], ncol = length(pn))
+  fr <- object$frame[!duplicated(object$index), -(1:2), drop = FALSE]
+
+  pn <- colnames(object$madf_args$data$rid)
+  Y <- matrix(object$report$y$estimate, ncol = length(pn))
   if (log) {
     colnames(Y) <- pn
   } else {
     Y <- exp(Y)
     colnames(Y) <- sub("^log_", "", pn)
   }
-  d <- cbind(
-    object$frame[!duplicated(object$index), -(1:2), drop = FALSE],
-    as.data.frame(Y)
-  )
+
+  d <- cbind(fr, Y)
   if (length(dots) > 0L) {
     f <- function(s) d[[s]] %in% dots[[s]]
     d <- d[Reduce("&", lapply(names(dots), f)), ]

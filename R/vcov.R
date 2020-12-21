@@ -1,6 +1,7 @@
 #' @importFrom TMB sdreport
 #' @importFrom stats setNames
-vcov.egf <- function(object, decontrast = TRUE, full = FALSE, cor = FALSE,
+vcov.egf <- function(object, decontrast = TRUE,
+                     full = FALSE, cor = FALSE,
                      random = FALSE, random_term_labels = NULL, ...) {
   for (s in c("decontrast", "full", "cor", "random")) {
     a <- get(s, inherits = FALSE)
@@ -24,39 +25,40 @@ vcov.egf <- function(object, decontrast = TRUE, full = FALSE, cor = FALSE,
       )
     }
 
-    rtl0 <- rownames(rid)
+    rtl <- rownames(rid)
     if (is.null(random_term_labels)) {
-      random_term_labels <- rtl0
+      random_term_labels <- rtl
     } else {
       stop_if_not(
         is.character(random_term_labels),
         length(random_term_labels) > 0L,
-        random_term_labels %in% rtl0,
+        random_term_labels %in% rtl,
         m = paste0(
-          "`random_term_labels` must be a subset of\n",
-          "`rownames(object$madf_args$data$rid)`."
+          "`random_term_labels` must be NULL or a subset\n",
+          "of `rownames(object$madf_args$data$rid)`."
         )
       )
     }
 
-    wh <- match(random_term_labels, rtl0)
-    ml <- object$madf_report$cor_list[wh]
-    names(ml) <- rtl0[wh]
+    wh <- match(random_term_labels, rtl)
+    ml <- object$report$cor_list[wh]
+    names(ml) <- rtl[wh]
     dnl <- lapply(wh, function(i) {
       pn <- colnames(rid)[rid[i, ] > 0L]
       rep(list(pn), 2L)
     })
     ml <- Map("dimnames<-", ml, dnl)
-    if (cor) {
-      return(ml)
+    if (!cor) {
+      sdl <- object$madf_report$sd_list[wh]
+      names(sdl) <- rtl[wh]
+      ml <- Map(function(x, y) outer(x, x) * y, sdl, ml)
     }
-    sdl <- object$madf_report$sd_list[wh]
-    names(sdl) <- rtl0[wh]
-    return(Map(function(x, y) outer(x, x) * y, sdl, ml))
+    return(ml)
   }
 
-  m <- object$madf_sdreport$cov.fixed
-  k <- which(colnames(m) == "beta")
+  m <- object$report$cov
+  dimnames(m) <- rep(list(grep("^b\\[", names(object$par), value = TRUE, invert = TRUE)), 2L)
+  k <- grep("^beta\\[", colnames(m))
   if (re && !full) {
     m <- m[k, k]
   }
@@ -75,7 +77,7 @@ vcov.egf <- function(object, decontrast = TRUE, full = FALSE, cor = FALSE,
       lc[-k, -k] <- diag(rep(1L, nrow(m) - length(k)))
     }
     dn <- dimnames(m)
-    m <- lc %*% m %*% t(lc)
+    m <- lc %*% m %*% t(lc) # dimnames discarded
     dimnames(m) <- dn
   }
   if (cor) {
@@ -83,10 +85,8 @@ vcov.egf <- function(object, decontrast = TRUE, full = FALSE, cor = FALSE,
     m <- m / outer(sd, sd)
   }
 
-  attr(m, "par_info") <- get_par_info(
-    par = object$par,
-    madf_data = object$madf_args$data,
-    which = if (full) c("beta", "sd_b") else "beta",
+  attr(m, "par_info") <- get_par_info(object,
+    which = if (full) c("beta", "sd") else "beta",
     decontrast = decontrast
   )
   m

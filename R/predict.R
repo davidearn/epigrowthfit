@@ -9,8 +9,8 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
       !duplicated(names(dots)),
       mapply("%in%", dots, lapply(object$frame[names(dots)], levels)),
       m = paste0(
-        "`list(...)` must specify levels of factors in `object$frame`,\n",
-        "e.g., f1 = l1, f2 = l2, and so on (one level per factor)."
+        "`list(...)` must specify valid levels\n",
+        "of factors in `object$frame` (one level per factor)."
       )
     )
   }
@@ -20,24 +20,23 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
     d <- object$frame[-(1:2)]
     il <- !duplicated(object$index)
     if (length(dots) > 0L) {
-      il <- il & Reduce("&", lapply(names(dots), function(s) d[[s]] == dots[[s]]))
-    }
-    nts <- sum(il)
-    if (nts == 0L) {
-      stop("`list(...)` must specify a nonempty interaction\n",
-           "of the factors in `object$frame`.")
-    } else if (nts > 1L) {
-      if (!all(duplicated(d[il, ])[-1L])) {
-        stop("`list(...)` must specify a unique interaction\n",
-             "of the factors in `object$frame`.")
-      }
+      f <- function(s) d[[s]] == dots[[s]]
+      il <- il & Reduce("&", lapply(names(dots), f))
     }
     i <- which(il)
+    stop_if_not(
+      length(i) > 0L,
+      all(duplicated(d[i, , drop = FALSE])[-1L]),
+      m = paste0(
+        "`list(...)` must specify a unique interaction\n",
+        "of the factors in `object$frame`."
+      )
+    )
   }
   stop_if_not(
     is.numeric(time),
-    length(time) > 0L,
-    m = "`time` must be numeric and have nonzero length."
+    length(time) >= 2L,
+    m = "`time` must be numeric and have length 2 or greater."
   )
   stop_if_not(
     !anyNA(time),
@@ -66,29 +65,27 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
     predict_flag <- 1L
     se_flag <- 1L * se
     t_new <- time
-    X_new <- X[i[1L], , drop = FALSE]
-    Z_new <- Z[i[1L], , drop = FALSE]
+    X_new <- matrix(X[i[1L], , drop = TRUE],
+                    nrow = length(time), ncol = ncol(X), byrow = TRUE)
+    Z_new <- matrix(Z[i[1L], , drop = TRUE],
+                    nrow = length(time), ncol = ncol(Z), byrow = TRUE)
   })
   madf_out_new <- do.call(MakeADFun, object$madf_args)
 
   if (se) {
-    madf_out_new$fn(object$par[object$inr])
-    sdr <- summary(sdreport(madf_out_new), select = "report")
-    out <- split(as.data.frame(sdr), factor(rownames(sdr)))
-    names(out) <- sub("_new", "", names(out))
-    out$log_int_inc <- rbind(NA_real_, out$log_int_inc)
-    out <- lapply(out, function(x) {
-      names(x) <- c("estimate", "se")
-      row.names(x) <- NULL
-      cbind(time, x)
-    })
+    madf_out_new$fn(object$par[object$nonrandom])
+    ssdr <- split_sdreport(sdreport(madf_out_new))
+    out <- ssdr[c("log_cum_inc_new", "log_int_inc_new")]
+    out$log_int_inc_new <- rbind(NA_real_, out$log_int_inc_new)
+    out <- lapply(out, function(d) cbind(time, d))
+    names(out) <- sub("_new$", "", names(out))
     class(out) <- c("egf_predict", "list")
   } else {
-    madf_report_new <- madf_out_new$report(object$par)
+    r <- madf_out_new$report(object$par)
     out <- data.frame(
       time = time,
-      log_cum_inc = madf_report_new$log_cum_inc_new,
-      log_int_inc = c(NA_real_, madf_report_new$log_int_inc_new)
+      log_cum_inc = r$log_cum_inc_new,
+      log_int_inc = c(NA_real_, r$log_int_inc_new)
     )
   }
 

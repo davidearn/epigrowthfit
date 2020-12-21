@@ -20,7 +20,7 @@ check_fixed <- function(fixed, par_names) {
     names(fixed) <- par_names
   }
   stop_if_not(
-    is.list(fixed),
+    inherits(fixed, "list"),
     length(fixed) >= 1L,
     vapply(fixed, inherits, logical(1L), "formula"),
     m = "`fixed` must be NULL, a formula, or a named list of formula."
@@ -31,7 +31,7 @@ check_fixed <- function(fixed, par_names) {
     !any(duplicated(names(fixed))),
     m = paste0(
       "If `fixed` is a list, then `names(fixed)` must be a subset\n",
-      "of `get_par_names(curve, distr, excess)`."
+      "of `get_par_names(, curve, distr, excess)`."
     )
   )
   names(fixed) <- ifelse(grepl("^log_", names(fixed)), names(fixed), sprintf("log_%s", names(fixed)))
@@ -59,7 +59,7 @@ check_random <- function(random, par_names) {
     names(random) <- par_names
   }
   stop_if_not(
-    is.list(random),
+    inherits(random, "list"),
     length(random) >= 1L,
     vapply(random, inherits, logical(1L), "formula"),
     m = "`random` must be NULL, a formula, or a named list of formula."
@@ -138,7 +138,7 @@ check_data <- function(formula, fixed, random,
   stop_if_not(
     all(data[[cn]] >= 0, na.rm = TRUE),
     !is.infinite(data[[cn]]),
-    all(data[[cn]] %% 1 == 0, na.rm = TRUE),
+    all(data[[cn]] %% 1 == 0, na.rm = TRUE), # FIXME: isTRUE(all.equal())?
     m = sprintf("Elements of `%s` must be non-negative integers or NA.", cn)
   )
   data[[cn]] <- as.integer(data[[cn]])
@@ -163,7 +163,7 @@ check_data <- function(formula, fixed, random,
       length(index) == n,
       m = sprintf("`index` must be a factor of length `length(%s)`.", dn)
     )
-    index <- droplevels(index, exclude = NA)
+    index <- factor(index, levels = unique(index), exclude = NA)
     stop_if_not(
       nlevels(index) > 0L,
       m = "`index` must have at least one nonempty level."
