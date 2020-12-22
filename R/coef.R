@@ -1,4 +1,4 @@
-coef.egf <- function(object, log = TRUE, ...) {
+coef.egf <- function(object, link = TRUE, ...) {
   dots <- list(...)
   if (length(dots) > 0L) {
     stop_if_not(
@@ -14,21 +14,23 @@ coef.egf <- function(object, log = TRUE, ...) {
     )
   }
   stop_if_not(
-    is.logical(log),
-    length(log) == 1L,
-    !is.na(log),
-    m = "`log` must be TRUE or FALSE."
+    is.logical(link),
+    length(link) == 1L,
+    !is.na(link),
+    m = "`link` must be TRUE or FALSE."
   )
 
   fr <- object$frame[!duplicated(object$index), -(1:2), drop = FALSE]
-
   pn <- colnames(object$madf_args$data$rid)
-  Y <- matrix(object$report$y$estimate, ncol = length(pn))
-  if (log) {
+  Y <- matrix(object$report$Y_short_as_vector$estimate, ncol = length(pn))
+  if (link) {
     colnames(Y) <- pn
   } else {
-    Y <- exp(Y)
-    colnames(Y) <- sub("^log_", "", pn)
+    j <- grep("^log_", pn)
+    Y[, j] <- exp(Y[, j])
+    j <- grep("^logit_", pn)
+    Y[, j] <- 1 / (1 + exp(-Y[, j]))
+    colnames(Y) <- remove_link_string(pn)
   }
 
   d <- cbind(fr, Y)

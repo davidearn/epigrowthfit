@@ -67,24 +67,22 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     )
     pin <- NULL
   } else if (!is.null(parm)) {
+    pn <- get_par_names(object$curve, object$distr, object$excess, link = TRUE)
+    stop_if_not(
+      is.character(parm),
+      length(parm) > 0L,
+      (parm <- add_link_string(unique(remove_link_string(parm)))) %in% pn,
+      m = paste0(
+        "`parm` must be a subset of\n",
+        "`get_par_names(curve, distr, excess, link)`."
+      )
+    )
     stop_if_not(
       is.logical(decontrast),
       length(decontrast) == 1L,
       !is.na(decontrast),
       m = "`decontrast` must be TRUE or FALSE."
     )
-    pn <- sub("^log_", "", colnames(fitted$madf_args$data$rid))
-    stop_if_not(
-      is.character(parm),
-      length(parm) > 0L,
-      parm %in% pn,
-      m = paste0(
-        "`parm` must be a subset of:\n",
-        paste(sprintf("\"%s\"", pn), collapse = ", ")
-      )
-    )
-    parm <- unique(parm)
-    parm <- sprintf("log_%s", parm)
 
     ## Matrix of linear coefficients if `decontrast = TRUE`,
     ## index vector if `decontrast = FALSE`

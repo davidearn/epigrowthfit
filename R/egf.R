@@ -1,16 +1,47 @@
+#' \loadmathjax
+#' Fit a model of epidemic growth
+#'
+#' @description
+#' Fits phenomenological models of epidemic growth to one or more
+#' disease incidence time series. Accounts for variation of model
+#' parameters (e.g., the initial exponential growth rate \mjseqn{r})
+#' across time series (e.g., between epidemic waves or geographical
+#' units) by assuming a user-specified generalized linear mixed model
+#' for the parameters. First and second order derivatives of the
+#' likelihood are calculated by automatic differentiation using
+#' package **TMB**.
+#'
+#' @param formula
+#'   A formula of the form `y ~ x` locating incidence time series
+#'   in `data`.
+#' @param fixed,random
+#'   A formula or named list of formula of form `~rhs` specifying
+#'   fixed and random effects. See Details.
+#' @param data
+#'   A data frame, list, or environment containing the variables
+#'   in `formula`, `fixed`, and `random`.
+#' @param index
+#'   A factor of length `nrow(data)` specifying fitting windows
+#'   (subsets of data )
+#'
+#' @details
+#' ## 1. Formula specification
+#' For fixed effects, `rhs` must be a
+#'   single interaction of `n >= 1` factors, as in `f1:...:fn`.
+#'   For random effects, `rhs` must be a sum of terms of the form
+
 #' @importFrom TMB MakeADFun sdreport
 egf <- function(formula,
-                fixed = NULL,
+                fixed = ~1,
                 random = NULL,
                 data = parent.frame(),
                 index = NULL,
-                curve = c("richards", "logistic", "exponential"),
+                curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
                 distr = c("nbinom", "pois"),
                 excess = FALSE,
                 method = c("nlminb", "nlm", "Nelder-Mead", "BFGS", "CG"),
                 na_action = c("exclude", "fail"),
                 sparse_X = FALSE,
-                sparse_Z = TRUE,
                 date_format = "%Y-%m-%d",
                 ...) {
   curve <- match.arg(curve)
@@ -24,17 +55,16 @@ egf <- function(formula,
   na_action <- match.arg(na_action)
   method <- match.arg(method)
 
-  par_names <- get_par_names(curve, distr, excess)
   formula <- check_formula(formula)
-  fixed <- check_fixed(fixed, par_names)
-  random <- check_random(random, par_names)
+  fixed <- check_fixed(fixed, curve, distr, excess)
+  random <- check_random(random, curve, distr, excess)
   frame <- check_data(formula, fixed, random, data, index,
                       na_action, date_format)
 
-  madf_data <- make_madf_data(frame, sparse_X, sparse_Z)
+  madf_data <- make_madf_data(frame, curve, distr, excess, sparse_X)
   madf_args <- list(
     data = madf_data,
-    parameters = make_madf_parameters(madf_data),
+    parameters = make_madf_parameters(madf_data, curve),
     map = make_madf_map(madf_data),
     random = make_madf_random(madf_data),
     DLL = "epigrowthfit",

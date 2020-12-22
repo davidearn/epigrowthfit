@@ -57,8 +57,7 @@ vcov.egf <- function(object, decontrast = TRUE,
   }
 
   m <- object$report$cov
-  dimnames(m) <- rep(list(grep("^b\\[", names(object$par), value = TRUE, invert = TRUE)), 2L)
-  k <- grep("^beta\\[", colnames(m))
+  k <- grep("^beta\\[", names(object$par))
   if (re && !full) {
     m <- m[k, k]
   }
@@ -76,18 +75,18 @@ vcov.egf <- function(object, decontrast = TRUE,
     if (re && full) {
       lc[-k, -k] <- diag(rep(1L, nrow(m) - length(k)))
     }
-    dn <- dimnames(m)
-    m <- lc %*% m %*% t(lc) # dimnames discarded
-    dimnames(m) <- dn
+    m <- lc %*% m %*% t(lc)
   }
   if (cor) {
     sd <- sqrt(diag(m))
     m <- m / outer(sd, sd)
   }
 
-  attr(m, "par_info") <- get_par_info(object,
-    which = if (full) c("beta", "sd") else "beta",
+  pin <- get_par_info(object,
+    which = if (full) c("beta", "log_sd") else "beta",
     decontrast = decontrast
   )
+  dimnames(m) <- rep(list(as.character(pin$name)), 2L)
+  attr(m, "par_info") <- pin
   m
 }

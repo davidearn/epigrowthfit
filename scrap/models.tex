@@ -76,18 +76,17 @@ Solving for $c(t)$:
 
 \subsection{Reparametrization}
 
-Solving $c(t_\text{half}) = \frac{K}{2}$ for $\frac{K}{c(0)}$:
+$c''(t_\text{infl}) = 0$ reduces to:
 %
 \begin{equation}
-  \label{eq:logistic-thalf}
-  \frac{K}{2} = \frac{K}{1 + \big(\frac{K}{c(0)} - 1\big) e^{-r t_\text{half}}}
-  \implies \frac{K}{c(0)} = e^{r t_\text{half}} + 1\,.
+  \label{eq:logistic-tinfl}
+  \frac{K}{c(0)} - 1 = e^{r t_\text{infl}}\,.
 \end{equation}
 %
-Substituting \eqref{eq:logistic-thalf} in \eqref{eq:logistic}:
+Substituting \eqref{eq:logistic-tinfl} in \eqref{eq:logistic}:
 %
 \begin{equation}
-  c(t) = \frac{K}{1 + e^{-r (t - t_\text{half})}}\,.
+  c(t) = \frac{K}{1 + e^{-r (t - t_\text{infl})}}\,.
 \end{equation}
 
 \section{Richards model}
@@ -95,30 +94,30 @@ Substituting \eqref{eq:logistic-thalf} in \eqref{eq:logistic}:
 The differential equation is
 %
 \begin{equation}
-  c'(s) = r c(s) \bigg(1 - \bigg(\frac{c(s)}{K}\bigg)^p\bigg)\,,
+  c'(s) = r c(s) \bigg(1 - \bigg(\frac{c(s)}{K}\bigg)^a\bigg)\,,
 \end{equation}
 %
 and can be rewritten as
 %
 \begin{equation}
   \label{eq:richards-integrand}
-  \bigg(\frac{1}{c(s) (c(s)^p - K^p)}\bigg) c'(s) = -\frac{r}{K^p}\,.
+  \bigg(\frac{1}{c(s) (c(s)^a - K^a)}\bigg) c'(s) = -\frac{r}{K^a}\,.
 \end{equation}
 %
 One can verify that
 %
 \begin{equation}
-  \int \frac{1}{x (x^p - a^p)}\,\text{d}x = \frac{1}{p a^p} \log\bigg|\frac{a^p}{x^p} - 1\bigg|\,.
+  \int \frac{1}{x (x^a - b^a)}\,\text{d}x = \frac{1}{a b^a} \log\bigg|\frac{b^a}{x^a} - 1\bigg|\,.
 \end{equation}
 %
 Integrating \eqref{eq:richards-integrand} from $s = 0$ to $s = t$:
 %
 \begin{equation}
   \begin{aligned}
-    &\frac{1}{p K^p} \Bigg(\log\bigg|\frac{K^p}{c(t)^p} - 1\bigg| - \log\bigg|\frac{K^p}{c(0)^p} - 1\bigg|\Bigg) \\
-    &= \frac{1}{p K^p} \log\Bigg|\frac{\frac{K^p}{c(t)^p} - 1}{\frac{K^p}{c(0)^p} - 1}\Bigg| \\
-    &= \frac{1}{p K^p} \log\Bigg(\frac{\frac{K^p}{c(t)^p} - 1}{\frac{K^p}{c(0)^p} - 1}\Bigg) \\
-    &= -\frac{r}{K^p}t\,.
+    &\frac{1}{a K^a} \Bigg(\log\bigg|\frac{K^a}{c(t)^a} - 1\bigg| - \log\bigg|\frac{K^a}{c(0)^a} - 1\bigg|\Bigg) \\
+    &= \frac{1}{a K^a} \log\Bigg|\frac{\frac{K^a}{c(t)^a} - 1}{\frac{K^a}{c(0)^a} - 1}\Bigg| \\
+    &= \frac{1}{a K^a} \log\Bigg(\frac{\frac{K^a}{c(t)^a} - 1}{\frac{K^a}{c(0)^a} - 1}\Bigg) \\
+    &= -\frac{r}{K^a}t\,.
   \end{aligned}
 \end{equation}
 %
@@ -126,22 +125,23 @@ Solving for $c(t)$:
 %
 \begin{equation}
   \label{eq:richards}
-  c(t) = \frac{K}{\big[1 + \big(\big(\frac{K}{c(0)}\big)^p - 1\big) e^{-r p t}\big]^{1/p}}\,.
+  c(t) = \frac{K}{\big[1 + \big(\big(\frac{K}{c(0)}\big)^a - 1\big) e^{-r a t}\big]^{1/a}}\,.
 \end{equation}
 
 \subsection{Reparametrization}
 
-Solving $c(t_\text{half}) = \frac{K}{2}$ for $\big(\frac{K}{c(0)}\big)^p$:
+$c''(t_\text{infl}) = 0$ reduces to:
 %
 \begin{equation}
-  \label{eq:richards-thalf}
-  \frac{K}{2} = \frac{K}{\big[1 + \big(\big(\frac{K}{c(0)}\big)^p - 1\big) e^{-r p t_\text{half}}\big]^{1/p}} \implies \bigg(\frac{K}{c(0)}\bigg)^p = 1 + (2^p - 1) e^{r p t_\text{half}}\,.
+  \label{eq:richards-tinfl}
+  \bigg(\frac{K}{c(0)}\bigg)^a - 1 = a e^{r a t_\text{infl}}\,.
 \end{equation}
 %
-Substituting \eqref{eq:richards-thalf} in \eqref{eq:richards}:
+Substituting \eqref{eq:richards-tinfl} in \eqref{eq:richards}:
 %
 \begin{equation}
-  c(t) = \frac{K}{\big[1 + (2^p - 1) e^{-r p (t - t_\text{half})}\big]^{1/p}}\,.
+  c(t) = \frac{K}{\big[1 + a e^{-r a (t - t_\text{infl})}\big]^{1/a}}\,.
 \end{equation}
+
 
 \end{document}

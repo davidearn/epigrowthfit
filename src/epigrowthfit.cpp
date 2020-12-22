@@ -4,8 +4,16 @@
 enum curve
 {
     exponential,
+    subexponential,
+    gompertz,
     logistic,
     richards
+};
+
+enum distr
+{
+    pois,
+    nbinom
 };
 
 template<class Type>
@@ -18,32 +26,55 @@ Type eval_exponential(Type t, Type log_r, Type log_c0)
 }
 
 template<class Type>
-Type eval_logistic(Type t, Type log_r, Type log_thalf, Type log_K)
+Type eval_subexponential(Type t, Type log_alpha, Type log_c0, Type logit_p)
 {
     // log(c(t))
-    // = log(K / (1 + exp(-r * (t - thalf))))
-    // = log(K) - log(1 + exp(-r * (t - thalf)))
-    return log_K - logspace_add(Type(0), -exp(log_r) * (t - exp(log_thalf)));
+    // = log((c0^(1 - p) + (1 - p) * alpha * t)^(1 / (1 - p)))
+    // = log(c0^(1 - p) + (1 - p) * alpha * t) / (1 - p)
+    Type one_minus_p = Type(1) / (Type(1) + exp(logit_p));
+    return logspace_add(one_minus_p * log_c0, log(one_minus_p) + log_alpha + log(t)) / one_minus_p;
 }
 
 template<class Type>
-Type eval_richards(Type t, Type log_r, Type log_thalf, Type log_K, Type log_p)
+Type eval_gompertz(Type t, Type log_alpha, Type log_c0, Type log_K)
 {
     // log(c(t))
-    // = log(K / (1 + (2^p - 1) * exp(-r * p * (t - thalf)))^(1 / p))
-    // = log(K) - log(1 + (2^p - 1) * exp(-r * p * (t - thalf))) / p
-    Type p = exp(log_p);
-    return log_K - logspace_add(Type(0), logspace_sub(p * log(Type(2)), Type(0)) - exp(log_r) * p * (t - exp(log_thalf))) / p;
+    // = log(K * (c0 / K)^(exp(-alpha * t)))
+    // = log(K) + exp(-alpha * t) * (log(c0) - log(K))
+    return log_K + exp(-exp(log_alpha) * t) * (log_c0 - log_K);
 }
 
 template<class Type>
-vector<Type> eval_log_cum_inc(vector<Type> t, int curve_flag, bool excess,
+Type eval_logistic(Type t, Type log_r, Type log_tinfl, Type log_K)
+{
+    // log(c(t))
+    // = log(K / (1 + exp(-r * (t - tinfl))))
+    // = log(K) - log(1 + exp(-r * (t - tinfl)))
+    return log_K - logspace_add(Type(0), -exp(log_r) * (t - exp(log_tinfl)));
+}
+
+template<class Type>
+Type eval_richards(Type t, Type log_r, Type log_tinfl, Type log_K, Type log_a)
+{
+    // log(c(t))
+    // = log(K / (1 + a * exp(-r * a * (t - tinfl)))^(1 / a))
+    // = log(K) - log(1 + a * exp(-r * a * (t - tinfl))) / a
+    Type a = exp(log_a);
+    return log_K - logspace_add(Type(0), log_a - exp(log_r) * a * (t - exp(log_tinfl))) / a;
+}
+
+template<class Type>
+vector<Type> eval_log_cum_inc(vector<Type> t,
 			      matrix<Type> Y,
+			      int curve_flag,
+			      bool excess,
 			      int j_log_r,
+			      int j_log_alpha,
 			      int j_log_c0,
-			      int j_log_thalf,
+			      int j_log_tinfl,
 			      int j_log_K,
-			      int j_log_p,
+			      int j_logit_p,
+			      int j_log_a,
 			      int j_log_b)
 {
     vector<Type> log_cum_inc(t.size());
@@ -54,11 +85,17 @@ vector<Type> eval_log_cum_inc(vector<Type> t, int curve_flag, bool excess,
 	case exponential:
 	    log_cum_inc(i) = eval_exponential(t(i), Y(i, j_log_r), Y(i, j_log_c0));
 	    break;
+	case subexponential:
+	    log_cum_inc(i) = eval_subexponential(t(i), Y(i, j_log_alpha), Y(i, j_log_c0), Y(i, j_logit_p));
+	    break;
+	case gompertz:
+	    log_cum_inc(i) = eval_gompertz(t(i), Y(i, j_log_alpha), Y(i, j_log_c0), Y(i, j_log_K));
+	    break;
 	case logistic:
-	    log_cum_inc(i) = eval_logistic(t(i), Y(i, j_log_r), Y(i, j_log_thalf), Y(i, j_log_K));
+	    log_cum_inc(i) = eval_logistic(t(i), Y(i, j_log_r), Y(i, j_log_tinfl), Y(i, j_log_K));
 	    break;
 	case richards:
-	    log_cum_inc(i) = eval_richards(t(i), Y(i, j_log_r), Y(i, j_log_thalf), Y(i, j_log_K), Y(i, j_log_p));
+	    log_cum_inc(i) = eval_richards(t(i), Y(i, j_log_r), Y(i, j_log_tinfl), Y(i, j_log_K), Y(i, j_log_a));
 	    break;
 	}
 	if (excess)
@@ -86,6 +123,38 @@ vector<Type> eval_log_int_inc(vector<Type> log_cum_inc, vector<int> wl)
 }
 
 template<class Type>
+vector<Type> compute_log_r(matrix<Type> Y,
+			   int curve_flag,
+			   int j_log_r,
+			   int j_log_alpha,
+			   int j_log_c0,
+			   int j_log_K,
+			   int j_logit_p)
+{
+    vector<Type> log_r(Y.rows());
+    Type one_minus_p;
+    for (int i = 0; i < Y.rows(); i++)
+    {
+        switch (curve_flag)
+	{
+	case exponential:
+	case logistic:
+	case richards:
+	    log_r(i) = Y(i, j_log_r);
+	    break;
+	case subexponential:
+	    one_minus_p = Type(1) / (Type(1) + exp(Y(i, j_logit_p)));
+	    log_r(i) = Y(i, j_log_alpha) - one_minus_p * Y(i, j_log_c0);
+	    break;
+	case gompertz:
+	    log_r(i) = Y(i, j_log_alpha) + log(Y(i, j_log_K) - Y(i, j_log_c0));
+	    break;
+	}
+    }
+    return log_r;
+}
+
+template<class Type>
 Type dpois_robust(Type x, Type log_lambda, int give_log = 0)
 {
     Type log_dpois = x * log_lambda - exp(log_lambda) - lfactorial(x);
@@ -95,8 +164,8 @@ Type dpois_robust(Type x, Type log_lambda, int give_log = 0)
 template<class Type>
 Type rnbinom_robust(Type log_mu, Type log_disp)
 {
-    Type log_p = log_disp - logspace_add(log_mu, log_disp);
-    return rnbinom(exp(log_disp), exp(log_p));
+    Type log_a = log_disp - logspace_add(log_mu, log_disp);
+    return rnbinom(exp(log_disp), exp(log_a));
 }
 
 // https://github.com/kaskr/adcomp/issues/59
@@ -122,6 +191,12 @@ matrix<Type> prune_dupl_rows(matrix<Type> Y, vector<int> wl)
 
 
 
+
+
+
+
+
+
 // https://kaskr.github.io/adcomp/Introduction.html
 template<class Type>
 Type objective_function<Type>::operator() ()
@@ -129,17 +204,19 @@ Type objective_function<Type>::operator() ()
     // Set up ==================================================================
 
     // Flags
-    DATA_INTEGER(sparseX_flag); // sparse X  (1=sparse,   0=dense)
-    DATA_INTEGER(sparseZ_flag); // sparse Z  (1=sparse,   0=dense)
-    DATA_INTEGER(predict_flag); // predict   (1=predict,  0=fit)
-    bool sparseX = (sparseX_flag == 1);
-    bool sparseZ = (sparseZ_flag == 1);
-    bool predict = (predict_flag == 1);
+    DATA_INTEGER(curve_flag);    // curve     (enum curve)
+    DATA_INTEGER(distr_flag);    // distr     (enum distr)
+    DATA_INTEGER(excess_flag);   // excess    (1=yes,      0=no)
+    DATA_INTEGER(sparse_X_flag); // X format  (1=sparse,   0=dense)
+    DATA_INTEGER(predict_flag);  // predict   (1=predict,  0=fit)
+    bool excess   = (excess_flag   == 1);
+    bool sparse_X = (sparse_X_flag == 1);
+    bool predict  = (predict_flag  == 1);
     
     // Data
     // time series
-    DATA_VECTOR(t);  // length=N
-    DATA_VECTOR(x);  // length=N
+    DATA_VECTOR(t); // length=N
+    DATA_VECTOR(x); // length=N
     // window lengths
     DATA_IVECTOR(wl); // length=nts
     int nw = wl.size();
@@ -147,30 +224,9 @@ Type objective_function<Type>::operator() ()
     DATA_IVECTOR(fnl); // length=nFE=np
     DATA_IVECTOR(rnl); // length=nRE
     // design matrices
-    Eigen::SparseMatrix<Type> Xs(t.size(), fnl.sum());
-    matrix<Type> Xd(t.size(), fnl.sum());
-    if (sparseX)
-    {
-        DATA_SPARSE_MATRIX(X); // nrow=N,  ncol=sum(nlevels(FE i))
-	Xs = X;
-    }
-    else
-    {
-	DATA_MATRIX(X);
-	Xd = X;
-    }
-    Eigen::SparseMatrix<Type> Zs(t.size(), rnl.sum());
-    matrix<Type> Zd(t.size(), rnl.sum());
-    if (sparseZ)
-    {
-        DATA_SPARSE_MATRIX(Z); // nrow=N, ncol=sum(nlevels(RE i))
-	Zs = Z;
-    }
-    else
-    {
-	DATA_MATRIX(Z);
-	Zd = Z;
-    }
+    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(nlevels(FE i))
+    DATA_MATRIX(Xd);
+    DATA_SPARSE_MATRIX(Z);  // nrow=N, ncol=sum(nlevels(RE i))
     // random effect indicators
     DATA_IMATRIX(rid); // nrow=nRE,  ncol=np,  {0,1}
     bool anyRE = (rid.rows() > 0);
@@ -178,21 +234,21 @@ Type objective_function<Type>::operator() ()
     vector<int> rnp = rid.rowwise().sum();
     // parameter indices
     DATA_INTEGER(j_log_r);
+    DATA_INTEGER(j_log_alpha);
     DATA_INTEGER(j_log_c0);
-    DATA_INTEGER(j_log_thalf);
+    DATA_INTEGER(j_log_tinfl);
     DATA_INTEGER(j_log_K);
-    DATA_INTEGER(j_log_p);
-    DATA_INTEGER(j_log_nbdisp);
+    DATA_INTEGER(j_logit_p);
+    DATA_INTEGER(j_log_a);
     DATA_INTEGER(j_log_b);
-    int curve_flag = ((j_log_c0 >= 0) ? 0 : ((j_log_p < 0) ? 1 : 2));
-    bool nbinom = (j_log_nbdisp >= 0);
-    bool excess = (j_log_b >= 0);
+    DATA_INTEGER(j_log_nbdisp);
+    
     
     // Parameters
     // fixed effects
     PARAMETER_VECTOR(beta); // length=sum(nlevels(FE i))
-    // sd random effects
-    PARAMETER_VECTOR(sd); // length=sum(np(RE i))
+    // log sd random effects
+    PARAMETER_VECTOR(log_sd);   // length=sum(np(RE i))
     // random effects
     PARAMETER_VECTOR(b);    // length=sum(nlevels(RE i)*np(RE i)) 
 
@@ -222,7 +278,7 @@ Type objective_function<Type>::operator() ()
 	i += fnl(j);
     }
     
-    if (sparseX)
+    if (sparse_X)
     {
         Y = Xs * beta2;
     }
@@ -275,7 +331,7 @@ Type objective_function<Type>::operator() ()
 
 	for (int r = 0, k = 0; r < sd_list.size(); r++)
 	{
-	    vector<Type> sd_list_el = sd.segment(k, rnp(r));
+	    vector<Type> sd_list_el = exp(log_sd.segment(k, rnp(r)));
 	    sd_list(r) = sd_list_el;
 	    k += rnp(r);
 	}
@@ -298,7 +354,7 @@ Type objective_function<Type>::operator() ()
 	    }
 	    else
 	    {
-		vector<Type> ltri(rnp(r) * (rnp(r) - 1) / 2);
+	        vector<Type> ltri(rnp(r) * (rnp(r) - 1) / 2);
 		cor_list(r) = density::UNSTRUCTURED_CORR(ltri).cov();
 	    }
 	}
@@ -320,15 +376,7 @@ Type objective_function<Type>::operator() ()
 	    }
 	    i += rnl(r);
 	}
-	
-	if (sparseZ)
-	{
-	    Y += Zs * b2;
-	}
-	else
-	{
-	    Y += Zd * b2;
-	}
+	Y += Z * b2;
     }
 
 
@@ -336,20 +384,23 @@ Type objective_function<Type>::operator() ()
     // NOTE: parameters are constant within but not across fitting windows
 
     matrix<Type> Y_short = prune_dupl_rows(Y, wl);
-    vector<Type> y = Y_short.vec();
-    ADREPORT(y);
+    vector<Type> Y_short_as_vector = Y_short.vec();
+    ADREPORT(Y_short_as_vector);
+    vector<Type> log_r = compute_log_r(Y_short, curve_flag,
+				       j_log_r, j_log_alpha, j_log_c0, j_log_K, j_logit_p);
+    ADREPORT(log_r);
     
 
     // Compute likelihood ======================================================
 
     // Log cumulative incidence
-    vector<Type> log_cum_inc = eval_log_cum_inc(t, curve_flag, excess, Y, j_log_r, j_log_c0, j_log_thalf, j_log_K, j_log_p, j_log_b);
-    
+    vector<Type> log_cum_inc = eval_log_cum_inc(t, Y, curve_flag, excess,
+						j_log_r, j_log_alpha, j_log_c0, j_log_tinfl, j_log_K, j_logit_p, j_log_a, j_log_b);
     // Log interval incidence
     vector<Type> log_int_inc = eval_log_int_inc(log_cum_inc, wl);
 
     // Negative log likelihood
-    Type nll = 0;
+    Type nll = Type(0);
     Type log_var_minus_mu;
     
     for (int i1 = 0, i2 = 1, k = 0; k < wl.size(); k++) // loop over time series
@@ -358,16 +409,17 @@ Type objective_function<Type>::operator() ()
 	{
 	    if (!isNA_real_(x(i2+j)))
 	    {
-	        if (nbinom)
+	        switch (distr_flag)
 		{
+		case pois:
+		    nll -= dpois_robust(x(i2+j), log_int_inc(i1+j), true);
+		    // usage: dpois_robust(x, log_lambda, give_log)
+		    break;
+		case nbinom:
 		    log_var_minus_mu = Type(2) * log_int_inc(i1+j) - Y(i2+j, j_log_nbdisp);
 		    nll -= dnbinom_robust(x(i2+j), log_int_inc(i1+j), log_var_minus_mu, true);
 		    // usage: dnbinom_robust(x, log_mu, log_var_minus_mu, give_log)
-		}
-		else
-		{
-		    nll -= dpois_robust(x(i2+j), log_int_inc(i1+j), true);
-		    // usage: dpois_robust(x, log_lambda, give_log)
+		    break;
 		}
 	    }
 	}
@@ -412,37 +464,33 @@ Type objective_function<Type>::operator() ()
 		}
 		i += rnl(r);
 	    }
-	    
-	    if (sparseZ)
-	    {
-		Y_sim += Zs * b2_sim;
-	    }
-	    else
-	    {
-		Y_sim += Zd * b2_sim;
-	    }
+	    Y_sim += Z * b2_sim;
 	}
-	matrix<Type> Y_sim_short = prune_dupl_rows(Y_sim, wl);
-	REPORT(Y_sim_short);
-	
-        log_cum_inc = eval_log_cum_inc(t, curve_flag, excess, Y_sim, j_log_r, j_log_c0, j_log_thalf, j_log_K, j_log_p, j_log_b);
+	// matrix<Type> Y_sim_short = prune_dupl_rows(Y_sim, wl);
+	// REPORT(Y_sim_short);
+	// vector<Type> log_r_sim = compute_log_r(Y_sim_short, curve_flag,
+	//                                        j_log_r, j_log_alpha, j_log_c0, j_log_K, j_logit_p);
+	// REPORT(log_r_sim);
+
+        log_cum_inc = eval_log_cum_inc(t, Y_sim, curve_flag, excess,
+				       j_log_r, j_log_alpha, j_log_c0, j_log_tinfl, j_log_K, j_logit_p, j_log_a, j_log_b);
 	log_int_inc = eval_log_int_inc(log_cum_inc, wl);
 
 	for (int i1 = 0, i2 = 1, k = 0; k < wl.size(); k++) // loop over time series
 	{
 	    for (int j = 0; j < wl(k) - 1; j++) // loop over time points
 	    {
-		if (nbinom)
+	        switch(distr_flag)
 		{
-		    x(i2+j) = rnbinom_robust(log_int_inc(i1+j), Y_sim(i2+j, j_log_nbdisp));
-		    // usage: rnbinom_robust(log_mu, log_disp)
-		}
-		else
-		{
+		case pois:
 		    x(i2+j) = rpois(exp(log_int_inc(i1+j)));
 		    // usage: rpois(mu)
+		    break;
+		case nbinom:
+		    x(i2+j) = rnbinom_robust(log_int_inc(i1+j), Y_sim(i2+j, j_log_nbdisp));
+		    // usage: rnbinom_robust(log_mu, log_disp)
+		    break;
 		}
-
 	    }
 	    i1 += wl(k) - 1;
 	    i2 += wl(k);
@@ -457,21 +505,31 @@ Type objective_function<Type>::operator() ()
     if (predict)
     {
         DATA_VECTOR(t_new); // length=N_new
-	vector<int> wl_new(1);
-	wl_new(0) = t_new.size();
-	DATA_MATRIX(X_new); // nrow=N_new,  ncol=sum(nlevels(FE i))
-    	DATA_MATRIX(Z_new); // nrow=N_new,  ncol=sum(nlevels(RE i))
-	DATA_INTEGER(se_flag); // report  (1=ADREPORT, 0=REPORT)
+	DATA_SPARSE_MATRIX(Xs_new); // nrow=N_new,  ncol=sum(nlevels(FE i))
+    	DATA_MATRIX(Xd_new); 
+	DATA_SPARSE_MATRIX(Z_new);  // nrow=N_new,  ncol=sum(nlevels(RE i))
+	DATA_INTEGER(se_flag); // report  (1=ADREPORT,  0=REPORT)
 	bool se = (se_flag == 1);
-      
-        matrix<Type> Y_new = X_new * beta2;
-    	if (anyRE)
+
+	matrix<Type> Y_new(t_new.size(), np);
+	if (sparse_X)
+	{
+	    Y_new = Xs_new * beta2;
+	}
+	else
+	{
+	    Y_new = Xd_new * beta2;
+	}
+        if (anyRE)
     	{
 	    Y_new += Z_new * b2;
     	}
 
-        vector<Type> log_cum_inc_new = eval_log_cum_inc(t_new, curve_flag, excess, Y_new, j_log_r, j_log_c0, j_log_thalf, j_log_K, j_log_p, j_log_b);
-    	vector<Type> log_int_inc_new = eval_log_int_inc(log_cum_inc_new, wl_new);
+        vector<Type> log_cum_inc_new = eval_log_cum_inc(t_new, Y_new, curve_flag, excess,
+							j_log_r, j_log_alpha, j_log_c0, j_log_tinfl, j_log_K, j_logit_p, j_log_a, j_log_b);
+	vector<int> wl_new(1);
+	wl_new(0) = t_new.size();
+	vector<Type> log_int_inc_new = eval_log_int_inc(log_cum_inc_new, wl_new);
 
     	if (se)
 	{

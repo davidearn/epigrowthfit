@@ -65,10 +65,19 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
     predict_flag <- 1L
     se_flag <- 1L * se
     t_new <- time
-    X_new <- matrix(X[i[1L], , drop = TRUE],
-                    nrow = length(time), ncol = ncol(X), byrow = TRUE)
-    Z_new <- matrix(Z[i[1L], , drop = TRUE],
-                    nrow = length(time), ncol = ncol(Z), byrow = TRUE)
+    if (sparse_X_flag == 1L) {
+      Xs_new <- do.call(rbind, rep(list(Xs[i[1L], , drop = FALSE]), length(t_new)))
+      Xd_new <- Xd
+    } else {
+      Xd_new <- matrix(Xd[i[1L], , drop = TRUE], nrow = length(t_new), ncol = ncol(Xd), byrow = TRUE)
+      Xs_new <- Xs
+    }
+    if (has_random(object)) {
+      ## FIXME: probably slow?
+      Z_new <- do.call(rbind, rep(list(Z[i[1L], , drop = FALSE]), length(t_new)))
+    } else {
+      Z_new <- Z
+    }
   })
   madf_out_new <- do.call(MakeADFun, object$madf_args)
 
@@ -78,14 +87,13 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
     out <- ssdr[c("log_cum_inc_new", "log_int_inc_new")]
     out$log_int_inc_new <- rbind(NA_real_, out$log_int_inc_new)
     out <- lapply(out, function(d) cbind(time, d))
-    names(out) <- sub("_new$", "", names(out))
+    names(out) <- sub("_new", "", names(out))
     class(out) <- c("egf_predict", "list")
   } else {
     r <- madf_out_new$report(object$par)
-    out <- data.frame(
-      time = time,
-      log_cum_inc = r$log_cum_inc_new,
-      log_int_inc = c(NA_real_, r$log_int_inc_new)
+    out <- list(
+      log_cum_inc = data.frame(time, estimate = r$log_cum_inc_new),
+      log_int_inc = data.frame(time, estimate = c(NA_real_, r$log_int_inc_new))
     )
   }
 

@@ -7,9 +7,13 @@ confint.egf <- function(object, parm = "r", level = 0.95,
                         parallel = c("serial", "multicore", "snow"),
                         cores = getOption("egf.cores", 2L),
                         breaks = NULL, probs = NULL, ...) {
+  if (object$curve %in% c("subexponential", "gompertz")) {
+    stop("Subexponential and Gompertz models not supported yet.")
+  }
+
   ## FIXME: Simplify string handling, e.g., "log_r" versus "r".
-  pn <- colnames(object$madf_args$data$rid)
-  pn0 <- c("R0", "doubling_time", sub("^log_", "", pn))
+  pn <- get_par_names(object$curve, object$distr, object$excess, link = TRUE)
+  pn0 <- c("R0", "doubling_time", remove_link_string(pn))
   stop_if_not(
     is.character(parm),
     length(parm) > 0L,
@@ -25,7 +29,7 @@ confint.egf <- function(object, parm = "r", level = 0.95,
   }
   parm0 <- parm
   parm[parm %in% c("R0", "doubling_time")] <- "r"
-  parm <- sprintf("log_%s", unique(parm))
+  parm <- add_link_string(unique(parm))
 
   stop_if_not(
     is.numeric(level),
@@ -75,7 +79,7 @@ confint.egf <- function(object, parm = "r", level = 0.95,
 
     if (method == "profile") {
       pr <- profile(object,
-        parm = sub("^log_", "", parm),
+        parm = parm,
         decontrast = TRUE,
         max_level = level + min(0.01, 0.1 * (1 - level)),
         grid_len = grid_len,
@@ -123,7 +127,7 @@ confint.egf <- function(object, parm = "r", level = 0.95,
 
   i_elu <- length(out) - 2:0 # index of "estimate", "lower", "upper"
   out[i_elu] <- exp(out[i_elu])
-  levels(out$par) <- sub("^log_", "", levels(out$par))
+  levels(out$par) <- remove_link_string(levels(out$par))
 
   if ("R0" %in% parm0) {
     d <- out[out$par == "r", ]

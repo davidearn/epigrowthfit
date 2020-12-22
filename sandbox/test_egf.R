@@ -1,8 +1,10 @@
 library("TMB")
+library("parallel")
+library("Matrix")
 setwd("src")
 file.remove(paste0("epigrowthfit.", c("o", "so")))
-#compile("epigrowthfit.cpp")
-#dyn.load(dynlib("epigrowthfit"))
+compile("epigrowthfit.cpp")
+dyn.load(dynlib("epigrowthfit"))
 setwd("..")
 
 load("data/canadacovid.RData")
@@ -26,17 +28,16 @@ source("R/confint.R")
 object <- egf(new_confirmed ~ date,
   data = ontario,
   index = ontario$wave,
-  #fixed = ~1,
-  fixed = ~wave,
-  #random = ~(1 | wave),
-  random = NULL,
+  fixed = ~1,
+  #fixed = ~wave,
+  random = ~(1 | wave),
+  #random = NULL,
   sparse_X = FALSE,
   sparse_Z = FALSE,
-  curve = "logistic",
+  curve = "richards",
   distr = "nbinom",
   excess = FALSE,
   na_action = "exclude",
   method = "nlminb",
   date_format = "%Y-%m-%d"
 )
-

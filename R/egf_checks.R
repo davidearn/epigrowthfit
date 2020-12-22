@@ -8,16 +8,18 @@ check_formula <- function(formula) {
   formula
 }
 
-check_fixed <- function(fixed, par_names) {
-  p <- length(par_names)
+check_fixed <- function(fixed, curve, distr, excess) {
+  pn <- get_par_names(curve, distr, excess, link = TRUE)
+  p <- length(pn)
+
   if (is.null(fixed)) {
     fixed <- rep(list(~1), p)
-    names(fixed) <- par_names
+    names(fixed) <- pn
     return(fixed)
   }
   if (inherits(fixed, "formula")) {
     fixed <- rep(list(fixed), p)
-    names(fixed) <- par_names
+    names(fixed) <- pn
   }
   stop_if_not(
     inherits(fixed, "list"),
@@ -25,16 +27,16 @@ check_fixed <- function(fixed, par_names) {
     vapply(fixed, inherits, logical(1L), "formula"),
     m = "`fixed` must be NULL, a formula, or a named list of formula."
   )
+  names(fixed) <- add_link_string(remove_link_string(names(fixed)))
   stop_if_not(
     !is.null(names(fixed)),
-    names(fixed) %in% c(par_names, sub("^log_", "", par_names)),
+    names(fixed) %in% pn,
     !any(duplicated(names(fixed))),
     m = paste0(
       "If `fixed` is a list, then `names(fixed)` must be a subset\n",
-      "of `get_par_names(, curve, distr, excess)`."
+      "of `get_par_names(curve, distr, excess, link)`."
     )
   )
-  names(fixed) <- ifelse(grepl("^log_", names(fixed)), names(fixed), sprintf("log_%s", names(fixed)))
   rhs <- vapply(fixed, function(x) deparse(x[[2L]]), character(1L))
   stop_if_not(
     lengths(fixed) == 2L,
@@ -43,20 +45,22 @@ check_fixed <- function(fixed, par_names) {
   )
 
   ## Fill out and order the list
-  fixed[setdiff(par_names, names(fixed))] <- list(~1)
-  fixed[par_names]
+  fixed[setdiff(pn, names(fixed))] <- list(~1)
+  fixed[pn]
 }
 
-check_random <- function(random, par_names) {
-  p <- length(par_names)
+check_random <- function(random, curve, distr, excess) {
+  pn <- get_par_names(curve, distr, excess, link = TRUE)
+  p <- length(pn)
+
   if (is.null(random)) {
     random <- rep(list(NULL), p)
-    names(random) <- par_names
+    names(random) <- pn
     return(random)
   }
   if (inherits(random, "formula")) {
     random <- rep(list(random), p)
-    names(random) <- par_names
+    names(random) <- pn
   }
   stop_if_not(
     inherits(random, "list"),
@@ -64,16 +68,16 @@ check_random <- function(random, par_names) {
     vapply(random, inherits, logical(1L), "formula"),
     m = "`random` must be NULL, a formula, or a named list of formula."
   )
+  names(random) <- add_link_string(remove_link_string(names(random)))
   stop_if_not(
     !is.null(names(random)),
-    names(random) %in% c(par_names, sub("^log_", "", par_names)),
+    names(random) %in% pn,
     !any(duplicated(names(random))),
     m = paste0(
       "If `random` is a list, then `names(random)` must be a subset\n",
-      "of `get_par_names(curve, distr, excess)`."
+      "of `get_par_names(curve, distr, excess, link)`."
     )
   )
-  names(random) <- ifelse(grepl("^log_", names(random)), names(random), sprintf("log_%s", names(random)))
   rhs <- vapply(random, function(x) deparse(x[[2L]]), character(1L))
   stop_if_not(
     lengths(random) == 2L,
@@ -86,8 +90,8 @@ check_random <- function(random, par_names) {
   )
 
   ## Fill out and order the list
-  random[setdiff(par_names, names(random))] <- list(NULL)
-  random[par_names]
+  random[setdiff(pn, names(random))] <- list(NULL)
+  random[pn]
 }
 
 check_data <- function(formula, fixed, random,
@@ -159,22 +163,21 @@ check_data <- function(formula, fixed, random,
     index <- factor(integer(n))
   } else {
     stop_if_not(
-      is.factor(index),
+      is.atomic(index),
       length(index) == n,
-      m = sprintf("`index` must be a factor of length `length(%s)`.", dn)
+      m = sprintf("`index` must be a factor or atomic vector of length `length(%s)`.", dn)
     )
-    index <- factor(index, levels = unique(index), exclude = NA)
+    index <- droplevels(index, exclude = NA)
     stop_if_not(
       nlevels(index) > 0L,
       m = "`index` must have at least one nonempty level."
     )
     not_na <- !is.na(index)
     index <- index[not_na]
-    stop_if_not(
-      sum(diff(unclass(index)) != 0L) == nlevels(index) - 1L,
-      m = "Elements of `index` of a given level must be contiguous."
-    )
     data <- data[not_na, ]
+    ord <- order(index)
+    index <- index[ord]
+    data <- data[ord, ]
   }
   data_split <- split(data, index)
   date_split <- lapply(data_split, "[[", dn)
@@ -195,7 +198,7 @@ check_data <- function(formula, fixed, random,
   } else {
     stop_if_not(
       vapply(cases_split, function(x) sum(!is.na(x)) >= 7L, logical(1L)),
-      m = sprintf("There are fitting windows with insufficient data in `%s`.", cn)
+      m = sprintf("There are fitting windows with insufficient data\n(fewer than 7 observations) in `%s`.", cn)
     )
   }
   factors_split <- lapply(data_split, "[", fn)
