@@ -32,12 +32,6 @@ object <- egf(new_confirmed ~ date,
   #fixed = ~wave,
   random = ~(1 | wave),
   #random = NULL,
-  sparse_X = FALSE,
-  sparse_Z = FALSE,
-  curve = "richards",
+  curve = "logistic",
   distr = "nbinom",
-  excess = FALSE,
-  na_action = "exclude",
-  method = "nlminb",
-  date_format = "%Y-%m-%d"
 )

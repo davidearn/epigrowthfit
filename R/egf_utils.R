@@ -112,13 +112,16 @@ factor_to_matrix <- function(x, sparse, intercept) {
 
 #' @importFrom Matrix sparseMatrix
 make_madf_data <- function(frame, curve, distr, excess, sparse_X) {
-  date_to_integer <- function(x) as.integer(x - min(x))
 
   a <- attributes(frame)
-  date <- frame[[a$date_name]]
-  cases <- frame[[a$cases_name]]
-  time <- unlist(lapply(split(date, a$index), date_to_integer), use.names = FALSE)
-  w <- as.integer(a$index) - 1L
+  i_not_na <- which(!is.na(a$index))
+  index <- a$index[i_not_na]
+  frame <- frame[i_not_na, ]
+
+  date_to_integer <- function(x) as.integer(x - min(x))
+  t <- unlist(lapply(split(frame[[a$date_name]], index), date_to_integer), use.names = FALSE)
+  x <- frame[[a$cases_name]]
+  w <- as.integer(index) - 1L
   wl <- as.vector(table(w))
 
   p <- length(a$fixed_term_labels)
@@ -178,8 +181,8 @@ make_madf_data <- function(frame, curve, distr, excess, sparse_X) {
   distr_list <- c("pois", "nbinom")
 
   l1 <- list(
-    t = time,
-    x = cases,
+    t = t,
+    x = x,
     w = w,
     wl = wl,
     Xs = Xs,

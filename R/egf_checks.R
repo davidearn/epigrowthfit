@@ -172,10 +172,7 @@ check_data <- function(formula, fixed, random,
       nlevels(index) > 0L,
       m = "`index` must have at least one nonempty level."
     )
-    not_na <- !is.na(index)
-    index <- index[not_na]
-    data <- data[not_na, ]
-    ord <- order(index)
+    ord <- order(index, na.last = TRUE)
     index <- index[ord]
     data <- data[ord, ]
   }
