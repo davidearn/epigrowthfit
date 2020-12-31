@@ -5,142 +5,156 @@
 \title{\loadmathjax
 Fit a model of epidemic growth}
 \usage{
-egf(init, method = "nlminb", na_action = "exclude", nbdisp_tol = 100, ...)
+egf(
+  formula,
+  fixed = ~1,
+  random = NULL,
+  data = parent.frame(),
+  index = NULL,
+  curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
+  distr = c("nbinom", "pois"),
+  excess = FALSE,
+  method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
+  na_action = c("pass", "fail"),
+  sparse_X = FALSE,
+  date_format = "\%Y-\%m-\%d",
+  debug = FALSE,
+  par_init = NULL,
+  ...
+)
 }
 \arguments{
-\item{init}{An "egf_init" object specifying epidemic data, a fitting window,
-and initial parameter estimates. See \code{\link[=egf_init]{egf_init()}}.}
+\item{formula}{A formula of the form \code{y ~ x} specifying an incidence time series
+or multiple incidence time series in long format. \code{x} and \code{y} must
+be vectors of dates (see \code{date_format}) and integers, respectively.}
 
-\item{method}{One of \code{"nlminb"}, \code{"nlm"}, \code{"Nelder-Mead"}, \code{"BFGS"},
-\code{"L-BFGS-S"}, and \code{"CG"}, indicating an optimization algorithm.}
+\item{fixed, random}{Named lists of formulae of the form \code{~rhs}, together specifying
+a generalized linear mixed effects model (the fixed and random
+components) for each parameter of the \emph{incidence} model indicated
+by \code{curve}, \code{distr}, and \code{excess}. A list of valid names can be
+obtained with \code{get_par_names(curve, distr, excess, link = TRUE)}.
+Alternatively, formulae (rather than lists of formulae) to be
+recycled for all parameters. Syntax is \code{\link[lme4:lmer]{lme4}}-like,
+but here all variables must be factors. \code{fixed} formulae are
+restricted to one term and so must have the form \code{~f1:...:fn}
+or \code{~1} (the default for each missing list element). \code{random}
+formulae must give sums of terms of the form \code{(1 | f1:...:fn)},
+\code{(1 | f1/.../fn)}, or \code{(1 | f1 * ... * fn)}. Use \code{NULL} (the
+default for each missing list element) instead of a formula to
+indicate absence of random effects.}
 
-\item{na_action}{One of \code{"fail"} and \code{"exclude"}, indicating how missing values
-in the fitting window are handled.}
+\item{data}{A data frame, list, or environment containing the variables
+named in \code{formula}, \code{fixed}, and \code{random}.}
 
-\item{nbdisp_tol}{A positive number defining a threshold on the fitted value
-of the negative binomial dispersion parameter. Used only if
-\code{init$distr = "nbinom"}.}
+\item{index}{A factor of length \code{nrow(data)} such that \code{split(data, index)}
+splits \code{data} by fitting window. In this case, \code{is.na(index)}
+should index rows of \code{data} not belonging to a fitting window.
+\code{NULL} (the default) is equivalent to \code{factor(integer(nrow(data)))}.}
 
-\item{...}{Additional arguments to \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}},
-or \code{\link[stats:optim]{stats::optim()}}, depending on \code{method}.}
+\item{curve}{A character string specifying a cumulative incidence model.}
+
+\item{distr}{A character string specifying an observation model.}
+
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
+rate will be estimated. Set to \code{TRUE} if what is observed
+(\code{y} if \code{formula = y ~ x}) is multiple causes mortality
+rather than disease mortality or incidence.}
+
+\item{method}{A character string specifying an optimizer available through
+\code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}.}
+
+\item{na_action}{A character string indicating how \code{NA} in the incidence vector
+(\code{y} if \code{formula = y ~ x}) are handled. See \code{\link[stats:na.fail]{stats::na.fail()}}.}
+
+\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design matrix
+will be constructed in sparse format.}
+
+\item{date_format}{A character vector passed to \code{\link[=as.Date]{as.Date()}} argument \code{tryFormats},
+used to convert dates (\code{x} if \code{formula = y ~ x}) from character
+to Date, if necessary. See \code{\link[base:strptime]{base::strptime()}} for a list of
+conversion specifications.}
+
+\item{debug}{A logical scalar used for debugging. If \code{TRUE}, then \code{egf()}
+returns early with a list of optimization inputs.}
+
+\item{par_init}{A full parameter vector for the first likelihood evaluation.
+Set to \code{NULL} to accept the internally generated default. If
+the default causes errors, then use \code{debug = TRUE} to retrieve
+its value, which will have the correct structure, and modify as
+desired.}
+
+\item{...}{Optional arguments to the optimizer specified by \code{method}.}
 }
 \value{
-An "egf" object. A list containing copies of \code{init} elements
-\code{data}, \code{window}, \code{first}, \code{last}, \code{curve}, \code{distr}, and
-\code{include_baseline}; a copy of argument \code{method}; and these
-additional elements:
-
-\describe{
-\item{\code{theta_fit}}{
-A named numeric vector giving the optimizer's approximation
-of the maximum likelihood parameter vector.
+If \code{debug = FALSE}, then an \code{"egf"} object, which is a list with
+elements:
+\item{\code{frame}}{
+The model frame. This is a data frame containing \emph{only} the
+variables named in \code{formula}, \code{fixed}, and \code{random}. Data not
+belonging to a fitting window appear in the tail.
 }
-\item{\code{log_theta_fit}}{
-Log-transformed \code{theta_fit}. Identical to \code{log(theta_fit)}
-but with \code{"log_"} prepended to the names.
+\item{\code{index}}{
+A factor of length \code{nrow(data)} such that \code{split(frame, index)}
+splits the model frame by fitting window. Not necessarily identical
+to the so-named argument, as \code{frame} may be a permutation of the
+rows of \code{data}.
+}
+\item{\code{curve}, \code{distr}, \code{excess}}{
+Copies of the so-named arguments.
+}
+\item{\code{tmb_args}}{
+A list of arguments to \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}. See \code{\link[=make_tmb_args]{make_tmb_args()}}.
+}
+\item{\code{tmb_out}}{
+The (optimized) list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.
+}
+\item{\code{optim_out}}{
+The list output of the optimizer.
+}
+\item{\code{par_init}}{
+The full parameter vector of the first likelihood evaluation.
+Matches the so-named argument if given.
+}
+\item{\code{par}}{
+The full parameter vector of the best likelihood evaluation.
+}
+\item{\code{par_info}}{
+A data frame summarizing the meaning of the elements of \code{par}
+in relation to the mixed effects model. See \code{\link[=get_par_info]{get_par_info()}}.
+}
+\item{\code{nonrandom}}{
+An integer vector indexing the nonrandom segment of \code{par}.
+}
+\item{\code{report}}{
+A list containing all variables \code{REPORT()}ed and \code{ADREPORT()}ed
+in the C++ template, with an additional element \code{cov} giving the
+covariance matrix corresponding to \code{par[nonrandom]}.
 }
 \item{\code{nll}}{
-A numeric scalar giving the negative log likelihood of
-\code{log_theta_fit}.
+A numeric scalar giving the negative log Laplace approximation
+of the marginal likelihood of \code{par[nonrandom]}.
 }
-\item{\code{nll_func}}{
-A closure with a numeric argument \code{log_theta} specifying a
-log-transformed parameter vector (default is \code{log_theta_fit}).
-Returns the negative log likelihood function evaluated at
-\code{log_theta}.
-}
-\item{\code{nll_grad}}{
-A closure with a numeric argument \code{log_theta} specifying a
-log-transformed parameter vector (default is \code{log_theta_fit}).
-Returns the gradient of the negative log likelihood with
-respect to log-transformed parameters evaluated at \code{log_theta}.
-}
-\item{\code{eval_cum_inc}}{
-A closure with numeric arguments \code{time} and \code{theta}
-(default is \code{theta_fit}) evaluating expected cumulative
-incidence at \code{time} days since \code{data$date[first]} conditional
-on parameter vector \code{theta}. Elements of \code{theta} must be
-named as in \code{theta_fit}. \code{predict(object, time)} should
-be used instead of \code{object$eval_cum_inc(time)}.
-}
-\item{\code{madf_out}}{The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.}
-\item{\code{optim_out}}{
-The list output of \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}},
-or \code{\link[stats:optim]{stats::optim()}}, depending on \code{method}.
-}
-\item{\code{large_nbdisp_flag}}{
-A logical scalar. If \code{TRUE}, then the fitted value of
-the negative binomial dispersion parameter
-(i.e., \code{theta_fit[["nbdisp"]]}) exceeds the threshold
-defined by \code{nbdisp_tol}. Omitted if \code{distr != "nbinom"}.
+\item{\code{nll_func}, \code{nll_grad}}{
+Closures taking a numeric vector \code{x} of length \code{length(nonrandom)}
+as an argument, and returning the value of the negative log
+Laplace approximation of the marginal likelihood and its gradient,
+respectively, evaluated at \code{x}.
 }
 \item{\code{call}}{
-The call to \code{egf()}, allowing the output to be updated
-using \code{\link[stats:update]{stats::update()}}.
+The call to \code{egf()}, allowing for updates to the \code{"egf"} object
+via \code{\link[stats:update]{stats::update()}}.
 }
-}
+
+If \code{debug = TRUE}, then a list containing \code{frame}, \code{tmb_args},
+\code{par_init}, and \code{par_init_info}.
 }
 \description{
-Minimizes the negative log likelihood of an epidemic growth model
-using \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or one of the routines
-provided through \code{\link[stats:optim]{stats::optim()}}. The negative log likelihood as a
-function of log-transformed parameters is written as a C++ template,
-and its derivatives with respect to log-transformed parameters are
-computed by automatic differentiation using package \pkg{TMB}.
-}
-\details{
-The data used in likelihood calculation are specified by
-\code{x = with(data, cases[(first+1):last])}.
-If \code{x} has missing values and \code{na_action = "fail"},
-then \code{egf()} will stop with an error.
-If \code{x} has missing values and \code{na_action = "exclude"},
-then the likelihood function will be defined as a product
-over indices without missing values, unless \code{sum(!is.na(x))}
-is less than the number of model parameters, in which case
-\code{egf()} will stop with an error.
-
-If \code{distr = "nbinom"} and \code{theta_fit[["nbdisp"]]}
-exceeds \code{nbdisp_tol * max(diff(eval_cum_inc(time)))},
-where \code{time = data$time[first:last]}, then \code{egf()}
-will issue a warning suggesting to refit using a
-Poisson model by running
-\code{update(object, init = update(init, distr = "pois"))}.
-This behaviour is discussed in the package vignette,
-accessible with \code{vignette("epigrowthfit-vignette")}.
-}
-\examples{
-data(canadacovid)
-ontario <- subset(canadacovid, province == "ON")
-x1 <- egf_init(new_confirmed ~ date,
-  data = ontario,
-  curve = "logistic",
-  distr = "nbinom",
-  first = 27,
-  last = 77,
-  peak = 77
-)
-x2 <- update(x1, first = 211, last = 236, peak = "2020-10-10")
-y1 <- egf(x1)
-y2 <- egf(x2)
-print(y1)
-coef(y1, log = FALSE)
-coef(y1, log = TRUE)
-confint(y1, level = 0.95, trace = FALSE)
-predict(y1)
-s <- simulate(y1, nsim = 6)
-plot(s, inc = "interval")
-plot(s, inc = "cumulative")
-plot(y1, inc = "interval")
-plot(y2, inc = "interval", add = TRUE)
-plot(y1, inc = "cumulative")
-plot(y2, inc = "cumulative", add = TRUE)
-
-}
-\references{
-\insertRef{Ma+14}{epigrowthfit}
-
-\insertRef{Earn+20}{epigrowthfit}
-}
-\seealso{
-\code{\link[=egf_init]{egf_init()}}, \code{\link[=confint.egf]{confint.egf()}}, \code{\link[=plot.egf]{plot.egf()}}
+Fits phenomenological models of epidemic growth to one or more
+disease incidence time series. Accounts for variation of model
+parameters (e.g., the initial exponential growth rate \mjseqn{r})
+across time series (e.g., between epidemic waves or geographical
+units) by assuming that the parameters follow a user-specified
+generalized linear mixed effects model. First and second order
+derivatives of the likelihood are calculated
+by automatic differentiation using package \strong{TMB}.
 }

@@ -21,7 +21,7 @@ and can be rewritten as
 %
 \begin{equation}
   \label{eq:exponential-integrand}
-  \frac{1}{c(s)} c'(s) = -r\,.
+  \frac{1}{c(s)} c'(s) = r\,.
 \end{equation}
 %
 Integrating \eqref{eq:exponential-integrand} from $s = 0$ to $s = t$:
@@ -30,14 +30,59 @@ Integrating \eqref{eq:exponential-integrand} from $s = 0$ to $s = t$:
   \log|c(t)| - \log|c(0)|
   = \log\bigg|\frac{c(t)}{c(0)}\bigg|
   = \log\bigg(\frac{c(t)}{c(0)}\bigg)
-  = -rt\,.
+  = rt\,.
 \end{equation}
 %
 Solving for $c(t)$:
 %
 \begin{equation}
   \label{eq:exponential}
-  c(t) = c(0) e^{-r t}\,.
+  c(t) = c(0) e^{r t}\,.
+\end{equation}
+
+
+\section{Subexponential model}
+
+The differential equation is
+%
+\begin{equation}
+  c'(s) = \alpha c(s)^p\,,\qquad p \in (0,1)\,,
+\end{equation}
+%
+and can be rewritten as
+%
+\begin{equation}
+  \label{eq:subexponential-integrand}
+  \frac{1}{c(s)^p} c'(s) = \alpha\,.
+\end{equation}
+%
+Integrating \eqref{eq:subexponential-integrand} from $s = 0$ to $s = t$:
+%
+\begin{equation}
+  \frac{1}{1 - p} \big[c(t)^{1 - p} - c(0)^{1 - p}\big] = \alpha t\,.
+\end{equation}
+%
+Solving for $c(t)$:
+%
+\begin{equation}
+  \label{eq:subexponential}
+  c(t) = \big[c(0)^{1 - p} + (1 - p) \alpha t\big]^{1 / (1 - p)}\,.
+\end{equation}
+
+
+\section{Gompertz model}
+
+The differential equation is
+%
+\begin{equation}
+  c'(t) = \alpha c(t) \log \bigg(\frac{K}{c(t)}\bigg)\,,
+\end{equation}
+%
+with solution
+%
+\begin{equation}
+  \label{eq:gompertz}
+  c(t) = K \bigg(\frac{c(0)}{K}\bigg)^{e^{-\alpha t}}\,.
 \end{equation}
 
 
@@ -76,7 +121,7 @@ Solving for $c(t)$:
 
 \subsection{Reparametrization}
 
-$c''(t_\text{infl}) = 0$ reduces to:
+$c''(t_\text{infl}) = 0$ reduces to
 %
 \begin{equation}
   \label{eq:logistic-tinfl}
@@ -130,7 +175,7 @@ Solving for $c(t)$:
 
 \subsection{Reparametrization}
 
-$c''(t_\text{infl}) = 0$ reduces to:
+$c''(t_\text{infl}) = 0$ reduces to
 %
 \begin{equation}
   \label{eq:richards-tinfl}

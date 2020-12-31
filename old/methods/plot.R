@@ -1,6 +1,6 @@
 #' @import graphics
 #' @importFrom stats median setNames
-plot.egf <- function(x, ..., join = NULL,
+plot.egf <- function(x, ..., wave_name = "wave",
                      what = c("interval", "cumulative"),
                      xty = c("date", "numeric"),
                      log = TRUE,
@@ -13,18 +13,6 @@ plot.egf <- function(x, ..., join = NULL,
                      main = NULL,
                      style = get_style_default()) {
   dots <- list(...)
-  if (!is.null(join)) {
-    stop_if_not(
-      is.character(join),
-      length(join) == 1L,
-      join %in% names(object$frame)[-(1:2)],
-      join %in% names(dots),
-      m = paste0(
-        "`join` must be NULL or an element of\n",
-        "`names(object$frame)[-(1:2)]` and `names(list(...))`."
-      )
-    )
-  }
   if (length(dots) > 0L) {
     stop_if_not(
       vapply(dots, is.atomic, logical(1L)),
@@ -35,6 +23,18 @@ plot.egf <- function(x, ..., join = NULL,
       m = paste0(
         "`list(...)` must specify valid levels\n",
         "of factors in `object$frame` (one level per factor)."
+      )
+    )
+  }
+  if (!is.null(wave_name)) {
+    stop_if_not(
+      is.character(wave_name),
+      length(wave_name) == 1L,
+      wave_name %in% names(object$frame)[-(1:2)],
+      wave_name %in% names(dots),
+      m = paste0(
+        "`wave_name` must be NULL or an element of\n",
+        "`names(object$frame)[-(1:2)]` and `names(list(...))`."
       )
     )
   }

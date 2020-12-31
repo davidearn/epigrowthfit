@@ -15,15 +15,15 @@ ontario$wave[211:236] <- 2L
 ontario$wave <- factor(ontario$wave, exclude = 0L)
 
 source("R/utils.R")
-source("R/egf_checks.R")
 source("R/egf_utils.R")
 source("R/egf.R")
 
-source("R/coef.R")
-source("R/vcov.R")
-source("R/predict.R")
-source("R/profile.R")
-source("R/confint.R")
+# source("R/coef.R")
+# source("R/vcov.R")
+# source("R/predict.R")
+# source("R/profile.R")
+# source("R/confint.R")
+# source("R/boot.R")
 
 object <- egf(new_confirmed ~ date,
   data = ontario,

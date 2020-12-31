@@ -123,38 +123,6 @@ vector<Type> eval_log_int_inc(vector<Type> log_cum_inc, vector<int> wl)
 }
 
 template<class Type>
-vector<Type> compute_log_r(matrix<Type> Y,
-			   int curve_flag,
-			   int j_log_r,
-			   int j_log_alpha,
-			   int j_log_c0,
-			   int j_log_K,
-			   int j_logit_p)
-{
-    vector<Type> log_r(Y.rows());
-    Type one_minus_p;
-    for (int i = 0; i < Y.rows(); i++)
-    {
-        switch (curve_flag)
-	{
-	case exponential:
-	case logistic:
-	case richards:
-	    log_r(i) = Y(i, j_log_r);
-	    break;
-	case subexponential:
-	    one_minus_p = Type(1) / (Type(1) + exp(Y(i, j_logit_p)));
-	    log_r(i) = Y(i, j_log_alpha) - one_minus_p * Y(i, j_log_c0);
-	    break;
-	case gompertz:
-	    log_r(i) = Y(i, j_log_alpha) + log(Y(i, j_log_K) - Y(i, j_log_c0));
-	    break;
-	}
-    }
-    return log_r;
-}
-
-template<class Type>
 Type dpois_robust(Type x, Type log_lambda, int give_log = 0)
 {
     Type log_dpois = x * log_lambda - exp(log_lambda) - lfactorial(x);
@@ -248,9 +216,9 @@ Type objective_function<Type>::operator() ()
     // fixed effects
     PARAMETER_VECTOR(beta); // length=sum(nlevels(FE i))
     // log sd random effects
-    PARAMETER_VECTOR(log_sd);   // length=sum(np(RE i))
+    PARAMETER_VECTOR(log_sd_b); // length=sum(np(RE i))
     // random effects
-    PARAMETER_VECTOR(b);    // length=sum(nlevels(RE i)*np(RE i)) 
+    PARAMETER_VECTOR(b); // length=sum(nlevels(RE i)*np(RE i)) 
 
     
     // Compute parameter values at every time point ============================
@@ -331,7 +299,7 @@ Type objective_function<Type>::operator() ()
 
 	for (int r = 0, k = 0; r < sd_list.size(); r++)
 	{
-	    vector<Type> sd_list_el = exp(log_sd.segment(k, rnp(r)));
+	    vector<Type> sd_list_el = exp(log_sd_b.segment(k, rnp(r)));
 	    sd_list(r) = sd_list_el;
 	    k += rnp(r);
 	}
@@ -386,9 +354,6 @@ Type objective_function<Type>::operator() ()
     matrix<Type> Y_short = prune_dupl_rows(Y, wl);
     vector<Type> Y_short_as_vector = Y_short.vec();
     ADREPORT(Y_short_as_vector);
-    vector<Type> log_r = compute_log_r(Y_short, curve_flag,
-				       j_log_r, j_log_alpha, j_log_c0, j_log_K, j_logit_p);
-    ADREPORT(log_r);
     
 
     // Compute likelihood ======================================================
@@ -468,9 +433,6 @@ Type objective_function<Type>::operator() ()
 	}
 	// matrix<Type> Y_sim_short = prune_dupl_rows(Y_sim, wl);
 	// REPORT(Y_sim_short);
-	// vector<Type> log_r_sim = compute_log_r(Y_sim_short, curve_flag,
-	//                                        j_log_r, j_log_alpha, j_log_c0, j_log_K, j_logit_p);
-	// REPORT(log_r_sim);
 
         log_cum_inc = eval_log_cum_inc(t, Y_sim, curve_flag, excess,
 				       j_log_r, j_log_alpha, j_log_c0, j_log_tinfl, j_log_K, j_logit_p, j_log_a, j_log_b);

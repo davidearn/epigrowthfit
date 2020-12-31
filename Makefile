@@ -17,17 +17,20 @@ deps:
 
 build: $(TARBALL)
 
-$(TARBALL): rd DESCRIPTION src/$(PACKAGE).so
+$(TARBALL): flags rd src/$(PACKAGE).so DESCRIPTION
 	$(R) CMD build .
 	mv $@ ..
+
+flags: utils/update_flags.R
+	$(R) --no-echo -e 'setwd("utils"); source("update_flags.R")'
 
 rd: R/*.R inst/REFERENCES.bib
 	$(R) --no-echo -e 'devtools::document(".")'
 	sed -i.bak 's/USCORE/_/ g' man/*.Rd 
 	sed -i.bak 's/\\text{/\\textrm{/ g' man/*.Rd
-	rm man/*.Rd.bak # `sed -i` without suffix is not portable to macOS
+	rm man/*.Rd.bak
 
-src/$(PACKAGE).so:
+src/$(PACKAGE).so: src/$(PACKAGE).cpp
 	$(MAKE) -C src
 
 manual: $(MANUAL)
@@ -46,6 +49,6 @@ clean:
 	rm -f ../$(TARBALL) ../$(PACKAGE)-manual.pdf
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
-	$(MAKE) -C vignettes clean
+	#$(MAKE) -C vignettes clean
 	$(MAKE) -C src clean
 	$(MAKE) -C scrap clean
