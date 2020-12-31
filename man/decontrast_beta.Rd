@@ -24,7 +24,7 @@ to recover within-group means.
 \examples{
 fnl <- 1:4
 beta <- sample(5L, sum(fnl), replace = TRUE)
-decontrast_beta(beta, fnl)
+epigrowthfit:::decontrast_beta(beta, fnl)
 
 }
 \keyword{internal}

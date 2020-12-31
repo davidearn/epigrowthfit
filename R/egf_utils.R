@@ -14,6 +14,10 @@
 #' @return
 #' An integer.
 #'
+#' @examples
+#' epigrowthfit:::get_flag("curve", "logistic")
+#' epigrowthfit:::get_flag("distr", "nbinom")
+#'
 #' @keywords internal
 get_flag <- function(type, enum) {
   curve_names <- c("exponential", "subexponential", "gompertz", "logistic", "richards") # GREP_FLAG
@@ -49,18 +53,14 @@ get_flag <- function(type, enum) {
 #' relevant to `curve`, `distr`, and `excess`.
 #'
 #' @examples
-#' a <- list(curve = "exponential", distr = "pois", excess = FALSE)
-#' pn <- do.call(get_par_names, c(link = FALSE, a))
-#' link_pn <- do.call(get_par_names, c(link = TRUE, a))
-#' identical(link_pn, add_link_string(pn))
-#' identical(pn, remove_link_string(link_pn))
+#' pn      <- get_par_names(curve = "exponential", distr = "pois",
+#'                          excess = FALSE, link = FALSE)
+#' link_pn <- get_par_names(curve = "exponential", distr = "pois",
+#'                          excess = FALSE, link = TRUE)
+#' identical(pn, epigrowthfit:::remove_link_string(link_pn))
+#' identical(link_pn, epigrowthfit:::add_link_string(pn))
 #'
-#' @name get_par_names
-#' @keywords internal
-NULL
-
-#' @keywords internal
-#' @rdname get_par_names
+#' @export
 get_par_names <- function(curve = NULL, distr = NULL, excess = NULL,
                           link = TRUE) {
   if (is.null(curve) && is.null(distr) && is.null(excess)) {
@@ -91,8 +91,8 @@ get_par_names <- function(curve = NULL, distr = NULL, excess = NULL,
   }
 }
 
-#' @keywords internal
 #' @rdname get_par_names
+#' @keywords internal
 add_link_string <- function(s) {
   if (is.null(s)) {
     return(NULL)
@@ -106,8 +106,8 @@ add_link_string <- function(s) {
   s
 }
 
-#' @keywords internal
 #' @rdname get_par_names
+#' @keywords internal
 remove_link_string <- function(s) {
   if (is.null(s)) {
     return(NULL)
@@ -155,46 +155,47 @@ remove_link_string <- function(s) {
 #' curve  <- "exponential"
 #' distr  <- "pois"
 #' excess <- FALSE
-#'
 #' get_par_names(curve, distr, excess, link = TRUE)
 #' ## [1] "log_r" "log_c0"
 #'
+#' cfm <- epigrowthfit:::check_formula
+#' cfx <- function(fixed) {
+#'   epigrowthfit:::check_fixed(fixed, curve, distr, excess)
+#' }
+#' crd <- function(random) {
+#'   epigrowthfit:::check_random(random, curve, distr, excess)
+#' }
+#'
 #' ## Time series
-#' check_formula(y ~ x)
+#' cfm(y ~ x)
 #'
 #' ## Fixed effects
-#' cf <- function(fixed) check_fixed(fixed, curve, distr, excess)
-#' cf(list(log_r = ~z, log_c0 = ~z))
-#' cf(list(log_r = ~z0, log_c0 = ~z1:z2))
-#' cf(~z) # same as first line
-#' cf(r = ~z) # `c0` defaults to `~1` (global mean)
+#' cfx(list(log_r = ~z, log_c0 = ~z))
+#' cfx(list(log_r = ~z0, log_c0 = ~z1:z2))
+#' cfx(~z) # same as first line
+#' cfx(list(r = ~z)) # `c0` defaults to `~1` (global mean)
 #'
 #' ## Random effects
-#' cr <- function(random) check_random(random, curve, distr, excess)
-#' cr(list(log_r = ~(1|z), log_c0 = ~(1|z)))
-#' cr(list(log_r = ~(1|z0), log_c0 = ~(1|z1:z2)))
-#' cr(~(1|z)) # same as first line
-#' cr(r = (1|z)) # `c0` defaults to NULL (no RE)
-#' cr(list(r = ~(1|z0), c0 = ~(1|z1/z2))) # RE component allowed >1 term,
-#'                                        # `z1/z2` expands to 2 terms
+#' crd(list(log_r = ~(1|z), log_c0 = ~(1|z)))
+#' crd(list(log_r = ~(1|z0), log_c0 = ~(1|z1:z2)))
+#' crd(~(1|z)) # same as first line
+#' crd(list(r = ~(1|z))) # `c0` defaults to NULL (no RE)
+#' crd(list(r = ~(1|z0), c0 = ~(1|z1/z2))) # RE component allowed >1 term,
+#'                                         # `z1/z2` expands to 2 terms
 #'
 #' ## Not run
 #' \dontrun{
-#' check_formula(I(y1 + y2) ~ x)  # error: arithmetic
-#' check_formula("0y" ~ x)        # error: nonsyntactic variable name
-#' check_formula((y) ~ x)         # error: spurious parentheses
-#' cf(list(r = ~z, c = ~z))       # error: misnamed parameter
-#' cf(list(r = ~z0, c0 = ~z1*z2)) # error: FE component restricted to 1 term,
-#'                                #        `z1*z2` expands to 3 terms
-#' cf(NULL)                       # error: for null FE model use `~1`
-#' cr(~1)                         # error: RE terms need >1 group
+#' cfm(I(y1 + y2) ~ x)  # error: arithmetic
+#' cfm("0y" ~ x)        # error: nonsyntactic variable name
+#' cfm((y) ~ x)         # error: spurious parentheses
+#' cfx(list(r = ~z, c = ~z))       # error: misnamed parameter
+#' cfx(list(r = ~z0, c0 = ~z1*z2)) # error: FE component restricted to 1 term,
+#'                                 #        `z1*z2` expands to 3 terms
+#' cfx(NULL)                       # error: for null FE model use `~1`
+#' crd(~1)                         # error: RE terms need >1 group
 #' }
 #'
 #' @name check_formula
-#' @keywords internal
-NULL
-
-#' @rdname check_formula
 #' @keywords internal
 check_formula <- function(formula) {
   stop_if_not(
@@ -277,7 +278,7 @@ check_random <- function(random, curve, distr, excess) {
     rhs <- vapply(random[is_formula], function(x) deparse(x[[2L]]), character(1L))
     stop_if_not(
       lengths(random[is_formula]) == 2L,
-      grepl("^(( \\+|- )?\\(1 \\| [[:alnum:]._]+((:[[:alnum:]._]+)*|(/[[:alnum:]._]+)*|(( \\* )[[:alnum:]._]+)*)\\))+$", rhs),
+      grepl("^(( (\\+|-) )?\\(1 \\| [[:alnum:]._]+((:[[:alnum:]._]+)*|(/[[:alnum:]._]+)*|(( \\* )[[:alnum:]._]+)*)\\))+$", rhs),
       m = paste0(
         "`random` formulae must have the form `~rhs`,\n",
         "with `rhs` a sum of one or more terms of the form\n",
@@ -329,11 +330,16 @@ check_random <- function(random, curve, distr, excess) {
 #' cases <- c(replicate(4L, c(NA, rpois(length(mu), mu))))
 #' continent <- rep(c("asia", "europe"), rep(200L, 2L))
 #' country <- rep(c("china", "japan", "france", "germany"), rep(100L, 4L))
-#' wave <- rep(rep(c(NA, rbind(1:2, NA)), rep(20L, 5L)), 4L)
+#' wave <- rep(rep(c(NA, 1, NA, 2, NA), rep(20L, 5L)), 4L)
 #'
 #' data <- data.frame(date, cases, continent, country, wave)
-#' data[] <- lapply(data, factor)
-#' index <- rep(c(NA, rbind(1:8, NA)), rep(20L, 20L))
+#' data[3:5] <- lapply(data[3:5], factor)
+#'
+#' x <- c(NA, 1, NA, 2, NA,
+#'        NA, 3, NA, 4, NA,
+#'        NA, 5, NA, 6, NA,
+#'        NA, 7, NA, 8, NA)
+#' index <- factor(rep(x, rep(20L, 20L)))
 #'
 #' formula <- cases ~ date
 #' fixed <- list(
@@ -352,8 +358,10 @@ check_random <- function(random, curve, distr, excess) {
 #' date_format <- "%Y-%m-%d" # unused in this case because
 #'                           # inherits(date, "Date") = TRUE
 #'
-#' frame <- make_frame(formula, fixed, random, data, index,
-#'                     curve, distr, excess, na_action, date_format)
+#' frame <- epigrowthfit:::make_frame(formula, fixed, random,
+#'                                    data, index,
+#'                                    curve, distr, excess,
+#'                                    na_action, date_format)
 #'
 #' @keywords internal
 make_frame <- function(formula, fixed, random, data, index,
@@ -496,10 +504,10 @@ make_frame <- function(formula, fixed, random, data, index,
 #' terms of `f` of the form `(1 | rhs_of_bar)` with `rhs_of_bar`.
 #'
 #' @examples
-#' get_term_labels(~w + x + y:z)
-#' get_term_labels(~1)
-#' get_term_labels(~w*x + y/z) # crosses and nests are expanded
-#' get_term_labels(~w*x + (1 | y/z)) # bars are ignored
+#' epigrowthfit:::get_term_labels(~w + x + y:z)
+#' epigrowthfit:::get_term_labels(~1)
+#' epigrowthfit:::get_term_labels(~w*x + y/z) # crosses, nests expanded
+#' epigrowthfit:::get_term_labels(~w*x + (1 | y/z)) # bars ignored
 #'
 #' @keywords internal
 #' @importFrom stats terms reformulate
@@ -541,8 +549,8 @@ get_term_labels <- function(f) {
 #' @examples
 #' f <- function() factor(sample(5L, 20L, replace = TRUE))
 #' d <- data.frame(x = f(), y = f())
-#' get_factor("x:y", frame = d)
-#' get_factor("(1)", frame = d)
+#' epigrowthfit:::get_factor("x:y", frame = d)
+#' epigrowthfit:::get_factor("(1)", frame = d)
 #'
 #' @keywords internal
 get_factor <- function(term_label, frame) {
@@ -582,10 +590,10 @@ get_factor <- function(term_label, frame) {
 #'
 #' @examples
 #' x <- factor(sample(5L, 20L, replace = TRUE))
-#' factor_to_matrix(x, sparse = TRUE, intercept = TRUE)
-#' factor_to_matrix(x, sparse = TRUE, intercept = FALSE)
-#' factor_to_matrix(x, sparse = FALSE, intercept = TRUE)
-#' factor_to_matrix(x, sparse = FALSE, intercept = FALSE)
+#' epigrowthfit:::factor_to_matrix(x, sparse = TRUE, intercept = TRUE)
+#' epigrowthfit:::factor_to_matrix(x, sparse = TRUE, intercept = FALSE)
+#' epigrowthfit:::factor_to_matrix(x, sparse = FALSE, intercept = TRUE)
+#' epigrowthfit:::factor_to_matrix(x, sparse = FALSE, intercept = FALSE)
 #'
 #' @keywords internal
 #' @importFrom Matrix sparseMatrix sparse.model.matrix
@@ -605,7 +613,7 @@ factor_to_matrix <- function(x, sparse, intercept) {
     }
   } else {
     fn <- if (sparse) "sparse.model.matrix" else "model.matrix"
-    f <- match.fun(fn)
+    f <- get(fn)
     X <- unname(f(
       object = if (intercept) ~x else ~-1 + x,
       data = list(x = x),
@@ -680,7 +688,8 @@ factor_to_matrix <- function(x, sparse, intercept) {
 #'
 #' @examples
 #' example("make_frame", package = "epigrowthfit")
-#' tmb_data <- make_tmb_data(frame, curve, distr, excess, sparse_X = FALSE)
+#' tmb_data <-
+#'   epigrowthfit:::make_tmb_data(frame, curve, distr, excess, sparse_X = FALSE)
 #'
 #' @keywords internal
 #' @importFrom Matrix sparseMatrix
@@ -868,9 +877,12 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
 #'
 #' @examples
 #' example("make_tmb_data", package = "epigrowthfit")
-#' tmb_parameters <- make_tmb_parameters(tmb_data, curve, distr, excess)
+#' tmb_parameters <-
+#'   epigrowthfit:::make_tmb_parameters(tmb_data, curve, distr, excess,
+#'                                      par_init = NULL)
 #'
 #' @keywords internal
+#' @importFrom stats coef lm na.omit
 make_tmb_parameters <- function(tmb_data, curve, distr, excess, par_init) {
   re <- has_random(tmb_data)
 
@@ -937,9 +949,9 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess, par_init) {
   ## Otherwise
   } else {
     p <- c(
-      beta     = sum(data$fnl),
-      log_sd_b = if (re) sum(data$rid),
-      b        = if (re) sum(data$rnl * rowSums(data$rid))
+      beta     = sum(tmb_data$fnl),
+      log_sd_b = if (re) sum(tmb_data$rid),
+      b        = if (re) sum(tmb_data$rnl * rowSums(tmb_data$rid))
     )
     stop_if_not(
       is.numeric(par_init),
@@ -979,7 +991,9 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess, par_init) {
 #'
 #' @examples
 #' example("make_frame", package = "epigrowthfit")
-#' tmb_args <- make_tmb_args(frame, curve, distr, excess, sparse_X = FALSE)
+#' tmb_args <-
+#'   epigrowthfit:::make_tmb_args(frame, curve, distr, excess,
+#'                                sparse_X = FALSE, par_init = NULL)
 #' tmb_out <- do.call(TMB::MakeADFun, tmb_args)
 #'
 #' @seealso [make_tmb_data()], [make_tmb_parameters()]
@@ -1043,8 +1057,11 @@ has_random <- function(object) {
 #' example("make_tmb_args", package = "epigrowthfit")
 #' m <- c("nlminb", "nlm", "Nelder-Mead", "BFGS")
 #' s <- c("par", "estimate", "par", "par")
-#' f <- function(m, s) optim_tmb_out(tmb_out, method = m)[[s]]
-#' pp <- mapply(f, m = m, s = s)
+#' f <- function(m, s) epigrowthfit:::optim_tmb_out(tmb_out, method = m)[[s]]
+#' ## Not run
+#' \dontrun{
+#' pp <- mapply(f, m = m, s = s) # needs 1-2 min
+#' }
 #'
 #' @keywords internal
 #' @importFrom stats nlminb nlm optim
@@ -1092,7 +1109,7 @@ optim_tmb_out <- function(tmb_out, method, ...) {
 #' n <- 10L
 #' par <- numeric(n)
 #' names(par) <- sample(s, n, replace = TRUE)
-#' rename_par(par)
+#' epigrowthfit:::rename_par(par)
 #'
 #' @keywords internal
 #' @importFrom stats setNames
@@ -1123,7 +1140,7 @@ rename_par <- function(par) {
 #' @examples
 #' fnl <- 1:4
 #' beta <- sample(5L, sum(fnl), replace = TRUE)
-#' decontrast_beta(beta, fnl)
+#' epigrowthfit:::decontrast_beta(beta, fnl)
 #'
 #' @keywords internal
 decontrast_beta <- function(beta, fnl) {

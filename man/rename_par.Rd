@@ -24,7 +24,7 @@ s <- c("beta", "log_sd_b", "b")
 n <- 10L
 par <- numeric(n)
 names(par) <- sample(s, n, replace = TRUE)
-rename_par(par)
+epigrowthfit:::rename_par(par)
 
 }
 \keyword{internal}

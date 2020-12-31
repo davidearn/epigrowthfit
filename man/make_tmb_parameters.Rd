@@ -87,7 +87,9 @@ and \code{b} are for simplicity initialized as zero vectors.
 }
 \examples{
 example("make_tmb_data", package = "epigrowthfit")
-tmb_parameters <- make_tmb_parameters(tmb_data, curve, distr, excess)
+tmb_parameters <-
+  epigrowthfit:::make_tmb_parameters(tmb_data, curve, distr, excess,
+                                     par_init = NULL)
 
 }
 \keyword{internal}

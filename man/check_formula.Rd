@@ -88,39 +88,44 @@ tolerated (see Examples).
 curve  <- "exponential"
 distr  <- "pois"
 excess <- FALSE
-
 get_par_names(curve, distr, excess, link = TRUE)
 ## [1] "log_r" "log_c0"
 
+cfm <- epigrowthfit:::check_formula
+cfx <- function(fixed) {
+  epigrowthfit:::check_fixed(fixed, curve, distr, excess)
+}
+crd <- function(random) {
+  epigrowthfit:::check_random(random, curve, distr, excess)
+}
+
 ## Time series
-check_formula(y ~ x)
+cfm(y ~ x)
 
 ## Fixed effects
-cf <- function(fixed) check_fixed(fixed, curve, distr, excess)
-cf(list(log_r = ~z, log_c0 = ~z))
-cf(list(log_r = ~z0, log_c0 = ~z1:z2))
-cf(~z) # same as first line
-cf(r = ~z) # `c0` defaults to `~1` (global mean)
+cfx(list(log_r = ~z, log_c0 = ~z))
+cfx(list(log_r = ~z0, log_c0 = ~z1:z2))
+cfx(~z) # same as first line
+cfx(list(r = ~z)) # `c0` defaults to `~1` (global mean)
 
 ## Random effects
-cr <- function(random) check_random(random, curve, distr, excess)
-cr(list(log_r = ~(1|z), log_c0 = ~(1|z)))
-cr(list(log_r = ~(1|z0), log_c0 = ~(1|z1:z2)))
-cr(~(1|z)) # same as first line
-cr(r = (1|z)) # `c0` defaults to NULL (no RE)
-cr(list(r = ~(1|z0), c0 = ~(1|z1/z2))) # RE component allowed >1 term,
-                                       # `z1/z2` expands to 2 terms
+crd(list(log_r = ~(1|z), log_c0 = ~(1|z)))
+crd(list(log_r = ~(1|z0), log_c0 = ~(1|z1:z2)))
+crd(~(1|z)) # same as first line
+crd(list(r = ~(1|z))) # `c0` defaults to NULL (no RE)
+crd(list(r = ~(1|z0), c0 = ~(1|z1/z2))) # RE component allowed >1 term,
+                                        # `z1/z2` expands to 2 terms
 
 ## Not run
 \dontrun{
-check_formula(I(y1 + y2) ~ x)  # error: arithmetic
-check_formula("0y" ~ x)        # error: nonsyntactic variable name
-check_formula((y) ~ x)         # error: spurious parentheses
-cf(list(r = ~z, c = ~z))       # error: misnamed parameter
-cf(list(r = ~z0, c0 = ~z1*z2)) # error: FE component restricted to 1 term,
-                               #        `z1*z2` expands to 3 terms
-cf(NULL)                       # error: for null FE model use `~1`
-cr(~1)                         # error: RE terms need >1 group
+cfm(I(y1 + y2) ~ x)  # error: arithmetic
+cfm("0y" ~ x)        # error: nonsyntactic variable name
+cfm((y) ~ x)         # error: spurious parentheses
+cfx(list(r = ~z, c = ~z))       # error: misnamed parameter
+cfx(list(r = ~z0, c0 = ~z1*z2)) # error: FE component restricted to 1 term,
+                                #        `z1*z2` expands to 3 terms
+cfx(NULL)                       # error: for null FE model use `~1`
+crd(~1)                         # error: RE terms need >1 group
 }
 
 }

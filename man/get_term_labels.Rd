@@ -19,10 +19,10 @@ A wrapper for \code{labels(terms())} with special handling of certain
 formulae.
 }
 \examples{
-get_term_labels(~w + x + y:z)
-get_term_labels(~1)
-get_term_labels(~w*x + y/z) # crosses and nests are expanded
-get_term_labels(~w*x + (1 | y/z)) # bars are ignored
+epigrowthfit:::get_term_labels(~w + x + y:z)
+epigrowthfit:::get_term_labels(~1)
+epigrowthfit:::get_term_labels(~w*x + y/z) # crosses, nests expanded
+epigrowthfit:::get_term_labels(~w*x + (1 | y/z)) # bars ignored
 
 }
 \keyword{internal}

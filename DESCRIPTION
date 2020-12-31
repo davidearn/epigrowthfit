@@ -1,18 +1,20 @@
 Package: epigrowthfit
-Title: Estimation of Epidemic Growth Rates
+Title: Nonlinear Mixed Effects Models of Epidemic Growth
 Version: 0.8.0
 Authors@R: c(
 	     person("Mikael", "Jagan", email = "mjagan@uwaterloo.ca", role = c("aut", "cre")),
 	     person("Ben", "Bolker", email = "bbolker@mcmaster.ca", role = c("aut")),
-	     person("Junling", "Ma", role = "aut"),
 	     person("David", "Earn", role = "aut"),
-	     person("Jonathan", "Dushoff", role = "aut"))
+	     person("Jonathan", "Dushoff", role = "aut"),
+	     person("Junling", "Ma", role = "aut")
+	   )
 Description:
     Tools for estimating parameters associated with initial epidemic growth.
 Depends:
     R (>= 3.5.0),
     TMB
 Imports:
+    Matrix,
     mathjaxr (>= 1.0-1),
     Rdpack (>= 0.7),
     emdbook (>= 1.3.12)

@@ -21,4 +21,9 @@ C++ template.
 This function is kept synchronized with the C++ template
 using script \code{utils/update_flags.R}.
 }
+\examples{
+epigrowthfit:::get_flag("curve", "logistic")
+epigrowthfit:::get_flag("distr", "nbinom")
+
+}
 \keyword{internal}

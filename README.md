@@ -1,8 +1,9 @@
 # epigrowthfit
 
-**epigrowthfit** is an R package for estimating parameters associated with
-epidemic growth. Methods are adapted from Ma *et al*. (2014) and Earn *et al*
-(2020):
+**epigrowthfit** is an R package for fitting nonlinear mixed
+effects models of epidemic growth to disease incidence time
+series. Methods are adapted from Ma *et al*. (2014) and Earn
+*et al* (2020):
 
 [Ma J, Dushoff J, Bolker BM, Earn DJD (2014). “Estimating initial epidemic growth rates.” *Bulletin of Mathematical Biology*, **76**, 245-260.](https://davidearn.mcmaster.ca/publications/MaEtAl2014)
 
@@ -17,6 +18,7 @@ epidemic growth. Methods are adapted from Ma *et al*. (2014) and Earn *et al*
 3.5.0 or greater and R package
 [**TMB**](https://CRAN.R-project.org/package=TMB),
 and imports from R packages
+[**Matrix**](https://CRAN.R-project.org/package=Matrix)
 [**mathjaxr**](https://CRAN.R-project.org/package=mathjaxr),
 [**Rdpack**](https://CRAN.R-project.org/package=Rdpack),
 and

@@ -1,15 +1,11 @@
 #' \loadmathjax
-#' Fit a model of epidemic growth
+#' Fit epidemic growth models
 #'
 #' @description
-#' Fits phenomenological models of epidemic growth to one or more
-#' disease incidence time series. Accounts for variation of model
-#' parameters (e.g., the initial exponential growth rate \mjseqn{r})
-#' across time series (e.g., between epidemic waves or geographical
-#' units) by assuming that the parameters follow a user-specified
-#' generalized linear mixed effects model. First and second order
-#' derivatives of the likelihood are calculated
-#' by automatic differentiation using package **TMB**.
+#' Fits nonlinear mixed effects models of epidemic growth to disease
+#' incidence time series. First and second order derivatives of the
+#' negative log Laplace approximation of the marginal likelihood are
+#' calculated by automatic differentiation using R package **TMB**.
 #'
 #' @param formula
 #'   A formula of the form `y ~ x` specifying an incidence time series
@@ -139,6 +135,7 @@
 #' @export
 #' @importFrom TMB MakeADFun sdreport
 #' @importFrom stats nlminb nlm optim
+#' @useDynLib epigrowthfit
 egf <- function(formula,
                 fixed = ~1,
                 random = NULL,

@@ -112,11 +112,16 @@ date <- rep(as.Date(0:99, origin = "2020-01-01"), 4L)
 cases <- c(replicate(4L, c(NA, rpois(length(mu), mu))))
 continent <- rep(c("asia", "europe"), rep(200L, 2L))
 country <- rep(c("china", "japan", "france", "germany"), rep(100L, 4L))
-wave <- rep(rep(c(NA, rbind(1:2, NA)), rep(20L, 5L)), 4L)
+wave <- rep(rep(c(NA, 1, NA, 2, NA), rep(20L, 5L)), 4L)
 
 data <- data.frame(date, cases, continent, country, wave)
-data[] <- lapply(data, factor)
-index <- rep(c(NA, rbind(1:8, NA)), rep(20L, 20L))
+data[3:5] <- lapply(data[3:5], factor)
+
+x <- c(NA, 1, NA, 2, NA,
+       NA, 3, NA, 4, NA,
+       NA, 5, NA, 6, NA,
+       NA, 7, NA, 8, NA)
+index <- factor(rep(x, rep(20L, 20L)))
 
 formula <- cases ~ date
 fixed <- list(
@@ -135,8 +140,10 @@ na_action <- "pass"
 date_format <- "\%Y-\%m-\%d" # unused in this case because
                           # inherits(date, "Date") = TRUE
 
-frame <- make_frame(formula, fixed, random, data, index,
-                    curve, distr, excess, na_action, date_format)
+frame <- epigrowthfit:::make_frame(formula, fixed, random,
+                                   data, index,
+                                   curve, distr, excess,
+                                   na_action, date_format)
 
 }
 \keyword{internal}

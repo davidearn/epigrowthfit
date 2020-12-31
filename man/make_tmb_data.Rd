@@ -83,7 +83,8 @@ via TMB's \code{DATA_} macros. See \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}
 }
 \examples{
 example("make_frame", package = "epigrowthfit")
-tmb_data <- make_tmb_data(frame, curve, distr, excess, sparse_X = FALSE)
+tmb_data <-
+  epigrowthfit:::make_tmb_data(frame, curve, distr, excess, sparse_X = FALSE)
 
 }
 \keyword{internal}

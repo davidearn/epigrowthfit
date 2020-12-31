@@ -43,11 +43,12 @@ incidence model.
 \code{remove_link_string()} is its inverse.
 }
 \examples{
-a <- list(curve = "exponential", distr = "pois", excess = FALSE)
-pn <- do.call(get_par_names, c(link = FALSE, a))
-link_pn <- do.call(get_par_names, c(link = TRUE, a))
-identical(link_pn, add_link_string(pn))
-identical(pn, remove_link_string(link_pn))
+pn      <- get_par_names(curve = "exponential", distr = "pois",
+                         excess = FALSE, link = FALSE)
+link_pn <- get_par_names(curve = "exponential", distr = "pois",
+                         excess = FALSE, link = TRUE)
+identical(pn, epigrowthfit:::remove_link_string(link_pn))
+identical(link_pn, epigrowthfit:::add_link_string(pn))
 
 }
 \keyword{internal}

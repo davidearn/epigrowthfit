@@ -1,4 +1,4 @@
-// #define TMB_LIB_INIT R_init_epigrowthfit
+#define TMB_LIB_INIT R_init_epigrowthfit
 #include <TMB.hpp>
 
 enum curve

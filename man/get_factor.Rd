@@ -27,8 +27,8 @@ factors in a data frame.
 \examples{
 f <- function() factor(sample(5L, 20L, replace = TRUE))
 d <- data.frame(x = f(), y = f())
-get_factor("x:y", frame = d)
-get_factor("(1)", frame = d)
+epigrowthfit:::get_factor("x:y", frame = d)
+epigrowthfit:::get_factor("(1)", frame = d)
 
 }
 \keyword{internal}

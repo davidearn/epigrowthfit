@@ -26,8 +26,11 @@ of a TMB model object.
 example("make_tmb_args", package = "epigrowthfit")
 m <- c("nlminb", "nlm", "Nelder-Mead", "BFGS")
 s <- c("par", "estimate", "par", "par")
-f <- function(m, s) optim_tmb_out(tmb_out, method = m)[[s]]
-pp <- mapply(f, m = m, s = s)
+f <- function(m, s) epigrowthfit:::optim_tmb_out(tmb_out, method = m)[[s]]
+## Not run
+\dontrun{
+pp <- mapply(f, m = m, s = s) # needs 1-2 min
+}
 
 }
 \keyword{internal}

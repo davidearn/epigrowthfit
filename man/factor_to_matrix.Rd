@@ -31,10 +31,10 @@ of \code{\link[stats:model.matrix]{stats::model.matrix()}} or \code{\link[Matrix
 }
 \examples{
 x <- factor(sample(5L, 20L, replace = TRUE))
-factor_to_matrix(x, sparse = TRUE, intercept = TRUE)
-factor_to_matrix(x, sparse = TRUE, intercept = FALSE)
-factor_to_matrix(x, sparse = FALSE, intercept = TRUE)
-factor_to_matrix(x, sparse = FALSE, intercept = FALSE)
+epigrowthfit:::factor_to_matrix(x, sparse = TRUE, intercept = TRUE)
+epigrowthfit:::factor_to_matrix(x, sparse = TRUE, intercept = FALSE)
+epigrowthfit:::factor_to_matrix(x, sparse = FALSE, intercept = TRUE)
+epigrowthfit:::factor_to_matrix(x, sparse = FALSE, intercept = FALSE)
 
 }
 \keyword{internal}
