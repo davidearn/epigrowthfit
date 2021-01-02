@@ -32,3 +32,15 @@ stop_if_not_tf <- function(x) {
     n = 2L
   )
 }
+
+stop_if_not_positive_integer <- function(x) {
+  s <- deparse(substitute(x))
+  stop_if_not(
+    inherits(x, c("integer", "numeric")),
+    length(x) == 1L,
+    x >= 1,
+    x %% 1 == 0,
+    m = sprintf("`%s` must be a positive integer.", s),
+    n = 2L
+  )
+}

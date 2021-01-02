@@ -18,18 +18,17 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
     i <- 1L
   } else {
     d <- object$frame[-(1:2)]
-    il <- !duplicated(object$index)
-    if (length(dots) > 0L) {
-      f <- function(s) d[[s]] == dots[[s]]
-      il <- il & Reduce("&", lapply(names(dots), f))
-    }
-    i <- which(il)
+    i <- which(
+      !is.na(object$index) &
+      !duplicated(object$index) &
+      if (length(dots) > 0L) Reduce("&", Map("==", d[names(dots)], dots)) else TRUE
+    )
     stop_if_not(
       length(i) > 0L,
-      all(duplicated(d[i, , drop = FALSE])[-1L]),
+      duplicated(d[i, , drop = FALSE])[-1L],
       m = paste0(
-        "`list(...)` must specify a unique interaction\n",
-        "of the factors in `object$frame`."
+        "`list(...)` must specify a unique level of\n",
+        "`interaction(object$frame[-(1:2)], drop = TRUE)`."
       )
     )
   }
@@ -46,7 +45,7 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
     diff(time) > 0,
     m = "`time` must be increasing."
   )
-  tr <- range(object$madf_args$data$t[object$index == object$index[i[1L]]])
+  tr <- range(object$tmb_args$data$t[object$index == object$index[i[1L]]])
   warn_if_not(
     time >= tr[1L] & time <= tr[2L],
     m = paste0(
@@ -54,18 +53,16 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
       "the fitting window specified by `list(...)`."
     )
   )
-  stop_if_not(
-    is.logical(se),
-    length(se) == 1L,
-    !is.na(se),
-    m = "`se` must be TRUE or FALSE."
-  )
+  stop_if_not_tf(se)
 
-  object$madf_args$data <- within(object$madf_args$data, {
+  ## Create data objects needed for prediction code
+  ## in C++ template to run
+  object$tmb_args$data <- within(object$tmb_args$data, {
     predict_flag <- 1L
     se_flag <- 1L * se
     t_new <- time
     if (sparse_X_flag == 1L) {
+      ## FIXME: sparseMatrix() doesn't recycle like matrix()
       Xs_new <- do.call(rbind, rep(list(Xs[i[1L], , drop = FALSE]), length(t_new)))
       Xd_new <- Xd
     } else {
@@ -73,30 +70,28 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
       Xs_new <- Xs
     }
     if (has_random(object)) {
-      ## FIXME: probably slow?
       Z_new <- do.call(rbind, rep(list(Z[i[1L], , drop = FALSE]), length(t_new)))
     } else {
       Z_new <- Z
     }
   })
-  madf_out_new <- do.call(MakeADFun, object$madf_args)
 
+  tmb_out_new <- do.call(MakeADFun, object$tmb_args)
   if (se) {
-    madf_out_new$fn(object$par[object$nonrandom])
-    ssdr <- split_sdreport(sdreport(madf_out_new))
+    tmb_out_new$fn(object$par[object$nonrandom])
+    ssdr <- split_sdreport(sdreport(tmb_out_new))
     out <- ssdr[c("log_cum_inc_new", "log_int_inc_new")]
     out$log_int_inc_new <- rbind(NA_real_, out$log_int_inc_new)
     out <- lapply(out, function(d) cbind(time, d))
-    names(out) <- sub("_new", "", names(out))
+    names(out) <- sub("_new$", "", names(out))
     class(out) <- c("egf_predict", "list")
   } else {
-    r <- madf_out_new$report(object$par)
+    r <- tmb_out_new$report(object$par)
     out <- list(
       log_cum_inc = data.frame(time, estimate = r$log_cum_inc_new),
       log_int_inc = data.frame(time, estimate = c(NA_real_, r$log_int_inc_new))
     )
   }
-
   attr(out, "refdate") <- object$frame$date[i]
   out
 }

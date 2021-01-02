@@ -1,7 +1,7 @@
 #' @importFrom TMB tmbroot
 #' @importFrom stats qchisq confint
 #' @importFrom parallel mcmapply makePSOCKcluster clusterMap stopCluster
-confint.egf <- function(object, parm = "r", level = 0.95,
+confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
                         method = c("wald", "profile", "uniroot"),
                         grid_len = 12, max_width = 7,
                         parallel = c("serial", "multicore", "snow"),

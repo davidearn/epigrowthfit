@@ -2,10 +2,11 @@
 #' Fit epidemic growth models
 #'
 #' @description
-#' Fits nonlinear mixed effects models of epidemic growth to disease
-#' incidence time series. First and second order derivatives of the
-#' negative log Laplace approximation of the marginal likelihood are
-#' calculated by automatic differentiation using R package **TMB**.
+#' Fits nonlinear mixed effects models of epidemic growth to one
+#' or more disease incidence time series. First and second order
+#' derivatives of the negative log Laplace approximation of the
+#' marginal likelihood are calculated by automatic differentiation
+#' using R package **TMB**.
 #'
 #' @param formula
 #'   A formula of the form `y ~ x` specifying an incidence time series
@@ -83,14 +84,14 @@
 #'   to the so-named argument, as `frame` may be a permutation of the
 #'   rows of `data`.
 #' }
-#' \item{`curve`, `distr`, `excess`}{
-#'   Copies of the so-named arguments.
+#' \item{`curve`, `distr`, `excess`, `method`}{
+#'   Copies of the so-named arguments (after matching).
 #' }
 #' \item{`tmb_args`}{
 #'   A list of arguments to [TMB::MakeADFun()]. See [make_tmb_args()].
 #' }
 #' \item{`tmb_out`}{
-#'   The (optimized) list output of [TMB::MakeADFun()].
+#'   The list output of [TMB::MakeADFun()] (after optimization).
 #' }
 #' \item{`optim_out`}{
 #'   The list output of the optimizer.
@@ -212,6 +213,7 @@ egf <- function(formula,
     curve = curve,
     distr = distr,
     excess = excess,
+    method = method,
     tmb_args = tmb_args,
     tmb_out = tmb_out,
     optim_out = optim_out,

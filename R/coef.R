@@ -1,3 +1,4 @@
+#' @export
 coef.egf <- function(object, link = TRUE, ...) {
   dots <- list(...)
   if (length(dots) > 0L) {
@@ -13,15 +14,10 @@ coef.egf <- function(object, link = TRUE, ...) {
       )
     )
   }
-  stop_if_not(
-    is.logical(link),
-    length(link) == 1L,
-    !is.na(link),
-    m = "`link` must be TRUE or FALSE."
-  )
+  stop_if_not_tf(link)
 
-  fr <- object$frame[!duplicated(object$index) & !is.na(object$index), -(1:2), drop = FALSE]
-  pn <- colnames(object$madf_args$data$rid)
+  fr <- object$frame[!is.na(object$index) & !duplicated(object$index), -(1:2), drop = FALSE]
+  pn <- get_par_names(object, link = TRUE)
   Y <- matrix(object$report$Y_short_as_vector$estimate, ncol = length(pn))
   if (link) {
     colnames(Y) <- pn

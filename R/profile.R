@@ -1,17 +1,13 @@
-#' @importFrom parallel mcmapply makePSOCKcluster clusterMap stopCluster
+#' @importFrom tmbprofile
+#' @importFrom parallel mcmapply makePSOCKcluster clusterExport clusterEvalQ parSapply stopCluster
 profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
-                        parm = "r", decontrast = TRUE,
+                        parm = get_par_names(fitted), decontrast = FALSE,
                         max_level = 0.99, grid_len = 12,
                         trace = FALSE,
                         parallel = c("serial", "multicore", "snow"),
                         cores = getOption("egf.cores", 2L),
                         ...) {
-  stop_if_not(
-    is.numeric(trace) || is.logical(trace),
-    length(trace) == 1L,
-    !is.na(trace),
-    m = "`trace` must be a numeric or logical scalar."
-  )
+  stop_if_not_tf(trace)
   stop_if_not(
     is.numeric(max_level),
     length(max_level) == 1L,
@@ -28,16 +24,8 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
   )
   parallel <- match.arg(parallel)
   if (parallel != "serial") {
-    stop_if_not(
-      is.numeric(cores),
-      length(cores) == 1L,
-      is.finite(cores),
-      cores >= 1,
-      m = "`cores` must be 1 or greater."
-    )
+    stop_if_not_positive_integer(cores)
   }
-
-  n <- length(fitted$nonrandom)
 
   if (!is.null(index)) {
     stop_if_not(
@@ -47,8 +35,8 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
       m = "`index` must be a subset of `fitted$nonrandom`."
     )
     index <- unique(index)
-    pin <- droplevels(fitted$par_info[index, ])
     lin_comb <- NULL
+    lin_comb_names <- fitted$par_info$element[index]
   } else if (!is.null(lin_comb)) {
     if (is.vector(lin_comb)) {
       lin_comb <- matrix(lin_comb, nrow = 1L)
@@ -61,51 +49,49 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     )
     stop_if_not(
       nrow(lin_comb) > 0L,
-      ncol(lin_comb) == n,
+      ncol(lin_comb) == length(fitted$nonrandom),
       apply(lin_comb, 1L, function(x) any(x != 0)),
-      m = sprintf("`lin_comb` must have %d columns and at least\none nonzero element per row.", n)
+      m = paste0(
+        "`lin_comb` must have `length(fitted$nonrandom)` columns\n",
+        "and at least one nonzero element per row."
+      )
     )
-    pin <- NULL
+    lin_comb_names <- seq_len(nrow(lin_comb))
   } else if (!is.null(parm)) {
-    pn <- get_par_names(object$curve, object$distr, object$excess, link = TRUE)
+    pn <- get_par_names(fitted, link = TRUE)
     stop_if_not(
       is.character(parm),
       length(parm) > 0L,
       (parm <- add_link_string(unique(remove_link_string(parm)))) %in% pn,
-      m = paste0(
-        "`parm` must be a subset of\n",
-        "`get_par_names(curve, distr, excess, link)`."
-      )
+      m = "`parm` must be a subset of `get_par_names(fitted)`."
     )
-    stop_if_not(
-      is.logical(decontrast),
-      length(decontrast) == 1L,
-      !is.na(decontrast),
-      m = "`decontrast` must be TRUE or FALSE."
-    )
+    stop_if_not_tf(decontrast)
 
-    ## Matrix of linear coefficients if `decontrast = TRUE`,
-    ## index vector if `decontrast = FALSE`
-    lin_comb <- make_lin_comb(fitted, parm, decontrast)
+    i_parm <- which(object$par_info$response %in% parm)
+    i_parm_split <- split(i_parm, object$par_info$vector[i_parm])
+    i1 <- unlist(i_parm_split[c("beta", "log_sd_b")])
+    i2 <- unlist(i_parm_split[c(".decontrast(beta)", "log_sd_b")])
 
-    if (is.vector(lin_comb)) {
-      index <- lin_comb
-      lin_comb <- NULL
-      pin <- droplevels(fitted$par_info[index, ])
+    if (decontrast) {
+      lin_comb <- make_lin_comb(fnl = object$tmb_args$data$fnl,
+                                rid = object$tmb_args$data$rid)
+      lin_comb <- lin_comb[i1, , drop = FALSE]
+      lin_comb_names <- object$par_info$element[i2]
     } else {
-      a <- attributes(lin_comb)
-      pin <- droplevels(a$par_info[a$index, ])
+      index <- unname(i1)
+      lin_comb <- NULL
+      lin_comb_names <- object$par_info$element[i1]
     }
   } else {
     stop("One of `index`, `lin_comb`, and `parm` must be non-NULL.")
   }
 
   if (is.null(lin_comb)) {
-    vc <- vcov(fitted, full = TRUE)
+    vc <- vcov(fitted)
     h <- sqrt(diag(vc))[index] / 4
     x <- index
   } else {
-    vc <- lin_comb %*% vcov(fitted, full = TRUE) %*% t(lin_comb)
+    vc <- lin_comb %*% vcov(fitted) %*% t(lin_comb)
     h <- sqrt(diag(vc)) / 4
     x <- lapply(seq_len(nrow(lin_comb)), function(i) lin_comb[i, ])
   }
@@ -114,11 +100,11 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
 
   f <- function(x, h) {
     if (length(x) > 1L) {
-      d <- TMB::tmbprofile(obj = fitted$madf_out, lincomb = x, h = h,
-                           ytol = ytol, ystep = ystep, trace = trace)
+      d <- tmbprofile(obj = fitted$tmb_out, lincomb = x, h = h,
+                      ytol = ytol, ystep = ystep, trace = trace)
     } else {
-      d <- TMB::tmbprofile(obj = fitted$madf_out, name = x, h = h,
-                           ytol = ytol, ystep = ystep, trace = trace)
+      d <- tmbprofile(obj = fitted$tmb_out, name = x, h = h,
+                      ytol = ytol, ystep = ystep, trace = trace)
     }
     d[[2L]] <- 2 * (d[[2L]] - min(d[[2L]], na.rm = TRUE))
     names(d) <- c("value", "deviance")
@@ -129,23 +115,16 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     dl <- mcmapply(f, x = x, h = h, SIMPLIFY = FALSE, mc.cores = cores)
   } else if (parallel == "snow") {
     cl <- makePSOCKcluster(cores)
+    on.exit(stopCluster(cl))
+    var <- c("fitted", "ytol", "ystep", "trace", "tmbprofile")
+    clusterExport(cl, var, envir = environment())
     dl <- clusterMap(cl, f, x = x, h = h)
-    stopCluster(cl)
   } else { # "serial"
     dl <- Map(f, x = x, h = h)
   }
 
   nr <- vapply(dl, nrow, integer(1L))
-  ## If user gave `lin_comb`
-  if (is.null(pin)) {
-    out <- cbind(name = factor(rep(seq_len(nrow(lin_comb)), nr)),
-                 do.call(rbind, dl))
-  ## Otherwise
-  } else {
-    out <- cbind(pin[rep(seq_len(nrow(pin)), nr), ],
-                 do.call(rbind, dl))
-  }
-
+  out <- cbind(name = factor(rep(lin_comb_names, nr)), do.call(rbind, dl))
   row.names(out) <- NULL
   class(out) <- c("egf_profile", "data.frame")
   if (!is.null(lin_comb)) {

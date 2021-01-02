@@ -34,7 +34,11 @@ get_flag <- function(type, enum) {
 #' Returns the names used internally for parameters of the specified
 #' incidence model.
 #'
-#' @inheritParams egf
+#' @param curve,distr,excess
+#'   Character strings specifying an incidence model. See [egf()].
+#'   Alternatively, `curve` can be an `"egf"` object returned by
+#'   [egf()] or a `"tmb_data"` object returned by [make_tmb_data()],
+#'   in which case `distr` and `excess` are ignored.
 #' @param link
 #'   A logical scalar. If `TRUE`, then a prefix indicating a link
 #'   function (either `"log_"` or `"logit_"`) is prepended to each
@@ -44,25 +48,32 @@ get_flag <- function(type, enum) {
 #'   prefixes.
 #'
 #' @details
-#' `add_link_string()` adds prefixes to parameter names.
-#' `remove_link_string()` is its inverse.
+#' `add_link_string()` (internal) adds prefixes to parameter names.
+#' `remove_link_string()` (internal) is its inverse.
 #'
 #' @return
-#' `get_par_names(link = FALSE)` returns the subset of
+#' `get_par_names(curve, distr, excess, link = FALSE)` returns the
+#' subset of
 #' `c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")`
 #' relevant to `curve`, `distr`, and `excess`.
 #'
 #' @examples
-#' pn      <- get_par_names(curve = "exponential", distr = "pois",
-#'                          excess = FALSE, link = FALSE)
-#' link_pn <- get_par_names(curve = "exponential", distr = "pois",
-#'                          excess = FALSE, link = TRUE)
-#' identical(pn, epigrowthfit:::remove_link_string(link_pn))
-#' identical(link_pn, epigrowthfit:::add_link_string(pn))
+#' pn  <- get_par_names(curve = "exponential", distr = "pois",
+#'                      excess = FALSE, link = FALSE)
+#' lpn <- get_par_names(curve = "exponential", distr = "pois",
+#'                      excess = FALSE, link = TRUE)
+#' identical(pn,  epigrowthfit:::remove_link_string(lpn))
+#' identical(lpn, epigrowthfit:::add_link_string(pn))
 #'
 #' @export
 get_par_names <- function(curve = NULL, distr = NULL, excess = NULL,
                           link = TRUE) {
+  UseMethod("get_par_names", curve)
+}
+
+#' @export
+get_par_names.default <- function(curve = NULL, distr = NULL, excess = NULL,
+                                  link = TRUE) {
   if (is.null(curve) && is.null(distr) && is.null(excess)) {
     pn <- c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")
   } else {
@@ -89,6 +100,22 @@ get_par_names <- function(curve = NULL, distr = NULL, excess = NULL,
   } else {
     pn
   }
+}
+
+#' @export
+get_par_names.tmb_data <- function(curve, distr = NULL, excess = NULL,
+                                   link = TRUE) {
+  if (link) {
+    colnames(curve$rid)
+  } else {
+    remove_link_string(colnames(curve$rid))
+  }
+}
+
+#' @export
+get_par_names.egf <- function(curve, distr = NULL, excess = NULL,
+                              link = TRUE) {
+  get_par_names(curve$tmb_args$data)
 }
 
 #' @rdname get_par_names
@@ -231,7 +258,7 @@ check_fixed <- function(fixed, curve, distr, excess) {
     !any(duplicated(names(fixed))),
     m = paste0(
       "If `fixed` is a list, then `names(fixed)` must be a subset\n",
-      "of `get_par_names(curve, distr, excess, link = TRUE)`."
+      "of `get_par_names(curve, distr, excess)`."
     )
   )
   rhs <- vapply(fixed, function(x) deparse(x[[2L]]), character(1L))
@@ -270,7 +297,7 @@ check_random <- function(random, curve, distr, excess) {
     !any(duplicated(names(random))),
     m = paste0(
       "If `random` is a list, then `names(random)` must be a subset\n",
-      "of `get_par_names(curve, distr, excess, link = TRUE)`."
+      "of `get_par_names(curve, distr, excess)`."
     )
   )
   is_formula <- vapply(random, inherits, logical(1L), "formula")
@@ -614,11 +641,12 @@ factor_to_matrix <- function(x, sparse, intercept) {
   } else {
     fn <- if (sparse) "sparse.model.matrix" else "model.matrix"
     f <- get(fn)
-    X <- unname(f(
+    X <- f(
       object = if (intercept) ~x else ~-1 + x,
       data = list(x = x),
       contrasts.arg = list(x = "contr.sum")
-    ))
+    )
+    dimnames(X) <- list(NULL, NULL)
   }
   X
 }
@@ -1032,13 +1060,17 @@ make_tmb_args <- function(frame, curve, distr, excess,
 #'
 #' @keywords internal
 has_random <- function(object) {
-  if (inherits(object, "egf")) {
-    !is.null(object$tmb_args$random)
-  } else if (inherits(object, "tmb_data")) {
-    nrow(object$rid) > 0L
-  } else {
-    stop("`object` must inherit from class \"egf\" or class \"tmb_data\".")
-  }
+  UseMethod("has_random", object)
+}
+
+#' @export
+has_random.tmb_data <- function(object) {
+  nrow(object$rid) > 0L
+}
+
+#' @export
+has_random.egf <- function(object) {
+  has_random(object$tmb_args$data)
 }
 
 #' Optimize a TMB model object
@@ -1218,11 +1250,11 @@ decontrast_beta <- function(beta, fnl) {
 get_par_info <- function(par, tmb_data) {
   with(tmb_data[c("ffr", "rfr", "fnl", "rnl", "rid")], {
     re <- has_random(tmb_data)
-    pn <- colnames(rid)
+    pn <- get_par_names(tmb_data, link = TRUE)
 
     beta_no_contrasts <- decontrast_beta(
       beta = par[grep("beta", names(par))],
-      fnl  = object$fnl
+      fnl  = fnl
     )
     f <- function(x, s) {
       c(sprintf(".mean(%s)", s),
@@ -1284,49 +1316,10 @@ get_par_info <- function(par, tmb_data) {
 #'
 #' @keywords internal
 split_sdreport <- function(sdreport) {
-  ssdr <- as.data.frame(summary(sdreport, select = "report"))
-  names(ssdr) <- c("estimate", "se")
-  lapply(split(ssdr, row.names(ssdr)), "row.names<-", NULL)
+  ssdr <- summary(sdreport, select = "report")
+  colnames(ssdr) <- c("estimate", "se")
+  lapply(split(as.data.frame(ssdr), rownames(ssdr)), "row.names<-", NULL)
 }
-
-# make_lin_comb <- function(object, parm, decontrast) {
-#   l1 <- grepl("^beta\\[", names(object$par))
-#   l2 <- grepl("^log_sd_b\\[", names(object$par))
-#   lp <- (object$par_info$par %in% parm)
-#
-#   if (!decontrast) {
-#     index <- which((l1 | l2) & lp)
-#     return(index)
-#   }
-#
-#   re <- has_random(object)
-#   n <- length(object$nonrandom)
-#
-#   f <- function(s) {
-#     lp <- (object$par_info$par == s)
-#     i1 <- which(l1 & lp)
-#     i2 <- which(l2 & lp)
-#     m1 <- length(i1)
-#     m2 <- length(i2)
-#
-#     lc <- matrix(0, nrow = m1 + m2, ncol = n)
-#     lc[seq_len(m1), i1[1L]] <- 1
-#     if (m1 > 1L) {
-#       lc[seq_len(m1), i1[-1L]] <- contr.sum(m1)
-#     }
-#     if (re) {
-#       lc[m1 + seq_len(m2), i2] <- diag(rep(1, m2))
-#     }
-#
-#     list(lc = lc, i = c(i1, i2))
-#   }
-#
-#   lcl <- lapply(parm, f)
-#   lin_comb <- do.call(rbind, lapply(lcl, "[[", "lc"))
-#   index <- do.call(c, lapply(lcl, "[[", "i"))
-#   par_info <- get_par_info(object, decontrast = TRUE)
-#   structure(lin_comb, index = index, par_info = par_info)
-# }
 
 
 
