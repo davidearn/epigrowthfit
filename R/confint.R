@@ -53,7 +53,7 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
     ml <- lapply(match(parm, pn), f)
     nr <- vapply(ml, nrow, integer(1L))
     out <- cbind(
-      name = factor(rep(parm, nr), levels = parm),
+      par = factor(rep(parm, nr), levels = parm),
       object$frame[!is.na(object$index) & !duplicated(object$index), -(1:2), drop = FALSE],
       do.call(rbind, ml)
     )
@@ -114,34 +114,36 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
       colnames(ci) <- c("lower", "upper")
       out <- data.frame(name = rownames(lin_comb), estimate, ci)
     }
+
+
   }
   out
 
-  # i_elu <- length(out) - 2:0 # index of "estimate", "lower", "upper"
   # out[i_elu] <- exp(out[i_elu])
   # levels(out$par) <- remove_link_string(levels(out$par))
-  #
-  # if ("R0" %in% parm0) {
-  #   d <- out[out$par == "r", ]
-  #   d[i_elu] <- lapply(d[i_elu], compute_R0, breaks = breaks, probs = probs)
-  #   levels(d$par) <- sub("^r$", "R0", levels(d$par))
-  #   out <- rbind(out, d)
-  # }
-  # if ("doubling_time" %in% parm0) {
-  #   i_eul <- i_elu[c(1L, 3L, 2L)]
-  #   d <- out[out$par == "r", ]
-  #   d[i_elu] <- log(2) / d[i_eul]
-  #   levels(d$par) <- sub("^r$", "doubling_time", levels(d$par))
-  #   out <- rbind(out, d)
-  # }
-  # if ("log_r" %in% parm && !"r" %in% parm0) {
-  #   out <- droplevels(out[out$par != "r", ])
-  # }
-  # out <- do.call(rbind, split(out, out$par)[parm0])
-  #
-  # row.names(out) <- NULL
-  # attr(out, "level") <- level
-  # out
+
+  i_elu <- length(out) - 2:0 # index of "estimate", "lower", "upper"
+  if ("R0" %in% parm0) {
+    d <- out[out$par == "log_r", , drop = FALSE]
+    d[i_elu] <- lapply(exp(d[i_elu]), compute_R0, breaks = breaks, probs = probs)
+    d$par <- factor("R0")
+    out <- rbind(out, d)
+  }
+  if ("tdoubling" %in% parm0) {
+    i_eul <- i_elu[c(1L, 3L, 2L)]
+    d <- out[out$par == "log_r", ]
+    d[i_elu] <- log(2) / exp(d[i_eul])
+    d$par <- factor("tdoubling")
+    out <- rbind(out, d)
+  }
+  if ("log_r" %in% parm && !"log_r" %in% parm0) {
+    out <- out[out$par != "log_r", , drop = FALSE]
+  }
+  out$par <- factor(out$par, levels = parm0)
+  out <- out[order(out$par), ]
+  row.names(out) <- NULL
+  attr(out, "level") <- level
+  out
 }
 
 #' @importFrom stats qchisq confint

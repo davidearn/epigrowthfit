@@ -533,8 +533,8 @@ make_frame <- function(formula, fixed, random, data, index,
   ## and preserve the difference as an attribute
   ## for use by plot methods
   keep <- !is.na(index)
-  structure(frame[keep, , drop = FALSE],
-    extra = frame[!keep, , drop = FALSE],
+  structure(droplevels(frame[keep, , drop = FALSE]),
+    extra = droplevels(frame[!keep, , drop = FALSE]),
     index = index[keep],
     date_name = dn,
     cases_name = cn,
