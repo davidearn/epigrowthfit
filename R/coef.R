@@ -8,7 +8,7 @@ coef.egf <- function(object, link = TRUE, ...) {
       lengths(dots) > 0L,
       names(dots) %in% names(object$frame)[-(1:2)],
       !duplicated(names(dots)),
-      unlist(Map("%in%", dots, lapply(object$frame[names(dots)], unique))),
+      unlist(Map("%in%", dots, lapply(object$frame[names(dots)], levels))),
       m = paste0(
         "`list(...)` must specify nonempty levels\n",
         "of factors in `object$frame`."
