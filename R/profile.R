@@ -129,8 +129,8 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     dl <- Map(f, x = xl, h = hl)
   }
 
-  nr <- vapply(dl, nrow, integer(1L))
-  out <- data.frame(name = factor(rep(lin_comb_names, nr)), do.call(rbind, dl))
+  nrl <- vapply(dl, nrow, integer(1L))
+  out <- data.frame(name = factor(rep(lin_comb_names, nrl)), do.call(rbind, dl))
   row.names(out) <- NULL
   class(out) <- c("egf_profile", "data.frame")
   out

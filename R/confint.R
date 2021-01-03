@@ -1,6 +1,6 @@
 #' @export
 #' @importFrom stats qchisq confint
-#' @importFrom parallel mcmapply makePSOCKcluster clusterExport cluserMap stopCluster
+#' @importFrom parallel mcmapply makePSOCKcluster clusterExport clusterMap stopCluster
 confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
                         link = TRUE,
                         method = c("wald", "profile", "uniroot"),
@@ -8,6 +8,8 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
                         parallel = c("serial", "multicore", "snow"),
                         cores = getOption("egf.cores", 2L),
                         breaks = NULL, probs = NULL, ...) {
+  ## FIXME: Behaves as expected but isn't pretty...
+
   curve_is_exp_in_limit <- (object$curve %in% c("exponential", "logistic", "richards"))
   pn <- get_par_names(object, link = TRUE)
   pn0 <- if (curve_is_exp_in_limit) c("R0", "tdoubling", pn) else pn
@@ -25,7 +27,7 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
          "See ?compute_R0.")
   }
   parm0 <- parm <- add_link_string(unique(remove_link_string(parm)))
-  parm[parm %in% c("R0", "doubling_time")] <- "log_r"
+  parm[parm %in% c("R0", "tdoubling")] <- "log_r"
   parm <- unique(parm)
 
   stop_if_not(
@@ -41,6 +43,8 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
     stop_if_not_positive_integer(cores)
   }
 
+  fr <- object$frame[!duplicated(object$index), -(1:2), drop = FALSE]
+
   if (method == "wald") {
     estimate <- matrix(object$report$Y_short_as_vector$estimate, ncol = length(pn))
     se <- matrix(object$report$Y_short_as_vector$se, ncol = length(pn))
@@ -51,10 +55,15 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
       elu
     }
     ml <- lapply(match(parm, pn), f)
-    nr <- vapply(ml, nrow, integer(1L))
+    nrl <- vapply(ml, nrow, integer(1L))
+    if (!link) {
+      g <- function(x, s) get_inverse_link(s)(x)
+      ml <- Map(g, x = ml, s = extract_link_string(parm))
+      parm <- remove_link_string(parm)
+    }
     out <- cbind(
-      par = factor(rep(parm, nr), levels = parm),
-      object$frame[!is.na(object$index) & !duplicated(object$index), -(1:2), drop = FALSE],
+      par = factor(rep(parm, nrl), levels = parm),
+      do.call(rbind, rep(list(fr), length(parm))),
       do.call(rbind, ml)
     )
   } else {
@@ -77,7 +86,7 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
         parallel = parallel,
         cores = cores
       )
-      out <- confint(pr, level = level)
+      d <- confint(pr, level = level)
     } else if (method == "uniroot") {
       stop_if_not(
         is.numeric(max_width),
@@ -87,7 +96,7 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
         m = "`max_width` must be a numeric vector with positive elements."
       )
 
-      lin_comb <- make_lin_comb_for_parm(object, parm) # see profile.R
+      lin_comb <- make_lin_comb_for_parm(object, parm) # see R/profile.R
       lcl <- lapply(seq_len(nrow(lin_comb)), function(i) lin_comb[i, ])
       wl <- rep(max_width, length.out = length(parm))
       ytol <- qchisq(level, df = 1) / 2 # y := diff(nll) = deviance / 2
@@ -112,35 +121,59 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
       estimate <- as.vector(lin_comb %*% object$par[object$nonrandom])
       ci <- do.call(rbind, cil)
       colnames(ci) <- c("lower", "upper")
-      out <- data.frame(name = rownames(lin_comb), estimate, ci)
+      d <- data.frame(name = rownames(lin_comb), estimate, ci, stringsAsFactors = FALSE)
     }
 
+    ## To create output matching `method = "wald"`, need to
+    ## map `d$name`, which has elements like "beta[1]+beta[2]",
+    ## to rows of `fr`
+    d_split <- split(d, object$par_info$response[match(d$name, object$par_info$name)])
+    ffr <- object$tmb_args$data$ffr[!duplicated(object$index), , drop = FALSE]
 
+    g <- function(d, s) {
+      i_pin <- match(d$name, object$par_info$name)
+      j_ffr <- match(object$par_info$term[i_pin[1L]], names(ffr))
+      i_d   <- match(ffr[[j_ffr]], object$par_info$level[i_pin])
+      if (!link) {
+        ## FIXME: trouble if link is not increasing or if link
+        ## calls functions that don't play nicely with data frames
+        l <- extract_link_string(s)
+        d[2:4] <- get_inverse_link(l)(d[2:4])
+        s <- remove_link_string(s)
+      }
+      cbind(
+        par = factor(rep(s, nrow(fr))),
+        fr,
+        d[i_d, -1L, drop = FALSE]
+      )
+    }
+    out <- do.call(rbind, Map(g, d_split[parm], parm))
   }
-  out
 
-  # out[i_elu] <- exp(out[i_elu])
-  # levels(out$par) <- remove_link_string(levels(out$par))
+  j_elu <- length(out) - 2:0 # index of "estimate", "lower", "upper"
+  if (any(c("R0", "tdoubling") %in% parm0)) {
+    s <- if (link) "log_r" else "r"
+    f <- if (link) exp else function(x) x
 
-  i_elu <- length(out) - 2:0 # index of "estimate", "lower", "upper"
-  if ("R0" %in% parm0) {
-    d <- out[out$par == "log_r", , drop = FALSE]
-    d[i_elu] <- lapply(exp(d[i_elu]), compute_R0, breaks = breaks, probs = probs)
-    d$par <- factor("R0")
-    out <- rbind(out, d)
+    if ("R0" %in% parm0) {
+      d <- out[out$par == s, , drop = FALSE]
+      d[j_elu] <- lapply(f(d[j_elu]), compute_R0, breaks = breaks, probs = probs)
+      d$par <- factor("R0")
+      out <- rbind(out, d)
+    }
+    if ("tdoubling" %in% parm0) {
+      d <- out[out$par == s, , drop = FALSE]
+      j_eul <- j_elu[c(1L, 3L, 2L)]
+      d[j_elu] <- log(2) / f(d[j_eul])
+      d$par <- factor("tdoubling")
+      out <- rbind(out, d)
+    }
+
+    out$par <- factor(out$par, levels = if (link) parm0 else remove_link_string(parm0))
+    out <- out[order(out$par), ]
+    out <- out[!is.na(out$par), ]
   }
-  if ("tdoubling" %in% parm0) {
-    i_eul <- i_elu[c(1L, 3L, 2L)]
-    d <- out[out$par == "log_r", ]
-    d[i_elu] <- log(2) / exp(d[i_eul])
-    d$par <- factor("tdoubling")
-    out <- rbind(out, d)
-  }
-  if ("log_r" %in% parm && !"log_r" %in% parm0) {
-    out <- out[out$par != "log_r", , drop = FALSE]
-  }
-  out$par <- factor(out$par, levels = parm0)
-  out <- out[order(out$par), ]
+
   row.names(out) <- NULL
   attr(out, "level") <- level
   out

@@ -30,10 +30,8 @@ coef.egf <- function(object, link = TRUE, ...) {
   if (link) {
     colnames(Y) <- pn
   } else {
-    j <- grep("^log_", pn)
-    Y[, j] <- exp(Y[, j])
-    j <- grep("^logit_", pn)
-    Y[, j] <- 1 / (1 + exp(-Y[, j]))
+    f <- function(x, s) get_inverse_link(s)(x)
+    Y <- mapply(f, x = as.data.frame(Y), s = extract_link_string(pn))
     colnames(Y) <- remove_link_string(pn)
   }
 

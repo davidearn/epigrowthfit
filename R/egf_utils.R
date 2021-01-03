@@ -121,9 +121,6 @@ get_par_names.egf <- function(curve, distr = NULL, excess = NULL,
 #' @rdname get_par_names
 #' @keywords internal
 add_link_string <- function(s) {
-  if (is.null(s)) {
-    return(NULL)
-  }
   ok <- s %in% get_par_names(link = FALSE)
   if (!any(ok)) {
     return(s)
@@ -136,15 +133,36 @@ add_link_string <- function(s) {
 #' @rdname get_par_names
 #' @keywords internal
 remove_link_string <- function(s) {
-  if (is.null(s)) {
-    return(NULL)
-  }
   ok <- s %in% get_par_names(link = TRUE)
-  if (!any(ok)) {
-    return(s)
-  }
   s[ok] <- sub("^(logit|log)_", "", s[ok])
   s
+}
+
+#' @rdname get_par_names
+#' @keywords internal
+extract_link_string <- function(s) {
+  ok <- s %in% get_par_names(link = TRUE)
+  s[ok] <- sub("^(logit|log)_.*$", "\\1", s[ok])
+  s[!ok] <- NA_character_
+  s
+}
+
+#' @keywords internal
+get_link <- function(s) {
+  switch(s,
+    log = log,
+    logit = function(x) log(x) - log1p(-x),
+    stop("Link not implemented.")
+  )
+}
+
+#' @keywords internal
+get_inverse_link <- function(s) {
+  switch(s,
+    log = exp,
+    logit = function(x) 1 / (1 + exp(-x)),
+    stop("Link not implemented.")
+  )
 }
 
 #' Validate model formulae
@@ -969,7 +987,7 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess, par_init) {
       log_c0     = log_c0,
       log_tinfl  = log_tinfl,
       log_K      = log_K,
-      logit_p    = log(p) - log1p(-p),
+      logit_p    = get_link("logit")(p),
       log_a      = 0,
       log_b      = 0,
       log_nbdisp = 0
