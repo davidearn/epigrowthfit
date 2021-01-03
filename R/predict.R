@@ -1,5 +1,6 @@
 #' @importFrom TMB MakeADFun sdreport
 predict.egf <- function(object, time = NULL, se = FALSE, ...) {
+  stop_if_not_tf(se)
   dots <- list(...)
   if (length(dots) > 0L) {
     stop_if_not(
@@ -14,24 +15,26 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
       )
     )
   }
-  if (length(object$frame) == 2L) {
-    i <- 1L
-  } else {
-    d <- object$frame[-(1:2)]
-    i <- which(
-      !is.na(object$index) &
-      !duplicated(object$index) &
-      if (length(dots) > 0L) Reduce("&", Map("==", d[names(dots)], dots)) else TRUE
-    )
+
+  ## Make sure user has specified a unique group,
+  ## if not a unique fitting window
+  d <- object$frame[-(1:2)]
+  li <- !duplicated(object$index)
+  if (length(d) > 0L) {
+    if (length(dots) > 0L) {
+      li <- li & Reduce("&", Map("==", d[names(dots)], dots))
+    }
     stop_if_not(
-      length(i) > 0L,
-      duplicated(d[i, , drop = FALSE])[-1L],
+      any(li),
+      duplicated(d[li, , drop = FALSE])[-1L],
       m = paste0(
         "`list(...)` must specify a unique level of\n",
         "`interaction(object$frame[-(1:2)], drop = TRUE)`."
       )
     )
   }
+  i <- which(li)
+
   stop_if_not(
     is.numeric(time),
     length(time) >= 2L,
@@ -53,7 +56,6 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
       "the fitting window specified by `list(...)`."
     )
   )
-  stop_if_not_tf(se)
 
   ## Create data objects needed for prediction code
   ## in C++ template to run
@@ -62,7 +64,7 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
     se_flag <- 1L * se
     t_new <- time
     if (sparse_X_flag == 1L) {
-      ## FIXME: sparseMatrix() doesn't recycle like matrix()
+      ## FIXME: slow? but sparseMatrix() doesn't recycle like matrix()
       Xs_new <- do.call(rbind, rep(list(Xs[i[1L], , drop = FALSE]), length(t_new)))
       Xd_new <- Xd
     } else {

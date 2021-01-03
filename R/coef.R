@@ -1,5 +1,6 @@
 #' @export
 coef.egf <- function(object, link = TRUE, ...) {
+  stop_if_not_tf(link)
   dots <- list(...)
   if (length(dots) > 0L) {
     stop_if_not(
@@ -7,18 +8,25 @@ coef.egf <- function(object, link = TRUE, ...) {
       lengths(dots) > 0L,
       names(dots) %in% names(object$frame)[-(1:2)],
       !duplicated(names(dots)),
-      unlist(Map("%in%", dots, lapply(object$frame[names(dots)], levels))),
+      unlist(Map("%in%", dots, lapply(object$frame[names(dots)], unique))),
       m = paste0(
-        "`list(...)` must specify valid levels\n",
+        "`list(...)` must specify nonempty levels\n",
         "of factors in `object$frame`."
       )
     )
   }
-  stop_if_not_tf(link)
 
-  fr <- object$frame[!is.na(object$index) & !duplicated(object$index), -(1:2), drop = FALSE]
+  ## Keep one row of `frame` (factors only) per fitting window.
+  ## No loss of information here, since factors have one level
+  ## within fitting windows.
+  fr <- object$frame[!duplicated(object$index), -(1:2), drop = FALSE]
+
+  ## Here `Y[i, ]` lists fitted responses in the group specified
+  ## by `fr[i, ]`. There are `length(pn)` responses, one for each
+  ## mixed effects model.
   pn <- get_par_names(object, link = TRUE)
   Y <- matrix(object$report$Y_short_as_vector$estimate, ncol = length(pn))
+
   if (link) {
     colnames(Y) <- pn
   } else {
@@ -30,9 +38,10 @@ coef.egf <- function(object, link = TRUE, ...) {
   }
 
   d <- cbind(fr, Y)
+
+  ## Select user-specified fitting windows
   if (length(dots) > 0L) {
-    f <- function(s) d[[s]] %in% dots[[s]]
-    d <- d[Reduce("&", lapply(names(dots), f)), ]
+    d <- d[Reduce("&", Map("%in%", d[names(dots)], dots)), ]
   }
   row.names(d) <- NULL
   d

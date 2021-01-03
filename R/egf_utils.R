@@ -327,14 +327,19 @@ check_random <- function(random, curve, distr, excess) {
 #' @inheritParams egf
 #'
 #' @details
-#' Rows of `data` indexed by `is.na(index)` are omitted. The remaining
-#' rows are permuted by `order(index[!is.na(index)])` so that rows
-#' belonging to the same fitting window are contiguous in the model
-#' frame.
+#' Rows of `data` are permuted by `order(index)` so that rows belonging
+#' to the same fitting window are contiguous in the model frame.
+#' The permuted rows indexed by `!is.na(index[order(index)])` form the
+#' model frame. The remaining rows are preserved in attribute `extra`.
 #'
 #' @return
 #' A data frame containing the variables named in `formula`, `fixed`,
 #' and `random`, with attributes:
+#' \item{`extra`}{
+#'   A data frame preserving data not belonging to a fitting window
+#'   (see Details).
+#'   Plot methods may use all of the data in `rbind(frame, extra)`.
+#' }
 #' \item{`index`}{
 #'   A factor of length `nrow(frame)` such that `split(frame, index)`
 #'   splits the frame by fitting window. Not necessarily identical to
@@ -453,7 +458,11 @@ make_frame <- function(formula, fixed, random, data, index,
     stop_if_not(
       vapply(data[fn], is.factor, logical(1L)),
       lengths(data[fn]) == n,
-      m = sprintf("Grouping variables must be factors of length `length(%s)`", dn)
+      m = sprintf("Grouping variables must be factors of length `length(%s)`.", dn)
+    )
+    stop_if_not(
+      !vapply(data[fn], anyNA, logical(1L)),
+      m = "Grouping variables must not have missing values."
     )
     data[fn] <- lapply(data[fn], droplevels, exclude = NA)
   }
@@ -473,11 +482,7 @@ make_frame <- function(formula, fixed, random, data, index,
       nlevels(index) > 0L,
       m = "`index` must have at least one nonempty level."
     )
-    ord <- order(index)
-    index <- index[ord]
-    frame <- frame[ord, ]
   }
-  row.names(frame) <- NULL
   frame_split <- split(frame, index)
   date_split <- lapply(frame_split, "[[", dn)
   stop_if_not(
@@ -500,17 +505,37 @@ make_frame <- function(formula, fixed, random, data, index,
       m = sprintf("There are fitting windows with insufficient data\n(fewer than 7 observations) in `%s`.", cn)
     )
   }
-  factors_split <- lapply(frame_split, function(x) droplevels(x[fn], exclude = NA))
-  stop_if_not(
-    vapply(factors_split, function(x) all(vapply(x, nlevels, integer(1L)) == 1L) && !anyNA(x), logical(1L)),
-    m = paste0(
-      "Grouping variables must be constant and without\n",
-      "missing values in each level of `index`."
+  if (length(fn) > 0L) {
+    factors_split <- lapply(frame_split, function(x) droplevels(x[fn]))
+    stop_if_not(
+      vapply(factors_split, function(x) all(vapply(x, nlevels, integer(1L)) == 1L), logical(1L)),
+      m = paste0(
+        "Grouping variables must have exactly one level\n",
+        "in each level of `index`."
+      )
     )
-  )
+    stop_if_not(
+      vapply(frame[fn], nlevels, integer(1L)) > 1L,
+      m = paste0(
+        "Grouping variables must not have the same level\n",
+        "in every level of `index`."
+      )
+    )
+  }
 
-  structure(frame,
-    index = index,
+  ## Order by index
+  ord <- order(index)
+  index <- index[ord]
+  frame <- frame[ord, ]
+  row.names(frame) <- NULL
+
+  ## Subset rows belonging to a fitting window
+  ## and preserve the difference as an attribute
+  ## for use by plot methods
+  keep <- !is.na(index)
+  structure(frame[keep, , drop = FALSE],
+    extra = frame[!keep, , drop = FALSE],
+    index = index[keep],
     date_name = dn,
     cases_name = cn,
     fixed_term_labels = lapply(fixed, get_term_labels),
@@ -661,8 +686,7 @@ factor_to_matrix <- function(x, sparse, intercept) {
 #' @return
 #' A `"tmb_data"` object, which is a list with elements:
 #' \item{`index`}{
-#'   `attr(frame, "index")` with missing values removed.
-#'   See [make_frame()].
+#'   A copy of `attr(frame, "index")`. See [make_frame()].
 #' }
 #' \item{`t`}{
 #'   An integer vector of length `nrow(frame)` giving time as a number
@@ -731,23 +755,18 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
   pn <- get_par_names(curve, distr, excess, link = TRUE) # model
   pn0 <- get_par_names(link = TRUE) # all
 
-  ## Exclude data not belonging to a fitting window
-  nna <- !is.na(a$index)
-  index <- a$index[nna]
-  frame <- frame[nna, ]
-
   ## Compute time as number of days since start of fitting window
   date_to_integer <- function(x) as.integer(x - x[1L])
   dn <- a$date_name
-  t <- unlist(lapply(unname(split(frame[[dn]], index)), date_to_integer))
+  t <- unlist(lapply(unname(split(frame[[dn]], a$index)), date_to_integer))
 
   ## Set unused first observations to NA (avoids confusion)
   cn <- a$cases_name
   x <- frame[[cn]]
-  x[!duplicated(index)] <- NA_integer_
+  x[!duplicated(a$index)] <- NA_integer_
 
   ## Find lengths of fitting windows
-  wl <- as.vector(table(index))
+  wl <- as.vector(table(a$index))
 
   ## Get character vectors containing unique term labels
   ftl_incl_dupl <- unlist(a$fixed_term_labels, use.names = FALSE) # length `p`
@@ -808,7 +827,7 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
   distr_list <- c("pois", "nbinom")
 
   l1 <- list(
-    index = index,
+    index = a$index,
     t = t,
     x = x,
     wl = wl,
@@ -1219,7 +1238,7 @@ decontrast_beta <- function(beta, fnl) {
 #'   A factor with levels `beta`, `log_sd_b`, `b`, and
 #'   `.decontrast(beta)`, allowing the data frame to be split by vector.
 #' }
-#' \item{`element`}{
+#' \item{`name`}{
 #'   A character vector concatenating `names(beta)`, `names(log_sd_b)`,
 #'   `names(b)`, and `names(u)`.
 #' }
@@ -1265,7 +1284,7 @@ get_par_info <- function(par, tmb_data) {
       sub("\\[[0-9]+\\]$", "", names(par)),
       rep(".decontrast(beta)", length(beta_no_contrasts))
     )
-    d_element <- c(names(par), names(beta_no_contrasts))
+    d_name <- c(names(par), names(beta_no_contrasts))
     d_estimate <- unname(c(par, beta_no_contrasts))
     d_response <- c(
       rep(pn, fnl),
@@ -1288,7 +1307,7 @@ get_par_info <- function(par, tmb_data) {
 
     data.frame(
       vector   = factor(d_vector, levels = unique(d_vector)),
-      element  = d_element,
+      name     = d_name,
       estimate = d_estimate,
       response = factor(d_response, levels = unique(d_response)),
       term     = factor(d_term, levels = unique(d_term)),

@@ -1,5 +1,5 @@
-#' @importFrom tmbprofile
-#' @importFrom parallel mcmapply makePSOCKcluster clusterExport clusterEvalQ parSapply stopCluster
+#' @export
+#' @importFrom parallel mcmapply makePSOCKcluster clusterExport clusterMap stopCluster
 profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
                         parm = get_par_names(fitted), decontrast = FALSE,
                         max_level = 0.99, grid_len = 12,
@@ -27,6 +27,7 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     stop_if_not_positive_integer(cores)
   }
 
+  ## If profiling user-specified elements of `u = c(beta, log_sd_b)`
   if (!is.null(index)) {
     stop_if_not(
       is.numeric(index),
@@ -36,7 +37,9 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     )
     index <- unique(index)
     lin_comb <- NULL
-    lin_comb_names <- fitted$par_info$element[index]
+    lin_comb_names <- fitted$par_info$name[index]
+
+  ## If profiling user-specified linear combinations of elements of `u`
   } else if (!is.null(lin_comb)) {
     if (is.vector(lin_comb)) {
       lin_comb <- matrix(lin_comb, nrow = 1L)
@@ -57,6 +60,9 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
       )
     )
     lin_comb_names <- seq_len(nrow(lin_comb))
+
+  ## If profiling (linear combinations of) elements of `u`
+  ## relevant to user-specified response variables
   } else if (!is.null(parm)) {
     pn <- get_par_names(fitted, link = TRUE)
     stop_if_not(
@@ -67,68 +73,65 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     )
     stop_if_not_tf(decontrast)
 
-    i_parm <- which(object$par_info$response %in% parm)
-    i_parm_split <- split(i_parm, object$par_info$vector[i_parm])
-    i1 <- unlist(i_parm_split[c("beta", "log_sd_b")])
-    i2 <- unlist(i_parm_split[c(".decontrast(beta)", "log_sd_b")])
-
+    ## If profiling elements of `v = c(decontrast(beta), log_sd_b)`
     if (decontrast) {
-      lin_comb <- make_lin_comb(fnl = object$tmb_args$data$fnl,
-                                rid = object$tmb_args$data$rid)
-      lin_comb <- lin_comb[i1, , drop = FALSE]
-      lin_comb_names <- object$par_info$element[i2]
+      ## Matrix of linear coefficients such that
+      ## `lin_comb %*% u = v[relevant]`
+      lin_comb <- make_lin_comb_for_parm(object, parm)
+      lin_comb_names <- rownames(lin_comb)
+    ## If profiling elements of `u`
     } else {
-      index <- unname(i1)
+      index <- make_index_for_parm(object, parm)
       lin_comb <- NULL
-      lin_comb_names <- object$par_info$element[i1]
+      lin_comb_names <- names(index)
     }
+
   } else {
     stop("One of `index`, `lin_comb`, and `parm` must be non-NULL.")
   }
 
   if (is.null(lin_comb)) {
+    ## Covariance matrix of `u`
     vc <- vcov(fitted)
-    h <- sqrt(diag(vc))[index] / 4
-    x <- index
+    hl <- sqrt(diag(vc))[index] / 4
+    xl <- unname(index)
   } else {
+    ## Covariance matrix of `lin_comb %*% u`
     vc <- lin_comb %*% vcov(fitted) %*% t(lin_comb)
-    h <- sqrt(diag(vc)) / 4
-    x <- lapply(seq_len(nrow(lin_comb)), function(i) lin_comb[i, ])
+    hl <- sqrt(diag(vc)) / 4
+    xl <- lapply(seq_len(nrow(lin_comb)), function(i) lin_comb[i, ])
   }
-  ytol <- qchisq(max_level, df = 1) / 2
+  ytol <- qchisq(max_level, df = 1) / 2 # y := diff(nll) = deviance / 2
   ystep <- ytol / grid_len
 
   f <- function(x, h) {
     if (length(x) > 1L) {
-      d <- tmbprofile(obj = fitted$tmb_out, lincomb = x, h = h,
-                      ytol = ytol, ystep = ystep, trace = trace)
+      d <- TMB::tmbprofile(obj = fitted$tmb_out, lincomb = x, h = h,
+                           ytol = ytol, ystep = ystep, trace = trace)
     } else {
-      d <- tmbprofile(obj = fitted$tmb_out, name = x, h = h,
-                      ytol = ytol, ystep = ystep, trace = trace)
+      d <- TMB::tmbprofile(obj = fitted$tmb_out, name = x, h = h,
+                           ytol = ytol, ystep = ystep, trace = trace)
     }
-    d[[2L]] <- 2 * (d[[2L]] - min(d[[2L]], na.rm = TRUE))
+    d[[2L]] <- 2 * (d[[2L]] - min(d[[2L]], na.rm = TRUE)) # deviance = 2 * diff(nll)
     names(d) <- c("value", "deviance")
     d
   }
 
   if (parallel == "multicore") {
-    dl <- mcmapply(f, x = x, h = h, SIMPLIFY = FALSE, mc.cores = cores)
+    dl <- mcmapply(f, x = xl, h = hl, SIMPLIFY = FALSE, mc.cores = cores)
   } else if (parallel == "snow") {
     cl <- makePSOCKcluster(cores)
     on.exit(stopCluster(cl))
-    var <- c("fitted", "ytol", "ystep", "trace", "tmbprofile")
+    var <- c("fitted", "ytol", "ystep", "trace")
     clusterExport(cl, var, envir = environment())
-    dl <- clusterMap(cl, f, x = x, h = h)
+    dl <- clusterMap(cl, f, x = xl, h = hl)
   } else { # "serial"
-    dl <- Map(f, x = x, h = h)
+    dl <- Map(f, x = xl, h = hl)
   }
 
   nr <- vapply(dl, nrow, integer(1L))
-  out <- cbind(name = factor(rep(lin_comb_names, nr)), do.call(rbind, dl))
+  out <- data.frame(name = factor(rep(lin_comb_names, nr)), do.call(rbind, dl))
   row.names(out) <- NULL
   class(out) <- c("egf_profile", "data.frame")
-  if (!is.null(lin_comb)) {
-    attr(out, "lin_comb") <- lin_comb
-  }
   out
 }

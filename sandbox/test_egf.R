@@ -3,7 +3,7 @@ ontario <- subset(canadacovid, province == "ON")
 ontario$wave <- 0L
 ontario$wave[27:77] <- 1L
 ontario$wave[211:236] <- 2L
-ontario$wave <- factor(ontario$wave, exclude = 0L)
+ontario$wave <- factor(ontario$wave)
 
 # source("R/predict.R")
 # source("R/profile.R")
@@ -12,7 +12,7 @@ ontario$wave <- factor(ontario$wave, exclude = 0L)
 
 object <- egf(new_confirmed ~ date,
   data = ontario,
-  index = ontario$wave,
+  index = factor(ontario$wave, exclude = 0L),
   #fixed = ~1,
   fixed = ~wave,
   #random = ~(1 | wave),

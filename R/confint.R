@@ -1,23 +1,20 @@
-#' @importFrom TMB tmbroot
+#' @export
 #' @importFrom stats qchisq confint
-#' @importFrom parallel mcmapply makePSOCKcluster clusterMap stopCluster
+#' @importFrom parallel mcmapply makePSOCKcluster clusterExport cluserMap stopCluster
 confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
+                        link = TRUE,
                         method = c("wald", "profile", "uniroot"),
                         grid_len = 12, max_width = 7,
                         parallel = c("serial", "multicore", "snow"),
                         cores = getOption("egf.cores", 2L),
                         breaks = NULL, probs = NULL, ...) {
-  if (object$curve %in% c("subexponential", "gompertz")) {
-    stop("Subexponential and Gompertz models not supported yet.")
-  }
-
-  ## FIXME: Simplify string handling, e.g., "log_r" versus "r".
-  pn <- get_par_names(object$curve, object$distr, object$excess, link = TRUE)
-  pn0 <- c("R0", "doubling_time", remove_link_string(pn))
+  curve_is_exp_in_limit <- (object$curve %in% c("exponential", "logistic", "richards"))
+  pn <- get_par_names(object, link = TRUE)
+  pn0 <- if (curve_is_exp_in_limit) c("R0", "tdoubling", pn) else pn
   stop_if_not(
     is.character(parm),
     length(parm) > 0L,
-    parm %in% pn0,
+    parm %in% c(pn0, remove_link_string(pn0)),
     m = paste0(
       "`parm` must be a subset of:\n",
       paste(sprintf("\"%s\"", pn0), collapse = ", ")
@@ -27,9 +24,9 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
     stop("`parm = \"R0\"` requires non-NULL `breaks` and `probs`.\n",
          "See ?compute_R0.")
   }
-  parm0 <- parm
-  parm[parm %in% c("R0", "doubling_time")] <- "r"
-  parm <- add_link_string(unique(parm))
+  parm0 <- parm <- add_link_string(unique(remove_link_string(parm)))
+  parm[parm %in% c("R0", "doubling_time")] <- "log_r"
+  parm <- unique(parm)
 
   stop_if_not(
     is.numeric(level),
@@ -37,22 +34,16 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
     level > 0 && level < 1,
     m = "`level` must be a number in the interval (0,1)."
   )
+  stop_if_not_tf(link)
   method <- match.arg(method)
   parallel <- match.arg(parallel)
   if (parallel != "serial") {
-    stop_if_not(
-      is.numeric(cores),
-      length(cores) == 1L,
-      is.finite(cores),
-      cores >= 1,
-      m = "`cores` must be 1 or greater."
-    )
+    stop_if_not_positive_integer(cores)
   }
 
   if (method == "wald") {
-    fr <- object$frame[!duplicated(object$index), -(1:2), drop = FALSE]
-    estimate <- matrix(object$report$y$estimate, ncol = length(pn))
-    se <- matrix(object$report$y$se, ncol = length(pn))
+    estimate <- matrix(object$report$Y_short_as_vector$estimate, ncol = length(pn))
+    se <- matrix(object$report$Y_short_as_vector$se, ncol = length(pn))
     q <- qchisq(level, df = 1)
     f <- function(j) {
       elu <- estimate[, j] + outer(se[, j], c(0, -1, 1) * sqrt(q))
@@ -60,20 +51,20 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
       elu
     }
     ml <- lapply(match(parm, pn), f)
+    nr <- vapply(ml, nrow, integer(1L))
     out <- cbind(
-      par = factor(rep(parm, each = nrow(fr))),
-      do.call(rbind, rep(list(fr), length(parm))),
+      name = factor(rep(parm, nr), levels = parm),
+      object$frame[!is.na(object$index) & !duplicated(object$index), -(1:2), drop = FALSE],
       do.call(rbind, ml)
     )
   } else {
-    rid <- object$madf_args$data$rid
+    rid <- object$tmb_args$data$rid
     stop_if_not(
       colSums(rid[, parm, drop = FALSE]) == 0L,
       m = paste0(
-        "Cannot compute likelihood profile w.r.t. parameters\n",
+        "Cannot compute likelihood profiles w.r.t. parameters\n",
         "modeled with random effects:\n",
-        paste(colnames(rid)[colSums(rid) > 0L], collapse = ", "), "\n",
-        "Use `method = \"wald\"` instead."
+        paste(colnames(rid)[colSums(rid) == 0L], collapse = ", ")
       )
     )
 
@@ -86,70 +77,71 @@ confint.egf <- function(object, parm = get_par_names(object), level = 0.95,
         parallel = parallel,
         cores = cores
       )
-      out <- confint(pr, level = level)[-1L]
+      out <- confint(pr, level = level)
     } else if (method == "uniroot") {
       stop_if_not(
         is.numeric(max_width),
+        length(max_width) > 0L,
         is.finite(max_width),
         max_width > 0,
-        m = paste0(
-          "`max_width` must be a nonempty numeric vector\n",
-          "with positive elements."
-        )
+        m = "`max_width` must be a numeric vector with positive elements."
       )
 
-      lin_comb <- make_lin_comb(object, parm, decontrast = TRUE)
-      a <- attributes(lin_comb)
-      pin <- droplevels(a$par_info[a$index, ])
-      estimate <- as.vector(lin_comb %*% object$par[object$nonrandom])
-
-      target <- 0.5 * qchisq(level, df = 1)
+      lin_comb <- make_lin_comb_for_parm(object, parm) # see profile.R
       lcl <- lapply(seq_len(nrow(lin_comb)), function(i) lin_comb[i, ])
       wl <- rep(max_width, length.out = length(parm))
+      ytol <- qchisq(level, df = 1) / 2 # y := diff(nll) = deviance / 2
+
       f <- function(lc, w) {
-        tmbroot(object$madf_out, target = target, lincomb = lc, sd.range = w)
+        TMB::tmbroot(object$tmb_out, target = ytol, lincomb = lc,
+                     sd.range = w)
       }
+
       if (parallel == "multicore") {
-        ci <- mcmapply(f, lc = lcl, w = wl, SIMPLIFY = FALSE,
-                       mc.cores = cores)
+        cil <- mcmapply(f, lc = lcl, w = wl, SIMPLIFY = FALSE,
+                        mc.cores = cores)
       } else if (parallel == "snow") {
         cl <- makePSOCKcluster(cores)
-        ci <- clusterMap(cl, f, lc = lcl, w = wl)
-        stopCluster(cl)
+        on.exit(stopCluster(cl))
+        clusterExport(cl, "ytol", envir = environment())
+        cil <- clusterMap(cl, f, lc = lcl, w = wl)
       } else { # "serial"
-        ci <- Map(f, lc = lcl, w = wl)
+        cil <- Map(f, lc = lcl, w = wl)
       }
-      ci <- do.call(rbind, ci)
+
+      estimate <- as.vector(lin_comb %*% object$par[object$nonrandom])
+      ci <- do.call(rbind, cil)
       colnames(ci) <- c("lower", "upper")
-      out <- data.frame(pin, estimate, ci)
+      out <- data.frame(name = rownames(lin_comb), estimate, ci)
     }
   }
-
-  i_elu <- length(out) - 2:0 # index of "estimate", "lower", "upper"
-  out[i_elu] <- exp(out[i_elu])
-  levels(out$par) <- remove_link_string(levels(out$par))
-
-  if ("R0" %in% parm0) {
-    d <- out[out$par == "r", ]
-    d[i_elu] <- lapply(d[i_elu], compute_R0, breaks = breaks, probs = probs)
-    levels(d$par) <- sub("^r$", "R0", levels(d$par))
-    out <- rbind(out, d)
-  }
-  if ("doubling_time" %in% parm0) {
-    i_eul <- i_elu[c(1L, 3L, 2L)]
-    d <- out[out$par == "r", ]
-    d[i_elu] <- log(2) / d[i_eul]
-    levels(d$par) <- sub("^r$", "doubling_time", levels(d$par))
-    out <- rbind(out, d)
-  }
-  if ("log_r" %in% parm && !"r" %in% parm0) {
-    out <- droplevels(out[out$par != "r", ])
-  }
-  out <- do.call(rbind, split(out, out$par)[parm0])
-
-  row.names(out) <- NULL
-  attr(out, "level") <- level
   out
+
+  # i_elu <- length(out) - 2:0 # index of "estimate", "lower", "upper"
+  # out[i_elu] <- exp(out[i_elu])
+  # levels(out$par) <- remove_link_string(levels(out$par))
+  #
+  # if ("R0" %in% parm0) {
+  #   d <- out[out$par == "r", ]
+  #   d[i_elu] <- lapply(d[i_elu], compute_R0, breaks = breaks, probs = probs)
+  #   levels(d$par) <- sub("^r$", "R0", levels(d$par))
+  #   out <- rbind(out, d)
+  # }
+  # if ("doubling_time" %in% parm0) {
+  #   i_eul <- i_elu[c(1L, 3L, 2L)]
+  #   d <- out[out$par == "r", ]
+  #   d[i_elu] <- log(2) / d[i_eul]
+  #   levels(d$par) <- sub("^r$", "doubling_time", levels(d$par))
+  #   out <- rbind(out, d)
+  # }
+  # if ("log_r" %in% parm && !"r" %in% parm0) {
+  #   out <- droplevels(out[out$par != "r", ])
+  # }
+  # out <- do.call(rbind, split(out, out$par)[parm0])
+  #
+  # row.names(out) <- NULL
+  # attr(out, "level") <- level
+  # out
 }
 
 #' @importFrom stats qchisq confint
@@ -157,7 +149,6 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
   stop_if_not(
     is.numeric(level),
     length(level) == 1L,
-    !is.na(level),
     level > 0 && level < 1,
     m = "`level` must be a number in the interval (0,1)."
   )
@@ -169,11 +160,9 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
     )
   )
 
-  object_split <- split(object, object$name)
-
+  object_split <- split(object, factor(object$name, levels = unique(object$name)))
   f <- function(d) d[which.min(d[["deviance"]]), "value"]
   estimate <- vapply(object_split, f, numeric(1L))
-
   g <- function(d) {
     d <- d[c("value", "deviance")]
     names(d) <- c("parameter", "value")
@@ -181,20 +170,14 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
     confint(d)
   }
   ci <- do.call(rbind, lapply(object_split, g))
-
-  has_par_info <- ("par" %in% names(object))
-  if (has_par_info) {
-    pin <- object[!duplicated(object$name), -(length(object) - 1:0), drop = FALSE]
-    out <- data.frame(pin, estimate, ci)
-    row.names(out) <- NULL
-  } else {
-    out <- data.frame(estimate, ci)
-  }
-
+  name <- as.character(object$name[!duplicated(object$name)])
+  out <- data.frame(name, estimate, ci, stringsAsFactors = FALSE)
+  row.names(out) <- NULL
   attr(out, "level") <- level
   out
 }
 
+#' @export
 #' @importFrom stats qchisq
 confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
   stop_if_not(
