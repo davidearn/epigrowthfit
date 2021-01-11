@@ -2,8 +2,7 @@
 % Please edit documentation in R/egf.R
 \name{egf}
 \alias{egf}
-\title{\loadmathjax
-Fit models of epidemic growth}
+\title{Fit models of epidemic growth}
 \usage{
 egf(
   formula,

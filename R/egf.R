@@ -1,4 +1,3 @@
-#' \loadmathjax
 #' Fit models of epidemic growth
 #'
 #' @description

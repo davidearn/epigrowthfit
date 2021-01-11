@@ -11,7 +11,7 @@ Authors@R: c(
 	   )
 Title: Nonlinear Mixed Effects Models of Epidemic Growth
 Description:
-    Tools for estimating parameters associated with initial epidemic growth.
+    Tools for estimating parameters associated with epidemic growth.
 Depends:
     R (>= 3.5),
     TMB
