@@ -12,7 +12,7 @@ get_enum_names <- function(lines, type) {
 }
 
 fn_cpp <- "../src/epigrowthfit.cpp"
-fn_r   <- "../R/egf_utils_copy.R"
+fn_r   <- "../R/enum.R"
 
 lines_cpp <- readLines(fn_cpp)
 lines_r   <- readLines(fn_r)

@@ -1,12 +1,12 @@
 #' \loadmathjax
-#' Fit epidemic growth models
+#' Fit models of epidemic growth
 #'
 #' @description
 #' Fits nonlinear mixed effects models of epidemic growth to one
 #' or more disease incidence time series. First and second order
-#' derivatives of the negative log Laplace approximation of the
-#' marginal likelihood are calculated by automatic differentiation
-#' using R package **TMB**.
+#' derivatives of the negative log likelihood (more precisely,
+#' the negative log Laplace approximation of the marginal likelihood)
+#' are calculated by automatic differentiation using R package **TMB**.
 #'
 #' @param formula
 #'   A formula of the form `y ~ x` specifying an incidence time series
@@ -43,7 +43,7 @@
 #'   A logical scalar. If `TRUE`, then a constant baseline mortality
 #'   rate will be estimated. Set to `TRUE` if what is observed
 #'   (`y` if `formula = y ~ x`) is multiple causes mortality
-#'   rather than disease mortality or incidence.
+#'   rather than disease mortality or disease incidence.
 #' @param method
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
@@ -71,8 +71,8 @@
 #'   Optional arguments to the optimizer specified by `method`.
 #'
 #' @return
-#' If `debug = FALSE`, then an `"egf"` object, which is a list with
-#' elements:
+#' If `debug = FALSE`, then a list inheriting from class `"egf"`,
+#' with elements:
 #' \item{`frame`}{
 #'   The model frame. This is a data frame containing _only_ the
 #'   variables named in `formula`, `fixed`, and `random`. Data not
@@ -103,10 +103,6 @@
 #' \item{`par`}{
 #'   The full parameter vector of the best likelihood evaluation.
 #' }
-#' \item{`par_info`}{
-#'   A data frame summarizing the meaning of the elements of `par`
-#'   in relation to the mixed effects model. See [get_par_info()].
-#' }
 #' \item{`nonrandom`}{
 #'   An integer vector indexing the nonrandom segment of `par`.
 #' }
@@ -116,22 +112,22 @@
 #'   covariance matrix corresponding to `par[nonrandom]`.
 #' }
 #' \item{`nll`}{
-#'   A numeric scalar giving the negative log Laplace approximation
-#'   of the marginal likelihood of `par[nonrandom]`.
+#'   A numeric scalar giving the value of the negative log
+#'   Laplace approximation of the marginal likelihood function
+#'   at `par[nonrandom]`.
 #' }
 #' \item{`nll_func`, `nll_grad`}{
-#'   Closures taking a numeric vector `x` of length `length(nonrandom)`
-#'   as an argument, and returning the value of the negative log
-#'   Laplace approximation of the marginal likelihood and its gradient,
-#'   respectively, evaluated at `x`.
+#'   Closures taking a numeric vector `x` as an argument and returning
+#'   the value or gradient of the negative log Laplace approximation of
+#'   the marginal likelihood function at `x[nonrandom]`.
 #' }
 #' \item{`call`}{
 #'   The call to `egf()`, allowing for updates to the `"egf"` object
 #'   via [stats::update()].
 #' }
 #'
-#' If `debug = TRUE`, then a list containing `frame`, `tmb_args`,
-#' `par_init`, and `par_init_info`.
+#' If `debug = TRUE`, then a list with elements `frame`, `tmb_args`,
+#' and `par_init`.
 #'
 #' @export
 #' @importFrom TMB MakeADFun sdreport
@@ -166,39 +162,21 @@ egf <- function(formula,
                             sparse_X, par_init)
   if (debug) {
     pl <- tmb_args$parameters
-    par_init <- rename_par(unlist(Map("names<-", unname(pl), Map(rep, names(pl), lengths(pl)))))
-    par_init_info <- get_par_info(par_init, tmb_args$data)
-    out <- list(
-      frame = frame,
-      tmb_args = tmb_args,
-      par_init = par_init,
-      par_init_info = par_init_info
-    )
+    par_init <- rename_par(unlist(Map("names<-", unname(pl), Map(rep.int, names(pl), lengths(pl)))))
+    out <- list(frame = frame, tmb_args = tmb_args, par_init = par_init)
     return(out)
   }
 
   tmb_out <- do.call(MakeADFun, tmb_args)
   optim_out <- optim_tmb_out(tmb_out, method, ...)
-  nll_name <- switch(method, nlminb = "objective", nlm = "minimum", "value")
-  nll <- optim_out[[nll_name]]
 
   par_init <- rename_par(tmb_out$env$par)
   par <- rename_par(tmb_out$env$last.par.best)
-  par_info <- get_par_info(par, tmb_args$data)
   nonrandom <- grep("^b\\[", names(par), invert = TRUE)
 
-  ## Store only necessary variables in the function environment
-  ## to minimize duplication
-  nll_func <- evalq(
-    expr = function(x = par) as.numeric(fn(x[nonrandom])),
-    envir = list(par = par, nonrandom = nonrandom, fn = tmb_out$fn),
-    enclos = baseenv()
-  )
-  nll_grad <- evalq(
-    expr = function(x = par) as.vector(gr(x[nonrandom])),
-    envir = list(par = par, nonrandom = nonrandom, gr = tmb_out$gr),
-    enclos = baseenv()
-  )
+  nll <- optim_out[[switch(method, nlminb = "objective", nlm = "minimum", "value")]]
+  nll_func <- function(x = par) as.numeric(tmb_out$fn(x[nonrandom]))
+  nll_grad <- function(x = par) as.vector(tmb_out$gr(x[nonrandom]))
 
   sdr <- sdreport(tmb_out)
   report <- c(
@@ -219,7 +197,6 @@ egf <- function(formula,
     optim_out = optim_out,
     par_init = par_init,
     par = par,
-    par_info = par_info,
     nonrandom = nonrandom,
     report = report,
     nll = nll,

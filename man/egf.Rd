@@ -3,7 +3,7 @@
 \name{egf}
 \alias{egf}
 \title{\loadmathjax
-Fit a model of epidemic growth}
+Fit models of epidemic growth}
 \usage{
 egf(
   formula,
@@ -58,7 +58,7 @@ should index rows of \code{data} not belonging to a fitting window.
 \item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
 rate will be estimated. Set to \code{TRUE} if what is observed
 (\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or incidence.}
+rather than disease mortality or disease incidence.}
 
 \item{method}{A character string specifying an optimizer available through
 \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}.}
@@ -86,8 +86,8 @@ desired.}
 \item{...}{Optional arguments to the optimizer specified by \code{method}.}
 }
 \value{
-If \code{debug = FALSE}, then an \code{"egf"} object, which is a list with
-elements:
+If \code{debug = FALSE}, then a list inheriting from class \code{"egf"},
+with elements:
 \item{\code{frame}}{
 The model frame. This is a data frame containing \emph{only} the
 variables named in \code{formula}, \code{fixed}, and \code{random}. Data not
@@ -99,14 +99,14 @@ splits the model frame by fitting window. Not necessarily identical
 to the so-named argument, as \code{frame} may be a permutation of the
 rows of \code{data}.
 }
-\item{\code{curve}, \code{distr}, \code{excess}}{
-Copies of the so-named arguments.
+\item{\code{curve}, \code{distr}, \code{excess}, \code{method}}{
+Copies of the so-named arguments (after matching).
 }
 \item{\code{tmb_args}}{
 A list of arguments to \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}. See \code{\link[=make_tmb_args]{make_tmb_args()}}.
 }
 \item{\code{tmb_out}}{
-The (optimized) list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.
+The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}} (after optimization).
 }
 \item{\code{optim_out}}{
 The list output of the optimizer.
@@ -118,10 +118,6 @@ Matches the so-named argument if given.
 \item{\code{par}}{
 The full parameter vector of the best likelihood evaluation.
 }
-\item{\code{par_info}}{
-A data frame summarizing the meaning of the elements of \code{par}
-in relation to the mixed effects model. See \code{\link[=get_par_info]{get_par_info()}}.
-}
 \item{\code{nonrandom}}{
 An integer vector indexing the nonrandom segment of \code{par}.
 }
@@ -131,30 +127,27 @@ in the C++ template, with an additional element \code{cov} giving the
 covariance matrix corresponding to \code{par[nonrandom]}.
 }
 \item{\code{nll}}{
-A numeric scalar giving the negative log Laplace approximation
-of the marginal likelihood of \code{par[nonrandom]}.
+A numeric scalar giving the value of the negative log
+Laplace approximation of the marginal likelihood function
+at \code{par[nonrandom]}.
 }
 \item{\code{nll_func}, \code{nll_grad}}{
-Closures taking a numeric vector \code{x} of length \code{length(nonrandom)}
-as an argument, and returning the value of the negative log
-Laplace approximation of the marginal likelihood and its gradient,
-respectively, evaluated at \code{x}.
+Closures taking a numeric vector \code{x} as an argument and returning
+the value or gradient of the negative log Laplace approximation of
+the marginal likelihood function at \code{x[nonrandom]}.
 }
 \item{\code{call}}{
 The call to \code{egf()}, allowing for updates to the \code{"egf"} object
 via \code{\link[stats:update]{stats::update()}}.
 }
 
-If \code{debug = TRUE}, then a list containing \code{frame}, \code{tmb_args},
-\code{par_init}, and \code{par_init_info}.
+If \code{debug = TRUE}, then a list with elements \code{frame}, \code{tmb_args},
+and \code{par_init}.
 }
 \description{
-Fits phenomenological models of epidemic growth to one or more
-disease incidence time series. Accounts for variation of model
-parameters (e.g., the initial exponential growth rate \mjseqn{r})
-across time series (e.g., between epidemic waves or geographical
-units) by assuming that the parameters follow a user-specified
-generalized linear mixed effects model. First and second order
-derivatives of the likelihood are calculated
-by automatic differentiation using package \strong{TMB}.
+Fits nonlinear mixed effects models of epidemic growth to one
+or more disease incidence time series. First and second order
+derivatives of the negative log likelihood (more precisely,
+the negative log Laplace approximation of the marginal likelihood)
+are calculated by automatic differentiation using R package \strong{TMB}.
 }

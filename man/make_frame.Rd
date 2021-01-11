@@ -67,7 +67,7 @@ should index rows of \code{data} not belonging to a fitting window.
 \item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
 rate will be estimated. Set to \code{TRUE} if what is observed
 (\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or incidence.}
+rather than disease mortality or disease incidence.}
 
 \item{na_action}{A character string indicating how \code{NA} in the incidence vector
 (\code{y} if \code{formula = y ~ x}) are handled. See \code{\link[stats:na.fail]{stats::na.fail()}}.}
@@ -80,6 +80,10 @@ conversion specifications.}
 \value{
 A data frame containing the variables named in \code{formula}, \code{fixed},
 and \code{random}, with attributes:
+\item{\code{extra}}{
+A data frame preserving data not belonging to a fitting window
+(see Details).
+}
 \item{\code{index}}{
 A factor of length \code{nrow(frame)} such that \code{split(frame, index)}
 splits the frame by fitting window. Not necessarily identical to
@@ -99,29 +103,36 @@ Constructs a model frame to be used by \code{\link[=egf]{egf()}}, after performi
 myriad checks on the arguments.
 }
 \details{
-Rows of \code{data} indexed by \code{is.na(index)} are omitted. The remaining
-rows are permuted by \code{order(index[!is.na(index)])} so that rows
-belonging to the same fitting window are contiguous in the model
-frame.
+Rows of \code{data} are permuted by \code{order(index)} so that rows belonging
+to the same fitting window are contiguous in the model frame.
+The permuted rows indexed by \code{!is.na(index[order(index)])} form the
+model frame. The remaining rows are preserved as an attribute.
 }
 \examples{
 r <- log(2) / 10
-mu <- diff(10 * exp(r * 0:99))
+c0 <- 10
+time <- 0:99
+mu <- diff(c0 * exp(r * time))
 
-date <- rep(as.Date(0:99, origin = "2020-01-01"), 4L)
+date <- rep(as.Date(time, origin = "2020-01-01"), 4L)
 cases <- c(replicate(4L, c(NA, rpois(length(mu), mu))))
-continent <- rep(c("asia", "europe"), rep(200L, 2L))
-country <- rep(c("china", "japan", "france", "germany"), rep(100L, 4L))
-wave <- rep(rep(c(NA, 1, NA, 2, NA), rep(20L, 5L)), 4L)
+continent <- factor(rep(c("asia", "europe"), rep(200L, 2L)))
+country <- factor(rep(c("china", "japan", "france", "germany"), rep(100L, 4L)))
+wave <- factor(rep(rep(c(0L, 1L, 0L, 2L, 0L), rep(20L, 5L)), 4L))
 
 data <- data.frame(date, cases, continent, country, wave)
-data[3:5] <- lapply(data[3:5], factor)
 
 x <- c(NA, 1, NA, 2, NA,
        NA, 3, NA, 4, NA,
        NA, 5, NA, 6, NA,
        NA, 7, NA, 8, NA)
 index <- factor(rep(x, rep(20L, 20L)))
+
+curve <- "exponential"
+distr <- "pois"
+excess <- FALSE
+get_par_names(curve, distr, excess, link = FALSE)
+## [1] "r" "c0"
 
 formula <- cases ~ date
 fixed <- list(
@@ -133,17 +144,10 @@ random <- list(
   c0 = ~(1 | continent/country)
 )
 
-curve <- "exponential"
-distr <- "pois"
-excess <- FALSE
-na_action <- "pass"
-date_format <- "\%Y-\%m-\%d" # unused in this case because
-                          # inherits(date, "Date") = TRUE
-
 frame <- epigrowthfit:::make_frame(formula, fixed, random,
                                    data, index,
                                    curve, distr, excess,
-                                   na_action, date_format)
+                                   na_action = "pass")
 
 }
 \keyword{internal}

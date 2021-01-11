@@ -2,35 +2,23 @@
 % Please edit documentation in R/egf_utils.R
 \name{get_par_names}
 \alias{get_par_names}
-\alias{add_link_string}
-\alias{remove_link_string}
 \title{Get parameter names}
 \usage{
 get_par_names(curve = NULL, distr = NULL, excess = NULL, link = TRUE)
-
-add_link_string(s)
-
-remove_link_string(s)
 }
 \arguments{
-\item{curve}{A character string specifying a cumulative incidence model.}
+\item{curve, distr, excess}{Character strings specifying an incidence model. See \code{\link[=egf]{egf()}}.
+Alternatively, \code{curve} can be an \code{"egf"} object returned by
+\code{\link[=egf]{egf()}} or a \code{"tmb_data"} object returned by \code{\link[=make_tmb_data]{make_tmb_data()}},
+in which case \code{distr} and \code{excess} are ignored.}
 
-\item{distr}{A character string specifying an observation model.}
-
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate will be estimated. Set to \code{TRUE} if what is observed
-(\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or incidence.}
-
-\item{link}{A logical scalar. If \code{TRUE}, then a prefix indicating a link
-function (either \code{"log_"} or \code{"logit_"}) is prepended to each
-parameter name.}
-
-\item{s}{A character vector listing parameter names with or without
-prefixes.}
+\item{link}{A logical scalar. If \code{TRUE}, then a prefix indicating the
+link function used internally (either \code{"log_"} or \code{"logit_"})
+is prepended to each parameter name.}
 }
 \value{
-\code{get_par_names(link = FALSE)} returns the subset of
+\code{get_par_names(curve, distr, excess, link = FALSE)} returns the
+subset of
 \code{c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")}
 relevant to \code{curve}, \code{distr}, and \code{excess}.
 }
@@ -38,17 +26,11 @@ relevant to \code{curve}, \code{distr}, and \code{excess}.
 Returns the names used internally for parameters of the specified
 incidence model.
 }
-\details{
-\code{add_link_string()} adds prefixes to parameter names.
-\code{remove_link_string()} is its inverse.
-}
 \examples{
-pn      <- get_par_names(curve = "exponential", distr = "pois",
-                         excess = FALSE, link = FALSE)
-link_pn <- get_par_names(curve = "exponential", distr = "pois",
-                         excess = FALSE, link = TRUE)
-identical(pn, epigrowthfit:::remove_link_string(link_pn))
-identical(link_pn, epigrowthfit:::add_link_string(pn))
+pn  <- get_par_names(curve = "exponential", distr = "pois",
+                     excess = FALSE, link = FALSE)
+lpn <- get_par_names(curve = "exponential", distr = "pois",
+                     excess = FALSE, link = TRUE)
+identical(pn, sub("^(log|logit)_", "", lpn))
 
 }
-\keyword{internal}

@@ -16,7 +16,7 @@ make_tmb_args(frame, curve, distr, excess, sparse_X, par_init)
 \item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
 rate will be estimated. Set to \code{TRUE} if what is observed
 (\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or incidence.}
+rather than disease mortality or disease incidence.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design matrix
 will be constructed in sparse format.}

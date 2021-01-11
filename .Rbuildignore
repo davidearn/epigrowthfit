@@ -9,3 +9,4 @@
 ^TODO\.md$
 ^data/old_plague_latent_period\.RData$
 ^data/old_plague_infectious_period\.RData$
+^R/plot\.R$

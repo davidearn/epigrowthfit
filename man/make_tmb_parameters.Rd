@@ -16,7 +16,7 @@ make_tmb_parameters(tmb_data, curve, distr, excess, par_init)
 \item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
 rate will be estimated. Set to \code{TRUE} if what is observed
 (\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or incidence.}
+rather than disease mortality or disease incidence.}
 
 \item{par_init}{A user-specified full parameter vector, or otherwise \code{NULL}.
 See \code{\link[=egf]{egf()}}.}
@@ -78,12 +78,12 @@ is roughly symmetric about the peak.
 \item{\code{nbdisp}}{1}
 }
 The naive estimates are log-transformed (all but \code{p}) or
-logit-transformed (\code{p} only), and coefficients under zero-sum
-contrasts are obtained from the within-group means to form
-segments of parameter object \code{beta}.
+logit-transformed (\code{p} only), and coefficients are obtained
+from the within-group means assuming zero-sum contrasts
+to form segments of parameter object \code{beta}.
 
-When \code{par_init = NULL} and there are random effects, \code{log_sd_b}
-and \code{b} are for simplicity initialized as zero vectors.
+When \code{par_init = NULL} and there are random effects,
+\code{log_sd_b} and \code{b} are for simplicity initialized as zero vectors.
 }
 \examples{
 example("make_tmb_data", package = "epigrowthfit")

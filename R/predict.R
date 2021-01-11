@@ -1,3 +1,32 @@
+#' Compute predicted incidence time series
+#'
+#' Computes predicted values of cumulative and interval incidence
+#' given user-specified time points.
+#'
+#' @param object
+#'   An `"egf"` object returned by [egf()].
+#' @param time
+#'   A numeric vector listing increasing time points in days since
+#'   the start of the fitting window specified by `list(...)`.
+#' @param se
+#'   A logical scalar. If `TRUE`, then standard errors on predicted
+#'   values are returned.
+#' @param ...
+#'   Atomic vectors together specifying a unique fitting window.
+#'   See Details.
+#'
+#' @inherit fitted.egf details
+#'
+#' @return
+#' A list inheriting from class `"egf_predict"`, containing two data
+#' frames `log_cum_inc` and `log_int_inc`, each with variables `time`,
+#' `estimate`, and `se` (if `se = TRUE`).
+#'
+#' `log_cum_inc$estimate[i]` stores log cumulative incidence at
+#' `time[i]`. `log_int_inc$estimate[i]` stores log incidence during
+#' the interval from `time[i-1]` to `time[i]`.
+#'
+#' @export
 #' @importFrom TMB MakeADFun sdreport
 predict.egf <- function(object, time = NULL, se = FALSE, ...) {
   stop_if_not_tf(se)
@@ -59,20 +88,21 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
 
   ## Create data objects needed for prediction code
   ## in C++ template to run
+  sparse_X_flag <- Xs <- Xd <- Z <- NULL # R CMD check
   object$tmb_args$data <- within(object$tmb_args$data, {
     predict_flag <- 1L
     se_flag <- 1L * se
     t_new <- time
     if (sparse_X_flag == 1L) {
       ## FIXME: slow? but sparseMatrix() doesn't recycle like matrix()
-      Xs_new <- do.call(rbind, rep(list(Xs[i[1L], , drop = FALSE]), length(t_new)))
+      Xs_new <- do.call(rbind, rep.int(list(Xs[i[1L], , drop = FALSE]), length(t_new)))
       Xd_new <- Xd
     } else {
       Xd_new <- matrix(Xd[i[1L], , drop = TRUE], nrow = length(t_new), ncol = ncol(Xd), byrow = TRUE)
       Xs_new <- Xs
     }
     if (has_random(object)) {
-      Z_new <- do.call(rbind, rep(list(Z[i[1L], , drop = FALSE]), length(t_new)))
+      Z_new <- do.call(rbind, rep.int(list(Z[i[1L], , drop = FALSE]), length(t_new)))
     } else {
       Z_new <- Z
     }
@@ -95,5 +125,6 @@ predict.egf <- function(object, time = NULL, se = FALSE, ...) {
     )
   }
   attr(out, "refdate") <- object$frame$date[i]
+  class(out) <- c("egf_predict", "list")
   out
 }
