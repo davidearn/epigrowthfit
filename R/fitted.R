@@ -10,49 +10,62 @@
 #'
 #' @param object
 #'   An `"egf"` object returned by [egf()].
+#' @param subset
+#'   An named list of atomic vectors with elements specifying levels
+#'   of factors in `object$frame` (and thus fitting windows). Use the
+#'   default (`NULL`) if there are no factors in `object$frame` or,
+#'   more generally, to retrieve fitted values for every fitting window.
+#'   See Details.
 #' @param link
-#'   A logical scalar. If `FALSE`, then inverse link-transformed
-#'   fitted values are returned.
+#'   A logical scalar. If `FALSE`, then fitted values
+#'   are inverse link-transformed.
 #' @param ...
-#'   Atomic vectors, optionally specifying fitting windows
-#'   for which fitted values are desired. See Details.
+#'   Unused optional arguments.
 #'
 #' @details
-#' Elements of `list(...)` must be named and have the form
-#' `factor_name = c(level_names)`, where `factor_name` must
-#' be the name of a factor in `object$frame` and `level_names`
-#' must be a subset of `levels(object$frame[[factor_name]])`.
+#' Elements of `subset` must be named and have the form
+#' `factor_name = level_names`, where `factor_name` is
+#' the name of a factor in `object$frame` and `level_names`
+#' is a subset of `levels(object$frame$factor_name)`.
 #'
 #' @return
-#' A data frame inheriting from class `"egf_fitted"`, with one row
-#' per fitting window. The first `length(object$frame)-2` variables
-#' specify levels for each factor in `object$frame[-(1:2)]`
-#' (and thus fitting windows). The remaining variables list fitted
-#' values for each element of `get_par_names(object, link)`.
+#' A data frame inheriting from class `"egf_fitted"`, with one
+#' row per fitting window. The first `length(object$frame)-2`
+#' variables specify levels for each factor in `object$frame`
+#' (and thus fitting windows). The remaining variables list
+#' fitted values for each element of `get_par_names(object, link)`.
 #'
 #' @export
-fitted.egf <- function(object, link = TRUE, ...) {
-  stop_if_not_tf(link)
-  dots <- list(...)
-  if (length(dots) > 0L) {
+fitted.egf <- function(object, subset = NULL, link = TRUE, ...) {
+  fr <- object$frame[!duplicated(object$index), -(1:2), drop = FALSE]
+  if (length(fr) > 0L && !is.null(subset)) {
     stop_if_not(
-      vapply(dots, is.atomic, FALSE),
-      lengths(dots) > 0L,
-      names(dots) %in% names(object$frame)[-(1:2)],
-      !duplicated(names(dots)),
-      unlist(Map("%in%", dots, lapply(object$frame[names(dots)], levels))),
-      m = "`list(...)` must specify levels of factors in `object$frame`."
+      is.list(subset),
+      length(subset) > 0L,
+      !is.null(names(subset)),
+      m = "`subset` must be a named list or NULL."
+    )
+    stop_if_not(
+      vapply(subset, is.atomic, FALSE),
+      lengths(subset) > 0L,
+      names(subset) %in% names(fr),
+      !duplicated(names(subset)),
+      unlist(Map("%in%", subset, lapply(fr[names(subset)], levels))),
+      m = "`subset` must specify levels of factors in `object$frame`."
+    )
+    w <- Reduce("&", Map("%in%", fr[names(subset)], subset))
+    stop_if_not(
+      any(w),
+      m = "`subset` does not match any fitting windows."
     )
   }
+  stop_if_not_tf(link)
 
-  ## Keep one row of `frame` (factors only) per fitting window.
-  ## No loss of information here, since factors have one level
-  ## within fitting windows.
-  fr <- object$frame[!duplicated(object$index), -(1:2), drop = FALSE]
-
-  ## `Y[i, ]` lists fitted responses in the group specified by `fr[i, ]`
+  ## `Y[i, ]` lists fitted values (link scale) in
+  ## fitting window `fr[i, ]`
   pn <- get_par_names(object, link = TRUE)
-  Y <- matrix(object$report$Y_short_as_vector$estimate, ncol = length(pn))
+  Y <- object$report$Y_short_as_vector$estimate
+  dim(Y) <- c(nrow(fr), length(pn))
 
   if (link) {
     colnames(Y) <- pn
@@ -64,8 +77,8 @@ fitted.egf <- function(object, link = TRUE, ...) {
 
   ## Select user-specified fitting windows
   d <- cbind(fr, Y)
-  if (length(dots) > 0L) {
-    d <- d[Reduce("&", Map("%in%", d[names(dots)], dots)), , drop = FALSE]
+  if (length(fr) > 0L && !is.null(subset)) {
+    d <- d[w, , drop = FALSE]
   }
   row.names(d) <- NULL
   class(d) <- c("egf_fitted", "data.frame")

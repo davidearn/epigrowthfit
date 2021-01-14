@@ -16,7 +16,7 @@
 #'   A number in the interval (0,1). The desired confidence level.
 #' @param link
 #'   A logical scalar. If `FALSE`, then confidence intervals on
-#'   the inverse-link transformed fitted values are returned.
+#'   inverse-link transformed fitted values are returned.
 #' @param method
 #'   A character string indicating how confidence intervals should
 #'   be calculated. See Details.
@@ -32,11 +32,11 @@
 #' @inheritParams profile.egf
 #'
 #' @details
-#' Three methods are provided for computing confidence intervals:
+#' Three methods are provided for calculating confidence intervals:
 #' \describe{
 #' \item{`wald`}{
-#'   Confidence intervals on fitted values (link scale) are computed
-#'   as `estimate +/- (standard error) * sqrt(qchisq(level, df = 1))`.
+#'   Confidence limits on fitted values (link scale) are computed as
+#'   `estimate +/- (standard error) * sqrt(qchisq(level, df = 1))`.
 #'   See the Wald test.
 #' }
 #' \item{`profile`}{
@@ -54,8 +54,8 @@
 #'   is called internally.
 #' }
 #' }
-#' However, `"wald"` is the only method available for response variables
-#' following a mixed (rather than fixed) effects model,
+#' `"wald"` is the only method available for response variables
+#' following a mixed (rather than fixed) effects model.
 #'
 #' `"wald"` requires minimal computation time but assumes, e.g.,
 #' asymptotic normality of the maximum likelihood estimator of

@@ -352,11 +352,11 @@ check_random <- function(random, curve, distr, excess) {
 #' time <- 0:99
 #' mu <- diff(c0 * exp(r * time))
 #'
-#' date <- rep(as.Date(time, origin = "2020-01-01"), 4L)
-#' cases <- c(replicate(4L, c(NA, rpois(length(mu), mu))))
-#' continent <- factor(rep(c("asia", "europe"), rep(200L, 2L)))
-#' country <- factor(rep(c("china", "japan", "france", "germany"), rep(100L, 4L)))
-#' wave <- factor(rep(rep(c(0L, 1L, 0L, 2L, 0L), rep(20L, 5L)), 4L))
+#' date <- rep(as.Date(time, origin = "2020-01-01"), 4)
+#' cases <- c(replicate(4, c(NA, rpois(length(mu), mu))))
+#' continent <- factor(rep(c("asia", "europe"), each = 200))
+#' country <- factor(rep(c("china", "japan", "france", "germany"), each = 100))
+#' wave <- factor(rep(rep(c(1, 2), each = 50), 4))
 #'
 #' data <- data.frame(date, cases, continent, country, wave)
 #'
@@ -364,7 +364,7 @@ check_random <- function(random, curve, distr, excess) {
 #'        NA, 3, NA, 4, NA,
 #'        NA, 5, NA, 6, NA,
 #'        NA, 7, NA, 8, NA)
-#' index <- factor(rep(x, rep(20L, 20L)))
+#' index <- factor(rep(x, each = 20))
 #'
 #' curve <- "exponential"
 #' distr <- "pois"
@@ -602,7 +602,7 @@ get_factor <- function(term_label, frame) {
     return(NULL)
   }
   if (term_label == "1") {
-    return(factor(rep.int("1", nrow(frame))))
+    return(rep.int(factor("1"), nrow(frame)))
   }
   s <- unique(strsplit(term_label, ":")[[1L]])
   interaction(frame[s], drop = TRUE, sep = ":")
@@ -1153,7 +1153,6 @@ optim_tmb_out <- function(tmb_out, method, ...) {
 #' rename_par(par)
 #'
 #' @noRd
-#' @importFrom stats setNames
 rename_par <- function(par) {
   for (s in c("beta", "log_sd_b", "b")) {
     i <- which(names(par) == s)

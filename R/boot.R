@@ -16,7 +16,7 @@
 #'   `"serial"` indicates no parallelization. `"multicore"` forks and
 #'   is intended for use from a terminal rather than, e.g., RStudio.
 #'   On Windows, it is equivalent to `"serial"`. `"snow"` creates
-#'   socket clusters and parallelizes on both Windows and Unix-alikes.
+#'   socket clusters and parallelizes on both Unix-alikes and Windows.
 #' @param cores
 #'   A positive integer. The number of worker processes spawned when
 #'   `parallel != "serial"`. See also [parallel::detectCores()].
