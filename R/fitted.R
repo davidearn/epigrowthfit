@@ -11,7 +11,7 @@
 #' @param object
 #'   An `"egf"` object returned by [egf()].
 #' @param subset
-#'   An named list of atomic vectors with elements specifying levels
+#'   A named list of atomic vectors with elements specifying levels
 #'   of factors in `object$frame` (and thus fitting windows). Use the
 #'   default (`NULL`) if there are no factors in `object$frame` or,
 #'   more generally, to retrieve fitted values for every fitting window.
