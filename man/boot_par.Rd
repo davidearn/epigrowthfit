@@ -31,7 +31,7 @@ printed.}
 \code{"serial"} indicates no parallelization. \code{"multicore"} forks and
 is intended for use from a terminal rather than, e.g., RStudio.
 On Windows, it is equivalent to \code{"serial"}. \code{"snow"} creates
-socket clusters and parallelizes on both Windows and Unix-alikes.}
+socket clusters and parallelizes on both Unix-alikes and Windows.}
 
 \item{cores}{A positive integer. The number of worker processes spawned when
 \code{parallel != "serial"}. See also \code{\link[parallel:detectCores]{parallel::detectCores()}}.}

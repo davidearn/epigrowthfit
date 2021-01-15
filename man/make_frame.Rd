@@ -114,11 +114,11 @@ c0 <- 10
 time <- 0:99
 mu <- diff(c0 * exp(r * time))
 
-date <- rep(as.Date(time, origin = "2020-01-01"), 4L)
-cases <- c(replicate(4L, c(NA, rpois(length(mu), mu))))
-continent <- factor(rep(c("asia", "europe"), rep(200L, 2L)))
-country <- factor(rep(c("china", "japan", "france", "germany"), rep(100L, 4L)))
-wave <- factor(rep(rep(c(0L, 1L, 0L, 2L, 0L), rep(20L, 5L)), 4L))
+date <- rep(as.Date(time, origin = "2020-01-01"), 4)
+cases <- c(replicate(4, c(NA, rpois(length(mu), mu))))
+continent <- factor(rep(c("asia", "europe"), each = 200))
+country <- factor(rep(c("china", "japan", "france", "germany"), each = 100))
+wave <- factor(rep(rep(c(1, 2), each = 50), 4))
 
 data <- data.frame(date, cases, continent, country, wave)
 
@@ -126,7 +126,7 @@ x <- c(NA, 1, NA, 2, NA,
        NA, 3, NA, 4, NA,
        NA, 5, NA, 6, NA,
        NA, 7, NA, 8, NA)
-index <- factor(rep(x, rep(20L, 20L)))
+index <- factor(rep(x, each = 20))
 
 curve <- "exponential"
 distr <- "pois"

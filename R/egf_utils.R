@@ -96,6 +96,8 @@ get_par_names.egf <- function(curve, distr = NULL, excess = NULL,
 #' underscore, either `"log"` or `"logit"`.
 #'
 #' @noRd
+NULL
+
 add_link_string <- function(s) {
   ok <- s %in% get_par_names(link = FALSE)
   if (!any(ok)) {

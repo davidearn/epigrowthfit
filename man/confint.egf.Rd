@@ -34,7 +34,7 @@ then \code{parm} may also contain \code{"R0"} and \code{"tdoubling"}.}
 \item{level}{A number in the interval (0,1). The desired confidence level.}
 
 \item{link}{A logical scalar. If \code{FALSE}, then confidence intervals on
-the inverse-link transformed fitted values are returned.}
+inverse-link transformed fitted values are returned.}
 
 \item{method}{A character string indicating how confidence intervals should
 be calculated. See Details.}
@@ -55,7 +55,7 @@ printed.}
 \code{"serial"} indicates no parallelization. \code{"multicore"} forks and
 is intended for use from a terminal rather than, e.g., RStudio.
 On Windows, it is equivalent to \code{"serial"}. \code{"snow"} creates
-socket clusters and parallelizes on both Windows and Unix-alikes.}
+socket clusters and parallelizes on both Unix-alikes and Windows.}
 
 \item{cores}{A positive integer. The number of worker processes spawned when
 \code{parallel != "serial"}. See also \code{\link[parallel:detectCores]{parallel::detectCores()}}.}
@@ -92,11 +92,11 @@ Computes confidence intervals on fitted values of response variables
 number and initial doubling time in days.
 }
 \details{
-Three methods are provided for computing confidence intervals:
+Three methods are provided for calculating confidence intervals:
 \describe{
 \item{\code{wald}}{
-Confidence intervals on fitted values (link scale) are computed
-as \verb{estimate +/- (standard error) * sqrt(qchisq(level, df = 1))}.
+Confidence limits on fitted values (link scale) are computed as
+\verb{estimate +/- (standard error) * sqrt(qchisq(level, df = 1))}.
 See the Wald test.
 }
 \item{\code{profile}}{
@@ -114,8 +114,8 @@ by root-finding using \code{\link[TMB:tmbroot]{TMB::tmbroot()}}. \code{\link[sta
 is called internally.
 }
 }
-However, \code{"wald"} is the only method available for response variables
-following a mixed (rather than fixed) effects model,
+\code{"wald"} is the only method available for response variables
+following a mixed (rather than fixed) effects model.
 
 \code{"wald"} requires minimal computation time but assumes, e.g.,
 asymptotic normality of the maximum likelihood estimator of

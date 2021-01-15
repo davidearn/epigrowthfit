@@ -5,25 +5,30 @@
 \alias{coef.egf}
 \title{Extract fitted values}
 \usage{
-\method{fitted}{egf}(object, link = TRUE, ...)
+\method{fitted}{egf}(object, subset = NULL, link = TRUE, ...)
 
-\method{coef}{egf}(object, link = TRUE, ...)
+\method{coef}{egf}(object, subset = NULL, link = TRUE, ...)
 }
 \arguments{
 \item{object}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
-\item{link}{A logical scalar. If \code{FALSE}, then inverse link-transformed
-fitted values are returned.}
+\item{subset}{A named list of atomic vectors with elements specifying levels
+of factors in \code{object$frame} (and thus fitting windows). Use the
+default (\code{NULL}) if there are no factors in \code{object$frame} or,
+more generally, to retrieve fitted values for every fitting window.
+See Details.}
 
-\item{...}{Atomic vectors, optionally specifying fitting windows
-for which fitted values are desired. See Details.}
+\item{link}{A logical scalar. If \code{FALSE}, then fitted values
+are inverse link-transformed.}
+
+\item{...}{Unused optional arguments.}
 }
 \value{
-A data frame inheriting from class \code{"egf_fitted"}, with one row
-per fitting window. The first \code{length(object$frame)-2} variables
-specify levels for each factor in \code{object$frame[-(1:2)]}
-(and thus fitting windows). The remaining variables list fitted
-values for each element of \code{get_par_names(object, link)}.
+A data frame inheriting from class \code{"egf_fitted"}, with one
+row per fitting window. The first \code{length(object$frame)-2}
+variables specify levels for each factor in \code{object$frame}
+(and thus fitting windows). The remaining variables list
+fitted values for each element of \code{get_par_names(object, link)}.
 }
 \description{
 Extracts the fitted values of incidence model parameters.
@@ -35,8 +40,8 @@ fixed effect coefficients and
 window.
 }
 \details{
-Elements of \code{list(...)} must be named and have the form
-\code{factor_name = c(level_names)}, where \code{factor_name} must
-be the name of a factor in \code{object$frame} and \code{level_names}
-must be a subset of \code{levels(object$frame[[factor_name]])}.
+Elements of \code{subset} must be named and have the form
+\code{factor_name = level_names}, where \code{factor_name} is
+the name of a factor in \code{object$frame} and \code{level_names}
+is a subset of \code{levels(object$frame$factor_name)}.
 }

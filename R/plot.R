@@ -5,26 +5,139 @@
 #'
 #' @param x
 #'   An `"egf"` object returned by [egf()].
-#' @param subset
-#'   An named list of atomic vectors with elements specifying levels
-#'   of factors in `object$frame` (and thus fitting windows). Use the
-#'   default (`NULL`) if there are no factors in `object$frame` or,
-#'   more generally, to plot every fitting window. See Details.
 #' @param group_by
-#'   A formula of the form `~1`
-
-
+#'   A formula of the form `~f1:...:fn` specifying an interaction of
+#'   the factors in `x$frame` _that are fixed within a time series_.
+#'   A plot is generated for each nonempty level of this interaction.
+#'   In general, include in the interaction all factors used to split
+#'   time series by geographical unit, and exclude all factors used
+#'   to split time series by segment (e.g., epidemic wave). Use the
+#'   default (`~1`) if `x$frame` has no factors that are fixed within
+#'   a time series (or no factors at all).
+#' @param subset
+#'   A named list of atomic vectors with elements specifying levels of
+#'   factors in `x$frame`. Only the subset of fitting windows belonging
+#'   to these levels are plotted. Use the default (`NULL`) to plot all
+#'   fitting windows or if `x$frame` has no factors.
+#' @param type
+#'   A character string indicating the type of incidence plotted.
+#' @param log
+#'   A logical scalar. If `TRUE`, then incidence is displayed on a
+#'   logarithmic scale.
+#' @param xty
+#'   A character string. If `"date"`, then ticks on the time axis are
+#'   placed at the start of calendar days, months, or years (depending
+#'   on time scale). If `"numeric"`, then time is displayed as a number
+#'   of days since an initial date.
+#' @param legend
+#'   A logical scalar. If `TRUE`, then a legend is displayed in the
+#'   right margin.
+#' @param tol
+#'   A non-negative number or `Inf`, used to define "exceptional"
+#'   points when `type = "interval"`. `cases[-1]` is highlighted
+#'   according to `control$points_short` if `diff(date) < (1-tol)*m`
+#'   and according to `control$points_long` if `diff(date) > (1+tol)*m`,
+#'   where `m = median(diff(date))`. In both cases, the value of
+#'   `diff(date)` is printed above the point. Assign 0 to highlight
+#'   all deviations from `m`. Assign `Inf` to disable highlighting.
+#' @param control
+#'   A list of lists defining the appearance of various
+#'   plot elements, or otherwise `NULL`. See Details.
+#' @param ...
+#'   Optional arguments specifying additional graphical parameters
+#'   to be recycled for all plots. Currently, only `xlim`, `ylim`,
+#'   `xlab`, `ylab`, and `main` are used; see [graphics::plot()].
+#'   `xlim` can be numeric, Date, or character coercible to Date
+#'   with `as.Date(xlim)`. If `main` is a character string, then
+#'   flags of the form `"%f"`, where `f` is the name of any factor
+#'   present in `group_by`, are replaced in a given plot by the
+#'   factor level relevant to that plot.
+#'
+#' @return
+#' `NULL` (invisibly).
+#'
+#' @details
+#' The appearance of most plot elements can be controlled
+#' using argument `control`, which must be `NULL` or a
+#' named list containing some subset of the elements below:
+#'
+#' \describe{
+#' \item{`box`}{
+#'   A named list of arguments to [graphics::box()], affecting
+#'   the appearance of the box drawn around the plot region.
+#'   Currently, only `bty`, `lty`, `col`, and `lwd` are used.
+#' }
+#' \item{`xax`, `yax`}{
+#'   Named lists of arguments to [graphics::axis()], affecting
+#'   the appearance of the bottom and left axes. Currently, only
+#'   `tcl`, `mgp2`, `col.axis`, `cex.axis`, and `font.axis` are
+#'   used, where `mgp2` is the second component of the usual `mgp`
+#'   argument. If `xty = "date"`, then the appearance of the minor
+#'   (day or month) and major (month or year) bottom axes can be
+#'   controlled separately by listing vectors of length 2. For example,
+#'   setting `xax = list(col.axis = c("black", "red"))` will make
+#'   the minor axis black and major axis red.
+#' }
+#' \item{`xlab`, `ylab`, `main`}{
+#'   Named lists of arguments to [graphics::title()], affecting
+#'   the appearance of axis titles. Currently, only `line`, `adj`,
+#'   `col.lab`, `cex.lab`, `font.lab`, `col.main`, `cex.main`,
+#'   and `font.main` are used.
+#' }
+#' \item{`points_main`}{
+#'   A named list of arguments to [graphics::points()], affecting
+#'   the appearance of observed data. Currently, only `pch`, `col`,
+#'   `bg` and `cex` are used.
+#' }
+#' \item{`points_short`, `points_long`}{
+#'   Alternatives to `points_main` used to highlight certain points
+#'   when `type = "interval"`. See argument `tol`.
+#' }
+#' \item{`lines`}{
+#'   A named list of arguments to [graphics::lines()], affecting
+#'   the appearance of the predicted incidence curve. Currently,
+#'   only `lty`, `lwd`, and `col` are used.
+#' }
+#' \item{`window`, `confband`}{
+#'   Named lists of arguments to [graphics::polygon()], affecting
+#'   the appearance of fitting windows and confidence bands on
+#'   predicted incidence curves. Currently, only `col` and `border`
+#'   are used.
+#' }
+#' \item{`text_dbl`, `text_hl`}{
+#'   Named lists of arguments to [graphics::text()], affecting
+#'   the appearance of text giving doubling times and text above
+#'   highlighted points. Currently, only `pos`, `offset`, `col`, `cex`,
+#'   and `font` are used. `text_dbl` can further specify alignment
+#'   `adj` and coordinates `x` and `y`. In this case, `x` can be
+#'   numeric, Date, or character coercible to Date with `as.Date(x)`,
+#'   but `y` must be numeric.
+#' }
+#' }
+#'
+#' If `control = NULL`, then it defaults to
+#' `get_control_default("plot.egf")`.
+#'
+#' If `control` is a list and one of its elements is only partially
+#' specified, then that element is filled out with parameter values
+#' taken from `get_control_default("plot.egf")`.
+#'
+#' If `control` is a named list and one if its elements is `NULL`
+#' (rather than a list), then the corresponding plot element is
+#' suppressed.
+#'
+#' @export
 #' @import graphics
-#' @importFrom stats reformulate
+#' @importFrom stats reformulate median predict confint
 plot.egf <- function(x,
-                     subset = NULL,
                      group_by = ~1,
+                     subset = NULL,
                      type = c("interval", "cumulative"),
-                     xty = c("date", "numeric"),
                      log = TRUE,
+                     xty = c("date", "numeric"),
                      legend = FALSE,
                      tol = 0,
-                     control = get_control_default("plot.egf"),
+                     control = NULL,
                      ...) {
 
   ### Argument validation #################################
@@ -95,8 +208,10 @@ plot.egf <- function(x,
     )
   }
 
-  control_default <- get_control_default("plot.egf")
-  if (inherits(control, "list") && !is.null(names(control))) {
+  if (is.null(control) || !inherits(control, "list") || is.null(names(control))) {
+    ct <- control <- get_control_default("plot.egf")
+  } else {
+    control_default <- get_control_default("plot.egf")
     for (pe in intersect(names(control), names(control_default))) {
       if (is.null(control[[pe]])) {
         control_default[pe] <- list(NULL)
@@ -105,8 +220,8 @@ plot.egf <- function(x,
         control_default[[pe]][s] <- control[[pe]][s]
       }
     }
+    ct <- control <- control_default
   }
-  control <- control_default
   dots <- list(...)
 
   ### Setting up loop over plots ##########################
@@ -119,8 +234,6 @@ plot.egf <- function(x,
   )
 
   interaction0 <- function(...) interaction(..., drop = TRUE, sep = ":")
-  days <- function(date, since) as.integer(date - since)
-  date_diff <- function(date) as.integer(diff(date))
 
   if (any_factors) {
     ## Split the augmented frame by interaction
@@ -176,7 +289,7 @@ plot.egf <- function(x,
     index <- droplevels(factor(d[[1L]], levels = index_levels_for_plot))
     date <- d[[2L]]
     cases <- d[[3L]]
-    i12 <- vapply(levels(index), function(s) range(which(index == s])), integer(2L))
+    i12 <- vapply(levels(index), function(s) range(which(index == s)), integer(2L))
     d0 <- date[1L]
     d1 <- date[i12[1L, ]]
     d2 <- date[i12[2L, ]]
@@ -188,7 +301,7 @@ plot.egf <- function(x,
       time = days(date, since = d0),
       cum_inc = cumsum(c(0L, cases[-1L])),
       int_inc = cases,
-      dt = c(NA, date_diff(date))
+      dt = c(NA, ddiff(date))
     )
 
     ## A way to artificially include zeros on logarithmic scale
@@ -203,12 +316,12 @@ plot.egf <- function(x,
     ## Predicted curves with confidence bands
     m <- median(data$dt, na.rm = TRUE)
     f <- function(i1, t1, t2, by) {
-      pr <- predict(x,
-        subset = if (length(d) > 3L) d[-(1:3), i1, drop = FALSE],
+      p <- predict(x,
+        subset = if (length(d) > 3L) d[i1, -(1:3), drop = FALSE],
         time = seq.int(from = 0L, to = t2 - t1, by = by),
         se = TRUE
       )
-      ci <- confint(pred, level = 0.95, log = FALSE)[[varname]]
+      ci <- confint(p, level = 0.95, log = FALSE)[[varname]]
       if (type == "cumulative" && i1 > 1L) {
         ci[, -1L] <- sum(cases[2L:i1]) + ci[, -1L]
       }
@@ -246,7 +359,7 @@ plot.egf <- function(x,
       }
     } else {
       main <- dots$main
-      if (any_groups) {
+      if (is.character(main) && any_groups) {
         for (s in group_by) {
           ## Replace "%factor_name" with "level_name"
           main <- gsub(sprintf("%%%s", s), as.character(d[1L, s]), main, fixed = TRUE)
@@ -289,7 +402,7 @@ plot.egf <- function(x,
     ### Plotting ==========================================
 
     op <- par(
-      mar = c(4, 5, 2.7, 0.5 + 6 * annotate) + 0.1,
+      mar = c(4, 5, 2.7, 0.5 + 6 * legend) + 0.1,
       bty = "l",
       xaxs = "i",
       yaxs = "i",
@@ -329,10 +442,11 @@ plot.egf <- function(x,
         )
         do.call(daxis, c(l, control$xax))
       } else { # "numeric"
-        l <- list(side = 1L)
-        control$xax$mgp <- c(3, control$xax$mgp2, 0)
-        control$xax$mgp2 <- NULL
-        do.call(axis, c(l, control$xax))
+        l1 <- list(side = 1L)
+        l2 <- control$xax
+        l2$mgp <- c(3, l2$mgp2, 0)
+        l2$mgp2 <- NULL
+        do.call(axis, c(l1, l2))
       }
     }
 
@@ -347,17 +461,18 @@ plot.egf <- function(x,
         mlw <- max(strwidth(yax_labels, units = "inches", cex = 0.85))
         long_yax_labels_flag <- (mlw / par("csi") + control$yax$mgp2 > 3.75)
       }
-      l <- list(
+      l1 <- list(
         side = 2L,
         at = yax_at,
         labels = yax_labels
       )
-      control$yax$mgp <- c(3, control$yax$mgp2, 0)
-      control$yax$mgp2 <- NULL
-      if (is.na(control$yax$cex.axis)) {
-        control$yax$cex.axis <- (1 - 0.25 * long_yax_labels_flag) * 0.85
+      l2 <- control$yax
+      l2$mgp <- c(3, l2$mgp2, 0)
+      l2$mgp2 <- NULL
+      if (is.na(l2$cex.axis)) {
+        l2$cex.axis <- (1 - 0.25 * long_yax_labels_flag) * 0.85
       }
-      do.call(axis, c(l, control$yax))
+      do.call(axis, c(l1, l2))
     }
 
     ## Observed data
@@ -406,29 +521,30 @@ plot.egf <- function(x,
     if (!is.null(control$text_dbl) && type == "interval" && x$curve %in% c("exponential", "logistic", "richards")) {
       for (s in levels(index)) {
         elu <- unlist(ci[match(s, levels(x$index)), length(ci) - 2:0])
-        l <- list(
+        l1 <- list(
           labels = sprintf("doubling time:\n%.1f (%.1f, %.1f) days", elu[1L], elu[2L], elu[3L]),
           xpd = NA
         )
-        if (is.na(control$text_dbl$y)) {
+        l2 <- control$text_dbl
+        if (is.na(l2$y)) {
           er <- range(pred[[s]]$estimate, na.rm = TRUE)
           if (log) {
-            control$text_dbl$y <- er[1L] * 10^(0.25 * diff(log10(er)))
+            l2$y <- er[1L] * 10^(0.25 * diff(log10(er)))
           } else {
-            control$text_dbl$y <- er[1] + 0.25 * diff(er)
+            l2$y <- er[1] + 0.25 * diff(er)
           }
         }
-        if (is.na(control$text_dbl$x)) {
-          control$text_dbl$x <- min(pred[[s]]$time[pred[[s]]$estimate > control$text_dbl$y], na.rm = TRUE)
+        if (is.na(l2$x)) {
+          l2$x <- min(pred[[s]]$time[pred[[s]]$estimate > l2$y], na.rm = TRUE)
         } else {
-          if (is.character(control$text_dbl$x)) {
-            control$text_dbl$x <- as.Date(control$text_dbl$x)
+          if (is.character(l2$x)) {
+            l2$x <- as.Date(l2$x)
           }
-          if (inherits(control$text_dbl$x, "Date")) {
-            control$text_dbl$x <- days(control$text_dbl$x, since = d0)
+          if (inherits(l2$x, "Date")) {
+            l2$x <- days(l2$x, since = d0)
           }
         }
-        do.call(text, c(l, control$text_dbl))
+        do.call(text, c(l1, l2))
       }
     }
 
@@ -481,11 +597,11 @@ plot.egf <- function(x,
         bty = "n",
         cex = 0.7,
         seg.len = 1,
-        pch = c(get_pe("pch"), NA)[lind],
-        pt.bg = c(get_pe("bg"), NA)[index],
+        pch = c(get_el("pch"), NA)[lind],
+        pt.bg = c(get_el("bg"), NA)[index],
         lty = c(rep(NA, 3L), control$lines$lty)[lind],
         lwd = c(rep(NA, 3L), control$lines$lwd)[lind],
-        col = c(get_pe("col"), control$lines$col)[lind]
+        col = c(get_el("col"), control$lines$col)[lind]
       )
     }
   }

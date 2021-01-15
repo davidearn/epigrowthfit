@@ -4,36 +4,40 @@
 \alias{predict.egf}
 \title{Compute predicted incidence time series}
 \usage{
-\method{predict}{egf}(object, time = NULL, se = FALSE, ...)
+\method{predict}{egf}(object, subset = NULL, time = NULL, se = FALSE, ...)
 }
 \arguments{
 \item{object}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
+\item{subset}{A named list of atomic vectors of length 1 specifying exactly
+one level for each factor in \code{object$frame} (and thus a unique
+parametrization of the incidence model). Use the default (\code{NULL})
+if (and only if) there are no factors in \code{object$frame}.}
+
 \item{time}{A numeric vector listing increasing time points in days since
-the start of the fitting window specified by \code{list(...)}.}
+the start of the fitting window specified by \code{subset}.}
 
 \item{se}{A logical scalar. If \code{TRUE}, then standard errors on predicted
-values are returned.}
+values (log scale) are also reported.}
 
-\item{...}{Atomic vectors together specifying a unique fitting window.
-See Details.}
+\item{...}{Unused optional arguments.}
 }
 \value{
 A list inheriting from class \code{"egf_predict"}, containing two data
-frames \code{log_cum_inc} and \code{log_int_inc}, each with variables \code{time},
-\code{estimate}, and \code{se} (if \code{se = TRUE}).
+frames, \code{log_cum_inc} and \code{log_int_inc}, each with numeric variables
+\code{time}, \code{estimate}, and \code{se} (if \code{se = TRUE}).
 
 \code{log_cum_inc$estimate[i]} stores log cumulative incidence at
 \code{time[i]}. \code{log_int_inc$estimate[i]} stores log incidence during
 the interval from \code{time[i-1]} to \code{time[i]}.
 }
 \description{
-Computes predicted values of cumulative and interval incidence
-given user-specified time points.
+Computes predicted values of log cumulative and log interval
+incidence given user-specified time points.
 }
 \details{
-Elements of \code{list(...)} must be named and have the form
-\code{factor_name = c(level_names)}, where \code{factor_name} must
-be the name of a factor in \code{object$frame} and \code{level_names}
-must be a subset of \code{levels(object$frame[[factor_name]])}.
+Elements of \code{subset} must be named and have the form
+\code{factor_name = level_name}, where \code{factor_name} is
+the name of a factor in \code{object$frame} and \code{level_name}
+is an element of \code{levels(object$frame$factor_name)}.
 }
