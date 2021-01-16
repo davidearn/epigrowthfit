@@ -13,10 +13,10 @@ make_tmb_data(frame, curve, distr, excess, sparse_X)
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate will be estimated. Set to \code{TRUE} if what is observed
-(\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or disease incidence.}
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
+mortality rate is estimated. Set to \code{TRUE} if what is
+observed (\code{y} if \code{formula = y ~ x}) is multiple causes
+mortality rather than disease mortality or disease incidence.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design matrix
 will be constructed in sparse format.}
@@ -27,8 +27,9 @@ A \code{"tmb_data"} object, which is a list with elements:
 A copy of \code{attr(frame, "index")}. See \code{\link[=make_frame]{make_frame()}}.
 }
 \item{\code{t}}{
-An integer vector of length \code{nrow(frame)} giving time as a number
-of days since the earliest date in the fitting window.
+An integer vector of length \code{nrow(frame)} giving time as
+a number of days since the earliest date in the relevant
+fitting window.
 }
 \item{\code{x}}{
 An integer vector of length \code{nrow(frame)}. Within each fitting
@@ -60,7 +61,7 @@ Integer vectors listing the number of levels of each factor in
 }
 \item{\code{fid}, \code{rid}}{
 Indicator matrices with term labels for row names and parameter
-names (with prefixes) for column names. Element \verb{[i,j]} is equal
+names (with prefixes) for column names. Element \verb{[i, j]} is equal
 to 1 if and only if term \code{i} appears in the mixed effects model
 (fixed/random component) for parameter \code{j}.
 }
@@ -71,10 +72,10 @@ Integer flags referencing \code{curve}, \code{distr}, \code{excess}, and
 \item{\code{predict_flag}}{
 An integer flag set equal to 0 so that prediction code is not run.
 }
-Additional integer elements of the form \code{j_link_parameter} (e.g.,
-\code{j_log_r}) give the index of parameter names in \code{colnames(rid)}.
-Indexing starts at 0, and the value -1 indicates that the parameter
-does not appear in the incidence model being fit.
+Additional integer elements of the form \code{j_link_parameter}
+(e.g., \code{j_log_r}) give the index of parameter names (e.g., \code{"log_r"})
+in \code{colnames(rid)}. Indexing starts at 0, and the value -1 indicates
+that the parameter is not relevant to the incidence model being fit.
 }
 \description{
 Gathers in a list data objects to be passed to the C++ template
@@ -82,9 +83,8 @@ via TMB's \code{DATA_} macros. See \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}
 }
 \examples{
 example("make_frame", package = "epigrowthfit")
-tmb_data <-
-  epigrowthfit:::make_tmb_data(frame, curve, distr, excess,
-                               sparse_X = FALSE)
+tmb_data <- epigrowthfit:::make_tmb_data(frame, curve, distr, excess,
+                                         sparse_X = FALSE)
 
 }
 \keyword{internal}

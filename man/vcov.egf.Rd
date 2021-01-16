@@ -18,9 +18,10 @@ instead of covariances.}
 \item{...}{Unused optional arguments.}
 }
 \value{
-A matrix of covariances or correlations. The number of rows is
-equal to the length of the \code{"beta"} component of \code{object$par}
-plus, if \code{full = TRUE}, the length the \code{"log_sd_b"} component.
+A matrix of covariances or correlations inheriting from class
+\code{"egf_vcov"}. The number of rows is equal to the length of the
+\code{"beta"} component of \code{object$par} plus, if \code{full = TRUE}, the
+length the \code{"log_sd_b"} component.
 }
 \description{
 Retrieves the covariance or correlation matrix of the fixed effects
@@ -30,6 +31,6 @@ effects.
 \details{
 Contrary to the documentation of generic function \code{\link[stats:vcov]{stats::vcov()}},
 \code{vcov.egf()} does \emph{not} return the covariance matrix corresponding
-to the output of \code{\link[=coef.egf]{coef.egf()}}, which returns fitted values,
-not coefficients, of the generalized linear mixed effects models.
+to the output of \code{\link[=coef.egf]{coef.egf()}}. \code{\link[=coef.egf]{coef.egf()}} is an alias for
+\code{\link[=fitted.egf]{fitted.egf()}} and so returns fitted values, not coefficients.
 }

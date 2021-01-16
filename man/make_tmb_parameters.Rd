@@ -13,10 +13,10 @@ make_tmb_parameters(tmb_data, curve, distr, excess, par_init)
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate will be estimated. Set to \code{TRUE} if what is observed
-(\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or disease incidence.}
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
+mortality rate is estimated. Set to \code{TRUE} if what is
+observed (\code{y} if \code{formula = y ~ x}) is multiple causes
+mortality rather than disease mortality or disease incidence.}
 
 \item{par_init}{A user-specified full parameter vector, or otherwise \code{NULL}.
 See \code{\link[=egf]{egf()}}.}
@@ -25,8 +25,9 @@ See \code{\link[=egf]{egf()}}.}
 A list with elements:
 \item{\code{beta}}{
 A numeric vector of length \code{sum(tmb_data$fnl)} listing initial
-values for the fixed effects coefficients, namely between-group
-means and within-group offsets.
+values for the fixed effects coefficients, each of which represents
+the mean of a set of within-group means or a within-group offset
+from that mean.
 }
 \item{\code{log_sd_b}}{
 If there are random effects, then a numeric vector of length
@@ -79,17 +80,16 @@ is roughly symmetric about the peak.
 }
 The naive estimates are log-transformed (all but \code{p}) or
 logit-transformed (\code{p} only), and coefficients are obtained
-from the within-group means assuming zero-sum contrasts
-to form segments of parameter object \code{beta}.
+from the within-group means (assuming zero-sum contrasts)
+to form segments of the parameter object \code{beta}.
 
 When \code{par_init = NULL} and there are random effects,
 \code{log_sd_b} and \code{b} are for simplicity initialized as zero vectors.
 }
 \examples{
 example("make_tmb_data", package = "epigrowthfit")
-tmb_parameters <-
-  epigrowthfit:::make_tmb_parameters(tmb_data, curve, distr, excess,
-                                     par_init = NULL)
+tmb_parameters <- epigrowthfit:::make_tmb_parameters(tmb_data, curve, distr, excess,
+                                                     par_init = NULL)
 
 }
 \keyword{internal}

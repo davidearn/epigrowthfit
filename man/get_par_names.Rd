@@ -17,9 +17,8 @@ link function used internally (either \code{"log_"} or \code{"logit_"})
 is prepended to each parameter name.}
 }
 \value{
-\code{get_par_names(curve, distr, excess, link = FALSE)} returns the
-subset of
-\code{c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")}
+If \code{link = FALSE}, then the default method returned the subset
+of \code{c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")}
 relevant to \code{curve}, \code{distr}, and \code{excess}.
 }
 \description{

@@ -56,7 +56,7 @@ where \code{m = median(diff(date))}. In both cases, the value of
 all deviations from \code{m}. Assign \code{Inf} to disable highlighting.}
 
 \item{control}{A list of lists defining the appearance of various
-plot elements, or otherwise \code{NULL}. See Details.}
+plot elements, or otherwise \code{NULL} (see Details).}
 
 \item{...}{Optional arguments specifying additional graphical parameters
 to be recycled for all plots. Currently, only \code{xlim}, \code{ylim},
@@ -74,15 +74,14 @@ factor level relevant to that plot.}
 Method for plotting \code{"egf"} objects.
 }
 \details{
-The appearance of most plot elements can be controlled
-using argument \code{control}, which must be \code{NULL} or a
-named list containing some subset of the elements below:
+\code{control} must be \code{NULL} or a named list containing some subset
+of the elements below:
 
 \describe{
 \item{\code{box}}{
 A named list of arguments to \code{\link[graphics:box]{graphics::box()}}, affecting
 the appearance of the box drawn around the plot region.
-Currently, only \code{bty}, \code{lty}, \code{col}, and \code{lwd} are used.
+Currently, only \code{bty}, \code{lty}, \code{lwd}, and \code{col} are used.
 }
 \item{\code{xax}, \code{yax}}{
 Named lists of arguments to \code{\link[graphics:axis]{graphics::axis()}}, affecting
@@ -135,11 +134,13 @@ but \code{y} must be numeric.
 If \code{control = NULL}, then it defaults to
 \code{get_control_default("plot.egf")}.
 
-If \code{control} is a list and one of its elements is only partially
-specified, then that element is filled out with parameter values
-taken from \code{get_control_default("plot.egf")}.
+If \code{control} is a list and one of its elements is a partially
+specified list
+(e.g., \code{box = list(bty)} rather than \code{box = c(bty, lty, lwd, col)}),
+then that element is filled out with values taken from
+\code{get_control_default("plot.egf")}.
 
-If \code{control} is a named list and one if its elements is \code{NULL}
-(rather than a list), then the corresponding plot element is
-suppressed.
+If \code{control} is a list and one if its elements is \code{NULL}
+(e.g., \code{box = NULL}), then the corresponding plot element
+is suppressed.
 }

@@ -67,10 +67,10 @@ If a file path, then console output is diverted there. If \code{NULL},
 then there is no diversion. When \code{parallel = "snow"}, diversion
 may be necessary to view output.}
 
-\item{cl}{A optional socket cluster, probably created by
-\code{\link[parallel:makeCluster]{parallel::makePSOCKcluster()}}, to be used when
-\code{parallel = "snow"}. If non-\code{NULL}, then \code{cores}
-and \code{outfile} are ignored.}
+\item{cl}{A optional socket cluster created by
+\code{\link[parallel:makeCluster]{parallel::makePSOCKcluster()}}, to be used
+when \code{parallel = "snow"}. If non-\code{NULL},
+then \code{cores} and \code{outfile} are ignored.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -94,7 +94,10 @@ linear combination being profiled.
 }
 }
 \description{
-Computes the likelihood profile of specified fixed effect
-coefficients, log standard deviations of random effects,
-and linear combinations thereof.
+Computes the (univariate) likelihood profile of fixed effect
+coefficients, log standard deviations of random effects, and
+linear combinations thereof.
+}
+\seealso{
+\code{\link[=confint.egf_profile]{confint.egf_profile()}}
 }

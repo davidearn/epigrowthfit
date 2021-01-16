@@ -46,18 +46,18 @@ indicate absence of random effects.}
 named in \code{formula}, \code{fixed}, and \code{random}.}
 
 \item{index}{A factor of length \code{nrow(data)} such that \code{split(data, index)}
-splits \code{data} by fitting window. In this case, \code{is.na(index)}
-should index rows of \code{data} not belonging to a fitting window.
-\code{NULL} (the default) is equivalent to \code{factor(integer(nrow(data)))}.}
+splits \code{data} by fitting window and \code{is.na(index)} indexes
+the rows of \code{data} not belonging to a fitting window. \code{NULL}
+(the default) is equivalent to \code{factor(integer(nrow(data)))}.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate will be estimated. Set to \code{TRUE} if what is observed
-(\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or disease incidence.}
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
+mortality rate is estimated. Set to \code{TRUE} if what is
+observed (\code{y} if \code{formula = y ~ x}) is multiple causes
+mortality rather than disease mortality or disease incidence.}
 
 \item{method}{A character string specifying an optimizer available through
 \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}.}
@@ -88,15 +88,16 @@ desired.}
 If \code{debug = FALSE}, then a list inheriting from class \code{"egf"},
 with elements:
 \item{\code{frame}}{
-The model frame. This is a data frame containing \emph{only} the
-variables named in \code{formula}, \code{fixed}, and \code{random}. Data not
-belonging to a fitting window appear in the tail.
+The model frame. This is a data frame containing only the
+variables named in \code{formula}, \code{fixed}, and \code{random}. Data
+not belonging to a fitting window are omitted (but stored
+as an attribute). See \code{\link[=make_frame]{make_frame()}}.
 }
 \item{\code{index}}{
 A factor of length \code{nrow(data)} such that \code{split(frame, index)}
-splits the model frame by fitting window. Not necessarily identical
-to the so-named argument, as \code{frame} may be a permutation of the
-rows of \code{data}.
+splits the model frame by fitting window. Not necessarily
+identical to the so-named argument, as \code{frame} is constructed
+by permuting and subsetting the rows of \code{data}.
 }
 \item{\code{curve}, \code{distr}, \code{excess}, \code{method}}{
 Copies of the so-named arguments (after matching).
@@ -139,9 +140,8 @@ the marginal likelihood function at \code{x[nonrandom]}.
 The call to \code{egf()}, allowing for updates to the \code{"egf"} object
 via \code{\link[stats:update]{stats::update()}}.
 }
-
-If \code{debug = TRUE}, then a list with elements \code{frame}, \code{tmb_args},
-and \code{par_init}.
+If \code{debug = TRUE}, then a list with only the elements \code{frame},
+\code{tmb_args}, and \code{par_init}.
 }
 \description{
 Fits nonlinear mixed effects models of epidemic growth to one

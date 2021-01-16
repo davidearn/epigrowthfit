@@ -2,7 +2,7 @@
 % Please edit documentation in R/confint.R
 \name{confint.egf}
 \alias{confint.egf}
-\title{Compute confidence intervals}
+\title{Confidence intervals on fitted values}
 \usage{
 \method{confint}{egf}(
   object,
@@ -37,7 +37,7 @@ then \code{parm} may also contain \code{"R0"} and \code{"tdoubling"}.}
 inverse-link transformed fitted values are returned.}
 
 \item{method}{A character string indicating how confidence intervals should
-be calculated. See Details.}
+be calculated (see Details).}
 
 \item{grid_len}{A positive integer. Step sizes chosen adaptively by
 \code{\link[TMB:tmbprofile]{TMB::tmbprofile()}} will generate approximately this
@@ -65,10 +65,10 @@ If a file path, then console output is diverted there. If \code{NULL},
 then there is no diversion. When \code{parallel = "snow"}, diversion
 may be necessary to view output.}
 
-\item{cl}{A optional socket cluster, probably created by
-\code{\link[parallel:makeCluster]{parallel::makePSOCKcluster()}}, to be used when
-\code{parallel = "snow"}. If non-\code{NULL}, then \code{cores}
-and \code{outfile} are ignored.}
+\item{cl}{A optional socket cluster created by
+\code{\link[parallel:makeCluster]{parallel::makePSOCKcluster()}}, to be used
+when \code{parallel = "snow"}. If non-\code{NULL},
+then \code{cores} and \code{outfile} are ignored.}
 
 \item{breaks, probs}{Arguments to \code{compute_R0()}, necessary if \code{"R0 \%in\% parm"}.}
 
@@ -95,9 +95,10 @@ number and initial doubling time in days.
 Three methods are provided for calculating confidence intervals:
 \describe{
 \item{\code{wald}}{
-Confidence limits on fitted values (link scale) are computed as
-\verb{estimate +/- (standard error) * sqrt(qchisq(level, df = 1))}.
-See the Wald test.
+Confidence limits on a fitted value (link scale) are computed as
+\code{estimate + c(-1, 1) * sqrt(q) * se},
+where \code{q = qchisq(level, df = 1)} and \code{estimate} and \code{se} are the
+fitted value and its approximate (delta method) standard error.
 }
 \item{\code{profile}}{
 A discrete approximation of the negative log likelihood profile
@@ -118,9 +119,9 @@ is called internally.
 following a mixed (rather than fixed) effects model.
 
 \code{"wald"} requires minimal computation time but assumes, e.g.,
-asymptotic normality of the maximum likelihood estimator of
-the restricted model. A further limitation of \code{"wald"} is
-functional non-invariance. \code{"profile"} and \code{"uniroot"} are
-naturally much slower, requiring estimation of the restricted
-model. Of the two, \code{"uniroot"} is typically less robust.
+asymptotic normality of the maximum likelihood estimator.
+A further limitation of \code{"wald"} is functional non-invariance.
+\code{"profile"} and \code{"uniroot"} avoid these issues but are much
+slower, requiring estimation of restricted models. Of the two,
+\code{"uniroot"} is typically less robust.
 }

@@ -13,10 +13,9 @@
 \item{object}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
 \item{subset}{A named list of atomic vectors with elements specifying levels
-of factors in \code{object$frame} (and thus fitting windows). Use the
-default (\code{NULL}) if there are no factors in \code{object$frame} or,
-more generally, to retrieve fitted values for every fitting window.
-See Details.}
+of factors in \code{object$frame} (and thus fitting windows). Use
+the default (\code{NULL}) to retrieve fitted values for every fitting
+window or if \code{object$frame} has no factors.}
 
 \item{link}{A logical scalar. If \code{FALSE}, then fitted values
 are inverse link-transformed.}
@@ -37,11 +36,13 @@ by adding
 (i) the population fitted value computed from the relevant
 fixed effect coefficients and
 (ii) the random effect conditional modes relevant to the
-window.
+window (if any).
 }
 \details{
-Elements of \code{subset} must be named and have the form
-\code{factor_name = level_names}, where \code{factor_name} is
-the name of a factor in \code{object$frame} and \code{level_names}
-is a subset of \code{levels(object$frame$factor_name)}.
+Elements of \code{subset} (if non-\code{NULL}) must have the form
+\code{factor_name = level_names}, where \code{factor_name} is the
+name of a factor in \code{object$frame} and \code{level_names} is
+a subset of \code{levels(object$frame$factor_name)}.
+
+Currently, \code{coef.egf()} is an alias for \code{fitted.egf()}.
 }

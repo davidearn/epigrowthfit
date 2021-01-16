@@ -56,18 +56,18 @@ indicate absence of random effects.}
 named in \code{formula}, \code{fixed}, and \code{random}.}
 
 \item{index}{A factor of length \code{nrow(data)} such that \code{split(data, index)}
-splits \code{data} by fitting window. In this case, \code{is.na(index)}
-should index rows of \code{data} not belonging to a fitting window.
-\code{NULL} (the default) is equivalent to \code{factor(integer(nrow(data)))}.}
+splits \code{data} by fitting window and \code{is.na(index)} indexes
+the rows of \code{data} not belonging to a fitting window. \code{NULL}
+(the default) is equivalent to \code{factor(integer(nrow(data)))}.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate will be estimated. Set to \code{TRUE} if what is observed
-(\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or disease incidence.}
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
+mortality rate is estimated. Set to \code{TRUE} if what is
+observed (\code{y} if \code{formula = y ~ x}) is multiple causes
+mortality rather than disease mortality or disease incidence.}
 
 \item{na_action}{A character string indicating how \code{NA} in the incidence vector
 (\code{y} if \code{formula = y ~ x}) are handled. See \code{\link[stats:na.fail]{stats::na.fail()}}.}
@@ -81,17 +81,13 @@ conversion specifications.}
 A data frame containing the variables named in \code{formula}, \code{fixed},
 and \code{random}, with attributes:
 \item{\code{extra}}{
-A data frame preserving data not belonging to a fitting window
+A data frame preserving data not belonging to a fitting window.
 (see Details).
 }
 \item{\code{index}}{
 A factor of length \code{nrow(frame)} such that \code{split(frame, index)}
 splits the frame by fitting window. Not necessarily identical to
 the argument of the same name (see Details).
-}
-\item{\code{date_name}, \code{cases_name}}{
-Characters strings naming the date and incidence variables in the
-data frame.
 }
 \item{\code{fixed_term_labels}, \code{random_term_labels}}{
 Named lists of character vectors naming mixed effects model terms

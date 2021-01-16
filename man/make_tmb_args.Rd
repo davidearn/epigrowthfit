@@ -13,10 +13,10 @@ make_tmb_args(frame, curve, distr, excess, sparse_X, par_init)
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate will be estimated. Set to \code{TRUE} if what is observed
-(\code{y} if \code{formula = y ~ x}) is multiple causes mortality
-rather than disease mortality or disease incidence.}
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
+mortality rate is estimated. Set to \code{TRUE} if what is
+observed (\code{y} if \code{formula = y ~ x}) is multiple causes
+mortality rather than disease mortality or disease incidence.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design matrix
 will be constructed in sparse format.}
@@ -33,9 +33,8 @@ Gathers necessary components of a call to \code{\link[TMB:MakeADFun]{TMB::MakeAD
 }
 \examples{
 example("make_frame", package = "epigrowthfit")
-tmb_args <-
-  epigrowthfit:::make_tmb_args(frame, curve, distr, excess,
-                               sparse_X = FALSE, par_init = NULL)
+tmb_args <- epigrowthfit:::make_tmb_args(frame, curve, distr, excess,
+                                         sparse_X = FALSE, par_init = NULL)
 tmb_out <- do.call(TMB::MakeADFun, tmb_args)
 
 }

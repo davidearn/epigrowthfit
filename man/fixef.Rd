@@ -31,11 +31,11 @@ Means of within-group means are labeled \code{"mean(term)"}.
 Within-group offsets are labeled \verb{"offset(level)}.
 }
 \item{\code{estimate}}{
-A numeric vector of coefficients.
+A numeric vector of coefficients (zero-sum contrasts).
 }
 Row names are taken from the \code{"beta"} component of \code{object$par}.
 }
 \description{
-Retrieve coefficients (zero-sum contrasts) of the fixed effects
-component of each mixed effects model.
+Retrieve the coefficients of the fixed effects component
+of mixed effects models.
 }

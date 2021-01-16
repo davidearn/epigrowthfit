@@ -418,7 +418,7 @@ confint.egf_predict <- function(object, parm, level = 0.95,
 
   q <- qnorm(0.5 * (1 + level))
   f <- function(d) {
-    elu <- d$estimate + outer(d$se, c(0, -q, q))
+    elu <- d$estimate + outer(d$se, c(0, -1, 1) * q)
     colnames(elu) <- c("estimate", "lower", "upper")
     data.frame(time = d$time, if (log) elu else exp(elu))
   }
@@ -426,6 +426,7 @@ confint.egf_predict <- function(object, parm, level = 0.95,
   if (!log) {
     names(out) <- sub("^log_", "", names(out))
   }
+  attr(out, "subset") <- attr(object, "subset")
   attr(out, "refdate") <- attr(object, "refdate")
   attr(out, "level") <- level
   out

@@ -7,7 +7,7 @@
 boot_par(
   object,
   n = 6L,
-  method = c("nlminb", "nlm", "Nelder-Mead", "BFGS", "CG"),
+  method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
   trace = TRUE,
   parallel = c("serial", "multicore", "snow"),
   cores = getOption("egf.cores", 2L),
@@ -41,10 +41,10 @@ If a file path, then console output is diverted there. If \code{NULL},
 then there is no diversion. When \code{parallel = "snow"}, diversion
 may be necessary to view output.}
 
-\item{cl}{A optional socket cluster, probably created by
-\code{\link[parallel:makeCluster]{parallel::makePSOCKcluster()}}, to be used when
-\code{parallel = "snow"}. If non-\code{NULL}, then \code{cores}
-and \code{outfile} are ignored.}
+\item{cl}{A optional socket cluster created by
+\code{\link[parallel:makeCluster]{parallel::makePSOCKcluster()}}, to be used
+when \code{parallel = "snow"}. If non-\code{NULL},
+then \code{cores} and \code{outfile} are ignored.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -53,6 +53,6 @@ A numeric matrix inheriting from class \code{"egf_boot"},
 with \code{length(object$par)} rows and \code{n} columns.
 }
 \description{
-Sample from the distribution of the full parameter vector implied
-by the fitted epidemic model.
+Sample from the conditional distribution of the full parameter vector
+given the fitted epidemic model.
 }
