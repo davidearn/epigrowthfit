@@ -6,16 +6,15 @@
 #' (i) the population fitted value computed from the relevant
 #' fixed effect coefficients and
 #' (ii) the random effect conditional modes relevant to the
-#' window.
+#' window (if any).
 #'
 #' @param object
 #'   An `"egf"` object returned by [egf()].
 #' @param subset
 #'   A named list of atomic vectors with elements specifying levels
-#'   of factors in `object$frame` (and thus fitting windows). Use the
-#'   default (`NULL`) if there are no factors in `object$frame` or,
-#'   more generally, to retrieve fitted values for every fitting window.
-#'   See Details.
+#'   of factors in `object$frame` (and thus fitting windows). Use
+#'   the default (`NULL`) to retrieve fitted values for every fitting
+#'   window or if `object$frame` has no factors.
 #' @param link
 #'   A logical scalar. If `FALSE`, then fitted values
 #'   are inverse link-transformed.
@@ -23,10 +22,12 @@
 #'   Unused optional arguments.
 #'
 #' @details
-#' Elements of `subset` must be named and have the form
-#' `factor_name = level_names`, where `factor_name` is
-#' the name of a factor in `object$frame` and `level_names`
-#' is a subset of `levels(object$frame$factor_name)`.
+#' Elements of `subset` (if non-`NULL`) must have the form
+#' `factor_name = level_names`, where `factor_name` is the
+#' name of a factor in `object$frame` and `level_names` is
+#' a subset of `levels(object$frame$factor_name)`.
+#'
+#' Currently, `coef.egf()` is an alias for `fitted.egf()`.
 #'
 #' @return
 #' A data frame inheriting from class `"egf_fitted"`, with one

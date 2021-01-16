@@ -1,8 +1,8 @@
 #' Compute likelihood profiles
 #'
-#' Computes the likelihood profile of specified fixed effect
-#' coefficients, log standard deviations of random effects,
-#' and linear combinations thereof.
+#' Computes the (univariate) likelihood profile of fixed effect
+#' coefficients, log standard deviations of random effects, and
+#' linear combinations thereof.
 #'
 #' @param fitted
 #'   An `"egf"` object returned by [egf()].
@@ -54,6 +54,7 @@
 #'   linear combination being profiled.
 #' }
 #'
+#' @seealso [confint.egf_profile()]
 #' @export
 #' @importFrom stats vcov
 #' @import parallel
@@ -150,12 +151,12 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
 
   if (is.null(lin_comb)) {
     ## Covariance matrix of `u`
-    vc <- vcov(fitted)
-    hl <- sqrt(diag(vc))[index] / 4
+    vc <- vcov(fitted, full = TRUE)
+    hl <- sqrt(diag(vc)[index]) / 4
     xl <- unname(index)
   } else {
     ## Covariance matrix of `lin_comb %*% u`
-    vc <- lin_comb %*% vcov(fitted) %*% t(lin_comb)
+    vc <- lin_comb %*% vcov(fitted, full = TRUE) %*% t(lin_comb)
     hl <- sqrt(diag(vc)) / 4
     xl <- lapply(seq_len(nrow(lin_comb)), function(i) lin_comb[i, ])
   }
@@ -212,7 +213,7 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
 
   nrl <- vapply(dl, nrow, 0L)
   out <- data.frame(
-    name = factor(rep.int(profile_names, nrl), levels = profile_names),
+    name = rep(factor(profile_names, levels = profile_names), nrl),
     do.call(rbind, dl)
   )
   row.names(out) <- NULL

@@ -1,7 +1,7 @@
 #' Parametric bootstrap
 #'
-#' Sample from the distribution of the full parameter vector implied
-#' by the fitted epidemic model.
+#' Sample from the conditional distribution of the full parameter vector
+#' given the fitted epidemic model.
 #'
 #' @inheritParams egf
 #' @param object
@@ -26,10 +26,10 @@
 #'   then there is no diversion. When `parallel = "snow"`, diversion
 #'   may be necessary to view output.
 #' @param cl
-#'   A optional socket cluster, probably created by
-#'   [parallel::makePSOCKcluster()], to be used when
-#'   `parallel = "snow"`. If non-`NULL`, then `cores`
-#'   and `outfile` are ignored.
+#'   A optional socket cluster created by
+#'   [parallel::makePSOCKcluster()], to be used
+#'   when `parallel = "snow"`. If non-`NULL`,
+#'   then `cores` and `outfile` are ignored.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -40,14 +40,14 @@
 #' @export
 #' @import parallel
 boot_par <- function(object, n = 6L,
-                     method = c("nlminb", "nlm", "Nelder-Mead", "BFGS", "CG"),
+                     method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
                      trace = TRUE,
                      parallel = c("serial", "multicore", "snow"),
                      cores = getOption("egf.cores", 2L),
                      outfile = NULL,
                      cl = NULL,
                      ...) {
-  ## FIXME: Is there a generic function boot()?
+  ## FIXME: Should this be a method for a boot() generic?
   stop_if_not(
     inherits(object, "egf"),
     m = "`object` must be an \"egf\" object."
@@ -59,7 +59,7 @@ boot_par <- function(object, n = 6L,
   check_parallel(parallel, cores, outfile, cl)
 
   ## Make sure that bootstrap optimizations start from
-  ## fitted parameter vector
+  ## the fitted parameter vector
   object$tmb_args$parameters <- make_tmb_parameters(
     tmb_data = object$tmb_args$data,
     par_init = object$par
@@ -77,7 +77,7 @@ boot_par <- function(object, n = 6L,
     tryCatch(
       expr = {
         optim_tmb_out(tmb_out_sim, method)
-        rename_par(tmb_out_sim$env$last.par.best)
+        tmb_out_sim$env$last.par.best
       },
       error = function(e) {
         cat("Error in bootstrap simulation", iofn(i), ":\n", e[[1L]])
@@ -100,11 +100,10 @@ boot_par <- function(object, n = 6L,
       on.exit(stopCluster(cl))
     }
     clusterEvalQ(cl, library("epigrowthfit"))
+    ## Need to make internal function optim_tmb_out()
+    ## available in global environment of workers
     clusterExport(cl,
-      ## Need to export internal functions optim_tmb_out()
-      ## and rename_par() from epigrowthfit namespace
-      varlist = c("object", "method", "trace", "iofn", "n",
-                  "optim_tmb_out", "rename_par"),
+      varlist = c("object", "method", "trace", "iofn", "n", "optim_tmb_out"),
       envir = environment()
     )
     clusterSetRNGStream(cl)
@@ -123,6 +122,7 @@ boot_par <- function(object, n = 6L,
       sink(type = "message")
     }
   }
+  rownames(m) <- names(object$par)
   class(m) <- c("egf_boot", "matrix", "array")
   m
 }

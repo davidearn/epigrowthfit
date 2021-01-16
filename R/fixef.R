@@ -1,7 +1,7 @@
 #' Extract fixed effect coefficients
 #'
-#' Retrieve coefficients (zero-sum contrasts) of the fixed effects
-#' component of each mixed effects model.
+#' Retrieve the coefficients of the fixed effects component
+#' of mixed effects models.
 #'
 #' @param object An `"egf"` object returned by [egf()].
 #' @param ... Unused optional arguments.
@@ -23,7 +23,7 @@
 #'   Within-group offsets are labeled `"offset(level)`.
 #' }
 #' \item{`estimate`}{
-#'   A numeric vector of coefficients.
+#'   A numeric vector of coefficients (zero-sum contrasts).
 #' }
 #' Row names are taken from the `"beta"` component of `object$par`.
 #'
@@ -43,9 +43,9 @@ fixef.egf <- function(object, ...) {
 
   with(object$tmb_args$data[c("fnl", "ffr")], {
     d <- data.frame(
-      response = factor(rep.int(pn, fnl), levels = pn),
-      term = factor(rep.int(names(fnl), fnl), levels = unique(names(fnl))),
-      contrast = unlist(Map(f, ffr[names(fnl)], names(fnl)), use.names = FALSE),
+      response = rep(factor(pn, levels = pn), fnl),
+      term = rep(factor(names(fnl), levels = unique(names(fnl))), fnl),
+      contrast = unlist(Map(f, ffr[names(fnl)], names(fnl))),
       estimate = beta,
       row.names = names(beta),
       stringsAsFactors = FALSE

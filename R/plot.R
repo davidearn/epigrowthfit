@@ -42,7 +42,7 @@
 #'   all deviations from `m`. Assign `Inf` to disable highlighting.
 #' @param control
 #'   A list of lists defining the appearance of various
-#'   plot elements, or otherwise `NULL`. See Details.
+#'   plot elements, or otherwise `NULL` (see Details).
 #' @param ...
 #'   Optional arguments specifying additional graphical parameters
 #'   to be recycled for all plots. Currently, only `xlim`, `ylim`,
@@ -57,15 +57,14 @@
 #' `NULL` (invisibly).
 #'
 #' @details
-#' The appearance of most plot elements can be controlled
-#' using argument `control`, which must be `NULL` or a
-#' named list containing some subset of the elements below:
+#' `control` must be `NULL` or a named list containing some subset
+#' of the elements below:
 #'
 #' \describe{
 #' \item{`box`}{
 #'   A named list of arguments to [graphics::box()], affecting
 #'   the appearance of the box drawn around the plot region.
-#'   Currently, only `bty`, `lty`, `col`, and `lwd` are used.
+#'   Currently, only `bty`, `lty`, `lwd`, and `col` are used.
 #' }
 #' \item{`xax`, `yax`}{
 #'   Named lists of arguments to [graphics::axis()], affecting
@@ -118,13 +117,15 @@
 #' If `control = NULL`, then it defaults to
 #' `get_control_default("plot.egf")`.
 #'
-#' If `control` is a list and one of its elements is only partially
-#' specified, then that element is filled out with parameter values
-#' taken from `get_control_default("plot.egf")`.
+#' If `control` is a list and one of its elements is a partially
+#' specified list
+#' (e.g., `box = list(bty)` rather than `box = c(bty, lty, lwd, col)`),
+#' then that element is filled out with values taken from
+#' `get_control_default("plot.egf")`.
 #'
-#' If `control` is a named list and one if its elements is `NULL`
-#' (rather than a list), then the corresponding plot element is
-#' suppressed.
+#' If `control` is a list and one if its elements is `NULL`
+#' (e.g., `box = NULL`), then the corresponding plot element
+#' is suppressed.
 #'
 #' @export
 #' @import graphics

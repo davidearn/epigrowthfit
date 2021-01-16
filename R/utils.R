@@ -23,12 +23,14 @@
 #' `stop_if_not_positive_integer()` stops if its argument is not a
 #' positive integer (of type `"integer"` or `"double"`).
 #' `stop_if_not_character_string()` stops if its argument is not a
-#' length 1 character vector (other than `NA_character_`).
+#' character vector of length 1 (other than `NA_character_`).
 #'
 #' @return
 #' `NULL` (invisibly).
 #'
 #' @noRd
+NULL
+
 stop_if_not <- function(..., m = "", n = 1L) {
   n <- ...length()
   for (i in seq_len(n)) {

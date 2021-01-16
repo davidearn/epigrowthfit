@@ -14,9 +14,8 @@
 #'   is prepended to each parameter name.
 #'
 #' @return
-#' `get_par_names(curve, distr, excess, link = FALSE)` returns the
-#' subset of
-#' `c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")`
+#' If `link = FALSE`, then the default method returned the subset
+#' of `c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")`
 #' relevant to `curve`, `distr`, and `excess`.
 #'
 #' @examples
@@ -76,7 +75,7 @@ get_par_names.tmb_data <- function(curve, distr = NULL, excess = NULL,
 #' @export
 get_par_names.egf <- function(curve, distr = NULL, excess = NULL,
                               link = TRUE) {
-  get_par_names(curve$tmb_args$data)
+  get_par_names(curve$tmb_args$data, link = link)
 }
 
 #' Manipulate parameter names
@@ -86,14 +85,14 @@ get_par_names.egf <- function(curve, distr = NULL, excess = NULL,
 #' @param s A character vector.
 #'
 #' @return
-#' `add_link_string()` returns `s` with `"log_"` or `"logit_"`
-#' prepended.
+#' `add_link_string()` returns `s` with prefixes
+#' `"log_"` and `"logit_"` prepended.
 #'
-#' `remove_link_string()` returns `s` without prefixes `"log_"`
-#' or `"logit_"`.
+#' `remove_link_string()` returns `s` with prefixes
+#' `"log_"` and `"logit_"` stripped.
 #'
-#' `extract_link_string()` returns the prefixes of `s` without
-#' underscore, either `"log"` or `"logit"`.
+#' `extract_link_string()` returns the prefixes of `s`
+#' without underscore, either `"log"` or `"logit"`.
 #'
 #' @noRd
 NULL
@@ -121,25 +120,25 @@ extract_link_string <- function(s) {
   s
 }
 
-#' Get link and inverse link functions
+#' Get link and inverse link
 #'
-#' Retrieve link or inverse link function corresponding to a string.
+#' Retrieve the link or inverse link function corresponding to a string.
 #'
 #' @param s A character string, either `"log"` or `"logit"`.
 #'
 #' @return
-#' If `s = "log"`, then `get_link(s) = log`
-#' and `get_inverse_link(s) = exp`.
-#'
-#' If `s = "logit"`, then `get_link(s) = stats::qlogis`
-#' and `get_inverse_link(s) = stats::plogis`.
+#' If `s = "log"`, then `log` or its inverse `exp`.
+#' If `s = "logit"`, then `function(p) qlogis(p)`
+#' or its inverse `function(q) plogis(q)`.
 #'
 #' @noRd
+NULL
+
 #' @importFrom stats qlogis
 get_link <- function(s) {
   switch(s,
     log = log,
-    logit = qlogis,
+    logit = function(p) qlogis(p),
     stop("Link not implemented.")
   )
 }
@@ -148,7 +147,7 @@ get_link <- function(s) {
 get_inverse_link <- function(s) {
   switch(s,
     log = exp,
-    logit = plogis,
+    logit = function(q) plogis(q),
     stop("Link not implemented.")
   )
 }
@@ -166,10 +165,10 @@ get_inverse_link <- function(s) {
 #' `check_fixed()` and `check_random()` return lists of `p` formulae
 #' with names `get_par_names(curve, distr, excess, link = TRUE)`.
 #' If `fixed` and `random` are already subsets of such a list, then
-#' those subsets are preserved, and the set difference is made up of
-#' `~1` and `NULL`, respectively. If `fixed` and `random` are formulae
-#' (rather than lists of formulae) or if `random` is `NULL`, then they
-#' are recycled to length `p`.
+#' those subsets are preserved, and the set difference consists of
+#' repeats of `~1` and `NULL`, respectively. If `fixed` and `random`
+#' are formulae (rather than lists of formulae) or if `random` is
+#' `NULL`, then they are recycled to length `p`.
 #'
 #' @details
 #' In R 4.0.3, formulae are deparsed with one or zero spaces on each
@@ -197,29 +196,35 @@ get_inverse_link <- function(s) {
 #'
 #' ## Time series
 #' cfm(y ~ x)
+#' ## Not run
+#' \dontrun{
+#' cfm(I(y1 + y2) ~ x) # error: arithmetic
+#' cfm("0y" ~ x)       # error: nonsyntactic variable name
+#' cfm((y) ~ x)        # error: spurious parentheses
+#' }
 #'
 #' ## Fixed effects
 #' cfx(list(log_r = ~z, log_c0 = ~z))
-#' cfx(list(log_r = ~z0, log_c0 = ~z1:z2))
-#' cfx(~z) # same as first line
-#' cfx(list(r = ~z)) # `c0` defaults to `~1` (global mean)
+#' cfx(list(log_r = ~z, log_c0 = ~z1:z2))
+#' cfx(~z)               # same as first line
+#' cfx(list(log_r = ~z)) # `log_c0` defaults to `~1` (global mean)
+#' ## Not run
+#' \dontrun{
+#' cfx(list(r = ~z, c0 = ~z1*z2)) # error: FE component restricted to 1 term
+#'                                #        (`z1*z2` expands to 3 terms)
+#' cfx(NULL)                      # error: use `~1`
+#' }
 #'
 #' ## Random effects
 #' crd(list(log_r = ~(1|z), log_c0 = ~(1|z)))
-#' crd(list(log_r = ~(1|z0), log_c0 = ~(1|z1:z2)))
-#' crd(~(1|z)) # same as first line
+#' crd(list(log_r = ~(1|z), log_c0 = ~(1|z1:z2)))
+#' crd(~(1|z))           # same as first line
 #' crd(list(r = ~(1|z))) # `c0` defaults to NULL (no RE)
-#' crd(list(r = ~(1|z0), c0 = ~(1|z1/z2))) # RE component allowed >1 term, `z1/z2` expands to 2 terms
-#'
+#' crd(list(r = ~(1|z), c0 = ~(1|z1/z2))) # RE component allowed >1 term
+#'                                        # (`z1/z2` expands to 2 terms)
 #' ## Not run
 #' \dontrun{
-#' cfm(I(y1 + y2) ~ x)             # error: arithmetic
-#' cfm("0y" ~ x)                   # error: nonsyntactic variable name
-#' cfm((y) ~ x)                    # error: spurious parentheses
-#' cfx(list(r = ~z, c = ~z))       # error: misnamed parameter
-#' cfx(list(r = ~z0, c0 = ~z1*z2)) # error: FE component restricted to 1 term, `z1*z2` expands to 3 terms
-#' cfx(NULL)                       # error: for null FE model use `~1`
-#' crd(~1)                         # error: RE terms need >1 group
+#' crd(~1) # error: RE terms need >1 group
 #' }
 #'
 #' @noRd
@@ -245,14 +250,14 @@ check_fixed <- function(fixed, curve, distr, excess) {
     inherits(fixed, "list"),
     length(fixed) >= 1L,
     vapply(fixed, inherits, FALSE, "formula"),
+    !is.null(names(fixed)),
     m = "`fixed` must be a formula or a named list of formulae."
   )
   ## Tolerate, e.g., "r" instead of "log_r" but not both
   names(fixed) <- add_link_string(remove_link_string(names(fixed)))
   stop_if_not(
-    !is.null(names(fixed)),
     names(fixed) %in% pn,
-    !any(duplicated(names(fixed))),
+    !duplicated(names(fixed)),
     m = paste0(
       "If `fixed` is a list, then `names(fixed)` must be a subset\n",
       "of `get_par_names(curve, distr, excess)`."
@@ -282,14 +287,14 @@ check_random <- function(random, curve, distr, excess) {
     inherits(random, "list"),
     length(random) >= 1L,
     vapply(random, inherits, FALSE, c("NULL", "formula")),
+    !is.null(names(random)),
     m = "`random` must be NULL, a formula, or a named list of formulae."
   )
   ## Tolerate, e.g., "r" instead of "log_r" but not both
   names(random) <- add_link_string(remove_link_string(names(random)))
   stop_if_not(
-    !is.null(names(random)),
     names(random) %in% pn,
-    !any(duplicated(names(random))),
+    !duplicated(names(random)),
     m = paste0(
       "If `random` is a list, then `names(random)` must be a subset\n",
       "of `get_par_names(curve, distr, excess)`."
@@ -331,17 +336,13 @@ check_random <- function(random, curve, distr, excess) {
 #' A data frame containing the variables named in `formula`, `fixed`,
 #' and `random`, with attributes:
 #' \item{`extra`}{
-#'   A data frame preserving data not belonging to a fitting window
+#'   A data frame preserving data not belonging to a fitting window.
 #'   (see Details).
 #' }
 #' \item{`index`}{
 #'   A factor of length `nrow(frame)` such that `split(frame, index)`
 #'   splits the frame by fitting window. Not necessarily identical to
 #'   the argument of the same name (see Details).
-#' }
-#' \item{`date_name`, `cases_name`}{
-#'   Characters strings naming the date and incidence variables in the
-#'   data frame.
 #' }
 #' \item{`fixed_term_labels`, `random_term_labels`}{
 #'   Named lists of character vectors naming mixed effects model terms
@@ -408,14 +409,15 @@ make_frame <- function(formula, fixed, random, data, index,
   dn <- all.vars(formula[[3L]]) # date
   cn <- all.vars(formula[[2L]]) # cases
   fn <- unique(unlist(lapply(c(fixed, random), all.vars))) # factors
-  an <- unique(c(dn, cn, fn))
+  an <- unique(c(dn, cn, fn)) # all
   found <- an %in% names(data)
-  if (any(!found)) {
-    stop(
+  stop_if_not(
+    all(found),
+    m = paste0(
       "Variables not found in `data`:\n",
       paste(an[!found], collapse = ", ")
     )
-  }
+  )
 
   ## Check that time series is specified correctly
   if (is.character(data[[dn]])) {
@@ -454,17 +456,17 @@ make_frame <- function(formula, fixed, random, data, index,
       lengths(data[fn]) == n,
       m = sprintf("Grouping variables must be factors of length `length(%s)`.", dn)
     )
+    data[fn] <- lapply(data[fn], droplevels, exclude = NA)
     stop_if_not(
       !vapply(data[fn], anyNA, FALSE),
       m = "Grouping variables must not have missing values."
     )
-    data[fn] <- lapply(data[fn], droplevels, exclude = NA)
   }
 
   ## Check that fitting windows are specified correctly
-  frame <- data.frame(data[an])
+  frame <- as.data.frame(data[an])
   if (is.null(index)) {
-    index <- factor(integer(n))
+    index <- rep(factor("0"), n)
   } else {
     stop_if_not(
       is.factor(index),
@@ -500,18 +502,18 @@ make_frame <- function(formula, fixed, random, data, index,
     )
   }
   if (length(fn) > 0L) {
-    factors_split <- lapply(frame_split, function(x) droplevels(x[fn]))
+    factors_split <- lapply(frame_split, function(d) droplevels(d[fn]))
     stop_if_not(
-      vapply(factors_split, function(x) all(vapply(x, nlevels, 0L) == 1L), FALSE),
+      vapply(factors_split, function(d) all(vapply(d, nlevels, 0L) == 1L), FALSE),
       m = paste0(
-        "Grouping variables must have exactly one level\n",
+        "Grouping variables must take exactly one value\n",
         "in each level of `index`."
       )
     )
     stop_if_not(
       vapply(frame[fn], nlevels, 0L) > 1L,
       m = paste0(
-        "Grouping variables must not have the same level\n",
+        "Grouping variables must not take the same value\n",
         "in every level of `index`."
       )
     )
@@ -530,8 +532,6 @@ make_frame <- function(formula, fixed, random, data, index,
   structure(droplevels(frame[keep, , drop = FALSE]),
     extra = droplevels(frame[!keep, , drop = FALSE]),
     index = index[keep],
-    date_name = dn,
-    cases_name = cn,
     fixed_term_labels = lapply(fixed, get_term_labels),
     random_term_labels = lapply(random, get_term_labels)
   )
@@ -542,10 +542,10 @@ make_frame <- function(formula, fixed, random, data, index,
 #' A wrapper for `labels(terms())` with special handling of certain
 #' formulae.
 #'
-#' @param f A formula.
+#' @param f A formula of the form `~rhs`.
 #'
 #' @return
-#' If `f` has no variable terms, as in `f = ~1`, then `"(1)"`.
+#' If `f` has no variable terms, as in `f = ~1`, then `"1"`.
 #' Otherwise, the result of `labels(terms(f))` *after* replacing
 #' terms of `f` of the form `(1 | rhs_of_bar)` with `rhs_of_bar`.
 #'
@@ -590,7 +590,7 @@ get_term_labels <- function(f) {
 #' specified by `term_label`. Unused levels are dropped.
 #'
 #' In the special case `term_label = "1"`, the result is
-#' `factor(rep("1", nrow(frame)))`.
+#' `rep(factor("1"), nrow(frame))`.
 #'
 #' @examples
 #' f <- function() factor(sample(5L, 20L, replace = TRUE))
@@ -604,7 +604,7 @@ get_factor <- function(term_label, frame) {
     return(NULL)
   }
   if (term_label == "1") {
-    return(rep.int(factor("1"), nrow(frame)))
+    return(rep(factor("1"), nrow(frame)))
   }
   s <- unique(strsplit(term_label, ":")[[1L]])
   interaction(frame[s], drop = TRUE, sep = ":")
@@ -619,8 +619,8 @@ get_factor <- function(term_label, frame) {
 #' @param x
 #'   A factor.
 #' @param sparse
-#'   A logical scalar. If TRUE, then matrix is returned in sparse
-#'   format.
+#'   A logical scalar. If TRUE, then the matrix is returned in
+#'   sparse format.
 #' @param intercept
 #'   A logical scalar. If TRUE, then zero-sum contrasts are used.
 #'   If FALSE, then no contrasts are used. See [stats::contr.sum()].
@@ -631,7 +631,7 @@ get_factor <- function(term_label, frame) {
 #'
 #' @return
 #' A matrix with `length(x)-d` rows and `nlevels(x)` columns,
-#' where `d = 0` if `anyNA(levels(x))` and `d = sum(is.na(x))`
+#' where `d = 0` if `levels(x)` contains `NA` and `d = sum(is.na(x))`
 #' otherwise.
 #'
 #' @examples
@@ -685,8 +685,9 @@ factor_to_matrix <- function(x, sparse, intercept) {
 #'   A copy of `attr(frame, "index")`. See [make_frame()].
 #' }
 #' \item{`t`}{
-#'   An integer vector of length `nrow(frame)` giving time as a number
-#'   of days since the earliest date in the fitting window.
+#'   An integer vector of length `nrow(frame)` giving time as
+#'   a number of days since the earliest date in the relevant
+#'   fitting window.
 #' }
 #' \item{`x`}{
 #'   An integer vector of length `nrow(frame)`. Within each fitting
@@ -718,7 +719,7 @@ factor_to_matrix <- function(x, sparse, intercept) {
 #' }
 #' \item{`fid`, `rid`}{
 #'   Indicator matrices with term labels for row names and parameter
-#'   names (with prefixes) for column names. Element `[i,j]` is equal
+#'   names (with prefixes) for column names. Element `[i, j]` is equal
 #'   to 1 if and only if term `i` appears in the mixed effects model
 #'   (fixed/random component) for parameter `j`.
 #' }
@@ -729,16 +730,15 @@ factor_to_matrix <- function(x, sparse, intercept) {
 #' \item{`predict_flag`}{
 #'   An integer flag set equal to 0 so that prediction code is not run.
 #' }
-#' Additional integer elements of the form `j_link_parameter` (e.g.,
-#' `j_log_r`) give the index of parameter names in `colnames(rid)`.
-#' Indexing starts at 0, and the value -1 indicates that the parameter
-#' does not appear in the incidence model being fit.
+#' Additional integer elements of the form `j_link_parameter`
+#' (e.g., `j_log_r`) give the index of parameter names (e.g., `"log_r"`)
+#' in `colnames(rid)`. Indexing starts at 0, and the value -1 indicates
+#' that the parameter is not relevant to the incidence model being fit.
 #'
 #' @examples
 #' example("make_frame", package = "epigrowthfit")
-#' tmb_data <-
-#'   epigrowthfit:::make_tmb_data(frame, curve, distr, excess,
-#'                                sparse_X = FALSE)
+#' tmb_data <- epigrowthfit:::make_tmb_data(frame, curve, distr, excess,
+#'                                          sparse_X = FALSE)
 #'
 #' @keywords internal
 #' @importFrom Matrix sparseMatrix
@@ -752,14 +752,14 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
   pn <- get_par_names(curve, distr, excess, link = TRUE) # model
   pn0 <- get_par_names(link = TRUE) # all
 
-  ## Compute time as number of days since start of fitting window
-  date_to_integer <- function(x) as.integer(x - x[1L])
-  dn <- a$date_name
-  t <- unlist(lapply(split(frame[[dn]], a$index), date_to_integer), use.names = FALSE)
+  ## Compute time as number of days since start of fitting window.
+  ## No issues with permutation here as `index` is ordered by level.
+  date_to_integer <- function(x) days(x, since = x[1L])
+  t <- unlist(lapply(split(frame[[1L]], a$index), date_to_integer), use.names = FALSE)
 
-  ## Set unused first observations to NA (avoids confusion)
-  cn <- a$cases_name
-  x <- frame[[cn]]
+  ## Set unused first observations to NA. They are unused regardless,
+  ## and this makes that explicit.
+  x <- frame[[2L]]
   x[!duplicated(a$index)] <- NA_integer_
 
   ## Find lengths of fitting windows
@@ -891,8 +891,8 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
 #' }
 #' The naive estimates are log-transformed (all but `p`) or
 #' logit-transformed (`p` only), and coefficients are obtained
-#' from the within-group means assuming zero-sum contrasts
-#' to form segments of parameter object `beta`.
+#' from the within-group means (assuming zero-sum contrasts)
+#' to form segments of the parameter object `beta`.
 #'
 #' When `par_init = NULL` and there are random effects,
 #' `log_sd_b` and `b` are for simplicity initialized as zero vectors.
@@ -901,8 +901,9 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
 #' A list with elements:
 #' \item{`beta`}{
 #'   A numeric vector of length `sum(tmb_data$fnl)` listing initial
-#'   values for the fixed effects coefficients, namely between-group
-#'   means and within-group offsets.
+#'   values for the fixed effects coefficients, each of which represents
+#'   the mean of a set of within-group means or a within-group offset
+#'   from that mean.
 #' }
 #' \item{`log_sd_b`}{
 #'   If there are random effects, then a numeric vector of length
@@ -917,14 +918,14 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
 #'
 #' @examples
 #' example("make_tmb_data", package = "epigrowthfit")
-#' tmb_parameters <-
-#'   epigrowthfit:::make_tmb_parameters(tmb_data, curve, distr, excess,
-#'                                      par_init = NULL)
+#' tmb_parameters <- epigrowthfit:::make_tmb_parameters(tmb_data, curve, distr, excess,
+#'                                                      par_init = NULL)
 #'
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis
-make_tmb_parameters <- function(tmb_data, curve, distr, excess, par_init) {
-  re <- has_random(tmb_data)
+make_tmb_parameters <- function(tmb_data, curve, distr, excess,
+                                par_init) {
+  any_re <- has_random(tmb_data)
 
   ## If user did not specify a parameter vector
   if (is.null(par_init)) {
@@ -973,12 +974,12 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess, par_init) {
     beta <- unlist(lapply(pn, function(s) {
       tl <- names(tmb_data$fnl)[match(s, pn)]
       ## within-group means
-      m <- vapply(split(pfr[[s]], ffr[[tl]]), mean, 0)
+      m <- vapply(split(pfr[[s]], ffr[[tl]]), mean, 0, USE.NAMES = FALSE)
       ## mean of means
       mm <- mean(m)
-      unname(c(mm, m[-length(m)] - mm))
+      c(mm, m[-length(m)] - mm)
     }))
-    if (re) {
+    if (any_re) {
       log_sd_b <- rep.int(0, sum(tmb_data$rid))
       b <- rep.int(0, sum(tmb_data$rnl * rowSums(tmb_data$rid)))
     } else {
@@ -990,8 +991,8 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess, par_init) {
   } else {
     p <- c(
       beta     = sum(tmb_data$fnl),
-      log_sd_b = if (re) sum(tmb_data$rid),
-      b        = if (re) sum(tmb_data$rnl * rowSums(tmb_data$rid))
+      log_sd_b = if (any_re) sum(tmb_data$rid),
+      b        = if (any_re) sum(tmb_data$rnl * rowSums(tmb_data$rid))
     )
     stop_if_not(
       is.numeric(par_init),
@@ -999,12 +1000,13 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess, par_init) {
       is.finite(par_init),
       m = sprintf("`par_init` must be a finite numeric vector of length %d.", sum(p))
     )
-
-    par_init <- unname(par_init)
+    if (!is.null(names(par_init))) {
+      names(par_init) <- NULL
+    }
     beta <- par_init[seq_len(p[1L])]
-    if (re) {
-      log_sd_b <- par_init[p[1L] + seq_len(p[2L])]
-      b <- par_init[p[1L] + p[2L] + seq_len(p[3L])]
+    if (any_re) {
+      log_sd_b <- par_init[seq.int(to = sum(p[1:2]), length.out = p[2L])]
+      b <- par_init[seq.int(to = sum(p), length.out = p[3L])]
     } else {
       log_sd_b <- NA_real_
       b <- NA_real_
@@ -1031,9 +1033,8 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess, par_init) {
 #'
 #' @examples
 #' example("make_frame", package = "epigrowthfit")
-#' tmb_args <-
-#'   epigrowthfit:::make_tmb_args(frame, curve, distr, excess,
-#'                                sparse_X = FALSE, par_init = NULL)
+#' tmb_args <- epigrowthfit:::make_tmb_args(frame, curve, distr, excess,
+#'                                          sparse_X = FALSE, par_init = NULL)
 #' tmb_out <- do.call(TMB::MakeADFun, tmb_args)
 #'
 #' @seealso [make_tmb_data()], [make_tmb_parameters()]
@@ -1070,7 +1071,7 @@ make_tmb_args <- function(frame, curve, distr, excess,
 #' @return
 #' `TRUE` if `object` specifies random effects and `FALSE` otherwise.
 #'
-#' @keywords internal
+#' @noRd
 has_random <- function(object) {
   UseMethod("has_random", object)
 }
@@ -1099,12 +1100,13 @@ has_random.egf <- function(object) {
 #'
 #' @examples
 #' example("make_tmb_args", package = "epigrowthfit")
-#' m <- c("nlminb", "nlm", "Nelder-Mead", "BFGS")
-#' s <- c("par", "estimate", "par", "par")
 #' f <- function(m, s) optim_tmb_out(tmb_out, method = m)[[s]]
 #' ## Not run
 #' \dontrun{
-#' pp <- Map(f, m = m, s = s) # needs 1-2 min
+#' pp <- Map(f,
+#'   m = c("nlminb", "nlm", "Nelder-Mead", "BFGS")
+#'   s = c("par", "estimate", "par", "par")
+#' )
 #' }
 #'
 #' @noRd

@@ -31,18 +31,18 @@
 #'   named in `formula`, `fixed`, and `random`.
 #' @param index
 #'   A factor of length `nrow(data)` such that `split(data, index)`
-#'   splits `data` by fitting window. In this case, `is.na(index)`
-#'   should index rows of `data` not belonging to a fitting window.
-#'   `NULL` (the default) is equivalent to `factor(integer(nrow(data)))`.
+#'   splits `data` by fitting window and `is.na(index)` indexes
+#'   the rows of `data` not belonging to a fitting window. `NULL`
+#'   (the default) is equivalent to `factor(integer(nrow(data)))`.
 #' @param curve
 #'   A character string specifying a cumulative incidence model.
 #' @param distr
 #'   A character string specifying an observation model.
 #' @param excess
-#'   A logical scalar. If `TRUE`, then a constant baseline mortality
-#'   rate will be estimated. Set to `TRUE` if what is observed
-#'   (`y` if `formula = y ~ x`) is multiple causes mortality
-#'   rather than disease mortality or disease incidence.
+#'   A logical scalar. If `TRUE`, then a constant baseline
+#'   mortality rate is estimated. Set to `TRUE` if what is
+#'   observed (`y` if `formula = y ~ x`) is multiple causes
+#'   mortality rather than disease mortality or disease incidence.
 #' @param method
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
@@ -73,15 +73,16 @@
 #' If `debug = FALSE`, then a list inheriting from class `"egf"`,
 #' with elements:
 #' \item{`frame`}{
-#'   The model frame. This is a data frame containing _only_ the
-#'   variables named in `formula`, `fixed`, and `random`. Data not
-#'   belonging to a fitting window appear in the tail.
+#'   The model frame. This is a data frame containing only the
+#'   variables named in `formula`, `fixed`, and `random`. Data
+#'   not belonging to a fitting window are omitted (but stored
+#'   as an attribute). See [make_frame()].
 #' }
 #' \item{`index`}{
 #'   A factor of length `nrow(data)` such that `split(frame, index)`
-#'   splits the model frame by fitting window. Not necessarily identical
-#'   to the so-named argument, as `frame` may be a permutation of the
-#'   rows of `data`.
+#'   splits the model frame by fitting window. Not necessarily
+#'   identical to the so-named argument, as `frame` is constructed
+#'   by permuting and subsetting the rows of `data`.
 #' }
 #' \item{`curve`, `distr`, `excess`, `method`}{
 #'   Copies of the so-named arguments (after matching).
@@ -124,9 +125,8 @@
 #'   The call to `egf()`, allowing for updates to the `"egf"` object
 #'   via [stats::update()].
 #' }
-#'
-#' If `debug = TRUE`, then a list with elements `frame`, `tmb_args`,
-#' and `par_init`.
+#' If `debug = TRUE`, then a list with only the elements `frame`,
+#' `tmb_args`, and `par_init`.
 #'
 #' @export
 #' @importFrom TMB MakeADFun sdreport
@@ -155,25 +155,30 @@ egf <- function(formula,
   stop_if_not_tf(sparse_X)
   stop_if_not_tf(debug)
 
-  frame <- make_frame(formula, fixed, random, data, index,
-                      curve, distr, excess, na_action, date_format)
-  tmb_args <- make_tmb_args(frame, curve, distr, excess,
-                            sparse_X, par_init)
+  frame <- make_frame(formula = formula, fixed = fixed, random = random,
+                      data = data, index = index,
+                      curve = curve, distr = distr, excess = excess,
+                      na_action = na_action, date_format = date_format)
+  tmb_args <- make_tmb_args(frame = frame,
+                            curve = curve, distr = distr, excess = excess,
+                            sparse_X = sparse_X, par_init = par_init)
   if (debug) {
     pl <- tmb_args$parameters
-    par_init <- rename_par(unlist(Map("names<-", unname(pl), Map(rep.int, names(pl), lengths(pl)))))
+    pn <- Map(rep.int, names(pl), lengths(pl))
+    par_init <- rename_par(unlist(Map("names<-", pl, pn, USE.NAMES = FALSE)))
     out <- list(frame = frame, tmb_args = tmb_args, par_init = par_init)
     return(out)
   }
 
   tmb_out <- do.call(MakeADFun, tmb_args)
-  optim_out <- optim_tmb_out(tmb_out, method, ...)
+  optim_out <- optim_tmb_out(tmb_out, method = method, ...)
 
   par_init <- rename_par(tmb_out$env$par)
   par <- rename_par(tmb_out$env$last.par.best)
   nonrandom <- grep("^b\\[", names(par), invert = TRUE)
 
-  nll <- optim_out[[switch(method, nlminb = "objective", nlm = "minimum", "value")]]
+  s <- switch(method, nlminb = "objective", nlm = "minimum", "value")
+  nll <- optim_out[[s]]
   nll_func <- function(x = par) as.numeric(tmb_out$fn(x[nonrandom]))
   nll_grad <- function(x = par) as.vector(tmb_out$gr(x[nonrandom]))
 

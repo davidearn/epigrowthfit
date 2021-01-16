@@ -1,4 +1,4 @@
-#' Compute confidence intervals
+#' Confidence intervals on fitted values
 #'
 #' Computes confidence intervals on fitted values of response variables
 #' (see [fitted.egf()]) and, where appropriate, the basic reproduction
@@ -19,7 +19,7 @@
 #'   inverse-link transformed fitted values are returned.
 #' @param method
 #'   A character string indicating how confidence intervals should
-#'   be calculated. See Details.
+#'   be calculated (see Details).
 #' @param max_width
 #'   A positive numeric vector, to be recycled to length `length(parm)`.
 #'   [TMB::tmbroot()] will search for roots in the interval from
@@ -35,9 +35,10 @@
 #' Three methods are provided for calculating confidence intervals:
 #' \describe{
 #' \item{`wald`}{
-#'   Confidence limits on fitted values (link scale) are computed as
-#'   `estimate +/- (standard error) * sqrt(qchisq(level, df = 1))`.
-#'   See the Wald test.
+#'   Confidence limits on a fitted value (link scale) are computed as
+#'   `estimate + c(-1, 1) * sqrt(q) * se`,
+#'   where `q = qchisq(level, df = 1)` and `estimate` and `se` are the
+#'   fitted value and its approximate (delta method) standard error.
 #' }
 #' \item{`profile`}{
 #'   A discrete approximation of the negative log likelihood profile
@@ -58,11 +59,11 @@
 #' following a mixed (rather than fixed) effects model.
 #'
 #' `"wald"` requires minimal computation time but assumes, e.g.,
-#' asymptotic normality of the maximum likelihood estimator of
-#' the restricted model. A further limitation of `"wald"` is
-#' functional non-invariance. `"profile"` and `"uniroot"` are
-#' naturally much slower, requiring estimation of the restricted
-#' model. Of the two, `"uniroot"` is typically less robust.
+#' asymptotic normality of the maximum likelihood estimator.
+#' A further limitation of `"wald"` is functional non-invariance.
+#' `"profile"` and `"uniroot"` avoid these issues but are much
+#' slower, requiring estimation of restricted models. Of the two,
+#' `"uniroot"` is typically less robust.
 #'
 #' @return
 #' A data frame inheriting from class `"egf_confint"`,
@@ -89,10 +90,10 @@ confint.egf <- function(object, parm = get_par_names(object),
                         outfile = NULL,
                         cl = NULL,
                         breaks = NULL, probs = NULL, ...) {
-  curve_is_exp_in_limit <-
-    (object$curve %in% c("exponential", "logistic", "richards"))
-  pn <- get_par_names(object, link = TRUE)
-  pn0 <- if (curve_is_exp_in_limit) c("R0", "tdoubling", pn) else pn
+  pn <- pn0 <- get_par_names(object, link = TRUE)
+  if (object$curve %in% c("exponential", "logistic", "richards")) {
+    pn0 <- c("R0", "tdoubling", pn0)
+  }
   stop_if_not(
     is.character(parm),
     length(parm) > 0L,
@@ -103,8 +104,8 @@ confint.egf <- function(object, parm = get_par_names(object),
     )
   )
   if ("R0" %in% parm && (is.null(breaks) || is.null(probs))) {
-    stop("`parm = \"R0\"` requires non-NULL\n",
-         "`breaks` and `probs`. See ?compute_R0.")
+    stop("`parm = \"R0\"` requires non-NULL `breaks`, `probs`.\n",
+         "See `help(\"compute_R0\")`.")
   }
   stop_if_not(
     is.numeric(level),
@@ -116,7 +117,7 @@ confint.egf <- function(object, parm = get_par_names(object),
   stop_if_not_tf(link)
   method <- match.arg(method)
 
-  parm0 <- parm <- add_link_string(unique(remove_link_string(parm)))
+  parm <- parm0 <- add_link_string(unique(remove_link_string(parm)))
   parm[parm %in% c("R0", "tdoubling")] <- "log_r"
   parm <- unique(parm)
   fr <- object$frame[!duplicated(object$index), -(1:2), drop = FALSE]
@@ -140,7 +141,7 @@ confint.egf <- function(object, parm = get_par_names(object),
       parm <- remove_link_string(parm)
     }
     out <- cbind(
-      par = factor(rep(parm, each = nrow(fr)), levels = parm),
+      par = rep(factor(parm, levels = parm), each = nrow(fr)),
       do.call(rbind, rep.int(list(fr), length(parm))),
       do.call(rbind, ml)
     )
@@ -158,7 +159,7 @@ confint.egf <- function(object, parm = get_par_names(object),
     )
 
     if (method == "profile") {
-      pr <- profile(object,
+      p <- profile(object,
         parm = parm,
         decontrast = TRUE,
         max_level = level + min(0.01, 0.1 * (1 - level)),
@@ -169,7 +170,7 @@ confint.egf <- function(object, parm = get_par_names(object),
         outfile = outfile,
         cl = cl
       )
-      out_point_five <- confint(pr, level = level)
+      out_point_five <- confint(p, level = level)
     } else if (method == "uniroot") {
       stop_if_not(
         is.numeric(max_width),
@@ -193,8 +194,7 @@ confint.egf <- function(object, parm = get_par_names(object),
       }
 
       if (parallel == "snow") {
-        ## See comment in R/boot.R
-        environment(f) <- environment(iofn) <- .GlobalEnv
+        environment(f) <- environment(iofn) <- .GlobalEnv # see R/boot.R
 
         if (is.null(cl)) {
           if (is.null(outfile)) {
@@ -237,16 +237,17 @@ confint.egf <- function(object, parm = get_par_names(object),
 
     ## To create output matching `method = "wald"`, we need to map
     ## `out_point_five$name`, which has elements like "beta[1]+beta[2]",
-    ## to fitting windows (rows of `fr`). If `link = FALSE`, we also
-    ## need to inverse link transform `estimate`, `lower`, `upper`.
+    ## to fitting windows (rows of `fr`). If `link = FALSE`, then we
+    ## also need to inverse link transform `estimate`, `lower`, `upper`.
 
     fnl <- object$tmb_args$data$fnl
     ffr <- object$tmb_args$data$ffr[!duplicated(object$index), , drop = FALSE]
     d0 <- data.frame(
-      name = unlist(lapply(split(names(object$par), rep.int(seq_along(fnl), fnl)), decontrast_beta_names), use.names = FALSE),
+      name = unlist(lapply(split(names(object$par), rep.int(seq_along(fnl), fnl)), decontrast_beta_names)),
       response = rep.int(pn, fnl),
       term = rep.int(names(fnl), fnl),
-      level = unlist(lapply(ffr[names(fnl)], levels), use.names = FALSE),
+      level = unlist(lapply(ffr[names(fnl)], levels)),
+      row.names = NULL,
       stringsAsFactors = FALSE
     )
     dl <- split(out_point_five, d0$response[match(out_point_five$name, d0$name)])
@@ -301,6 +302,31 @@ confint.egf <- function(object, parm = get_par_names(object),
   out
 }
 
+#' Confidence intervals from likelihood profiles
+#'
+#' Computes confidence intervals on fixed effect coefficients,
+#' log standard deviations of random effects, and linear combinations
+#' thereof from their (univariate) likelihood profiles.
+#'
+#' @param object
+#'   An `"egf_profile"` object returned by [profile.egf()].
+#' @param parm
+#'   Unused argument included for generic consistency.
+#' @inheritParams confint.egf
+#'
+#' @details
+#' For each likelihood profile (level of `object$name`),
+#' [TMB::confint.tmbprofile()] is called to approximate
+#' (via linear interpolation) the two solutions of
+#' `deviance(x) = qchisq(level, df = 1)`. These are
+#' the lower and upper confidence limits of interest.
+#'
+#' @return
+#' A data frame with character variable `name` equal to
+#' `levels(object$name)` and numeric variables `estimate`,
+#' `lower`, and `upper` supplying estimates and confidence
+#' intervals.
+#'
 #' @export
 #' @importFrom stats qchisq confint
 confint.egf_profile <- function(object, parm, level = 0.95, ...) {
@@ -334,17 +360,54 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
     name = names(object_split),
     estimate,
     ci,
+    row.names = NULL,
     stringsAsFactors = FALSE
   )
-  row.names(out) <- NULL
   attr(out, "level") <- level
   out
 }
 
+#' Confidence bands on log predicted incidence
+#'
+#' Computes confidence bands on log predicted incidence assuming
+#' asymptotic normality of the estimator.
+#'
+#' @param object
+#'   An `"egf_predict"` object returned by [predict.egf()].
+#'   Must supply standard errors on log predicted incidence.
+#' @param log
+#'   A logical scalar. If `FALSE`, then log predicted incidence and
+#'   the corresponding confidence bands are inverse log transformed.
+#' @inheritParams confint.egf_profile
+#'
+#' @details
+#' Confidence bands on log predicted incidence are computed as
+#' `estimate + c(-1, 1) * q * se`, where `q = qnorm(0.5 * (1 + level))`
+#' and `estimate` and `se` are log predicted incidence and the
+#' approximate (delta method) standard errors.
+#'
+#' @return
+#' If `log = TRUE`, then `object` but with variable `se` in each listed
+#' data frame replaced with two variables `lower` and `upper` supplying
+#' confidence bands on log predicted incidence.
+#'
+#' Otherwise, the same list but with variables `estimate`, `lower`,
+#' and `upper` inverse log transformed in each listed data frame.
+#' In this case, the listed data frames are named `cum_inc` and
+#' `int_inc`, rather than `log_cum_inc` and `log_int_inc`.
+#'
 #' @export
-#' @importFrom stats qchisq
+#' @importFrom stats qnorm
 confint.egf_predict <- function(object, parm, level = 0.95,
                                 log = TRUE, ...) {
+  stop_if_not(
+    "se" %in% names(object$log_cum_inc),
+    "se" %in% names(object$log_int_inc),
+    m = paste0(
+      "`object` must supply standard errors.\n",
+      "Repeat `predict()` but with argument `se = TRUE`."
+    )
+  )
   stop_if_not(
     is.numeric(level),
     length(level) == 1L,
@@ -353,9 +416,9 @@ confint.egf_predict <- function(object, parm, level = 0.95,
     m = "`level` must be a number in the interval (0,1)."
   )
 
-  q <- qchisq(level, df = 1)
+  q <- qnorm(0.5 * (1 + level))
   f <- function(d) {
-    elu <- d$estimate + outer(d$se, c(0, -1, 1) * sqrt(q))
+    elu <- d$estimate + outer(d$se, c(0, -q, q))
     colnames(elu) <- c("estimate", "lower", "upper")
     data.frame(time = d$time, if (log) elu else exp(elu))
   }

@@ -18,13 +18,14 @@
 #' @details
 #' Contrary to the documentation of generic function [stats::vcov()],
 #' `vcov.egf()` does _not_ return the covariance matrix corresponding
-#' to the output of [coef.egf()], which returns fitted values,
-#' not coefficients, of the generalized linear mixed effects models.
+#' to the output of [coef.egf()]. [coef.egf()] is an alias for
+#' [fitted.egf()] and so returns fitted values, not coefficients.
 #'
 #' @return
-#' A matrix of covariances or correlations. The number of rows is
-#' equal to the length of the `"beta"` component of `object$par`
-#' plus, if `full = TRUE`, the length the `"log_sd_b"` component.
+#' A matrix of covariances or correlations inheriting from class
+#' `"egf_vcov"`. The number of rows is equal to the length of the
+#' `"beta"` component of `object$par` plus, if `full = TRUE`, the
+#' length the `"log_sd_b"` component.
 #'
 #' @export
 #' @importFrom TMB sdreport
@@ -33,8 +34,17 @@ vcov.egf <- function(object, full = FALSE, cor = FALSE, ...) {
   stop_if_not_tf(full)
   stop_if_not_tf(cor)
 
-  k <- if (full) object$nonrandom else grep("^beta\\[", names(object$par))
-  m <- if (cor) cov2cor(object$report$cov[k, k]) else object$report$cov[k, k]
+  if (full) {
+    k <- object$nonrandom
+  } else {
+    k <- grep("^beta\\[", names(object$par))
+  }
+  if (cor) {
+    m <- cov2cor(object$report$cov[k, k])
+  } else {
+    m <- object$report$cov[k, k]
+  }
   dimnames(m) <- rep.int(list(names(object$par)[k]), 2L)
+  class(m) <- c("egf_vcov", "matrix", "array")
   m
 }

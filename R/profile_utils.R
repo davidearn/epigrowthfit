@@ -42,25 +42,23 @@ decontrast_beta_names <- function(x) {
 }
 
 make_lin_comb_for_parm <- function(object, parm) {
-  parm <- unname(parm)
+  fnl <- object$tmb_args$data$fnl
+  rid <- object$tmb_args$data$rid
+
   pn <- get_par_names(object, link = TRUE)
-  pn_along_par <- with(object$tmb_args$data[c("fnl", "rid")], {
-    c(rep.int(pn, fnl), rep.int(pn, nrow(rid))[t(rid) > 0L])
-  })
+  pn_along_par <- c(rep.int(pn, fnl), rep.int(pn, nrow(rid))[t(rid) > 0L])
   lin_comb <- make_lin_comb(object)
 
   f <- function(s) {
     i <- which(pn_along_par == s)
+    k <- seq_len(fnl[match(s, pn)])
     m <- lin_comb[i, , drop = FALSE]
-    rownames(m) <- with(object$tmb_args$data["fnl"], {
-      rn <- names(object$par)[i]
-      j <- seq_len(fnl[match(s, pn)])
-      rn[j] <- decontrast_beta_names(rn[j])
-      rn
-    })
+    rn <- names(object$par)[i]
+    rn[k] <- decontrast_beta_names(rn[k])
+    rownames(m) <- rn
     m
   }
-  do.call(rbind, lapply(parm, f))
+  do.call(rbind, lapply(unname(parm), f))
 }
 
 make_index_for_parm <- function(object, parm) {

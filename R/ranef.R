@@ -49,10 +49,10 @@ ranef.egf <- function(object, ...) {
 
   with(object$tmb_args$data[c("rnl", "rfr", "rid")], {
     rnl_times_rid <- rnl * rid
-    d <- data.frame(
-      response = factor(rep.int(rep.int(pn, nrow(rid)), t(rnl_times_rid)), levels = pn),
-      term = factor(rep.int(rownames(rid), rowSums(rnl_times_rid)), levels = rownames(rid)),
-      level = unlist(Map(rep.int, lapply(rfr[rownames(rid)], levels), rowSums(rid)), use.names = FALSE),
+    out <- data.frame(
+      response = rep(rep(factor(pn, levels = pn), nrow(rid)), t(rnl_times_rid)),
+      term = rep(factor(rownames(rid), levels = rownames(rid)), rowSums(rnl_times_rid)),
+      level = unlist(Map(rep.int, lapply(rfr[rownames(rid)], levels), rowSums(rid))),
       mode = b,
       sd = rep.int(exp(log_sd_b), t(rnl_times_rid)[t(rid) > 0L]),
       row.names = names(b),
@@ -67,8 +67,8 @@ ranef.egf <- function(object, ...) {
       pn <- colnames(rid)[rid[i, ] > 0L]
       rep(list(pn), 2L)
     })
-    attr(d, "cov") <- Map("dimnames<-", ml, dnl)
-    class(d) <- c("egf_ranef", "data.frame")
-    d
+    attr(out, "cov") <- Map("dimnames<-", ml, dnl)
+    class(out) <- c("egf_ranef", "data.frame")
+    out
   })
 }

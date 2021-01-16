@@ -1,15 +1,15 @@
-#' Compute predicted incidence time series
+#' Compute predicted incidence
 #'
-#' Computes predicted values of log cumulative and log interval
-#' incidence given user-specified time points.
+#' Computes predicted values of log cumulative incidnece
+#' and log interval incidence given user-specified time points.
 #'
 #' @param object
 #'   An `"egf"` object returned by [egf()].
 #' @param subset
 #'   A named list of atomic vectors of length 1 specifying exactly
 #'   one level for each factor in `object$frame` (and thus a unique
-#'   parametrization of the incidence model). Use the default (`NULL`)
-#'   if (and only if) there are no factors in `object$frame`.
+#'   fitting window). Use the default (`NULL`) if and only if
+#'   `object$frame` has no factors.
 #' @param time
 #'   A numeric vector listing increasing time points in days since
 #'   the start of the fitting window specified by `subset`.
@@ -20,7 +20,7 @@
 #'   Unused optional arguments.
 #'
 #' @details
-#' Elements of `subset` must be named and have the form
+#' Elements of `subset` (if non-`NULL`) must have the form
 #' `factor_name = level_name`, where `factor_name` is
 #' the name of a factor in `object$frame` and `level_name`
 #' is an element of `levels(object$frame$factor_name)`.
@@ -31,9 +31,10 @@
 #' `time`, `estimate`, and `se` (if `se = TRUE`).
 #'
 #' `log_cum_inc$estimate[i]` stores log cumulative incidence at
-#' `time[i]`. `log_int_inc$estimate[i]` stores log incidence during
-#' the interval from `time[i-1]` to `time[i]`.
+#' `time[i]`. For `i > 1`, `log_int_inc$estimate[i]` stores log
+#' incidence during the interval from `time[i-1]` to `time[i]`.
 #'
+#' @seealso [confint.egf_predict()]
 #' @export
 #' @importFrom TMB MakeADFun sdreport
 predict.egf <- function(object, subset = NULL, time = NULL,
@@ -90,7 +91,8 @@ predict.egf <- function(object, subset = NULL, time = NULL,
     )
   )
 
-  ## Create data objects needed to run prediction code in C++ template
+  ## Create the data objects needed to run prediction code
+  ## in C++ template
   sparse_X_flag <- Xs <- Xd <- Z <- NULL # R CMD check
   object$tmb_args$data <- within(object$tmb_args$data, {
     predict_flag <- 1L
@@ -112,6 +114,7 @@ predict.egf <- function(object, subset = NULL, time = NULL,
   })
 
   tmb_out_new <- do.call(MakeADFun, object$tmb_args)
+
   if (se) {
     tmb_out_new$fn(object$par[object$nonrandom])
     ssdr <- split_sdreport(sdreport(tmb_out_new))
@@ -126,6 +129,7 @@ predict.egf <- function(object, subset = NULL, time = NULL,
       log_int_inc = data.frame(time, estimate = c(NA_real_, r$log_int_inc_new))
     )
   }
+  attr(out, "subset") <- subset
   attr(out, "refdate") <- object$frame$date[i]
   class(out) <- c("egf_predict", "list")
   out
