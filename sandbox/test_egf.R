@@ -1,4 +1,4 @@
-load("data/canadacovid.RData")
+library("epigrowthfit")
 
 ontario <- subset(canadacovid, province == "ON")
 ontario$wave <- factor(rep(1:3, diff(c(0L, 100L, 250L, 346L))))
@@ -31,4 +31,8 @@ object <- egf(new_confirmed ~ date,
   curve = "logistic",
   distr = "nbinom",
 )
-plot(object, group_by = ~province, control = list(text_dbl = list(cex = 0.6, pos = 4, offset = 1.5)))
+
+plot(object,
+  group_by = ~province,
+  control = list(text_dbl = list(cex = 0.6))
+)
