@@ -134,3 +134,68 @@ predict.egf <- function(object, subset = NULL, time = NULL,
   class(out) <- c("egf_predict", "list")
   out
 }
+
+#' Confidence bands on predicted incidence
+#'
+#' Computes confidence bands on predicted incidence assuming
+#' asymptotic normality.
+#'
+#' @param object
+#'   An `"egf_predict"` object returned by [predict.egf()].
+#'   Must supply standard errors on log predicted incidence.
+#' @param log
+#'   A logical scalar. If `FALSE`, then log predicted incidence and
+#'   the corresponding confidence bands are inverse log transformed.
+#' @inheritParams confint.egf_profile
+#'
+#' @details
+#' Confidence bands on log predicted incidence are computed as
+#' `estimate + c(-1, 1) * q * se`, where `q = qnorm(0.5 * (1 + level))`
+#' and `estimate` and `se` are log predicted incidence and the
+#' approximate (delta method) standard errors.
+#'
+#' @return
+#' If `log = TRUE`, then `object` but with variable `se` in each listed
+#' data frame replaced with two variables `lower` and `upper` supplying
+#' confidence bands on log predicted incidence.
+#'
+#' Otherwise, the same list but with variables `estimate`, `lower`,
+#' and `upper` inverse log transformed in each listed data frame.
+#' In this case, the list has names `c("cum_inc", "int_inc")`,
+#' rather than `c("log_cum_inc", "log_int_inc")`
+#'
+#' @export
+#' @importFrom stats qnorm
+confint.egf_predict <- function(object, parm, level = 0.95,
+                                log = TRUE, ...) {
+  stop_if_not(
+    "se" %in% names(object$log_cum_inc),
+    "se" %in% names(object$log_int_inc),
+    m = paste0(
+      "`object` must supply standard errors.\n",
+      "Repeat `predict()` but with argument `se = TRUE`."
+    )
+  )
+  stop_if_not(
+    is.numeric(level),
+    length(level) == 1L,
+    level > 0,
+    level < 1,
+    m = "`level` must be a number in the interval (0,1)."
+  )
+
+  q <- qnorm(0.5 * (1 + level))
+  f <- function(d) {
+    elu <- d$estimate + outer(d$se, c(0, -1, 1) * q)
+    colnames(elu) <- c("estimate", "lower", "upper")
+    data.frame(time = d$time, if (log) elu else exp(elu))
+  }
+  out <- lapply(object, f)
+  if (!log) {
+    names(out) <- sub("^log_", "", names(out))
+  }
+  attr(out, "subset") <- attr(object, "subset")
+  attr(out, "refdate") <- attr(object, "refdate")
+  attr(out, "level") <- level
+  out
+}

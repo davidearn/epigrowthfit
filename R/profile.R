@@ -220,3 +220,68 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
   class(out) <- c("egf_profile", "data.frame")
   out
 }
+
+#' Confidence intervals from likelihood profiles
+#'
+#' Computes confidence intervals on fixed effect coefficients,
+#' log standard deviations of random effects, and linear combinations
+#' thereof from their (univariate) likelihood profiles.
+#'
+#' @param object
+#'   An `"egf_profile"` object returned by [profile.egf()].
+#' @param parm
+#'   Unused argument included for generic consistency.
+#' @inheritParams confint.egf
+#'
+#' @details
+#' For each likelihood profile (level of `object$name`),
+#' [TMB::confint.tmbprofile()] is called to approximate
+#' (via linear interpolation) the two solutions of
+#' `deviance(x) = qchisq(level, df = 1)`. These are
+#' the lower and upper confidence limits of interest.
+#'
+#' @return
+#' A data frame with character variable `name` equal to
+#' `levels(object$name)` and numeric variables `estimate`,
+#' `lower`, and `upper` supplying estimates and confidence
+#' intervals.
+#'
+#' @export
+#' @importFrom stats qchisq confint
+confint.egf_profile <- function(object, parm, level = 0.95, ...) {
+  stop_if_not(
+    is.numeric(level),
+    length(level) == 1L,
+    level > 0,
+    level < 1,
+    m = "`level` must be a number in the interval (0,1)."
+  )
+  stop_if_not(
+    qchisq(level, df = 1) < max(object$deviance, na.rm = TRUE),
+    m = paste0(
+      "Maximum deviance must exceed `qchisq(level, df = 1)`.\n",
+      "Reprofile with higher `max_level` or retry with lower `level`."
+    )
+  )
+
+  object_split <- split(object, object$name)
+  f <- function(d) d[which.min(d[["deviance"]]), "value"]
+  estimate <- vapply(object_split, f, 0)
+  g <- function(d) {
+    d <- d[c("value", "deviance")]
+    names(d) <- c("parameter", "value")
+    class(d) <- c("tmbprofile", "data.frame")
+    confint(d)
+  }
+  ci <- do.call(rbind, lapply(object_split, g))
+
+  out <- data.frame(
+    name = names(object_split),
+    estimate,
+    ci,
+    row.names = NULL,
+    stringsAsFactors = FALSE
+  )
+  attr(out, "level") <- level
+  out
+}

@@ -32,11 +32,10 @@
 #' There is one matrix per random effects term and, for a given term,
 #' one row per response whose mixed effects model includes the term.
 #'
+#' @aliases ranef
 #' @export
-ranef <- nlme::ranef
-
-#' @rdname ranef
-#' @export
+#' @export ranef
+#' @importFrom nlme ranef
 ranef.egf <- function(object, ...) {
   stop_if_not(
     has_random(object),

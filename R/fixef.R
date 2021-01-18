@@ -27,11 +27,10 @@
 #' }
 #' Row names are taken from the `"beta"` component of `object$par`.
 #'
+#' @aliases fixef
 #' @export
-fixef <- nlme::fixef
-
-#' @rdname fixef
-#' @export
+#' @export fixef
+#' @importFrom nlme fixef
 fixef.egf <- function(object, ...) {
   beta <- object$par[grep("^beta\\[", names(object$par))]
   pn <- get_par_names(object, link = TRUE)
