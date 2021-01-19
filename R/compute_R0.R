@@ -42,6 +42,25 @@
 #' `R0 = compute_R0.default(r = exp(d$log_r), breaks, probs)`,
 #' and returns the result omitting extraneous variables.
 #'
+#' @examples
+#' data(plague_latent_period)
+#' lat <- plague_latent_period$relfreq
+#' m <- length(lat)
+#'
+#' data(plague_infectious_period)
+#' inf <- plague_infectious_period$relfreq
+#' n <- length(inf)
+#'
+#' r <- seq(0, 1, by = 0.02)
+#' breaks <- seq(1, m + n, by = 1)
+#' probs <- diff(pgi(breaks, lat, inf))
+#'
+#' R0 <- compute_R0(r, breaks, probs)
+#' plot(r, R0, las = 1,
+#'   xlab = "initial exponential growth rate, per day",
+#'   ylab = "basic reproduction number"
+#' )
+#'
 #' @references
 #' \insertRef{WallLips07}{epigrowthfit}
 #'
