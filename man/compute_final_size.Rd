@@ -25,10 +25,10 @@ the proportion of the population expected to be infected
 over the course of an epidemic.
 }
 \details{
-The basic reproduction number \mjseqn{\mathcal{R}USCORE0} defines
+The basic reproduction number \mjseqn{\mathcal{R}_0} defines
 the expected epidemic final size \mjseqn{Z \in \lbrack 0,1 \rbrack}
 
-\mjsdeqn{Z = S_0 \big(1 - e^{-\mathcal{R}USCORE0 (Z + I_0)}\big)\,,}
+\mjsdeqn{Z = S_0 \big(1 - e^{-\mathcal{R}_0 (Z + I_0)}\big)\,,}
 
 where \mjseqn{S_0,I_0 \in \lbrack 0,1 \rbrack} are the
 proportions of the population that are susceptible and
@@ -41,15 +41,15 @@ multiple infectious stages and arbitrarily distributed stage
 durations.
 
 The explicit solution for \mjseqn{Z} in terms of
-\mjseqn{\mathcal{R}USCORE0} can be expressed using the non-elementary
+\mjseqn{\mathcal{R}_0} can be expressed using the non-elementary
 \href{https://en.wikipedia.org/wiki/Lambert_W_function}{Lambert W function}:
 
-\mjsdeqn{Z(\mathcal{R}USCORE0,S_0,I_0) = S_0 + \frac{1}{\mathcal{R}USCORE0} W\big\lbrack-\mathcal{R}USCORE0 S_0 e^{-\mathcal{R}USCORE0 (S_0 + I_0)}\big\rbrack\,.}
+\mjsdeqn{Z(\mathcal{R}_0,S_0,I_0) = S_0 + \frac{1}{\mathcal{R}_0} W\big\lbrack-\mathcal{R}_0 S_0 e^{-\mathcal{R}_0 (S_0 + I_0)}\big\rbrack\,.}
 
 \code{R0}, \code{S0}, and \code{I0} are recycled to length
 \code{max(lengths(list(R0, S0, I0)))}
 and \mjseqn{Z} is evaluated at each resulting
-\mjseqn{(\mathcal{R}USCORE0,S_0,I_0)} triple.
+\mjseqn{(\mathcal{R}_0,S_0,I_0)} triple.
 For invalid or incomplete triples, the value
 is \code{NA}.
 }

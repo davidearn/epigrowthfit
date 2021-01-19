@@ -34,7 +34,7 @@ then \code{probs} is replaced with \code{probs / sum(probs)}.}
 }
 \value{
 The default method returns a numeric vector of length \code{length(r)}
-listing basic reproduction numbers \mjseqn{\mathcal{R}USCORE0}
+listing basic reproduction numbers \mjseqn{\mathcal{R}_0}
 (see Details).
 
 The method for class \code{"egf"} constructs the data frame
@@ -53,10 +53,30 @@ Let \mjseqn{t_0 < \cdots < t_m} be the break points specified by
 the probability that the generation interval is in the interval
 \mjseqn{\lbrack t_{i-1},t_i)}.
 Section 3d in \insertCite{WallLips07;textual}{epigrowthfit}
-gives the basic reproduction number \mjseqn{\mathcal{R}USCORE0}
+gives the basic reproduction number \mjseqn{\mathcal{R}_0}
 as a function of the initial exponential growth rate \mjseqn{r}:
 
-\mjsdeqn{\mathcal{R}USCORE0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}
+\mjsdeqn{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}
+}
+\examples{
+data(plague_latent_period)
+lat <- plague_latent_period$relfreq
+m <- length(lat)
+
+data(plague_infectious_period)
+inf <- plague_infectious_period$relfreq
+n <- length(inf)
+
+r <- seq(0, 1, by = 0.02)
+breaks <- seq(1, m + n, by = 1)
+probs <- diff(pgi(breaks, lat, inf))
+
+R0 <- compute_R0(r, breaks, probs)
+plot(r, R0, las = 1,
+  xlab = "initial exponential growth rate, per day",
+  ylab = "basic reproduction number"
+)
+
 }
 \references{
 \insertRef{WallLips07}{epigrowthfit}
