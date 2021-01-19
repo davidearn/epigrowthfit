@@ -393,19 +393,22 @@ check_random <- function(random, curve, distr, excess) {
 #' @keywords internal
 make_frame <- function(formula, fixed, random, data, index,
                        curve, distr, excess, na_action, date_format) {
+  ## Check that `data` makes sense
+  stop_if_not(
+    inherits(data, c("data.frame", "list", "environment")),
+    # typeof(data) %in% c("list", "environment"), # FIXME: better/worse?
+    m = "`data` must be a data frame, list, or environment."
+  )
+  if (is.environment(data)) {
+    data <- as.list(data)
+  }
+
   ## Check that model formulae are specified correctly
   formula <- check_formula(formula)
   fixed   <- check_fixed(fixed, curve, distr, excess)
   random  <- check_random(random, curve, distr, excess)
 
   ## Check that formula variables can be found
-  stop_if_not(
-    inherits(data, c("data.frame", "list", "environment")),
-    m = "`data` must be a data frame, list, or environment."
-  )
-  if (is.environment(data)) {
-    data <- as.list(data)
-  }
   dn <- all.vars(formula[[3L]]) # date
   cn <- all.vars(formula[[2L]]) # cases
   fn <- unique(unlist(lapply(c(fixed, random), all.vars))) # factors
@@ -511,7 +514,7 @@ make_frame <- function(formula, fixed, random, data, index,
       )
     )
     stop_if_not(
-      vapply(frame[fn], nlevels, 0L) > 1L,
+      !Reduce("==", lapply(factors_split, function(d) vapply(d, levels, ""))),
       m = paste0(
         "Grouping variables must not take the same value\n",
         "in every level of `index`."

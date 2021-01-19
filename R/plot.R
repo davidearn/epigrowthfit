@@ -32,6 +32,10 @@
 #' @param legend
 #'   A logical scalar. If `TRUE`, then a legend is displayed in the
 #'   right margin.
+#' @param level
+#'   A number in the interval (0,1). The confidence level represented
+#'   by confidence intervals on doubling times and confidence bands on
+#'   predicted incidence.
 #' @param tol
 #'   A non-negative number or `Inf`, used to define "exceptional"
 #'   points when `type = "interval"`. `cases[-1]` is highlighted
@@ -134,6 +138,7 @@ plot.egf <- function(x,
                      log = TRUE,
                      xty = c("date", "numeric"),
                      legend = FALSE,
+                     level = 0.95,
                      tol = 0,
                      control = NULL,
                      ...) {
@@ -151,8 +156,9 @@ plot.egf <- function(x,
       grepl("^(1|([[:alnum:]._]+(:[[:alnum:]._]+)*))$", deparse(group_by[[2L]])),
       all.vars(group_by) %in% names(frame_red),
       m = paste0(
-        "`group_by` must be a formula of the form `~1` or\n",
-        "`~f1:...:fn` with `f1`,...,`fn` factors in `x$frame`."
+        "`group_by` must be a formula of the form\n",
+        "`~1` or `~f1:...:fn`, with `f1`,...,`fn`\n",
+        "naming factors in `x$frame`."
       )
     )
     group_by <- all.vars(group_by)
@@ -276,7 +282,7 @@ plot.egf <- function(x,
   formula <- reformulate("time", varname)
 
   ## Confidence intervals on doubling times
-  ci <- confint(x, parm = "tdoubling", level = 0.95, method = "wald")
+  ci <- confint(x, parm = "tdoubling", level = level, method = "wald")
 
   ### Loop over plots #####################################
 
@@ -319,7 +325,7 @@ plot.egf <- function(x,
         time = seq.int(from = 0L, to = t2 - t1, by = by),
         se = TRUE
       )
-      ci <- confint(p, level = 0.95, log = FALSE)[[varname]]
+      ci <- confint(p, level = level, log = FALSE)[[varname]]
       if (type == "cumulative" && i1 > 1L) {
         ci[, -1L] <- sum(cases[2L:i1]) + ci[, -1L]
       }

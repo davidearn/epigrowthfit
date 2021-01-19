@@ -36,7 +36,7 @@
 #'   A factor of length `nrow(data)` such that `split(data, index)`
 #'   splits `data` by fitting window and `is.na(index)` indexes
 #'   the rows of `data` not belonging to a fitting window. `NULL`
-#'   (the default) is equivalent to `factor(integer(nrow(data)))`.
+#'   (the default) is equivalent to `rep(factor("0"), nrow(data))`.
 #' @param curve
 #'   A character string specifying a cumulative incidence model.
 #' @param distr
