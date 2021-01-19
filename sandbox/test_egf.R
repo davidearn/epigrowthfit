@@ -2,11 +2,11 @@ library("epigrowthfit")
 
 ontario <- subset(canadacovid, province == "ON")
 ontario$wave <- factor(rep(1:3, diff(c(0L, 100L, 250L, 346L))))
-index <- rep(0, nrow(ontario))
+index <- rep(NA, nrow(ontario))
 index[27:77] <- 1
 index[211:245] <- 2
 index[251:346] <- 3
-index_ontario <- factor(index, exclude = 0)
+index_ontario <- factor(index, exclude = NA)
 
 quebec <- subset(canadacovid, province == "QC")
 quebec$wave <- factor(rep(1:5, diff(c(0L, 100L, 150L, 220L, 255L, 313L))))
@@ -34,5 +34,8 @@ object <- egf(new_confirmed ~ date,
 
 plot(object,
   group_by = ~province,
-  control = list(text_dbl = list(cex = 0.6))
+  control = list(text_dbl = list(cex = 0.6)),
+  main = "Fitted logistic model (province = %province)",
+  subset = list(province = "ON")
 )
+

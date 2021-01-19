@@ -43,7 +43,10 @@ default for each missing list element) instead of a formula to
 indicate absence of random effects.}
 
 \item{data}{A data frame, list, or environment containing the variables
-named in \code{formula}, \code{fixed}, and \code{random}.}
+named in \code{formula}, \code{fixed}, and \code{random}. Missing values in
+incidence (\code{y} if \code{formula = y ~ x}) are not tolerated unless
+\code{na_action = "pass"}. Missing values in other variables are
+never tolerated.}
 
 \item{index}{A factor of length \code{nrow(data)} such that \code{split(data, index)}
 splits \code{data} by fitting window and \code{is.na(index)} indexes

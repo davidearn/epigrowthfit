@@ -28,7 +28,10 @@
 #'   indicate absence of random effects.
 #' @param data
 #'   A data frame, list, or environment containing the variables
-#'   named in `formula`, `fixed`, and `random`.
+#'   named in `formula`, `fixed`, and `random`. Missing values in
+#'   incidence (`y` if `formula = y ~ x`) are not tolerated unless
+#'   `na_action = "pass"`. Missing values in other variables are
+#'   never tolerated.
 #' @param index
 #'   A factor of length `nrow(data)` such that `split(data, index)`
 #'   splits `data` by fitting window and `is.na(index)` indexes

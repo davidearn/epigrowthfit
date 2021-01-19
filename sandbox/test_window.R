@@ -10,7 +10,6 @@ f <- function(formula, data, spar) {
     log1p_cases = log10(1L + cases)
   ))
 
-  spar <- 0.6
   ss <- smooth.spline(
     x = data$time,
     y = data$log1p_cases,
@@ -29,8 +28,9 @@ f <- function(formula, data, spar) {
   invisible(NULL)
 }
 
-f(new_confirmed ~ date, data = ontario, spar = 0.6)
-f(new_confirmed ~ date, data = quebec,  spar = 0.6)
+f(new_confirmed ~ date, data = ontario, spar = 0.7)
+plot(object,
+     group_by = ~province,
+     subset = list(province = "ON"))
 
-
-
+f(new_confirmed ~ date, data = quebec,  spar = 0.7)

@@ -12,7 +12,7 @@ pinf <- function(q, inf) {
 }
 
 dwait <- function(x, inf) {
-  n <- length(x)
+  n <- length(inf)
   d <- rep.int(NA_real_, length(x))
   d[x < 0] <- 0
   is_x_geq_0 <- (!is.na(x) & x >= 0)

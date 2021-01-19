@@ -120,14 +120,11 @@ the appearance of fitting windows and confidence bands on
 predicted incidence curves. Currently, only \code{col} and \code{border}
 are used.
 }
-\item{\code{text_dbl}, \code{text_hl}}{
+\item{\code{text_td}, \code{text_hl}}{
 Named lists of arguments to \code{\link[graphics:text]{graphics::text()}}, affecting
 the appearance of text giving doubling times and text above
-highlighted points. Currently, only \code{pos}, \code{offset}, \code{col}, \code{cex},
-and \code{font} are used. \code{text_dbl} can further specify alignment
-\code{adj} and coordinates \code{x} and \code{y}. In this case, \code{x} can be
-numeric, Date, or character coercible to Date with \code{as.Date(x)},
-but \code{y} must be numeric.
+highlighted points. Currently, only \code{adj} (\code{text_td} only),
+\code{pos}, \code{offset}, \code{col}, \code{cex}, and \code{font} are used.
 }
 }
 

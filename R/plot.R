@@ -103,14 +103,11 @@
 #'   predicted incidence curves. Currently, only `col` and `border`
 #'   are used.
 #' }
-#' \item{`text_dbl`, `text_hl`}{
+#' \item{`text_td`, `text_hl`}{
 #'   Named lists of arguments to [graphics::text()], affecting
 #'   the appearance of text giving doubling times and text above
-#'   highlighted points. Currently, only `pos`, `offset`, `col`, `cex`,
-#'   and `font` are used. `text_dbl` can further specify alignment
-#'   `adj` and coordinates `x` and `y`. In this case, `x` can be
-#'   numeric, Date, or character coercible to Date with `as.Date(x)`,
-#'   but `y` must be numeric.
+#'   highlighted points. Currently, only `adj` (`text_td` only),
+#'   `pos`, `offset`, `col`, `cex`, and `font` are used.
 #' }
 #' }
 #'
@@ -178,7 +175,7 @@ plot.egf <- function(x,
         unlist(Map("%in%", subset, lapply(frame_red[names(subset)], levels))),
         m = "`subset` must specify levels of factors in `object$frame`."
       )
-      w <- Reduce("&", Map("%in%", frame_red[names(subset)[i]], subset[i]))
+      w <- Reduce("&", Map("%in%", frame_red[names(subset)], subset))
       stop_if_not(
         any(w),
         m = "`subset` does not match any fitting windows."
@@ -444,7 +441,7 @@ plot.egf <- function(x,
         do.call(daxis, c(l, control$xax))
       } else { # "numeric"
         l1 <- list(side = 1L)
-        l2 <- control$xax
+        l2 <- lapply(control$xax, "[", 1L)
         l2$mgp <- c(3, l2$mgp2, 0)
         l2$mgp2 <- NULL
         do.call(axis, c(l1, l2))
@@ -519,33 +516,21 @@ plot.egf <- function(x,
     }
 
     ## Doubling time
-    if (!is.null(control$text_dbl) && type == "interval" && x$curve %in% c("exponential", "logistic", "richards")) {
+    if (!is.null(control$text_td) && type == "interval" && x$curve %in% c("exponential", "logistic", "richards")) {
       for (s in levels(index)) {
         elu <- unlist(ci[match(s, levels(x$index)), length(ci) - 2:0])
-        l1 <- list(
+        l <- list(
           labels = sprintf("doubling time:\n%.1f (%.1f, %.1f) days", elu[1L], elu[2L], elu[3L]),
           xpd = NA
         )
-        l2 <- control$text_dbl
-        if (is.na(l2$y)) {
-          er <- range(pred[[s]]$estimate, na.rm = TRUE)
-          if (log) {
-            l2$y <- er[1L] * 10^(0.25 * diff(log10(er)))
-          } else {
-            l2$y <- er[1] + 0.25 * diff(er)
-          }
-        }
-        if (is.na(l2$x)) {
-          l2$x <- min(pred[[s]]$time[pred[[s]]$estimate > l2$y], na.rm = TRUE)
+        er <- range(pred[[s]]$estimate, na.rm = TRUE)
+        if (log) {
+          l$y <- er[1L] * 10^(0.25 * diff(log10(er)))
         } else {
-          if (is.character(l2$x)) {
-            l2$x <- as.Date(l2$x)
-          }
-          if (inherits(l2$x, "Date")) {
-            l2$x <- days(l2$x, since = d0)
-          }
+          l$y <- er[1L] + 0.25 * diff(er)
         }
-        do.call(text, c(l1, l2))
+        l$x <- min(pred[[s]]$time[pred[[s]]$estimate > l$y], na.rm = TRUE)
+        do.call(text, c(l, control$text_td))
       }
     }
 

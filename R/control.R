@@ -26,8 +26,8 @@ get_control_default <- function(f) {
       window = list(col = "#DDCC7740", border = NA),
       confband = list(col = "#44AA9960", border = NA),
       text_hl = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
-      text_dbl = list(x = NA, y = NA, adj = c(0, 0.5), pos = 4, offset = 1, col = "black", cex = 0.7, font = 1)
+      text_td = list(adj = c(0, 0.5), pos = 4, offset = 1, col = "black", cex = 0.7, font = 1)
     ),
-    stop("No control default implemented for function name `f`.")
+    stop(sprintf("No control default implemented for function name `%s`.", f))
   )
 }
