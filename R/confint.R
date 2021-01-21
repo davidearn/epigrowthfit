@@ -275,7 +275,7 @@ confint.egf <- function(object, parm = get_par_names(object),
   j_elu <- length(out) - 2:0 # index of "estimate", "lower", "upper"
   if (any(c("R0", "tdoubling") %in% parm0)) {
     s <- if (link) "log_r" else "r"
-    delink <- if (link) exp else function(x) x
+    delink <- if (link) exp else identity
 
     if ("R0" %in% parm0) {
       d <- out[out$par == s, , drop = FALSE]

@@ -40,3 +40,7 @@ plot(object,
 )
 
 p <- profile(object, parm = "r")
+plot(p)
+plot(p, sqrt = FALSE)
+plot(p, level = 0.95, sqrt=FALSE)
+plot(p, subset = "beta[1]")

@@ -176,7 +176,7 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
     }
     d[[2L]] <- 2 * (d[[2L]] - min(d[[2L]], na.rm = TRUE)) # deviance = 2 * diff(nll)
     names(d) <- c("value", "deviance")
-    d
+    d[!duplicated(d), , drop = FALSE] # omits instances of zero step size
   }
 
   if (parallel == "snow") {
@@ -247,7 +247,7 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
 #' intervals.
 #'
 #' @export
-#' @importFrom stats qchisq confint
+#' @importFrom stats qchisq
 confint.egf_profile <- function(object, parm, level = 0.95, ...) {
   stop_if_not(
     is.numeric(level),
@@ -265,20 +265,31 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
   )
 
   object_split <- split(object, object$name)
-  f <- function(d) d[which.min(d[["deviance"]]), "value"]
-  estimate <- vapply(object_split, f, 0)
-  g <- function(d) {
-    d <- d[c("value", "deviance")]
-    names(d) <- c("parameter", "value")
-    class(d) <- c("tmbprofile", "data.frame")
-    confint(d)
+  q <- qchisq(level, df = 1)
+
+  f <- function(d) {
+    i_min <- which.min(d$deviance)
+    i_left <- seq_len(i_min)
+    i_right <- seq.int(i_min, nrow(d))
+
+    estimate <- d$value[i_min]
+    lower <- approx(
+      x = d$deviance[i_left],
+      y = d$value[i_left],
+      xout = q
+    )$y
+    upper <- approx(
+      x = d$deviance[i_right],
+      y = d$value[i_right],
+      xout = q
+    )$y
+    c(estimate = estimate, lower = lower, upper = upper)
   }
-  ci <- do.call(rbind, lapply(object_split, g))
+  elu <- do.call(rbind, lapply(object_split, f))
 
   out <- data.frame(
     name = names(object_split),
-    estimate,
-    ci,
+    elu,
     row.names = NULL,
     stringsAsFactors = FALSE
   )
@@ -295,23 +306,27 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
 #' @param subset
 #'   A subset of `levels(x$name)` specifying profiles to be plotted,
 #'   or otherwise `NULL`, in which case all profiles are plotted.
-#' @param level
-#'   A numeric vector with elements in (0,1), or otherwise `NULL`.
-#'   If non-`NULL`, then horizontal lines are drawn at
-#'   `qchisq(level, df = 1)` or its square root, depending on `sqrt`.
 #' @param sqrt
 #'   A logical scalar. If `TRUE`, then square root-transformed
 #'   deviance is plotted.
+#' @param level
+#'   A numeric vector with elements in (0,1), or otherwise `NULL`.
+#'   If non-`NULL` and `sqrt = FALSE`, then line segments are drawn
+#'   to show the intersection of the profile with horizontal lines
+#'   at `qchisq(level, df = 1)`.
 #' @param ...
-#'   Optional arguments to `plot()`.
+#'   Optional graphical parameters passed to [graphics::plot()],
+#'   such as `type = "o"`. Note that `ann = FALSE` and `axes = FALSE`
+#'   are hard-coded, as axes and their labels are drawn separately.
 #'
 #' @return
 #' `NULL` (invisibly).
 #'
 #' @export
 #' @import graphics
-plot.egf_profile <- function(x, subset = NULL, level = 0.95,
-                             sqrt = TRUE, ...) {
+#' @importFrom stats confint
+plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
+                             level = NULL, ...) {
   x_split <- split(x, x$name)
   if (!is.null(subset)) {
     stop_if_not(
@@ -323,12 +338,6 @@ plot.egf_profile <- function(x, subset = NULL, level = 0.95,
     )
     x_split <- x_split[subset]
   }
-
-  stop_if_not_tf(sqrt)
-  f <- if (sqrt) base::sqrt else function(x) x
-  ymax <- f(max(x$deviance, na.rm = FALSE))
-  ylab <- if (sqrt) expression(sqrt("deviance")) else "deviance"
-
   if (!is.null(level)) {
     stop_if_not(
       is.numeric(level),
@@ -340,7 +349,19 @@ plot.egf_profile <- function(x, subset = NULL, level = 0.95,
         "with elements in (0,1)."
       )
     )
+  }
+  stop_if_not_tf(sqrt)
+
+  f <- if (sqrt) base::sqrt else identity
+  ymax <- f(max(x$deviance, na.rm = FALSE))
+  ylab <- if (sqrt) expression(sqrt("deviance")) else "deviance"
+
+  if (!sqrt & !is.null(level)) {
     h <- f(qchisq(level, df = 1))
+    ci <- lapply(level, function(p) confint(x, level = p))
+    m <- match(names(x_split), levels(x$name))
+    v_lower <- lapply(m, function(i) vapply(ci, "[", 0, i, "lower"))
+    v_upper <- lapply(m, function(i) vapply(ci, "[", 0, i, "upper"))
   }
 
   op <- par(
@@ -357,20 +378,33 @@ plot.egf_profile <- function(x, subset = NULL, level = 0.95,
       x = x_split[[i]]$value,
       y = f(x_split[[i]]$deviance),
       ylim = c(0, ymax),
-      type = "o",
-      xaxt = "n", xlab = "",
-      yaxt = "n", ylab = "",
+      ann = FALSE,
+      axes = FALSE,
       ...
     )
-    if (!is.null(level)) {
-      abline(h = h, lty = 2)
+    if (!sqrt && !is.null(level)) {
+      segments(
+        x0 = v_lower[[i]],
+        x1 = v_upper[[i]],
+        y0 = h,
+        y1 = h,
+        lty = 3
+      )
+      segments(
+        x0 = c(v_lower[[i]], v_upper[[i]]),
+        x1 = c(v_lower[[i]], v_upper[[i]]),
+        y0 = par("usr")[3L],
+        y1 = rep.int(h, 2L),
+        lty = 3
+      )
+      text(
+        x = mean(par("usr")[1:2]),
+        y = h,
+        labels = sprintf("%.3g%%", 100 * level),
+        pos = 3, offset = 0.1, cex = 0.8
+      )
     }
-    text(
-      x = mean(par("usr")[1:2]),
-      y = h,
-      labels = sprintf("%.3g%%", 100 * level),
-      pos = 3, offset = 0.1, cex = 0.8
-    )
+    box()
     axis(side = 1, mgp = c(3, 0.5, 0))
     axis(side = 2, mgp = c(3, 0.7, 0))
     title(xlab = names(x_split)[i], line = 2)
