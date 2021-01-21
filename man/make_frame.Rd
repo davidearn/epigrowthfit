@@ -61,7 +61,7 @@ never tolerated.}
 \item{index}{A factor of length \code{nrow(data)} such that \code{split(data, index)}
 splits \code{data} by fitting window and \code{is.na(index)} indexes
 the rows of \code{data} not belonging to a fitting window. \code{NULL}
-(the default) is equivalent to \code{factor(integer(nrow(data)))}.}
+(the default) is equivalent to \code{rep(factor("0"), nrow(data))}.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 

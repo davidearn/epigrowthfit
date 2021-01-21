@@ -48,10 +48,10 @@ growth rates and a binned generation interval distribution.
 }
 \details{
 Let \mjseqn{t_0 < \cdots < t_m} be the break points specified by
-\code{breaks}. For \mjseqn{i \in \lbrace 1,\ldots,m \rbrace}, let
-\mjseqn{p_i} be the probability specified by \code{probs[i]}. This is
-the probability that the generation interval is in the interval
-\mjseqn{\lbrack t_{i-1},t_i)}.
+\code{breaks}, and let \mjseqn{p_1,\ldots,p_m} be the probabilities
+specified by \code{probs}, defining \mjseqn{p_i} to be the probability
+that the generation interval is in \mjseqn{\lbrack t_{i-1},t_i)}.
+
 Section 3d in \insertCite{WallLips07;textual}{epigrowthfit}
 gives the basic reproduction number \mjseqn{\mathcal{R}_0}
 as a function of the initial exponential growth rate \mjseqn{r}:
@@ -67,8 +67,8 @@ data(plague_infectious_period)
 inf <- plague_infectious_period$relfreq
 n <- length(inf)
 
-r <- seq(0, 1, by = 0.02)
-breaks <- seq(1, m + n, by = 1)
+r <- seq(0, 1, by = 0.02) # per day
+breaks <- seq(1, m + n, by = 1) # days
 probs <- diff(pgi(breaks, lat, inf))
 
 R0 <- compute_R0(r, breaks, probs)

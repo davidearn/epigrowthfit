@@ -12,6 +12,7 @@
   log = TRUE,
   xty = c("date", "numeric"),
   legend = FALSE,
+  level = 0.95,
   tol = 0,
   control = NULL,
   ...
@@ -46,6 +47,10 @@ of days since an initial date.}
 
 \item{legend}{A logical scalar. If \code{TRUE}, then a legend is displayed in the
 right margin.}
+
+\item{level}{A number in the interval (0,1). The confidence level represented
+by confidence intervals on doubling times and confidence bands on
+predicted incidence.}
 
 \item{tol}{A non-negative number or \code{Inf}, used to define "exceptional"
 points when \code{type = "interval"}. \code{cases[-1]} is highlighted

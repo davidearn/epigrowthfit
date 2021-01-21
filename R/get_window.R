@@ -1,4 +1,5 @@
-get_window <- function(formula, data, group_by = ~1, spar = 0.66) {
+get_window <- function(formula, data, group_by = ~1, spar = 0.66,
+                       date_format = "%Y-%m-%d") {
   ## Check that `data` makes sense
   stop_if_not(
     inherits(data, c("data.frame", "list", "environment")),
@@ -99,6 +100,25 @@ get_window <- function(formula, data, group_by = ~1, spar = 0.66) {
     vapply(cases_split, function(x) sum(!is.na(x)) >= 7L, FALSE),
     m = sprintf("There are groups with insufficient data\n(fewer than 7 observations) in `%s`.", cn)
   )
+
+  f <- function(d) {
+    d <- na.omit(data.frame(
+      time = days(d[[dn]], since = d[[dn]][1L]),
+      log_cases = log(1L + d[[cn]]),
+      difftime = c(NA_integer_, ddiff(d[[dn]]))
+    ))
+
+    ss <- smooth.spline(
+      x = d$time,
+      y = d$log_cases,
+      w = 1 / d$difftime,
+      spar = spar
+    )
+    dss <- predict(ss, deriv = 1L)
+    ddss <- predict(ss, deriv = 2L)
+
+
+  }
 
 
 

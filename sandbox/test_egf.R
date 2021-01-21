@@ -35,7 +35,8 @@ object <- egf(new_confirmed ~ date,
 plot(object,
   group_by = ~province,
   control = list(text_dbl = list(cex = 0.6)),
-  main = "Fitted logistic model (province = %province)",
+  main = "Fitted logistic model (%province)",
   subset = list(province = "ON")
 )
 
+p <- profile(object, parm = "r")

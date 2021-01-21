@@ -99,5 +99,5 @@ coefficients, log standard deviations of random effects, and
 linear combinations thereof.
 }
 \seealso{
-\code{\link[=confint.egf_profile]{confint.egf_profile()}}
+\code{\link[=confint.egf_profile]{confint.egf_profile()}}, \code{\link[=plot.egf_profile]{plot.egf_profile()}}
 }
