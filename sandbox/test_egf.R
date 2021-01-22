@@ -31,16 +31,3 @@ object <- egf(new_confirmed ~ date,
   curve = "logistic",
   distr = "nbinom",
 )
-
-plot(object,
-  group_by = ~province,
-  control = list(text_dbl = list(cex = 0.6)),
-  main = "Fitted logistic model (%province)",
-  subset = list(province = "ON")
-)
-
-p <- profile(object, parm = "r")
-plot(p)
-plot(p, sqrt = FALSE)
-plot(p, level = 0.95, sqrt=FALSE)
-plot(p, subset = "beta[1]")

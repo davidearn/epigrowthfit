@@ -77,6 +77,7 @@
 #' list fitted values and the corresponding lower and upper
 #' confidence limits.
 #'
+#' @seealso [plot.egf_confint()]
 #' @export
 #' @importFrom stats qchisq confint profile
 #' @import parallel
@@ -299,5 +300,175 @@ confint.egf <- function(object, parm = get_par_names(object),
 
   row.names(out) <- NULL
   attr(out, "level") <- level
+  class(out) <- c("egf_confint", "data.frame")
   out
+}
+
+#' Plot confidence intervals
+#'
+#' A method for graphically comparing confidence intervals
+#' on fitted values across groups.
+#'
+#' @param x
+#'   An `"egf_confint"` object returned by [confint.egf()].
+#' @param par
+#'   A subset of `levels(x$par)` specifying response variables
+#'   for which confidence intervals are desired.
+#' @param group_by
+#'   A formula of the form `~f1:...:fn` specifying an interaction of
+#'   the factors in `x` other than `par`. `group_by` determines the
+#'   order in which confidence intervals are plotted, with `f1` varying
+#'   slowest. Use `~1` (the default) to preserve the order given in `x`
+#'   or if `x` has no factors other than `par`.
+#' @param subset
+#'   A named list of atomic vectors with elements specifying
+#'   levels of factors in `x` other than `par`. Only the subset
+#'   of confidence intervals belonging to these levels is plotted.
+#'   Use `NULL` (the default) to plot all confidence intervals.
+#' @param ci_per_panel
+#'   A positive integer. One panel will display at most this many
+#'   confidence intervals.
+#' @param ...
+#'   Unused optional arguments.
+#'
+#' @return
+#' `NULL` (invisibly).
+#'
+#' @export
+#' @import graphics
+plot.egf_confint <- function(x, par = levels(d$par),
+                             group_by = ~1, subset = NULL,
+                             ci_per_panel = 8L, ...) {
+  stop_if_not(
+    is.atomic(par),
+    length(par) > 0L,
+    par %in% levels(x$par),
+    !duplicated(par),
+    m = "`par` must be a subset of `levels(x$par)`."
+  )
+  any_factors <- (length(x) > 4L)
+  if (any_factors) {
+    factor_names <- names(x)[-c(1L, length(x) - 2:0)]
+    stop_if_not(
+      inherits(group_by, "formula"),
+      length(group_by) == 2L,
+      grepl("^(1|([[:alnum:]._]+(:[[:alnum:]._]+)*))$", deparse(group_by[[2L]])),
+      all.vars(group_by) %in% factor_names,
+      m = paste0(
+        "`group_by` must be a formula of the form\n",
+        "`~1` or `~f1:...:fn`, with `f1`,...,`fn`\n",
+        "naming factors in `x[-c(1, length(x)-2:0)]`."
+      )
+    )
+    group_by <- all.vars(group_by)
+    any_groups <- (length(group_by) > 0L)
+
+    if (!is.null(subset)) {
+      stop_if_not(
+        is.list(subset),
+        length(subset) > 0L,
+        !is.null(names(subset)),
+        m = "`subset` must be a named list or NULL."
+      )
+      stop_if_not(
+        vapply(subset, is.atomic, FALSE),
+        lengths(subset) > 0L,
+        names(subset) %in% factor_names,
+        !duplicated(names(subset)),
+        unlist(Map("%in%", subset, lapply(x[names(subset)], levels))),
+        m = paste0(
+          "`subset` must specify levels of factors in",
+          "`x[-c(1, length(x)-2:0)]`."
+        )
+      )
+      w <- Reduce("&", Map("%in%", x[names(subset)], subset))
+      stop_if_not(
+        any(w),
+        m = "`subset` does not match any rows of `x`."
+      )
+      x <- droplevels(x[w, , drop = FALSE])
+      factor_names <- c(group_by, setdiff(factor_names, group_by))
+    }
+  } else {
+    any_groups <- FALSE
+  }
+  stop_if_not_positive_integer(ci_per_panel)
+
+  x_split <- split(x, factor(x$par, levels = par))
+  if (any_groups) {
+    x_split <- lapply(x_split, function(d) d[do.call(order, d[group_by]), ])
+  }
+
+  op <- graphics::par(
+    mar = c(3.5, 5, 1.5, 1),
+    cex.axis = 0.8,
+    cex.lab = 0.9,
+    cex.main = 0.9
+  )
+  on.exit(graphics::par(op))
+
+  for (i in seq_along(x_split)) {
+    d <- x_split[[i]]
+    is_na_lower <- is.na(d$lower)
+    is_na_upper <- is.na(d$upper)
+    if (any_factors) {
+      yax_labels <- as.character(interaction(d[factor_names], drop = TRUE, sep = ":"))
+    }
+
+    j <- 0L
+    while (j < nrow(d)) {
+      k <- j + seq_len(min(ci_per_panel, nrow(d) - j))
+      plot.new()
+      plot.window(
+        xlim = range(d[c("estimate", "lower", "upper")], na.rm = TRUE),
+        ylim = c(ci_per_panel + 1, 0),
+        yaxs = "i"
+      )
+      abline(v = axTicks(side = 1), lty = 3, col = "grey75")
+      segments(
+        x0 = ifelse(is_na_lower[k], graphics::par("usr")[1L], d$lower[k]),
+        x1 = d$estimate[k],
+        y0 = seq_along(k),
+        y1 = seq_along(k),
+        lty = c(1, 3)[is_na_lower[k] + 1L],
+        lwd = c(2, 1)[is_na_lower[k] + 1L]
+      )
+      segments(
+        x0 = d$estimate[k],
+        x1 = ifelse(is_na_upper[k], graphics::par("usr")[2L], d$upper[k]),
+        y0 = seq_along(k),
+        y1 = seq_along(k),
+        lty = c(1, 3)[1L + is_na_upper[k]],
+        lwd = c(2, 1)[1L + is_na_upper[k]]
+      )
+      points(
+        x = d$estimate[k],
+        y = seq_along(k),
+        pch = 21,
+        bg = "grey75"
+      )
+      box()
+      axis(side = 1, tcl = -0.4, mgp = c(3, 0.3, 0))
+      axis(side = 2,
+        at = seq_along(k),
+        labels = yax_labels[k],
+        tick = FALSE,
+        las = 1,
+        mgp = c(3, 0.2, 0)
+      )
+      xlab <- names(x_split)[i]
+      if (grepl("_", xlab)) {
+        ss <- strsplit(xlab, "_")[[1L]]
+        xlab <- sprintf("%s(%s)", ss[1L], ss[2L])
+      }
+      title(xlab = xlab, line = 2)
+      main <- sprintf("%.3g%% CI", 100 * attr(x, "level"))
+      if (any_factors) {
+        main <- sprintf("%s by %s", main, paste(factor_names, collapse = ":"))
+      }
+      title(main, line = 0.25, adj = 0)
+      j <- j + ci_per_panel
+    }
+  }
+  invisible(NULL)
 }

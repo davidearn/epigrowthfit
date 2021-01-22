@@ -11,13 +11,13 @@
 #'   A plot is generated for each nonempty level of this interaction.
 #'   In general, include in the interaction all factors used to split
 #'   time series by geographical unit, and exclude all factors used
-#'   to split time series by segment (e.g., epidemic wave). Use the
-#'   default (`~1`) if `x$frame` has no factors that are fixed within
+#'   to split time series by segment (e.g., epidemic wave). Use `~1`
+#'   (the default) if `x$frame` has no factors that are fixed within
 #'   a time series (or no factors at all).
 #' @param subset
 #'   A named list of atomic vectors with elements specifying levels of
 #'   factors in `x$frame`. Only the subset of fitting windows belonging
-#'   to these levels are plotted. Use the default (`NULL`) to plot all
+#'   to these levels is plotted. Use `NULL` (the default) to plot all
 #'   fitting windows or if `x$frame` has no factors.
 #' @param type
 #'   A character string indicating the type of incidence plotted.

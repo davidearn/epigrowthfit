@@ -299,13 +299,12 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
 
 #' Plot likelihood profiles
 #'
-#' A method for quickly inspecting computed likelihood profiles.
+#' A method for inspecting computed likelihood profiles.
 #'
 #' @param x
 #'   An `"egf_profile"` object returned by [profile.egf()].
-#' @param subset
-#'   A subset of `levels(x$name)` specifying profiles to be plotted,
-#'   or otherwise `NULL`, in which case all profiles are plotted.
+#' @param name
+#'   A subset of `levels(x$name)` specifying profiles to be plotted.
 #' @param sqrt
 #'   A logical scalar. If `TRUE`, then square root-transformed
 #'   deviance is plotted.
@@ -325,20 +324,17 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
 #' @export
 #' @import graphics
 #' @importFrom stats confint
-plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
+plot.egf_profile <- function(x, name = levels(x$name), sqrt = FALSE,
                              level = NULL, ...) {
-  x_split <- split(x, x$name)
-  if (!is.null(subset)) {
-    stop_if_not(
-      is.atomic(subset),
-      length(subset) > 0L,
-      subset %in% levels(x$name),
-      !duplicated(subset),
-      m = "`subset` must be NULL or a subset of `levels(x$name)`."
-    )
-    x_split <- x_split[subset]
-  }
-  if (!is.null(level)) {
+  stop_if_not(
+    is.atomic(name),
+    length(name) > 0L,
+    name %in% levels(x$name),
+    !duplicated(name),
+    m = "`name` must be a subset of `levels(x$name)`."
+  )
+  stop_if_not_tf(sqrt)
+  if (!sqrt && !is.null(level)) {
     stop_if_not(
       is.numeric(level),
       length(level) > 0L,
@@ -350,7 +346,8 @@ plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
       )
     )
   }
-  stop_if_not_tf(sqrt)
+
+  x_split <- split(x, factor(x$name, levels = name))
 
   f <- if (sqrt) base::sqrt else identity
   ymax <- f(max(x$deviance, na.rm = FALSE))
@@ -358,15 +355,14 @@ plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
 
   if (!sqrt & !is.null(level)) {
     h <- f(qchisq(level, df = 1))
-    ci <- lapply(level, function(p) confint(x, level = p))
+    cil <- lapply(level, function(p) confint(x, level = p))
     m <- match(names(x_split), levels(x$name))
-    v_lower <- lapply(m, function(i) vapply(ci, "[", 0, i, "lower"))
-    v_upper <- lapply(m, function(i) vapply(ci, "[", 0, i, "upper"))
+    v_lower <- lapply(m, function(i) vapply(cil, "[", 0, i, "lower"))
+    v_upper <- lapply(m, function(i) vapply(cil, "[", 0, i, "upper"))
   }
 
   op <- par(
     mar = c(3.5, 4, 1, 1),
-    las = 1L,
     tcl = -0.4,
     cex.axis = 0.8,
     cex.lab = 0.9
@@ -406,7 +402,7 @@ plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
     }
     box()
     axis(side = 1, mgp = c(3, 0.5, 0))
-    axis(side = 2, mgp = c(3, 0.7, 0))
+    axis(side = 2, mgp = c(3, 0.7, 0), las = 1)
     title(xlab = names(x_split)[i], line = 2)
     title(ylab = ylab, line = 2.25)
   }
