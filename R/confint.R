@@ -311,9 +311,6 @@ confint.egf <- function(object, parm = get_par_names(object),
 #'
 #' @param x
 #'   An `"egf_confint"` object returned by [confint.egf()].
-#' @param par
-#'   A subset of `levels(x$par)` specifying response variables
-#'   for which confidence intervals are desired.
 #' @param group_by
 #'   A formula of the form `~f1:...:fn` specifying an interaction of
 #'   the factors in `x` other than `par`. `group_by` determines the
@@ -322,30 +319,27 @@ confint.egf <- function(object, parm = get_par_names(object),
 #'   or if `x` has no factors other than `par`.
 #' @param subset
 #'   A named list of atomic vectors with elements specifying
-#'   levels of factors in `x` other than `par`. Only the subset
-#'   of confidence intervals belonging to these levels is plotted.
-#'   Use `NULL` (the default) to plot all confidence intervals.
+#'   levels of factors in `x`. Only the relevant subset of
+#'   confidence intervals is plotted. Use `NULL` (the default)
+#'   to plot all confidence intervals.
 #' @param ci_per_panel
 #'   A positive integer. One panel will display at most this many
 #'   confidence intervals.
 #' @param ...
 #'   Unused optional arguments.
 #'
+#' @details
+#' If an endpoint of a confidence interval is `NA`, then a dashed
+#' line is drawn from the point estimate to the left or right boundary
+#' of the plotting region (depending on the missing endpoint).
+#'
 #' @return
 #' `NULL` (invisibly).
 #'
 #' @export
 #' @import graphics
-plot.egf_confint <- function(x, par = levels(d$par),
-                             group_by = ~1, subset = NULL,
+plot.egf_confint <- function(x, group_by = ~1, subset = NULL,
                              ci_per_panel = 8L, ...) {
-  stop_if_not(
-    is.atomic(par),
-    length(par) > 0L,
-    par %in% levels(x$par),
-    !duplicated(par),
-    m = "`par` must be a subset of `levels(x$par)`."
-  )
   any_factors <- (length(x) > 4L)
   if (any_factors) {
     factor_names <- names(x)[-c(1L, length(x) - 2:0)]
@@ -362,6 +356,7 @@ plot.egf_confint <- function(x, par = levels(d$par),
     )
     group_by <- all.vars(group_by)
     any_groups <- (length(group_by) > 0L)
+    factor_names <- c(group_by, setdiff(factor_names, group_by))
 
     if (!is.null(subset)) {
       stop_if_not(
@@ -373,12 +368,12 @@ plot.egf_confint <- function(x, par = levels(d$par),
       stop_if_not(
         vapply(subset, is.atomic, FALSE),
         lengths(subset) > 0L,
-        names(subset) %in% factor_names,
+        names(subset) %in% c("par", factor_names),
         !duplicated(names(subset)),
         unlist(Map("%in%", subset, lapply(x[names(subset)], levels))),
         m = paste0(
-          "`subset` must specify levels of factors in",
-          "`x[-c(1, length(x)-2:0)]`."
+          "`subset` must specify levels of factors in\n",
+          "`x[-(length(x)-2:0)]`."
         )
       )
       w <- Reduce("&", Map("%in%", x[names(subset)], subset))
@@ -387,25 +382,24 @@ plot.egf_confint <- function(x, par = levels(d$par),
         m = "`subset` does not match any rows of `x`."
       )
       x <- droplevels(x[w, , drop = FALSE])
-      factor_names <- c(group_by, setdiff(factor_names, group_by))
     }
   } else {
     any_groups <- FALSE
   }
   stop_if_not_positive_integer(ci_per_panel)
 
-  x_split <- split(x, factor(x$par, levels = par))
+  x_split <- split(x, x$par)
   if (any_groups) {
     x_split <- lapply(x_split, function(d) d[do.call(order, d[group_by]), ])
   }
 
-  op <- graphics::par(
+  op <- par(
     mar = c(3.5, 5, 1.5, 1),
     cex.axis = 0.8,
     cex.lab = 0.9,
     cex.main = 0.9
   )
-  on.exit(graphics::par(op))
+  on.exit(par(op))
 
   for (i in seq_along(x_split)) {
     d <- x_split[[i]]
@@ -426,19 +420,19 @@ plot.egf_confint <- function(x, par = levels(d$par),
       )
       abline(v = axTicks(side = 1), lty = 3, col = "grey75")
       segments(
-        x0 = ifelse(is_na_lower[k], graphics::par("usr")[1L], d$lower[k]),
+        x0 = ifelse(is_na_lower[k], par("usr")[1L], d$lower[k]),
         x1 = d$estimate[k],
         y0 = seq_along(k),
         y1 = seq_along(k),
-        lty = c(1, 3)[is_na_lower[k] + 1L],
+        lty = c(1, 2)[is_na_lower[k] + 1L],
         lwd = c(2, 1)[is_na_lower[k] + 1L]
       )
       segments(
         x0 = d$estimate[k],
-        x1 = ifelse(is_na_upper[k], graphics::par("usr")[2L], d$upper[k]),
+        x1 = ifelse(is_na_upper[k], par("usr")[2L], d$upper[k]),
         y0 = seq_along(k),
         y1 = seq_along(k),
-        lty = c(1, 3)[1L + is_na_upper[k]],
+        lty = c(1, 2)[1L + is_na_upper[k]],
         lwd = c(2, 1)[1L + is_na_upper[k]]
       )
       points(

@@ -26,13 +26,13 @@ the factors in \code{x$frame} \emph{that are fixed within a time series}.
 A plot is generated for each nonempty level of this interaction.
 In general, include in the interaction all factors used to split
 time series by geographical unit, and exclude all factors used
-to split time series by segment (e.g., epidemic wave). Use the
-default (\code{~1}) if \code{x$frame} has no factors that are fixed within
+to split time series by segment (e.g., epidemic wave). Use \code{~1}
+(the default) if \code{x$frame} has no factors that are fixed within
 a time series (or no factors at all).}
 
 \item{subset}{A named list of atomic vectors with elements specifying levels of
 factors in \code{x$frame}. Only the subset of fitting windows belonging
-to these levels are plotted. Use the default (\code{NULL}) to plot all
+to these levels is plotted. Use \code{NULL} (the default) to plot all
 fitting windows or if \code{x$frame} has no factors.}
 
 \item{type}{A character string indicating the type of incidence plotted.}

@@ -125,3 +125,6 @@ A further limitation of \code{"wald"} is functional non-invariance.
 slower, requiring estimation of restricted models. Of the two,
 \code{"uniroot"} is typically less robust.
 }
+\seealso{
+\code{\link[=plot.egf_confint]{plot.egf_confint()}}
+}

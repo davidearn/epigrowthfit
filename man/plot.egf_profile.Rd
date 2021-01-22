@@ -4,26 +4,28 @@
 \alias{plot.egf_profile}
 \title{Plot likelihood profiles}
 \usage{
-\method{plot}{egf_profile}(x, subset = NULL, level = 0.95, sqrt = TRUE, ...)
+\method{plot}{egf_profile}(x, name = levels(x$name), sqrt = FALSE, level = NULL, ...)
 }
 \arguments{
 \item{x}{An \code{"egf_profile"} object returned by \code{\link[=profile.egf]{profile.egf()}}.}
 
-\item{subset}{A subset of \code{levels(x$name)} specifying profiles to be plotted,
-or otherwise \code{NULL}, in which case all profiles are plotted.}
-
-\item{level}{A numeric vector with elements in (0,1), or otherwise \code{NULL}.
-If non-\code{NULL}, then horizontal lines are drawn at
-\code{qchisq(level, df = 1)} or its square root, depending on \code{sqrt}.}
+\item{name}{A subset of \code{levels(x$name)} specifying profiles to be plotted.}
 
 \item{sqrt}{A logical scalar. If \code{TRUE}, then square root-transformed
 deviance is plotted.}
 
-\item{...}{Optional arguments to \code{plot()}.}
+\item{level}{A numeric vector with elements in (0,1), or otherwise \code{NULL}.
+If non-\code{NULL} and \code{sqrt = FALSE}, then line segments are drawn
+to show the intersection of the profile with horizontal lines
+at \code{qchisq(level, df = 1)}.}
+
+\item{...}{Optional graphical parameters passed to \code{\link[graphics:plot.default]{graphics::plot()}},
+such as \code{type = "o"}. Note that \code{ann = FALSE} and \code{axes = FALSE}
+are hard-coded, as axes and their labels are drawn separately.}
 }
 \value{
 \code{NULL} (invisibly).
 }
 \description{
-A method for quickly inspecting computed likelihood profiles.
+A method for inspecting computed likelihood profiles.
 }
