@@ -6,29 +6,20 @@
 \usage{
 \method{plot}{egf}(
   x,
-  group_by = ~1,
   subset = NULL,
   type = c("interval", "cumulative"),
   log = TRUE,
   xty = c("date", "numeric"),
-  legend = FALSE,
-  level = 0.95,
   tol = 0,
+  legend = FALSE,
+  bands = FALSE,
+  level = 0.95,
   control = NULL,
   ...
 )
 }
 \arguments{
 \item{x}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
-
-\item{group_by}{A formula of the form \code{~f1:...:fn} specifying an interaction of
-the factors in \code{x$frame} \emph{that are fixed within a time series}.
-A plot is generated for each nonempty level of this interaction.
-In general, include in the interaction all factors used to split
-time series by geographical unit, and exclude all factors used
-to split time series by segment (e.g., epidemic wave). Use \code{~1}
-(the default) if \code{x$frame} has no factors that are fixed within
-a time series (or no factors at all).}
 
 \item{subset}{A named list of atomic vectors with elements specifying levels of
 factors in \code{x$frame}. Only the subset of fitting windows belonging
@@ -45,13 +36,6 @@ placed at the start of calendar days, months, or years (depending
 on time scale). If \code{"numeric"}, then time is displayed as a number
 of days since an initial date.}
 
-\item{legend}{A logical scalar. If \code{TRUE}, then a legend is displayed in the
-right margin.}
-
-\item{level}{A number in the interval (0,1). The confidence level represented
-by confidence intervals on doubling times and confidence bands on
-predicted incidence.}
-
 \item{tol}{A non-negative number or \code{Inf}, used to define "exceptional"
 points when \code{type = "interval"}. \code{cases[-1]} is highlighted
 according to \code{control$points_short} if \code{diff(date) < (1-tol)*m}
@@ -59,6 +43,17 @@ and according to \code{control$points_long} if \code{diff(date) > (1+tol)*m},
 where \code{m = median(diff(date))}. In both cases, the value of
 \code{diff(date)} is printed above the point. Assign 0 to highlight
 all deviations from \code{m}. Assign \code{Inf} to disable highlighting.}
+
+\item{legend}{A logical scalar. If \code{TRUE}, then a legend is displayed in the
+right margin.}
+
+\item{bands}{A logical scalar. If \code{TRUE}, then confidence bands on predicted
+incidence are displayed. Longer run times should be expected in
+this case.}
+
+\item{level}{A number in the interval (0,1). The confidence level represented
+by confidence intervals on doubling times and confidence bands on
+predicted incidence.}
 
 \item{control}{A list of lists defining the appearance of various
 plot elements, or otherwise \code{NULL} (see Details).}
@@ -119,7 +114,7 @@ A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}}, af
 the appearance of the predicted incidence curve. Currently,
 only \code{lty}, \code{lwd}, and \code{col} are used.
 }
-\item{\code{window}, \code{confband}}{
+\item{\code{windows}, \code{bands}}{
 Named lists of arguments to \code{\link[graphics:polygon]{graphics::polygon()}}, affecting
 the appearance of fitting windows and confidence bands on
 predicted incidence curves. Currently, only \code{col} and \code{border}

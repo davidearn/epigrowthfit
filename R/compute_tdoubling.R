@@ -84,9 +84,11 @@ compute_tdoubling.egf <- function(r, subset, ...) {
     )
   )
 
-  d <- fitted(r, subset, link = TRUE)
-  n <- length(r$frame) - 2L # first `n` variables in `d` are factors
-  out <- cbind(d[seq_len(n)], tdoubling = log(2) / exp(d$log_r))
+  d <- fitted(r, subset = subset, link = TRUE)
+  out <- cbind(
+    d[vapply(d, is.factor, FALSE)],
+    tdoubling = log(2) / exp(d$log_r)
+  )
   attr(out, "per") <- 1L
   class(out) <- c("tdoubling", class(out))
   out
@@ -96,9 +98,9 @@ compute_tdoubling.egf <- function(r, subset, ...) {
 print.tdoubling <- function(x, ...) {
   per <- attr(x, "per")
   units <- switch(as.character(per),
-    "1"   = "days",
-    "7"   = "weeks",
-    "365" = "years (1 year = 365 days)",
+    `1`   = "days",
+    `7`   = "weeks",
+    `365` = "years (1 year = 365 days)",
     sprintf("units t = %d days", per)
   )
   attr(x, "per") <- NULL

@@ -33,8 +33,12 @@ Gathers necessary components of a call to \code{\link[TMB:MakeADFun]{TMB::MakeAD
 }
 \examples{
 example("make_frame", package = "epigrowthfit")
-tmb_args <- epigrowthfit:::make_tmb_args(frame, curve, distr, excess,
-                                         sparse_X = FALSE, par_init = NULL)
+tmb_args <- epigrowthfit:::make_tmb_args(
+  frame,
+  curve, distr, excess,
+  sparse_X = FALSE,
+  par_init = NULL
+)
 tmb_out <- do.call(TMB::MakeADFun, tmb_args)
 
 }

@@ -21,7 +21,7 @@ at \code{qchisq(level, df = 1)}.}
 
 \item{...}{Optional graphical parameters passed to \code{\link[graphics:plot.default]{graphics::plot()}},
 such as \code{type = "o"}. Note that \code{ann = FALSE} and \code{axes = FALSE}
-are hard-coded, as axes and their labels are drawn separately.}
+are hard-coded. Axes and their labels are drawn separately.}
 }
 \value{
 \code{NULL} (invisibly).

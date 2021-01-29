@@ -8,6 +8,7 @@ egf(
   formula,
   fixed = ~1,
   random = NULL,
+  group_by = ~1,
   data = parent.frame(),
   index = NULL,
   curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
@@ -16,42 +17,48 @@ egf(
   method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
   na_action = c("pass", "fail"),
   sparse_X = FALSE,
-  date_format = "\%Y-\%m-\%d",
   debug = FALSE,
   par_init = NULL,
   ...
 )
 }
 \arguments{
-\item{formula}{A formula of the form \code{y ~ x} specifying an incidence time series
-or multiple incidence time series in long format. \code{x} and \code{y} must
-be vectors of dates (see \code{date_format}) and integers, respectively.}
+\item{formula}{A formula of the form \code{y ~ x} specifying one or more incidence
+time series in long format, with \code{x} Date and \code{y} numeric.}
 
 \item{fixed, random}{Named lists of formulae of the form \code{~rhs}, together specifying
 a generalized linear mixed effects model (the fixed and random
 components) for each parameter of the \emph{incidence} model indicated
-by \code{curve}, \code{distr}, and \code{excess}. A list of valid names can be
-obtained with \code{get_par_names(curve, distr, excess, link = TRUE)}.
+by \code{curve}, \code{distr}, and \code{excess}.
+A list of valid names can be obtained with
+\code{get_par_names(curve, distr, excess, link = TRUE)}.
 Alternatively, formulae (rather than lists of formulae) to be
-recycled for all parameters. Syntax is \code{\link[lme4:lmer]{lme4}}-like,
-but here all variables must be factors. \code{fixed} formulae are
-restricted to one term and so must have the form \code{~f1:...:fn}
-or \code{~1} (the default for each missing list element). \code{random}
-formulae must give sums of terms of the form \code{(1 | f1:...:fn)},
-\code{(1 | f1/.../fn)}, or \code{(1 | f1 * ... * fn)}. Use \code{NULL} (the
-default for each missing list element) instead of a formula to
-indicate absence of random effects.}
+recycled for all parameters.
+Syntax is \code{\link[lme4:lmer]{lme4}}-like, but here all variables
+must be factors.
+\code{fixed} formulae are restricted to one term and so must be \code{~1}
+(the default for each missing list element) or have the form
+\code{~f1:...:fn}.
+\code{random} formulae are restricted to sums of terms of the form
+\code{(1 | f1:...:fn)}, \code{(1 | f1/.../fn)}, or \code{(1 | f1 * ... * fn)}.
+Use \code{NULL} (the default for each missing list element) instead
+of a formula to indicate absence of random effects.}
+
+\item{group_by}{A formula of the form \code{~f1:...:fn},
+such that \code{split(data, interaction(data[all.vars(group_by)]))}
+splits \code{data} by time series. Use \code{~1} (the default) if there
+is only one time series.}
 
 \item{data}{A data frame, list, or environment containing the variables
-named in \code{formula}, \code{fixed}, and \code{random}. Missing values in
-incidence (\code{y} if \code{formula = y ~ x}) are not tolerated unless
-\code{na_action = "pass"}. Missing values in other variables are
-never tolerated.}
+named in \code{formula}, \code{fixed}, \code{random}, and \code{group_by}. Missing
+values in incidence (\code{y} if \code{formula = y ~ x}) are tolerated
+only if \code{na_action = "pass"}. Missing values in other variables
+are not tolerated.}
 
 \item{index}{A factor of length \code{nrow(data)} such that \code{split(data, index)}
-splits \code{data} by fitting window and \code{is.na(index)} indexes
-the rows of \code{data} not belonging to a fitting window. \code{NULL}
-(the default) is equivalent to \code{rep(factor("0"), nrow(data))}.}
+splits \code{data} by fitting window, with \code{is.na(index)} indexing
+rows of \code{data} not belonging to a fitting window. \code{NULL}
+(the default) is equivalent to \code{rep(factor(0), nrow(data))}.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
@@ -71,19 +78,14 @@ mortality rather than disease mortality or disease incidence.}
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design matrix
 will be constructed in sparse format.}
 
-\item{date_format}{A character vector passed to \code{\link[=as.Date]{as.Date()}} argument \code{tryFormats},
-used to convert dates (\code{x} if \code{formula = y ~ x}) from character
-to Date, if necessary. See \code{\link[base:strptime]{base::strptime()}} for a list of
-conversion specifications.}
-
 \item{debug}{A logical scalar used for debugging. If \code{TRUE}, then \code{egf()}
 returns early with a list of optimization inputs.}
 
 \item{par_init}{A full parameter vector for the first likelihood evaluation.
 Set to \code{NULL} to accept the internally generated default. If
 the default causes errors, then use \code{debug = TRUE} to retrieve
-its value, which will have the correct structure, and modify as
-desired.}
+its value, which will have the correct structure, and modify
+as necessary.}
 
 \item{...}{Optional arguments to the optimizer specified by \code{method}.}
 }
@@ -91,16 +93,12 @@ desired.}
 If \code{debug = FALSE}, then a list inheriting from class \code{"egf"},
 with elements:
 \item{\code{frame}}{
-The model frame. This is a data frame containing only the
-variables named in \code{formula}, \code{fixed}, and \code{random}. Data
-not belonging to a fitting window are omitted (but stored
-as an attribute). See \code{\link[=make_frame]{make_frame()}}.
+The model frame. See \code{\link[=make_frame]{make_frame()}}.
 }
 \item{\code{index}}{
 A factor of length \code{nrow(data)} such that \code{split(frame, index)}
-splits the model frame by fitting window. Not necessarily
-identical to the so-named argument, as \code{frame} is constructed
-by permuting and subsetting the rows of \code{data}.
+splits the model frame by fitting window. Not usually identical
+to the so-named argument.
 }
 \item{\code{curve}, \code{distr}, \code{excess}, \code{method}}{
 Copies of the so-named arguments (after matching).
@@ -112,7 +110,7 @@ A list of arguments to \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}. See \code{
 The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}} (after optimization).
 }
 \item{\code{optim_out}}{
-The list output of the optimizer.
+The list output of the optimizer specified by \code{method}.
 }
 \item{\code{par_init}}{
 The full parameter vector of the first likelihood evaluation.

@@ -23,8 +23,8 @@ get_control_default <- function(f) {
       points_short = list(pch = 1, col = "#882255", bg = NA, cex = 1),
       points_long = list(pch = 16, col = "#882255", bg = NA, cex = 1),
       lines = list(lty = 1, lwd = 2.5, col = "#44AA99"),
-      window = list(col = "#DDCC7740", border = NA),
-      confband = list(col = "#44AA9960", border = NA),
+      windows = list(col = "#DDCC7740", border = NA),
+      bands = list(col = "#44AA9960", border = NA),
       text_hl = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
       text_td = list(adj = c(0, 0.5), pos = 4, offset = 1, col = "black", cex = 0.7, font = 1)
     ),

@@ -8,60 +8,70 @@ make_frame(
   formula,
   fixed,
   random,
+  group_by,
   data,
   index,
   curve,
   distr,
   excess,
-  na_action,
-  date_format
+  na_action
 )
 }
 \arguments{
-\item{formula}{A formula of the form \code{y ~ x} specifying an incidence time series
-or multiple incidence time series in long format. \code{x} and \code{y} must
-be vectors of dates (see \code{date_format}) and integers, respectively.}
+\item{formula}{A formula of the form \code{y ~ x} specifying one or more incidence
+time series in long format, with \code{x} Date and \code{y} numeric.}
 
 \item{fixed}{Named lists of formulae of the form \code{~rhs}, together specifying
 a generalized linear mixed effects model (the fixed and random
 components) for each parameter of the \emph{incidence} model indicated
-by \code{curve}, \code{distr}, and \code{excess}. A list of valid names can be
-obtained with \code{get_par_names(curve, distr, excess, link = TRUE)}.
+by \code{curve}, \code{distr}, and \code{excess}.
+A list of valid names can be obtained with
+\code{get_par_names(curve, distr, excess, link = TRUE)}.
 Alternatively, formulae (rather than lists of formulae) to be
-recycled for all parameters. Syntax is \code{\link[lme4:lmer]{lme4}}-like,
-but here all variables must be factors. \code{fixed} formulae are
-restricted to one term and so must have the form \code{~f1:...:fn}
-or \code{~1} (the default for each missing list element). \code{random}
-formulae must give sums of terms of the form \code{(1 | f1:...:fn)},
-\code{(1 | f1/.../fn)}, or \code{(1 | f1 * ... * fn)}. Use \code{NULL} (the
-default for each missing list element) instead of a formula to
-indicate absence of random effects.}
+recycled for all parameters.
+Syntax is \code{\link[lme4:lmer]{lme4}}-like, but here all variables
+must be factors.
+\code{fixed} formulae are restricted to one term and so must be \code{~1}
+(the default for each missing list element) or have the form
+\code{~f1:...:fn}.
+\code{random} formulae are restricted to sums of terms of the form
+\code{(1 | f1:...:fn)}, \code{(1 | f1/.../fn)}, or \code{(1 | f1 * ... * fn)}.
+Use \code{NULL} (the default for each missing list element) instead
+of a formula to indicate absence of random effects.}
 
 \item{random}{Named lists of formulae of the form \code{~rhs}, together specifying
 a generalized linear mixed effects model (the fixed and random
 components) for each parameter of the \emph{incidence} model indicated
-by \code{curve}, \code{distr}, and \code{excess}. A list of valid names can be
-obtained with \code{get_par_names(curve, distr, excess, link = TRUE)}.
+by \code{curve}, \code{distr}, and \code{excess}.
+A list of valid names can be obtained with
+\code{get_par_names(curve, distr, excess, link = TRUE)}.
 Alternatively, formulae (rather than lists of formulae) to be
-recycled for all parameters. Syntax is \code{\link[lme4:lmer]{lme4}}-like,
-but here all variables must be factors. \code{fixed} formulae are
-restricted to one term and so must have the form \code{~f1:...:fn}
-or \code{~1} (the default for each missing list element). \code{random}
-formulae must give sums of terms of the form \code{(1 | f1:...:fn)},
-\code{(1 | f1/.../fn)}, or \code{(1 | f1 * ... * fn)}. Use \code{NULL} (the
-default for each missing list element) instead of a formula to
-indicate absence of random effects.}
+recycled for all parameters.
+Syntax is \code{\link[lme4:lmer]{lme4}}-like, but here all variables
+must be factors.
+\code{fixed} formulae are restricted to one term and so must be \code{~1}
+(the default for each missing list element) or have the form
+\code{~f1:...:fn}.
+\code{random} formulae are restricted to sums of terms of the form
+\code{(1 | f1:...:fn)}, \code{(1 | f1/.../fn)}, or \code{(1 | f1 * ... * fn)}.
+Use \code{NULL} (the default for each missing list element) instead
+of a formula to indicate absence of random effects.}
+
+\item{group_by}{A formula of the form \code{~f1:...:fn},
+such that \code{split(data, interaction(data[all.vars(group_by)]))}
+splits \code{data} by time series. Use \code{~1} (the default) if there
+is only one time series.}
 
 \item{data}{A data frame, list, or environment containing the variables
-named in \code{formula}, \code{fixed}, and \code{random}. Missing values in
-incidence (\code{y} if \code{formula = y ~ x}) are not tolerated unless
-\code{na_action = "pass"}. Missing values in other variables are
-never tolerated.}
+named in \code{formula}, \code{fixed}, \code{random}, and \code{group_by}. Missing
+values in incidence (\code{y} if \code{formula = y ~ x}) are tolerated
+only if \code{na_action = "pass"}. Missing values in other variables
+are not tolerated.}
 
 \item{index}{A factor of length \code{nrow(data)} such that \code{split(data, index)}
-splits \code{data} by fitting window and \code{is.na(index)} indexes
-the rows of \code{data} not belonging to a fitting window. \code{NULL}
-(the default) is equivalent to \code{rep(factor("0"), nrow(data))}.}
+splits \code{data} by fitting window, with \code{is.na(index)} indexing
+rows of \code{data} not belonging to a fitting window. \code{NULL}
+(the default) is equivalent to \code{rep(factor(0), nrow(data))}.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
@@ -74,23 +84,21 @@ mortality rather than disease mortality or disease incidence.}
 
 \item{na_action}{A character string indicating how \code{NA} in the incidence vector
 (\code{y} if \code{formula = y ~ x}) are handled. See \code{\link[stats:na.fail]{stats::na.fail()}}.}
-
-\item{date_format}{A character vector passed to \code{\link[=as.Date]{as.Date()}} argument \code{tryFormats},
-used to convert dates (\code{x} if \code{formula = y ~ x}) from character
-to Date, if necessary. See \code{\link[base:strptime]{base::strptime()}} for a list of
-conversion specifications.}
 }
 \value{
 A data frame containing the variables named in \code{formula}, \code{fixed},
 and \code{random}, with attributes:
 \item{\code{extra}}{
-A data frame preserving data not belonging to a fitting window.
-(see Details).
+A data frame preserving unused data (see Details).
 }
 \item{\code{index}}{
 A factor of length \code{nrow(frame)} such that \code{split(frame, index)}
-splits the frame by fitting window. Not necessarily identical to
-the argument of the same name (see Details).
+splits the data frame by fitting window. Not usually identical
+to the so-named argument (see Details).
+}
+\item{\code{group_by}}{
+A character vector. The result of applying \code{\link[=all.vars]{all.vars()}} to the
+so-named argument.
 }
 \item{\code{fixed_term_labels}, \code{random_term_labels}}{
 Named lists of character vectors naming mixed effects model terms
@@ -98,14 +106,16 @@ for each parameter.
 }
 }
 \description{
-Constructs a model frame to be used by \code{\link[=egf]{egf()}}, after performing
-myriad checks on the arguments.
+Constructs a model frame to be used by \code{\link[=egf]{egf()}},
+while performing myriad checks on the arguments.
 }
 \details{
-Rows of \code{data} are permuted by \code{order(index)} so that rows belonging
-to the same fitting window are contiguous in the model frame.
-The permuted rows indexed by \code{!is.na(index[order(index)])} form the
-model frame. The remaining rows are preserved as an attribute.
+Rows of \code{data} belonging to time series without fitting windows
+are discarded. Rows of \code{data[-discarded, ]} belonging to fitting
+windows are returned. The remaining rows of \code{data[-discarded, ]}
+are preserved in attribute \code{extra}. These are necessary as it
+is desirable for \code{\link[=plot.egf]{plot.egf()}} to display entire time series,
+not only segments to which a curve has been fit.
 }
 \examples{
 r <- log(2) / 10
@@ -142,11 +152,14 @@ random <- list(
   r  = ~(1 | continent/country) + (1 | wave),
   c0 = ~(1 | continent/country)
 )
+group_by <- ~country
 
-frame <- epigrowthfit:::make_frame(formula, fixed, random,
-                                   data, index,
-                                   curve, distr, excess,
-                                   na_action = "pass")
+frame <- epigrowthfit:::make_frame(
+  formula, fixed, random, group_by,
+  data, index,
+  curve, distr, excess,
+  na_action = "pass"
+)
 
 }
 \keyword{internal}

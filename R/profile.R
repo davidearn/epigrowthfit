@@ -249,13 +249,7 @@ profile.egf <- function(fitted, index = NULL, lin_comb = NULL,
 #' @export
 #' @importFrom stats qchisq
 confint.egf_profile <- function(object, parm, level = 0.95, ...) {
-  stop_if_not(
-    is.numeric(level),
-    length(level) == 1L,
-    level > 0,
-    level < 1,
-    m = "`level` must be a number in the interval (0,1)."
-  )
+  stop_if_not_in_0_1(level)
   stop_if_not(
     qchisq(level, df = 1) < max(object$deviance, na.rm = TRUE),
     m = paste0(
@@ -316,7 +310,7 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
 #' @param ...
 #'   Optional graphical parameters passed to [graphics::plot()],
 #'   such as `type = "o"`. Note that `ann = FALSE` and `axes = FALSE`
-#'   are hard-coded, as axes and their labels are drawn separately.
+#'   are hard-coded. Axes and their labels are drawn separately.
 #'
 #' @return
 #' `NULL` (invisibly).
@@ -357,8 +351,8 @@ plot.egf_profile <- function(x, name = levels(x$name), sqrt = FALSE,
     h <- f(qchisq(level, df = 1))
     cil <- lapply(level, function(p) confint(x, level = p))
     m <- match(names(x_split), levels(x$name))
-    v_lower <- lapply(m, function(i) vapply(cil, "[", 0, i, "lower"))
-    v_upper <- lapply(m, function(i) vapply(cil, "[", 0, i, "upper"))
+    v_lower <- lapply(m, function(i) vapply(cil, `[`, 0, i, "lower"))
+    v_upper <- lapply(m, function(i) vapply(cil, `[`, 0, i, "upper"))
   }
 
   op <- par(

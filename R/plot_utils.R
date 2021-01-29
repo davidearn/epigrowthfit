@@ -114,6 +114,9 @@ dceiling <- function(date, to = c("month", "year")) {
 #' @param refdate
 #'   A Date scalar. `left` and `right` represent numbers
 #'   of days since this date.
+#' @param plot
+#'   A logical scalar. If `FALSE`, then the axis is not drawn.
+#'   Useful if only the return value is desired.
 #' @param tcl,mgp2,col.axis,cex.axis,font.axis
 #'   Arguments to [graphics::axis()], which are recycled to length 2.
 #'   (`mgp2` is passed as the second component of argument `mgp`.)
@@ -122,7 +125,7 @@ dceiling <- function(date, to = c("month", "year")) {
 #'   [graphics::par()].
 #'
 #' @return
-#' `NULL` (invisibly).
+#' An integer vector listing positions of axis labels.
 #'
 #' @details
 #' `daxis()` assumes that horizontal user coordinates measure
@@ -149,20 +152,21 @@ dceiling <- function(date, to = c("month", "year")) {
 #' of the minor axis is the value of `ceiling(ceiling(w / 365) / 7)`.
 #'
 #' @noRd
-#' @importFrom graphics axis
-daxis <- function(left, right, refdate,
-                  tcl, mgp2, col.axis, cex.axis, font.axis) {
+#' @importFrom graphics axis par
+daxis <- function(left = NULL, right = NULL, refdate, plot = TRUE,
+                  tcl = NULL, mgp2 = NULL,
+                  col.axis = NULL, cex.axis = NULL, font.axis = NULL) {
+  if (is.null(left)) {
+    left <- par("usr")[1L]
+  }
+  if (is.null(right)) {
+    right <- par("usr")[2L]
+  }
   t0 <- min(ceiling(left), floor(right))
   t1 <- max(ceiling(left), floor(right), t0 + 1)
   d0 <- refdate + t0
   d1 <- refdate + t1
   w <- t1 - t0
-
-  tcl <- tcl[1L]
-  mgp2 <- rep(mgp2, length.out = 2L)
-  col.axis <- rep(col.axis, length.out = 2L)
-  cex.axis <- rep(cex.axis, length.out = 2L)
-  font.axis <- rep(font.axis, length.out = 2L)
 
   ## Determine tick coordinates and labels
   if (w <= 210) {
@@ -220,33 +224,59 @@ daxis <- function(left, right, refdate,
     any_major <- FALSE
   }
 
-  ## Minor axis
-  axis(
-    side = 1L,
-    at = t0 + at_minor,
-    labels = labels_minor,
-    gap.axis = 0,
-    tcl = tcl[1L],
-    mgp = c(3, mgp2[1L], 0),
-    col.axis = col.axis[1L],
-    cex.axis = cex.axis[1L],
-    font.axis = font.axis[1L]
-  )
-  ## Major axis
-  if (any_major) {
+  if (plot) {
+    if (is.null(tcl)) {
+      tcl <- par("tcl")
+    }
+    tcl <- tcl[1L]
+    if (is.null(mgp2)) {
+      mgp2 <- par("mgp2")[2L] + c(0, 1)
+    }
+    mgp2 <- rep_len(mgp2, 2L)
+    if (is.null(col.axis)) {
+      col.axis <- par("col.axis")
+    }
+    col.axis <- rep_len(col.axis, 2L)
+    if (is.null(cex.axis)) {
+      cex.axis <- par("cex.axis")
+    }
+    cex.axis <- rep_len(cex.axis, 2L)
+    if (is.null(font.axis)) {
+      font.axis <- par("font.axis")
+    }
+    font.axis <- rep_len(font.axis, 2L)
+
+    ## Minor axis
     axis(
       side = 1L,
-      at = t0 + at_major,
-      labels = labels_major,
+      at = t0 + at_minor,
+      labels = labels_minor,
+      xpd = FALSE,
       gap.axis = 0,
-      tick = FALSE,
-      mgp = c(3, mgp2[2L], 0),
-      col.axis = col.axis[2L],
-      cex.axis = cex.axis[2L],
-      font.axis = font.axis[2L]
+      tcl = tcl[1L],
+      mgp = c(3, mgp2[1L], 0),
+      col.axis = col.axis[1L],
+      cex.axis = cex.axis[1L],
+      font.axis = font.axis[1L]
     )
+    ## Major axis
+    if (any_major) {
+      axis(
+        side = 1L,
+        at = t0 + at_major,
+        labels = labels_major,
+        xpd = FALSE,
+        gap.axis = 0,
+        tick = FALSE,
+        mgp = c(3, mgp2[2L], 0),
+        col.axis = col.axis[2L],
+        cex.axis = cex.axis[2L],
+        font.axis = font.axis[2L]
+      )
+    }
   }
-  invisible(NULL)
+
+  if (any_major) at_major else at_minor
 }
 
 #' Get nicely formatted tick labels
@@ -292,3 +322,32 @@ get_labels <- function(at) {
   }
   labels
 }
+
+#' Find size for y-axis tick labels
+#'
+#' Find `cex.axis` such that the widest y-axis tick label generated
+#' by `axis(labels = x, las = 1, cex.axis)` is exactly `mex` margin
+#' lines wide.
+#'
+#' @param x
+#'   A character or expression vector listing tick labels.
+#' @param mex
+#'   A positive number. The width of the widest tick label
+#'   as a number of margin lines. See [graphics::par()].
+#' @param csi
+#'   A positive number. The width of one margin line in inches.
+#'   The default is `par("csi")`. See [graphics::par()].
+#'
+#' @return
+#' `mex * csi / mw`, where `mw` is the width of the widest tick label
+#' in inches, given by `max(strwidth(x, units = "inches", cex = 1))`.
+#'
+#' @noRd
+#' @importFrom graphics par strwidth
+get_cex_axis <- function(x, mex, csi = NULL) {
+  if (is.null(csi)) {
+    csi <- par("csi")
+  }
+  mex * csi / max(strwidth(x, units = "inches", cex = 1))
+}
+

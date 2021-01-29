@@ -53,13 +53,13 @@ predict.egf <- function(object, subset = NULL, time = NULL,
       identical(sort(names(subset)), sort(names(fr))),
       vapply(subset, is.atomic, logical(1L)),
       lengths(subset) == 1L,
-      mapply("%in%", subset, lapply(fr[names(subset)], levels)),
+      mapply(`%in%`, subset, lapply(fr[names(subset)], levels)),
       m = paste0(
         "`subset` must specify exactly one level\n",
         "for each factor in `object$frame`."
       )
     )
-    w <- Reduce("&", Map("==", fr[names(subset)], subset), w)
+    w <- Reduce(`&`, Map(`==`, fr[names(subset)], subset), w)
     stop_if_not(
       any(w),
       m = "`subset` does not match any fitting windows."
@@ -173,16 +173,10 @@ confint.egf_predict <- function(object, parm, level = 0.95,
     "se" %in% names(object$log_int_inc),
     m = paste0(
       "`object` must supply standard errors.\n",
-      "Repeat `predict()` but with argument `se = TRUE`."
+      "Repeat `predict()` with argument `se = TRUE`."
     )
   )
-  stop_if_not(
-    is.numeric(level),
-    length(level) == 1L,
-    level > 0,
-    level < 1,
-    m = "`level` must be a number in the interval (0,1)."
-  )
+  stop_if_not_in_0_1(level)
 
   q <- qnorm(0.5 * (1 + level))
   f <- function(d) {

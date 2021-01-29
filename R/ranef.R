@@ -66,7 +66,7 @@ ranef.egf <- function(object, ...) {
       pn <- colnames(rid)[rid[i, ] > 0L]
       rep(list(pn), 2L)
     })
-    attr(out, "cov") <- Map("dimnames<-", ml, dnl)
+    attr(out, "cov") <- Map(`dimnames<-`, ml, dnl)
     class(out) <- c("egf_ranef", "data.frame")
     out
   })

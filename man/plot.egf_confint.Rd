@@ -4,24 +4,37 @@
 \alias{plot.egf_confint}
 \title{Plot confidence intervals}
 \usage{
-\method{plot}{egf_confint}(x, group_by = ~1, subset = NULL, ci_per_panel = 8L, ...)
+\method{plot}{egf_confint}(
+  x,
+  type = c("1", "2"),
+  group_by = ~1,
+  sort = c("none", "increasing", "decreasing"),
+  subset = NULL,
+  per_plot = 12L,
+  ...
+)
 }
 \arguments{
 \item{x}{An \code{"egf_confint"} object returned by \code{\link[=confint.egf]{confint.egf()}}.}
 
-\item{group_by}{A formula of the form \code{~f1:...:fn} specifying an interaction of
-the factors in \code{x} other than \code{par}. \code{group_by} determines the
-order in which confidence intervals are plotted, with \code{f1} varying
-slowest. Use \code{~1} (the default) to preserve the order given in \code{x}
-or if \code{x} has no factors other than \code{par}.}
+\item{type}{A character string indicating how confidence intervals are
+displayed (see Details).}
 
-\item{subset}{A named list of atomic vectors with elements specifying
-levels of factors in \code{x}. Only the relevant subset of
-confidence intervals is plotted. Use \code{NULL} (the default)
-to plot all confidence intervals.}
+\item{group_by}{A formula of the form \code{~f1:...:fn} specifying an interaction of the
+factors in \code{x} other than \code{par}. Confidence intervals belonging to
+the same level of the interaction are plotted together in the order
+set out by \code{sort}. Use \code{~1} (the default) to indicate no grouping
+or if \code{x} has no factors other than \code{par}. Ignored if \code{type = "2"}.}
 
-\item{ci_per_panel}{A positive integer. One panel will display at most this many
-confidence intervals.}
+\item{sort}{A character string indicating how confidence intervals are sorted
+within the groups set out by \code{group_by}. Ignored if \code{type = "2"}.}
+
+\item{subset}{A named list of atomic vectors with elements specifying levels of
+factors in \code{x}. Only the relevant subset of confidence intervals is
+plotted. Use \code{NULL} (the default) to plot all confidence intervals.}
+
+\item{per_plot}{A positive integer. One plot will display at most this many
+confidence intervals (\code{type = "1"}) or panels (\code{type = "2"}).}
 
 \item{...}{Unused optional arguments.}
 }
@@ -33,7 +46,19 @@ A method for graphically comparing confidence intervals
 on fitted values across groups.
 }
 \details{
-If an endpoint of a confidence interval is \code{NA}, then a dashed
-line is drawn from the point estimate to the left or right boundary
-of the plotting region (depending on the missing endpoint).
+Confidence intervals are displayed in one- or two-dimensional plots,
+depending on \code{type}.
+
+If \code{type = "1"}, then the horizontal axis measures the parameter.
+Confidence intervals are plotted as stacked horizontal line segments.
+
+If \code{type = "2"}, then the vertical axis measures the parameter,
+while the horizontal axis measures time. Confidence intervals
+are plotted as \code{x} by \code{y} boxes, where \code{x} is confidence interval
+length and \code{y} is fitting window length. In this case, there is
+one panel per time series.
+
+If endpoints of confidence intervals are \code{NA}, then dashed lines
+are drawn from the point estimate to the boundary of the plotting
+region to indicate missingness.
 }

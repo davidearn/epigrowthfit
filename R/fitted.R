@@ -51,10 +51,10 @@ fitted.egf <- function(object, subset = NULL, link = TRUE, ...) {
       lengths(subset) > 0L,
       names(subset) %in% names(fr),
       !duplicated(names(subset)),
-      unlist(Map("%in%", subset, lapply(fr[names(subset)], levels))),
+      unlist(Map(`%in%`, subset, lapply(fr[names(subset)], levels))),
       m = "`subset` must specify levels of factors in `object$frame`."
     )
-    w <- Reduce("&", Map("%in%", fr[names(subset)], subset))
+    w <- Reduce(`&`, Map(`%in%`, fr[names(subset)], subset))
     stop_if_not(
       any(w),
       m = "`subset` does not match any fitting windows."

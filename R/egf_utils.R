@@ -160,7 +160,7 @@ get_inverse_link <- function(s) {
 #' @inheritParams egf
 #'
 #' @return
-#' `check_formula()` returns `formula` as is.
+#' `check_formula()` and `check_group_by()` return the argument as is.
 #'
 #' `check_fixed()` and `check_random()` return lists of `p` formulae
 #' with names `get_par_names(curve, distr, excess, link = TRUE)`.
@@ -228,6 +228,8 @@ get_inverse_link <- function(s) {
 #' }
 #'
 #' @noRd
+NULL
+
 check_formula <- function(formula) {
   stop_if_not(
     inherits(formula, "formula"),
@@ -319,30 +321,45 @@ check_random <- function(random, curve, distr, excess) {
   random[pn]
 }
 
+check_group_by <- function(group_by) {
+  stop_if_not(
+    inherits(group_by, "formula"),
+    length(group_by) == 2L,
+    grepl("^(1|([[:alnum:]._]+(:[[:alnum:]._]+)*))$", deparse(group_by[[2L]])),
+    m = "`group_by` must be `~1` or a formula of the form `~f1:...:fn`."
+  )
+  group_by
+}
+
 #' Construct a model frame
 #'
-#' Constructs a model frame to be used by [egf()], after performing
-#' myriad checks on the arguments.
+#' Constructs a model frame to be used by [egf()],
+#' while performing myriad checks on the arguments.
 #'
 #' @inheritParams egf
 #'
 #' @details
-#' Rows of `data` are permuted by `order(index)` so that rows belonging
-#' to the same fitting window are contiguous in the model frame.
-#' The permuted rows indexed by `!is.na(index[order(index)])` form the
-#' model frame. The remaining rows are preserved as an attribute.
+#' Rows of `data` belonging to time series without fitting windows
+#' are discarded. Rows of `data[-discarded, ]` belonging to fitting
+#' windows are returned. The remaining rows of `data[-discarded, ]`
+#' are preserved in attribute `extra`. These are necessary as it
+#' is desirable for [plot.egf()] to display entire time series,
+#' not only segments to which a curve has been fit.
 #'
 #' @return
 #' A data frame containing the variables named in `formula`, `fixed`,
 #' and `random`, with attributes:
 #' \item{`extra`}{
-#'   A data frame preserving data not belonging to a fitting window.
-#'   (see Details).
+#'   A data frame preserving unused data (see Details).
 #' }
 #' \item{`index`}{
 #'   A factor of length `nrow(frame)` such that `split(frame, index)`
-#'   splits the frame by fitting window. Not necessarily identical to
-#'   the argument of the same name (see Details).
+#'   splits the data frame by fitting window. Not usually identical
+#'   to the so-named argument (see Details).
+#' }
+#' \item{`group_by`}{
+#'   A character vector. The result of applying [all.vars()] to the
+#'   so-named argument.
 #' }
 #' \item{`fixed_term_labels`, `random_term_labels`}{
 #'   Named lists of character vectors naming mixed effects model terms
@@ -384,96 +401,76 @@ check_random <- function(random, curve, distr, excess) {
 #'   r  = ~(1 | continent/country) + (1 | wave),
 #'   c0 = ~(1 | continent/country)
 #' )
+#' group_by <- ~country
 #'
-#' frame <- epigrowthfit:::make_frame(formula, fixed, random,
-#'                                    data, index,
-#'                                    curve, distr, excess,
-#'                                    na_action = "pass")
+#' frame <- epigrowthfit:::make_frame(
+#'   formula, fixed, random, group_by,
+#'   data, index,
+#'   curve, distr, excess,
+#'   na_action = "pass"
+#' )
 #'
 #' @keywords internal
-make_frame <- function(formula, fixed, random, data, index,
-                       curve, distr, excess, na_action, date_format) {
-  ## Check that `data` makes sense
+#' @importFrom stats complete.cases
+make_frame <- function(formula, fixed, random, group_by, data, index,
+                       curve, distr, excess, na_action) {
+  ## Check model formulae
+  formula  <- check_formula(formula)
+  fixed    <- check_fixed(fixed, curve, distr, excess)
+  random   <- check_random(random, curve, distr, excess)
+  group_by <- check_group_by(group_by)
+
+  ## Check that formula variables can be found
   stop_if_not(
     inherits(data, c("data.frame", "list", "environment")),
-    # typeof(data) %in% c("list", "environment"), # FIXME: better/worse?
     m = "`data` must be a data frame, list, or environment."
   )
   if (is.environment(data)) {
     data <- as.list(data)
   }
-
-  ## Check that model formulae are specified correctly
-  formula <- check_formula(formula)
-  fixed   <- check_fixed(fixed, curve, distr, excess)
-  random  <- check_random(random, curve, distr, excess)
-
-  ## Check that formula variables can be found
+  group_by <- all.vars(group_by)
   dn <- all.vars(formula[[3L]]) # date
   cn <- all.vars(formula[[2L]]) # cases
-  fn <- unique(unlist(lapply(c(fixed, random), all.vars))) # factors
+  fn <- unique(c(group_by, unlist(lapply(c(fixed, random), all.vars)))) # factors
   an <- unique(c(dn, cn, fn)) # all
-  found <- an %in% names(data)
+  found <- (an %in% names(data))
   stop_if_not(
     all(found),
     m = paste0(
-      "Variables not found in `data`:\n",
-      paste(an[!found], collapse = ", ")
+      "Formula variables not found in `data`:\n",
+      paste(sprintf("`%s`", an[!found]), collapse = ", ")
     )
   )
 
-  ## Check that time series is specified correctly
-  if (is.character(data[[dn]])) {
-    data[[dn]] <- try(as.Date(data[[dn]], tryFormats = date_format), silent = TRUE)
-  }
+  ## Construct model frame
   stop_if_not(
-    inherits(data[[dn]], "Date"),
-    m = sprintf("`%s` must be of class \"Date\" or so coercible with\n`as.Date(%s, tryFormats = date_format)`.", dn, dn)
+    vapply(data[an], is.atomic, FALSE),
+    m = "Formula variables must be atomic."
   )
-  n <- length(data[[dn]])
-  stop_if_not(
-    n > 0L,
-    m = sprintf("`%s` must have nonzero length.", dn)
-  )
-  stop_if_not(
-    !anyNA(data[[dn]]),
-    m = sprintf("`%s` must not have missing values.", dn)
-  )
-  stop_if_not(
-    is.numeric(data[[cn]]),
-    length(data[[cn]]) == n,
-    m = sprintf("`%s` must be numeric and have length `length(%s)`.", cn, dn)
-  )
-  stop_if_not(
-    all(data[[cn]] >= 0, na.rm = TRUE),
-    !is.infinite(data[[cn]]),
-    all(data[[cn]] %% 1 == 0, na.rm = TRUE), # FIXME: isTRUE(all.equal())?
-    m = sprintf("Elements of `%s` must be non-negative integers or NA.", cn)
-  )
-  data[[cn]] <- as.integer(data[[cn]])
-
-  ## Check that grouping variables are specified correctly
-  if (length(fn) > 0L) {
+  if (!is.data.frame(data)) {
     stop_if_not(
-      vapply(data[fn], is.factor, FALSE),
-      lengths(data[fn]) == n,
-      m = sprintf("Grouping variables must be factors of length `length(%s)`.", dn)
+      diff(range(lengths(data[an]))) == 0L,
+      m = "Formula variables must have a common length."
     )
-    data[fn] <- lapply(data[fn], droplevels, exclude = NA)
-    stop_if_not(
-      !vapply(data[fn], anyNA, FALSE),
-      m = "Grouping variables must not have missing values."
-    )
+    for (s in an) {
+      dim(data[[s]]) <- NULL
+    }
   }
-
-  ## Check that fitting windows are specified correctly
   frame <- as.data.frame(data[an])
+  N <- nrow(frame)
+  min_window_length <- 7L
+  stop_if_not(
+    N >= min_window_length,
+    m = sprintf("Model frame must have at least %d rows.", min_window_length)
+  )
+
+  ## Check fitting windows
   if (is.null(index)) {
-    index <- rep(factor("0"), n)
+    index <- rep(factor(0), N)
   } else {
     stop_if_not(
       is.factor(index),
-      length(index) == n,
+      length(index) == N,
       m = sprintf("`index` must be a factor of length `length(%s)`.", dn)
     )
     index <- droplevels(index, exclude = NA)
@@ -481,18 +478,94 @@ make_frame <- function(formula, fixed, random, data, index,
       nlevels(index) > 0L,
       m = "`index` must have at least one nonempty level."
     )
+    stop_if_not(
+      tabulate(index) >= min_window_length,
+      m = sprintf("Nonempty levels of `index` must have count %d or greater.", min_window_length)
+    )
   }
-  frame_split <- split(frame, index)
-  date_split <- lapply(frame_split, "[[", dn)
+
+  if (length(fn) > 0L) {
+    ## Check factors
+    stop_if_not(
+      vapply(frame[fn], is.factor, FALSE),
+      m = "Grouping variables must be factors."
+    )
+    frame[fn] <- lapply(frame[fn], droplevels, exclude = NA)
+    stop_if_not(
+      !vapply(frame[fn], anyNA, FALSE),
+      m = "Grouping variables must not have missing values."
+    )
+    stop_if_not(
+      nlevels(interaction(cbind(index, frame[fn]), drop = TRUE)) == nlevels(index),
+      m = "Grouping variables must be fixed in each level of `index`."
+    )
+    frame_red <- droplevels(frame[!duplicated(index), fn, drop = FALSE])
+    stop_if_not(
+      vapply(frame_red, nlevels, 0L) > 1L,
+      m = "Grouping variables must not be fixed across all levels of `index`."
+    )
+  }
+
+  if (length(group_by) > 0L) {
+    ## Discard rows belonging to time series without fitting windows
+    frame[group_by] <- Map(factor,
+      x = frame[group_by],
+      levels = lapply(frame_red[group_by], levels)
+    )
+    keep <- complete.cases(frame[group_by])
+    frame <- droplevels(frame[keep, ])
+    index <- index[keep]
+    N <- nrow(frame)
+
+    ## Order rows by time series
+    ts <- interaction(frame[group_by], drop = TRUE)
+    ord <- order(ts)
+    frame <- frame[ord, ]
+    index <- index[ord]
+    ts <- ts[ord]
+  }
+
+  ## Check time
   stop_if_not(
-    lengths(date_split) >= 7L,
-    m = sprintf("`%s` must have length 7 or greater in each level of `index`.", dn)
+    inherits(frame[[dn]], "Date"),
+    m = sprintf("`%s` must inherit from class \"Date\".", dn)
   )
   stop_if_not(
-    vapply(date_split, function(x) all(diff(x) > 0), FALSE),
-    m = sprintf("`%s` must be increasing in each level of `index`.", dn)
+    !anyNA(frame[[dn]]),
+    m = sprintf("`%s` must not have missing values.", dn)
   )
-  cases_split <- lapply(frame_split, "[[", cn)
+  if (length(group_by) > 0L) {
+    date_split <- split(frame[[dn]], ts)
+    stop_if_not(
+      vapply(date_split, function(x) all(diff(x) > 0), FALSE),
+      m = sprintf("`%s` must be increasing in each level of `%s`.", dn, paste(group_by, collapse = ":"))
+    )
+  } else {
+    stop_if_not(
+      all(diff(frame[[dn]]) > 0),
+      m = sprintf("`%s` must be increasing.", dn)
+    )
+  }
+
+  ## Check incidence
+  stop_if_not(
+    is.numeric(frame[[cn]]),
+    all(frame[[cn]] >= 0, na.rm = TRUE),
+    m = sprintf("`%s` must be a non-negative numeric vector.", cn)
+  )
+  if (!is.integer(frame[[cn]])) {
+    which_is_infinite <- which(is.infinite(frame[[cn]]))
+    if (length(which_is_infinite) > 0L) {
+      warning(sprintf("Non-finite numeric elements of `%s` replaced with NA.", cn))
+      frame[[cn]][which_is_infinite] <- NA
+    }
+    which_is_non_integer <- which(frame[[cn]] %% 1 != 0)
+    if (length(which_is_non_integer) > 0L) {
+      warning(sprintf("Non-integer numeric elements of `%s` truncated.", cn))
+      frame[[cn]][which_is_non_integer] <- trunc(frame[[cn]][which_is_non_integer])
+    }
+  }
+  cases_split <- split(frame[[cn]], index)
   if (na_action == "fail") {
     stop_if_not(
       vapply(cases_split, function(x) !anyNA(x[-1L]), FALSE),
@@ -500,41 +573,29 @@ make_frame <- function(formula, fixed, random, data, index,
     )
   } else {
     stop_if_not(
-      vapply(cases_split, function(x) sum(!is.na(x)) >= 7L, FALSE),
-      m = sprintf("There are fitting windows with insufficient data\n(fewer than 7 observations) in `%s`.", cn)
-    )
-  }
-  if (length(fn) > 0L) {
-    factors_split <- lapply(frame_split, function(d) droplevels(d[fn]))
-    stop_if_not(
-      vapply(factors_split, function(d) all(vapply(d, nlevels, 0L) == 1L), FALSE),
-      m = paste0(
-        "Grouping variables must take exactly one value\n",
-        "in each level of `index`."
-      )
-    )
-    stop_if_not(
-      !Reduce("==", lapply(factors_split, function(d) vapply(d, levels, ""))),
-      m = paste0(
-        "Grouping variables must not take the same value\n",
-        "in every level of `index`."
-      )
+      vapply(cases_split, function(x) sum(!is.na(x)) >= min_window_length, FALSE),
+      m = sprintf("There are fitting windows with insufficient data\n(fewer than %d observations) in `%s`.", min_window_length, cn)
     )
   }
 
-  ## Order by index
-  ord <- order(index)
-  index <- index[ord]
-  frame <- frame[ord, ]
+  ## Check that fitting windows are contiguous
+  stop_if_not(
+    vapply(split(seq_len(N), index), function(i) all(diff(i) == 1L), FALSE),
+    m = "Fitting windows must be contiguous."
+  )
+
+  ## Clean up
   row.names(frame) <- NULL
+  index <- factor(index, levels = unique(index), exclude = NA)
 
   ## Subset rows belonging to a fitting window
   ## and preserve the difference as an attribute
-  ## for use by plot methods
+  ## for use by plot.egf()
   keep <- !is.na(index)
-  structure(droplevels(frame[keep, , drop = FALSE]),
-    extra = droplevels(frame[!keep, , drop = FALSE]),
+  structure(droplevels(frame[keep, ]),
+    extra = droplevels(frame[!keep, ]),
     index = index[keep],
+    group_by = group_by,
     fixed_term_labels = lapply(fixed, get_term_labels),
     random_term_labels = lapply(random, get_term_labels)
   )
@@ -593,7 +654,7 @@ get_term_labels <- function(f) {
 #' specified by `term_label`. Unused levels are dropped.
 #'
 #' In the special case `term_label = "1"`, the result is
-#' `rep(factor("1"), nrow(frame))`.
+#' `rep(factor(1), nrow(frame))`.
 #'
 #' @examples
 #' f <- function() factor(sample(5L, 20L, replace = TRUE))
@@ -607,7 +668,7 @@ get_factor <- function(term_label, frame) {
     return(NULL)
   }
   if (term_label == "1") {
-    return(rep(factor("1"), nrow(frame)))
+    return(rep(factor(1), nrow(frame)))
   }
   s <- unique(strsplit(term_label, ":")[[1L]])
   interaction(frame[s], drop = TRUE, sep = ":")
@@ -712,9 +773,9 @@ factor_to_matrix <- function(x, sparse, intercept) {
 #'   contrasts.
 #' }
 #' \item{`ffr`, `rfr`}{
-#'   Data frames containing the factors referenced by the elements of
-#'   `attr(frame, "fixed_term_labels")` and
-#'   `attr(frame, "random_term_labels")`. See [make_frame()].
+#'   Data frames containing the factors referenced by the elements
+#'   of `frame` attributes `fixed_term_labels` and `random_term_labels`.
+#'   See [make_frame()].
 #' }
 #' \item{`fnl`, `rnl`}{
 #'   Integer vectors listing the number of levels of each factor in
@@ -734,14 +795,18 @@ factor_to_matrix <- function(x, sparse, intercept) {
 #'   An integer flag set equal to 0 so that prediction code is not run.
 #' }
 #' Additional integer elements of the form `j_link_parameter`
-#' (e.g., `j_log_r`) give the index of parameter names (e.g., `"log_r"`)
-#' in `colnames(rid)`. Indexing starts at 0, and the value -1 indicates
-#' that the parameter is not relevant to the incidence model being fit.
+#' (e.g., `j_log_r`) give the index of response variables
+#' (e.g., `"log_r"`) in `colnames(rid)`. Indexing starts at 0,
+#' and the value -1 indicates that the parameter does not
+#' belong to the incidence model being fit.
 #'
 #' @examples
 #' example("make_frame", package = "epigrowthfit")
-#' tmb_data <- epigrowthfit:::make_tmb_data(frame, curve, distr, excess,
-#'                                          sparse_X = FALSE)
+#' tmb_data <- epigrowthfit:::make_tmb_data(
+#'   frame,
+#'   curve, distr, excess,
+#'   sparse_X = FALSE
+#' )
 #'
 #' @keywords internal
 #' @importFrom Matrix sparseMatrix
@@ -766,7 +831,7 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
   x[!duplicated(a$index)] <- NA_integer_
 
   ## Find lengths of fitting windows
-  wl <- as.vector(table(a$index))
+  wl <- tabulate(a$index)
 
   ## Get character vectors containing unique term labels
   ftl_incl_dupl <- unlist(a$fixed_term_labels, use.names = FALSE) # length `p`
@@ -809,7 +874,7 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
   ## Construct indicator matrices such that 1 at index (i,j)
   ## indicates that parameter j follows model using term i
   fid <- matrix(0L, nrow = length(ftl), ncol = p, dimnames = list(ftl, pn))
-  for (i in seq_len(nrow(fid))) { # FIXME: outer(FUN = "==")?
+  for (i in seq_len(nrow(fid))) { # FIXME: outer(FUN = `==`)?
     for (j in seq_len(ncol(fid))) {
       fid[i, j] <- 1L * (ftl[[i]] == a$fixed_term_labels[[j]])
     }
@@ -818,7 +883,7 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
     rid <- matrix(integer(0L), ncol = p, dimnames = list(NULL, pn))
   } else {
     rid <- matrix(0L, nrow = length(rtl), ncol = p, dimnames = list(rtl, pn))
-    for (i in seq_len(nrow(rid))) { # FIXME: outer(FUN = "%in%")?
+    for (i in seq_len(nrow(rid))) { # FIXME: outer(FUN = `%in%`)?
       for (j in seq_len(ncol(rid))) {
         rid[i, j] <- 1L * (rtl[[i]] %in% a$random_term_labels[[j]])
       }
@@ -921,8 +986,11 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
 #'
 #' @examples
 #' example("make_tmb_data", package = "epigrowthfit")
-#' tmb_parameters <- epigrowthfit:::make_tmb_parameters(tmb_data, curve, distr, excess,
-#'                                                      par_init = NULL)
+#' tmb_parameters <- epigrowthfit:::make_tmb_parameters(
+#'   tmb_data,
+#'   curve, distr, excess,
+#'   par_init = NULL
+#' )
 #'
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis
@@ -971,7 +1039,7 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess,
       log_b      = 0,
       log_nbdisp = 0
     )
-    ffr <- do.call(rbind, lapply(ffr_split, "[", 1L, , drop = FALSE))
+    ffr <- do.call(rbind, lapply(ffr_split, `[`, 1L, , drop = FALSE))
 
     pn <- get_par_names(curve, distr, excess, link = TRUE)
     beta <- unlist(lapply(pn, function(s) {
@@ -1036,16 +1104,32 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess,
 #'
 #' @examples
 #' example("make_frame", package = "epigrowthfit")
-#' tmb_args <- epigrowthfit:::make_tmb_args(frame, curve, distr, excess,
-#'                                          sparse_X = FALSE, par_init = NULL)
+#' tmb_args <- epigrowthfit:::make_tmb_args(
+#'   frame,
+#'   curve, distr, excess,
+#'   sparse_X = FALSE,
+#'   par_init = NULL
+#' )
 #' tmb_out <- do.call(TMB::MakeADFun, tmb_args)
 #'
 #' @seealso [make_tmb_data()], [make_tmb_parameters()]
 #' @keywords internal
 make_tmb_args <- function(frame, curve, distr, excess,
                           sparse_X, par_init) {
-  data <- make_tmb_data(frame, curve, distr, excess, sparse_X)
-  parameters <- make_tmb_parameters(data, curve, distr, excess, par_init)
+  data <- make_tmb_data(
+    frame = frame,
+    curve = curve,
+    distr = distr,
+    excess = excess,
+    sparse_X = sparse_X
+  )
+  parameters <- make_tmb_parameters(
+    tmb_data = data,
+    curve = curve,
+    distr = distr,
+    excess = excess,
+    par_init = par_init
+  )
   if (has_random(data)) {
     map <- list()
     random <- "b"

@@ -8,35 +8,42 @@
 #' are calculated by automatic differentiation using R package **TMB**.
 #'
 #' @param formula
-#'   A formula of the form `y ~ x` specifying an incidence time series
-#'   or multiple incidence time series in long format. `x` and `y` must
-#'   be vectors of dates (see `date_format`) and integers, respectively.
+#'   A formula of the form `y ~ x` specifying one or more incidence
+#'   time series in long format, with `x` Date and `y` numeric.
 #' @param fixed,random
 #'   Named lists of formulae of the form `~rhs`, together specifying
 #'   a generalized linear mixed effects model (the fixed and random
 #'   components) for each parameter of the _incidence_ model indicated
-#'   by `curve`, `distr`, and `excess`. A list of valid names can be
-#'   obtained with `get_par_names(curve, distr, excess, link = TRUE)`.
+#'   by `curve`, `distr`, and `excess`.
+#'   A list of valid names can be obtained with
+#'   `get_par_names(curve, distr, excess, link = TRUE)`.
 #'   Alternatively, formulae (rather than lists of formulae) to be
-#'   recycled for all parameters. Syntax is [`lme4`][lme4::lmer()]-like,
-#'   but here all variables must be factors. `fixed` formulae are
-#'   restricted to one term and so must have the form `~f1:...:fn`
-#'   or `~1` (the default for each missing list element). `random`
-#'   formulae must give sums of terms of the form `(1 | f1:...:fn)`,
-#'   `(1 | f1/.../fn)`, or `(1 | f1 * ... * fn)`. Use `NULL` (the
-#'   default for each missing list element) instead of a formula to
-#'   indicate absence of random effects.
+#'   recycled for all parameters.
+#'   Syntax is [`lme4`][lme4::lmer()]-like, but here all variables
+#'   must be factors.
+#'   `fixed` formulae are restricted to one term and so must be `~1`
+#'   (the default for each missing list element) or have the form
+#'   `~f1:...:fn`.
+#'   `random` formulae are restricted to sums of terms of the form
+#'   `(1 | f1:...:fn)`, `(1 | f1/.../fn)`, or `(1 | f1 * ... * fn)`.
+#'   Use `NULL` (the default for each missing list element) instead
+#'   of a formula to indicate absence of random effects.
+#' @param group_by
+#'   A formula of the form `~f1:...:fn`,
+#'   such that `split(data, interaction(data[all.vars(group_by)]))`
+#'   splits `data` by time series. Use `~1` (the default) if there
+#'   is only one time series.
 #' @param data
 #'   A data frame, list, or environment containing the variables
-#'   named in `formula`, `fixed`, and `random`. Missing values in
-#'   incidence (`y` if `formula = y ~ x`) are not tolerated unless
-#'   `na_action = "pass"`. Missing values in other variables are
-#'   never tolerated.
+#'   named in `formula`, `fixed`, `random`, and `group_by`. Missing
+#'   values in incidence (`y` if `formula = y ~ x`) are tolerated
+#'   only if `na_action = "pass"`. Missing values in other variables
+#'   are not tolerated.
 #' @param index
 #'   A factor of length `nrow(data)` such that `split(data, index)`
-#'   splits `data` by fitting window and `is.na(index)` indexes
-#'   the rows of `data` not belonging to a fitting window. `NULL`
-#'   (the default) is equivalent to `rep(factor("0"), nrow(data))`.
+#'   splits `data` by fitting window, with `is.na(index)` indexing
+#'   rows of `data` not belonging to a fitting window. `NULL`
+#'   (the default) is equivalent to `rep(factor(0), nrow(data))`.
 #' @param curve
 #'   A character string specifying a cumulative incidence model.
 #' @param distr
@@ -55,11 +62,6 @@
 #' @param sparse_X
 #'   A logical scalar. If `TRUE`, then the fixed effects design matrix
 #'   will be constructed in sparse format.
-#' @param date_format
-#'   A character vector passed to [as.Date()] argument `tryFormats`,
-#'   used to convert dates (`x` if `formula = y ~ x`) from character
-#'   to Date, if necessary. See [base::strptime()] for a list of
-#'   conversion specifications.
 #' @param debug
 #'   A logical scalar used for debugging. If `TRUE`, then `egf()`
 #'   returns early with a list of optimization inputs.
@@ -67,8 +69,8 @@
 #'   A full parameter vector for the first likelihood evaluation.
 #'   Set to `NULL` to accept the internally generated default. If
 #'   the default causes errors, then use `debug = TRUE` to retrieve
-#'   its value, which will have the correct structure, and modify as
-#'   desired.
+#'   its value, which will have the correct structure, and modify
+#'   as necessary.
 #' @param ...
 #'   Optional arguments to the optimizer specified by `method`.
 #'
@@ -76,16 +78,12 @@
 #' If `debug = FALSE`, then a list inheriting from class `"egf"`,
 #' with elements:
 #' \item{`frame`}{
-#'   The model frame. This is a data frame containing only the
-#'   variables named in `formula`, `fixed`, and `random`. Data
-#'   not belonging to a fitting window are omitted (but stored
-#'   as an attribute). See [make_frame()].
+#'   The model frame. See [make_frame()].
 #' }
 #' \item{`index`}{
 #'   A factor of length `nrow(data)` such that `split(frame, index)`
-#'   splits the model frame by fitting window. Not necessarily
-#'   identical to the so-named argument, as `frame` is constructed
-#'   by permuting and subsetting the rows of `data`.
+#'   splits the model frame by fitting window. Not usually identical
+#'   to the so-named argument.
 #' }
 #' \item{`curve`, `distr`, `excess`, `method`}{
 #'   Copies of the so-named arguments (after matching).
@@ -97,7 +95,7 @@
 #'   The list output of [TMB::MakeADFun()] (after optimization).
 #' }
 #' \item{`optim_out`}{
-#'   The list output of the optimizer.
+#'   The list output of the optimizer specified by `method`.
 #' }
 #' \item{`par_init`}{
 #'   The full parameter vector of the first likelihood evaluation.
@@ -138,6 +136,7 @@
 egf <- function(formula,
                 fixed = ~1,
                 random = NULL,
+                group_by = ~1,
                 data = parent.frame(),
                 index = NULL,
                 curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
@@ -146,7 +145,6 @@ egf <- function(formula,
                 method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
                 na_action = c("pass", "fail"),
                 sparse_X = FALSE,
-                date_format = "%Y-%m-%d",
                 debug = FALSE,
                 par_init = NULL,
                 ...) {
@@ -158,18 +156,37 @@ egf <- function(formula,
   stop_if_not_tf(sparse_X)
   stop_if_not_tf(debug)
 
-  frame <- make_frame(formula = formula, fixed = fixed, random = random,
-                      data = data, index = index,
-                      curve = curve, distr = distr, excess = excess,
-                      na_action = na_action, date_format = date_format)
-  tmb_args <- make_tmb_args(frame = frame,
-                            curve = curve, distr = distr, excess = excess,
-                            sparse_X = sparse_X, par_init = par_init)
+  frame <- make_frame(
+    formula = formula,
+    fixed = fixed,
+    random = random,
+    group_by = group_by,
+    data = data,
+    index = index,
+    curve = curve,
+    distr = distr,
+    excess = excess,
+    na_action = na_action
+  )
+  tmb_args <- make_tmb_args(
+    frame = frame,
+    curve = curve,
+    distr = distr,
+    excess = excess,
+    sparse_X = sparse_X,
+    par_init = par_init
+  )
+
   if (debug) {
     pl <- tmb_args$parameters
-    pn <- Map(rep.int, names(pl), lengths(pl))
-    par_init <- rename_par(unlist(Map("names<-", pl, pn, USE.NAMES = FALSE)))
-    out <- list(frame = frame, tmb_args = tmb_args, par_init = par_init)
+    for (s in names(pl)) {
+      names(pl[[s]]) <- rep.int(s, length(pl[[s]]))
+    }
+    out <- list(
+      frame = frame,
+      tmb_args = tmb_args,
+      par_init = rename_par(unlist(pl))
+    )
     return(out)
   }
 

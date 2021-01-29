@@ -88,8 +88,11 @@ When \code{par_init = NULL} and there are random effects,
 }
 \examples{
 example("make_tmb_data", package = "epigrowthfit")
-tmb_parameters <- epigrowthfit:::make_tmb_parameters(tmb_data, curve, distr, excess,
-                                                     par_init = NULL)
+tmb_parameters <- epigrowthfit:::make_tmb_parameters(
+  tmb_data,
+  curve, distr, excess,
+  par_init = NULL
+)
 
 }
 \keyword{internal}

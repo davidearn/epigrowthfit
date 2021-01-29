@@ -31,10 +31,7 @@ check_gi <- function(lat, inf) {
     length(inf) > 0L,
     is.finite(lat),
     is.finite(inf),
-    m = paste0(
-      "`lat` and `inf` must be finite numeric vectors\n",
-      "of nonzero length."
-    ),
+    m = "`lat` and `inf` must be finite numeric vectors\nof nonzero length.",
     n = 2L
   )
   stop_if_not(

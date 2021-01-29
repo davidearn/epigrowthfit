@@ -146,10 +146,9 @@ compute_R0.egf <- function(r, breaks, probs, subset, ...) {
     )
   )
 
-  d <- fitted(r, subset, link = TRUE)
-  n <- length(r$frame) - 2L # first `n` variables in `d` are factors
+  d <- fitted(r, subset = subset, link = TRUE)
   cbind(
-    d[seq_len(n)],
+    d[vapply(d, is.factor, FALSE)],
     R0 = compute_R0(exp(d$log_r), breaks, probs)
   )
 }

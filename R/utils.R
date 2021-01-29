@@ -22,6 +22,8 @@
 #' `stop_if_not_tf()` stops if its argument is not `TRUE` or `FALSE`.
 #' `stop_if_not_positive_integer()` stops if its argument is not a
 #' positive integer (of type `"integer"` or `"double"`).
+#' `stop_if_not_in_0_1()` stops if its arguments is not a number in
+#' the interval (0,1).
 #' `stop_if_not_character_string()` stops if its argument is not a
 #' character vector of length 1 (other than `NA_character_`).
 #'
@@ -78,13 +80,25 @@ stop_if_not_positive_integer <- function(x, n = 1L) {
   )
 }
 
+stop_if_not_in_0_1 <- function(x, n = 1L) {
+  s <- deparse(substitute(x))
+  stop_if_not(
+    inherits(x, "numeric"),
+    length(x) == 1L,
+    x > 0,
+    x < 1,
+    m = sprintf("`%s` must be a number in the interval (0,1).", s),
+    n = 1L + n
+  )
+}
+
 stop_if_not_character_string <- function(x, n = 1L) {
   s <- deparse(substitute(x))
   stop_if_not(
     inherits(x, "character"),
     length(x) == 1L,
     !is.na(x),
-    m = sprintf("`%s` must be a character string."),
+    m = sprintf("`%s` must be a character string.", s),
     n = 1L + n
   )
 }

@@ -51,9 +51,9 @@ The random effects design matrix in sparse format, without
 contrasts.
 }
 \item{\code{ffr}, \code{rfr}}{
-Data frames containing the factors referenced by the elements of
-\code{attr(frame, "fixed_term_labels")} and
-\code{attr(frame, "random_term_labels")}. See \code{\link[=make_frame]{make_frame()}}.
+Data frames containing the factors referenced by the elements
+of \code{frame} attributes \code{fixed_term_labels} and \code{random_term_labels}.
+See \code{\link[=make_frame]{make_frame()}}.
 }
 \item{\code{fnl}, \code{rnl}}{
 Integer vectors listing the number of levels of each factor in
@@ -73,9 +73,10 @@ Integer flags referencing \code{curve}, \code{distr}, \code{excess}, and
 An integer flag set equal to 0 so that prediction code is not run.
 }
 Additional integer elements of the form \code{j_link_parameter}
-(e.g., \code{j_log_r}) give the index of parameter names (e.g., \code{"log_r"})
-in \code{colnames(rid)}. Indexing starts at 0, and the value -1 indicates
-that the parameter is not relevant to the incidence model being fit.
+(e.g., \code{j_log_r}) give the index of response variables
+(e.g., \code{"log_r"}) in \code{colnames(rid)}. Indexing starts at 0,
+and the value -1 indicates that the parameter does not
+belong to the incidence model being fit.
 }
 \description{
 Gathers in a list data objects to be passed to the C++ template
@@ -83,8 +84,11 @@ via TMB's \code{DATA_} macros. See \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}
 }
 \examples{
 example("make_frame", package = "epigrowthfit")
-tmb_data <- epigrowthfit:::make_tmb_data(frame, curve, distr, excess,
-                                         sparse_X = FALSE)
+tmb_data <- epigrowthfit:::make_tmb_data(
+  frame,
+  curve, distr, excess,
+  sparse_X = FALSE
+)
 
 }
 \keyword{internal}

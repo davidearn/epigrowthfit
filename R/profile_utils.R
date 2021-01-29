@@ -34,9 +34,10 @@ decontrast_beta_names <- function(x) {
       gsub("^beta\\[([0-9]+)\\]$", "\\1", s)
     }
     y[l] <- sprintf("%s-sum(beta[%s:%s])",
-                    x[1L],
-                    extract_index(x[2L]),
-                    extract_index(x[l]))
+      x[1L],
+      extract_index(x[2L]),
+      extract_index(x[l])
+    )
   }
   y
 }

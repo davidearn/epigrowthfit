@@ -5,15 +5,6 @@
 #'
 #' @param x
 #'   An `"egf"` object returned by [egf()].
-#' @param group_by
-#'   A formula of the form `~f1:...:fn` specifying an interaction of
-#'   the factors in `x$frame` _that are fixed within a time series_.
-#'   A plot is generated for each nonempty level of this interaction.
-#'   In general, include in the interaction all factors used to split
-#'   time series by geographical unit, and exclude all factors used
-#'   to split time series by segment (e.g., epidemic wave). Use `~1`
-#'   (the default) if `x$frame` has no factors that are fixed within
-#'   a time series (or no factors at all).
 #' @param subset
 #'   A named list of atomic vectors with elements specifying levels of
 #'   factors in `x$frame`. Only the subset of fitting windows belonging
@@ -29,13 +20,6 @@
 #'   placed at the start of calendar days, months, or years (depending
 #'   on time scale). If `"numeric"`, then time is displayed as a number
 #'   of days since an initial date.
-#' @param legend
-#'   A logical scalar. If `TRUE`, then a legend is displayed in the
-#'   right margin.
-#' @param level
-#'   A number in the interval (0,1). The confidence level represented
-#'   by confidence intervals on doubling times and confidence bands on
-#'   predicted incidence.
 #' @param tol
 #'   A non-negative number or `Inf`, used to define "exceptional"
 #'   points when `type = "interval"`. `cases[-1]` is highlighted
@@ -44,6 +28,17 @@
 #'   where `m = median(diff(date))`. In both cases, the value of
 #'   `diff(date)` is printed above the point. Assign 0 to highlight
 #'   all deviations from `m`. Assign `Inf` to disable highlighting.
+#' @param legend
+#'   A logical scalar. If `TRUE`, then a legend is displayed in the
+#'   right margin.
+#' @param bands
+#'   A logical scalar. If `TRUE`, then confidence bands on predicted
+#'   incidence are displayed. Longer run times should be expected in
+#'   this case.
+#' @param level
+#'   A number in the interval (0,1). The confidence level represented
+#'   by confidence intervals on doubling times and confidence bands on
+#'   predicted incidence.
 #' @param control
 #'   A list of lists defining the appearance of various
 #'   plot elements, or otherwise `NULL` (see Details).
@@ -101,7 +96,7 @@
 #'   the appearance of the predicted incidence curve. Currently,
 #'   only `lty`, `lwd`, and `col` are used.
 #' }
-#' \item{`window`, `confband`}{
+#' \item{`windows`, `bands`}{
 #'   Named lists of arguments to [graphics::polygon()], affecting
 #'   the appearance of fitting windows and confidence bands on
 #'   predicted incidence curves. Currently, only `col` and `border`
@@ -132,36 +127,24 @@
 #' @import graphics
 #' @importFrom stats reformulate median predict confint
 plot.egf <- function(x,
-                     group_by = ~1,
                      subset = NULL,
                      type = c("interval", "cumulative"),
                      log = TRUE,
                      xty = c("date", "numeric"),
-                     legend = FALSE,
-                     level = 0.95,
                      tol = 0,
+                     legend = FALSE,
+                     bands = FALSE,
+                     level = 0.95,
                      control = NULL,
                      ...) {
 
   ### Argument validation #################################
 
-  ## Reduced frame
-  frame_red <- x$frame[!duplicated(x$index), -(1:2), drop = FALSE]
-  any_factors <- (length(frame_red) > 0L)
-
+  any_factors <- (length(x$frame) > 2L)
   if (any_factors) {
-    stop_if_not(
-      inherits(group_by, "formula"),
-      length(group_by) == 2L,
-      grepl("^(1|([[:alnum:]._]+(:[[:alnum:]._]+)*))$", deparse(group_by[[2L]])),
-      all.vars(group_by) %in% names(frame_red),
-      m = paste0(
-        "`group_by` must be a formula of the form\n",
-        "`~1` or `~f1:...:fn`, with `f1`,...,`fn`\n",
-        "naming factors in `x$frame`."
-      )
-    )
-    group_by <- all.vars(group_by)
+    ## Reduced frame
+    frame_red <- x$frame[!duplicated(x$index), -(1:2), drop = FALSE]
+    group_by <- attr(x$frame, "group_by")
     any_groups <- (length(group_by) > 0L)
 
     if (is.null(subset)) {
@@ -179,7 +162,7 @@ plot.egf <- function(x,
         names(subset) %in% names(frame_red),
         !duplicated(names(subset)),
         unlist(Map("%in%", subset, lapply(frame_red[names(subset)], levels))),
-        m = "`subset` must specify levels of factors in `object$frame`."
+        m = "`subset` must specify levels of factors in `x$frame`."
       )
       w <- Reduce("&", Map("%in%", frame_red[names(subset)], subset))
       stop_if_not(
@@ -200,8 +183,8 @@ plot.egf <- function(x,
   }
 
   type <- match.arg(type)
-  xty <- match.arg(xty)
   stop_if_not_tf(log)
+  xty <- match.arg(xty)
   stop_if_not_tf(legend)
   if (type == "interval") {
     stop_if_not(
@@ -211,9 +194,11 @@ plot.egf <- function(x,
       m = "`tol` must be a non-negative number or `Inf`."
     )
   }
+  stop_if_not_tf(bands)
+  stop_if_not_in_0_1(level)
 
   if (is.null(control) || !inherits(control, "list") || is.null(names(control))) {
-    ct <- control <- get_control_default("plot.egf")
+    control <- get_control_default("plot.egf")
   } else {
     control_default <- get_control_default("plot.egf")
     for (pe in intersect(names(control), names(control_default))) {
@@ -224,7 +209,7 @@ plot.egf <- function(x,
         control_default[[pe]][s] <- control[[pe]][s]
       }
     }
-    ct <- control <- control_default
+    control <- control_default
   }
   dots <- list(...)
 
@@ -248,7 +233,7 @@ plot.egf <- function(x,
     } else {
       frame_red_split <- list("1" = frame_red)
     }
-    ## Merge grouped interactions
+    ## Merge grouped interactions in split augmented frame
     frame_aug_split <- lapply(frame_red_split, function(d) {
       do.call(rbind, frame_aug_split[as.character(interaction0(d))])
     })
@@ -261,8 +246,8 @@ plot.egf <- function(x,
   stop_if_not(
     vapply(frame_aug_split, function(d) all(diff(d[[2L]]) > 0), FALSE),
     m = paste0(
-      "Plots of multiple time series in one panel are not\n",
-      "supported (yet). See `group_by` argument details in\n",
+      "Plots of multiple time series in one panel are\n",
+      "not supported (yet). See `group_by` details in\n",
       "`help(\"plot.egf\")`."
     )
   )
@@ -285,6 +270,18 @@ plot.egf <- function(x,
   ci <- confint(x, parm = "tdoubling", level = level, method = "wald")
 
   ### Loop over plots #####################################
+
+  op <- par(
+    mar = c(4, 5, 2.7, 0.5 + 6 * legend) + 0.1,
+    bty = "l",
+    xaxs = "i",
+    yaxs = "i",
+    las = 1
+  )
+  on.exit({
+    assign("egf.par", par("mar", "plt"), envir = .epigrowthfit)
+    par(op)
+  })
 
   for (d in frame_aug_split) {
 
@@ -323,14 +320,17 @@ plot.egf <- function(x,
       p <- predict(x,
         subset = if (length(d) > 3L) d[i1, -(1:3), drop = FALSE],
         time = seq.int(from = 0L, to = t2 - t1, by = by),
-        se = TRUE
+        se = bands
       )
-      ci <- confint(p, level = level, log = FALSE)[[varname]]
-      if (type == "cumulative" && i1 > 1L) {
-        ci[, -1L] <- sum(cases[2L:i1]) + ci[, -1L]
+      if (bands) {
+        p <- confint(p, level = level, log = FALSE)
       }
-      ci[[1L]] <- t1 + ci[[1L]]
-      ci
+      p <- p[[varname]]
+      p[[1L]] <- t1 + p[[1L]]
+      if (type == "cumulative" && i1 > 1L) {
+        p[-1L] <- sum(cases[2L:i1]) + p[-1L]
+      }
+      p
     }
     pred <- Map(f, i1 = i12[1L, ], t1 = t1, t2 = t2,
                 by = if (type == "cumulative") 1L else m)
@@ -405,29 +405,17 @@ plot.egf <- function(x,
 
     ### Plotting ==========================================
 
-    op <- par(
-      mar = c(4, 5, 2.7, 0.5 + 6 * legend) + 0.1,
-      bty = "l",
-      xaxs = "i",
-      yaxs = "i",
-      las = 1
-    )
-    on.exit({
-      assign("egf.par", par("mar", "plt"), envir = .epigrowthfit)
-      par(op)
-    })
-
     plot.new()
     plot.window(xlim = xlim, ylim = ylim, log = if (log) "y" else "")
 
     ## Fitting windows
-    if (!is.null(control$window)) {
+    if (!is.null(control$windows)) {
       for (i in seq_len(nlevels(index))) {
         l <- list(
           x = c(t1[i], t2[i], t2[i], t1[i]),
           y = ylim[c(1, 1, 2, 2)]
         )
-        do.call(polygon, c(l, control$window))
+        do.call(polygon, c(l, control$windows))
       }
     }
 
@@ -456,25 +444,22 @@ plot.egf <- function(x,
 
     ## Axis (y)
     if (!is.null(control$yax)) {
-      yax_at <- axTicks(side = 2L)
-      if (max(yax_at) < 1e05) {
-        yax_labels <- TRUE
-        long_yax_labels_flag <- FALSE
-      } else {
-        yax_labels <- get_labels(yax_at)
-        mlw <- max(strwidth(yax_labels, units = "inches", cex = 0.85))
-        long_yax_labels_flag <- (mlw / par("csi") + control$yax$mgp2 > 3.75)
-      }
       l1 <- list(
         side = 2L,
-        at = yax_at,
-        labels = yax_labels
+        at = axTicks(side = 2L)
       )
+      if (max(l1$at) < 1e05) {
+        l1$labels <- TRUE
+        cex_axis_default <- 0.85
+      } else {
+        l1$labels <- get_labels(l1$at)
+        cex_axis_default <- min(0.85, get_cex_axis(l1$at, mex = 0.9 * control$ylab$line - control$yax$mgp2))
+      }
       l2 <- control$yax
       l2$mgp <- c(3, l2$mgp2, 0)
       l2$mgp2 <- NULL
       if (is.na(l2$cex.axis)) {
-        l2$cex.axis <- (1 - 0.25 * long_yax_labels_flag) * 0.85
+        l2$cex.axis <- cex_axis_default
       }
       do.call(axis, c(l1, l2))
     }
@@ -503,13 +488,13 @@ plot.egf <- function(x,
     }
 
     ## Confidence band
-    if (!is.null(control$confband)) {
+    if (bands && !is.null(control$bands)) {
       for (p in pred) {
         l <- list(
           x = c(p$time, rev(p$time)),
           y = c(p$lower, rev(p$upper))
         )
-        do.call(polygon, c(l, control$confband))
+        do.call(polygon, c(l, control$bands))
       }
     }
 
