@@ -19,8 +19,8 @@ corresponding time series. That is, they must be disjoint
 subsets of \code{seq_len(table(ts)[[name]])}.}
 }
 \value{
-A data frame listing 2 factors of length \code{length(date)},
-\code{index} and \code{wave}.
+A data frame with \code{length(date)} rows,
+listing two factors, \code{index} and \code{wave}.
 }
 \description{
 Constructs a factor splitting time series in long format
@@ -44,10 +44,4 @@ to the \code{i}th epidemic wave in that time series, and if
 epidemic wave is being included as a fixed or random effect
 in a mixed effects model, then \code{wave} can be passed to
 \code{\link[=egf]{egf()}} as a variable in \code{data}.
-
-Note that \code{wave} codes points not belonging to a fitting window
-as \code{0}, regardless of epidemic wave. Since they do not affect
-the fitted model, their coding is arbitrary, though \code{NA} is not
-used as \code{NA} are not tolerated by \code{\link[=egf]{egf()}} except in the incidence
-variable.
 }

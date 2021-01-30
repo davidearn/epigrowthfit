@@ -125,7 +125,7 @@ dceiling <- function(date, to = c("month", "year")) {
 #'   [graphics::par()].
 #'
 #' @return
-#' An integer vector listing positions of axis labels.
+#' An integer vector listing positions of minor axis labels.
 #'
 #' @details
 #' `daxis()` assumes that horizontal user coordinates measure
@@ -251,7 +251,7 @@ daxis <- function(left = NULL, right = NULL, refdate, plot = TRUE,
       side = 1L,
       at = t0 + at_minor,
       labels = labels_minor,
-      xpd = FALSE,
+      xpd = TRUE,
       gap.axis = 0,
       tcl = tcl[1L],
       mgp = c(3, mgp2[1L], 0),
@@ -265,7 +265,7 @@ daxis <- function(left = NULL, right = NULL, refdate, plot = TRUE,
         side = 1L,
         at = t0 + at_major,
         labels = labels_major,
-        xpd = FALSE,
+        xpd = TRUE,
         gap.axis = 0,
         tick = FALSE,
         mgp = c(3, mgp2[2L], 0),
@@ -276,7 +276,7 @@ daxis <- function(left = NULL, right = NULL, refdate, plot = TRUE,
     }
   }
 
-  if (any_major) at_major else at_minor
+  at_minor
 }
 
 #' Get nicely formatted tick labels

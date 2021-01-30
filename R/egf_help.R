@@ -34,15 +34,9 @@
 #' in a mixed effects model, then `wave` can be passed to
 #' [egf()] as a variable in `data`.
 #'
-#' Note that `wave` codes points not belonging to a fitting window
-#' as `0`, regardless of epidemic wave. Since they do not affect
-#' the fitted model, their coding is arbitrary, though `NA` is not
-#' used as `NA` are not tolerated by [egf()] except in the incidence
-#' variable.
-#'
 #' @return
-#' A data frame listing 2 factors of length `length(date)`,
-#' `index` and `wave`.
+#' A data frame with `length(date)` rows,
+#' listing two factors, `index` and `wave`.
 #'
 #' @export
 make_index <- function(date, ts, subset) {
@@ -85,9 +79,9 @@ make_index <- function(date, ts, subset) {
   tts <- table(ts)
   subset <- subset[order(match(names(subset), levels(ts)))]
   index_split <- split(rep(factor(NA, levels = seq_len(sum(lengths(subset)))), length(date)), ts)
-  wave_split <- split(rep(factor(0L, levels = c(0L, seq_len(max(lengths(subset))))), length(date)), ts)
+  wave_split <- split(rep(factor(1, levels = seq_len(max(lengths(subset)))), length(date)), ts)
 
-  i <- 1L
+  k <- 1L
   for (s in names(subset)) {
     l <- subset[[s]]
     stop_if_not(
@@ -97,14 +91,25 @@ make_index <- function(date, ts, subset) {
       !duplicated(unlist(l)),
       m = sprintf("`subset[[%s]]` must list disjoint subsets\nof `seq_len(table(ts)[[%s]])`.", s, s)
     )
+    l <- lapply(l, sort.int)
     stop_if_not(
-      vapply(l, function(x) all(diff(sort.int(x)) == 1L), FALSE),
+      vapply(l, function(x) all(diff(x) == 1L), FALSE),
       m = sprintf("Elements of `subset[[%s]]` must be contiguous integer vectors.", s)
     )
-    l <- l[order(vapply(l, `[[`, 1L))]
-    index_split[[s]][unlist(l)] <- rep.int(seq.int(i, length.out = length(l)), lengths(l))
+
+    l <- l[order(vapply(l, `[[`, 0L, 1L))]
+    index_split[[s]][unlist(l)] <- rep.int(seq.int(k, length.out = length(l)), lengths(l))
     wave_split[[s]][unlist(l)] <- rep.int(seq_along(l), lengths(l))
-    i <- i + length(l)
+
+    i1 <- c(vapply(l, `[`, 0L, 1L), length(wave_split[[s]]) + 1L)
+    i2 <- c(0L, vapply(l, function(i) i[length(i)], 0L))
+    w <- c(1L, seq_along(l))
+    for (j in seq_along(w)) {
+      if (i1[j] - i2[j] > 1L) {
+        wave_split[[s]][seq.int(i2[j] + 1L, i1[j] - 1L)] <- w[j]
+      }
+    }
+    k <- k + length(l)
   }
 
   data.frame(

@@ -228,7 +228,7 @@ plot.egf <- function(x,
     ## Split the augmented frame by interaction
     frame_aug_split <- split(frame_aug, interaction0(frame_aug[-(1:3)]))
     ## Split the reduced frame by group of interactions
-    if (length(group_by) > 0L) {
+    if (any_groups) {
       frame_red_split <- split(frame_red, interaction0(frame_red[group_by]))
     } else {
       frame_red_split <- list("1" = frame_red)
@@ -243,14 +243,6 @@ plot.egf <- function(x,
   ## Order by date
   frame_aug_split <- lapply(frame_aug_split, function(d) d[order(d[[2L]]), ])
 
-  stop_if_not(
-    vapply(frame_aug_split, function(d) all(diff(d[[2L]]) > 0), FALSE),
-    m = paste0(
-      "Plots of multiple time series in one panel are\n",
-      "not supported (yet). See `group_by` details in\n",
-      "`help(\"plot.egf\")`."
-    )
-  )
   if (type == "cumulative") {
     stop_if_not(
       vapply(frame_aug_split, function(d) !anyNA(d[-1L, 3L]), FALSE),
@@ -278,10 +270,7 @@ plot.egf <- function(x,
     yaxs = "i",
     las = 1
   )
-  on.exit({
-    assign("egf.par", par("mar", "plt"), envir = .epigrowthfit)
-    par(op)
-  })
+  on.exit(par(op))
 
   for (d in frame_aug_split) {
 
@@ -323,10 +312,11 @@ plot.egf <- function(x,
         se = bands
       )
       if (bands) {
-        p <- confint(p, level = level, log = FALSE)
+        p <- confint(p, level = level, log = TRUE)
       }
-      p <- p[[varname]]
+      p <- p[[sprintf("log_%s", varname)]]
       p[[1L]] <- t1 + p[[1L]]
+      p[-1L] <- exp(p[-1L])
       if (type == "cumulative" && i1 > 1L) {
         p[-1L] <- sum(cases[2L:i1]) + p[-1L]
       }
@@ -338,7 +328,7 @@ plot.egf <- function(x,
     ## Axis title (x)
     if (is.null(dots$xlab)) {
       xlab <- switch(xty,
-        date = "date",
+        date = "",
         numeric = sprintf("days since %s", as.character(d0))
       )
     } else {

@@ -295,16 +295,17 @@ confint.egf <- function(object, parm = get_par_names(object),
 
 
   ## For plot.egf_confint()
-  refdate <- min(object$frame[[1L]], attr(object$frame, "extra")[[1L]])
+  refdate <- min(object$frame[[1L]])
   time_split <- split(days(object$frame[[1L]], since = refdate), object$index)
+  endpoints <- data.frame(
+    .t1 = vapply(time_split, min, 0L),
+    .t2 = vapply(time_split, max, 0L)
+  )
 
   structure(out,
     level = level,
     refdate = refdate,
-    endpoints = data.frame(
-      .t1 = vapply(time_split, min, 0L),
-      .t2 = vapply(time_split, max, 0L)
-    ),
+    endpoints = endpoints,
     group_by = attr(object$frame, "group_by"),
     class = c("egf_confint", "data.frame")
   )
@@ -366,8 +367,9 @@ plot.egf_confint <- function(x,
                              group_by = ~1,
                              sort = c("none", "increasing", "decreasing"),
                              subset = NULL,
-                             per_plot = 12L, ...) {
-  ### Argument validation #################################
+                             per_plot = switch(type, `1` = 12L, `2` = 3L),
+                             ...) {
+  ### Argument validation =================================
 
   i_factor <- seq_along(x)[-c(1L, length(x) - 2:0)]
   any_factors <- (length(i_factor) > 0L)
@@ -408,7 +410,7 @@ plot.egf_confint <- function(x,
   }
   stop_if_not_positive_integer(per_plot)
 
-  ### Split, order confidence intervals ###################
+  ### Split, order confidence intervals ===================
 
   x_split <- split(x, x$par)
 
@@ -442,7 +444,7 @@ plot.egf_confint <- function(x,
   }
 
   if (type == "1") {
-    ### Loop over response variables ######################
+    ### Loop over response variables ======================
 
     op <- par(
       mar = c(3.5, 5, 1.5, 1),
@@ -461,7 +463,7 @@ plot.egf_confint <- function(x,
         yax_labels <- as.character(interaction(d[factor_names], drop = TRUE, sep = ":"))
       }
 
-      ### Loop over plots #################################
+      ### Loop over plots =================================
 
       j <- 0L
       while (j < nrow(d)) {
@@ -512,38 +514,41 @@ plot.egf_confint <- function(x,
         j <- j + per_plot
       }
     }
-  } else {
-    ### Loop over response variables ######################
+  } else { # "2"
+    ### Loop over response variables ======================
 
     op <- par(
       mfrow = c(per_plot, 1),
-      mar = c(0, 5, 1.5, 1),
-      oma = c(3.5, 0, 0, 0),
-      cex.axis = 0.8,
-      cex.lab = 0.9,
-      cex.main = 0.9
+      mar = c(0, 3, 0.25, 0.5),
+      oma = c(2.5, 1.5, 1.5, 0)
     )
     on.exit(par(op))
 
-    xlim <- range(x_split[[1L]][c(".t1", ".t2")])
+    xlim <- c(0L, max(x_split[[1L]]$.t2))
     xax_at <- daxis(
       left = xlim[1L],
       right = xlim[2L],
       refdate = a$refdate,
       plot = FALSE
     )
+    any_groups <- (length(a$group_by) > 0L)
 
     for (i in seq_along(x_split)) {
       d <- x_split[[i]]
-      d_split <- split(d, interaction(d[a$group_by], drop = TRUE, sep = ":"))
       ylim <- range(d[c("estimate", "lower", "upper")], na.rm = TRUE)
 
-      ### Loop over plots #################################
+      if (any_groups) {
+        d_split <- split(d, interaction(d[a$group_by], drop = TRUE, sep = ":"))
+      } else {
+        d_split <- list(`1` = d)
+      }
+
+      ### Loop over plots =================================
 
       j <- 0L
       while (j < length(d_split)) {
 
-        ### Loop over panels ##############################
+        ### Loop over panels ==============================
 
         for (k in j + seq_len(min(per_plot, length(d_split) - j))) {
           dd <- d_split[[k]]
@@ -551,11 +556,11 @@ plot.egf_confint <- function(x,
           plot.window(xlim = xlim, ylim = ylim, xaxs = "i")
           abline(v = xax_at, lty = 3, col = "grey75")
 
-          ### Loop over confidence intervals ##############
+          ### Loop over confidence intervals ==============
 
           for (l in seq_len(nrow(dd))) {
             t12 <- unlist(dd[l, c(".t1", ".t2")], use.names = FALSE)
-            elu <- unlist(dd[l, c("lower", "upper")], use.names = FALSE)
+            elu <- unlist(dd[l, c("estimate", "lower", "upper")], use.names = FALSE)
             if ((lna <- is.na(elu[2L]))) {
               elu[2L] <- par("usr")[3L]
             }
@@ -587,18 +592,48 @@ plot.egf_confint <- function(x,
           } # loop over confidence intervals
 
           box()
-          axis(side = 2, las = 1, mgp = c(3, 0.7, 0))
-          title(ylab = names(x_split)[i], line = 2.5)
-          title(main = sprintf("%.3g%% CI for %s", 100 * a$level, names(d_split)[k]), line = 0.25, adj = 0)
+          axis(side = 2, las = 1, mgp = c(3, 0.7, 0), cex.axis = 0.85)
+          if (any_groups) {
+            text(
+              x = par("usr")[1L] + (0.075 * par("pin")[2L] / par("pin")[1L]) * diff(par("usr")[1:2]),
+              y = par("usr")[4L] - 0.075 * diff(par("usr")[3:4]),
+              labels = names(d_split)[k],
+              adj = c(0, 1),
+              cex = 0.8,
+              font = 1
+            )
+          }
         } # loop over panels
 
+        main <- sprintf("%.3g%% CI", 100 * a$level)
+        if (any_groups) {
+          main <- sprintf("%s by %s", main, paste(a$group_by, collapse = ":"))
+        }
+        mtext(main,
+          side = 3,
+          line = 0,
+          outer = TRUE,
+          at = par("mai")[2L] / (par("din")[1L] - sum(par("omi")[c(2L, 4L)])),
+          adj = 0,
+          cex = 0.8,
+          font = 2
+        )
+        mtext(names(x_split)[i],
+          side = 2,
+          line = 0,
+          outer = TRUE,
+          at = 0.5,
+          adj = 0.5,
+          cex = 0.8
+        )
         daxis(
           left = xlim[1L],
           right = xlim[2L],
           refdate = a$refdate,
-          mgp2 = c(0.25, 1.25)
+          tcl = -0.2,
+          mgp2 = c(0.25, 1.25),
+          cex.axis = c(0.85, 1.15)
         )
-        title(xlab = "date", line = 2, xpd = FALSE)
         j <- j + per_plot
       } # loop over plots
     } # loop over response variables

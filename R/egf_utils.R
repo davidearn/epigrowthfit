@@ -499,7 +499,7 @@ make_frame <- function(formula, fixed, random, group_by, data, index,
       nlevels(interaction(cbind(index, frame[fn]), drop = TRUE)) == nlevels(index),
       m = "Grouping variables must be fixed in each level of `index`."
     )
-    frame_red <- droplevels(frame[!duplicated(index), fn, drop = FALSE])
+    frame_red <- droplevels(frame[!is.na(index) & !duplicated(index), fn, drop = FALSE])
     stop_if_not(
       vapply(frame_red, nlevels, 0L) > 1L,
       m = "Grouping variables must not be fixed across all levels of `index`."
