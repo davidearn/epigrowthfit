@@ -15,7 +15,7 @@
   level = 0.95,
   bands = FALSE,
   control = NULL,
-  per_plot = 12L,
+  per_plot = 6L,
   ...
 )
 }

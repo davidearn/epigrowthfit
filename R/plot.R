@@ -145,7 +145,7 @@ plot.egf <- function(x,
                      level = 0.95,
                      bands = FALSE,
                      control = NULL,
-                     per_plot = 12L,
+                     per_plot = 6L,
                      ...) {
   type <- match.arg(type)
   xty <- match.arg(xty)

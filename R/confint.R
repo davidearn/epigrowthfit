@@ -360,7 +360,7 @@ plot.egf_confint <- function(x,
                              group_by = ~1,
                              sort = c("none", "increasing", "decreasing"),
                              subset = NULL,
-                             per_plot = switch(type, `1` = 12L, `2` = 3L),
+                             per_plot = switch(type, `1` = 12L, `2` = 4L),
                              ...) {
   ### Argument validation =================================
 
