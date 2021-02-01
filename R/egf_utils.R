@@ -586,7 +586,7 @@ make_frame <- function(formula, fixed, random, group_by, data, index,
 
   ## Clean up
   row.names(frame) <- NULL
-  index <- factor(index, levels = unique(index), exclude = NA)
+  index <- factor(index, levels = unique(index), exclude = NA) # beware: dependency of multiple methods
 
   ## Subset rows belonging to a fitting window
   ## and preserve the difference as an attribute

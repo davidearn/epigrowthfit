@@ -351,3 +351,14 @@ get_cex_axis <- function(x, mex, csi = NULL) {
   mex * csi / max(strwidth(x, units = "inches", cex = 1))
 }
 
+make_endpoints <- function(object) {
+  refdate <- min(object$frame[[1L]])
+  time_split <- split(days(object$frame[[1L]], since = refdate), object$index)
+  endpoints <- data.frame(
+    .t1 = vapply(time_split, min, 0L),
+    .t2 = vapply(time_split, max, 0L)
+  )
+  row.names(endpoints) <- NULL
+  attr(endpoints, "refdate") <- refdate
+  endpoints
+}

@@ -4,10 +4,12 @@
 \alias{get_control_default}
 \title{Get control default}
 \usage{
-get_control_default(f)
+get_control_default(f, ...)
 }
 \arguments{
 \item{f}{A character string giving the name of a function.}
+
+\item{...}{Optional arguments to the function.}
 }
 \value{
 A named list.

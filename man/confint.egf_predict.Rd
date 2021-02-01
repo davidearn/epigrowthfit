@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.R
 \name{confint.egf_predict}
 \alias{confint.egf_predict}
-\title{Confidence bands on predicted incidence}
+\title{Confidence bands on predicted values}
 \usage{
 \method{confint}{egf_predict}(object, parm, level = 0.95, log = TRUE, ...)
 }
@@ -14,28 +14,28 @@ Must supply standard errors on log predicted incidence.}
 
 \item{level}{A number in the interval (0,1). The desired confidence level.}
 
-\item{log}{A logical scalar. If \code{FALSE}, then log predicted incidence and
-the corresponding confidence bands are inverse log transformed.}
+\item{log}{A logical scalar. If \code{FALSE}, then log scale predicted
+values are inverse log transformed.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
 If \code{log = TRUE}, then \code{object} but with variable \code{se} in each listed
 data frame replaced with two variables \code{lower} and \code{upper} supplying
-confidence bands on log predicted incidence.
+confidence bands on log predicted values.
 
 Otherwise, the same list but with variables \code{estimate}, \code{lower},
 and \code{upper} inverse log transformed in each listed data frame.
-In this case, the list has names \code{c("cum_inc", "int_inc")},
-rather than \code{c("log_cum_inc", "log_int_inc")}
+In this case, the prefix \code{"log_"} is stripped from the list names.
 }
 \description{
-Computes confidence bands on predicted incidence assuming
-asymptotic normality.
+Computes confidence bands on predicted log cumulative incidence,
+predicted log interval incidence, and predicted log instantaneous
+exponential growth rate, assuming asymptotic normality.
 }
 \details{
-Confidence bands on log predicted incidence are computed as
-\code{estimate + c(-1, 1) * q * se}, where \code{q = qnorm(0.5 * (1 + level))}
-and \code{estimate} and \code{se} are log predicted incidence and the
+Confidence bands on log scale predicted values are computed as
+\code{estimate + c(-1, 1) * q * se}, where \code{q = qnorm(0.5 * (1 + level))},
+where \code{estimate} and \code{se} are the log predicted values and the
 approximate (delta method) standard errors.
 }

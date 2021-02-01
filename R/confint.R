@@ -293,18 +293,11 @@ confint.egf <- function(object, parm = get_par_names(object),
   }
   row.names(out) <- NULL
 
-
   ## For plot.egf_confint()
-  refdate <- min(object$frame[[1L]])
-  time_split <- split(days(object$frame[[1L]], since = refdate), object$index)
-  endpoints <- data.frame(
-    .t1 = vapply(time_split, min, 0L),
-    .t2 = vapply(time_split, max, 0L)
-  )
+  endpoints <- make_endpoints(object)
 
   structure(out,
     level = level,
-    refdate = refdate,
     endpoints = endpoints,
     group_by = attr(object$frame, "group_by"),
     class = c("egf_confint", "data.frame")
@@ -528,7 +521,7 @@ plot.egf_confint <- function(x,
     xax_at <- daxis(
       left = xlim[1L],
       right = xlim[2L],
-      refdate = a$refdate,
+      refdate = attr(a$endpoints, "refdate"),
       plot = FALSE
     )
     any_groups <- (length(a$group_by) > 0L)
@@ -629,7 +622,7 @@ plot.egf_confint <- function(x,
         daxis(
           left = xlim[1L],
           right = xlim[2L],
-          refdate = a$refdate,
+          refdate = attr(a$endpoints, "refdate"),
           tcl = -0.2,
           mgp2 = c(0.25, 1.25),
           cex.axis = c(0.85, 1.15)

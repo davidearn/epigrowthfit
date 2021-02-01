@@ -1,21 +1,25 @@
-#' Compute predicted incidence
+#' Compute predicted values
 #'
-#' Computes predicted values of log cumulative incidnece
-#' and log interval incidence given user-specified time points.
+#' Computes predicted values of log cumulative incidence, log
+#' interval incidence, and log instantaneous exponential growth
+#' rate given user-specified time points.
 #'
 #' @param object
 #'   An `"egf"` object returned by [egf()].
+#' @param time
+#'   A numeric vector listing increasing time points in days since
+#'   the start of the fitting window specified by `subset`.
+#' @param varname
+#'   A character vector listing one or more variables for which
+#'   predicted values are desired.
 #' @param subset
 #'   A named list of atomic vectors of length 1 specifying exactly
 #'   one level for each factor in `object$frame` (and thus a unique
 #'   fitting window). Use the default (`NULL`) if and only if
 #'   `object$frame` has no factors.
-#' @param time
-#'   A numeric vector listing increasing time points in days since
-#'   the start of the fitting window specified by `subset`.
 #' @param se
 #'   A logical scalar. If `TRUE`, then standard errors on predicted
-#'   values (log scale) are also reported.
+#'   values are also reported.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -26,22 +30,30 @@
 #' is an element of `levels(object$frame$factor_name)`.
 #'
 #' @return
-#' A list inheriting from class `"egf_predict"`, containing two data
-#' frames, `log_cum_inc` and `log_int_inc`, each with numeric variables
-#' `time`, `estimate`, and `se` (if `se = TRUE`).
+#' A list inheriting from class `"egf_predict"`,
+#' containing data frames (one for each `varname`)
+#' with numeric variables `time`, `estimate`, and
+#' `se` (if `se = TRUE`).
 #'
-#' `log_cum_inc$estimate[i]` stores log cumulative incidence at
-#' `time[i]`. For `i > 1`, `log_int_inc$estimate[i]` stores log
-#' incidence during the interval from `time[i-1]` to `time[i]`.
+#' If `"log_int_inc" %in% varname`, then, for `i > 1`,
+#' `log_int_inc$estimate[i]` stores log incidence
+#' during the interval from `time[i-1]` to `time[i]`.
 #'
 #' @seealso [confint.egf_predict()]
 #' @export
 #' @importFrom TMB MakeADFun sdreport
-predict.egf <- function(object, subset = NULL, time = NULL,
-                        se = FALSE, ...) {
-  fr <- object$frame[-(1:2)]
-  w <- !duplicated(object$index)
-  if (length(fr) > 0L || !is.null(subset)) {
+predict.egf <- function(object,
+                        time,
+                        varname = c("log_int_inc", "log_cum_inc", "log_rt"),
+                        subset = NULL,
+                        se = FALSE,
+                        ...) {
+  varname <- unique(match.arg(varname, several.ok = TRUE))
+  index_levels <- levels(object$index)
+  i1 <- which(!duplicated(object$index))
+  refdate <- object$frame[i1, 1L]
+  if (length(object$frame) > 2L || !is.null(subset)) {
+    frame_red <- object$frame[i1, -(1:2), drop = FALSE]
     stop_if_not(
       is.list(subset),
       length(subset) > 0L,
@@ -49,21 +61,25 @@ predict.egf <- function(object, subset = NULL, time = NULL,
       m = "`subset` must be a named list or NULL."
     )
     stop_if_not(
-      length(subset) == length(fr),
-      identical(sort(names(subset)), sort(names(fr))),
+      length(subset) == length(frame_red),
+      identical(sort(names(subset)), sort(names(frame_red))),
       vapply(subset, is.atomic, logical(1L)),
       lengths(subset) == 1L,
-      mapply(`%in%`, subset, lapply(fr[names(subset)], levels)),
+      mapply(`%in%`, subset, lapply(frame_red[names(subset)], levels)),
       m = paste0(
         "`subset` must specify exactly one level\n",
         "for each factor in `object$frame`."
       )
     )
-    w <- Reduce(`&`, Map(`==`, fr[names(subset)], subset), w)
+    subset <- lapply(subset, as.character)
+    w <- Reduce(`&`, Map(`==`, frame_red[names(subset)], subset))
     stop_if_not(
       any(w),
       m = "`subset` does not match any fitting windows."
     )
+    index_levels <- index_levels[w]
+    i1 <- i1[w]
+    refdate <- refdate[w]
   }
   stop_if_not(
     is.numeric(time),
@@ -79,9 +95,7 @@ predict.egf <- function(object, subset = NULL, time = NULL,
     m = "`time` must be increasing."
   )
   stop_if_not_tf(se)
-
-  i <- which(w)
-  tr <- range(object$tmb_args$data$t[object$index %in% object$index[i]])
+  tr <- range(object$tmb_args$data$t[object$index %in% index_levels])
   warn_if_not(
     time >= tr[1L],
     time <= tr[2L],
@@ -96,81 +110,79 @@ predict.egf <- function(object, subset = NULL, time = NULL,
   sparse_X_flag <- Xs <- Xd <- Z <- NULL # R CMD check
   object$tmb_args$data <- within(object$tmb_args$data, {
     predict_flag <- 1L
+    predict_lci_lii_lrt_flag <- 1L * (c("log_int_inc", "log_cum_inc", "log_rt") %in% varname)
     se_flag <- 1L * se
     t_new <- time
     if (sparse_X_flag == 1L) {
       ## sparseMatrix() doesn't recycle like matrix()
-      Xs_new <- do.call(rbind, rep.int(list(Xs[i[1L], , drop = FALSE]), length(t_new)))
+      Xs_new <- do.call(rbind, rep.int(list(Xs[i1[1L], , drop = FALSE]), length(t_new)))
       Xd_new <- Xd
     } else {
-      Xd_new <- matrix(Xd[i[1L], , drop = TRUE], nrow = length(t_new), ncol = ncol(Xd), byrow = TRUE)
+      Xd_new <- matrix(Xd[i1[1L], , drop = TRUE], nrow = length(t_new), ncol = ncol(Xd), byrow = TRUE)
       Xs_new <- Xs
     }
     if (has_random(object)) {
-      Z_new <- do.call(rbind, rep.int(list(Z[i[1L], , drop = FALSE]), length(t_new)))
+      Z_new <- do.call(rbind, rep.int(list(Z[i1[1L], , drop = FALSE]), length(t_new)))
     } else {
       Z_new <- Z
     }
   })
 
   tmb_out_new <- do.call(MakeADFun, object$tmb_args)
-
+  varname_new <- sprintf("%s_new", varname)
   if (se) {
     tmb_out_new$fn(object$par[object$nonrandom])
-    ssdr <- split_sdreport(sdreport(tmb_out_new))
-    out <- ssdr[c("log_cum_inc_new", "log_int_inc_new")]
-    out$log_int_inc_new <- rbind(NA_real_, out$log_int_inc_new)
-    out <- lapply(out, function(d) cbind(time, d))
-    names(out) <- sub("_new$", "", names(out))
+    out <- split_sdreport(sdreport(tmb_out_new))[varname_new]
   } else {
-    r <- tmb_out_new$report(object$par)
-    out <- list(
-      log_cum_inc = data.frame(time, estimate = r$log_cum_inc_new),
-      log_int_inc = data.frame(time, estimate = c(NA_real_, r$log_int_inc_new))
-    )
+    out <- lapply(tmb_out_new$report(object$par)[varname_new],
+                  function(x) data.frame(estimate = x))
   }
+  if ("log_int_inc" %in% varname) {
+    out$log_int_inc_new <- rbind(NA_real_, out$log_int_inc_new)
+  }
+  out <- lapply(out, function(d) cbind(time, d))
+  names(out) <- sub("_new$", "", names(out))
   attr(out, "subset") <- subset
-  attr(out, "refdate") <- object$frame$date[i]
+  attr(out, "refdate") <- refdate
   class(out) <- c("egf_predict", "list")
   out
 }
 
-#' Confidence bands on predicted incidence
+#' Confidence bands on predicted values
 #'
-#' Computes confidence bands on predicted incidence assuming
-#' asymptotic normality.
+#' Computes confidence bands on predicted log cumulative incidence,
+#' predicted log interval incidence, and predicted log instantaneous
+#' exponential growth rate, assuming asymptotic normality.
 #'
 #' @param object
 #'   An `"egf_predict"` object returned by [predict.egf()].
 #'   Must supply standard errors on log predicted incidence.
 #' @param log
-#'   A logical scalar. If `FALSE`, then log predicted incidence and
-#'   the corresponding confidence bands are inverse log transformed.
+#'   A logical scalar. If `FALSE`, then log scale predicted
+#'   values are inverse log transformed.
 #' @inheritParams confint.egf_profile
 #'
 #' @details
-#' Confidence bands on log predicted incidence are computed as
-#' `estimate + c(-1, 1) * q * se`, where `q = qnorm(0.5 * (1 + level))`
-#' and `estimate` and `se` are log predicted incidence and the
+#' Confidence bands on log scale predicted values are computed as
+#' `estimate + c(-1, 1) * q * se`, where `q = qnorm(0.5 * (1 + level))`,
+#' where `estimate` and `se` are the log predicted values and the
 #' approximate (delta method) standard errors.
 #'
 #' @return
 #' If `log = TRUE`, then `object` but with variable `se` in each listed
 #' data frame replaced with two variables `lower` and `upper` supplying
-#' confidence bands on log predicted incidence.
+#' confidence bands on log predicted values.
 #'
 #' Otherwise, the same list but with variables `estimate`, `lower`,
 #' and `upper` inverse log transformed in each listed data frame.
-#' In this case, the list has names `c("cum_inc", "int_inc")`,
-#' rather than `c("log_cum_inc", "log_int_inc")`
+#' In this case, the prefix `"log_"` is stripped from the list names.
 #'
 #' @export
 #' @importFrom stats qnorm
 confint.egf_predict <- function(object, parm, level = 0.95,
                                 log = TRUE, ...) {
   stop_if_not(
-    "se" %in% names(object$log_cum_inc),
-    "se" %in% names(object$log_int_inc),
+    "se" %in% names(object[[1L]]),
     m = paste0(
       "`object` must supply standard errors.\n",
       "Repeat `predict()` with argument `se = TRUE`."
@@ -179,12 +191,13 @@ confint.egf_predict <- function(object, parm, level = 0.95,
   stop_if_not_in_0_1(level)
 
   q <- qnorm(0.5 * (1 + level))
-  f <- function(d) {
+  f <- if (log) identity else exp
+  g <- function(d) {
     elu <- d$estimate + outer(d$se, c(0, -1, 1) * q)
     colnames(elu) <- c("estimate", "lower", "upper")
-    data.frame(time = d$time, if (log) elu else exp(elu))
+    data.frame(time = d$time, f(elu))
   }
-  out <- lapply(object, f)
+  out <- lapply(object, g)
   if (!log) {
     names(out) <- sub("^log_", "", names(out))
   }

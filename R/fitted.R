@@ -75,9 +75,9 @@ fitted.egf <- function(object, subset = NULL, link = TRUE, ...) {
     Y <- mapply(f, x = as.data.frame(Y), s = extract_link_string(pn))
     colnames(Y) <- remove_link_string(pn)
   }
+  d <- cbind(fr, Y)
 
   ## Select user-specified fitting windows
-  d <- cbind(fr, Y)
   if (length(fr) > 0L && !is.null(subset)) {
     d <- d[w, , drop = FALSE]
   }

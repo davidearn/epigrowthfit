@@ -123,6 +123,48 @@ vector<Type> eval_log_int_inc(vector<Type> log_cum_inc, vector<int> wl)
 }
 
 template<class Type>
+vector<Type> eval_log_rt(vector<Type> log_cum_inc,
+		         matrix<Type> Y,
+		         int curve_flag,
+			 int j_log_r,
+			 int j_log_alpha,
+			 int j_log_K,
+			 int j_logit_p,
+			 int j_log_a)
+{
+    vector<Type> log_rt(log_cum_inc.size());
+    Type one_minus_p;
+    for (int i = 0; i < log_cum_inc.size(); i++)
+    {
+        switch (curve_flag)
+	{
+	case exponential:
+	    // log(c'(t) / c(t)) = log(r)
+	    log_rt(i) = Y(i, j_log_r);
+	    break;
+	case subexponential:
+	    // log(c'(t) / c(t)) = log(alpha) - (1 - p) * log(c(t))
+	    one_minus_p = Type(1) / (Type(1) + exp(Y(i, j_logit_p)));
+	    log_rt(i) = Y(i, j_log_alpha) - one_minus_p * log_cum_inc(i);
+	    break;
+	case gompertz:
+	    // log(c'(t) / c(t)) = log(alpha) + log(log(K) - log(c(t)))
+	    log_rt(i) = Y(i, j_log_alpha) + log(Y(i, j_log_K) - log_cum_inc(i));
+	    break;
+	case logistic:
+	    // log(c'(t) / c(t)) = log(r) + log(1 - c(t) / K)
+	    log_rt(i) = Y(i, j_log_r) + logspace_sub(Type(0), log_cum_inc(i) - Y(i, j_log_K));
+	    break;
+	case richards:
+	    // log(c'(t) / c(t)) = log(r) + log(1 - (c(t) / K)^a)
+	    log_rt(i) = Y(i, j_log_r) + logspace_sub(Type(0), exp(Y(i, j_log_a)) * (log_cum_inc(i) - Y(i, j_log_K)));
+	    break;
+	}
+    }
+    return log_rt;
+}
+
+template<class Type>
 Type dpois_robust(Type x, Type log_lambda, int give_log = 0)
 {
     Type log_dpois = x * log_lambda - exp(log_lambda) - lfactorial(x);
@@ -154,16 +196,6 @@ matrix<Type> prune_dupl_rows(matrix<Type> Y, vector<int> wl)
     }
     return Y_short;
 }
-
-
-
-
-
-
-
-
-
-
 
 // https://kaskr.github.io/adcomp/Introduction.html
 template<class Type>
@@ -469,9 +501,9 @@ Type objective_function<Type>::operator() ()
         DATA_VECTOR(t_new); // length=N_new
 	DATA_SPARSE_MATRIX(Xs_new); // nrow=N_new,  ncol=sum(nlevels(FE i))
     	DATA_MATRIX(Xd_new); 
-	DATA_SPARSE_MATRIX(Z_new);  // nrow=N_new,  ncol=sum(nlevels(RE i))
+	DATA_SPARSE_MATRIX(Z_new); // nrow=N_new,  ncol=sum(nlevels(RE i))
+	DATA_IVECTOR(predict_lci_lii_lrt_flag); // predict (log_cum_inc, log_int_inc, log_rt)  (1=do,  0=don't)
 	DATA_INTEGER(se_flag); // report  (1=ADREPORT,  0=REPORT)
-	bool se = (se_flag == 1);
 
 	matrix<Type> Y_new(t_new.size(), np);
 	if (sparse_X)
@@ -487,21 +519,46 @@ Type objective_function<Type>::operator() ()
 	    Y_new += Z_new * b2;
     	}
 
-        vector<Type> log_cum_inc_new = eval_log_cum_inc(t_new, Y_new, curve_flag, excess,
+	vector<Type> log_cum_inc_new = eval_log_cum_inc(t_new, Y_new, curve_flag, excess,
 							j_log_r, j_log_alpha, j_log_c0, j_log_tinfl, j_log_K, j_logit_p, j_log_a, j_log_b);
-	vector<int> wl_new(1);
-	wl_new(0) = t_new.size();
-	vector<Type> log_int_inc_new = eval_log_int_inc(log_cum_inc_new, wl_new);
-
-    	if (se)
+	
+	if (predict_lci_lii_lrt_flag(0) == 1)
 	{
-	    ADREPORT(log_cum_inc_new);
-	    ADREPORT(log_int_inc_new);
+	    vector<int> wl_new(1);
+	    wl_new(0) = t_new.size();
+	    vector<Type> log_int_inc_new = eval_log_int_inc(log_cum_inc_new, wl_new);
+	    if (se_flag == 1)
+	    {
+	        ADREPORT(log_int_inc_new);
+	    }
+	    else
+	    {
+	        REPORT(log_int_inc_new);
+	    }
 	}
-	else
+	if (predict_lci_lii_lrt_flag(1) == 1)
 	{
-	    REPORT(log_cum_inc_new);
-	    REPORT(log_int_inc_new);
+	    if (se_flag == 1)
+	    {
+	        ADREPORT(log_cum_inc_new);
+	    }
+	    else
+	    {
+	        REPORT(log_cum_inc_new);
+	    }
+	}
+	if (predict_lci_lii_lrt_flag(2) == 1)
+	{
+	    vector<Type> log_rt_new = eval_log_rt(log_cum_inc_new, Y_new, curve_flag,
+						  j_log_r, j_log_alpha, j_log_K, j_logit_p, j_log_a);
+	    if (se_flag == 1)
+	    {
+	        ADREPORT(log_rt_new);
+	    }
+	    else
+	    {
+	        REPORT(log_rt_new);
+	    }
 	}
     }
 

@@ -6,35 +6,39 @@
 \usage{
 \method{plot}{egf}(
   x,
+  type = c("interval", "cumulative", "rt1", "rt2"),
   subset = NULL,
-  type = c("interval", "cumulative"),
-  log = TRUE,
   xty = c("date", "numeric"),
+  log = TRUE,
   tol = 0,
   legend = FALSE,
-  bands = FALSE,
   level = 0.95,
+  bands = FALSE,
   control = NULL,
+  per_plot = 12L,
   ...
 )
 }
 \arguments{
 \item{x}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
+\item{type}{A character string indicating a type of plot. One of
+\code{"interval"} (interval incidence),
+\code{"cumulative"} (cumulative incidence),
+\code{"rt1"}, \code{"rt2"} (instantaneous exponential growth rate).}
+
 \item{subset}{A named list of atomic vectors with elements specifying levels of
 factors in \code{x$frame}. Only the subset of fitting windows belonging
 to these levels is plotted. Use \code{NULL} (the default) to plot all
 fitting windows or if \code{x$frame} has no factors.}
 
-\item{type}{A character string indicating the type of incidence plotted.}
-
-\item{log}{A logical scalar. If \code{TRUE}, then incidence is displayed on a
-logarithmic scale.}
-
 \item{xty}{A character string. If \code{"date"}, then ticks on the time axis are
 placed at the start of calendar days, months, or years (depending
 on time scale). If \code{"numeric"}, then time is displayed as a number
 of days since an initial date.}
+
+\item{log}{A logical scalar. If \code{TRUE}, then the dependent variable is plotted
+on a logarithmic scale. Unused by \code{type \%in\% c("rt1", "rt2")}.}
 
 \item{tol}{A non-negative number or \code{Inf}, used to define "exceptional"
 points when \code{type = "interval"}. \code{cases[-1]} is highlighted
@@ -45,18 +49,18 @@ where \code{m = median(diff(date))}. In both cases, the value of
 all deviations from \code{m}. Assign \code{Inf} to disable highlighting.}
 
 \item{legend}{A logical scalar. If \code{TRUE}, then a legend is displayed in the
-right margin.}
-
-\item{bands}{A logical scalar. If \code{TRUE}, then confidence bands on predicted
-incidence are displayed. Longer run times should be expected in
-this case.}
+right margin. Unused by \code{type = "rt2"}.}
 
 \item{level}{A number in the interval (0,1). The confidence level represented
 by confidence intervals on doubling times and confidence bands on
-predicted incidence.}
+predicted values. Unused by \code{type = "rt2"}.}
 
-\item{control}{A list of lists defining the appearance of various
-plot elements, or otherwise \code{NULL} (see Details).}
+\item{bands}{A logical scalar. If \code{TRUE}, then confidence bands on predicted
+values are displayed. Longer run times can be anticipated in this
+case. Unused by \code{type = "rt2"}.}
+
+\item{control}{A list of lists defining the appearance of various plot elements,
+or otherwise \code{NULL} (see Details). Unused by \code{type = "rt2"}.}
 
 \item{...}{Optional arguments specifying additional graphical parameters
 to be recycled for all plots. Currently, only \code{xlim}, \code{ylim},
@@ -71,7 +75,7 @@ factor level relevant to that plot.}
 \code{NULL} (invisibly).
 }
 \description{
-Method for plotting \code{"egf"} objects.
+Methods for plotting \code{"egf"} objects.
 }
 \details{
 \code{control} must be \code{NULL} or a named list containing some subset
@@ -90,9 +94,9 @@ the appearance of the bottom and left axes. Currently, only
 used, where \code{mgp2} is the second component of the usual \code{mgp}
 argument. If \code{xty = "date"}, then the appearance of the minor
 (day or month) and major (month or year) bottom axes can be
-controlled separately by listing vectors of length 2. For example,
-setting \code{xax = list(col.axis = c("black", "red"))} will make
-the minor axis black and major axis red.
+controlled separately by listing vectors of length 2.
+For example, setting \code{xax = list(col.axis = c("black", "red"))}
+will make the minor axis black and major axis red.
 }
 \item{\code{xlab}, \code{ylab}, \code{main}}{
 Named lists of arguments to \code{\link[graphics:title]{graphics::title()}}, affecting
@@ -114,6 +118,10 @@ A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}}, af
 the appearance of the predicted incidence curve. Currently,
 only \code{lty}, \code{lwd}, and \code{col} are used.
 }
+\item{\code{zero}}{
+A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}}, affecting
+the appearance of the line drawn at \code{y = 0} when \code{type = "rt1"}.
+}
 \item{\code{windows}, \code{bands}}{
 Named lists of arguments to \code{\link[graphics:polygon]{graphics::polygon()}}, affecting
 the appearance of fitting windows and confidence bands on
@@ -123,19 +131,20 @@ are used.
 \item{\code{text_td}, \code{text_hl}}{
 Named lists of arguments to \code{\link[graphics:text]{graphics::text()}}, affecting
 the appearance of text giving doubling times and text above
-highlighted points. Currently, only \code{adj} (\code{text_td} only),
-\code{pos}, \code{offset}, \code{col}, \code{cex}, and \code{font} are used.
+highlighted points when \code{type = "interval"}. Currently, only
+\code{adj} (\code{text_td} only), \code{pos}, \code{offset}, \code{col}, \code{cex}, and
+\code{font} are used.
 }
 }
 
 If \code{control = NULL}, then it defaults to
-\code{get_control_default("plot.egf")}.
+\code{get_control_default("plot.egf", type = type)}.
 
 If \code{control} is a list and one of its elements is a partially
 specified list
 (e.g., \code{box = list(bty)} rather than \code{box = c(bty, lty, lwd, col)}),
 then that element is filled out with values taken from
-\code{get_control_default("plot.egf")}.
+\code{get_control_default("plot.egf", type = type)}.
 
 If \code{control} is a list and one if its elements is \code{NULL}
 (e.g., \code{box = NULL}), then the corresponding plot element
