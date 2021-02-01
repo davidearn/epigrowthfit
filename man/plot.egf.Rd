@@ -40,7 +40,7 @@ of days since an initial date.}
 \item{log}{A logical scalar. If \code{TRUE}, then the dependent variable is plotted
 on a logarithmic scale. Unused by \code{type \%in\% c("rt1", "rt2")}.}
 
-\item{tol}{A non-negative number or \code{Inf}, used to define "exceptional"
+\item{tol}{A non-negative number or \code{Inf}. Used to define "exceptional"
 points when \code{type = "interval"}. \code{cases[-1]} is highlighted
 according to \code{control$points_short} if \code{diff(date) < (1-tol)*m}
 and according to \code{control$points_long} if \code{diff(date) > (1+tol)*m},
@@ -61,6 +61,9 @@ case. Unused by \code{type = "rt2"}.}
 
 \item{control}{A list of lists defining the appearance of various plot elements,
 or otherwise \code{NULL} (see Details). Unused by \code{type = "rt2"}.}
+
+\item{per_plot}{A positive integer. One plot will display this many time series
+when \code{type = "rt2"}.}
 
 \item{...}{Optional arguments specifying additional graphical parameters
 to be recycled for all plots. Currently, only \code{xlim}, \code{ylim},

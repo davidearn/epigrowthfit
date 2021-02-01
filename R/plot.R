@@ -24,7 +24,7 @@
 #'   A logical scalar. If `TRUE`, then the dependent variable is plotted
 #'   on a logarithmic scale. Unused by `type %in% c("rt1", "rt2")`.
 #' @param tol
-#'   A non-negative number or `Inf`, used to define "exceptional"
+#'   A non-negative number or `Inf`. Used to define "exceptional"
 #'   points when `type = "interval"`. `cases[-1]` is highlighted
 #'   according to `control$points_short` if `diff(date) < (1-tol)*m`
 #'   and according to `control$points_long` if `diff(date) > (1+tol)*m`,
@@ -45,6 +45,9 @@
 #' @param control
 #'   A list of lists defining the appearance of various plot elements,
 #'   or otherwise `NULL` (see Details). Unused by `type = "rt2"`.
+#' @param per_plot
+#'   A positive integer. One plot will display this many time series
+#'   when `type = "rt2"`.
 #' @param ...
 #'   Optional arguments specifying additional graphical parameters
 #'   to be recycled for all plots. Currently, only `xlim`, `ylim`,
@@ -634,7 +637,7 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
 }
 
 #' @import graphics
-#' @importFrom grDevices colorRampPalette rgb
+#' @importFrom grDevices colorRamp rgb
 plot.egf.heat <- function(x, xty, per_plot, frame_aug_split, ...) {
   dots <- list(...)
   stop_if_not_positive_integer(per_plot)
