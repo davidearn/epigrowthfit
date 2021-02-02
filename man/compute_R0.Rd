@@ -34,7 +34,7 @@ then \code{probs} is replaced with \code{probs / sum(probs)}.}
 }
 \value{
 The default method returns a numeric vector of length \code{length(r)}
-listing basic reproduction numbers \mjseqn{\mathcal{R}USCORE0}
+listing basic reproduction numbers \mjseqn{\mathcal{R}_0}
 (see Details).
 
 The method for class \code{"egf"} constructs the data frame
@@ -53,10 +53,10 @@ specified by \code{probs}, defining \mjseqn{p_i} to be the probability
 that the generation interval is in \mjseqn{\lbrack t_{i-1},t_i)}.
 
 Section 3d in \insertCite{WallLips07;textual}{epigrowthfit}
-gives the basic reproduction number \mjseqn{\mathcal{R}USCORE0}
+gives the basic reproduction number \mjseqn{\mathcal{R}_0}
 as a function of the initial exponential growth rate \mjseqn{r}:
 
-\mjsdeqn{\mathcal{R}USCORE0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}
+\mjsdeqn{\mathcal{R}_0(r) = \left. r \middle/ \bigg\lbrace \sum_{i=1}^{m} \frac{p_i (e^{-r t_{i-1}} - e^{-r t_i})}{t_i - t_{i-1}} \bigg\rbrace \right.\,.}
 }
 \examples{
 data(plague_latent_period)

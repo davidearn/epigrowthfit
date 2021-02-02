@@ -36,8 +36,8 @@ weight) for all \mjseqn{i \in \lbrace 1,\ldots,n \rbrace}.}
 A numeric vector with length equal to the length of the
 first argument, or with length \code{n} in the case of \code{rgi()}.
 
-\code{dgi()} evaluates the density function \mjseqn{f_\text{gen}}.
-\code{pgi()} evaluates the distribution function \mjseqn{F_\text{gen}}.
+\code{dgi()} evaluates the density function \mjseqn{f_\textrm{gen}}.
+\code{pgi()} evaluates the distribution function \mjseqn{F_\textrm{gen}}.
 \code{qgi()} evaluates the quantile function, which is defined as the
 left-continuous generalized inverse of \code{pgi()}.
 \code{rgi()} samples from the distribution.
@@ -52,41 +52,41 @@ Assumes:
 }
 }
 \details{
-Let \mjseqn{\tau_\text{lat}} and \mjseqn{\tau_\text{inf}} be the
-latent and infectious periods. Let \mjseqn{f_\text{lat}} the density
-function of \mjseqn{\tau_\text{lat}}, and let \mjseqn{F_\text{inf}}
-be the distribution function of \mjseqn{\tau_\text{inf}}.
+Let \mjseqn{\tau_\textrm{lat}} and \mjseqn{\tau_\textrm{inf}} be the
+latent and infectious periods. Let \mjseqn{f_\textrm{lat}} the density
+function of \mjseqn{\tau_\textrm{lat}}, and let \mjseqn{F_\textrm{inf}}
+be the distribution function of \mjseqn{\tau_\textrm{inf}}.
 
-Suppose that the distributions of \mjseqn{\tau_\text{lat}} and
-\mjseqn{\tau_\text{inf}} are supported on
+Suppose that the distributions of \mjseqn{\tau_\textrm{lat}} and
+\mjseqn{\tau_\textrm{inf}} are supported on
 \mjseqn{\lbrace 1,\ldots,m \rbrace} and
 \mjseqn{\lbrace 1,\ldots,n \rbrace}, respectively, so that
 
-\mjtdeqn{\begin{array}{r@{}ll} f_\text{lat}(t) &= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr F_\text{inf}(t) & {}= \mathrm{1}USCORE{\lbrack 1,\infty)} \sum_{i=1}^{\min\lbrace n,\lfloor t \rfloor\rbrace} q_i\,, \end{array}}{\begin{align} f_\text{lat}(t) & {}= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr F_\text{inf}(t) &= \unicode{x1D7D9}USCORE{\lbrack 1,\infty)} \sum_{i=1}^{\min\lbrace n,\lfloor t \rfloor\rbrace} q_i\,, \end{align}}{LaTeX}
+\mjtdeqn{\begin{array}{r@{}ll} f_\textrm{lat}(t) &= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr F_\textrm{inf}(t) & {}= \mathrm{1}_{\lbrack 1,\infty)} \sum_{i=1}^{\min\lbrace n,\lfloor t \rfloor\rbrace} q_i\,, \end{array}}{\begin{align} f_\textrm{lat}(t) & {}= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr F_\textrm{inf}(t) &= \unicode{x1D7D9}_{\lbrack 1,\infty)} \sum_{i=1}^{\min\lbrace n,\lfloor t \rfloor\rbrace} q_i\,, \end{align}}{LaTeX}
 
 where \mjseqn{p_i,q_i \in \lbrack 0,1 \rbrack},
 \mjseqn{\sum_{i=1}^{m} p_i = \sum_{i=1}^{n} q_i = 1}
 and \mjseqn{\delta} is the Dirac delta.
 
-Now let \mjseqn{\tau_\text{wait}} be the infectious waiting time
-and \mjseqn{f_\text{wait}} its density. The generation interval is
-\mjseqn{\tau_\text{gen} = \tau_\text{lat} + \tau_\text{wait}} and
+Now let \mjseqn{\tau_\textrm{wait}} be the infectious waiting time
+and \mjseqn{f_\textrm{wait}} its density. The generation interval is
+\mjseqn{\tau_\textrm{gen} = \tau_\textrm{lat} + \tau_\textrm{wait}} and
 has density
 
-\mjsdeqn{f_\text{gen}(t) = (f_\text{lat} * f_\text{wait})(t) = \sum_{i=1}^{m} p_i f_\text{wait}(t - i)\,,}
+\mjsdeqn{f_\textrm{gen}(t) = (f_\textrm{lat} * f_\textrm{wait})(t) = \sum_{i=1}^{m} p_i f_\textrm{wait}(t - i)\,,}
 
-assuming independence of \mjseqn{\tau_\text{lat}} and
-\mjseqn{\tau_\text{wait}}.
+assuming independence of \mjseqn{\tau_\textrm{lat}} and
+\mjseqn{\tau_\textrm{wait}}.
 
 Equation 5.7 of \insertCite{Sven07;textual}{epigrowthfit}
-gives an expression for \mjseqn{f_\text{wait}} for the case
+gives an expression for \mjseqn{f_\textrm{wait}} for the case
 in which infectiousness is constant over the infectious period:
 
-\mjtdeqn{f_\text{wait} = \mathrm{1}USCORE{(0,\infty)} \frac{1 - F_\text{inf}}{\mathrm{E}\lbrack \tau_\text{inf} \rbrack}\,.}{f_\text{wait} = \unicode{x1D7D9}USCORE{(0,\infty)} \frac{1 - F_\text{inf}}{\unicode{x1D53C}\lbrack \tau_\text{inf} \rbrack}\,.}{LaTeX}
+\mjtdeqn{f_\textrm{wait} = \mathrm{1}_{(0,\infty)} \frac{1 - F_\textrm{inf}}{\mathrm{E}\lbrack \tau_\textrm{inf} \rbrack}\,.}{f_\textrm{wait} = \unicode{x1D7D9}_{(0,\infty)} \frac{1 - F_\textrm{inf}}{\unicode{x1D53C}\lbrack \tau_\textrm{inf} \rbrack}\,.}{LaTeX}
 
-In this case, \mjseqn{f_\text{gen}} is supported on the interval
+In this case, \mjseqn{f_\textrm{gen}} is supported on the interval
 \mjseqn{\lbrack 1,m+n)} and is constant on the unit intervals
-\mjseqn{\lbrack i,i+1)}. Hence evaluation of \mjseqn{f_\text{gen}}
+\mjseqn{\lbrack i,i+1)}. Hence evaluation of \mjseqn{f_\textrm{gen}}
 (as well as the corresponding distribution and quantile functions)
 is straightforward and fast.
 }

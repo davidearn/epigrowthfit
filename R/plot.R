@@ -259,10 +259,10 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
   }
   if (type %in% c("interval", "cumulative")) {
     stop_if_not_tf(log)
+    stop_if_not_tf(legend)
   } else {
-    log <- FALSE
+    log <- legend <- FALSE
   }
-  stop_if_not_tf(legend)
   stop_if_not_tf(bands)
   stop_if_not_in_0_1(level)
   if (is.null(control) || !inherits(control, "list") || is.null(names(control))) {
@@ -301,7 +301,11 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
 
   ### Loop over plots =====================================
 
-  op <- par(mar = c(4, 5, 2.7, 1.5 + 5 * legend) + 0.1)
+  mar <- switch(type,
+    rt1 = c(4, 7.5, 2.7, 1) + 0.1,
+    c(4, 5, 2.7, 1 + 5.5 * legend) + 0.1
+  )
+  op <- par(mar = mar)
   on.exit(par(op))
 
   for (d in frame_aug_split) {
@@ -368,10 +372,16 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
       if (type %in% c("interval", "cumulative")) {
         ylab <- sprintf("%s incidence", type)
       } else {
-        ylab <- "instantaneous exponential\ngrowth rate, per day"
+        ylab <- expression("growth rate, day"^{-1})
+        ylab_again <- "doubling time, days"
       }
     } else {
-      ylab <- dots$ylab
+      if (type %in% c("interval", "cumulative")) {
+        ylab <- dots$ylab
+      } else {
+        ylab <- dots$ylab[1L]
+        ylab_again <- dots$ylab[2L]
+      }
     }
 
     ## Axis title (main)
@@ -381,7 +391,7 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
       if (any_groups) {
         lv <- as.character(unlist(d[1L, group_by]))
         s <- paste(sprintf("%s = %s", group_by, lv), collapse = ", ")
-        main <- sprintf("%s\n(%s)", main, s)
+        main <- sprintf("%s\n%s", main, s)
       }
     } else {
       main <- dots$main
@@ -423,6 +433,8 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
         ylim <- c(ymin, ymax)
       } else {
         ylim <- range(data$rt, na.rm = TRUE)
+        ylim[1L] <- max(-1, ylim[1L])
+        ylim[2L] <- min(1, ylim[2L])
         ylim <- ylim + c(-1, 1) * 0.04 * diff(ylim)
       }
     } else {
@@ -544,8 +556,8 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
         )
         do.call(daxis, c(l, control$xax))
       } else { # "numeric"
-        l1 <- list(side = 1L)
-        l2 <- lapply(control$xax, "[", 1L)
+        l1 <- list(side = 1)
+        l2 <- lapply(control$xax, `[`, 1L)
         l2$mgp <- c(3, l2$mgp2, 0)
         l2$mgp2 <- NULL
         do.call(axis, c(l1, l2))
@@ -554,25 +566,36 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
 
     ## Axis (y)
     if (!is.null(control$yax)) {
-      l1 <- list(
-        side = 2L,
-        at = axTicks(side = 2L),
-        las = 1
-      )
-      if (max(l1$at) < 1e05) {
-        l1$labels <- TRUE
-        cex_axis_default <- 0.85
-      } else {
-        l1$labels <- get_labels(l1$at)
-        cex_axis_default <- min(0.85, get_cex_axis(l1$at, mex = 0.9 * control$ylab$line - control$yax$mgp2))
-      }
+      l1 <- list(side = 2, las = 1)
       l2 <- control$yax
-      l2$mgp <- c(3, l2$mgp2, 0)
+      l2$mgp <- c(3, control$yax$mgp2, 0)
       l2$mgp2 <- NULL
-      if (is.na(l2$cex.axis)) {
-        l2$cex.axis <- cex_axis_default
+      if (type %in% c("interval", "cumulative")) {
+        l1$at = axTicks(side = 2)
+        if (max(l1$at) >= 1e05) {
+          l1$labels <- get_labels(l1$at)
+          l2$cex.axis <- min(control$yax$cex.axis, get_cex_axis(l1$labels, mex = 0.9 * control$ylab$line - control$yax$mgp2))
+        }
+        do.call(axis, c(l1, l2))
+      } else {
+        do.call(axis, c(l1, l2))
+        if (ylim[2L] > 0) {
+          axis(
+            side = 2,
+            line = 4.5,
+            at = c(0, ylim[2L]),
+            labels = c("", ""),
+            lwd.ticks = 0
+          )
+          td <- c(0.5, 1, 5, 10, 50, 100)
+          l1$at <- c(log(2) / td)
+          l1$labels <- td
+          l2$mgp <- c(3, 4 + control$yax$mgp2, 4.5)
+          l2$lwd <- 0
+          l2$lwd.ticks <- 1
+          do.call(axis, c(l1, l2))
+        }
       }
-      do.call(axis, c(l1, l2))
     }
 
     ## Axis title (x)
@@ -583,8 +606,18 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
 
     ## Axis title (y)
     if (!is.null(control$ylab)) {
-      l <- list(ylab = ylab)
-      do.call(title, c(l, control$ylab))
+      if (type %in% c("interval", "cumulative")) {
+        l <- list(ylab = ylab)
+        do.call(title, c(l, control$ylab))
+      } else {
+        l1 <- list(ylab = ylab)
+        l2 <- control$ylab
+        l2$line <- control$ylab$line[1L]
+        do.call(title, c(l1, l2))
+        l1$ylab <- ylab_again
+        l2$line <- control$ylab$line[2L]
+        do.call(title, c(l1, l2))
+      }
     }
 
     ## Axis title (main)
@@ -594,7 +627,7 @@ plot.egf.main <- function(x, type, xty, log, tol, legend,
     }
 
     ## Legend
-    if (legend) {
+    if (type %in% c("interval", "cumulative") && legend) {
       lx <- par("usr")[2L] + 0.02 * diff(par("usr")[1:2])
       ly <- par("usr")[4L] - 0.02 * diff(par("usr")[3:4])
       if (log) {
@@ -686,7 +719,7 @@ plot.egf.heat <- function(x, xty, per_plot, frame_aug_split, ...) {
   j <- 0L
   while (j < length(frame_aug_split)) {
 
-    layout(matrix(c(1L, 2L, 3L, 4L, 4L, 4L), nrow = 3L), widths = c(6, 1))
+    layout(matrix(c(seq_len(per_plot), rep.int(per_plot + 1L, per_plot)), ncol = 2L), widths = c(6, 1))
     par(mar = c(0, 3, 0.25, 0.5))
 
     ### Loop over panels ==================================
@@ -716,6 +749,14 @@ plot.egf.heat <- function(x, xty, per_plot, frame_aug_split, ...) {
       } # loop over fitting windows
 
       box(lwd = 0.5)
+      text(
+        x = par("usr")[1L] + (0.075 * par("pin")[2L] / par("pin")[1L]) * diff(par("usr")[1:2]),
+        y = par("usr")[4L] - 0.075 * diff(par("usr")[3:4]),
+        labels = names(d_split)[k],
+        adj = c(0, 1),
+        cex = 0.8,
+        col = "white"
+      )
       title(ylab = names(frame_aug_split)[k], line = 1.5)
       if (k == j + 1L) {
         title(

@@ -18,10 +18,10 @@ get_control_default <- function(f, ...) {
     list(
       box = list(bty = "l", lty = 1, lwd = 1, col = "black"),
       xax = list(tcl = -0.2, mgp2 = c(0.25, 1.25), col.axis = "black", cex.axis = c(0.85, 1.15), font.axis = 1),
-      yax = list(tcl = -0.5, mgp2 = 0.7, col.axis = "black", cex.axis = NA, font.axis = 1),
+      yax = list(tcl = -0.5, mgp2 = 0.7, col.axis = "black", cex.axis = 0.85, font.axis = 1),
       xlab = list(line = 3, adj = 0.5, col.lab = "black", cex.lab = 1, font.lab = 1),
-      ylab = list(line = switch(type, rt1 = 3, 4), adj = 0.5, col.lab = "black", cex.lab = 1, font.lab = 1),
-      main = list(line = 1, adj = 0.5, col.main = "black", cex.main = 1, font.main = 2),
+      ylab = list(line = switch(type, rt1 = c(2.5, 6.5), 4), adj = 0.5, col.lab = "black", cex.lab = 1, font.lab = 1),
+      main = list(line = 0.25, adj = 0, col.main = "black", cex.main = 1, font.main = 2),
       points_main = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
       points_short = list(pch = 1, col = "#882255", bg = NA, cex = 1),
       points_long = list(pch = 16, col = "#882255", bg = NA, cex = 1),

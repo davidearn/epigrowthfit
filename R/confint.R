@@ -592,8 +592,7 @@ plot.egf_confint <- function(x,
               y = par("usr")[4L] - 0.075 * diff(par("usr")[3:4]),
               labels = names(d_split)[k],
               adj = c(0, 1),
-              cex = 0.8,
-              font = 1
+              cex = 0.8
             )
           }
         } # loop over panels
