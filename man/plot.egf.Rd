@@ -15,7 +15,7 @@
   bands = FALSE,
   control = NULL,
   per_plot = 6L,
-  between_panels = 0.25,
+  bw_panels = 0.25,
   ...
 )
 }
@@ -55,7 +55,7 @@ values are displayed. Longer run times can be anticipated in this
 case. Unused by \code{type = "rt2"}.}
 
 \item{control}{A list of lists defining the appearance of various plot elements,
-or otherwise \code{NULL} (see Details). Unused by \code{type = "rt2"}.}
+or otherwise \code{NULL} (see Details).}
 
 \item{per_plot}{A positive integer. One plot will display this many time series
 when \code{type = "rt2"}.}
@@ -69,6 +69,9 @@ of the form \code{"\%f"}, where \code{f} is the name of any factor present
 in \code{group_by}, are replaced in a given plot by the factor level
 relevant to that plot. Use \code{"\\n"} within \code{main} to separate
 title from subtitle.}
+
+\item{bw_panel}{A non-negative number. The spacing between panels as a number of
+margin lines used when \code{type = "rt2"}.}
 }
 \value{
 \code{NULL} (invisibly).
@@ -131,6 +134,12 @@ the appearance of text giving initial doubling times and
 text above highlighted points. Only \code{col} and \code{cex} are
 used by \code{text_td}. \code{text_hl} also uses \code{font}, \code{pos} and
 \code{offset}.
+}
+\item{\code{heat}}{
+Named lists of arguments to \code{\link[grDevices:colorRamp]{grDevices::colorRamp()}},
+affecting the color palette used when \code{type = "rt2"}.
+(Currently, this is the only control parameter for
+\code{type = "rt2"}.)
 }
 }
 

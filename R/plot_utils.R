@@ -246,6 +246,13 @@ daxis <- function(left = NULL, right = NULL, refdate, plot = TRUE,
     }
     font.axis <- rep_len(font.axis, 2L)
 
+    ## Axis line
+    axis(
+      side = 1L,
+      at = c(left, right),
+      labels = c("", ""),
+      lwd.ticks = 0
+    )
     ## Minor axis
     axis(
       side = 1L,
@@ -253,6 +260,8 @@ daxis <- function(left = NULL, right = NULL, refdate, plot = TRUE,
       labels = labels_minor,
       xpd = TRUE,
       gap.axis = 0,
+      lwd = 0,
+      lwd.ticks = 1,
       tcl = tcl[1L],
       mgp = c(3, mgp2[1L], 0),
       col.axis = col.axis[1L],
@@ -267,7 +276,7 @@ daxis <- function(left = NULL, right = NULL, refdate, plot = TRUE,
         labels = labels_major,
         xpd = TRUE,
         gap.axis = 0,
-        tick = FALSE,
+        lwd = 0,
         mgp = c(3, mgp2[2L], 0),
         col.axis = col.axis[2L],
         cex.axis = cex.axis[2L],

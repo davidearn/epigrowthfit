@@ -39,10 +39,13 @@
 #'   case. Unused by `type = "rt2"`.
 #' @param control
 #'   A list of lists defining the appearance of various plot elements,
-#'   or otherwise `NULL` (see Details). Unused by `type = "rt2"`.
+#'   or otherwise `NULL` (see Details).
 #' @param per_plot
 #'   A positive integer. One plot will display this many time series
 #'   when `type = "rt2"`.
+#' @param bw_panel
+#'   A non-negative number. The spacing between panels as a number of
+#'   margin lines used when `type = "rt2"`.
 #' @param ...
 #'   Optional arguments specifying additional graphical parameters
 #'   to be recycled for all plots. Currently, only `xlim`, `ylim`,
@@ -113,6 +116,12 @@
 #'   used by `text_td`. `text_hl` also uses `font`, `pos` and
 #'   `offset`.
 #' }
+#' \item{`heat`}{
+#'   Named lists of arguments to [grDevices::colorRamp()],
+#'   affecting the color palette used when `type = "rt2"`.
+#'   (Currently, this is the only control parameter for
+#'   `type = "rt2"`.)
+#' }
 #' }
 #'
 #' If `control = NULL`, then it defaults to
@@ -139,7 +148,7 @@ plot.egf <- function(x,
                      bands = FALSE,
                      control = NULL,
                      per_plot = 6L,
-                     between_panels = 0.25,
+                     bw_panels = 0.25,
                      ...) {
   type <- match.arg(type)
   interaction0 <- function(...) interaction(..., drop = TRUE, sep = ":")
@@ -201,6 +210,14 @@ plot.egf <- function(x,
   ## Drop unused levels
   frame_aug_split <- lapply(frame_aug_split, droplevels)
 
+  ## Order data frames according to `subset`
+  if (any_groups && !is.null(subset) && any(group_by %in% names(subset))) {
+    subset <- subset[intersect(group_by, names(subset))]
+    frame_red[names(subset)] <- Map(factor, x = frame_red[names(subset)], levels = subset)
+    ord <- order(match(names(frame_aug_split), levels(interaction0(frame_red[names(subset)]))))
+    frame_aug_split <- frame_aug_split[ord]
+  }
+
   ## Validate `control` structure (quietly)
   if (is.null(control) || !inherits(control, "list") || is.null(names(control))) {
     control <- get_control_default("plot.egf", type = type)
@@ -232,7 +249,7 @@ plot.egf <- function(x,
   } else if (type %in% c("rt2")) {
     plot.egf.heat(x,
       per_plot = per_plot,
-      between_panels = between_panels,
+      bw_panels = bw_panels,
       control = control,
       frame_aug_split = frame_aug_split,
       ...
@@ -305,7 +322,7 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
     if (type %in% c("interval", "cumulative")) {
       ylab <- sprintf("%s incidence", type)
     } else {
-      ylab <- expression("growth rate, day"^{-1})
+      ylab <- "growth rate, per day"
       ylab_again <- "doubling time, days"
     }
   } else {
@@ -321,13 +338,13 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
   group_by <- attr(x$frame, "group_by")
   if (is.null(dots$main)) {
     s <- switch(x$curve, gompertz = "Gompertz", richards = "Richards", x$curve)
-    main <- sprintf("Fitted %s model", s)
+    main_template <- sprintf("Fitted %s model", s)
     if (length(group_by) > 0L) {
       s <- paste(sprintf("%s = %%%s", group_by, group_by), collapse = ", ")
-      main <- sprintf("%s\n%s", main, s)
+      main_template <- sprintf("%s\n%s", main_template, s)
     }
   } else {
-    main <- dots$main
+    main_template <- dots$main
   }
 
   ### Loop over plots =====================================
@@ -389,11 +406,13 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
                 by = switch(type, interval = m, 1))
 
     ## Title with flags substituted
-    if (is.character(main)) {
+    if (is.character(main_template)) {
       ## Replace "%factor_name" with "level_name"
       for (s in group_by) {
-        main <- gsub(sprintf("%%%s", s), as.character(d[1L, s]), main, fixed = TRUE)
+        main <- gsub(sprintf("%%%s", s), as.character(d[1L, s]), main_template, fixed = TRUE)
       }
+    } else {
+      main <- main_template
     }
 
     ## Axis limits (x)
@@ -621,7 +640,7 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
           )
           do.call(title, c(l, control$ylab))
           if (usr[2L] > 0) {
-            rsw <- (strwidth(ylab_again, units = "inches", cex = control$ylab$cex.lab, font = control$ylab$font.lab) * diff(ylim) / pin[2L]) / (0.8 * (usr[2L] - max(0, usr[1L])))
+            rsw <- (strwidth(ylab_again, units = "inches", cex = control$ylab$cex.lab, font = control$ylab$font.lab) * diff(ylim) / pin[2L]) / (0.8 * (usr[4L] - max(0, usr[3L])))
             text(
               ## FIXME: why 7.5 instead of 5?
               x = usr[1L] - cxy[1L] * (7.5 + max(strwidth(td, units = "inches", cex = control$yax$cex.axis, font = control$yax$font.axis)) / csi + control$yax$mgp2),
@@ -703,10 +722,16 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
 
 #' @import graphics
 #' @importFrom grDevices colorRamp rgb
-plot.egf.heat <- function(x, per_plot, between_panels,
+plot.egf.heat <- function(x, per_plot, bw_panels,
                           control, frame_aug_split, ...) {
   dots <- list(...)
   stop_if_not_positive_integer(per_plot)
+  stop_if_not(
+    is.numeric(bw_panels),
+    length(bw_panels) == 1L,
+    bw_panels >= 0,
+    m = "`bw_panels` must be a non-negative number."
+  )
 
   group_by <- attr(x$frame, "group_by")
   refdate <- do.call(min, lapply(frame_aug_split, `[`, 1L, 1L))
@@ -749,7 +774,7 @@ plot.egf.heat <- function(x, per_plot, between_panels,
   while (j < length(frame_aug_split)) {
 
     layout(matrix(c(seq_len(per_plot), rep.int(per_plot + 1L, per_plot)), ncol = 2L), widths = c(4, 1))
-    par(mar = c(0, 1.5, between_panels, 0.5))
+    par(mar = c(0, 1.5, bw_panels, 0.5))
 
     ### Loop over panels ==================================
 
@@ -874,7 +899,6 @@ plot.egf.heat <- function(x, per_plot, between_panels,
       adj = c(0, 0),
       xpd = NA
     )
-
 
     j <- j + per_plot
   } # loop over plots
