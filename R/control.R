@@ -19,10 +19,9 @@ get_control_default <- function(f, ...) {
       box = list(bty = "l", lty = 1, lwd = 1, col = "black"),
       xax = list(tcl = -0.2, mgp2 = c(0.25, 1.25), col.axis = "black", cex.axis = c(0.85, 1.15), font.axis = 1),
       yax = list(tcl = -0.5, mgp2 = 0.7, col.axis = "black", cex.axis = 0.85, font.axis = 1),
-      xlab = list(line = 3, adj = 0.5, col.lab = "black", cex.lab = 1, font.lab = 1),
-      ylab = list(line = switch(type, rt1 = c(2.5, 6.5), 4), adj = 0.5, col.lab = "black", cex.lab = 1, font.lab = 1),
-      main = list(line = 0.25, adj = 0, col.main = "black", cex.main = 1, font.main = 2),
-      points_main = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
+      ylab = list(adj = 0.5, col.lab = "black", cex.lab = 1, font.lab = 1),
+      main = list(adj = 0, col.main = "black", cex.main = c(1, 0.75), font.main = 2),
+      points = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD", cex = 1),
       points_short = list(pch = 1, col = "#882255", bg = NA, cex = 1),
       points_long = list(pch = 16, col = "#882255", bg = NA, cex = 1),
       lines = list(lty = 1, lwd = 2.5, col = "#44AA99"),
@@ -30,7 +29,7 @@ get_control_default <- function(f, ...) {
       windows = list(col = "#DDCC7740", border = NA),
       bands = list(col = "#44AA9960", border = NA),
       text_hl = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
-      text_td = list(adj = c(0, 0.5), pos = 4, offset = 1, col = "black", cex = 0.7, font = 1)
+      text_td = list(col = "black", cex = 0.7)
     )
   } else {
     stop(sprintf("No control default implemented for function name `%s`.", f))

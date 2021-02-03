@@ -8,7 +8,6 @@
   x,
   type = c("interval", "cumulative", "rt1", "rt2"),
   subset = NULL,
-  xty = c("date", "numeric"),
   log = TRUE,
   tol = 0,
   legend = FALSE,
@@ -22,20 +21,15 @@
 \arguments{
 \item{x}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
-\item{type}{A character string indicating a type of plot. One of
+\item{type}{A character string indicating a type of plot. Options are
 \code{"interval"} (interval incidence),
 \code{"cumulative"} (cumulative incidence),
-\code{"rt1"}, \code{"rt2"} (instantaneous exponential growth rate).}
+\code{"rt1"}, and \code{"rt2"} (instantaneous exponential growth rate).}
 
 \item{subset}{A named list of atomic vectors with elements specifying levels of
 factors in \code{x$frame}. Only the subset of fitting windows belonging
 to these levels is plotted. Use \code{NULL} (the default) to plot all
 fitting windows or if \code{x$frame} has no factors.}
-
-\item{xty}{A character string. If \code{"date"}, then ticks on the time axis are
-placed at the start of calendar days, months, or years (depending
-on time scale). If \code{"numeric"}, then time is displayed as a number
-of days since an initial date.}
 
 \item{log}{A logical scalar. If \code{TRUE}, then the dependent variable is plotted
 on a logarithmic scale. Unused by \code{type \%in\% c("rt1", "rt2")}.}
@@ -49,7 +43,7 @@ where \code{m = median(diff(date))}. In both cases, the value of
 all deviations from \code{m}. Assign \code{Inf} to disable highlighting.}
 
 \item{legend}{A logical scalar. If \code{TRUE}, then a legend is displayed in the
-right margin. Unused by \code{type = "rt2"}.}
+right margin. Unused by \code{type != "rt2"}.}
 
 \item{level}{A number in the interval (0,1). The confidence level represented
 by confidence intervals on doubling times and confidence bands on
@@ -67,12 +61,13 @@ when \code{type = "rt2"}.}
 
 \item{...}{Optional arguments specifying additional graphical parameters
 to be recycled for all plots. Currently, only \code{xlim}, \code{ylim},
-\code{xlab}, \code{ylab}, and \code{main} are used; see \code{\link[graphics:plot.default]{graphics::plot()}}.
-\code{xlim} can be numeric, Date, or character coercible to Date
-with \code{as.Date(xlim)}. If \code{main} is a character string, then
-flags of the form \code{"\%f"}, where \code{f} is the name of any factor
-present in \code{group_by}, are replaced in a given plot by the
-factor level relevant to that plot.}
+\code{ylab}, and \code{main} are used; see \code{\link[graphics:plot.default]{graphics::plot()}}. \code{xlim}
+can be numeric, Date, or character coercible to Date with
+\code{as.Date(xlim)}. If \code{main} is a character string, then flags
+of the form \code{"\%f"}, where \code{f} is the name of any factor present
+in \code{group_by}, are replaced in a given plot by the factor level
+relevant to that plot. Use \code{"\\n"} within \code{main} to separate
+title from subtitle.}
 }
 \value{
 \code{NULL} (invisibly).
@@ -88,29 +83,28 @@ of the elements below:
 \item{\code{box}}{
 A named list of arguments to \code{\link[graphics:box]{graphics::box()}}, affecting
 the appearance of the box drawn around the plot region.
-Currently, only \code{bty}, \code{lty}, \code{lwd}, and \code{col} are used.
+Only \code{bty}, \code{lty}, \code{lwd}, and \code{col} are used.
 }
 \item{\code{xax}, \code{yax}}{
-Named lists of arguments to \code{\link[graphics:axis]{graphics::axis()}}, affecting
-the appearance of the bottom and left axes. Currently, only
-\code{tcl}, \code{mgp2}, \code{col.axis}, \code{cex.axis}, and \code{font.axis} are
-used, where \code{mgp2} is the second component of the usual \code{mgp}
-argument. If \code{xty = "date"}, then the appearance of the minor
-(day or month) and major (month or year) bottom axes can be
-controlled separately by listing vectors of length 2.
-For example, setting \code{xax = list(col.axis = c("black", "red"))}
+Named lists of arguments to \code{\link[graphics:axis]{graphics::axis()}}, affecting the
+appearance of the bottom and left axes. Only \code{tcl}, \code{mgp2},
+\code{col.axis}, \code{cex.axis}, and \code{font.axis} are used, where \code{mgp2}
+is the second component of the usual \code{mgp} argument. The
+appearance of the minor (day or month) and major (month or year)
+bottom axes can be controlled separately by listing vectors of
+length 2. For example, setting
+\code{xax = list(col.axis = c("black", "red"))}
 will make the minor axis black and major axis red.
 }
-\item{\code{xlab}, \code{ylab}, \code{main}}{
+\item{\code{ylab}, \code{main}}{
 Named lists of arguments to \code{\link[graphics:title]{graphics::title()}}, affecting
-the appearance of axis titles. Currently, only \code{line}, \code{adj},
-\code{col.lab}, \code{cex.lab}, \code{font.lab}, \code{col.main}, \code{cex.main},
-and \code{font.main} are used.
+the appearance of axis titles. Only \code{adj}, \code{col.lab}, \code{cex.lab},
+\code{font.lab}, \code{col.main}, \code{cex.main}, and \code{font.main} are used.
 }
-\item{\code{points_main}}{
+\item{\code{points}}{
 A named list of arguments to \code{\link[graphics:points]{graphics::points()}}, affecting
-the appearance of observed data. Currently, only \code{pch}, \code{col},
-\code{bg} and \code{cex} are used.
+the appearance of observed data. Only \code{pch}, \code{col}, \code{bg} and
+\code{cex} are used.
 }
 \item{\code{points_short}, \code{points_long}}{
 Alternatives to \code{points_main} used to highlight certain points
@@ -118,8 +112,8 @@ when \code{type = "interval"}. See argument \code{tol}.
 }
 \item{\code{lines}}{
 A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}}, affecting
-the appearance of the predicted incidence curve. Currently,
-only \code{lty}, \code{lwd}, and \code{col} are used.
+the appearance of predicted curves. Only \code{lty}, \code{lwd}, and
+\code{col} are used.
 }
 \item{\code{zero}}{
 A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}}, affecting
@@ -128,15 +122,14 @@ the appearance of the line drawn at \code{y = 0} when \code{type = "rt1"}.
 \item{\code{windows}, \code{bands}}{
 Named lists of arguments to \code{\link[graphics:polygon]{graphics::polygon()}}, affecting
 the appearance of fitting windows and confidence bands on
-predicted incidence curves. Currently, only \code{col} and \code{border}
-are used.
+predicted incidence curves. Only \code{col} and \code{border} are used.
 }
 \item{\code{text_td}, \code{text_hl}}{
 Named lists of arguments to \code{\link[graphics:text]{graphics::text()}}, affecting
-the appearance of text giving doubling times and text above
-highlighted points when \code{type = "interval"}. Currently, only
-\code{adj} (\code{text_td} only), \code{pos}, \code{offset}, \code{col}, \code{cex}, and
-\code{font} are used.
+the appearance of text giving initial doubling times and
+text above highlighted points. Only \code{col} and \code{cex} are
+used by \code{text_td}. \code{text_hl} also uses \code{font}, \code{pos} and
+\code{offset}.
 }
 }
 
