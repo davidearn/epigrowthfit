@@ -139,6 +139,7 @@ plot.egf <- function(x,
                      bands = FALSE,
                      control = NULL,
                      per_plot = 6L,
+                     between_panels = 0.25,
                      ...) {
   type <- match.arg(type)
   interaction0 <- function(...) interaction(..., drop = TRUE, sep = ":")
@@ -200,6 +201,22 @@ plot.egf <- function(x,
   ## Drop unused levels
   frame_aug_split <- lapply(frame_aug_split, droplevels)
 
+  ## Validate `control` structure (quietly)
+  if (is.null(control) || !inherits(control, "list") || is.null(names(control))) {
+    control <- get_control_default("plot.egf", type = type)
+  } else {
+    control_default <- get_control_default("plot.egf", type = type)
+    for (pe in intersect(names(control), names(control_default))) {
+      if (is.null(control[[pe]])) {
+        control_default[pe] <- list(NULL)
+      } else if (inherits(control[[pe]], "list") && !is.null(names(control[[pe]]))) {
+        s <- intersect(names(control[[pe]]), names(control_default[[pe]]))
+        control_default[[pe]][s] <- control[[pe]][s]
+      }
+    }
+    control <- control_default
+  }
+
   if (type %in% c("interval", "cumulative", "rt1")) {
     plot.egf.main(x,
       type = type,
@@ -215,6 +232,8 @@ plot.egf <- function(x,
   } else if (type %in% c("rt2")) {
     plot.egf.heat(x,
       per_plot = per_plot,
+      between_panels = between_panels,
+      control = control,
       frame_aug_split = frame_aug_split,
       ...
     )
@@ -259,20 +278,6 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
   }
   stop_if_not_tf(bands)
   stop_if_not_in_0_1(level)
-  if (is.null(control) || !inherits(control, "list") || is.null(names(control))) {
-    control <- get_control_default("plot.egf", type = type)
-  } else {
-    control_default <- get_control_default("plot.egf", type = type)
-    for (pe in intersect(names(control), names(control_default))) {
-      if (is.null(control[[pe]])) {
-        control_default[pe] <- list(NULL)
-      } else if (inherits(control[[pe]], "list") && !is.null(names(control[[pe]]))) {
-        s <- intersect(names(control[[pe]]), names(control_default[[pe]]))
-        control_default[[pe]][s] <- control[[pe]][s]
-      }
-    }
-    control <- control_default
-  }
 
   ### Set-up ==============================================
 
@@ -698,18 +703,17 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
 
 #' @import graphics
 #' @importFrom grDevices colorRamp rgb
-plot.egf.heat <- function(x, per_plot, frame_aug_split, ...) {
+plot.egf.heat <- function(x, per_plot, between_panels,
+                          control, frame_aug_split, ...) {
   dots <- list(...)
   stop_if_not_positive_integer(per_plot)
 
   group_by <- attr(x$frame, "group_by")
-  any_groups <- (length(group_by) > 0L)
-
   refdate <- do.call(min, lapply(frame_aug_split, `[`, 1L, 1L))
   xlim <- c(0, days(do.call(max, lapply(frame_aug_split, function(d) d[nrow(d), 1L])), since = refdate))
   ylim <- c(0, 1)
 
-  g <- function(d) {
+  f <- function(d) {
     index <- d$.index
     i12 <- vapply(levels(index), function(s) range(which(index == s)), integer(2L))
     i1 <- i12[1L, ]
@@ -717,7 +721,7 @@ plot.egf.heat <- function(x, per_plot, frame_aug_split, ...) {
     t1 <- days(d[i1, 1L], since = refdate)
     t2 <- days(d[i2, 1L], since = refdate)
 
-    f <- function(i1, t1, t2) {
+    g <- function(i1, t1, t2) {
       p <- predict(x,
         time = seq.int(from = 0, to = t2 - t1, by = 1),
         varname = "log_rt",
@@ -729,25 +733,23 @@ plot.egf.heat <- function(x, per_plot, frame_aug_split, ...) {
       p$estimate <- exp(p$estimate)
       p
     }
-    Map(f, i1 = i1, t1 = t1, t2 = t2)
+    Map(g, i1 = i1, t1 = t1, t2 = t2)
   }
-  pred <- lapply(frame_aug_split, g)
+  pred <- lapply(frame_aug_split, f)
   rt_max <- do.call(max, lapply(do.call(c, pred), function(d) max(d$estimate, na.rm = TRUE)))
 
   ### Loop over plots =====================================
 
-  op <- par(oma = c(2.5, 0, 3, 0))
+  op <- par(oma = c(2.5, 0, 3.5, 0))
   on.exit(par(op))
 
-  pal <- colorRamp(c("#364B9A", "#4A7BB7", "#6EA6CD", "#98CAE1",
-                     "#C2E4EF", "#EAECCC", "#FEDA8B", "#FDB366",
-                     "#F67E4B", "#DD3D2D", "#A50026"))
+  pal <- do.call(colorRamp, control$heat)
 
   j <- 0L
   while (j < length(frame_aug_split)) {
 
-    layout(matrix(c(seq_len(per_plot), rep.int(per_plot + 1L, per_plot)), ncol = 2L), widths = c(6, 1))
-    par(mar = c(0, 3, 0.25, 0.5))
+    layout(matrix(c(seq_len(per_plot), rep.int(per_plot + 1L, per_plot)), ncol = 2L), widths = c(4, 1))
+    par(mar = c(0, 1.5, between_panels, 0.5))
 
     ### Loop over panels ==================================
 
@@ -775,22 +777,21 @@ plot.egf.heat <- function(x, per_plot, frame_aug_split, ...) {
         }
       } # loop over fitting windows
 
-      box(lwd = 0.5)
       text(
-        x = par("usr")[1L] + (0.075 * par("pin")[2L] / par("pin")[1L]) * diff(par("usr")[1:2]),
+        x = par("usr")[1L] + diff(par("usr")[1:2]) * (0.075 * par("pin")[2L] / par("pin")[1L]),
         y = par("usr")[4L] - 0.075 * diff(par("usr")[3:4]),
-        labels = names(d_split)[k],
+        labels = names(frame_aug_split)[k],
         adj = c(0, 1),
-        cex = 0.8,
+        cex = 1,
+        font = 2,
         col = "white"
       )
-      title(ylab = names(frame_aug_split)[k], line = 1.5)
       if (k == j + 1L) {
         title(
-          main = sprintf("Instantaneous exponential growth rate\nper day, by %s", paste(group_by, collapse = ":")),
+          main = sprintf("Instantaneous exponential growth rate, by %s", paste(group_by, collapse = ":")),
           line = 0.5,
           adj = 0,
-          cex.main = 1.2,
+          cex.main = 1.3,
           xpd = NA
         )
       }
@@ -802,10 +803,14 @@ plot.egf.heat <- function(x, per_plot, frame_aug_split, ...) {
       refdate = refdate,
       tcl = -0.2,
       mgp2 = c(0.25, 1.25),
-      cex.axis = c(0.85, 1.15)
+      cex.axis = c(0.85, 1.15) + 0.1
     )
 
-    par(mar = c(0, 1, 0.25, 3))
+    for (l in seq_len((per_plot - (k %% per_plot)) %% per_plot)) {
+      plot.new()
+    }
+
+    par(mar = c(0, 1, 0.25, 7))
     plot.new()
     dy2 <- 0.005
     plot.window(
@@ -824,11 +829,52 @@ plot.egf.heat <- function(x, per_plot, frame_aug_split, ...) {
     }
     axis(
       side = 4,
+      at = par("usr")[3:4],
+      labels = c("", ""),
+      mgp = c(3, 0.7, 0),
+      lwd.ticks = 0
+    )
+    axis(
+      side = 4,
       mgp = c(3, 0.7, 0),
       las = 1,
-      col = NA,
-      col.ticks = "black"
+      lwd = 0,
+      lwd.ticks = 1
     )
+    text(
+      x = par("usr")[2L] + 0 * par("cxy")[1L],
+      y = par("usr")[4L] + 0.5 * par("cxy")[2L],
+      labels = "growth\nrate,\nper day",
+      cex = 0.9,
+      adj = c(0, 0),
+      xpd = NA
+    )
+    td <- c(0.5, 1, 5, 10, 50, 100)
+    axis(
+      side = 4,
+      at = par("usr")[3:4],
+      labels = c("", ""),
+      mgp = c(3, 4.7, 4),
+      lwd.ticks = 0
+    )
+    axis(
+      side = 4,
+      at = log(2) / td,
+      labels = td,
+      mgp = c(3, 4.7, 4),
+      las = 1,
+      lwd = 0,
+      lwd.ticks = 1
+    )
+    text(
+      x = par("usr")[2L] + 3.5 * par("cxy")[1L],
+      y = par("usr")[4L] + 0.5 * par("cxy")[2L],
+      labels = "doubling\ntime,\ndays",
+      cex = 0.9,
+      adj = c(0, 0),
+      xpd = NA
+    )
+
 
     j <- j + per_plot
   } # loop over plots

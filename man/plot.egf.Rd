@@ -15,6 +15,7 @@
   bands = FALSE,
   control = NULL,
   per_plot = 6L,
+  between_panels = 0.25,
   ...
 )
 }

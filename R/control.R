@@ -29,7 +29,11 @@ get_control_default <- function(f, ...) {
       windows = list(col = "#DDCC7740", border = NA),
       bands = list(col = "#44AA9960", border = NA),
       text_hl = list(pos = 3, offset = 0.3, col = "#BBBBBB", cex = 0.7, font = 2),
-      text_td = list(col = "black", cex = 0.7)
+      text_td = list(col = "black", cex = 0.7),
+      heat = list(colors = c("#364B9A", "#4A7BB7", "#6EA6CD", "#98CAE1",
+                             "#C2E4EF", "#EAECCC", "#FEDA8B", "#FDB366",
+                             "#F67E4B", "#DD3D2D", "#A50026"),
+                  bias = 1, space = "rgb", interpolate = "linear")
     )
   } else {
     stop(sprintf("No control default implemented for function name `%s`.", f))
