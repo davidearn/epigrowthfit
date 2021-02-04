@@ -69,23 +69,29 @@ dev.off()
 
 subset <- list(region = census_divisions)
 subset <- list(region = "TORONTO")
+xlim <- c("2020-03-01", "2021-02-02")
 
 pdf("ontario_incidence.pdf", width = 8, height = 4, onefile = TRUE)
 plot(object,
   type = "interval",
   bands = TRUE,
   subset = subset,
-  tol = Inf
+  tol = Inf,
+  xlim = xlim,
+  ylab = "reported incidence",
+  main = "Daily reported COVID-19 incidence\n%region"
 )
 dev.off()
 
 pdf("ontario_rt1.pdf", width = 8, height = 4, onefile = TRUE)
 plot(object,
   type = "rt1",
-  bands =  TRUE,
+  bands = TRUE,
   subset = subset,
-  ylim = c(0, 0.2),
-  control = list(points = NULL)
+  xlim = xlim,
+  ylim = c(0, log(2) / 2.5),
+  main = "Instantaneous exponential growth rate\n%region",
+  control = list(points = NULL, zero = NULL)
 )
 dev.off()
 
@@ -93,7 +99,8 @@ pdf("ontario_rt2.pdf", width = 6, height = 4, onefile = TRUE)
 plot(object,
   type = "rt2",
   per_plot = 12,
-  bw_plot = 0,
+  bw_panels = 0,
   subset = subset,
-  control = list(heat = list(bias = 2))
+  control = list(colorRamp = list(bias = 2))
 )
+dev.off()

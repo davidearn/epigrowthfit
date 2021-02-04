@@ -35,7 +35,7 @@
 #'   predicted values. Unused by `type = "rt2"`.
 #' @param bands
 #'   A logical scalar. If `TRUE`, then confidence bands on predicted
-#'   values are displayed. Longer run times can be anticipated in this
+#'   curves are displayed. Longer run times can be anticipated in this
 #'   case. Unused by `type = "rt2"`.
 #' @param control
 #'   A list of lists defining the appearance of various plot elements,
@@ -43,7 +43,7 @@
 #' @param per_plot
 #'   A positive integer. One plot will display this many time series
 #'   when `type = "rt2"`.
-#' @param bw_panel
+#' @param bw_panels
 #'   A non-negative number. The spacing between panels as a number of
 #'   margin lines used when `type = "rt2"`.
 #' @param ...
@@ -62,80 +62,74 @@
 #'
 #' @details
 #' `control` must be `NULL` or a named list containing some subset
-#' of the elements below:
+#' of the elements ("control parameters") below:
 #'
 #' \describe{
 #' \item{`box`}{
 #'   A named list of arguments to [graphics::box()], affecting
 #'   the appearance of the box drawn around the plot region.
-#'   Only `bty`, `lty`, `lwd`, and `col` are used.
 #' }
 #' \item{`xax`, `yax`}{
 #'   Named lists of arguments to [graphics::axis()], affecting the
-#'   appearance of the bottom and left axes. Only `tcl`, `mgp2`,
-#'   `col.axis`, `cex.axis`, and `font.axis` are used, where `mgp2`
-#'   is the second component of the usual `mgp` argument. The
-#'   appearance of the minor (day or month) and major (month or year)
-#'   bottom axes can be controlled separately by listing vectors of
-#'   length 2. For example, setting
-#'   `xax = list(col.axis = c("black", "red"))`
-#'   will make the minor axis black and major axis red.
+#'   appearance of the bottom and left axes. Option `mgp2` defines
+#'   the second component of the usual `mgp` argument. The minor
+#'   (day or month) and major (month or year) bottom axes can be
+#'   controlled separately by listing vectors of length 2.
+#'   For example, setting `xax = list(col.axis = c("black", "red"))`
+#'   makes the minor axis black and major axis red.
 #' }
-#' \item{`ylab`, `main`}{
+#' \item{`main`, `ylab`}{
 #'   Named lists of arguments to [graphics::title()], affecting
-#'   the appearance of axis titles. Only `adj`, `col.lab`, `cex.lab`,
-#'   `font.lab`, `col.main`, `cex.main`, and `font.main` are used.
+#'   the appearance of axis titles.
 #' }
-#' \item{`points`}{
-#'   A named list of arguments to [graphics::points()], affecting
-#'   the appearance of observed data. Only `pch`, `col`, `bg` and
-#'   `cex` are used.
+#' \item{`rect`}{
+#'   A named list of arguments to [graphics::rect()], affecting
+#'   the appearance of fitting windows.
 #' }
-#' \item{`points_short`, `points_long`}{
-#'   Alternatives to `points_main` used to highlight certain points
-#'   when `type = "interval"`. See argument `tol`.
+#' \item{`polygon`}{
+#'   A named list of arguments to [graphics::polygon()], affecting
+#'   the appearance of confidence bands on predicted curves.
 #' }
 #' \item{`lines`}{
 #'   A named list of arguments to [graphics::lines()], affecting
-#'   the appearance of predicted curves. Only `lty`, `lwd`, and
-#'   `col` are used.
+#'   the appearance of predicted curves.
 #' }
-#' \item{`zero`}{
-#'   A named list of arguments to [graphics::lines()], affecting
+#' \item{`points`}{
+#'   A named list of arguments to [graphics::points()], affecting
+#'   the appearance of observed data.
+#' }
+#' \item{`points_short`, `points_long`}{
+#'   Alternatives to `points` used to highlight certain points
+#'   when `type = "interval"`. See argument `tol`.
+#' }
+#' \item{`text_short_long`}{
+#'   A named list of arguments to [graphics::text()], affecting
+#'   the appearance of text above highlighted points when
+#'   `type = "interval"`. See argument `tol`.
+#' }
+#' \item{`text_tdoubling`}{
+#'   A named list of arguments to [graphics::text()], affecting
+#'   the appearance of printed initial doubling times.
+#' }
+#' \item{`abline`}{
+#'   A named list of arguments to [graphics::abline()], affecting
 #'   the appearance of the line drawn at `y = 0` when `type = "rt1"`.
 #' }
-#' \item{`windows`, `bands`}{
-#'   Named lists of arguments to [graphics::polygon()], affecting
-#'   the appearance of fitting windows and confidence bands on
-#'   predicted incidence curves. Only `col` and `border` are used.
-#' }
-#' \item{`text_td`, `text_hl`}{
-#'   Named lists of arguments to [graphics::text()], affecting
-#'   the appearance of text giving initial doubling times and
-#'   text above highlighted points. Only `col` and `cex` are
-#'   used by `text_td`. `text_hl` also uses `font`, `pos` and
-#'   `offset`.
-#' }
-#' \item{`heat`}{
-#'   Named lists of arguments to [grDevices::colorRamp()],
+#' \item{`colorRamp`}{
+#'   A named list of arguments to [grDevices::colorRamp()],
 #'   affecting the color palette used when `type = "rt2"`.
 #'   (Currently, this is the only control parameter for
 #'   `type = "rt2"`.)
 #' }
 #' }
 #'
-#' If `control = NULL`, then it defaults to
-#' `get_control_default("plot.egf", type = type)`.
+#' A catalogue of modifiable options for each control parameter can
+#' be obtained with `get_control_default("plot.egf", type = type)`.
+#' Unspecified options take their values in this list. Unsupported
+#' options are discarded.
 #'
-#' If `control` is a list and one of its elements is a partially
-#' specified list
-#' (e.g., `box = list(bty)` rather than `box = c(bty, lty, lwd, col)`),
-#' then that element is filled out with values taken from
-#' `get_control_default("plot.egf", type = type)`.
-#'
-#' If `control` is a list and one if its elements is `NULL`
-#' (e.g., `box = NULL`), then the corresponding plot element
-#' is suppressed.
+#' To suppress a plot element, set the corresponding control parameter
+#' to `NULL`, as in `control = list(box = NULL)`.
 #'
 #' @export
 plot.egf <- function(x,
@@ -307,13 +301,13 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
   )
   formula <- reformulate("time", varname)
 
-  ## Confidence intervals on doubling times
-  show_td <- (
+  ## Confidence intervals on initial doubling times
+  show_tdoubling <- (
     type %in% c("interval", "rt1") &&
     x$curve %in% c("exponential", "logistic", "richards") &&
-    !is.null(control$text_td)
+    !is.null(control$text_tdoubling)
   )
-  if (show_td) {
+  if (show_tdoubling) {
     ci <- confint(x, parm = "tdoubling", level = level, method = "wald")
   }
 
@@ -337,8 +331,12 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
   ## Axis title (main)
   group_by <- attr(x$frame, "group_by")
   if (is.null(dots$main)) {
-    s <- switch(x$curve, gompertz = "Gompertz", richards = "Richards", x$curve)
-    main_template <- sprintf("Fitted %s model", s)
+    if (type %in% c("interval", "cumulative")) {
+      s <- switch(x$curve, gompertz = "Gompertz", richards = "Richards", x$curve)
+      main_template <- sprintf("Fitted %s model", s)
+    } else {
+      main_template <- "Instantaneous exponential growth rate"
+    }
     if (length(group_by) > 0L) {
       s <- paste(sprintf("%s = %%%s", group_by, group_by), collapse = ", ")
       main_template <- sprintf("%s\n%s", main_template, s)
@@ -450,15 +448,15 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
     }
 
     ## Point styles depending on observation interval
-    control$points_main <- control$points
-    pty <- c("main", "short", "long")
+    control$points_median <- control$points
+    pty <- c("median", "short", "long")
     if (type == "interval") {
       dt_min <- (1 - tol) * m
       dt_max <- (1 + tol) * m
       dt_enum <- 1L + 1L * (data$dt < dt_min) + 2L * (data$dt > dt_max)
       data$pty <- factor(pty)[dt_enum]
     } else {
-      data$pty <- factor("main")
+      data$pty <- factor("median")
     }
 
     ### Plot ==============================================
@@ -478,14 +476,14 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
     usr <- par("usr")
 
     ## Fitting windows
-    if (!is.null(control$windows)) {
-      for (i in seq_len(nlevels(index))) {
-        l <- list(
-          x = c(t1[i], t2[i], t2[i], t1[i]),
-          y = ylim[c(1L, 1L, 2L, 2L)]
-        )
-        do.call(polygon, c(l, control$windows))
-      }
+    if (!is.null(control$rect)) {
+      l <- list(
+        xleft = t1,
+        ybottom = inv_log10(usr[3L], log),
+        xright = t2,
+        ytop = inv_log10(usr[4L], log)
+      )
+      do.call(rect, c(l, control$rect))
     }
 
     ## Observed data
@@ -501,29 +499,29 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
     }
 
     ## Zero line
-    if (type == "rt1" && !is.null(control$zero)) {
-      do.call(abline, c(list(h = 0), control$zero))
+    if (type == "rt1" && !is.null(control$abline)) {
+      do.call(abline, c(list(h = 0), control$abline))
     }
 
     ## Annotation above exceptional points
-    if (type == "interval" && !is.null(control$text_hl)) {
+    if (type == "interval" && !is.null(control$text_short_long)) {
       l <- list(
         formula = formula,
         data = data,
         labels = data$dt,
         subset = (data$pty != pty[1L])
       )
-      do.call(text, c(l, control$text_hl))
+      do.call(text, c(l, control$text_short_long))
     }
 
     ## Confidence band
-    if (bands && !is.null(control$bands)) {
+    if (bands && !is.null(control$polygon)) {
       for (p in pred) {
         l <- list(
           x = c(p$time, rev(p$time)),
           y = c(p$lower, rev(p$upper))
         )
-        do.call(polygon, c(l, control$bands))
+        do.call(polygon, c(l, control$polygon))
       }
     }
 
@@ -535,8 +533,10 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
       }
     }
 
-    ## Doubling time
-    if (show_td) {
+    ## Initial doubling times
+    if (show_tdoubling) {
+      ## Much ado about finding the right user coordinates
+      ## when log scale is in effect
       y_lu <- add_lines_to_user(0.25, inv_log10(usr[4L], log), log)
       h_lu <- strheight("", cex = control$text_td$cex, font = 1)
       y_e <- add_lines_to_user(0.15, add_height_to_user(h_lu, y_lu, log), log)
@@ -600,60 +600,54 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
       l2 <- control$yax
       l2$mgp <- c(3, control$yax$mgp2, 0)
       l2$mgp2 <- NULL
-      if (type %in% c("interval", "cumulative")) {
-        l1$at = axTicks(side = 2)
-        if (max(l1$at) >= 1e05) {
-          l1$labels <- get_labels(l1$at)
-          l2$cex.axis <- min(control$yax$cex.axis, get_cex_axis(l1$labels, mex = 0.9 * 4 - control$yax$mgp2))
-        }
+      l1$at <- axTicks(side = 2)
+      if (type %in% c("interval", "cumulative") && (max(l1$at) >= 1e05)) {
+        l1$labels <- get_labels(l1$at)
+        l2$cex.axis <- min(l2$cex.axis, get_cex_axis(l1$labels, mex = 3.5 - control$yax$mgp2))
+      }
+      do.call(axis, c(l1, l2))
+      if (type == "rt1" && usr[4L] > 0) {
+        axis(
+          side = 2,
+          line = 4.5,
+          at = c(0, usr[4L]),
+          labels = c("", ""),
+          lwd.ticks = 0
+        )
+        tdoubling <- c(1:5, 10, 50, 100)
+        l1$at <- log(2) / tdoubling
+        l1$labels <- tdoubling
+        ## FIXME: why mgp[4] = 4 + x, not mgp[2] = 4.5 + x?
+        l2$mgp <- c(3, 4 + control$yax$mgp2, 4.5)
+        l2$lwd <- 0
+        l2$lwd.ticks <- 1
         do.call(axis, c(l1, l2))
-      } else {
-        do.call(axis, c(l1, l2))
-        if (usr[2L] > 0) {
-          axis(
-            side = 2,
-            line = 4.5,
-            at = c(0, usr[4L]),
-            labels = c("", ""),
-            lwd.ticks = 0
-          )
-          td <- c(0.5, 1, 5, 10, 50, 100)
-          l1$at <- c(log(2) / td)
-          l1$labels <- td
-          ## FIXME: why 4.5 instead of 4?
-          l2$mgp <- c(3, 4 + control$yax$mgp2, 4.5)
-          l2$lwd <- 0
-          l2$lwd.ticks <- 1
-          do.call(axis, c(l1, l2))
-        }
       }
 
       ## Axis title (y)
       if (!is.null(control$ylab)) {
         if (type %in% c("interval", "cumulative")) {
-          l <- list(ylab = ylab, line = 4)
-          do.call(title, c(l, control$ylab))
+          line0 <- 4
         } else {
-          l <- list(
-            ylab = ylab,
-            line = 0.5 + max(strwidth(axTicks(side = 2), units = "inches", cex = control$yax$cex.axis, font = control$yax$font.axis)) / csi + control$yax$mgp2
+          line0 <- 0.5 + max(strwidth(axTicks(side = 2), units = "inches", cex = control$yax$cex.axis, font = control$yax$font.axis)) / csi + control$yax$mgp2
+        }
+        l <- list(ylab = ylab, line = line0)
+        do.call(title, c(l, control$ylab))
+        if (type == "rt1" && usr[4L] > 0) {
+          ## String width relative to 0.8 times the distance from 0 to usr[4]
+          rsw <- (strwidth(ylab_again, units = "inches", cex = control$ylab$cex.lab, font = control$ylab$font.lab) * diff(usr[3:4]) / pin[2L]) / (0.8 * (usr[4L] - max(0, usr[3L])))
+          text(
+            ## FIXME: why 7.5, not 4.5 + 0.5?
+            x = usr[1L] - cxy[1L] * (7.5 + max(strwidth(tdoubling, units = "inches", cex = control$yax$cex.axis, font = control$yax$font.axis)) / csi + control$yax$mgp2),
+            y = mean(c(max(0, usr[3L]), usr[4L])),
+            labels = ylab_again,
+            adj = c(0.5, 0),
+            srt = 90,
+            xpd = NA,
+            col = control$ylab$col.lab,
+            cex = control$ylab$cex.lab * cex / max(1, rsw),
+            font = control$ylab$font.lab
           )
-          do.call(title, c(l, control$ylab))
-          if (usr[2L] > 0) {
-            rsw <- (strwidth(ylab_again, units = "inches", cex = control$ylab$cex.lab, font = control$ylab$font.lab) * diff(ylim) / pin[2L]) / (0.8 * (usr[4L] - max(0, usr[3L])))
-            text(
-              ## FIXME: why 7.5 instead of 5?
-              x = usr[1L] - cxy[1L] * (7.5 + max(strwidth(td, units = "inches", cex = control$yax$cex.axis, font = control$yax$font.axis)) / csi + control$yax$mgp2),
-              y = mean(c(max(0, usr[3L]), usr[4L])),
-              labels = ylab_again,
-              adj = c(0.5, 0),
-              srt = 90,
-              xpd = NA,
-              col = control$ylab$col.lab,
-              cex = control$ylab$cex.lab * par("cex") / max(1, rsw),
-              font = control$ylab$font.lab
-            )
-          }
         }
       }
     }
@@ -662,7 +656,7 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
     if (!is.null(control$main)) {
       main_split <- strsplit(main, "\n", fixed = TRUE)[[1L]]
       control$main <- lapply(control$main, rep_len, 2L)
-      if (show_td) {
+      if (show_tdoubling) {
         line0 <- user_to_lines(add_lines_to_user(0.5, add_height_to_user(h_e, y_e, log), log), log)
       } else {
         line0 <- 0.5
@@ -689,7 +683,7 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
     if (legend) {
       lx <- usr[2L] + 0.02 * diff(usr[1:2])
       ly <- inv_log10(usr[4L] - 0.02 * diff(usr[3:4]), log)
-      cond <- all(data$dt[data$pty == "main"] == m, na.rm = TRUE)
+      cond <- all(data$dt[data$pty == "median"] == m, na.rm = TRUE)
       lexp <- parse(
         text = sprintf("'%s,' ~ Delta * 't %s %g day%s'",
           c("obs", "obs", "obs", "pred"),
@@ -768,13 +762,13 @@ plot.egf.heat <- function(x, per_plot, bw_panels,
   op <- par(oma = c(2.5, 0, 3.5, 0))
   on.exit(par(op))
 
-  pal <- do.call(colorRamp, control$heat)
+  pal <- do.call(colorRamp, control$colorRamp)
 
   j <- 0L
   while (j < length(frame_aug_split)) {
 
-    layout(matrix(c(seq_len(per_plot), rep.int(per_plot + 1L, per_plot)), ncol = 2L), widths = c(4, 1))
-    par(mar = c(0, 1.5, bw_panels, 0.5))
+    layout(matrix(c(seq_len(per_plot), rep.int(per_plot + 1L, per_plot)), ncol = 2L), widths = c(par("din")[1L] - 1.2, 1.2))
+    par(mar = c(0.5 * bw_panels, 1.5, 0.5 * bw_panels, 0.5))
 
     ### Loop over panels ==================================
 
@@ -802,10 +796,24 @@ plot.egf.heat <- function(x, per_plot, bw_panels,
         }
       } # loop over fitting windows
 
+      s <- names(frame_aug_split)[k]
+
+      w <- strwidth(s, cex = 1, font = 2)
+      h <- strheight(s, cex = 1, font = 2)
+      x_pad <- diff(par("usr")[1:2]) * (0.075 * par("pin")[2L] / par("pin")[1L])
+      y_pad <- 0.075 * diff(par("usr")[3:4])
+      rect(
+        xleft = par("usr")[1L],
+        ybottom = par("usr")[4L] - h - 2 * y_pad,
+        xright = par("usr")[1L] + w + 2 * x_pad,
+        ytop = par("usr")[4L],
+        border = NA,
+        col = "#00000080"
+      )
       text(
-        x = par("usr")[1L] + diff(par("usr")[1:2]) * (0.075 * par("pin")[2L] / par("pin")[1L]),
-        y = par("usr")[4L] - 0.075 * diff(par("usr")[3:4]),
-        labels = names(frame_aug_split)[k],
+        x = par("usr")[1L] + x_pad,
+        y = par("usr")[4L] - y_pad,
+        labels = s,
         adj = c(0, 1),
         cex = 1,
         font = 2,
@@ -830,14 +838,13 @@ plot.egf.heat <- function(x, per_plot, bw_panels,
       mgp2 = c(0.25, 1.25),
       cex.axis = c(0.85, 1.15) + 0.1
     )
-
     for (l in seq_len((per_plot - (k %% per_plot)) %% per_plot)) {
       plot.new()
     }
 
-    par(mar = c(0, 1, 0.25, 7))
+    par(mar = c(0.5 * bw_panels, 1, 0.5 * bw_panels, 7))
     plot.new()
-    dy2 <- 0.005
+    dy2 <- 0.0025
     plot.window(
       xlim = c(0, 1),
       ylim = c(-dy2, 1 + dy2) * rt_max,
@@ -874,7 +881,7 @@ plot.egf.heat <- function(x, per_plot, bw_panels,
       adj = c(0, 0),
       xpd = NA
     )
-    td <- c(0.5, 1, 5, 10, 50, 100)
+    tdoubling <- c(1:5, 10, 50, 100)
     axis(
       side = 4,
       at = par("usr")[3:4],
@@ -884,8 +891,8 @@ plot.egf.heat <- function(x, per_plot, bw_panels,
     )
     axis(
       side = 4,
-      at = log(2) / td,
-      labels = td,
+      at = log(2) / tdoubling,
+      labels = tdoubling,
       mgp = c(3, 4.7, 4),
       las = 1,
       lwd = 0,

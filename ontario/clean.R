@@ -1,4 +1,4 @@
-d0 <- read.csv(file = "2021-01-19/IPHIS_REPORT_2years.CSV")
+d0 <- read.csv(file = "2021-02-01/IPHIS_REPORT_2years.CSV")
 
 d <- d0[c("CASE_REPORTED_DATE", "COUNTY_NAME", "age_grp")]
 names(d) <- c("date", "region", "age")
@@ -7,7 +7,7 @@ d$region <- factor(d$region, exclude = "")
 d$age <- factor(d$age, exclude = ".")
 levels(d$age) <- sub("^age", "", levels(d$age))
 levels(d$age) <- sub("PLUS$", "-Inf", levels(d$age))
-d <- d[!Reduce("|", lapply(d, is.na)), , drop = FALSE]
+d <- d[!Reduce(`|`, lapply(d, is.na)), , drop = FALSE]
 
 tt <- table(interaction(d[c("date", "region")], drop = TRUE, sep = "::"))
 on_by_region <- data.frame(

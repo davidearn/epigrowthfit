@@ -51,7 +51,7 @@ by confidence intervals on doubling times and confidence bands on
 predicted values. Unused by \code{type = "rt2"}.}
 
 \item{bands}{A logical scalar. If \code{TRUE}, then confidence bands on predicted
-values are displayed. Longer run times can be anticipated in this
+curves are displayed. Longer run times can be anticipated in this
 case. Unused by \code{type = "rt2"}.}
 
 \item{control}{A list of lists defining the appearance of various plot elements,
@@ -59,6 +59,9 @@ or otherwise \code{NULL} (see Details).}
 
 \item{per_plot}{A positive integer. One plot will display this many time series
 when \code{type = "rt2"}.}
+
+\item{bw_panels}{A non-negative number. The spacing between panels as a number of
+margin lines used when \code{type = "rt2"}.}
 
 \item{...}{Optional arguments specifying additional graphical parameters
 to be recycled for all plots. Currently, only \code{xlim}, \code{ylim},
@@ -69,9 +72,6 @@ of the form \code{"\%f"}, where \code{f} is the name of any factor present
 in \code{group_by}, are replaced in a given plot by the factor level
 relevant to that plot. Use \code{"\\n"} within \code{main} to separate
 title from subtitle.}
-
-\item{bw_panel}{A non-negative number. The spacing between panels as a number of
-margin lines used when \code{type = "rt2"}.}
 }
 \value{
 \code{NULL} (invisibly).
@@ -81,78 +81,72 @@ Methods for plotting \code{"egf"} objects.
 }
 \details{
 \code{control} must be \code{NULL} or a named list containing some subset
-of the elements below:
+of the elements ("control parameters") below:
 
 \describe{
 \item{\code{box}}{
 A named list of arguments to \code{\link[graphics:box]{graphics::box()}}, affecting
 the appearance of the box drawn around the plot region.
-Only \code{bty}, \code{lty}, \code{lwd}, and \code{col} are used.
 }
 \item{\code{xax}, \code{yax}}{
 Named lists of arguments to \code{\link[graphics:axis]{graphics::axis()}}, affecting the
-appearance of the bottom and left axes. Only \code{tcl}, \code{mgp2},
-\code{col.axis}, \code{cex.axis}, and \code{font.axis} are used, where \code{mgp2}
-is the second component of the usual \code{mgp} argument. The
-appearance of the minor (day or month) and major (month or year)
-bottom axes can be controlled separately by listing vectors of
-length 2. For example, setting
-\code{xax = list(col.axis = c("black", "red"))}
-will make the minor axis black and major axis red.
+appearance of the bottom and left axes. Option \code{mgp2} defines
+the second component of the usual \code{mgp} argument. The minor
+(day or month) and major (month or year) bottom axes can be
+controlled separately by listing vectors of length 2.
+For example, setting \code{xax = list(col.axis = c("black", "red"))}
+makes the minor axis black and major axis red.
 }
-\item{\code{ylab}, \code{main}}{
+\item{\code{main}, \code{ylab}}{
 Named lists of arguments to \code{\link[graphics:title]{graphics::title()}}, affecting
-the appearance of axis titles. Only \code{adj}, \code{col.lab}, \code{cex.lab},
-\code{font.lab}, \code{col.main}, \code{cex.main}, and \code{font.main} are used.
+the appearance of axis titles.
 }
-\item{\code{points}}{
-A named list of arguments to \code{\link[graphics:points]{graphics::points()}}, affecting
-the appearance of observed data. Only \code{pch}, \code{col}, \code{bg} and
-\code{cex} are used.
+\item{\code{rect}}{
+A named list of arguments to \code{\link[graphics:rect]{graphics::rect()}}, affecting
+the appearance of fitting windows.
 }
-\item{\code{points_short}, \code{points_long}}{
-Alternatives to \code{points_main} used to highlight certain points
-when \code{type = "interval"}. See argument \code{tol}.
+\item{\code{polygon}}{
+A named list of arguments to \code{\link[graphics:polygon]{graphics::polygon()}}, affecting
+the appearance of confidence bands on predicted curves.
 }
 \item{\code{lines}}{
 A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}}, affecting
-the appearance of predicted curves. Only \code{lty}, \code{lwd}, and
-\code{col} are used.
+the appearance of predicted curves.
 }
-\item{\code{zero}}{
-A named list of arguments to \code{\link[graphics:lines]{graphics::lines()}}, affecting
+\item{\code{points}}{
+A named list of arguments to \code{\link[graphics:points]{graphics::points()}}, affecting
+the appearance of observed data.
+}
+\item{\code{points_short}, \code{points_long}}{
+Alternatives to \code{points} used to highlight certain points
+when \code{type = "interval"}. See argument \code{tol}.
+}
+\item{\code{text_short_long}}{
+A named list of arguments to \code{\link[graphics:text]{graphics::text()}}, affecting
+the appearance of text above highlighted points when
+\code{type = "interval"}. See argument \code{tol}.
+}
+\item{\code{text_tdoubling}}{
+A named list of arguments to \code{\link[graphics:text]{graphics::text()}}, affecting
+the appearance of printed initial doubling times.
+}
+\item{\code{abline}}{
+A named list of arguments to \code{\link[graphics:abline]{graphics::abline()}}, affecting
 the appearance of the line drawn at \code{y = 0} when \code{type = "rt1"}.
 }
-\item{\code{windows}, \code{bands}}{
-Named lists of arguments to \code{\link[graphics:polygon]{graphics::polygon()}}, affecting
-the appearance of fitting windows and confidence bands on
-predicted incidence curves. Only \code{col} and \code{border} are used.
-}
-\item{\code{text_td}, \code{text_hl}}{
-Named lists of arguments to \code{\link[graphics:text]{graphics::text()}}, affecting
-the appearance of text giving initial doubling times and
-text above highlighted points. Only \code{col} and \code{cex} are
-used by \code{text_td}. \code{text_hl} also uses \code{font}, \code{pos} and
-\code{offset}.
-}
-\item{\code{heat}}{
-Named lists of arguments to \code{\link[grDevices:colorRamp]{grDevices::colorRamp()}},
+\item{\code{colorRamp}}{
+A named list of arguments to \code{\link[grDevices:colorRamp]{grDevices::colorRamp()}},
 affecting the color palette used when \code{type = "rt2"}.
 (Currently, this is the only control parameter for
 \code{type = "rt2"}.)
 }
 }
 
-If \code{control = NULL}, then it defaults to
-\code{get_control_default("plot.egf", type = type)}.
+A catalogue of modifiable options for each control parameter can
+be obtained with \code{get_control_default("plot.egf", type = type)}.
+Unspecified options take their values in this list. Unsupported
+options are discarded.
 
-If \code{control} is a list and one of its elements is a partially
-specified list
-(e.g., \code{box = list(bty)} rather than \code{box = c(bty, lty, lwd, col)}),
-then that element is filled out with values taken from
-\code{get_control_default("plot.egf", type = type)}.
-
-If \code{control} is a list and one if its elements is \code{NULL}
-(e.g., \code{box = NULL}), then the corresponding plot element
-is suppressed.
+To suppress a plot element, set the corresponding control parameter
+to \code{NULL}, as in \code{control = list(box = NULL)}.
 }
