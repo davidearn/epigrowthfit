@@ -63,8 +63,8 @@ pdf("ontario_doubling1.pdf", width = 6, height = 4, onefile = TRUE)
 plot(ci, type = "1", group_by = ~region, per_plot = 12)
 dev.off()
 
-pdf("ontario_doubling2.pdf", width = 6, height = 6, onefile = TRUE)
-plot(ci, type = "2", per_plot = 6)
+pdf("ontario_doubling2.pdf", width = 6, height = 4, onefile = TRUE)
+plot(ci, type = "1", group_by = ~wave, sort = "decreasing", per_plot = 12)
 dev.off()
 
 subset <- list(region = census_divisions)
@@ -91,7 +91,7 @@ plot(object,
   xlim = xlim,
   ylim = c(0, log(2) / 2.5),
   main = "Instantaneous exponential growth rate\n%region",
-  control = list(points = NULL, zero = NULL)
+  control = list(points = NULL, abline = NULL)
 )
 dev.off()
 
