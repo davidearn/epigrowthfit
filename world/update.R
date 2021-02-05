@@ -1,4 +1,4 @@
-# Retrieve full DELVE COVID-19 data set
+## Retrieve full DELVE COVID-19 data set
 loc <- paste0(
   "https://raw.githubusercontent.com/",
   "rs-delve/covid19_datasets/master/dataset/",
@@ -6,13 +6,92 @@ loc <- paste0(
 )
 world_full <- read.csv(url(loc))
 
-# Extract incidence
+## Extract incidence
 world <- world_full[c("DATE", "cases_new", "ISO", "country_name")]
 
-# Clean up
+## Make nice
 names(world) <- c("date", "cases", "country_code", "country_name")
 world$date <- as.Date(world$date)
 world$cases <- as.integer(world$cases)
 world$country_code <- factor(world$country_code)
 world$country_name <- factor(world$country_name)
+
+## Prefer familiar country names
+lev <- levels(world$country_name)
+old <- c(
+  "Aruba",
+  "Bolivia, Plurinational State of",
+  "Brunei Darussalam",
+  "Congo, The Democratic Republic of the",
+  "Czechia",
+  "Faroe Islands",
+  "Greenland",
+  "Guam",
+  "Iran, Islamic Republic of",
+  "Korea, Republic of",
+  "Lao People's Democratic Republic",
+  "Moldova, Republic of",
+  "Palestine, State of",
+  "Puerto Rico",
+  "Republic of Kosovo",
+  "Russian Federation",
+  "Syrian Arab Republic",
+  "Taiwan, Province of China",
+  "Tanzania, United Republic of",
+  "Venezuela, Bolivarian Republic of",
+  "Viet Nam",
+  "Virgin Islands, U.S."
+)
+new <- c(
+  "Aruba (Netherlands)",
+  "Bolivia",
+  "Brunei",
+  "D. R. Congo",
+  "Czech Republic",
+  "Faroe Islands (Denmark)",
+  "Greenland (Denmark)",
+  "Guam (United States)",
+  "Iran",
+  "South Korea",
+  "Laos",
+  "Moldova",
+  "Palestine",
+  "Puerto Rico (United States)",
+  "Kosovo",
+  "Russia",
+  "Syria",
+  "Taiwan",
+  "Tanzania",
+  "Venezuela",
+  "Vietnam",
+  "Virgin Islands (United States)"
+)
+lev[match(old, lev)] <- new
+levels(world$country_name) <- lev
+
+## Group countries by continent
+library("countrycode")
+world$continent <- factor(countrycode(
+  sourcevar = world$country_code,
+  origin = "iso3c",
+  destination = "continent",
+  custom_match = `names<-`("Europe", "RKS")
+))
+
+## Replace negative observations with NA
+world$cases[world$cases < 0L] <- NA
+
+## Omit leading NA from time series
+world_split <- lapply(split(world, world$country_code), function(d) {
+  i <- which(!is.na(d$cases))
+  if (length(i) > 0L) {
+    d[seq.int(i[1L], nrow(d)), , drop = FALSE]
+  } else {
+    NULL
+  }
+})
+world <- droplevels(do.call(rbind, world_split))
+row.names(world) <- NULL
+
+## Save
 save(world, file = "world.RData")

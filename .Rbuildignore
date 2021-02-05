@@ -5,8 +5,8 @@
 ^sandbox$
 ^scrap$
 ^utils$
+^world$
 ^Makefile$
 ^TODO\.md$
 ^data/old_plague_latent_period\.RData$
 ^data/old_plague_infectious_period\.RData$
-^R/get_window\.R$

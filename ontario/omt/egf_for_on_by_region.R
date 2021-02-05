@@ -73,20 +73,6 @@ w <- list(
   )
 )
 
-## Choose fitting windows by eye
-# on_by_region_split <- split(on_by_region, factor(on_by_region$region, levels = census_divisions))
-# s <- "TORONTO"
-# d <- on_by_region_split[[s]]
-# ss <- smooth.spline(
-#   x = d$date - d$date[1],
-#   y = log10(1 + d$cases),
-#   spar = 0.7
-# )
-# plot(x = d$date - d$date[1], y = log10(1 + d$cases), main = s)
-# lines(ss, lwd = 2, col = "red")
-# i <- 1
-# abline(v = d$date[i] - d$date[1])
-
 ff <- make_index(
   date = on_by_region$date,
   ts = on_by_region$region,

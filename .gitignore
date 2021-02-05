@@ -7,3 +7,8 @@
 *~
 .Rhistory
 */.Rhistory
+
+ontario/2021-*/
+ontario/*.RData
+
+world/world.RData
