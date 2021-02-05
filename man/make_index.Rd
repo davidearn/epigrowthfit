@@ -12,11 +12,10 @@ make_index(date, ts, subset)
 \item{ts}{A factor of length \code{length(date)} such that \code{split(date, ts)}
 splits \code{date} by time series.}
 
-\item{subset}{A named list of lists of integer vectors. \code{names(subset)}
-must be a subset of \code{levels(ts)}. Integer vectors listed
-in \code{subset[[name]]} must index disjoint segments of the
-corresponding time series. That is, they must be disjoint
-subsets of \code{seq_len(table(ts)[[name]])}.}
+\item{subset}{A named list of lists of integer, Date, or character vectors
+of length 2. \code{names(subset)} must be a subset of \code{levels(ts)}.
+\code{subset[[s]]} defines fitting windows for time series \code{s}.
+See Details.}
 }
 \value{
 A data frame with \code{length(date)} rows,
@@ -27,21 +26,45 @@ Constructs a factor splitting time series in long format
 by fitting window, to be passed to \code{\link[=egf]{egf()}}.
 }
 \details{
+\subsection{Subsetting}{
+
+In \code{subset[[s]]}, integer vectors must index time points in
+time series \code{s}. Character and Date vectors are converted to
+index vectors as follows: (i) all character vectors \code{x} are
+replaced with \code{as.Date(x)}, then (ii) each Date is replaced
+with the index of the nearest time point in time series \code{s}.
+
+The resulting set of vectors \code{c(i, j)} (which must satisfy
+\code{i < j}) are replaced with \code{i:j}, and these vectors (which
+must be disjoint) each index the set of time points included
+in a fitting window.
+}
+
+\subsection{Interpreting \code{index}}{
+
 \code{index} has levels \code{seq_len(sum(lengths(subset)))}.
 \code{split(date, index)} splits \code{date} by fitting window,
 \code{is.na(index)} indexes points in \code{date} not belonging
 to a window.
 
 \code{index} can be assigned to the so-named argument of \code{\link[=egf]{egf()}}.
+}
 
-\code{wave} has levels \verb{c(0, seq_len(max(lengths(subset)))}.
-It is a recoding of \code{index}, replacing \code{NA} with \code{0}
-and replacing elements in the \code{i}th fitting window of
-each time series (chronologically) with \code{i}.
+\subsection{Interpreting \code{wave}}{
 
-If the \code{i}th fitting window of each time series corresponds
-to the \code{i}th epidemic wave in that time series, and if
-epidemic wave is being included as a fixed or random effect
-in a mixed effects model, then \code{wave} can be passed to
-\code{\link[=egf]{egf()}} as a variable in \code{data}.
+\code{wave} has levels \code{seq_len(max(lengths(subset)))}.
+It is a recoding of \code{index}, obtained within a
+given time series by (i) replacing elements in
+the \code{k}th fitting window of that time series
+with \code{k}, (ii) replacing \code{NA} by carrying last
+observations forward, then (iii) replacing any
+remaining (leading) \code{NA} with 1.
+
+If the \code{k}th fitting window of each time series
+corresponds to the \code{k}th epidemic wave in that
+time series, and if epidemic wave is being included
+as a fixed or random effect in a mixed effects model,
+then \code{wave} can be passed to \code{\link[=egf]{egf()}} as a variable
+in \code{data}.
+}
 }
