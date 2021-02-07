@@ -10,5 +10,6 @@
 
 ontario/2021-*/
 ontario/*.RData
+ontario/omt/*.RData
 
-world/world.RData
+world/*.RData

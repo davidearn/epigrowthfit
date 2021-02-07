@@ -439,13 +439,11 @@ plot.egf_confint <- function(x,
   if (type == "1") {
     ### Loop over response variables ======================
 
-    op <- par(
-      mar = c(3.5, 5, 1.5, 1),
-      cex.axis = 0.8,
-      cex.lab = 0.9,
-      cex.main = 0.9
-    )
+    op <- par(mar = c(3.5, 5, 1.5, 1))
     on.exit(par(op))
+
+    msw <- max(strwidth(levels(interaction(x[factor_names], drop = TRUE, sep = ":")), units = "inches", cex = 0.8, font = 1))
+    yax_cex <- 0.8 / max(1, msw / (0.92 * par("mai")[2L]))
 
     for (i in seq_along(x_split)) {
       d <- x_split[[i]]
@@ -489,21 +487,23 @@ plot.egf_confint <- function(x,
         box()
         axis(side = 1,
           tcl = -0.4,
-          mgp = c(3, 0.3, 0)
+          mgp = c(3, 0.3, 0),
+          cex.axis = yax_cex
         )
         axis(side = 2,
           at = seq_along(k),
           labels = yax_labels[k],
           tick = FALSE,
           las = 1,
-          mgp = c(3, 0.2, 0)
+          mgp = c(3, 0.2, 0),
+          cex.axis = 0.8
         )
-        title(xlab = names(x_split)[i], line = 2)
+        title(xlab = names(x_split)[i], line = 2, cex.lab = 0.9)
         main <- sprintf("%.3g%% CI", 100 * a$level)
         if (any_factors) {
           main <- sprintf("%s by %s", main, paste(factor_names, collapse = ":"))
         }
-        title(main, line = 0.25, adj = 0)
+        title(main, line = 0.25, adj = 0, cex.main = 0.9)
         j <- j + per_plot
       }
     }

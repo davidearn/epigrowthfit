@@ -128,11 +128,20 @@ the appearance of text above highlighted points when
 }
 \item{\code{text_tdoubling}}{
 A named list of arguments to \code{\link[graphics:text]{graphics::text()}}, affecting
-the appearance of printed initial doubling times.
+the appearance of printed initial doubling times when
+\code{x$curve \%in\% c("exponential", "logistic", "richards")}.
+The estimate, confidence interval, and caption can be
+controlled separately by listing vectors of length 3.
 }
 \item{\code{abline}}{
 A named list of arguments to \code{\link[graphics:abline]{graphics::abline()}}, affecting
 the appearance of the line drawn at \code{y = 0} when \code{type = "rt1"}.
+}
+\item{\code{segments}}{
+A named list of arguments to \code{\link[graphics:segments]{graphics::segments()}}, affecting
+the appearance of the line segments drawn at \code{y = r} when
+\code{type = "rt1"} and
+\code{x$curve \%in\% c("exponential", "logistic", "richards")}.
 }
 \item{\code{colorRamp}}{
 A named list of arguments to \code{\link[grDevices:colorRamp]{grDevices::colorRamp()}},

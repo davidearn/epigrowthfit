@@ -109,11 +109,20 @@
 #' }
 #' \item{`text_tdoubling`}{
 #'   A named list of arguments to [graphics::text()], affecting
-#'   the appearance of printed initial doubling times.
+#'   the appearance of printed initial doubling times when
+#'   `x$curve %in% c("exponential", "logistic", "richards")`.
+#'   The estimate, confidence interval, and caption can be
+#'   controlled separately by listing vectors of length 3.
 #' }
 #' \item{`abline`}{
 #'   A named list of arguments to [graphics::abline()], affecting
 #'   the appearance of the line drawn at `y = 0` when `type = "rt1"`.
+#' }
+#' \item{`segments`}{
+#'   A named list of arguments to [graphics::segments()], affecting
+#'   the appearance of the line segments drawn at `y = r` when
+#'   `type = "rt1"` and
+#'   `x$curve %in% c("exponential", "logistic", "richards")`.
 #' }
 #' \item{`colorRamp`}{
 #'   A named list of arguments to [grDevices::colorRamp()],
@@ -304,8 +313,7 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
   ## Confidence intervals on initial doubling times
   show_tdoubling <- (
     type %in% c("interval", "rt1") &&
-    x$curve %in% c("exponential", "logistic", "richards") &&
-    !is.null(control$text_tdoubling)
+    x$curve %in% c("exponential", "logistic", "richards")
   )
   if (show_tdoubling) {
     ci <- confint(x, parm = "tdoubling", level = level, method = "wald")
@@ -498,11 +506,6 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
       }
     }
 
-    ## Zero line
-    if (type == "rt1" && !is.null(control$abline)) {
-      do.call(abline, c(list(h = 0), control$abline))
-    }
-
     ## Annotation above exceptional points
     if (type == "interval" && !is.null(control$text_short_long)) {
       l <- list(
@@ -533,37 +536,60 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
       }
     }
 
+    ## Asymptotes
+    if (type == "rt1") {
+      if (!is.null(control$abline)) {
+        do.call(abline, c(list(h = 0), control$abline))
+      }
+      if (!is.null(control$segments)) {
+        for (s in levels(index)) {
+          p <- pred[[s]]
+          r <- log(2) / ci[match(s, levels(x$index)), length(ci) - 2L]
+          l <- list(
+            x0 = p$time[1L],
+            y0 = r,
+            x1 = p$time[nrow(p)],
+            y1 = r
+          )
+          do.call(segments, c(l, control$segments))
+        }
+      }
+    }
+
     ## Initial doubling times
     if (show_tdoubling) {
+      control$text_tdoubling <- lapply(control$text_tdoubling, rep_len, 3L)
+      l <- lapply(1:3, function(i) lapply(control$text_tdoubling, `[`, i))
+      names(l) <- c("e", "ci", "cap")
       ## Much ado about finding the right user coordinates
       ## when log scale is in effect
-      y_lu <- add_lines_to_user(0.25, inv_log10(usr[4L], log), log)
-      h_lu <- strheight("", cex = control$text_td$cex, font = 1)
-      y_e <- add_lines_to_user(0.15, add_height_to_user(h_lu, y_lu, log), log)
-      h_e <- strheight("", cex = control$text_td$cex, font = 2)
+      y_ci <- add_lines_to_user(0.25, inv_log10(usr[4L], log), log)
+      h_ci <- strheight("", cex = l$ci$cex, font = l$ci$font)
+      y_e <- add_lines_to_user(0.15, add_height_to_user(h_ci, y_ci, log), log)
+      h_e <- strheight("", cex = l$e$cex, font = l$e$font)
       for (s in levels(index)) {
         p <- pred[[s]]
         elu <- unlist(ci[match(s, levels(x$index)), length(ci) - 2:0])
         text(
           x = rep.int(mean(p$time[c(1L, nrow(p))]), 2L),
-          y = c(y_e, y_lu),
+          y = c(y_e, y_ci),
           labels = c(sprintf("%.1f", elu[1L]), sprintf("(%.1f, %.1f)", elu[2L], elu[3L])),
-          cex = cex * control$text_td$cex,
-          col = control$text_td$col,
-          font = c(2, 1),
+          cex = cex * c(l$e$cex, l$ci$cex),
+          col = c(l$e$col, l$ci$col),
+          font = c(l$e$font, l$ci$font),
           adj = c(0.5, 0),
           xpd = NA
         )
       }
-      y_lu_again <- add_lines_to_user(0.5, add_height_to_user(h_e, y_e, log), log)
-      y_e_again <- add_lines_to_user(0.15, add_height_to_user(h_lu, y_lu_again, log), log)
+      y_ci_again <- add_lines_to_user(0.5, add_height_to_user(h_e, y_e, log), log)
+      y_e_again <- add_lines_to_user(0.15, add_height_to_user(h_ci, y_ci_again, log), log)
       text(
-        x = rep.int(usr[2L] - 0.5 * strwidth("estimate", cex = control$text_td$cex, font = 2), 2L),
-        y = c(y_e_again, y_lu_again),
+        x = rep.int(usr[2L] - 0.5 * strwidth("estimate", cex = control$text_tdoubling$cex, font = 2), 2L),
+        y = c(y_e_again, y_ci_again),
         labels = c("estimate", "(95% CI)"),
-        cex = cex * control$text_td$cex,
-        col = control$text_td$col,
-        font = c(2, 1),
+        cex = cex * c(l$e$cex, l$ci$cex),
+        col = c(l$e$col, l$ci$col),
+        font = c(l$e$font, l$ci$font),
         adj = c(0.5, 0),
         xpd = NA
       )
@@ -571,9 +597,9 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
         x = usr[2L],
         y = add_lines_to_user(0.25, add_height_to_user(h_e, y_e_again, log), log),
         labels = "initial doubling time, days:",
-        cex = cex * control$text_td$cex,
-        col = control$text_td$col,
-        font = 1,
+        cex = cex * l$cap$cex,
+        col = l$cap$col,
+        font = l$cap$font,
         adj = c(1, 0),
         xpd = NA
       )

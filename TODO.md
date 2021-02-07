@@ -2,11 +2,14 @@
 * Add R back end
 * Write tests
 * Add generalized Richards
-* Plot methods for egf objects, CIs, profiles, parametric bootstrap
+* Plot method for parametric bootstrap
+* Print and summary methods
+* Allow for day-of-week offsets
+* Allow continuous numeric predictors
+* Allow random slopes models
 
 ## Documentation
-* methods
-* vignette
+* Vignette
 
 ## Data
 * Raw data
