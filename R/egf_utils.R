@@ -63,8 +63,7 @@ get_par_names.default <- function(curve = NULL, distr = NULL, excess = NULL,
 }
 
 #' @export
-get_par_names.tmb_data <- function(curve, distr = NULL, excess = NULL,
-                                   link = TRUE) {
+get_par_names.tmb_data <- function(curve, distr, excess, link = TRUE) {
   if (link) {
     colnames(curve$rid)
   } else {
@@ -73,8 +72,7 @@ get_par_names.tmb_data <- function(curve, distr = NULL, excess = NULL,
 }
 
 #' @export
-get_par_names.egf <- function(curve, distr = NULL, excess = NULL,
-                              link = TRUE) {
+get_par_names.egf <- function(curve, distr, excess, link = TRUE) {
   get_par_names(curve$tmb_args$data, link = link)
 }
 
@@ -152,184 +150,136 @@ get_inverse_link <- function(s) {
   )
 }
 
-#' Validate model formulae
-#'
-#' Check that formulae passed to [egf()] are specified correctly
-#' by deparsing and comparing against an accepted pattern.
-#'
-#' @inheritParams egf
-#'
-#' @return
-#' `check_formula()` and `check_group_by()` return the argument as is.
-#'
-#' `check_fixed()` and `check_random()` return lists of `p` formulae
-#' with names `get_par_names(curve, distr, excess, link = TRUE)`.
-#' If `fixed` and `random` are already subsets of such a list, then
-#' those subsets are preserved, and the set difference consists of
-#' repeats of `~1` and `NULL`, respectively. If `fixed` and `random`
-#' are formulae (rather than lists of formulae) or if `random` is
-#' `NULL`, then they are recycled to length `p`.
-#'
-#' @details
-#' In R 4.0.3, formulae are deparsed with one or zero spaces on each
-#' side of the tilde operator `~` (one if there is a left-hand side,
-#' zero if not), zero spaces around `( ) : /`, and one space around
-#' `+ - * |`. `check_formula()` and friends unsafely assume that this
-#' behavior is maintained across R versions, so unexpected breakage
-#' is possible.
-#'
-#' FIXME: Refactor using [stats::terms()] instead of deparse-regex
-#' to avoid breakage. Ideally, allow for arithmetic, nonsyntactic
-#' variable names, and spurious parentheses, which are currently not
-#' tolerated (see Examples).
-#'
-#' @examples
-#' curve  <- "exponential"
-#' distr  <- "pois"
-#' excess <- FALSE
-#' get_par_names(curve, distr, excess, link = TRUE)
-#' ## [1] "log_r" "log_c0"
-#'
-#' cfm <- check_formula
-#' cfx <- function(fixed) check_fixed(fixed, curve, distr, excess)
-#' crd <- function(random) check_random(random, curve, distr, excess)
-#'
-#' ## Time series
-#' cfm(y ~ x)
-#' ## Not run
-#' \dontrun{
-#' cfm(I(y1 + y2) ~ x) # error: arithmetic
-#' cfm("0y" ~ x)       # error: nonsyntactic variable name
-#' cfm((y) ~ x)        # error: spurious parentheses
-#' }
-#'
-#' ## Fixed effects
-#' cfx(list(log_r = ~z, log_c0 = ~z))
-#' cfx(list(log_r = ~z, log_c0 = ~z1:z2))
-#' cfx(~z)               # same as first line
-#' cfx(list(log_r = ~z)) # `log_c0` defaults to `~1` (global mean)
-#' ## Not run
-#' \dontrun{
-#' cfx(list(r = ~z, c0 = ~z1*z2)) # error: FE component restricted to 1 term
-#'                                #        (`z1*z2` expands to 3 terms)
-#' cfx(NULL)                      # error: use `~1`
-#' }
-#'
-#' ## Random effects
-#' crd(list(log_r = ~(1|z), log_c0 = ~(1|z)))
-#' crd(list(log_r = ~(1|z), log_c0 = ~(1|z1:z2)))
-#' crd(~(1|z))           # same as first line
-#' crd(list(r = ~(1|z))) # `c0` defaults to NULL (no RE)
-#' crd(list(r = ~(1|z), c0 = ~(1|z1/z2))) # RE component allowed >1 term
-#'                                        # (`z1/z2` expands to 2 terms)
-#' ## Not run
-#' \dontrun{
-#' crd(~1) # error: RE terms need >1 group
-#' }
-#'
-#' @noRd
-NULL
+######################## REFACTOR
 
-check_formula <- function(formula) {
+
+
+check_formula_ts <- function(formula_ts) {
   stop_if_not(
-    inherits(formula, "formula"),
-    length(formula) == 3L,
-    grepl("^[[:alpha:].]{1}[[:alnum:]._]* ~ [[:alpha:].]{1}[[:alnum:]._]*$", deparse(formula)),
-    m = "`formula` must be a formula of the form `y ~ x`."
+    inherits(formula_ts, "formula"),
+    m = "`formula_ts` must be a formula."
   )
-  formula
-}
-
-check_fixed <- function(fixed, curve, distr, excess) {
-  pn <- get_par_names(curve, distr, excess, link = TRUE)
-  p <- length(pn)
-
-  if (inherits(fixed, "formula")) {
-    fixed <- rep.int(list(fixed), p)
-    names(fixed) <- pn
+  stop_if_not(
+    length(formula_ts) == 3L,
+    m = "`formula_ts` must have a response."
+  )
+  formula_ts[[2L]] <- deparen(formula_ts[[2L]])
+  stop_if_not(
+    is.name(formula_ts[[2L]]),
+    m = "Left hand side of `formula_ts` must be a name."
+  )
+  formula_ts[[3L]] <- deparen(formula_ts[[3L]])
+  if (is.name(formula_ts[[3L]])) {
+    return(formula_ts)
   }
-  stop_if_not(
-    inherits(fixed, "list"),
-    length(fixed) >= 1L,
-    vapply(fixed, inherits, FALSE, "formula"),
-    !is.null(names(fixed)),
-    m = "`fixed` must be a formula or a named list of formulae."
-  )
-  ## Tolerate, e.g., "r" instead of "log_r" but not both
-  names(fixed) <- add_link_string(remove_link_string(names(fixed)))
-  stop_if_not(
-    names(fixed) %in% pn,
-    !duplicated(names(fixed)),
-    m = paste0(
-      "If `fixed` is a list, then `names(fixed)` must be a subset\n",
-      "of `get_par_names(curve, distr, excess)`."
-    )
-  )
-  rhs <- vapply(fixed, function(x) deparse(x[[2L]]), "")
-  stop_if_not(
-    lengths(fixed) == 2L,
-    grepl("^(1|([[:alnum:]._]+(:[[:alnum:]._]+)*))$", rhs),
-    m = "`fixed` formulae must be `~1` or have the form `~f1:...:fn`."
-  )
-
-  ## Fill out and order the list
-  fixed[setdiff(pn, names(fixed))] <- list(~1)
-  fixed[pn]
-}
-
-check_random <- function(random, curve, distr, excess) {
-  pn <- get_par_names(curve, distr, excess, link = TRUE)
-  p <- length(pn)
-
-  if (is.null(random) || inherits(random, "formula")) {
-    random <- rep.int(list(random), p)
-    names(random) <- pn
-  }
-  stop_if_not(
-    inherits(random, "list"),
-    length(random) >= 1L,
-    vapply(random, inherits, FALSE, c("NULL", "formula")),
-    !is.null(names(random)),
-    m = "`random` must be NULL, a formula, or a named list of formulae."
-  )
-  ## Tolerate, e.g., "r" instead of "log_r" but not both
-  names(random) <- add_link_string(remove_link_string(names(random)))
-  stop_if_not(
-    names(random) %in% pn,
-    !duplicated(names(random)),
-    m = paste0(
-      "If `random` is a list, then `names(random)` must be a subset\n",
-      "of `get_par_names(curve, distr, excess)`."
-    )
-  )
-  is_formula <- vapply(random, inherits, FALSE, "formula")
-  if (any(is_formula)) {
-    rhs <- vapply(random[is_formula], function(x) deparse(x[[2L]]), "")
+  if (is.call(formula_ts[[3L]]) && formula_ts[[3L]][[1L]] == as.name("|")) {
+    formula_ts[[3L]][[2L]] <- deparen(formula_ts[[3L]][[2L]])
     stop_if_not(
-      lengths(random[is_formula]) == 2L,
-      grepl("^(( (\\+|-) )?\\(1 \\| [[:alnum:]._]+((:[[:alnum:]._]+)*|(/[[:alnum:]._]+)*|(( \\* )[[:alnum:]._]+)*)\\))+$", rhs),
+      is.name(formula_ts[[3L]][[2L]]),
+      m = "Left hand side of `|` in `formula_ts`\nmust be a name."
+    )
+    formula_ts[[3L]][[3L]] <- deparen(formula_ts[[3L]][[3L]])
+    stop_if_not(
+      is_interaction(formula_ts[[3L]][[3L]]),
+      m = "Right hand side of `|` in `formula_ts`\nmust be a name or interaction."
+    )
+    formula_ts[[3L]][[3L]] <- expand_terms(formula_ts[[3L]][[3L]])
+    return(formula_ts)
+  }
+  stop("Right hand side of `formula_ts`\nmust be a name or a call to `|`.")
+}
+
+check_formula_glmm <- function(formula_glmm, curve, distr, excess) {
+  pn <- get_par_names(curve, distr, excess, link = TRUE)
+  p <- length(pn)
+
+  if (inherits(formula_glmm, "formula") && length(formula_glmm) == 2L) {
+    formula_glmm[[3L]] <- formula_glmm[[2L]]
+    formula_glmm <- Map(
+      f = function(s, x) `[[<-`(x, 2L, as.name(s)),
+      s = pn,
+      x = rep.int(list(formula_glmm), p)
+    )
+  } else if (inherits(formula_glmm, "list") &&
+             length(formula_glmm) > 0L &&
+             all(vapply(formula_glmm, inherits, FALSE, "formula")) &&
+             all(lengths(formula_glmm) == 3L)) {
+    formula_glmm <- lapply(formula_glmm, function(x) `[[<-`(x, 2L, deparen(x[[2L]])))
+    lhs <- lapply(formula_glmm, `[[`, 2L)
+    stop_if_not(
+      vapply(lhs, is.name, FALSE),
+      m = "Left hand side of each `formula_glmm` formula\nmust be a name."
+    )
+    lhs_as_character <- vapply(lhs, all.vars, "")
+    stop_if_not(
+      lhs_as_character %in% pn,
+      !duplicated(lhs_as_character),
       m = paste0(
-        "`random` formulae must have the form `~rhs`,\n",
-        "with `rhs` a sum of one or more terms of the form\n",
-        "`(1 | r1:...:rk)`, `(1 | r1/.../rm)`, or `(1 | r1 * ... * rn)`."
+        "Name on left hand side of each `formula_glmm` formula\n",
+        "must be an element of:\n",
+        "`get_par_names(curve, distr, excess, link = TRUE)`."
       )
     )
+    names(formula_glmm) <- lhs_as_character
+    make_default_formula <- function(s) {
+      as.formula(call("~", as.name(s), 1))
+    }
+    ss <- setdiff(pn, lhs_as_character)
+    formula_glmm[ss] <- lapply(ss, make_default_formula)
+    formula_glmm <- formula_glmm[pn]
+  } else {
+    stop("`formula_glmm` must be a formula of the form `~rhs`\n",
+         "or a list of formulae of the form `par ~ rhs`.")
+  }
+  lapply(formula_glmm, function(x) {
+    ftrt <- split_effects(x)
+    formula_glmm[[3L]] <- unsplit_terms(do.call(c, ftrt))
+    structure(formula_glmm,
+      fixed_terms = ftrt$fixed_terms,
+      random_terms = ftrt$random_terms
+    )
+  })
+}
+
+split_effects <- function(x) {
+  if (!(inherits(x, "formula") || is.call(x) || is.name(x) || is.numeric(x))) {
+    stop("`x` must be a formula, call, name, or number.")
+  }
+  orig_terms <- split_terms(x)
+  has_bar <- vapply(orig_terms, function(x) is.call(x) && x[[1L]] == as.name("|"), FALSE)
+
+  if (all(has_bar)) {
+    fixed_terms <- list()
+  } else {
+    fixed_terms <- split_terms(expand_terms(unsplit_terms(orig_terms[!has_bar])))
   }
 
-  ## Fill out and order the list
-  random[setdiff(pn, names(random))] <- list(NULL)
-  random[pn]
+  if (any(has_bar)) {
+    lhs <- lapply(orig_terms[has_bar], function(x) deparen(x[[2L]]))
+    stop_if_not(
+      vapply(lhs, function(x) is.name(x) || x == 1, FALSE),
+      m = "Left hand side of each `|` in `formula_glmm`\nmust be 1 or a name."
+    )
+    rhs <- lapply(orig_terms[has_bar], function(x) expand_terms(x[[3L]]))
+    rhs_split <- lapply(rhs, split_terms)
+    stop_if_not(
+      vapply(do.call(c, rhs_split), is_interaction, FALSE),
+      m = "Right hand side of each `|` in `formula_glmm`\nmust expand to a sum of names and interactions."
+    )
+    random_terms <- Map(
+      f = function(x, y) call("|", x, y),
+      x = rep.int(lhs, lengths(rhs_split)),
+      y = do.call(c, rhs_split)
+    )
+  } else {
+    random_terms <- list()
+  }
+
+  list(fixed_terms = fixed_terms, random_terms = random_terms)
 }
 
-check_group_by <- function(group_by) {
-  stop_if_not(
-    inherits(group_by, "formula"),
-    length(group_by) == 2L,
-    grepl("^(1|([[:alnum:]._]+(:[[:alnum:]._]+)*))$", deparse(group_by[[2L]])),
-    m = "`group_by` must be `~1` or a formula of the form `~f1:...:fn`."
-  )
-  group_by
-}
+
+
 
 #' Construct a model frame
 #'
@@ -342,28 +292,23 @@ check_group_by <- function(group_by) {
 #' Rows of `data` belonging to time series without fitting windows
 #' are discarded. Rows of `data[-discarded, ]` belonging to fitting
 #' windows are returned. The remaining rows of `data[-discarded, ]`
-#' are preserved in attribute `extra`. These are necessary as it
-#' is desirable for [plot.egf()] to display entire time series,
+#' are preserved in attribute `extra`. These rows are kept because
+#' it is desirable for [plot.egf()] to display entire time series,
 #' not only segments to which a curve has been fit.
 #'
 #' @return
-#' A data frame containing the variables named in `formula`, `fixed`,
-#' and `random`, with attributes:
+#' A data frame containing the variables named in `formula_ts` and
+#' `formula_glmm`, with attributes:
 #' \item{`extra`}{
 #'   A data frame preserving unused data (see Details).
 #' }
-#' \item{`index`}{
-#'   A factor of length `nrow(frame)` such that `split(frame, index)`
+#' \item{`window`}{
+#'   A factor of length `nrow(frame)` such that `split(frame, window)`
 #'   splits the data frame by fitting window. Not usually identical
 #'   to the so-named argument (see Details).
 #' }
-#' \item{`group_by`}{
-#'   A character vector. The result of applying [all.vars()] to the
-#'   so-named argument.
-#' }
-#' \item{`fixed_term_labels`, `random_term_labels`}{
-#'   Named lists of character vectors naming mixed effects model terms
-#'   for each parameter.
+#' \item{`formula_ts`, `formula_glmm`}{
+#'   Processed versions of the so-named arguments.
 #' }
 #'
 #' @examples
@@ -412,13 +357,12 @@ check_group_by <- function(group_by) {
 #'
 #' @keywords internal
 #' @importFrom stats complete.cases
-make_frame <- function(formula, fixed, random, group_by, data, index,
+make_frame <- function(formula_ts, formula_glmm, data, window,
                        curve, distr, excess, na_action) {
   ## Check model formulae
-  formula  <- check_formula(formula)
-  fixed    <- check_fixed(fixed, curve, distr, excess)
-  random   <- check_random(random, curve, distr, excess)
-  group_by <- check_group_by(group_by)
+  formula_ts   <- check_formula_ts(formula_ts)
+  formula_glmm <- check_formula_glmm(formula_glmm, curve, distr, excess)
+  a <- attributes(formula_glmm)
 
   ## Check that formula variables can be found
   stop_if_not(
@@ -428,35 +372,31 @@ make_frame <- function(formula, fixed, random, group_by, data, index,
   if (is.environment(data)) {
     data <- as.list(data)
   }
-  group_by <- all.vars(group_by)
-  dn <- all.vars(formula[[3L]]) # date
-  cn <- all.vars(formula[[2L]]) # cases
-  fn <- unique(c(group_by, unlist(lapply(c(fixed, random), all.vars)))) # factors
-  an <- unique(c(dn, cn, fn)) # all
-  found <- (an %in% names(data))
+  av <- unique(c(all.vars(formula_ts), all.vars(formula_glmm)))
+  found <- (av %in% names(data))
   stop_if_not(
     all(found),
     m = paste0(
       "Formula variables not found in `data`:\n",
-      paste(sprintf("`%s`", an[!found]), collapse = ", ")
+      paste(sprintf("`%s`", av[!found]), collapse = ", ")
     )
   )
 
   ## Construct model frame
   stop_if_not(
-    vapply(data[an], is.atomic, FALSE),
+    vapply(data[av], is.atomic, FALSE),
     m = "Formula variables must be atomic."
   )
   if (!is.data.frame(data)) {
     stop_if_not(
-      diff(range(lengths(data[an]))) == 0L,
+      diff(range(lengths(data[av]))) == 0L,
       m = "Formula variables must have a common length."
     )
-    for (s in an) {
+    for (s in av) {
       dim(data[[s]]) <- NULL
     }
   }
-  frame <- as.data.frame(data[an])
+  frame <- as.data.frame(data[av])
   N <- nrow(frame)
   min_window_length <- 7L
   stop_if_not(
@@ -464,100 +404,119 @@ make_frame <- function(formula, fixed, random, group_by, data, index,
     m = sprintf("Model frame must have at least %d rows.", min_window_length)
   )
 
-  ## Check fitting windows
-  if (is.null(index)) {
-    index <- rep(factor(0), N)
+  ## Check data types
+  if (is.call(formula_ts[[3L]])) {
+    gv <- all.vars(formula_ts[[3L]][[3L]])
   } else {
-    stop_if_not(
-      is.factor(index),
-      length(index) == N,
-      m = sprintf("`index` must be a factor of length `length(%s)`.", dn)
-    )
-    index <- droplevels(index, exclude = NA)
-    stop_if_not(
-      nlevels(index) > 0L,
-      m = "`index` must have at least one nonempty level."
-    )
-    stop_if_not(
-      tabulate(index) >= min_window_length,
-      m = sprintf("Nonempty levels of `index` must have count %d or greater.", min_window_length)
-    )
+    gv <- character(0L)
   }
+  dv <- setdiff(all.vars(formula_ts[[3L]]), gv)
+  stop_if_not(
+    inherits(frame[[dv]], "Date"),
+    m = sprintf("`%s` must inherit from class \"Date\".", dv)
+  )
+  cv <- all.vars(formula_ts[[2L]])
+  stop_if_not(
+    is.numeric(frame[[cv]]),
+    all(frame[[cv]] >= 0, na.rm = TRUE),
+    m = sprintf("`%s` must be a non-negative numeric vector.", cv)
+  )
+  rv_lhs <- unique(unlist(lapply(a$random_terms, function(x) all.vars(x[[2L]]))))
+  stop_if_not(
+    vapply(frame[rv_lhs], is.numeric, FALSE),
+    m = "Formula variables on left hand side of `|`\nmust be numeric vectors."
+  )
+  rv_rhs <- unique(unlist(lapply(a$random_terms, function(x) all.vars(x[[3L]]))))
+  stop_if_not(
+    vapply(frame[c(rv_rhs, cv)], is.factor, FALSE),
+    m = "Formula variables on right hand side of `|`\nmust be factors."
+  )
+  fv <- unique(unlist(lapply(a$fixed_terms, all.vars)))
+  stop_if_not(
+    vapply(frame[fv], function(x) is.factor(x) || is.numeric(x), FALSE),
+    m = "Fixed effects formula variables\nmust be factors or numeric vectors."
+  )
 
-  if (length(fn) > 0L) {
+  ## Drop unused and NA factor levels
+  facv <- an[vapply(frame[an], is.factor, FALSE)]
+  frame[facv] <- lapply(frame[facv], droplevels, exclude = NA)
+
+  ## Check missing values
+  stop_if_not(
+    !vapply(frame[setdiff(av, cv)], anyNA, FALSE),
+    m = sprintf("Formula variables other than incidence (`%s`)\ncannot have missing values.", cv)
+  )
+
+  ## Check fitting windows
+  stop_if_not(
+    is.factor(window),
+    length(window) == N,
+    m = sprintf("`window` must be a factor of length `length(%s)`.", dv)
+  )
+  window <- droplevels(window, exclude = NA)
+  stop_if_not(
+    nlevels(window) > 0L,
+    m = "`window` must have at least one nonempty level."
+  )
+  stop_if_not(
+    tabulate(window) >= min_window_length,
+    m = sprintf("Nonempty levels of `window` must have\nfrequency %d or greater.", min_window_length)
+  )
+
+  if (length(facv) > 0L) {
     ## Check factors
     stop_if_not(
-      vapply(frame[fn], is.factor, FALSE),
-      m = "Grouping variables must be factors."
+      nlevels(interaction(cbind(window, frame[facv]), drop = TRUE)) == nlevels(window),
+      m = "Factors must be constant in each level of `window`."
     )
-    frame[fn] <- lapply(frame[fn], droplevels, exclude = NA)
-    stop_if_not(
-      !vapply(frame[fn], anyNA, FALSE),
-      m = "Grouping variables must not have missing values."
-    )
-    stop_if_not(
-      nlevels(interaction(cbind(index, frame[fn]), drop = TRUE)) == nlevels(index),
-      m = "Grouping variables must be fixed in each level of `index`."
-    )
-    frame_red <- droplevels(frame[!is.na(index) & !duplicated(index), fn, drop = FALSE])
-    stop_if_not(
-      vapply(frame_red, nlevels, 0L) > 1L,
-      m = "Grouping variables must not be fixed across all levels of `index`."
-    )
+    if (length(facv) > length(gv)) {
+      frame_red <- droplevels(frame[!is.na(window) & !duplicated(window), setdiff(facv, gv), drop = FALSE])
+      stop_if_not(
+        vapply(frame_red, nlevels, 0L) > 1L,
+        m = "Factors in `formula_glmm` must not be constant\nacross all levels of `window`."
+      )
+    }
   }
 
-  if (length(group_by) > 0L) {
+  if (length(gv) > 0L) {
     ## Discard rows belonging to time series without fitting windows
-    frame[group_by] <- Map(factor,
-      x = frame[group_by],
-      levels = lapply(frame_red[group_by], levels)
+    frame_red <- droplevels(frame[!is.na(window) & !duplicated(window), gv, drop = FALSE])
+    frame[gv] <- Map(factor,
+      x = frame[gv],
+      levels = lapply(frame_red[gv], levels)
     )
-    keep <- complete.cases(frame[group_by])
-    frame <- droplevels(frame[keep, ])
+    keep <- complete.cases(frame[gv])
+    frame <- droplevels(frame[keep, , drop = FALSE])
     index <- index[keep]
     N <- nrow(frame)
 
     ## Order rows by time series
-    ts <- interaction(frame[group_by], drop = TRUE)
+    ts <- interaction(frame[gv], drop = TRUE)
     ord <- order(ts)
     frame <- frame[ord, ]
     index <- index[ord]
     ts <- ts[ord]
-  }
 
-  ## Check time
-  stop_if_not(
-    inherits(frame[[dn]], "Date"),
-    m = sprintf("`%s` must inherit from class \"Date\".", dn)
-  )
-  stop_if_not(
-    !anyNA(frame[[dn]]),
-    m = sprintf("`%s` must not have missing values.", dn)
-  )
-  if (length(group_by) > 0L) {
-    date_split <- split(frame[[dn]], ts)
+    ## Check date
+    date_split <- split(frame[[dv]], ts)
     stop_if_not(
       vapply(date_split, function(x) all(diff(x) > 0), FALSE),
-      m = sprintf("`%s` must be increasing in each level of `%s`.", dn, paste(group_by, collapse = ":"))
+      m = sprintf("`%s` must be increasing in each level of `%s`.", dv, paste(gv, collapse = ":"))
     )
   } else {
+    ## Check date
     stop_if_not(
-      all(diff(frame[[dn]]) > 0),
-      m = sprintf("`%s` must be increasing.", dn)
+      all(diff(frame[[dv]]) > 0),
+      m = sprintf("`%s` must be increasing.", dv)
     )
   }
 
   ## Check incidence
-  stop_if_not(
-    is.numeric(frame[[cn]]),
-    all(frame[[cn]] >= 0, na.rm = TRUE),
-    m = sprintf("`%s` must be a non-negative numeric vector.", cn)
-  )
-  if (!is.integer(frame[[cn]])) {
-    which_is_infinite <- which(is.infinite(frame[[cn]]))
+  if (!is.integer(frame[[cv]])) {
+    which_is_infinite <- which(!is.finite(frame[[cv]]))
     if (length(which_is_infinite) > 0L) {
-      warning(sprintf("Non-finite numeric elements of `%s` replaced with NA.", cn))
-      frame[[cn]][which_is_infinite] <- NA
+      warning(sprintf("Non-finite numeric elements of `%s` replaced with NA.", cv))
+      frame[[cv]][which_is_infinite] <- NA
     }
     which_is_non_integer <- which(frame[[cn]] %% 1 != 0)
     if (length(which_is_non_integer) > 0L) {
@@ -565,28 +524,32 @@ make_frame <- function(formula, fixed, random, group_by, data, index,
       frame[[cn]][which_is_non_integer] <- trunc(frame[[cn]][which_is_non_integer])
     }
   }
-  cases_split <- split(frame[[cn]], index)
+  cases_split <- split(frame[[cn]], window)
   if (na_action == "fail") {
     stop_if_not(
-      vapply(cases_split, function(x) !anyNA(x[-1L]), FALSE),
-      m = sprintf("There are fitting windows with missing values in `%s`.", cn)
+      !vapply(cases_split, function(x) anyNA(x[-1L]), FALSE),
+      m = sprintf("na_action = \"fail\": `%s` has missing values\nin at least one fitting window.", cv)
     )
   } else {
     stop_if_not(
       vapply(cases_split, function(x) sum(!is.na(x)) >= min_window_length, FALSE),
-      m = sprintf("There are fitting windows with insufficient data\n(fewer than %d observations) in `%s`.", min_window_length, cn)
+      m = sprintf("`%s` has insufficient data (fewer than %d observations)\nin at least one fitting window.", cv, min_window_length)
     )
   }
 
   ## Check that fitting windows are contiguous
   stop_if_not(
-    vapply(split(seq_len(N), index), function(i) all(diff(i) == 1L), FALSE),
+    vapply(split(seq_len(N), window), function(i) all(diff(i) == 1L), FALSE),
     m = "Fitting windows must be contiguous."
   )
 
   ## Clean up
   row.names(frame) <- NULL
-  index <- factor(index, levels = unique(index), exclude = NA) # beware: dependency of multiple methods
+
+  # Variable/level order is a dependency of multiple methods
+  # (for better or for worse), so edit with care
+  frame <- frame[c(dv, cv, setdiff(av, c(dv, cv)))] # put time series first, everything else after
+  window <- factor(window, levels = unique(window), exclude = NA) # order levels by occurrence
 
   ## Subset rows belonging to a fitting window
   ## and preserve the difference as an attribute
@@ -594,10 +557,9 @@ make_frame <- function(formula, fixed, random, group_by, data, index,
   keep <- !is.na(index)
   structure(droplevels(frame[keep, ]),
     extra = droplevels(frame[!keep, ]),
-    index = index[keep],
-    group_by = group_by,
-    fixed_term_labels = lapply(fixed, get_term_labels),
-    random_term_labels = lapply(random, get_term_labels)
+    window = window[keep],
+    formula_ts = formula_ts,
+    formula_glmm = formula_glmm
   )
 }
 

@@ -7,43 +7,27 @@
 #' the negative log Laplace approximation of the marginal likelihood)
 #' are calculated by automatic differentiation using R package **TMB**.
 #'
-#' @param formula
-#'   A formula of the form `y ~ x` specifying one or more incidence
-#'   time series in long format, with `x` Date and `y` numeric.
-#' @param fixed,random
-#'   Named lists of formulae of the form `~rhs`, together specifying
-#'   a generalized linear mixed effects model (the fixed and random
-#'   components) for each parameter of the _incidence_ model indicated
-#'   by `curve`, `distr`, and `excess`.
-#'   A list of valid names can be obtained with
-#'   `get_par_names(curve, distr, excess, link = TRUE)`.
-#'   Alternatively, formulae (rather than lists of formulae) to be
-#'   recycled for all parameters.
-#'   Syntax is [`lme4`][lme4::lmer()]-like, but here all variables
-#'   must be factors.
-#'   `fixed` formulae are restricted to one term and so must be `~1`
-#'   (the default for each missing list element) or have the form
-#'   `~f1:...:fn`.
-#'   `random` formulae are restricted to sums of terms of the form
-#'   `(1 | f1:...:fn)`, `(1 | f1/.../fn)`, or `(1 | f1 * ... * fn)`.
-#'   Use `NULL` (the default for each missing list element) instead
-#'   of a formula to indicate absence of random effects.
-#' @param group_by
-#'   A formula of the form `~f1:...:fn`,
-#'   such that `split(data, interaction(data[all.vars(group_by)]))`
-#'   splits `data` by time series. Use `~1` (the default) if there
-#'   is only one time series.
+#' @param formula_ts
+#'   A formula of the form `y ~ x` or `y ~ x | group` specifying one
+#'   or more incidence time series in long format, with `x` the name
+#'   of a Date vector, `y` the name of a numeric vector, and `group`
+#'   an interaction of one or more factors, splitting the data by
+#'   time series.
+#' @param formula_glmm
+#'   A list of formulae of the form `par ~ rhs`, where `par`
+#'   is the name of a nonlinear model parameter (an element
+#'   of `get_par_names(curve, distr, excess, link = TRUE)`)
+#'   and `rhs` is a sum of mixed effects model terms following
+#'   [`lme4`][lme4::lmer()]-like syntax. Alternatively,
+#'   a formula of the form `~rhs` to be recycled for all
+#'   nonlinear model parameters.
 #' @param data
 #'   A data frame, list, or environment containing the variables
-#'   named in `formula`, `fixed`, `random`, and `group_by`. Missing
-#'   values in incidence (`y` if `formula = y ~ x`) are tolerated
-#'   only if `na_action = "pass"`. Missing values in other variables
-#'   are not tolerated.
-#' @param index
-#'   A factor of length `nrow(data)` such that `split(data, index)`
-#'   splits `data` by fitting window, with `is.na(index)` indexing
-#'   rows of `data` not belonging to a fitting window. `NULL`
-#'   (the default) is equivalent to `rep(factor(0), nrow(data))`.
+#'   named in `formula_ts` and `formula_glmm`.
+#' @param window
+#'   A factor of length `nrow(data)` such that `split(data, window)`
+#'   splits `data` by fitting window, with `is.na(window)` indexing
+#'   rows of `data` not belonging to a fitting window.
 #' @param curve
 #'   A character string specifying a cumulative incidence model.
 #' @param distr
@@ -58,7 +42,8 @@
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
 #' @param na_action
 #'   A character string indicating how `NA` in the incidence vector
-#'   (`y` if `formula = y ~ x`) are handled. See [stats::na.fail()].
+#'   (`y` if `formula = y ~ x | group`) are handled. Note that `NA`
+#'   in other variables are not tolerated.
 #' @param sparse_X
 #'   A logical scalar. If `TRUE`, then the fixed effects design matrix
 #'   will be constructed in sparse format.
@@ -133,12 +118,10 @@
 #' @importFrom TMB MakeADFun sdreport
 #' @importFrom stats nlminb nlm optim
 #' @useDynLib epigrowthfit
-egf <- function(formula,
-                fixed = ~1,
-                random = NULL,
-                group_by = ~1,
+egf <- function(formula_ts,
+                formula_glmm,
                 data = parent.frame(),
-                index = NULL,
+                window,
                 curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
                 distr = c("nbinom", "pois"),
                 excess = FALSE,
@@ -157,12 +140,10 @@ egf <- function(formula,
   stop_if_not_tf(debug)
 
   frame <- make_frame(
-    formula = formula,
-    fixed = fixed,
-    random = random,
-    group_by = group_by,
+    formula_ts = formula_ts,
+    formula_glmm = formula_glmm,
     data = data,
-    index = index,
+    window = window,
     curve = curve,
     distr = distr,
     excess = excess,
