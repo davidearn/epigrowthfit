@@ -360,7 +360,7 @@ split_effects <- function(x) {
 make_frame <- function(formula_ts, formula_glmm, data, window,
                        curve, distr, excess, na_action) {
   ## Check model formulae
-  formula_ts   <- check_formula_ts(formula_ts)
+  formula_ts <- check_formula_ts(formula_ts)
   formula_glmm <- check_formula_glmm(formula_glmm, curve, distr, excess)
   a <- attributes(formula_glmm)
 
@@ -543,13 +543,13 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
     m = "Fitting windows must be contiguous."
   )
 
+  ## Variable/level order is a dependency of multiple methods
+  ## (for better or for worse), so edit with care
+  frame <- frame[c(dv, cv, setdiff(av, c(dv, cv)))] # order variables with time series first, everything else after
+  window <- factor(window, levels = unique(window), exclude = NA) # order levels by occurrence
+
   ## Clean up
   row.names(frame) <- NULL
-
-  # Variable/level order is a dependency of multiple methods
-  # (for better or for worse), so edit with care
-  frame <- frame[c(dv, cv, setdiff(av, c(dv, cv)))] # put time series first, everything else after
-  window <- factor(window, levels = unique(window), exclude = NA) # order levels by occurrence
 
   ## Subset rows belonging to a fitting window
   ## and preserve the difference as an attribute
