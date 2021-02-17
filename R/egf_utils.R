@@ -152,8 +152,6 @@ get_inverse_link <- function(s) {
 
 ######################## REFACTOR
 
-
-
 check_formula_ts <- function(formula_ts) {
   stop_if_not(
     inherits(formula_ts, "formula"),
@@ -163,120 +161,40 @@ check_formula_ts <- function(formula_ts) {
     length(formula_ts) == 3L,
     m = "`formula_ts` must have a response."
   )
-  formula_ts[[2L]] <- deparen(formula_ts[[2L]])
+  formula_ts <- deparen(formula_ts)
+
+  lhs <- formula_ts[[2L]]
   stop_if_not(
-    is.name(formula_ts[[2L]]),
-    m = "Left hand side of `formula_ts` must be a name."
+    is.name(lhs) || (is.call(lhs) && lhs[[1L]] == as.name("I")),
+    m = "Left hand side of `formula_ts`\nmust be a name or call to I()."
   )
-  formula_ts[[3L]] <- deparen(formula_ts[[3L]])
-  if (is.name(formula_ts[[3L]])) {
+
+  rhs <- formula_ts[[3L]]
+  if (is.name(rhs) || (is.call(rhs) && rhs[[1L]] == as.name("I"))) {
     return(formula_ts)
   }
-  if (is.call(formula_ts[[3L]]) && formula_ts[[3L]][[1L]] == as.name("|")) {
-    formula_ts[[3L]][[2L]] <- deparen(formula_ts[[3L]][[2L]])
+  if (is.call(rhs) && rhs[[1L]] == as.name("|")) {
     stop_if_not(
-      is.name(formula_ts[[3L]][[2L]]),
-      m = "Left hand side of `|` in `formula_ts`\nmust be a name."
+      is.name(rhs[[2L]]) || (is.call(rhs[[2L]]) && rhs[[2L]][[1L]] == as.name("I")),
+      m = "Left hand side of `|` in `formula_ts`\nmust be a name or call to I()."
     )
-    formula_ts[[3L]][[3L]] <- deparen(formula_ts[[3L]][[3L]])
     stop_if_not(
-      is_interaction(formula_ts[[3L]][[3L]]),
-      m = "Right hand side of `|` in `formula_ts`\nmust be a name or interaction."
+      is_interaction(rhs[[3L]], strict = TRUE),
+      m = "Right hand side of `|` in `formula_ts`\nmust be a name or interaction of names."
     )
-    formula_ts[[3L]][[3L]] <- expand_terms(formula_ts[[3L]][[3L]])
+    rhs[[3L]] <- expand_terms(rhs[[3L]])
+    formula_ts[[3L]] <- rhs
     return(formula_ts)
   }
-  stop("Right hand side of `formula_ts`\nmust be a name or a call to `|`.")
+  stop("Right hand side of `formula_ts`\nmust be a name or call\nto `I()` or `|`.")
 }
 
-check_formula_glmm <- function(formula_glmm, curve, distr, excess) {
-  pn <- get_par_names(curve, distr, excess, link = TRUE)
-  p <- length(pn)
 
-  if (inherits(formula_glmm, "formula") && length(formula_glmm) == 2L) {
-    formula_glmm[[3L]] <- formula_glmm[[2L]]
-    formula_glmm <- Map(
-      f = function(s, x) `[[<-`(x, 2L, as.name(s)),
-      s = pn,
-      x = rep.int(list(formula_glmm), p)
-    )
-  } else if (inherits(formula_glmm, "list") &&
-             length(formula_glmm) > 0L &&
-             all(vapply(formula_glmm, inherits, FALSE, "formula")) &&
-             all(lengths(formula_glmm) == 3L)) {
-    formula_glmm <- lapply(formula_glmm, function(x) `[[<-`(x, 2L, deparen(x[[2L]])))
-    lhs <- lapply(formula_glmm, `[[`, 2L)
-    stop_if_not(
-      vapply(lhs, is.name, FALSE),
-      m = "Left hand side of each `formula_glmm` formula\nmust be a name."
-    )
-    lhs_as_character <- vapply(lhs, all.vars, "")
-    stop_if_not(
-      lhs_as_character %in% pn,
-      !duplicated(lhs_as_character),
-      m = paste0(
-        "Name on left hand side of each `formula_glmm` formula\n",
-        "must be an element of:\n",
-        "`get_par_names(curve, distr, excess, link = TRUE)`."
-      )
-    )
-    names(formula_glmm) <- lhs_as_character
-    make_default_formula <- function(s) {
-      as.formula(call("~", as.name(s), 1))
-    }
-    ss <- setdiff(pn, lhs_as_character)
-    formula_glmm[ss] <- lapply(ss, make_default_formula)
-    formula_glmm <- formula_glmm[pn]
-  } else {
-    stop("`formula_glmm` must be a formula of the form `~rhs`\n",
-         "or a list of formulae of the form `par ~ rhs`.")
-  }
-  lapply(formula_glmm, function(x) {
-    ftrt <- split_effects(x)
-    formula_glmm[[3L]] <- unsplit_terms(do.call(c, ftrt))
-    structure(formula_glmm,
-      fixed_terms = ftrt$fixed_terms,
-      random_terms = ftrt$random_terms
-    )
-  })
-}
 
-split_effects <- function(x) {
-  if (!(inherits(x, "formula") || is.call(x) || is.name(x) || is.numeric(x))) {
-    stop("`x` must be a formula, call, name, or number.")
-  }
-  orig_terms <- split_terms(x)
-  has_bar <- vapply(orig_terms, function(x) is.call(x) && x[[1L]] == as.name("|"), FALSE)
 
-  if (all(has_bar)) {
-    fixed_terms <- list()
-  } else {
-    fixed_terms <- split_terms(expand_terms(unsplit_terms(orig_terms[!has_bar])))
-  }
 
-  if (any(has_bar)) {
-    lhs <- lapply(orig_terms[has_bar], function(x) deparen(x[[2L]]))
-    stop_if_not(
-      vapply(lhs, function(x) is.name(x) || x == 1, FALSE),
-      m = "Left hand side of each `|` in `formula_glmm`\nmust be 1 or a name."
-    )
-    rhs <- lapply(orig_terms[has_bar], function(x) expand_terms(x[[3L]]))
-    rhs_split <- lapply(rhs, split_terms)
-    stop_if_not(
-      vapply(do.call(c, rhs_split), is_interaction, FALSE),
-      m = "Right hand side of each `|` in `formula_glmm`\nmust expand to a sum of names and interactions."
-    )
-    random_terms <- Map(
-      f = function(x, y) call("|", x, y),
-      x = rep.int(lhs, lengths(rhs_split)),
-      y = do.call(c, rhs_split)
-    )
-  } else {
-    random_terms <- list()
-  }
 
-  list(fixed_terms = fixed_terms, random_terms = random_terms)
-}
+
 
 
 
@@ -362,7 +280,8 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
   ## Check model formulae
   formula_ts <- check_formula_ts(formula_ts)
   formula_glmm <- check_formula_glmm(formula_glmm, curve, distr, excess)
-  a <- attributes(formula_glmm)
+  ft <- do.call(c, lapply(formula_glmm, attr, "fixed_terms"))
+  rt <- do.call(c, lapply(formula_glmm, attr, "random_terms"))
 
   ## Check that formula variables can be found
   stop_if_not(
@@ -421,20 +340,20 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
     all(frame[[cv]] >= 0, na.rm = TRUE),
     m = sprintf("`%s` must be a non-negative numeric vector.", cv)
   )
-  rv_lhs <- unique(unlist(lapply(a$random_terms, function(x) all.vars(x[[2L]]))))
+  fv <- unique(unlist(lapply(ft, all.vars)))
+  stop_if_not(
+    vapply(frame[fv], function(x) is.factor(x) || is.numeric(x), FALSE),
+    m = "Fixed effects formula variables\nmust be factors or numeric vectors."
+  )
+  rv_lhs <- unique(unlist(lapply(rt, function(x) all.vars(x[[2L]]))))
   stop_if_not(
     vapply(frame[rv_lhs], is.numeric, FALSE),
     m = "Formula variables on left hand side of `|`\nmust be numeric vectors."
   )
-  rv_rhs <- unique(unlist(lapply(a$random_terms, function(x) all.vars(x[[3L]]))))
+  rv_rhs <- unique(unlist(lapply(rt, function(x) all.vars(x[[3L]]))))
   stop_if_not(
     vapply(frame[c(rv_rhs, cv)], is.factor, FALSE),
     m = "Formula variables on right hand side of `|`\nmust be factors."
-  )
-  fv <- unique(unlist(lapply(a$fixed_terms, all.vars)))
-  stop_if_not(
-    vapply(frame[fv], function(x) is.factor(x) || is.numeric(x), FALSE),
-    m = "Fixed effects formula variables\nmust be factors or numeric vectors."
   )
 
   ## Drop unused and NA factor levels
@@ -548,8 +467,30 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
   frame <- frame[c(dv, cv, setdiff(av, c(dv, cv)))] # order variables with time series first, everything else after
   window <- factor(window, levels = unique(window), exclude = NA) # order levels by occurrence
 
+
   ## Clean up
   row.names(frame) <- NULL
+
+  clean_fixed_terms <- function(x) {
+    a <- attributes(x)
+    av <- lapply(a$fixed_terms, all.vars)
+    all_is_factor <- function(s) all(vapply(frame[s], is.factor, FALSE))
+    aif <- vapply(av, all_is_factor, FALSE)
+    if (sum(aif) == 1L) {
+      return(x)
+    }
+    l <- lapply(unique(unlist(av[aif])), as.name)
+    tt <- l[[1L]]
+    for (i in seq_along(l)[-1L]) {
+      tt <- call(":", tt, l[[i]])
+    }
+    a$fixed_terms <- c(list(tt), a$fixed_terms[!aif])
+    structure(unsplit_terms(c(a$fixed_terms, a$random_terms)),
+      fixed_terms = a$fixed_terms,
+      random_terms = a$random_terms
+    )
+  }
+  formula_glmm <- lapply(formula_glmm, clean_fixed_terms)
 
   ## Subset rows belonging to a fitting window
   ## and preserve the difference as an attribute
@@ -563,78 +504,7 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
   )
 }
 
-#' Get term labels from a formula
-#'
-#' A wrapper for `labels(terms())` with special handling of certain
-#' formulae.
-#'
-#' @param f A formula of the form `~rhs`.
-#'
-#' @return
-#' If `f` has no variable terms, as in `f = ~1`, then `"1"`.
-#' Otherwise, the result of `labels(terms(f))` *after* replacing
-#' terms of `f` of the form `(1 | rhs_of_bar)` with `rhs_of_bar`.
-#'
-#' @examples
-#' get_term_labels(~w + x + y:z)
-#' get_term_labels(~1)
-#' get_term_labels(~w*x + y/z) # crosses, nests expanded
-#' get_term_labels(~w*x + (1 | y/z)) # bars ignored
-#'
-#' @noRd
-#' @importFrom stats terms reformulate
-get_term_labels <- function(f) {
-  if (is.null(f)) {
-    return(NULL)
-  }
-  tl <- labels(terms(f))
-  if (length(tl) == 0L) {
-    return("1")
-  }
-  has_bar <- grepl("^1 \\| ", tl)
-  if (any(has_bar)) {
-    tl[has_bar] <- sub("^1 \\| ", "", tl[has_bar])
-    tl <- labels(terms(reformulate(tl)))
-  }
-  tl
-}
 
-#' Evaluate a term label in a data frame
-#'
-#' Constructs the interaction specified by a term label
-#' (a character string of the form `"f1:...:fn"`) from
-#' factors in a data frame.
-#'
-#' @param term_label
-#'   A character string giving a colon-separated list of names
-#'   of factors in `frame`.
-#' @param frame
-#'   A data frame containing factors.
-#'
-#' @return
-#' A factor of length `nrow(frame)` giving the interaction
-#' specified by `term_label`. Unused levels are dropped.
-#'
-#' In the special case `term_label = "1"`, the result is
-#' `rep(factor(1), nrow(frame))`.
-#'
-#' @examples
-#' f <- function() factor(sample(5L, 20L, replace = TRUE))
-#' d <- data.frame(x = f(), y = f())
-#' get_factor("x:y", frame = d)
-#' get_factor("1", frame = d)
-#'
-#' @noRd
-get_factor <- function(term_label, frame) {
-  if (is.null(term_label)) {
-    return(NULL)
-  }
-  if (term_label == "1") {
-    return(rep(factor(1), nrow(frame)))
-  }
-  s <- unique(strsplit(term_label, ":")[[1L]])
-  interaction(frame[s], drop = TRUE, sep = ":")
-}
 
 #' Construct a design matrix from a factor
 #'
@@ -670,10 +540,11 @@ get_factor <- function(term_label, frame) {
 #' @noRd
 #' @importFrom Matrix sparseMatrix sparse.model.matrix
 #' @importFrom stats model.matrix
-factor_to_matrix <- function(x, sparse, intercept) {
-  if (is.null(x)) {
-    return(NULL)
-  }
+term_to_matrix <- function(x, frame, sparse, intercept) {
+  av <- all.vars(x)
+  av_factor <- av[vapply(frame[av], is.factor, FALSE)]
+
+
   d <- if (anyNA(levels(x))) 0L else sum(is.na(x))
   m <- length(x) - d
   n <- nlevels(x)
