@@ -341,16 +341,16 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
   if (is.null(dots$main)) {
     if (type %in% c("interval", "cumulative")) {
       s <- switch(x$curve, gompertz = "Gompertz", richards = "Richards", x$curve)
-      main_template <- sprintf("Fitted %s model", s)
+      main <- sprintf("Fitted %s model", s)
     } else {
-      main_template <- "Instantaneous exponential growth rate"
+      main <- "Instantaneous exponential growth rate"
     }
     if (length(group_by) > 0L) {
       s <- paste(sprintf("%s = %%%s", group_by, group_by), collapse = ", ")
-      main_template <- sprintf("%s\n%s", main_template, s)
+      main <- sprintf("%s\n%s", main, s)
     }
   } else {
-    main_template <- dots$main
+    main <- dots$main
   }
 
   ### Loop over plots =====================================
@@ -412,13 +412,11 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
                 by = switch(type, interval = m, 1))
 
     ## Title with flags substituted
-    if (is.character(main_template)) {
+    if (is.character(main)) {
       ## Replace "%factor_name" with "level_name"
       for (s in group_by) {
-        main <- gsub(sprintf("%%%s", s), as.character(d[1L, s]), main_template, fixed = TRUE)
+        main <- gsub(sprintf("%%%s", s), as.character(d[1L, s]), main, fixed = TRUE)
       }
-    } else {
-      main <- main_template
     }
 
     ## Axis limits (x)
