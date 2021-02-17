@@ -6,6 +6,7 @@
 ^scrap$
 ^utils$
 ^world$
+^ucc$
 ^Makefile$
 ^TODO\.md$
 ^data/old_plague_latent_period\.RData$
