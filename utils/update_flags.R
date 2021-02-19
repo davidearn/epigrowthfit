@@ -11,14 +11,14 @@ get_enum_names <- function(lines, type) {
   strsplit(text, ",")[[1L]]
 }
 
-fn_cpp <- "../src/epigrowthfit.cpp"
+fn_h <- "../src/enum.h"
 fn_r   <- "../R/enum.R"
 
-lines_cpp <- readLines(fn_cpp)
+lines_h <- readLines(fn_h)
 lines_r   <- readLines(fn_r)
 
-curve_names <- get_enum_names(lines_cpp, "curve")
-distr_names <- get_enum_names(lines_cpp, "distr")
+curve_names <- get_enum_names(lines_h, "curve")
+distr_names <- get_enum_names(lines_h, "distr")
 
 pattern <- "^(  curve_names <- c\\().*(\\) # GREP_FLAG)$"
 replacement <- sprintf("\\1%s\\2", paste(sprintf("\"%s\"", curve_names), collapse = ", "))

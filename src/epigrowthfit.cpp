@@ -1,203 +1,9 @@
 #define TMB_LIB_INIT R_init_epigrowthfit
 #include <TMB.hpp>
+#include "enum.h"
+#include "curve.h"
+#include "utils.h"
 
-enum curve
-{
-    exponential,
-    subexponential,
-    gompertz,
-    logistic,
-    richards
-};
-
-enum distr
-{
-    pois,
-    nbinom
-};
-
-template<class Type>
-Type eval_exponential(Type t, Type log_r, Type log_c0)
-{
-    // log(c(t))
-    // = log(c0 * exp(r * t))
-    // = log(c0) + r * t
-    return log_c0 + exp(log_r) * t;
-}
-
-template<class Type>
-Type eval_subexponential(Type t, Type log_alpha, Type log_c0, Type logit_p)
-{
-    // log(c(t))
-    // = log((c0^(1 - p) + (1 - p) * alpha * t)^(1 / (1 - p)))
-    // = log(c0^(1 - p) + (1 - p) * alpha * t) / (1 - p)
-    Type one_minus_p = Type(1) / (Type(1) + exp(logit_p));
-    return logspace_add(one_minus_p * log_c0, log(one_minus_p) + log_alpha + log(t)) / one_minus_p;
-}
-
-template<class Type>
-Type eval_gompertz(Type t, Type log_alpha, Type log_c0, Type log_K)
-{
-    // log(c(t))
-    // = log(K * (c0 / K)^(exp(-alpha * t)))
-    // = log(K) + exp(-alpha * t) * (log(c0) - log(K))
-    return log_K + exp(-exp(log_alpha) * t) * (log_c0 - log_K);
-}
-
-template<class Type>
-Type eval_logistic(Type t, Type log_r, Type log_tinfl, Type log_K)
-{
-    // log(c(t))
-    // = log(K / (1 + exp(-r * (t - tinfl))))
-    // = log(K) - log(1 + exp(-r * (t - tinfl)))
-    return log_K - logspace_add(Type(0), -exp(log_r) * (t - exp(log_tinfl)));
-}
-
-template<class Type>
-Type eval_richards(Type t, Type log_r, Type log_tinfl, Type log_K, Type log_a)
-{
-    // log(c(t))
-    // = log(K / (1 + a * exp(-r * a * (t - tinfl)))^(1 / a))
-    // = log(K) - log(1 + a * exp(-r * a * (t - tinfl))) / a
-    Type a = exp(log_a);
-    return log_K - logspace_add(Type(0), log_a - exp(log_r) * a * (t - exp(log_tinfl))) / a;
-}
-
-template<class Type>
-vector<Type> eval_log_cum_inc(vector<Type> t,
-			      matrix<Type> Y,
-			      int curve_flag,
-			      bool excess,
-			      int j_log_r,
-			      int j_log_alpha,
-			      int j_log_c0,
-			      int j_log_tinfl,
-			      int j_log_K,
-			      int j_logit_p,
-			      int j_log_a,
-			      int j_log_b)
-{
-    vector<Type> log_cum_inc(t.size());
-    for (int i = 0; i < t.size(); i++)
-    {
-        switch (curve_flag)
-	{
-	case exponential:
-	    log_cum_inc(i) = eval_exponential(t(i), Y(i, j_log_r), Y(i, j_log_c0));
-	    break;
-	case subexponential:
-	    log_cum_inc(i) = eval_subexponential(t(i), Y(i, j_log_alpha), Y(i, j_log_c0), Y(i, j_logit_p));
-	    break;
-	case gompertz:
-	    log_cum_inc(i) = eval_gompertz(t(i), Y(i, j_log_alpha), Y(i, j_log_c0), Y(i, j_log_K));
-	    break;
-	case logistic:
-	    log_cum_inc(i) = eval_logistic(t(i), Y(i, j_log_r), Y(i, j_log_tinfl), Y(i, j_log_K));
-	    break;
-	case richards:
-	    log_cum_inc(i) = eval_richards(t(i), Y(i, j_log_r), Y(i, j_log_tinfl), Y(i, j_log_K), Y(i, j_log_a));
-	    break;
-	}
-	if (excess)
-	{
-	    log_cum_inc(i) = logspace_add(Y(i, j_log_b) + log(t(i)), log_cum_inc(i));
-	}
-    }
-    return log_cum_inc;
-}
-
-template<class Type>
-vector<Type> eval_log_int_inc(vector<Type> log_cum_inc, vector<int> wl)
-{
-    vector<Type> log_int_inc(log_cum_inc.size() - wl.size());
-    for (int i1 = 0, i2 = 1, k = 0; k < wl.size(); k++)
-    {
-        for (int j = 0; j < wl(k) - 1; j++)
-	{
-	    log_int_inc(i1+j) = logspace_sub(log_cum_inc(i2+j), log_cum_inc(i2+j-1));
-	}
-	i1 += wl(k) - 1;
-	i2 += wl(k);
-    }
-    return log_int_inc;
-}
-
-template<class Type>
-vector<Type> eval_log_rt(vector<Type> log_cum_inc,
-		         matrix<Type> Y,
-		         int curve_flag,
-			 int j_log_r,
-			 int j_log_alpha,
-			 int j_log_K,
-			 int j_logit_p,
-			 int j_log_a)
-{
-    vector<Type> log_rt(log_cum_inc.size());
-    Type one_minus_p;
-    for (int i = 0; i < log_cum_inc.size(); i++)
-    {
-        switch (curve_flag)
-	{
-	case exponential:
-	    // log(c'(t) / c(t)) = log(r)
-	    log_rt(i) = Y(i, j_log_r);
-	    break;
-	case subexponential:
-	    // log(c'(t) / c(t)) = log(alpha) - (1 - p) * log(c(t))
-	    one_minus_p = Type(1) / (Type(1) + exp(Y(i, j_logit_p)));
-	    log_rt(i) = Y(i, j_log_alpha) - one_minus_p * log_cum_inc(i);
-	    break;
-	case gompertz:
-	    // log(c'(t) / c(t)) = log(alpha) + log(log(K) - log(c(t)))
-	    log_rt(i) = Y(i, j_log_alpha) + log(Y(i, j_log_K) - log_cum_inc(i));
-	    break;
-	case logistic:
-	    // log(c'(t) / c(t)) = log(r) + log(1 - c(t) / K)
-	    log_rt(i) = Y(i, j_log_r) + logspace_sub(Type(0), log_cum_inc(i) - Y(i, j_log_K));
-	    break;
-	case richards:
-	    // log(c'(t) / c(t)) = log(r) + log(1 - (c(t) / K)^a)
-	    log_rt(i) = Y(i, j_log_r) + logspace_sub(Type(0), exp(Y(i, j_log_a)) * (log_cum_inc(i) - Y(i, j_log_K)));
-	    break;
-	}
-    }
-    return log_rt;
-}
-
-template<class Type>
-Type dpois_robust(Type x, Type log_lambda, int give_log = 0)
-{
-    Type log_dpois = x * log_lambda - exp(log_lambda) - lfactorial(x);
-    return ( give_log ? log_dpois : exp(log_dpois) );
-}
-
-template<class Type>
-Type rnbinom_robust(Type log_mu, Type log_disp)
-{
-    Type log_a = log_disp - logspace_add(log_mu, log_disp);
-    return rnbinom(exp(log_disp), exp(log_a));
-}
-
-// https://github.com/kaskr/adcomp/issues/59
-template<class Type>
-bool isNA_real_(Type x)
-{
-    return R_IsNA(asDouble(x));
-}
-
-template<class Type>
-matrix<Type> prune_dupl_rows(matrix<Type> Y, vector<int> wl)
-{
-    matrix<Type> Y_short(wl.size(), Y.cols());
-    for (int i = 0, k = 0; k < wl.size(); k++)
-    {
-        Y_short.row(k) = Y.row(i);
-	i += wl(k);
-    }
-    return Y_short;
-}
-
-// https://kaskr.github.io/adcomp/Introduction.html
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
@@ -207,9 +13,11 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(curve_flag);    // curve     (enum curve)
     DATA_INTEGER(distr_flag);    // distr     (enum distr)
     DATA_INTEGER(excess_flag);   // excess    (1=yes,      0=no)
+    DATA_INTEGER(weekday_flag);  // weekday   (1=yes,      0=no)
     DATA_INTEGER(sparse_X_flag); // X format  (1=sparse,   0=dense)
-    DATA_INTEGER(predict_flag);  // predict   (1=predict,  0=fit)
+    DATA_INTEGER(predict_flag);  // predict   (1=yes,      0=no)
     bool excess   = (excess_flag   == 1);
+    bool weekday  = (weekday_flag  == 1);
     bool sparse_X = (sparse_X_flag == 1);
     bool predict  = (predict_flag  == 1);
     
@@ -218,20 +26,19 @@ Type objective_function<Type>::operator() ()
     DATA_VECTOR(t); // length=N
     DATA_VECTOR(x); // length=N
     // window lengths
-    DATA_IVECTOR(wl); // length=nts
-    int nw = wl.size();
-    // factor nlevels
-    DATA_IVECTOR(fnl); // length=nFE=np
-    DATA_IVECTOR(rnl); // length=nRE
+    DATA_IVECTOR(wl); // length=#(fitting windows)
+    // day-of-week of earliest date: 0 -> Sunday, etc.
+    DATA_IVECTOR(dow0); // length=#(fitting windows)
+    // number of coefficients
+    DATA_IVECTOR(fnc); // length=#(unique FE terms)
+    DATA_IVECTOR(rnc); // length=#(unique RE terms)
+    // mixed effects indicator matrices: elements in {0,1}
+    DATA_IMATRIX(fid); // nrow=#(FE terms),  ncol=#(nonlinear model parameters)
+    DATA_IMATRIX(rid); // nrow=#(RE terms),  ncol=#(nonlinear model parameters)
     // design matrices
-    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(nlevels(FE i))
+    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(#(groups in FE term i))
     DATA_MATRIX(Xd);
-    DATA_SPARSE_MATRIX(Z);  // nrow=N, ncol=sum(nlevels(RE i))
-    // random effect indicators
-    DATA_IMATRIX(rid); // nrow=nRE,  ncol=np,  {0,1}
-    bool anyRE = (rid.rows() > 0);
-    int np = rid.cols();
-    vector<int> rnp = rid.rowwise().sum();
+    DATA_SPARSE_MATRIX(Z);  // nrow=N,  ncol=sum(#(groups in RE term i))
     // parameter indices
     DATA_INTEGER(j_log_r);
     DATA_INTEGER(j_log_alpha);
@@ -242,6 +49,18 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(j_log_a);
     DATA_INTEGER(j_log_b);
     DATA_INTEGER(j_log_nbdisp);
+    DATA_INTEGER(j_log_w1);
+    DATA_INTEGER(j_log_w2);
+    DATA_INTEGER(j_log_w3);
+    DATA_INTEGER(j_log_w4);
+    DATA_INTEGER(j_log_w5);
+    DATA_INTEGER(j_log_w6);
+    // misc.
+    int nw = wl.size();
+    int np = fid.cols();
+    bool anyRE = (rid.rows() > 0);
+    vector<int> fnp = fid.rowwise().sum();
+    vector<int> rnp = rid.rowwise().sum();
     
     
     // Parameters

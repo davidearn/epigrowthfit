@@ -110,23 +110,7 @@ deparen <- function(x) {
   x
 }
 
-is_interaction <- function(x, strict = TRUE) {
-  if (is.name(x)) {
-    return(TRUE)
-  }
-  if (is.call(x)) {
-    if (strict) {
-      return(x[[1L]] == as.name(":") && is_interaction(x[[2L]], strict) && is.name(x[[3L]]))
-    }
-    if (x[[1L]] == as.name(":")) {
-      return(is_interaction(x[[2L]], strict) && is_interaction(x[[3L]], strict))
-    }
-    if (x[[1L]] == as.name("(") {
-      return(is_interaction(x[[2L]], strict))
-    }
-    if (x[[1L]] == as.name("I")) {
-      return(TRUE)
-    }
-  }
-  FALSE
+is_interaction <- function(x) {
+  is.name(x) ||
+    (is.call(x) && x[[1L]] == as.name(":") && is_interaction(x[[2L]]) && is.name(x[[3L]]))
 }

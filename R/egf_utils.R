@@ -3,48 +3,56 @@
 #' Returns the names used internally for parameters of the specified
 #' incidence model.
 #'
-#' @param curve,distr,excess
-#'   Character strings specifying an incidence model. See [egf()].
-#'   Alternatively, `curve` can be an `"egf"` object returned by
-#'   [egf()] or a `"tmb_data"` object returned by [make_tmb_data()],
-#'   in which case `distr` and `excess` are ignored.
+#' @param curve,distr,excess,weekday
+#'   Character or logical flags specifying an incidence model.
+#'   See [egf()]. Alternatively, `curve` can be an `"egf"` object
+#'   returned by [egf()] or a `"tmb_data"` object returned by
+#'   [make_tmb_data()], in which case `distr`, `excess`, and
+#'   `weekday` are ignored.
 #' @param link
 #'   A logical scalar. If `TRUE`, then a prefix indicating the
 #'   link function used internally (either `"log_"` or `"logit_"`)
 #'   is prepended to each parameter name.
 #'
 #' @return
-#' If `link = FALSE`, then the default method returned the subset
-#' of `c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")`
-#' relevant to `curve`, `distr`, and `excess`.
+#' A subset of `"r"`, `"alpha"`, `paste0("w", 1:6)`, `"c0"`, `"tinfl"`,
+#' `"K"`, `"p"`, `"a"`, `"b"`, and `"nbdisp"`, with or without prefixes
+#' depending on `link`.
 #'
 #' @examples
 #' pn  <- get_par_names(curve = "exponential", distr = "pois",
-#'                      excess = FALSE, link = FALSE)
+#'                      excess = FALSE, weekday = FALSE, link = FALSE)
 #' lpn <- get_par_names(curve = "exponential", distr = "pois",
-#'                      excess = FALSE, link = TRUE)
+#'                      excess = FALSE, weekday = FALSE, link = TRUE)
 #' identical(pn, sub("^(log|logit)_", "", lpn))
 #'
 #' @export
-get_par_names <- function(curve = NULL, distr = NULL, excess = NULL,
+get_par_names <- function(curve = NULL,
+                          distr = NULL,
+                          excess = NULL,
+                          weekday = NULL,
                           link = TRUE) {
   UseMethod("get_par_names", curve)
 }
 
 #' @export
-get_par_names.default <- function(curve = NULL, distr = NULL, excess = NULL,
+get_par_names.default <- function(curve = NULL,
+                                  distr = NULL,
+                                  excess = NULL,
+                                  weekday = NULL,
                                   link = TRUE) {
-  if (is.null(curve) && is.null(distr) && is.null(excess)) {
-    pn <- c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")
+  if (all(vapply(list(curve, distr, excess, weekday), is.null, FALSE))) {
+    pn <- c("r", "alpha", paste0("w", 1:6),
+            "c0", "tinfl", "K", "p", "a", "b", "nbdisp")
   } else {
-    pn <- character(0)
+    pn <- character(0L)
     if (!is.null(curve)) {
       a <- switch(curve,
         exponential    = c("r", "c0"),
-        subexponential = c("alpha", "c0", "p"),
-        gompertz       = c("alpha", "c0", "K"),
         logistic       = c("r", "tinfl", "K"),
         richards       = c("r", "tinfl", "K", "a"),
+        subexponential = c("alpha", "c0", "p"),
+        gompertz       = c("alpha", "c0", "K")
       )
       pn <- c(pn, a)
     }
@@ -53,6 +61,9 @@ get_par_names.default <- function(curve = NULL, distr = NULL, excess = NULL,
     }
     if (!is.null(excess) && excess) {
       pn <- c(pn, "b")
+    }
+    if (!is.null(weekday) && weekday) {
+      pn <- c(pn, paste0("w", 1:6))
     }
   }
   if (link) {
@@ -150,8 +161,17 @@ get_inverse_link <- function(s) {
   )
 }
 
-######################## REFACTOR
-
+#' Validate time series formula
+#'
+#' Checks that [egf()] argument `formula_ts` is a valid formula
+#' of the form `y ~ x` or `y ~ x | group`.
+#'
+#' @inheritParams egf
+#'
+#' @return
+#' `formula_ts`, simplified if possible.
+#'
+#' @noRd
 check_formula_ts <- function(formula_ts) {
   stop_if_not(
     inherits(formula_ts, "formula"),
@@ -162,42 +182,137 @@ check_formula_ts <- function(formula_ts) {
     m = "`formula_ts` must have a response."
   )
   formula_ts <- deparen(formula_ts)
-
   lhs <- formula_ts[[2L]]
   stop_if_not(
-    is.name(lhs) || (is.call(lhs) && lhs[[1L]] == as.name("I")),
-    m = "Left hand side of `formula_ts`\nmust be a name or call to I()."
+    is.name(lhs),
+    m = "Left hand side of `formula_ts` must be a name."
   )
-
   rhs <- formula_ts[[3L]]
-  if (is.name(rhs) || (is.call(rhs) && rhs[[1L]] == as.name("I"))) {
+  if (is.name(rhs)) {
     return(formula_ts)
   }
-  if (is.call(rhs) && rhs[[1L]] == as.name("|")) {
-    stop_if_not(
-      is.name(rhs[[2L]]) || (is.call(rhs[[2L]]) && rhs[[2L]][[1L]] == as.name("I")),
-      m = "Left hand side of `|` in `formula_ts`\nmust be a name or call to I()."
-    )
-    stop_if_not(
-      is_interaction(rhs[[3L]], strict = TRUE),
-      m = "Right hand side of `|` in `formula_ts`\nmust be a name or interaction of names."
-    )
-    rhs[[3L]] <- expand_terms(rhs[[3L]])
-    formula_ts[[3L]] <- rhs
-    return(formula_ts)
-  }
-  stop("Right hand side of `formula_ts`\nmust be a name or call\nto `I()` or `|`.")
+  stop_if_not(
+    is.call(rhs) && rhs[[1L]] == as.name("|"),
+    m = "Right hand side of `formula_ts`\nmust be a name or a call to `|`."
+  )
+  stop_if_not(
+    is.name(rhs[[2L]]),
+    m = "Left hand side of `|` in `formula_ts` must be a name."
+  )
+  stop_if_not(
+    is_interaction(rhs[[3L]]),
+    m = "Right hand side of `|` in `formula_ts`\nmust be a name or an interaction of names."
+  )
+  rhs[[3L]] <- expand_terms(rhs[[3L]])
+  formula_ts[[3L]] <- rhs
+  formula_ts
 }
 
+#' Validate mixed effects formulae
+#'
+#' Checks that [egf()] argument `formula_glmm` is a valid formula
+#' of the form `~terms` or a valid list of formulae of the form
+#' `par ~ terms`.
+#'
+#' @inheritParams egf
+#'
+#' @details
+#' If `formula_glmm` is a formula, then it is recycled to a list.
+#' If it is an incomplete list of formulae, then missing formulae
+#' are assigned `par ~ 1`. Terms using formula operators such as
+#' `"*"` are expanded in the result.
+#'
+#' @return
+#' A list of formulae of the form `par ~ terms`, one for each
+#' nonlinear model parameter. Each has attributes `fixed_terms`
+#' and `random_terms`, which split the fixed and random effects
+#' components of `terms` at `"+"`.
+#'
+#' @noRd
+check_formula_glmm <- function(formula_glmm, curve, distr, excess, weekday) {
+  pn <- get_par_names(curve = curve, distr = distr,
+                      excess = excess, weekday = weekday, link = TRUE)
+  make_default_formula <- function(s) as.formula(call("~", as.name(s), 1))
 
+  if (inherits(formula_glmm, "formula") &&
+      length(formula_glmm) == 2L) {
+    formula_glmm <- check_formula_terms(formula_glmm)
+    formula_glmm[[3L]] <- formula_glmm[[2L]]
+    formula_glmm <- Map(
+      f = function(s, x) {x[[2L]] <- as.name(s); x},
+      s = pn,
+      x = list(formula_glmm)
+    )
+  } else if (inherits(formula_glmm, "list") &&
+             length(formula_glmm) > 0L &&
+             all(vapply(formula_glmm, inherits, FALSE, "formula")) &&
+             all(lengths(formula_glmm) == 3L)) {
+    formula_glmm <- lapply(formula_glmm, deparen)
+    lhs <- lapply(formula_glmm, `[[`, 2L)
+    lhs_as_character <- vapply(lhs, deparse, "")
+    stop_if_not(
+      vapply(lhs, is.name, FALSE),
+      lhs_as_character %in% pn,
+      !duplicated(lhs_as_character),
+      m = paste0(
+        "Left hand side of each `formula_glmm` formula\n",
+        "must be a name in:\n",
+        "`get_par_names(curve, distr, excess, weekday, link = TRUE)`."
+      )
+    )
+    names(formula_glmm) <- lhs_as_character
+    fill <- setdiff(pn, lhs_as_character)
+    formula_glmm[fill] <- lapply(fill, make_default_formula)
+    formula_glmm <- lapply(formula_glmm[pn], check_formula_glmm_terms)
+  } else {
+    stop("`formula_glmm` must be a formula of the form `~terms`\n",
+         "or a list of formulae of the form `par ~ terms`.")
+  }
 
+  formula_glmm
+}
 
+check_formula_glmm_terms <- function(x) {
+  stop_if_not(
+    inherits(x, "formula"),
+    m = "`x` must be a formula."
+  )
+  x[[length(x)]] <- expand_terms(x)
+  terms <- split_terms(x)
+  has_bar <- vapply(terms, function(x) is.call(x) && x[[1L]] == as.name("|"), FALSE)
+  stop_if_not(
+    vapply(terms[!has_bar], is_interaction, FALSE),
+    m = paste0(
+      "Fixed effects formulae must expand to\n",
+      "a sum of names and interactions of names."
+    )
+  )
+  if (any(has_bar)) {
+    lhs <- lapply(terms[has_bar], `[[`, 2L)
+    stop_if_not(
+      vapply(lhs, `==`, FALSE, 1) | vapply(lhs, is_interaction, FALSE),
+      m = paste0(
+        "Left hand side of `|` in `formula_glmm`\n",
+        "must expand to 1 or a sum of names and\n",
+        "interactions of names."
+      )
+    )
+    rhs <- lapply(terms[has_bar], `[[`, 3L)
+    stop_if_not(
+      vapply(rhs, is_interaction, FALSE),
+      m = paste0(
+        "Right hand side of `|` in `formula_glmm`\n",
+        "must expand to a sum of names and\n",
+        "interactions of names."
+      )
+    )
+  }
 
-
-
-
-
-
+  structure(x,
+    fixed_terms = terms[!has_bar],
+    random_terms = terms[has_bar]
+  )
+}
 
 #' Construct a model frame
 #'
@@ -210,9 +325,7 @@ check_formula_ts <- function(formula_ts) {
 #' Rows of `data` belonging to time series without fitting windows
 #' are discarded. Rows of `data[-discarded, ]` belonging to fitting
 #' windows are returned. The remaining rows of `data[-discarded, ]`
-#' are preserved in attribute `extra`. These rows are kept because
-#' it is desirable for [plot.egf()] to display entire time series,
-#' not only segments to which a curve has been fit.
+#' are preserved in attribute `extra`.
 #'
 #' @return
 #' A data frame containing the variables named in `formula_ts` and
@@ -276,7 +389,7 @@ check_formula_ts <- function(formula_ts) {
 #' @keywords internal
 #' @importFrom stats complete.cases
 make_frame <- function(formula_ts, formula_glmm, data, window,
-                       curve, distr, excess, na_action) {
+                       curve, distr, excess, weekday, na_action) {
   ## Check model formulae
   formula_ts <- check_formula_ts(formula_ts)
   formula_glmm <- check_formula_glmm(formula_glmm, curve, distr, excess)
@@ -291,7 +404,7 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
   if (is.environment(data)) {
     data <- as.list(data)
   }
-  av <- unique(c(all.vars(formula_ts), all.vars(formula_glmm)))
+  av <- unique(unlist(lapply(c(list(formula_ts), ft, rt), all.vars)))
   found <- (av %in% names(data))
   stop_if_not(
     all(found),
@@ -317,7 +430,7 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
   }
   frame <- as.data.frame(data[av])
   N <- nrow(frame)
-  min_window_length <- 7L
+  min_window_length <- 1L + length(get_par_names(curve, distr, excess, weekday))
   stop_if_not(
     N >= min_window_length,
     m = sprintf("Model frame must have at least %d rows.", min_window_length)
@@ -352,12 +465,12 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
   )
   rv_rhs <- unique(unlist(lapply(rt, function(x) all.vars(x[[3L]]))))
   stop_if_not(
-    vapply(frame[c(rv_rhs, cv)], is.factor, FALSE),
+    vapply(frame[c(rv_rhs, gv)], is.factor, FALSE),
     m = "Formula variables on right hand side of `|`\nmust be factors."
   )
 
   ## Drop unused and NA factor levels
-  facv <- an[vapply(frame[an], is.factor, FALSE)]
+  facv <- av[vapply(frame[av], is.factor, FALSE)]
   frame[facv] <- lapply(frame[facv], droplevels, exclude = NA)
 
   ## Check missing values
@@ -467,30 +580,46 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
   frame <- frame[c(dv, cv, setdiff(av, c(dv, cv)))] # order variables with time series first, everything else after
   window <- factor(window, levels = unique(window), exclude = NA) # order levels by occurrence
 
-
   ## Clean up
   row.names(frame) <- NULL
 
-  clean_fixed_terms <- function(x) {
-    a <- attributes(x)
-    av <- lapply(a$fixed_terms, all.vars)
-    all_is_factor <- function(s) all(vapply(frame[s], is.factor, FALSE))
-    aif <- vapply(av, all_is_factor, FALSE)
-    if (sum(aif) == 1L) {
+  ## Condense, e.g., `x + y` to `x:y` if `x` and `y` are factors
+  condense_fixed_terms <- function(x) {
+    fixed_terms <- attr(x, "fixed_terms")
+    if (length(fixed_terms) == 1L && fixed_terms[[1L]] == 1) {
       return(x)
     }
-    l <- lapply(unique(unlist(av[aif])), as.name)
-    tt <- l[[1L]]
-    for (i in seq_along(l)[-1L]) {
-      tt <- call(":", tt, l[[i]])
+    av <- lapply(fixed_terms, all.vars)
+    av_numeric <- lapply(av, function(s) sort(s[vapply(frame[s], is.numeric, FALSE)]))
+    av_factor <- Map(setdiff, av, av_numeric)
+    l <- tapply(
+      X = av_factor,
+      INDEX = vapply(av_numeric, paste, "", collapse = ":"),
+      FUN = function(l) paste(unique(unlist(l)), collapse = ":"),
+      simplify = FALSE
+    )
+    l <- Map(
+      f = function(s1, s2) strsplit(paste(s1, s2, sep = ":"), ":")[[1L]],
+      s1 = names(l),
+      s2 = l,
+      USE.NAMES = FALSE
+    )
+    l <- lapply(l, function(s) {
+      tt <- as.name(s[1L])
+      for (i in seq_along(s)[-1L]) {
+        tt <- call(":", tt, as.name(s[i]))
+      }
+      tt
+    })
+    if (all(lengths(av_numeric) > 0L)) {
+      l <- c(list(1), l)
     }
-    a$fixed_terms <- c(list(tt), a$fixed_terms[!aif])
-    structure(unsplit_terms(c(a$fixed_terms, a$random_terms)),
-      fixed_terms = a$fixed_terms,
+    structure(unsplit_terms(c(l, a$random_terms)),
+      fixed_terms = l,
       random_terms = a$random_terms
     )
   }
-  formula_glmm <- lapply(formula_glmm, clean_fixed_terms)
+  formula_glmm <- lapply(formula_glmm, condense_fixed_terms)
 
   ## Subset rows belonging to a fitting window
   ## and preserve the difference as an attribute
@@ -504,68 +633,78 @@ make_frame <- function(formula_ts, formula_glmm, data, window,
   )
 }
 
-
-
-#' Construct a design matrix from a factor
+#' Construct a design matrix from a formula term
 #'
 #' A wrapper for
 #' [stats::model.matrix()] and [Matrix::sparse.model.matrix()]
-#' operating on factors instead of formulae and data frames.
+#' operating on irreducible formula terms.
 #'
 #' @param x
-#'   A factor.
-#' @param sparse
-#'   A logical scalar. If TRUE, then the matrix is returned in
-#'   sparse format.
-#' @param intercept
-#'   A logical scalar. If TRUE, then zero-sum contrasts are used.
-#'   If FALSE, then no contrasts are used. See [stats::contr.sum()].
-#'
-#' @details
-#' Factors `x` with `nlevels(x) < 2` are tolerated. This is not true
-#' of [stats::model.matrix()] or [Matrix::sparse.model.matrix()].
+#'   A formula term, one of
+#'   (1) 1, as in `(~1)[[2L]]`;
+#'   (2) an interaction of one or more numeric vectors and factors,
+#'   as in `x` and `x:y`; and
+#'   (3) a call to `|` with 1 or an interaction of one or more
+#'   numeric variables on the left hand side and an interaction
+#'   of one or more factors on the right hand side, as in
+#'   `1 | f` and `x | f:g`.
+#' @param frame
+#'   A data frame containing the variables named in `x`,
+#'   which must not have missing values, as enforced by
+#'   [make_frame()].
+#' @param sparse_X
+#'   A logical scalar. If `TRUE`, then the matrix is returned in
+#'   sparse format. If `x` is a call to `|`, then the matrix is
+#'   returned in sparse format regardless of `sparse`.
 #'
 #' @return
-#' A matrix with `length(x)-d` rows and `nlevels(x)` columns,
-#' where `d = 0` if `levels(x)` contains `NA` and `d = sum(is.na(x))`
-#' otherwise.
-#'
-#' @examples
-#' x <- factor(sample(5L, 20L, replace = TRUE))
-#' factor_to_matrix(x, sparse = TRUE, intercept = TRUE)
-#' factor_to_matrix(x, sparse = TRUE, intercept = FALSE)
-#' factor_to_matrix(x, sparse = FALSE, intercept = TRUE)
-#' factor_to_matrix(x, sparse = FALSE, intercept = FALSE)
+#' A matrix with `nrow(frame)` rows and `n` columns,
+#' where `n` is the number of nonempty groups if `x`
+#' has a grouping component and 1 otherwise.
 #'
 #' @noRd
 #' @importFrom Matrix sparseMatrix sparse.model.matrix
 #' @importFrom stats model.matrix
-term_to_matrix <- function(x, frame, sparse, intercept) {
-  av <- all.vars(x)
-  av_factor <- av[vapply(frame[av], is.factor, FALSE)]
-
-
-  d <- if (anyNA(levels(x))) 0L else sum(is.na(x))
-  m <- length(x) - d
-  n <- nlevels(x)
-  if (m == 0L || n < 2L) {
-    mn <- m * n
-    if (sparse) {
-      X <- sparseMatrix(i = seq_len(mn), j = rep.int(1L, mn),
-                        x = rep.int(1L, mn), dims = c(m, n))
-    } else {
-      X <- rep.int(1L, mn)
-      dim(X) <- c(m, n)
+term_to_matrix <- function(x, frame, sparse_X) {
+  if (is.call(x) && x[[1L]] == as.name("|")) {
+    group <- interaction(frame[all.vars(x[[3L]])], drop = TRUE)
+    Z <- sparse.model.matrix(~-1 + group, data = list(group = group))
+    if (x[[2L]] != 1) {
+      Z <- Z * Reduce(`*`, frame[all.vars(x[[2L]])])
     }
-  } else {
-    f <- if (sparse) sparse.model.matrix else model.matrix
-    X <- f(
-      object = if (intercept) ~x else ~-1 + x,
-      data = list(x = x),
-      contrasts.arg = list(x = "contr.sum")
-    )
-    dimnames(X) <- list(NULL, NULL)
+    attr(Z, "assign") <- attr(Z, "contrasts") <- NULL
+    attr(Z, "variables") <- list(numeric = all.vars(x[[2L]]), factor = all.vars(x[[3L]]))
+    attr(Z, "group") <- group
+    dimnames(Z) <- list(NULL, NULL)
+    return(Z)
   }
+
+  av <- all.vars(x)
+  av_is_numeric <- vapply(frame[av], is.numeric, FALSE)
+  if (all(av_is_numeric)) {
+    X <- if (x == 1) rep.int(1L, nrow(frame)) else Reduce(`*`, frame[av])
+    if (sparse_X) {
+      X <- sparseMatrix(i = seq_along(X), j = rep.int(1L, length(X)),
+                        x = X, dims = c(length(X), 1L))
+    } else {
+      dim(X) <- c(length(X), 1L)
+    }
+    attr(X, "variables") <- list(numeric = av, factor = character(0L))
+    attr(X, "group") <- rep(factor(1), nrow(X))
+    return(X)
+  }
+
+  mm <- if (sparse_X) sparse.model.matrix else model.matrix
+  f <- if (any(av_is_numeric)) ~-1 + group else ~group
+  group <- interaction(frame[av[!av_is_numeric]], drop = TRUE)
+  X <- mm(f, data = list(group = group), contrasts.arg = list(group = "contr.sum"))
+  if (any(av_is_numeric)) {
+    X <- X * Reduce(`*`, frame[av[av_is_numeric]])
+  }
+  attr(X, "assign") <- attr(X, "contrasts") <- NULL
+  attr(X, "variables") <- list(numeric = av[av_is_numeric], factor = av[!av_is_numeric])
+  attr(X, "group") <- group
+  dimnames(X) <- list(NULL, NULL)
   X
 }
 
@@ -589,12 +728,17 @@ term_to_matrix <- function(x, frame, sparse, intercept) {
 #' \item{`x`}{
 #'   An integer vector of length `nrow(frame)`. Within each fitting
 #'   window, the first element is `NA` and the remaining elements
-#'   are such that `x[i]` is the number of cases observed from `t[i-1]`
-#'   to `t[i]`.
+#'   are such that `x[i]` is the number of cases observed from the
+#'   end of day `t[i-1]` to the end of day `t[i]`.
 #' }
 #' \item{`wl`}{
 #'   An integer vector of length `nlevels(index)` giving the length
 #'   of each fitting window.
+#' }
+#' \item{`dow0`}{
+#'   An integer vector giving the day-of-week of the earliest date
+#'   in each fitting window, with Sunday mapping to 0, Monday mapping
+#'   to 1, and so on.
 #' }
 #' \item{`Xs`, `Xd`}{
 #'   The fixed effects design matrix in sparse and dense format.
@@ -602,27 +746,30 @@ term_to_matrix <- function(x, frame, sparse, intercept) {
 #'   then `Xs` is empty. Uses zero-sum contrasts.
 #' }
 #' \item{`Z`}{
-#'   The random effects design matrix in sparse format, without
-#'   contrasts.
+#'   The random effects design matrix in sparse format.
+#'   Does not use contrasts.
 #' }
-#' \item{`ffr`, `rfr`}{
-#'   Data frames containing the factors referenced by the elements
-#'   of `frame` attributes `fixed_term_labels` and `random_term_labels`.
-#'   See [make_frame()].
+#' \item{`fvar`, `rvar`}{
+#'   Character vectors naming the independent variable
+#'   in each fixed or random effects term.
 #' }
-#' \item{`fnl`, `rnl`}{
-#'   Integer vectors listing the number of levels of each factor in
-#'   `ffr` and `rfr`.
+#' \item{`fgrp`, `rgrp`}{
+#'   Data frames containing the grouping variable corresponding
+#'   to each fixed or random effects term.
+#' }
+#' \item{`fnc`, `rnc`}{
+#'   Integer vectors listing the number of coefficients corresponding
+#'   to each fixed or random effects term.
 #' }
 #' \item{`fid`, `rid`}{
 #'   Indicator matrices with term labels for row names and parameter
-#'   names (with prefixes) for column names. Element `[i, j]` is equal
+#'   labels (with prefixes) for column names. Element `[i, j]` is equal
 #'   to 1 if and only if term `i` appears in the mixed effects model
 #'   (fixed/random component) for parameter `j`.
 #' }
-#' \item{`curve_flag`, `distr_flag`, `excess_flag`, `sparse_X_flag`}{
-#'   Integer flags referencing `curve`, `distr`, `excess`, and
-#'   `sparse_X`.
+#' \item{`curve_flag`, `distr_flag`, `excess_flag`, `weekday_flag`, `sparse_X_flag`}{
+#'   Integer flags referencing `curve`, `distr`, `excess`, `weekday`,
+#'   and `sparse_X`.
 #' }
 #' \item{`predict_flag`}{
 #'   An integer flag set equal to 0 so that prediction code is not run.
@@ -636,110 +783,130 @@ term_to_matrix <- function(x, frame, sparse, intercept) {
 #' @examples
 #' example("make_frame", package = "epigrowthfit")
 #' tmb_data <- epigrowthfit:::make_tmb_data(
-#'   frame,
-#'   curve, distr, excess,
+#'   frame = frame,
+#'   curve = curve,
+#'   distr = distr,
+#'   excess = excess,
+#'   weekday = weekday,
 #'   sparse_X = FALSE
 #' )
 #'
 #' @keywords internal
 #' @importFrom Matrix sparseMatrix
-make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
+make_tmb_data <- function(frame, curve, distr, excess, weekday, sparse_X) {
   a <- attributes(frame)
 
-  ## Number of parameters
-  p <- length(a$fixed_term_labels)
-
   ## Parameter names (with prefixes)
-  pn <- get_par_names(curve, distr, excess, link = TRUE) # model
+  pn <- get_par_names(curve = curve, distr = distr,
+                      excess = excess, weekday = TRUE, link = TRUE) # model
   pn0 <- get_par_names(link = TRUE) # all
+  p <- length(pn)
 
   ## Compute time as number of days since start of fitting window.
-  ## No issues with permutation here as `index` is ordered by level.
-  date_to_integer <- function(x) days(x, since = x[1L])
-  t <- unlist(lapply(split(frame[[1L]], a$index), date_to_integer), use.names = FALSE)
+  ## No issues with permutation as `window` is ordered by level.
+  date_to_integer <- function(x) as.integer(julian(x, origin = x[1L]))
+  t <- unlist(tapply(frame[[1L]], a$window, date_to_integer, simplify = FALSE), use.names = FALSE)
 
   ## Set unused first observations to NA. They are unused regardless,
   ## and this makes that explicit.
-  x <- frame[[2L]]
-  x[!duplicated(a$index)] <- NA_integer_
+  x <- unlist(tapply(frame[[2L]], a$window, `[<-`, 1L, NA, simplify = FALSE), use.names = FALSE)
 
-  ## Find lengths of fitting windows
-  wl <- tabulate(a$index)
+  ## Get lengths of fitting windows
+  wl <- tabulate(a$window)
 
-  ## Get character vectors containing unique term labels
-  ftl_incl_dupl <- unlist(a$fixed_term_labels, use.names = FALSE) # length `p`
-  rtl_incl_dupl <- unlist(a$random_term_labels, use.names = FALSE)
-  ftl <- unique(ftl_incl_dupl)
-  rtl <- unique(rtl_incl_dupl)
-  names(ftl) <- ftl
-  names(rtl) <- rtl
+  ## Get day-of-week of first date, mapping Sunday to 0, etc.
+  d0 <- do.call(c, tapply(frame[[1L]], a$window, `[`, 1L, simplify = FALSE))
+  dow0 <- as.integer(julian(d0, origin = as.Date("1995-03-05"))) %% 7L # "1995-03-05" was a Sunday
 
-  ## Evaluate term labels in `frame` and construct a data frame from
-  ## the result
-  ffr <- data.frame(lapply(ftl, get_factor, frame), check.names = FALSE)
-  rfr <- data.frame(lapply(rtl, get_factor, frame), check.names = FALSE)
+  ## Get unique mixed effects terms
+  ftl <- lapply(a$formula_glmm, attr, "fixed_terms")
+  rtl <- lapply(a$formula_glmm, attr, "random_terms")
+  ftl <- Map(`names<-`, ftl, lapply(ftl, function(l) vapply(l, deparse, "")))
+  rtl <- Map(`names<-`, rtl, lapply(rtl, function(l) vapply(l, deparse, "")))
+  ft_incl_dupl <- do.call(c, unname(ftl))
+  rt_incl_dupl <- do.call(c, unname(rtl))
+  ft <- ft_incl_dupl[!duplicated(names(ft_incl_dupl))]
+  rt <- rt_incl_dupl[!duplicated(names(rt_incl_dupl))]
 
-  ## Get number of levels for each factor
-  fnl <- vapply(ffr, nlevels, 0L)[ftl_incl_dupl] # length `p`
-  rnl <- vapply(rfr, nlevels, 0L)
+  ## Get design matrix for each term
+  fmat <- lapply(ft, term_to_matrix, frame = frame, sparse_X = sparse_X)
+  rmat <- lapply(rt, term_to_matrix, frame = frame)
 
-  ## Get design matrix for each factor
-  fmat <- lapply(ffr, factor_to_matrix, sparse = sparse_X, intercept = TRUE)[ftl_incl_dupl] # length `p`
-  rmat <- lapply(rfr, factor_to_matrix, sparse = TRUE, intercept = FALSE)
+  ## Get independent variable name for each term
+  get_varname <- function(m) {
+    s <- attr(m, "variables")$numeric
+    if (length(s) == 0L) {
+      return("(Intercept)")
+    }
+    paste(s, collapse = ":")
+  }
+  fvar <- lapply(fmat, get_varname)
+  rvar <- lapply(rmat, get_varname)
+
+  ## Get grouping variable for each term
+  fgrp <- as.data.frame(lapply(fmat, attr, "group"))
+  rgrp <- as.data.frame(lapply(rmat, attr, "group"))
+
+  ## Get number of coefficients for each term
+  fnc <- vapply(fmat, ncol, 0L)
+  rnc <- vapply(rmat, ncol, 0L)
 
   ## Combine design matrices columnwise
   if (sparse_X) {
     Xs <- do.call(cbind, fmat)
-    Xd <- integer(0L)
-    dim(Xd) <- c(0L, ncol(Xs))
+    Xd <- matrix(integer(0L), ncol = ncol(Xs))
   } else {
     Xd <- do.call(cbind, fmat)
     Xs <- sparseMatrix(i = integer(0L), j = integer(0L),
                        x = integer(0L), dims = c(0L, ncol(Xd)))
   }
-  if (is.null(rtl_incl_dupl)) {
+  if (length(rt) > 0L) {
+    Z <- do.call(cbind, rmat)
+  } else {
     Z <- sparseMatrix(i = integer(0L), j = integer(0L),
                       x = integer(0L), dims = c(nrow(frame), 0L))
-  } else {
-    Z <- do.call(cbind, rmat)
   }
 
   ## Construct indicator matrices such that 1 at index (i,j)
   ## indicates that parameter j follows model using term i
-  fid <- matrix(0L, nrow = length(ftl), ncol = p, dimnames = list(ftl, pn))
-  for (i in seq_len(nrow(fid))) { # FIXME: outer(FUN = `==`)?
-    for (j in seq_len(ncol(fid))) {
-      fid[i, j] <- 1L * (ftl[[i]] == a$fixed_term_labels[[j]])
+  fid <- matrix(0L, nrow = length(ft), ncol = p, dimnames = list(names(ft), pn))
+  for (s1 in rownames(fid)) { # FIXME: outer(FUN = `%in%`)?
+    for (s2 in colnames(fid)) {
+      fid[s1, s2] <- 1L * (s1 %in% ftl[[s2]])
     }
   }
-  if (is.null(rtl)) {
-    rid <- matrix(integer(0L), ncol = p, dimnames = list(NULL, pn))
-  } else {
-    rid <- matrix(0L, nrow = length(rtl), ncol = p, dimnames = list(rtl, pn))
-    for (i in seq_len(nrow(rid))) { # FIXME: outer(FUN = `%in%`)?
-      for (j in seq_len(ncol(rid))) {
-        rid[i, j] <- 1L * (rtl[[i]] %in% a$random_term_labels[[j]])
+  if (length(rt) > 0L) {
+    rid <- matrix(0L, nrow = length(rt), ncol = p, dimnames = list(names(rt), pn))
+    for (s1 in rownames(rid)) { # FIXME: outer(FUN = `%in%`)?
+      for (s2 in colnames(rid)) {
+        rid[s1, s2] <- 1L * (s1 %in% rtl[[s2]])
       }
     }
+  } else {
+    rid <- matrix(integer(0L), ncol = p, dimnames = list(NULL, pn))
   }
 
   l1 <- list(
-    index = a$index,
+    window = a$window,
     t = t,
     x = x,
     wl = wl,
+    dow0 = dow0,
     Xs = Xs,
     Xd = Xd,
     Z = Z,
-    ffr = ffr,
-    rfr = rfr,
-    fnl = fnl,
-    rnl = rnl,
+    fvar = fvar,
+    rvar = rvar,
+    fgrp = fgrp,
+    rgrp = rgrp,
+    fnc = fnc,
+    rnc = rnc,
     fid = fid,
     rid = rid,
     curve_flag = get_flag("curve", curve),
     distr_flag = get_flag("distr", distr),
     excess_flag = 1L * excess,
+    weekday_flag = 1L * weekday,
     sparse_X_flag = 1L * sparse_X,
     predict_flag = 0L
   )
@@ -754,7 +921,8 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
 #' via TMB's `PARAMETER_` macros during the first likelihood evaluation.
 #' See [TMB::MakeADFun()].
 #'
-#' @param tmb_data A `"tmb_data"` object returned by [make_tmb_data()].
+#' @param tmb_data
+#'   A `"tmb_data"` object returned by [make_tmb_data()].
 #' @inheritParams make_tmb_args
 #'
 #' @details
@@ -786,9 +954,7 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
 #'   is roughly symmetric about the peak.
 #' }
 #' \item{`p`}{0.8}
-#' \item{`a`}{1}
-#' \item{`b`}{1}
-#' \item{`nbdisp`}{1}
+#' \item{`a`, `b`, `nbdisp`, `w[123456]`}{1}
 #' }
 #' The naive estimates are log-transformed (all but `p`) or
 #' logit-transformed (`p` only), and coefficients are obtained
@@ -801,40 +967,39 @@ make_tmb_data <- function(frame, curve, distr, excess, sparse_X) {
 #' @return
 #' A list with elements:
 #' \item{`beta`}{
-#'   A numeric vector of length `sum(tmb_data$fnl)` listing initial
-#'   values for the fixed effects coefficients, each of which represents
-#'   the mean of a set of within-group means or a within-group offset
-#'   from that mean.
+#'   A numeric vector of length
+#'   `sum(tmb_data$fnc * rowSums(tmb_data$fid))`
+#'   listing initial values for the fixed effects coefficients.
 #' }
 #' \item{`log_sd_b`}{
 #'   If there are random effects, then a numeric vector of length
 #'   `sum(tmb_data$rid)` listing initial values for the log standard
-#'   deviations of the within-group random effects. Otherwise, `NA_real_`.
+#'   deviations of the random effects coefficients.
+#'   Otherwise, `NA_real_`.
 #' }
 #' \item{`b`}{
 #'   If there are random effects, then a numeric vector of length
-#'   `sum(tmb_data$rnl * rowSums(tmb_data$rid))` listing initial
-#'   values for the within-group random effects. Otherwise, `NA_real_`.
+#'   `sum(tmb_data$rnc * rowSums(tmb_data$rid))` listing initial
+#'   values for the random effects coefficients.
+#'   Otherwise, `NA_real_`.
 #' }
 #'
 #' @examples
 #' example("make_tmb_data", package = "epigrowthfit")
 #' tmb_parameters <- epigrowthfit:::make_tmb_parameters(
-#'   tmb_data,
-#'   curve, distr, excess,
+#'   tmb_data = tmb_data,
 #'   par_init = NULL
 #' )
 #'
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis
-make_tmb_parameters <- function(tmb_data, curve, distr, excess,
-                                par_init) {
+make_tmb_parameters <- function(tmb_data, par_init) {
   any_re <- has_random(tmb_data)
 
   ## If user did not specify a parameter vector
   if (is.null(par_init)) {
-    ts_split  <- split(data.frame(tmb_data[c("t", "x")]), tmb_data$index)
-    ffr_split <- split(tmb_data$ffr, tmb_data$index)
+    ts_split  <- split(as.data.frame(tmb_data[c("t", "x")]), tmb_data$window)
+    fgrp_red <- tmb_data$fgrp[!duplicated(tmb_data$window), , drop = FALSE]
 
     get_log_r_log_c0 <- function(d) {
       h <- max(2, nrow(d) / 2)
@@ -847,56 +1012,61 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess,
       c(log(ab[[2L]]), ab[[1L]])
     }
     get_log_tinfl <- function(d) log(max(d$t))
-    get_log_K     <- function(d) log(2) + log(sum(d$x[-1L], na.rm = TRUE))
+    get_log_K <- function(d) log(2) + log(sum(d$x[-1L], na.rm = TRUE))
 
-    log_r_log_c0 <- vapply(ts_split, get_log_r_log_c0, rep(0, 2L))
-    log_tinfl    <- vapply(ts_split, get_log_tinfl,    0)
-    log_K        <- vapply(ts_split, get_log_K,        0)
+    log_r_log_c0 <- vapply(ts_split, get_log_r_log_c0, c(0, 0))
+    log_tinfl <- vapply(ts_split, get_log_tinfl, 0)
+    log_K <- vapply(ts_split, get_log_K, 0)
     log_r  <- log_r_log_c0[1L, ]
     log_c0 <- log_r_log_c0[2L, ]
     p <- 0.8
     log_alpha <- switch(curve,
       subexponential = log_r + (1 - p) * log_c0,
-      gompertz       = log_r - log(log_K - log_c0),
-      NA
+      gompertz = log_r - log(log_K - log_c0),
+      NA_real_
     )
 
-    pfr <- data.frame(
+    Y_init <- data.frame(
       log_r      = log_r,
       log_alpha  = log_alpha,
       log_c0     = log_c0,
       log_tinfl  = log_tinfl,
       log_K      = log_K,
-      logit_p    = qlogis(p),
-      log_a      = 0,
-      log_b      = 0,
-      log_nbdisp = 0
+      logit_p    = qlogis(p)
     )
-    ffr <- do.call(rbind, lapply(ffr_split, `[`, 1L, , drop = FALSE))
+    Y_init[sprintf("log_%s", c("a", "b", "nbdisp", paste0("w", 1:6)))] <- 0
 
-    pn <- get_par_names(curve, distr, excess, link = TRUE)
-    beta <- unlist(lapply(pn, function(s) {
-      tl <- names(tmb_data$fnl)[match(s, pn)]
-      ## within-group means
-      m <- vapply(split(pfr[[s]], ffr[[tl]]), mean, 0, USE.NAMES = FALSE)
-      ## mean of means
-      mm <- mean(m)
-      c(mm, m[-length(m)] - mm)
-    }))
+    pn <- get_par_names(tmb_data, link = TRUE)
+    get_term_labels <- function(par_name) {
+      rownames(tmb_data$fid)[tmb_data$fid[, par_name] == 1L]
+    }
+    tl <- lapply(pn, get_term_labels)
+    make_beta_segment <- function(par_name, term_label) {
+      if (tmb_data$fvar[term_label] == "(Intercept)") {
+        ## Within-group means
+        m <- unname(tapply(Y_init[[par_name]], fgrp_red[[term_label]], mean))
+        ## Mean of means
+        mm <- mean(m)
+        return(c(mm, m[-length(m)] - mm))
+      }
+      rep.int(0, tmb_data$fnc[[term_label]])
+    }
+    beta <- unlist(Map(make_beta_segment,
+      par_name = rep.int(pn, lengths(tl)),
+      term_label = unlist(tl),
+      USE.NAMES = FALSE
+    ))
     if (any_re) {
       log_sd_b <- rep.int(0, sum(tmb_data$rid))
-      b <- rep.int(0, sum(tmb_data$rnl * rowSums(tmb_data$rid)))
-    } else {
-      log_sd_b <- NA_real_
-      b <- NA_real_
+      b <- rep.int(0, sum(tmb_data$rnc * rowSums(tmb_data$rid)))
     }
 
-  ## Otherwise
+  ## If user specified a full parameter vector
   } else {
     p <- c(
-      beta     = sum(tmb_data$fnl),
+      beta = sum(tmb_data$fnc * rowSums(tmb_data$fid)),
       log_sd_b = if (any_re) sum(tmb_data$rid),
-      b        = if (any_re) sum(tmb_data$rnl * rowSums(tmb_data$rid))
+      b = if (any_re) sum(tmb_data$rnc * rowSums(tmb_data$rid))
     )
     stop_if_not(
       is.numeric(par_init),
@@ -904,19 +1074,17 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess,
       is.finite(par_init),
       m = sprintf("`par_init` must be a finite numeric vector of length %d.", sum(p))
     )
-    if (!is.null(names(par_init))) {
-      names(par_init) <- NULL
-    }
+    names(par_init) <- NULL
     beta <- par_init[seq_len(p[1L])]
     if (any_re) {
       log_sd_b <- par_init[seq.int(to = sum(p[1:2]), length.out = p[2L])]
       b <- par_init[seq.int(to = sum(p), length.out = p[3L])]
-    } else {
-      log_sd_b <- NA_real_
-      b <- NA_real_
     }
   }
 
+  if (!any_re) {
+    log_sd_b <- b <- NA_real_
+  }
   list(beta = beta, log_sd_b = log_sd_b, b = b)
 }
 
@@ -926,9 +1094,6 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess,
 #'
 #' @param frame
 #'   A model frame returned by [make_frame()].
-#' @param par_init
-#'   A user-specified full parameter vector, or otherwise `NULL`.
-#'   See [egf()].
 #' @inheritParams egf
 #'
 #' @return
@@ -938,8 +1103,11 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess,
 #' @examples
 #' example("make_frame", package = "epigrowthfit")
 #' tmb_args <- epigrowthfit:::make_tmb_args(
-#'   frame,
-#'   curve, distr, excess,
+#'   frame = frame,
+#'   curve = curve,
+#'   distr = distr,
+#'   excess = excess,
+#'   weekday = weekday,
 #'   sparse_X = FALSE,
 #'   par_init = NULL
 #' )
@@ -947,20 +1115,18 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess,
 #'
 #' @seealso [make_tmb_data()], [make_tmb_parameters()]
 #' @keywords internal
-make_tmb_args <- function(frame, curve, distr, excess,
+make_tmb_args <- function(frame, curve, distr, excess, weekday,
                           sparse_X, par_init) {
   data <- make_tmb_data(
     frame = frame,
     curve = curve,
     distr = distr,
     excess = excess,
+    weekday = weekday,
     sparse_X = sparse_X
   )
   parameters <- make_tmb_parameters(
     tmb_data = data,
-    curve = curve,
-    distr = distr,
-    excess = excess,
     par_init = par_init
   )
   if (has_random(data)) {

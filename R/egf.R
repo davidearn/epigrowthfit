@@ -2,10 +2,7 @@
 #'
 #' @description
 #' Fits nonlinear mixed effects models of epidemic growth to one
-#' or more disease incidence time series. First and second order
-#' derivatives of the negative log likelihood (more precisely,
-#' the negative log Laplace approximation of the marginal likelihood)
-#' are calculated by automatic differentiation using R package **TMB**.
+#' or more disease incidence time series.
 #'
 #' @param formula_ts
 #'   A formula of the form `y ~ x` or `y ~ x | group` specifying one
@@ -14,12 +11,12 @@
 #'   an interaction of one or more factors, splitting the data by
 #'   time series.
 #' @param formula_glmm
-#'   A list of formulae of the form `par ~ rhs`, where `par`
+#'   A list of formulae of the form `par ~ terms`, where `par`
 #'   is the name of a nonlinear model parameter (an element
 #'   of `get_par_names(curve, distr, excess, link = TRUE)`)
 #'   and `rhs` is a sum of mixed effects model terms following
 #'   [`lme4`][lme4::lmer()]-like syntax. Alternatively,
-#'   a formula of the form `~rhs` to be recycled for all
+#'   a formula of the form `~terms` to be recycled for all
 #'   nonlinear model parameters.
 #' @param data
 #'   A data frame, list, or environment containing the variables
@@ -37,6 +34,9 @@
 #'   mortality rate is estimated. Set to `TRUE` if what is
 #'   observed (`y` if `formula = y ~ x`) is multiple causes
 #'   mortality rather than disease mortality or disease incidence.
+#' @param weekday
+#'   A logical scalar. If `TRUE`, then day-of-week effects
+#'   are estimated.
 #' @param method
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
@@ -65,12 +65,11 @@
 #' \item{`frame`}{
 #'   The model frame. See [make_frame()].
 #' }
-#' \item{`index`}{
-#'   A factor of length `nrow(data)` such that `split(frame, index)`
-#'   splits the model frame by fitting window. Not usually identical
-#'   to the so-named argument.
+#' \item{`window`}{
+#'   A factor of length `nrow(data)` such that `split(frame, window)`
+#'   splits the model frame by fitting window.
 #' }
-#' \item{`curve`, `distr`, `excess`, `method`}{
+#' \item{`curve`, `distr`, `excess`, `weekday`, `method`}{
 #'   Copies of the so-named arguments (after matching).
 #' }
 #' \item{`tmb_args`}{
@@ -125,6 +124,7 @@ egf <- function(formula_ts,
                 curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
                 distr = c("nbinom", "pois"),
                 excess = FALSE,
+                weekday = FALSE,
                 method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
                 na_action = c("pass", "fail"),
                 sparse_X = FALSE,
@@ -134,6 +134,7 @@ egf <- function(formula_ts,
   curve <- match.arg(curve)
   distr <- match.arg(distr)
   stop_if_not_tf(excess)
+  stop_if_not_tf(weekday)
   method <- match.arg(method)
   na_action <- match.arg(na_action)
   stop_if_not_tf(sparse_X)
@@ -147,6 +148,7 @@ egf <- function(formula_ts,
     curve = curve,
     distr = distr,
     excess = excess,
+    weekday = weekday,
     na_action = na_action
   )
   tmb_args <- make_tmb_args(
