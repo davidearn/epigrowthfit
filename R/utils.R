@@ -102,3 +102,14 @@ stop_if_not_character_string <- function(x, n = 1L) {
     n = 1L + n
   )
 }
+
+is_constant_within_tol <- function(x, tol = sqrt(.Machine$double.eps), na.rm = FALSE) {
+  if (length(x) == 0L || (na.rm && all(is.na(x)))) {
+    return(NA)
+  }
+  abs(max(x, na.rm = na.rm) - min(x, na.rm = na.rm)) < tol
+}
+
+is_integer_within_tol <- function(x, tol = sqrt(.Machine$double.eps)) {
+  abs(x - round(x)) < tol
+}

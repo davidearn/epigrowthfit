@@ -1,11 +1,10 @@
-#' Get parameter names
+#' Get nonlinear model parameter names
 #'
-#' Returns the names used internally for parameters of the specified
-#' incidence model.
+#' Returns the names used internally for nonlinear model parameters.
 #'
 #' @param curve,distr,excess,weekday
-#'   Character or logical flags specifying an incidence model.
-#'   See [egf()]. Alternatively, `curve` can be an `"egf"` object
+#'   Character or logical flags specifying an incidence model;
+#'   see [egf()]. Alternatively, `curve` can be an `"egf"` object
 #'   returned by [egf()] or a `"tmb_data"` object returned by
 #'   [make_tmb_data()], in which case `distr`, `excess`, and
 #'   `weekday` are ignored.
@@ -20,26 +19,28 @@
 #' depending on `link`.
 #'
 #' @examples
-#' pn  <- get_par_names(curve = "exponential", distr = "pois",
-#'                      excess = FALSE, weekday = FALSE, link = FALSE)
-#' lpn <- get_par_names(curve = "exponential", distr = "pois",
-#'                      excess = FALSE, weekday = FALSE, link = TRUE)
-#' identical(pn, sub("^(log|logit)_", "", lpn))
+#' curve <- "exponential"
+#' distr <- "pois"
+#' excess <- FALSE
+#' weekday <- FALSE
+#' pn_l0  <- get_par_names(curve = curve, distr = distr,
+#'                         excess = excess, weekday = weekday,
+#'                         link = FALSE)
+#' pn_l1 <- get_par_names(curve = curve, distr = distr,
+#'                        excess = excess, weekday = weekday,
+#'                        link = TRUE)
+#' identical(pn_l0, sub("^(log|logit)_", "", pn_l1))
 #'
 #' @export
-get_par_names <- function(curve = NULL,
-                          distr = NULL,
-                          excess = NULL,
-                          weekday = NULL,
+get_par_names <- function(curve = NULL, distr = NULL,
+                          excess = NULL, weekday = NULL,
                           link = TRUE) {
   UseMethod("get_par_names", curve)
 }
 
 #' @export
-get_par_names.default <- function(curve = NULL,
-                                  distr = NULL,
-                                  excess = NULL,
-                                  weekday = NULL,
+get_par_names.default <- function(curve = NULL, distr = NULL,
+                                  excess = NULL, weekday = NULL,
                                   link = TRUE) {
   if (all(vapply(list(curve, distr, excess, weekday), is.null, FALSE))) {
     pn <- c("r", "alpha", paste0("w", 1:6),
@@ -67,29 +68,29 @@ get_par_names.default <- function(curve = NULL,
     }
   }
   if (link) {
-    add_link_string(pn)
-  } else {
-    pn
+    return(add_link_string(pn))
   }
+  pn
 }
 
 #' @export
-get_par_names.tmb_data <- function(curve, distr, excess, link = TRUE) {
+get_par_names.tmb_data <- function(curve, distr, excess, weekday, link = TRUE) {
+  pn <- colnames(curve$fid)
   if (link) {
-    colnames(curve$rid)
-  } else {
-    remove_link_string(colnames(curve$rid))
+    return(pn)
   }
+  remove_link_string(pn)
 }
 
 #' @export
-get_par_names.egf <- function(curve, distr, excess, link = TRUE) {
+get_par_names.egf <- function(curve, distr, excess, weekday, link = TRUE) {
   get_par_names(curve$tmb_args$data, link = link)
 }
 
-#' Manipulate parameter names
+#' Manipulate nonlinear model parameter names
 #'
-#' Add, remove, and extract prefixes from parameter names.
+#' Add, remove, and extract prefixes from nonlinear model
+#' parameter names.
 #'
 #' @param s A character vector.
 #'
@@ -102,6 +103,11 @@ get_par_names.egf <- function(curve, distr, excess, link = TRUE) {
 #'
 #' `extract_link_string()` returns the prefixes of `s`
 #' without underscore, either `"log"` or `"logit"`.
+#'
+#' @examples
+#' add_link_string("r")
+#' remove_link_string("log_r")
+#' extract_link_string("log_r)
 #'
 #' @noRd
 NULL
@@ -131,14 +137,18 @@ extract_link_string <- function(s) {
 
 #' Get link and inverse link
 #'
-#' Retrieve the link or inverse link function corresponding to a string.
+#' Retrieve the link or inverse link function associated with a string.
 #'
 #' @param s A character string, either `"log"` or `"logit"`.
 #'
 #' @return
-#' If `s = "log"`, then `log` or its inverse `exp`.
-#' If `s = "logit"`, then `function(p) qlogis(p)`
-#' or its inverse `function(q) plogis(q)`.
+#' A function.
+#'
+#' @examples
+#' get_link("log")
+#' get_inverse_link("logit)
+#' get_link("logit")
+#' get_inverse_link("log")
 #'
 #' @noRd
 NULL
@@ -161,551 +171,277 @@ get_inverse_link <- function(s) {
   )
 }
 
-#' Validate time series formula
+#' Validate model formulae and construct model frames
 #'
-#' Checks that [egf()] argument `formula_ts` is a valid formula
-#' of the form `y ~ x` or `y ~ x | group`.
-#'
-#' @inheritParams egf
-#'
-#' @return
-#' `formula_ts`, simplified if possible.
-#'
-#' @noRd
-check_formula_ts <- function(formula_ts) {
-  stop_if_not(
-    inherits(formula_ts, "formula"),
-    m = "`formula_ts` must be a formula."
-  )
-  stop_if_not(
-    length(formula_ts) == 3L,
-    m = "`formula_ts` must have a response."
-  )
-  formula_ts <- deparen(formula_ts)
-  lhs <- formula_ts[[2L]]
-  stop_if_not(
-    is.name(lhs),
-    m = "Left hand side of `formula_ts` must be a name."
-  )
-  rhs <- formula_ts[[3L]]
-  if (is.name(rhs)) {
-    return(formula_ts)
-  }
-  stop_if_not(
-    is.call(rhs) && rhs[[1L]] == as.name("|"),
-    m = "Right hand side of `formula_ts`\nmust be a name or a call to `|`."
-  )
-  stop_if_not(
-    is.name(rhs[[2L]]),
-    m = "Left hand side of `|` in `formula_ts` must be a name."
-  )
-  stop_if_not(
-    is_interaction(rhs[[3L]]),
-    m = "Right hand side of `|` in `formula_ts`\nmust be a name or an interaction of names."
-  )
-  rhs[[3L]] <- expand_terms(rhs[[3L]])
-  formula_ts[[3L]] <- rhs
-  formula_ts
-}
-
-#' Validate mixed effects formulae
-#'
-#' Checks that [egf()] argument `formula_glmm` is a valid formula
-#' of the form `~terms` or a valid list of formulae of the form
-#' `par ~ terms`.
-#'
-#' @inheritParams egf
-#'
-#' @details
-#' If `formula_glmm` is a formula, then it is recycled to a list.
-#' If it is an incomplete list of formulae, then missing formulae
-#' are assigned `par ~ 1`. Terms using formula operators such as
-#' `"*"` are expanded in the result.
-#'
-#' @return
-#' A list of formulae of the form `par ~ terms`, one for each
-#' nonlinear model parameter. Each has attributes `fixed_terms`
-#' and `random_terms`, which split the fixed and random effects
-#' components of `terms` at `"+"`.
-#'
-#' @noRd
-check_formula_glmm <- function(formula_glmm, curve, distr, excess, weekday) {
-  pn <- get_par_names(curve = curve, distr = distr,
-                      excess = excess, weekday = weekday, link = TRUE)
-  make_default_formula <- function(s) as.formula(call("~", as.name(s), 1))
-
-  if (inherits(formula_glmm, "formula") &&
-      length(formula_glmm) == 2L) {
-    formula_glmm <- check_formula_terms(formula_glmm)
-    formula_glmm[[3L]] <- formula_glmm[[2L]]
-    formula_glmm <- Map(
-      f = function(s, x) {x[[2L]] <- as.name(s); x},
-      s = pn,
-      x = list(formula_glmm)
-    )
-  } else if (inherits(formula_glmm, "list") &&
-             length(formula_glmm) > 0L &&
-             all(vapply(formula_glmm, inherits, FALSE, "formula")) &&
-             all(lengths(formula_glmm) == 3L)) {
-    formula_glmm <- lapply(formula_glmm, deparen)
-    lhs <- lapply(formula_glmm, `[[`, 2L)
-    lhs_as_character <- vapply(lhs, deparse, "")
-    stop_if_not(
-      vapply(lhs, is.name, FALSE),
-      lhs_as_character %in% pn,
-      !duplicated(lhs_as_character),
-      m = paste0(
-        "Left hand side of each `formula_glmm` formula\n",
-        "must be a name in:\n",
-        "`get_par_names(curve, distr, excess, weekday, link = TRUE)`."
-      )
-    )
-    names(formula_glmm) <- lhs_as_character
-    fill <- setdiff(pn, lhs_as_character)
-    formula_glmm[fill] <- lapply(fill, make_default_formula)
-    formula_glmm <- lapply(formula_glmm[pn], check_formula_glmm_terms)
-  } else {
-    stop("`formula_glmm` must be a formula of the form `~terms`\n",
-         "or a list of formulae of the form `par ~ terms`.")
-  }
-
-  formula_glmm
-}
-
-check_formula_glmm_terms <- function(x) {
-  stop_if_not(
-    inherits(x, "formula"),
-    m = "`x` must be a formula."
-  )
-  x[[length(x)]] <- expand_terms(x)
-  terms <- split_terms(x)
-  has_bar <- vapply(terms, function(x) is.call(x) && x[[1L]] == as.name("|"), FALSE)
-  stop_if_not(
-    vapply(terms[!has_bar], is_interaction, FALSE),
-    m = paste0(
-      "Fixed effects formulae must expand to\n",
-      "a sum of names and interactions of names."
-    )
-  )
-  if (any(has_bar)) {
-    lhs <- lapply(terms[has_bar], `[[`, 2L)
-    stop_if_not(
-      vapply(lhs, `==`, FALSE, 1) | vapply(lhs, is_interaction, FALSE),
-      m = paste0(
-        "Left hand side of `|` in `formula_glmm`\n",
-        "must expand to 1 or a sum of names and\n",
-        "interactions of names."
-      )
-    )
-    rhs <- lapply(terms[has_bar], `[[`, 3L)
-    stop_if_not(
-      vapply(rhs, is_interaction, FALSE),
-      m = paste0(
-        "Right hand side of `|` in `formula_glmm`\n",
-        "must expand to a sum of names and\n",
-        "interactions of names."
-      )
-    )
-  }
-
-  structure(x,
-    fixed_terms = terms[!has_bar],
-    random_terms = terms[has_bar]
-  )
-}
-
-#' Construct a model frame
-#'
-#' Constructs a model frame to be used by [egf()],
+#' Constructs model frames to be used by [egf()]
 #' while performing myriad checks on the arguments.
 #'
 #' @inheritParams egf
 #'
-#' @details
-#' Rows of `data` belonging to time series without fitting windows
-#' are discarded. Rows of `data[-discarded, ]` belonging to fitting
-#' windows are returned. The remaining rows of `data[-discarded, ]`
-#' are preserved in attribute `extra`.
-#'
 #' @return
-#' A data frame containing the variables named in `formula_ts` and
-#' `formula_glmm`, with attributes:
-#' \item{`extra`}{
-#'   A data frame preserving unused data (see Details).
+#' A list with elements:
+#' \item{`formula_ts`}{
+#'   The so-named argument, simplified if possible.
+#' }
+#' \item{`frame_ts`}{
+#'   A data frame with 3 variables: a Date vector, an incidence vector,
+#'   and a factor such that `split(`
 #' }
 #' \item{`window`}{
 #'   A factor of length `nrow(frame)` such that `split(frame, window)`
-#'   splits the data frame by fitting window. Not usually identical
-#'   to the so-named argument (see Details).
+#'   splits `frame` by fitting window.
 #' }
 #' \item{`formula_ts`, `formula_glmm`}{
 #'   Processed versions of the so-named arguments.
 #' }
 #'
-#' @examples
-#' r <- log(2) / 10
-#' c0 <- 10
-#' time <- 0:99
-#' mu <- diff(c0 * exp(r * time))
-#'
-#' date <- rep(as.Date(time, origin = "2020-01-01"), 4)
-#' cases <- c(replicate(4, c(NA, rpois(length(mu), mu))))
-#' continent <- factor(rep(c("asia", "europe"), each = 200))
-#' country <- factor(rep(c("china", "japan", "france", "germany"), each = 100))
-#' wave <- factor(rep(rep(c(1, 2), each = 50), 4))
-#'
-#' data <- data.frame(date, cases, continent, country, wave)
-#'
-#' x <- c(NA, 1, NA, 2, NA,
-#'        NA, 3, NA, 4, NA,
-#'        NA, 5, NA, 6, NA,
-#'        NA, 7, NA, 8, NA)
-#' index <- factor(rep(x, each = 20))
-#'
-#' curve <- "exponential"
-#' distr <- "pois"
-#' excess <- FALSE
-#' get_par_names(curve, distr, excess, link = FALSE)
-#' ## [1] "r" "c0"
-#'
-#' formula <- cases ~ date
-#' fixed <- list(
-#'   r  = ~1,
-#'   c0 = ~wave
-#' )
-#' random <- list(
-#'   r  = ~(1 | continent/country) + (1 | wave),
-#'   c0 = ~(1 | continent/country)
-#' )
-#' group_by <- ~country
-#'
-#' frame <- epigrowthfit:::make_frame(
-#'   formula, fixed, random, group_by,
-#'   data, index,
-#'   curve, distr, excess,
-#'   na_action = "pass"
-#' )
-#'
 #' @keywords internal
-#' @importFrom stats complete.cases
-make_frame <- function(formula_ts, formula_glmm, data, window,
-                       curve, distr, excess, weekday, na_action) {
-  ## Check model formulae
-  formula_ts <- check_formula_ts(formula_ts)
-  formula_glmm <- check_formula_glmm(formula_glmm, curve, distr, excess)
-  ft <- do.call(c, lapply(formula_glmm, attr, "fixed_terms"))
-  rt <- do.call(c, lapply(formula_glmm, attr, "random_terms"))
+#' @importFrom stats model.frame
+make_frames <- function(formula_ts, formula_glmm, data, window,
+                        curve, distr, excess, weekday, na_action) {
+  ## Nonlinear model parameter names
+  pn <- get_par_names(curve = curve, distr = distr,
+                      excess = excess, weekday = weekday,
+                      link = TRUE)
+  p <- length(pn)
+  min_window_length <- 1L + p
 
-  ## Check that formula variables can be found
+  ## Check data
   stop_if_not(
     inherits(data, c("data.frame", "list", "environment")),
     m = "`data` must be a data frame, list, or environment."
   )
-  if (is.environment(data)) {
-    data <- as.list(data)
-  }
-  av <- unique(unlist(lapply(c(list(formula_ts), ft, rt), all.vars)))
-  found <- (av %in% names(data))
+
+  ## Check time series formula
   stop_if_not(
-    all(found),
-    m = paste0(
-      "Formula variables not found in `data`:\n",
-      paste(sprintf("`%s`", av[!found]), collapse = ", ")
-    )
+    inherits(formula_ts, "formula"),
+    m = "`formula_ts` must be a formula."
+  )
+  formula_ts <- expand_terms(formula_ts)
+  stop_if_not(
+    length(formula_ts) == 3L,
+    length(split_terms(formula_ts)) == 1L,
+    m = "`formula_ts` must have a response and exactly one term."
   )
 
-  ## Construct model frame
+  ## Check time series
+  eval0 <- function(x) try(eval(x, envir = data, enclos = environment(formula_ts)))
+  cases <- eval0(formula_ts[[2L]])
+  cv <- deparse(formula_ts[[2L]])
   stop_if_not(
-    vapply(data[av], is.atomic, FALSE),
-    m = "Formula variables must be atomic."
+    is.vector(cases, "numeric"),
+    m = "Left hand side of `formula_ts`\nmust evaluate to a numeric vector."
   )
-  if (!is.data.frame(data)) {
-    stop_if_not(
-      diff(range(lengths(data[av]))) == 0L,
-      m = "Formula variables must have a common length."
-    )
-    for (s in av) {
-      dim(data[[s]]) <- NULL
+  stop_if_not(
+    cases[!is.na(cases)] >= 0,
+    m = sprintf("`%s` must be non-negative.", cv)
+  )
+  if (!is.integer(cases)) {
+    if (any(is.infinite(cases))) {
+      warning(sprintf("Infinite numeric elements of `%s` replaced with NA.", cv))
+      cases[is.infinite(cases)] <- NA
+    }
+    if (!all(is_integer_within_tol(cases))) {
+      warning(sprintf("Non-integer numeric elements of `%s` truncated.", cv))
+      cases <- trunc(cases)
     }
   }
-  frame <- as.data.frame(data[av])
-  N <- nrow(frame)
-  min_window_length <- 1L + length(get_par_names(curve, distr, excess, weekday))
-  stop_if_not(
-    N >= min_window_length,
-    m = sprintf("Model frame must have at least %d rows.", min_window_length)
-  )
-
-  ## Check data types
-  if (is.call(formula_ts[[3L]])) {
-    gv <- all.vars(formula_ts[[3L]][[3L]])
+  if (is_bar(formula_ts[[3L]])) {
+    date <- eval0(formula_ts[[3L]][[2L]])
+    dv <- deparse(formula_ts[[3L]][[2L]])
+    stop_if_not(
+      inherits(date, "Date"),
+      m = "Left hand side of `|` in `formula_ts`\nmust evaluate to a Date vector."
+    )
+    ts <- eval0(formula_ts[[3L]][[3L]])
+    tsv <- deparse(formula_ts[[3L]][[3L]])
+    stop_if_not(
+      is.factor(ts),
+      m = "Right hand side of `|` in `formula_ts`\nmust evaluate to a factor."
+    )
+    stop_if_not(
+      diff(range(lengths(list(ts, date, cases)))) == 0L,
+      m = sprintf("`%s`, `%s`, and `%s`\nmust have a common length.", tsv, dv, cv)
+    )
+    ts <- droplevels(ts, exclude = NA)
+    stop_if_not(
+      !anyNA(date),
+      !anyNA(ts),
+      m = sprintf("`%s` and `%s` must not have missing values.", dv, tsv)
+    )
+    stop_if_not(
+      tapply(date, ts, function(x) all(diff(x) > 0)),
+      m = sprintf("`%s` must be increasing in each level of `%s`.", dv, tsv)
+    )
   } else {
-    gv <- character(0L)
+    date <- eval0(formula_ts[[3L]])
+    dv <- deparse(formula_ts[[3L]])
+    stop_if_not(
+      inherits(date, "Date"),
+      m = "Right hand side of `formula_ts`\nmust evaluate to a Date vector."
+    )
+    stop_if_not(
+      length(date) == length(cases),
+      m = sprintf("`%s` and `%s`\nmust have a common length.", dv, cv)
+    )
+    stop_if_not(
+      !anyNA(date),
+      m = sprintf("`%s` must not have missing values.", dv)
+    )
+    stop_if_not(
+      diff(date) > 0,
+      m = sprintf("`%s` must be increasing.", dv)
+    )
+    ts <- rep.int(factor(1), length(date))
+    tsv <- "ts"
   }
-  dv <- setdiff(all.vars(formula_ts[[3L]]), gv)
   stop_if_not(
-    inherits(frame[[dv]], "Date"),
-    m = sprintf("`%s` must inherit from class \"Date\".", dv)
-  )
-  cv <- all.vars(formula_ts[[2L]])
-  stop_if_not(
-    is.numeric(frame[[cv]]),
-    all(frame[[cv]] >= 0, na.rm = TRUE),
-    m = sprintf("`%s` must be a non-negative numeric vector.", cv)
-  )
-  fv <- unique(unlist(lapply(ft, all.vars)))
-  stop_if_not(
-    vapply(frame[fv], function(x) is.factor(x) || is.numeric(x), FALSE),
-    m = "Fixed effects formula variables\nmust be factors or numeric vectors."
-  )
-  rv_lhs <- unique(unlist(lapply(rt, function(x) all.vars(x[[2L]]))))
-  stop_if_not(
-    vapply(frame[rv_lhs], is.numeric, FALSE),
-    m = "Formula variables on left hand side of `|`\nmust be numeric vectors."
-  )
-  rv_rhs <- unique(unlist(lapply(rt, function(x) all.vars(x[[3L]]))))
-  stop_if_not(
-    vapply(frame[c(rv_rhs, gv)], is.factor, FALSE),
-    m = "Formula variables on right hand side of `|`\nmust be factors."
+    tabulate(ts) >= min_window_length,
+    m = sprintf("Time series must have length %d or greater.", min_window_length)
   )
 
-  ## Drop unused and NA factor levels
-  facv <- av[vapply(frame[av], is.factor, FALSE)]
-  frame[facv] <- lapply(frame[facv], droplevels, exclude = NA)
-
-  ## Check missing values
-  stop_if_not(
-    !vapply(frame[setdiff(av, cv)], anyNA, FALSE),
-    m = sprintf("Formula variables other than incidence (`%s`)\ncannot have missing values.", cv)
-  )
+  ## Construct time series model frame
+  frame_ts <- data.frame(ts, date, cases)
+  names(frame_ts) <- c(tsv, dv, cv)
 
   ## Check fitting windows
   stop_if_not(
     is.factor(window),
-    length(window) == N,
+    length(window) == nrow(frame_ts),
     m = sprintf("`window` must be a factor of length `length(%s)`.", dv)
   )
   window <- droplevels(window, exclude = NA)
   stop_if_not(
     nlevels(window) > 0L,
-    m = "`window` must have at least one nonempty level."
+    m = "`window` must have at least one used level."
   )
   stop_if_not(
     tabulate(window) >= min_window_length,
-    m = sprintf("Nonempty levels of `window` must have\nfrequency %d or greater.", min_window_length)
+    m = sprintf("Used levels of `window` must have\nfrequency %d or greater.", min_window_length)
   )
-
-  if (length(facv) > 0L) {
-    ## Check factors
+  if (is_bar(formula_ts[[3L]])) {
     stop_if_not(
-      nlevels(interaction(cbind(window, frame[facv]), drop = TRUE)) == nlevels(window),
-      m = "Factors must be constant in each level of `window`."
-    )
-    if (length(facv) > length(gv)) {
-      frame_red <- droplevels(frame[!is.na(window) & !duplicated(window), setdiff(facv, gv), drop = FALSE])
-      stop_if_not(
-        vapply(frame_red, nlevels, 0L) > 1L,
-        m = "Factors in `formula_glmm` must not be constant\nacross all levels of `window`."
-      )
-    }
-  }
-
-  if (length(gv) > 0L) {
-    ## Discard rows belonging to time series without fitting windows
-    frame_red <- droplevels(frame[!is.na(window) & !duplicated(window), gv, drop = FALSE])
-    frame[gv] <- Map(factor,
-      x = frame[gv],
-      levels = lapply(frame_red[gv], levels)
-    )
-    keep <- complete.cases(frame[gv])
-    frame <- droplevels(frame[keep, , drop = FALSE])
-    index <- index[keep]
-    N <- nrow(frame)
-
-    ## Order rows by time series
-    ts <- interaction(frame[gv], drop = TRUE)
-    ord <- order(ts)
-    frame <- frame[ord, ]
-    index <- index[ord]
-    ts <- ts[ord]
-
-    ## Check date
-    date_split <- split(frame[[dv]], ts)
-    stop_if_not(
-      vapply(date_split, function(x) all(diff(x) > 0), FALSE),
-      m = sprintf("`%s` must be increasing in each level of `%s`.", dv, paste(gv, collapse = ":"))
-    )
-  } else {
-    ## Check date
-    stop_if_not(
-      all(diff(frame[[dv]]) > 0),
-      m = sprintf("`%s` must be increasing.", dv)
+      nlevels(interaction(ts, window, drop = TRUE)) == nlevels(window),
+      m = sprintf("`%s` must be constant in each level of `window`.", tsv)
     )
   }
-
-  ## Check incidence
-  if (!is.integer(frame[[cv]])) {
-    which_is_infinite <- which(!is.finite(frame[[cv]]))
-    if (length(which_is_infinite) > 0L) {
-      warning(sprintf("Non-finite numeric elements of `%s` replaced with NA.", cv))
-      frame[[cv]][which_is_infinite] <- NA
-    }
-    which_is_non_integer <- which(frame[[cn]] %% 1 != 0)
-    if (length(which_is_non_integer) > 0L) {
-      warning(sprintf("Non-integer numeric elements of `%s` truncated.", cn))
-      frame[[cn]][which_is_non_integer] <- trunc(frame[[cn]][which_is_non_integer])
-    }
-  }
-  cases_split <- split(frame[[cn]], window)
   if (na_action == "fail") {
     stop_if_not(
-      !vapply(cases_split, function(x) anyNA(x[-1L]), FALSE),
+      !tapply(cases, window, function(x) anyNA(x[-1L])),
       m = sprintf("na_action = \"fail\": `%s` has missing values\nin at least one fitting window.", cv)
     )
   } else {
     stop_if_not(
-      vapply(cases_split, function(x) sum(!is.na(x)) >= min_window_length, FALSE),
-      m = sprintf("`%s` has insufficient data (fewer than %d observations)\nin at least one fitting window.", cv, min_window_length)
+      tapply(cases, window, function(x) sum(!is.na(x[-1L])) >= min_window_length - 1L),
+      m = sprintf("`%s` has insufficient data\n(fewer than %d observations)\nin at least one fitting window.", cv, min_window_length - 1L)
     )
+  }
+
+  ## Check mixed effects formulae
+  if (inherits(formula_glmm, "formula") && length(formula_glmm) == 2L) {
+    formula_glmm <- rep.int(list(expand_terms(formula_glmm)), p)
+    names(formula_glmm) <- pn
+  } else {
+    stop_if_not(
+      inherits(formula_glmm, "list"),
+      length(formula_glmm) > 0L,
+      vapply(formula_glmm, inherits, FALSE, "formula"),
+      lengths(formula_glmm) == 2L,
+      !is.null(names(formula_glmm)),
+      names(formula_glmm) %in% pn,
+      m = paste0(
+        "`formula_glmm` must be a formula of the form\n",
+        "`~terms` or a named list of such formulae with\n",
+        "`names(formula_glmm)` a subset of\n",
+        "`get_par_names(curve, distr, excess, weekday, link = TRUE)`."
+      )
+    )
+    formula_glmm[setdiff(pn, names(formula_glmm))] <- list(~1)
+    formula_glmm <- lapply(formula_glmm[pn], expand_terms(x))
+  }
+
+  ## Construct mixed effects model frame
+  formula_glmm_no_bars <- lapply(formula_glmm, gsub_bar_plus)
+  frame_glmm_list <- lapply(formula_glmm_no_bars, model.frame,
+    data = data,
+    na.action = na.pass,
+    drop.unused.levels = TRUE
+  )
+  frame_glmm_list <- frame_glmm_list[lengths(frame_glmm_list) > 0L]
+  stop_if_not(
+    vapply(frame_glmm_list, nrow, 0L) == nrow(frame_ts),
+    m = sprintf("`formula_glmm` variables must have length `length(%s)`.", dv)
+  )
+  frame_glmm <- do.call(cbind, frame_glmm_list)
+  frame_glmm <- frame_glmm[unique(names(frame_glmm))]
+  stop_if_not(
+    !anyNA(frame_glmm),
+    m = "`formula_glmm` variables must not have missing values."
+  )
+  stop_if_not(
+    !vapply(frame_glmm[vapply(frame_glmm, is.numeric, FALSE)], function(x) any(is.infinite(x)), FALSE),
+    m = "Numeric `formula_glmm` variables must be finite."
+  )
+  stop_if_not(
+    vapply(split(frame_glmm, window), function(d) nrow(unique(d)) == 1L, FALSE),
+    m = "`formula_glmm` variables must be constant\nin each level of `window`."
+  )
+  stop_if_not(
+    vapply(frame_glmm[!is.na(window), , drop = FALSE], function(x) length(unique(x)) > 1L, FALSE),
+    m = "`formula_glmm` variables must not be constant\nacross all levels of `window`."
+  )
+  eval_to_factor <- function(term, formula) {
+    is.factor(try(eval(term, envir = data, enclos = environment(formula))))
+  }
+  all_bar_rhs_eval_to_factor <- function(x) {
+    tl <- split_terms(x)
+    tl_is_bar <- vapply(tl, is_bar, FALSE)
+    bar_rhs <- lapply(tl[tl_is_bar], `[[`, 3L)
+    all(vapply(bar_rhs, eval_to_factor, FALSE))
+  }
+  stop_if_not(
+    vapply(formula_glmm, all_bar_rhs_eval_to_factor, FALSE),
+    m = "Formula variables on right hand side of `|`\nmust be factors."
+  )
+
+  if (is_bar(formula_ts[[3L]])) {
+    ## Discard time series without fitting windows
+    frame_ts[[tsv]] <- factor(frame_ts[[tsv]],
+      levels = levels(droplevels(frame_ts[[tsv]][!is.na(window)]))
+    )
+    keep <- !is.na(frame_ts[[tsv]])
+    frame_ts <- droplevels(frame_ts[keep, , drop = FALSE])
+    frame_glmm <- droplevels(frame_glmm[keep, , drop = FALSE])
+    window <- window[keep]
+
+    ## Order rows by time series
+    ord <- order(frame_ts[[tsv]])
+    frame_ts <- frame_ts[ord, ]
+    frame_glmm <- frame_glmm[ord, ]
+    window <- window[ord]
   }
 
   ## Check that fitting windows are contiguous
   stop_if_not(
-    vapply(split(seq_len(N), window), function(i) all(diff(i) == 1L), FALSE),
+    tapply(seq_len(N), window, function(i) all(diff(i) == 1L)),
     m = "Fitting windows must be contiguous."
   )
 
-  ## Variable/level order is a dependency of multiple methods
-  ## (for better or for worse), so edit with care
-  frame <- frame[c(dv, cv, setdiff(av, c(dv, cv)))] # order variables with time series first, everything else after
-  window <- factor(window, levels = unique(window), exclude = NA) # order levels by occurrence
+  ## Order `levels(window)` by occurrence
+  ## NB: Certain methods depend on this order, so edit with care
+  window <- factor(window, levels = unique(window), exclude = NA)
 
   ## Clean up
-  row.names(frame) <- NULL
+  row.names(frame_ts) <- NULL
+  row.names(frame_glmm) <- NULL
 
-  ## Condense, e.g., `x + y` to `x:y` if `x` and `y` are factors
-  condense_fixed_terms <- function(x) {
-    fixed_terms <- attr(x, "fixed_terms")
-    if (length(fixed_terms) == 1L && fixed_terms[[1L]] == 1) {
-      return(x)
-    }
-    av <- lapply(fixed_terms, all.vars)
-    av_numeric <- lapply(av, function(s) sort(s[vapply(frame[s], is.numeric, FALSE)]))
-    av_factor <- Map(setdiff, av, av_numeric)
-    l <- tapply(
-      X = av_factor,
-      INDEX = vapply(av_numeric, paste, "", collapse = ":"),
-      FUN = function(l) paste(unique(unlist(l)), collapse = ":"),
-      simplify = FALSE
-    )
-    l <- Map(
-      f = function(s1, s2) strsplit(paste(s1, s2, sep = ":"), ":")[[1L]],
-      s1 = names(l),
-      s2 = l,
-      USE.NAMES = FALSE
-    )
-    l <- lapply(l, function(s) {
-      tt <- as.name(s[1L])
-      for (i in seq_along(s)[-1L]) {
-        tt <- call(":", tt, as.name(s[i]))
-      }
-      tt
-    })
-    if (all(lengths(av_numeric) > 0L)) {
-      l <- c(list(1), l)
-    }
-    structure(unsplit_terms(c(l, a$random_terms)),
-      fixed_terms = l,
-      random_terms = a$random_terms
-    )
-  }
-  formula_glmm <- lapply(formula_glmm, condense_fixed_terms)
-
-  ## Subset rows belonging to a fitting window
-  ## and preserve the difference as an attribute
-  ## for use by plot.egf()
-  keep <- !is.na(index)
-  structure(droplevels(frame[keep, ]),
-    extra = droplevels(frame[!keep, ]),
-    window = window[keep],
+  list(
     formula_ts = formula_ts,
-    formula_glmm = formula_glmm
+    frame_ts = frame_ts,
+    formula_glmm = formula_glmm,
+    frame_glmm = frame_glmm,
+    window = window
   )
-}
-
-#' Construct a design matrix from a formula term
-#'
-#' A wrapper for
-#' [stats::model.matrix()] and [Matrix::sparse.model.matrix()]
-#' operating on irreducible formula terms.
-#'
-#' @param x
-#'   A formula term, one of
-#'   (1) 1, as in `(~1)[[2L]]`;
-#'   (2) an interaction of one or more numeric vectors and factors,
-#'   as in `x` and `x:y`; and
-#'   (3) a call to `|` with 1 or an interaction of one or more
-#'   numeric variables on the left hand side and an interaction
-#'   of one or more factors on the right hand side, as in
-#'   `1 | f` and `x | f:g`.
-#' @param frame
-#'   A data frame containing the variables named in `x`,
-#'   which must not have missing values, as enforced by
-#'   [make_frame()].
-#' @param sparse_X
-#'   A logical scalar. If `TRUE`, then the matrix is returned in
-#'   sparse format. If `x` is a call to `|`, then the matrix is
-#'   returned in sparse format regardless of `sparse`.
-#'
-#' @return
-#' A matrix with `nrow(frame)` rows and `n` columns,
-#' where `n` is the number of nonempty groups if `x`
-#' has a grouping component and 1 otherwise.
-#'
-#' @noRd
-#' @importFrom Matrix sparseMatrix sparse.model.matrix
-#' @importFrom stats model.matrix
-term_to_matrix <- function(x, frame, sparse_X) {
-  if (is.call(x) && x[[1L]] == as.name("|")) {
-    group <- interaction(frame[all.vars(x[[3L]])], drop = TRUE)
-    Z <- sparse.model.matrix(~-1 + group, data = list(group = group))
-    if (x[[2L]] != 1) {
-      Z <- Z * Reduce(`*`, frame[all.vars(x[[2L]])])
-    }
-    attr(Z, "assign") <- attr(Z, "contrasts") <- NULL
-    attr(Z, "variables") <- list(numeric = all.vars(x[[2L]]), factor = all.vars(x[[3L]]))
-    attr(Z, "group") <- group
-    dimnames(Z) <- list(NULL, NULL)
-    return(Z)
-  }
-
-  av <- all.vars(x)
-  av_is_numeric <- vapply(frame[av], is.numeric, FALSE)
-  if (all(av_is_numeric)) {
-    X <- if (x == 1) rep.int(1L, nrow(frame)) else Reduce(`*`, frame[av])
-    if (sparse_X) {
-      X <- sparseMatrix(i = seq_along(X), j = rep.int(1L, length(X)),
-                        x = X, dims = c(length(X), 1L))
-    } else {
-      dim(X) <- c(length(X), 1L)
-    }
-    attr(X, "variables") <- list(numeric = av, factor = character(0L))
-    attr(X, "group") <- rep(factor(1), nrow(X))
-    return(X)
-  }
-
-  mm <- if (sparse_X) sparse.model.matrix else model.matrix
-  f <- if (any(av_is_numeric)) ~-1 + group else ~group
-  group <- interaction(frame[av[!av_is_numeric]], drop = TRUE)
-  X <- mm(f, data = list(group = group), contrasts.arg = list(group = "contr.sum"))
-  if (any(av_is_numeric)) {
-    X <- X * Reduce(`*`, frame[av[av_is_numeric]])
-  }
-  attr(X, "assign") <- attr(X, "contrasts") <- NULL
-  attr(X, "variables") <- list(numeric = av[av_is_numeric], factor = av[!av_is_numeric])
-  attr(X, "group") <- group
-  dimnames(X) <- list(NULL, NULL)
-  X
 }
 
 #' Construct data objects for C++ template
