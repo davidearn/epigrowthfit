@@ -174,14 +174,14 @@ get_inverse_link <- function(s) {
 #' Validate model formulae and construct model frames
 #'
 #' Constructs model frames to be used by [egf()]
-#' while performing myriad checks on the arguments.
+#' while performing myriad checks on the input.
 #'
 #' @inheritParams egf
 #'
 #' @return
 #' A list with elements:
 #' \item{`formula_ts`}{
-#'   The so-named argument, simplified if possible.
+#'   A simplified if possible.
 #' }
 #' \item{`frame_ts`}{
 #'   A data frame with 3 variables: a Date vector, an incidence vector,
