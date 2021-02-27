@@ -5,22 +5,24 @@
 #' or more disease incidence time series.
 #'
 #' @param formula_ts
-#'   A formula of the form `y ~ x` or `y ~ x | group` specifying one
-#'   or more incidence time series in long format, with `x` the name
-#'   of a Date vector, `y` the name of a numeric vector, and `group`
-#'   an interaction of one or more factors, splitting the data by
-#'   time series.
+#'   A formula of the form `y ~ x` or `y ~ x | ts` specifying one or
+#'   more incidence time series in long format, with `x` the name of
+#'   a Date vector, `y` the name of a numeric vector, and `ts` an
+#'   interaction of one or more factors, splitting the data by time
+#'   series. `y ~ x` is equivalent to `y ~ x | ts` with `ts` equal
+#'   to `rep(factor(1), length(x))`.
 #' @param formula_glmm
-#'   A list of formulae of the form `par ~ terms`, where `par`
-#'   is the name of a nonlinear model parameter (an element
-#'   of `get_par_names(curve, distr, excess, link = TRUE)`)
-#'   and `rhs` is a sum of mixed effects model terms following
-#'   [`lme4`][lme4::lmer()]-like syntax. Alternatively,
-#'   a formula of the form `~terms` to be recycled for all
-#'   nonlinear model parameters.
+#'   A named list of formulae of the form `~terms`, specifying
+#'   mixed effects models for nonlinear model parameters.
+#'   In this case, `names(formula_glmm)` must be a subset of
+#'   `get_par_names(curve, distr, excess, weekday, link = TRUE)`.
+#'   Alternatively, a formula of the form `~terms` to be recycled
+#'   for all nonlinear model parameters.
+#'   Syntax is [`lme4`][lme4::lmer()]-like.
 #' @param data
-#'   A data frame, list, or environment containing the variables
-#'   named in `formula_ts` and `formula_glmm`.
+#'   A data frame, list, or environment. `egf()` looks here for
+#'   variables named in `formula_ts` and `formula_glmm`, before
+#'   looking in the respective formula environment (and its enclosure).
 #' @param window
 #'   A factor of length `nrow(data)` such that `split(data, window)`
 #'   splits `data` by fitting window, with `is.na(window)` indexing
@@ -41,21 +43,23 @@
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
 #' @param na_action
-#'   A character string indicating how `NA` in the incidence vector
-#'   (`y` if `formula = y ~ x | group`) are handled. Note that `NA`
-#'   in other variables are not tolerated.
+#'   A character string indicating how `NA` in incidence
+#'   (`y` if `formula_ts = y ~ x | group`) are handled.
+#'   Note that `NA` in other variables are not tolerated.
 #' @param sparse_X
-#'   A logical scalar. If `TRUE`, then the fixed effects design matrix
-#'   will be constructed in sparse format.
+#'   A logical scalar. If `TRUE`, then the fixed effects
+#'   design matrix will be constructed in sparse format.
+#'   (The random effects design matrix is always constructed
+#'   in sparse format.)
 #' @param debug
-#'   A logical scalar used for debugging. If `TRUE`, then `egf()`
-#'   returns early with a list of optimization inputs.
+#'   A logical scalar used for debugging. If `TRUE`, then
+#'   `egf()` returns early with a list of optimization inputs.
 #' @param par_init
 #'   A full parameter vector for the first likelihood evaluation.
 #'   Set to `NULL` to accept the internally generated default. If
 #'   the default causes errors, then use `debug = TRUE` to retrieve
-#'   its value, which will have the correct structure, and modify
-#'   as necessary.
+#'   its value, which will have the correct length, and modify as
+#'   necessary.
 #' @param ...
 #'   Optional arguments to the optimizer specified by `method`.
 #'
@@ -140,7 +144,7 @@ egf <- function(formula_ts,
   stop_if_not_tf(sparse_X)
   stop_if_not_tf(debug)
 
-  frame <- make_frame(
+  mf_out <- make_frames(
     formula_ts = formula_ts,
     formula_glmm = formula_glmm,
     data = data,
@@ -152,10 +156,14 @@ egf <- function(formula_ts,
     na_action = na_action
   )
   tmb_args <- make_tmb_args(
-    frame = frame,
+    frame_ts = mf_out$frame_ts,
+    frame_glmm = mf_out$frame_glmm,
+    data = data,
+    window = mf_out$window,
     curve = curve,
     distr = distr,
     excess = excess,
+    weekday = weekday,
     sparse_X = sparse_X,
     par_init = par_init
   )

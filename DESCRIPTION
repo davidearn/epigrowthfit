@@ -17,6 +17,7 @@ Depends:
     TMB
 Imports:
     stats,
+    methods,
     graphics,
     grDevices,
     Matrix,

@@ -26,19 +26,16 @@ Type objective_function<Type>::operator() ()
     DATA_VECTOR(t); // length=N
     DATA_VECTOR(x); // length=N
     // window lengths
-    DATA_IVECTOR(wl); // length=#(fitting windows)
+    DATA_IVECTOR(wl); // length=w
     // day-of-week of earliest date: 0 -> Sunday, etc.
-    DATA_IVECTOR(dow0); // length=#(fitting windows)
-    // number of coefficients
-    DATA_IVECTOR(fnc); // length=#(unique FE terms)
-    DATA_IVECTOR(rnc); // length=#(unique RE terms)
-    // mixed effects indicator matrices: elements in {0,1}
-    DATA_IMATRIX(fid); // nrow=#(FE terms),  ncol=#(nonlinear model parameters)
-    DATA_IMATRIX(rid); // nrow=#(RE terms),  ncol=#(nonlinear model parameters)
+    DATA_IVECTOR(dow0); // length=w
+    // number of coefficients for each nonlinear model parameter
+    DATA_IVECTOR(fnc); // length=p
+    DATA_IVECTOR(rnc); // length=p
     // design matrices
-    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(#(groups in FE term i))
     DATA_MATRIX(Xd);
-    DATA_SPARSE_MATRIX(Z);  // nrow=N,  ncol=sum(#(groups in RE term i))
+    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(fnc)
+    DATA_SPARSE_MATRIX(Z);  // nrow=N,  ncol=sum(rnc)
     // parameter indices
     DATA_INTEGER(j_log_r);
     DATA_INTEGER(j_log_alpha);
@@ -56,45 +53,42 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(j_log_w5);
     DATA_INTEGER(j_log_w6);
     // misc.
-    int nw = wl.size();
-    int np = fid.cols();
-    bool anyRE = (rid.rows() > 0);
-    vector<int> fnp = fid.rowwise().sum();
-    vector<int> rnp = rid.rowwise().sum();
-    
+    int w = wl.size();
+    int p = fnc.size();
+    bool anyRE = (rnc.sum() > 0);
     
     // Parameters
     // fixed effects
-    PARAMETER_VECTOR(beta); // length=sum(nlevels(FE i))
+    PARAMETER_VECTOR(beta); // length=sum(fnc)
     // log sd random effects
-    PARAMETER_VECTOR(log_sd_b); // length=sum(np(RE i))
+    PARAMETER_VECTOR(log_sd_b); // length=with(Zinfo, nlevels(interaction(par, term, group, drop = TRUE)))
     // random effects
-    PARAMETER_VECTOR(b); // length=sum(nlevels(RE i)*np(RE i)) 
+    PARAMETER_VECTOR(b); // length=sum(rnc) 
 
     
     // Compute parameter values at every time point ============================
     // NOTE: parameters are constant within but not across fitting windows
 
     // (N x np) matrix of parameter values
-    matrix<Type> Y(t.size(), np);
+    matrix<Type> Y(t.size(), p);
     
     // Fixed effects component:
     // matrix multiply
     // X * beta2
-    // = (N x sum(nlevels(FE i))) * (sum(nlevels(FE i)) x np)
-    // = (N x np)
+    // = (N x sum(fnc)) * (sum(fnc) x p)
+    // = (N x p)
     // need to construct block matrix `beta2` from vector `beta`
 
-    Eigen::SparseMatrix<Type> beta2(fnl.sum(), np);
-    beta2.reserve(fnl);
+    Eigen::SparseMatrix<Type> beta2(fnc.sum(), p);
+    beta2.reserve(fnc);
     
-    for (int j = 0, i = 0; j < np; j++) // loop over parameters
+    for (int j = 0, i = 0; j < p; j++) // loop over parameters
     {
-	for (int l = 0; l < fnl(j); l++) // loop over levels
+	for (int l = 0; l < fnc(j); l++) // loop over coefficients
 	{
 	    beta2.insert(i + l, j) = beta(i + l);
 	}
-	i += fnl(j);
+	i += fnc(j);
     }
     
     if (sparse_X)
@@ -110,16 +104,16 @@ Type objective_function<Type>::operator() ()
     // Random effects component:
     // matrix multiply
     // Z * b2
-    // = (N x sum(nlevels(RE i))) * (sum(nlevels(RE i)) x np)
-    // = (N x np)
+    // = (N x sum(rnc)) * (sum(rnc) x p)
+    // = (N x p)
     // need to construct block matrix `b2` from vector `b`
     // will require some setting up...
     
-    matrix<Type> b2(rnl.sum(), np);
+    matrix<Type> b2(rnc.sum(), p);
     
-    // A list of (nlevels(RE i) x np(RE i)) matrices gathering related elements
-    // of vector `b`: rows of each matrix follow a zero-mean, unit-variance
-    // multivariate normal distribution with a common covariance matrix
+    // A list of matrices gathering related elements of vector `b`:
+    // rows of each matrix follow a zero-mean, unit-variance multivariate
+    // normal distribution with a common covariance matrix
     vector< matrix<Type> > re_list(rid.rows());
 
     // A list of s.d. vectors corresponding elementwise to `re_list`

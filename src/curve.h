@@ -1,32 +1,3 @@
-double log_exponential(vector<double> x)
-{
-    // log(c(t))
-    // = log(c0 * exp(r * t))
-    // = log(c0) + r * t
-    double t = x(0);
-    double log_r = x(1);
-    double log_c0 = x(2);
-    return log_c0 + exp(log_r) * t;
-}
-
-
-TMB_ATOMIC_VECTOR_FUNCTION(
-    // ATOMIC_NAME
-    log_exponential
-    ,
-    // OUTPUT_DIM
-    1,
-    // ATOMIC_DOUBLE
-    ty(0) = log_exponential(tx);
-    ,
-    // ATOMIC_REVERSE
-    Type f = ty[0];
-    Type df = 1. / (exp(W) * (1. + W)); // Derivative
-    px[0] = DW * py[0];                 // Reverse mode chain rule
-)
-
-
-
 template<class Type>
 Type log_exponential(Type t, Type log_r, Type log_c0)
 {
@@ -118,7 +89,19 @@ vector<Type> eval_log_cum_inc(vector<Type> t,
 }
 
 template<class Type>
-vector<Type> eval_log_int_inc(vector<Type> log_cum_inc, vector<int> wl)
+vector<Type> eval_log_int_inc(vector<Type> t,
+			      vector<Type> log_cum_inc,
+			      vector<int> wl,
+			      bool weekday,
+			      vector<int> dow0,
+			      matrix<Type> Y,
+			      int j_log_w1,
+			      int j_log_w2,
+			      int j_log_w3,
+			      int j_log_w4,
+			      int j_log_w5,
+			      int j_log_w6
+			      )
 {
     vector<Type> log_int_inc(log_cum_inc.size() - wl.size());
     for (int i1 = 0, i2 = 1, k = 0; k < wl.size(); k++)

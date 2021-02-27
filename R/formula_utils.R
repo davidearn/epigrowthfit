@@ -136,8 +136,8 @@ is_bar <- function(x) {
 
 #' Expand and simplify formula terms
 #'
-#' Expand and simplify formulae and formula terms,
-#' including those with calls to the ```|``` operator,
+#' Expand and simplify formulae and formula terms
+#' (including those with calls to the ```|``` operator)
 #' using `terms(simplify = TRUE)` machinery.
 #'
 #' @param x A call, name, or atomic scalar.
@@ -166,9 +166,13 @@ expand_terms <- function(x) {
   )
   tl <- split_terms(x)
   tl_is_bar <- vapply(tl, is_bar, FALSE)
-  no_bar <- terms(as.formula(call("~", unsplit_terms(tl[!tl_is_bar]))), simplify = TRUE)[[2L]]
-  if (!any(tl_is_bar)) {
-    return(no_bar)
+  if (all(tl_is_bar)) {
+    no_bar <- NULL
+  } else {
+    no_bar <- terms(as.formula(call("~", unsplit_terms(tl[!tl_is_bar]))), simplify = TRUE)[[2L]]
+    if (!any(tl_is_bar)) {
+      return(no_bar)
+    }
   }
   expand_bar <- function(x) {
     lhs <- expand_terms(x[[2L]])
@@ -219,48 +223,43 @@ gsub_bar_plus <- function(x) {
   unsplit_terms(tl)
 }
 
-#' #' @importFrom Matrix sparseMatrix sparse.model.matrix
-#' #' @importFrom stats model.matrix
-#' term_to_matrix <- function(x, data, sparse) {
-#'   if (is.call(x) && x[[1L]] == as.name("|")) {
-#'
-#'     group <- interaction(frame[all.vars(x[[3L]])], drop = TRUE)
-#'     Z <- sparse.model.matrix(~-1 + group, data = list(group = group))
-#'     if (x[[2L]] != 1) {
-#'       Z <- Z * Reduce(`*`, frame[all.vars(x[[2L]])])
-#'     }
-#'     attr(Z, "assign") <- attr(Z, "contrasts") <- NULL
-#'     attr(Z, "variables") <- list(numeric = all.vars(x[[2L]]), factor = all.vars(x[[3L]]))
-#'     attr(Z, "group") <- group
-#'     dimnames(Z) <- list(NULL, NULL)
-#'     return(Z)
-#'   }
-#'
-#'   av <- all.vars(x)
-#'   av_is_numeric <- vapply(frame[av], is.numeric, FALSE)
-#'   if (all(av_is_numeric)) {
-#'     X <- if (x == 1) rep.int(1L, nrow(frame)) else Reduce(`*`, frame[av])
-#'     if (sparse_X) {
-#'       X <- sparseMatrix(i = seq_along(X), j = rep.int(1L, length(X)),
-#'                         x = X, dims = c(length(X), 1L))
-#'     } else {
-#'       dim(X) <- c(length(X), 1L)
-#'     }
-#'     attr(X, "variables") <- list(numeric = av, factor = character(0L))
-#'     attr(X, "group") <- rep(factor(1), nrow(X))
-#'     return(X)
-#'   }
-#'
-#'   mm <- if (sparse_X) sparse.model.matrix else model.matrix
-#'   f <- if (any(av_is_numeric)) ~-1 + group else ~group
-#'   group <- interaction(frame[av[!av_is_numeric]], drop = TRUE)
-#'   X <- mm(f, data = list(group = group), contrasts.arg = list(group = "contr.sum"))
-#'   if (any(av_is_numeric)) {
-#'     X <- X * Reduce(`*`, frame[av[av_is_numeric]])
-#'   }
-#'   attr(X, "assign") <- attr(X, "contrasts") <- NULL
-#'   attr(X, "variables") <- list(numeric = av[av_is_numeric], factor = av[!av_is_numeric])
-#'   attr(X, "group") <- group
-#'   dimnames(X) <- list(NULL, NULL)
-#'   X
-#' }
+split_effects <- function(x) {
+  tl <- split_terms(x)
+  tl_is_bar <- vapply(tl, is_bar, FALSE)
+  fixed_rhs <- if (all(tl_is_bar)) 1 else unsplit_terms(tl[!tl_is_bar])
+  list(
+    fixed = as.formula(call("~", fixed_rhs), env = environment(x)),
+    random = tl[tl_is_bar]
+  )
+}
+
+split_interaction <- function(x) {
+  if (is.call(x) && x[[1L]] == as.name(":")) {
+    return(do.call(c, lapply(x[-1L], split_interaction)))
+  }
+  list(x)
+}
+
+
+
+#
+# extract_level <- function(term_label, column_name) {
+#   f <- function(s1, s1s2) {
+#     ## Handle "(Intercept)" and numeric variable names
+#     if (s1 == s1s2) {
+#       return(s1)
+#     }
+#     ## Extract `factor_level` from `paste0(factor_name, factor_level)`
+#     sub(sprintf("^%s", s1), "", s1s2)
+#   }
+#   split_string_at_colon <- function(s) {
+#     ## `strsplit(split = ":")` is naive as there could be
+#     ## colons in the variable name
+#     vapply(split_interaction(str2lang(s)), deparse, "")
+#   }
+#   ss <- mapply(f,
+#     s1 = split_string_at_colon(term_label),
+#     s2 = split_string_at_colon(column_name)
+#   )
+#   paste(ss, collapse = ":")
+# }
