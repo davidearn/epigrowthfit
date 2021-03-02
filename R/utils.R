@@ -19,14 +19,6 @@
 #' `warn_if_not()` behaves identically to `stop_if_not()` but issues
 #' a warning instead of an error.
 #'
-#' `stop_if_not_tf()` stops if its argument is not `TRUE` or `FALSE`.
-#' `stop_if_not_positive_integer()` stops if its argument is not a
-#' positive integer (of type `"integer"` or `"double"`).
-#' `stop_if_not_in_0_1()` stops if its arguments is not a number in
-#' the interval (0,1).
-#' `stop_if_not_character_string()` stops if its argument is not a
-#' character vector of length 1 (other than `NA_character_`).
-#'
 #' @return
 #' `NULL` (invisibly).
 #'
@@ -57,10 +49,10 @@ warn_if_not <- function(..., m, n = 1L) {
   invisible(NULL)
 }
 
-stop_if_not_tf <- function(x, n = 1L) {
+stop_if_not_true_false <- function(x, n = 1L) {
   s <- deparse(substitute(x))
   stop_if_not(
-    inherits(x, "logical"),
+    is.vector(x, "logical"),
     length(x) == 1L,
     !is.na(x),
     m = sprintf("`%s` must be TRUE or FALSE.", s),
@@ -68,10 +60,21 @@ stop_if_not_tf <- function(x, n = 1L) {
   )
 }
 
+stop_if_not_integer <- function(x, n = 1L) {
+  s <- deparse(substitute(x))
+  stop_if_not(
+    is.vector(x, "numeric"),
+    length(x) == 1L,
+    x %% 1 == 0,
+    m = sprintf("`%s` must be an integer.", s),
+    n = 1L + n
+  )
+}
+
 stop_if_not_positive_integer <- function(x, n = 1L) {
   s <- deparse(substitute(x))
   stop_if_not(
-    inherits(x, c("integer", "numeric")),
+    is.vector(x, "numeric"),
     length(x) == 1L,
     x >= 1,
     x %% 1 == 0,
@@ -83,7 +86,7 @@ stop_if_not_positive_integer <- function(x, n = 1L) {
 stop_if_not_in_0_1 <- function(x, n = 1L) {
   s <- deparse(substitute(x))
   stop_if_not(
-    inherits(x, "numeric"),
+    is.vector(x, "numeric"),
     length(x) == 1L,
     x > 0,
     x < 1,
@@ -95,7 +98,7 @@ stop_if_not_in_0_1 <- function(x, n = 1L) {
 stop_if_not_character_string <- function(x, n = 1L) {
   s <- deparse(substitute(x))
   stop_if_not(
-    inherits(x, "character"),
+    is.vector(x, "character"),
     length(x) == 1L,
     !is.na(x),
     m = sprintf("`%s` must be a character string.", s),
@@ -105,9 +108,19 @@ stop_if_not_character_string <- function(x, n = 1L) {
 
 is_constant_within_tol <- function(x, tol = sqrt(.Machine$double.eps), na.rm = FALSE) {
   if (length(x) == 0L || (na.rm && all(is.na(x)))) {
-    return(NA)
+    return(TRUE)
   }
   abs(max(x, na.rm = na.rm) - min(x, na.rm = na.rm)) < tol
+}
+
+is_constant <- function(x) {
+  if (is.data.frame(x)) {
+    return(all(vapply(x, is_constant, FALSE)))
+  }
+  if (typeof(x) == "double") {
+    return(is_constant_within_tol(x))
+  }
+  length(unique(x)) < 2L
 }
 
 is_integer_within_tol <- function(x, tol = sqrt(.Machine$double.eps)) {

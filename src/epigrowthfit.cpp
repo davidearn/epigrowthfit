@@ -12,10 +12,10 @@ Type objective_function<Type>::operator() ()
     // Flags
     DATA_INTEGER(curve_flag);    // curve     (enum curve)
     DATA_INTEGER(distr_flag);    // distr     (enum distr)
-    DATA_INTEGER(excess_flag);   // excess    (1=yes,      0=no)
-    DATA_INTEGER(weekday_flag);  // weekday   (1=yes,      0=no)
-    DATA_INTEGER(sparse_X_flag); // X format  (1=sparse,   0=dense)
-    DATA_INTEGER(predict_flag);  // predict   (1=yes,      0=no)
+    DATA_INTEGER(excess_flag);   // excess    (1=yes,  0=no)
+    DATA_INTEGER(weekday_flag);  // weekday   (1=yes,  0=no)
+    DATA_INTEGER(sparse_X_flag); // sparse X  (1=yes,  0=no)
+    DATA_INTEGER(predict_flag);  // predict   (1=yes,  0=no)
     bool excess   = (excess_flag   == 1);
     bool weekday  = (weekday_flag  == 1);
     bool sparse_X = (sparse_X_flag == 1);
@@ -26,16 +26,21 @@ Type objective_function<Type>::operator() ()
     DATA_VECTOR(t); // length=N
     DATA_VECTOR(x); // length=N
     // window lengths
-    DATA_IVECTOR(wl); // length=w
-    // day-of-week of earliest date: 0 -> Sunday, etc.
-    DATA_IVECTOR(dow0); // length=w
+    DATA_IVECTOR(wlen); // length=w
+    // day-of-week of earliest date
+    DATA_IVECTOR(dow0); // length=w,  val={0,...,6}
     // number of coefficients for each nonlinear model parameter
-    DATA_IVECTOR(fnc); // length=p
-    DATA_IVECTOR(rnc); // length=p
+    DATA_IVECTOR(fncoef); // length=p
+    DATA_IVECTOR(rncoef); // length=p
+    // coefficients factored by nonlinear model parameter
+    DATA_IVECTOR(fpar); // length=sum(fncoef),  val={0,...,p-1}
+    DATA_IVECTOR(rpar); // length=sum(rncoef),  val={0,...,p-1}
+    // number of columns in each random effects block
+    DATA_IVECTOR(rncol); // length=m
     // design matrices
     DATA_MATRIX(Xd);
-    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(fnc)
-    DATA_SPARSE_MATRIX(Z);  // nrow=N,  ncol=sum(rnc)
+    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(fncoef)
+    DATA_SPARSE_MATRIX(Z);  // nrow=N,  ncol=sum(rncoef)
     // parameter indices
     DATA_INTEGER(j_log_r);
     DATA_INTEGER(j_log_alpha);
@@ -53,24 +58,24 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(j_log_w5);
     DATA_INTEGER(j_log_w6);
     // misc.
-    int w = wl.size();
-    int p = fnc.size();
-    bool anyRE = (rnc.sum() > 0);
+    int w = wlen.size();
+    int p = fncoef.size();
+    bool anyRE = (rncoef.sum() > 0);
     
     // Parameters
-    // fixed effects
-    PARAMETER_VECTOR(beta); // length=sum(fnc)
-    // log sd random effects
-    PARAMETER_VECTOR(log_sd_b); // length=with(Zinfo, nlevels(interaction(par, term, group, drop = TRUE)))
-    // random effects
-    PARAMETER_VECTOR(b); // length=sum(rnc) 
-
+    // fixed effects coefficients
+    PARAMETER_VECTOR(beta); // length=sum(fncoeff)
+    // random effects coefficients, unit variance
+    PARAMETER_VECTOR(b); // length=sum(rncoef)
+    // log sd random effects coefficients
+    PARAMETER_VECTOR(log_sd_b); // length=p*m
     
-    // Compute parameter values at every time point ============================
-    // NOTE: parameters are constant within but not across fitting windows
+    
+    // Compute parameter values in each fitting window =========================
+    // NB: parameters vary across but not within fitting windows
 
-    // (N x np) matrix of parameter values
-    matrix<Type> Y(t.size(), p);
+    // (N x w) matrix of parameter values
+    matrix<Type> Y(t.size(), w);
     
     // Fixed effects component:
     // matrix multiply

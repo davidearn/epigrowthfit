@@ -22,7 +22,9 @@
 #' @param data
 #'   A data frame, list, or environment. `egf()` looks here for
 #'   variables named in `formula_ts` and `formula_glmm`, before
-#'   looking in the respective formula environment (and its enclosure).
+#'   looking in formula environments (and their enclosures).
+#'   `formula_glmm` variables must be constant in each fitting
+#'   window.
 #' @param window
 #'   A factor of length `nrow(data)` such that `split(data, window)`
 #'   splits `data` by fitting window, with `is.na(window)` indexing
@@ -37,8 +39,11 @@
 #'   observed (`y` if `formula = y ~ x`) is multiple causes
 #'   mortality rather than disease mortality or disease incidence.
 #' @param weekday
-#'   A logical scalar. If `TRUE`, then day-of-week effects
-#'   are estimated.
+#'   A logical scalar. If `TRUE`, then weekday effects are estimated.
+#' @param weekday_ref
+#'   An integer indicating a weekday, with 1 mapping to Sunday,
+#'   2 mapping to Monday, and so on. Weekday effects are modeled
+#'   as offsets relative to the indicated day.
 #' @param method
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
@@ -129,6 +134,7 @@ egf <- function(formula_ts,
                 distr = c("nbinom", "pois"),
                 excess = FALSE,
                 weekday = FALSE,
+                weekday_ref = 2L,
                 method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
                 na_action = c("pass", "fail"),
                 sparse_X = FALSE,
@@ -137,12 +143,14 @@ egf <- function(formula_ts,
                 ...) {
   curve <- match.arg(curve)
   distr <- match.arg(distr)
-  stop_if_not_tf(excess)
-  stop_if_not_tf(weekday)
+  stop_if_not_true_false(excess)
+  stop_if_not_true_false(weekday)
+  stop_if_not_integer(weekday_ref)
+  weekday_ref <- as.integer(1 + (weekday_ref - 1) %% 7)
   method <- match.arg(method)
   na_action <- match.arg(na_action)
-  stop_if_not_tf(sparse_X)
-  stop_if_not_tf(debug)
+  stop_if_not_true_false(sparse_X)
+  stop_if_not_true_false(debug)
 
   mf_out <- make_frames(
     formula_ts = formula_ts,
@@ -153,7 +161,8 @@ egf <- function(formula_ts,
     distr = distr,
     excess = excess,
     weekday = weekday,
-    na_action = na_action
+    na_action = na_action,
+    par_init = par_init
   )
   tmb_args <- make_tmb_args(
     frame_ts = mf_out$frame_ts,
@@ -164,6 +173,7 @@ egf <- function(formula_ts,
     distr = distr,
     excess = excess,
     weekday = weekday,
+    weekday_ref = weekday_ref,
     sparse_X = sparse_X,
     par_init = par_init
   )

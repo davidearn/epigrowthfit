@@ -148,7 +148,7 @@ is_bar <- function(x) {
 #' @examples
 #' expand_terms(~x * y)
 #' expand_terms(~x * y + (1 | f/g))
-#' expand_terms(~x * y + (1 | f/g) + (a | f) + (b | f:g))
+#' expand_terms(~x * y + (1 | f/g) + (a | f) + (0 + b | f:g))
 #'
 #' @export
 #' @importFrom stats terms
@@ -179,8 +179,14 @@ expand_terms <- function(x) {
     rhs <- split_terms(expand_terms(x[[3L]]))
     lapply(rhs, function(x) call("|", lhs, x))
   }
+  has_intercept <- function(x) {
+    attr(terms(as.formula(call("~", x))), "intercept") == 1L
+  }
   merge_bars <- function(l) {
     lhs <- lapply(l, `[[`, 2L)
+    if (any(vapply(lhs, has_intercept, FALSE))) {
+      lhs <- c(lhs, list(1))
+    }
     rhs <- l[[1L]][[3L]]
     call("|", expand_terms(unsplit_terms(lhs)), rhs)
   }
@@ -239,27 +245,3 @@ split_interaction <- function(x) {
   }
   list(x)
 }
-
-
-
-#
-# extract_level <- function(term_label, column_name) {
-#   f <- function(s1, s1s2) {
-#     ## Handle "(Intercept)" and numeric variable names
-#     if (s1 == s1s2) {
-#       return(s1)
-#     }
-#     ## Extract `factor_level` from `paste0(factor_name, factor_level)`
-#     sub(sprintf("^%s", s1), "", s1s2)
-#   }
-#   split_string_at_colon <- function(s) {
-#     ## `strsplit(split = ":")` is naive as there could be
-#     ## colons in the variable name
-#     vapply(split_interaction(str2lang(s)), deparse, "")
-#   }
-#   ss <- mapply(f,
-#     s1 = split_string_at_colon(term_label),
-#     s2 = split_string_at_colon(column_name)
-#   )
-#   paste(ss, collapse = ":")
-# }
