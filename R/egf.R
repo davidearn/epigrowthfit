@@ -5,52 +5,54 @@
 #' or more disease incidence time series.
 #'
 #' @param formula_ts
-#'   A formula of the form `y ~ x` or `y ~ x | ts` specifying one or
-#'   more incidence time series in long format, with `x` the name of
-#'   a Date vector, `y` the name of a numeric vector, and `ts` an
-#'   interaction of one or more factors, splitting the data by time
-#'   series. `y ~ x` is equivalent to `y ~ x | ts` with `ts` equal
-#'   to `rep(factor(1), length(x))`.
+#'   A formula of the form `y ~ x` or `y ~ x | ts` specifying one
+#'   or more incidence time series in long format. `x` and `y` must
+#'   evaluate to Date and numeric vectors, respectively. `ts` must
+#'   evaluate to a factor splitting the data by time series.
+#'   `y ~ x` is equivalent to `y ~ x | ts` with `ts` evaluating to
+#'   `rep(factor(1), length(x))`.
 #' @param formula_glmm
-#'   A named list of formulae of the form `~terms`, specifying
-#'   mixed effects models for nonlinear model parameters.
+#'   A named list of formulae of the form `~terms`,
+#'   specifying mixed effects models for nonlinear model parameters.
 #'   In this case, `names(formula_glmm)` must be a subset of
-#'   `get_par_names(curve, distr, excess, weekday, link = TRUE)`.
+#'   `get_par_names(curve, distr, excess, weekday, link = TRUE)`,
+#'   and `~1` is the default for parameters not assigned a formula.
 #'   Alternatively, a formula of the form `~terms` to be recycled
 #'   for all nonlinear model parameters.
 #'   Syntax is [`lme4`][lme4::lmer()]-like.
 #' @param data
 #'   A data frame, list, or environment. `egf()` looks here for
-#'   variables named in `formula_ts` and `formula_glmm`, before
-#'   looking in formula environments (and their enclosures).
-#'   `formula_glmm` variables must be constant in each fitting
-#'   window.
+#'   variables used in `formula_ts` and `formula_glmm`, before
+#'   looking in formula environments. `formula_glmm` variables
+#'   must be constant in each fitting window.
 #' @param window
 #'   A factor of length `nrow(data)` such that `split(data, window)`
 #'   splits `data` by fitting window, with `is.na(window)` indexing
 #'   rows of `data` not belonging to a fitting window.
 #' @param curve
 #'   A character string specifying a cumulative incidence model.
+#' @param excess
+#'   A logical scalar. If `TRUE`, then a constant baseline mortality
+#'   rate is estimated. Set to `TRUE` if what is observed (`y` if
+#'   `formula = y ~ x | ts`) is multiple causes mortality rather than
+#'   disease mortality or disease incidence.
 #' @param distr
 #'   A character string specifying an observation model.
-#' @param excess
-#'   A logical scalar. If `TRUE`, then a constant baseline
-#'   mortality rate is estimated. Set to `TRUE` if what is
-#'   observed (`y` if `formula = y ~ x`) is multiple causes
-#'   mortality rather than disease mortality or disease incidence.
 #' @param weekday
 #'   A logical scalar. If `TRUE`, then weekday effects are estimated.
 #' @param weekday_ref
 #'   An integer indicating a weekday, with 1 mapping to Sunday,
-#'   2 mapping to Monday, and so on. Weekday effects are modeled
+#'   2 mapping to Monday, and so on. Weekday effects are estimated
 #'   as offsets relative to the indicated day.
 #' @param method
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
 #' @param na_action
 #'   A character string indicating how `NA` in incidence
-#'   (`y` if `formula_ts = y ~ x | group`) are handled.
-#'   Note that `NA` in other variables are not tolerated.
+#'   (`y` if `formula_ts = y ~ x | ts`) are handled.
+#'   `NA` in other `formula_ts` variables are an error.
+#'   `NA` in `formula_glmm` variables _inside fitting windows_
+#'   are an error.
 #' @param sparse_X
 #'   A logical scalar. If `TRUE`, then the fixed effects
 #'   design matrix will be constructed in sparse format.
@@ -71,14 +73,14 @@
 #' @return
 #' If `debug = FALSE`, then a list inheriting from class `"egf"`,
 #' with elements:
-#' \item{`frame`}{
-#'   The model frame. See [make_frame()].
+#' \item{`frame_ts`}{
+#'   The time series model frame. See [make_frames()].
 #' }
-#' \item{`window`}{
-#'   A factor of length `nrow(data)` such that `split(frame, window)`
-#'   splits the model frame by fitting window.
+#' \item{`frame_glmm`}{
+#'   A list containing the mixed effects model frames,
+#'   one for each nonlinear model parameter. See [make_frames()].
 #' }
-#' \item{`curve`, `distr`, `excess`, `weekday`, `method`}{
+#' \item{`curve`, `excess`, `distr`, `weekday`, `weekday_ref`, `method`}{
 #'   Copies of the so-named arguments (after matching).
 #' }
 #' \item{`tmb_args`}{
@@ -119,20 +121,19 @@
 #'   The call to `egf()`, allowing for updates to the `"egf"` object
 #'   via [stats::update()].
 #' }
-#' If `debug = TRUE`, then a list with only the elements `frame`,
-#' `tmb_args`, and `par_init`.
+#' If `debug = TRUE`, then a list with only the elements `frame_ts`,
+#' `frame_glmm`, `tmb_args`, and `par_init`.
 #'
 #' @export
 #' @importFrom TMB MakeADFun sdreport
-#' @importFrom stats nlminb nlm optim
 #' @useDynLib epigrowthfit
 egf <- function(formula_ts,
                 formula_glmm,
                 data = parent.frame(),
                 window,
                 curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
-                distr = c("nbinom", "pois"),
                 excess = FALSE,
+                distr = c("nbinom", "pois"),
                 weekday = FALSE,
                 weekday_ref = 2L,
                 method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
@@ -167,8 +168,6 @@ egf <- function(formula_ts,
   tmb_args <- make_tmb_args(
     frame_ts = mf_out$frame_ts,
     frame_glmm = mf_out$frame_glmm,
-    data = data,
-    window = mf_out$window,
     curve = curve,
     distr = distr,
     excess = excess,
@@ -179,14 +178,17 @@ egf <- function(formula_ts,
   )
 
   if (debug) {
-    pl <- tmb_args$parameters
-    for (s in names(pl)) {
-      names(pl[[s]]) <- rep.int(s, length(pl[[s]]))
+    par_init_split <- tmb_args$parameters
+    if (!has_random(tmb_args$data)) {
+      par_init_split <- par_init_split["beta"]
     }
+    par_init <- unlist(par_init_split)
+    names(par_init) <- rep.int(names(par_init_split), lengths(par_init_split))
     out <- list(
-      frame = frame,
+      frame_ts = mf_out$frame_ts,
+      frame_glmm = mf_out$frame_glmm,
       tmb_args = tmb_args,
-      par_init = rename_par(unlist(pl))
+      par_init = rename_par(par_init)
     )
     return(out)
   }
@@ -201,7 +203,7 @@ egf <- function(formula_ts,
   s <- switch(method, nlminb = "objective", nlm = "minimum", "value")
   nll <- optim_out[[s]]
   nll_func <- function(x = par) as.numeric(tmb_out$fn(x[nonrandom]))
-  nll_grad <- function(x = par) as.vector(tmb_out$gr(x[nonrandom]))
+  nll_grad <- function(x = par) as.numeric(tmb_out$gr(x[nonrandom]))
 
   sdr <- sdreport(tmb_out)
   report <- c(
@@ -211,11 +213,13 @@ egf <- function(formula_ts,
   )
 
   out <- list(
-    frame = frame,
-    index = attr(frame, "index"),
+    frame_ts = mf_out$frame_ts,
+    frame_glmm = mf_out$frame_glmm,
     curve = curve,
-    distr = distr,
     excess = excess,
+    distr = distr,
+    weekday = weekday,
+    weekday_ref = weekday_ref,
     method = method,
     tmb_args = tmb_args,
     tmb_out = tmb_out,

@@ -11,8 +11,8 @@ Type objective_function<Type>::operator() ()
 
     // Flags
     DATA_INTEGER(curve_flag);    // curve     (enum curve)
-    DATA_INTEGER(distr_flag);    // distr     (enum distr)
     DATA_INTEGER(excess_flag);   // excess    (1=yes,  0=no)
+    DATA_INTEGER(distr_flag);    // distr     (enum distr)
     DATA_INTEGER(weekday_flag);  // weekday   (1=yes,  0=no)
     DATA_INTEGER(sparse_X_flag); // sparse X  (1=yes,  0=no)
     DATA_INTEGER(predict_flag);  // predict   (1=yes,  0=no)
@@ -37,10 +37,11 @@ Type objective_function<Type>::operator() ()
     DATA_IVECTOR(rpar); // length=sum(rncoef),  val={0,...,p-1}
     // number of columns in each random effects block
     DATA_IVECTOR(rncol); // length=m
-    // design matrices
+    // model matrices
     DATA_MATRIX(Xd);
-    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(fncoef)
-    DATA_SPARSE_MATRIX(Z);  // nrow=N,  ncol=sum(rncoef)
+    DATA_SPARSE_MATRIX(Xs); // nrow=w,  ncol=sum(fncoef)
+    DATA_SPARSE_MATRIX(Z);  // nrow=w,  ncol=sum(rncoef)
+    DATA_MATRIX(Yoffset);   // nrow=w,  ncol=p
     // parameter indices
     DATA_INTEGER(j_log_r);
     DATA_INTEGER(j_log_alpha);
@@ -64,7 +65,7 @@ Type objective_function<Type>::operator() ()
     
     // Parameters
     // fixed effects coefficients
-    PARAMETER_VECTOR(beta); // length=sum(fncoeff)
+    PARAMETER_VECTOR(beta); // length=sum(fncoef)
     // random effects coefficients, unit variance
     PARAMETER_VECTOR(b); // length=sum(rncoef)
     // log sd random effects coefficients

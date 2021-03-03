@@ -122,7 +122,3 @@ is_constant <- function(x) {
   }
   length(unique(x)) < 2L
 }
-
-is_integer_within_tol <- function(x, tol = sqrt(.Machine$double.eps)) {
-  abs(x - round(x)) < tol
-}
