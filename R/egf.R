@@ -5,26 +5,30 @@
 #' or more disease incidence time series.
 #'
 #' @param formula_ts
-#'   A formula of the form `y ~ x` or `y ~ x | ts` specifying one
-#'   or more incidence time series in long format. `x` and `y` must
-#'   evaluate to Date and numeric vectors, respectively. `ts` must
-#'   evaluate to a factor splitting the data by time series.
-#'   `y ~ x` is equivalent to `y ~ x | ts` with `ts` evaluating to
-#'   `rep(factor(1), length(x))`.
+#'   A formula of the form `y ~ x` or `y ~ x | ts` specifying
+#'   one or more incidence time series in long format. `x` and `y`
+#'   must evaluate to Date and numeric vectors, respectively. `ts`
+#'   must evaluate to a factor splitting the data by time series.
+#'   `y ~ x` is equivalent to `y ~ x | ts` with `ts` evaluating
+#'   to `rep(factor(1), length(x))`. In each time series, `y[i]`
+#'   should give the number of cases observed from `23:59:59` on
+#'   date `x[i-1]` to `23:59:59` on date `x[i]` (hence time series
+#'   may have unequal spacing).
 #' @param formula_glmm
-#'   A named list of formulae of the form `~terms`,
-#'   specifying mixed effects models for nonlinear model parameters.
+#'   A named list of formulae of the form `~terms`, specifying
+#'   mixed effects models (with [`lme4`][lme4::lmer()]-like syntax)
+#'   for nonlinear model parameters.
 #'   In this case, `names(formula_glmm)` must be a subset of
 #'   `get_par_names(curve, distr, excess, weekday, link = TRUE)`,
-#'   and `~1` is the default for parameters not assigned a formula.
-#'   Alternatively, a formula of the form `~terms` to be recycled
-#'   for all nonlinear model parameters.
-#'   Syntax is [`lme4`][lme4::lmer()]-like.
+#'   and `~1` is used as a default for parameters not assigned a
+#'   formula. Alternatively, a formula of the form `~terms` to be
+#'   recycled for all nonlinear model parameters. Mixed effects
+#'   variables must match the length of time series variables and
+#'   be constant in each fitting window.
 #' @param data
 #'   A data frame, list, or environment. `egf()` looks here for
 #'   variables used in `formula_ts` and `formula_glmm`, before
-#'   looking in formula environments. `formula_glmm` variables
-#'   must be constant in each fitting window.
+#'   looking in formula environments.
 #' @param window
 #'   A factor of length `nrow(data)` such that `split(data, window)`
 #'   splits `data` by fitting window, with `is.na(window)` indexing
@@ -39,7 +43,9 @@
 #' @param distr
 #'   A character string specifying an observation model.
 #' @param weekday
-#'   A logical scalar. If `TRUE`, then weekday effects are estimated.
+#'   A logical scalar. If `TRUE`, then weekday effects are estimated,
+#'   though this currently requires daily observation of incidence in
+#'   all fitting windows.
 #' @param weekday_ref
 #'   An integer indicating a weekday, with 1 mapping to Sunday,
 #'   2 mapping to Monday, and so on. Weekday effects are estimated
@@ -188,7 +194,7 @@ egf <- function(formula_ts,
       frame_ts = mf_out$frame_ts,
       frame_glmm = mf_out$frame_glmm,
       tmb_args = tmb_args,
-      par_init = rename_par(par_init)
+      par_init = enum_dupl_names(par_init)
     )
     return(out)
   }
@@ -196,8 +202,8 @@ egf <- function(formula_ts,
   tmb_out <- do.call(MakeADFun, tmb_args)
   optim_out <- optim_tmb_out(tmb_out, method = method, ...)
 
-  par_init <- rename_par(tmb_out$env$par)
-  par <- rename_par(tmb_out$env$last.par.best)
+  par_init <- enum_dupl_names(tmb_out$env$par)
+  par <- enum_dupl_names(tmb_out$env$last.par.best)
   nonrandom <- grep("^b\\[", names(par), invert = TRUE)
 
   s <- switch(method, nlminb = "objective", nlm = "minimum", "value")

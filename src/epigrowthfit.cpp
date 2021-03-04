@@ -24,24 +24,25 @@ Type objective_function<Type>::operator() ()
     // Data
     // time series
     DATA_VECTOR(t); // length=N
-    DATA_VECTOR(x); // length=N
+    DATA_VECTOR(x); // length=N-w
     // window lengths
     DATA_IVECTOR(wlen); // length=w
-    // day-of-week of earliest date
-    DATA_IVECTOR(dow0); // length=w,  val={0,...,6}
+    // earliest day-of-week
+    DATA_IVECTOR(dow0); // length=w,  val={0,...,6}  (0=reference)
     // number of coefficients for each nonlinear model parameter
     DATA_IVECTOR(fncoef); // length=p
     DATA_IVECTOR(rncoef); // length=p
     // coefficients factored by nonlinear model parameter
     DATA_IVECTOR(fpar); // length=sum(fncoef),  val={0,...,p-1}
     DATA_IVECTOR(rpar); // length=sum(rncoef),  val={0,...,p-1}
-    // number of columns in each random effects block
-    DATA_IVECTOR(rncol); // length=m
+    // dimensions each random effects block
+    DATA_IVECTOR(rnrow); // length=M,  val={1,...,p}
+    DATA_IVECTOR(rncol); // length=M
     // model matrices
     DATA_MATRIX(Xd);
     DATA_SPARSE_MATRIX(Xs); // nrow=w,  ncol=sum(fncoef)
     DATA_SPARSE_MATRIX(Z);  // nrow=w,  ncol=sum(rncoef)
-    DATA_MATRIX(Yoffset);   // nrow=w,  ncol=p
+    DATA_MATRIX(Yo);        // nrow=w,  ncol=p
     // parameter indices
     DATA_INTEGER(j_log_r);
     DATA_INTEGER(j_log_alpha);
@@ -59,7 +60,8 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(j_log_w5);
     DATA_INTEGER(j_log_w6);
     // misc.
-    int w = wlen.size();
+    int N = t.size();
+    int M = rnrow.size();
     int p = fncoef.size();
     bool anyRE = (rncoef.sum() > 0);
     
@@ -69,186 +71,174 @@ Type objective_function<Type>::operator() ()
     // random effects coefficients, unit variance
     PARAMETER_VECTOR(b); // length=sum(rncoef)
     // log sd random effects coefficients
-    PARAMETER_VECTOR(log_sd_b); // length=p*m
+    PARAMETER_VECTOR(log_sd_b); // length=sum(rnrow)
     
     
-    // Compute parameter values in each fitting window =========================
-    // NB: parameters vary across but not within fitting windows
+    // Compute nonlinear model parameter values ================================
+    // (link scale) in each window
 
-    // (N x w) matrix of parameter values
-    matrix<Type> Y(t.size(), w);
+    // (w x p) matrix of parameter value initialized to matrix of offsets
+    matrix<Type> Y = Yo;
     
     // Fixed effects component:
-    // matrix multiply
-    // X * beta2
-    // = (N x sum(fnc)) * (sum(fnc) x p)
-    // = (N x p)
-    // need to construct block matrix `beta2` from vector `beta`
+    // 1. construct block matrix `beta_as_matrix` from vector `beta`
+    // 2. matrix multiply
+    //    X * beta_as_matrix
+    //    = (w x sum(fncoef)) * (sum(fncoef) x p)
+    //    = (w x p)
 
-    Eigen::SparseMatrix<Type> beta2(fnc.sum(), p);
-    beta2.reserve(fnc);
+    Eigen::SparseMatrix<Type> beta_as_matrix(beta.size(), p);
+    beta_as_matrix.reserve(fncoef); // declare nnz
     
-    for (int j = 0, i = 0; j < p; j++) // loop over parameters
+    for (int i = 0; i < beta.size(); i++) // loop over `beta` elements
     {
-	for (int l = 0; l < fnc(j); l++) // loop over coefficients
-	{
-	    beta2.insert(i + l, j) = beta(i + l);
-	}
-	i += fnc(j);
+        beta_as_matrix.insert(i, fpar(i)) = beta(i);
     }
     
     if (sparse_X)
     {
-        Y = Xs * beta2;
+        Y += Xs * beta_as_matrix;
     }
     else
     {
-        Y = Xd * beta2;
+        Y += Xd * beta_as_matrix;
     }
-    matrix<Type> Y_sim = Y; // preserve fixed effects component for SIMULATE
+    matrix<Type> Y_sim = Y; // preserve (offsets + fixed effects) component for SIMULATE
     
     // Random effects component:
-    // matrix multiply
-    // Z * b2
-    // = (N x sum(rnc)) * (sum(rnc) x p)
-    // = (N x p)
-    // need to construct block matrix `b2` from vector `b`
-    // will require some setting up...
-    
-    matrix<Type> b2(rnc.sum(), p);
-    
-    // A list of matrices gathering related elements of vector `b`:
-    // rows of each matrix follow a zero-mean, unit-variance multivariate
-    // normal distribution with a common covariance matrix
-    vector< matrix<Type> > re_list(rid.rows());
+    // 1. Construct block matrix `b_scaled_as_matrix` from vectors `b` and `log_sd_b`
+    // 2. Matrix multiply
+    //    Z * b_scaled_as_matrix
+    //    = (w x sum(rncoef)) * (sum(rncoef) x p)
+    //    = (w x p) 
 
-    // A list of s.d. vectors corresponding elementwise to `re_list`
-    vector< vector<Type> > sd_list(rid.rows());
+    vector<Type> b_scaled(b.size());
+    matrix<Type> b_scaled_as_matrix(b.size(), p);
 
-    // A list of correlation matrices corresponding elementwise to `re_list`
-    vector< matrix<Type> > cor_list(rid.rows());
-	
+    // A list of random effects blocks gathering related elements of `b`:
+    // columns of each block are samples from a zero-mean, unit-variance,
+    // multivariate normal distribution with a common covariance matrix
+    vector< matrix<Type> > block_list(M);
+
+    // A list of s.d. vectors corresponding elementwise to `block_list`
+    vector< vector<Type> > sd_list(M);
+
+    // A list of correlation matrices corresponding elementwise to `block_list`
+    vector< matrix<Type> > cor_list(M);
+    
     if (anyRE)
     {
+        // Correlation matrix in univariate case
+        matrix<Type> cor1d(1, 1);
+	cor1d(0, 0) = Type(1);
 
-        // Form random effect matrices -----------------------------------------
-
-	for (int r = 0, k = 0; r < re_list.size(); r++) // loop over RE
+	// Initialize list elements
+        // NB: Assuming here that `b` and `log_sd_b` are ordered
+	//     so that no permutation is needed when filling the
+	//     random effects blocks (in column-major order) and
+	//     s.d. vectors
+        for (int m = 0, k1 = 0, k2 = 0; m < M; m++) // loop over list elements
 	{
-	    matrix<Type> re_list_el(rnl(r), rnp(r));
-	    for (int j = 0; j < rnp(r); j++) // loop over parameters
+	    // Form random effects block 
+	    matrix<Type> block(rnrow(m), rncol(m));
+	    for (int j = 0; j < rncol(m); j++) // loop over block columns
 	    {
-		re_list_el.col(j) = b.segment(k, rnl(r));
-		k += rnl(r);
+		block.col(j) = b.segment(k1, rnrow(m));
+		k1 += rnrow(m); // increment `b` index
 	    }
-	    re_list(r) = re_list_el;
-	}
-	REPORT(re_list);
+	    block_list(m) = block;
 
+	    // Form s.d. vector
+	    vector<Type> sd = exp(log_sd_b.segment(k2, rnrow(m)));
+	    sd_list(m) = sd;
+	    k2 += rnrow(m); // increment `log_sd_b` index
 
-	// Form scale vectors --------------------------------------------------
-
-	for (int r = 0, k = 0; r < sd_list.size(); r++)
-	{
-	    vector<Type> sd_list_el = exp(log_sd_b.segment(k, rnp(r)));
-	    sd_list(r) = sd_list_el;
-	    k += rnp(r);
-	}
-	REPORT(sd_list);
-
-	
-	// Form correlation matrices -------------------------------------------
-
-	// Correlation matrix in univariate case
-	matrix<Type> cor_list_el(1, 1);
-	cor_list_el(0, 0) = Type(1);
-
-	for (int r = 0; r < cor_list.size(); r++) // loop over RE
-	{
-	    // UNSTRUCTURED_CORR() does not tolerate `ltri.size() == 0`
-	    if (rnp(r) == 1)
+	    // Form correlation matrix
+	    // NB: UNSTRUCTURED_CORR() does not tolerate `ltri.size() == 0`
+	    if (rnrow(m) == 1)
 	    {
-		cor_list(r) = cor_list_el;
-		continue;
+		cor_list(m) = cor1d;
 	    }
 	    else
 	    {
-	        vector<Type> ltri(rnp(r) * (rnp(r) - 1) / 2);
-		cor_list(r) = density::UNSTRUCTURED_CORR(ltri).cov();
+	        vector<Type> ltri(rnrow(m) * (rnrow(m) - 1) / 2);
+		cor_list(m) = density::UNSTRUCTURED_CORR(ltri).cov();
 	    }
 	}
+	REPORT(block_list);
+	REPORT(sd_list);
 	REPORT(cor_list);
 
+	// Construct `b_scaled` ------------------------------------------------
 
-	// Construct `b2` ------------------------------------------------------
-
-        b2.fill(Type(0));
-	for (int r = 0, i = 0; r < rid.rows(); r++) // loop over RE
+	for (int m = 0, k = 0; m < M; m++) // loop over blocks
 	{
-	    for (int j = 0, k = 0; j < np; j++) // loop over parameters
+	    for (int j = 0; j < rncol(m); j++) // loop over block columns
 	    {
-		if (rid(r, j) == 1)
-		{
-		    b2.block(i, j, rnl(r), 1) = sd_list(r)(k) * re_list(r).col(k);
-		    k++;
-		}
+	        b_scaled.segment(k, rnrow(m)) = sd_list(m) * block_list(m).col(j);
+		k += rnrow(m); // increment `b_scaled` index
 	    }
-	    i += rnl(r);
 	}
-	Y += Z * b2;
+
+	// Construct `b_scaled_as_matrix` --------------------------------------
+
+	b_scaled_as_matrix.fill(Type(0));
+        for (int i = 0; i < b_scaled.size(); i++) // loop over `b_scaled` elements
+	{
+	    b_scaled_as_matrix(i, rpar(i)) = b_scaled(i);
+	}
+	Y += Z * b_scaled_as_matrix;
     }
+    vector<Type> Y_as_vector = Y.vec();
+    ADREPORT(Y_as_vector);
 
-
-    // Report parameter values in each fitting window ==========================
-    // NOTE: parameters are constant within but not across fitting windows
-
-    matrix<Type> Y_short = prune_dupl_rows(Y, wl);
-    vector<Type> Y_short_as_vector = Y_short.vec();
-    ADREPORT(Y_short_as_vector);
     
-
     // Compute likelihood ======================================================
 
     // Log cumulative incidence
-    vector<Type> log_cum_inc = eval_log_cum_inc(t, Y, curve_flag, excess,
-						j_log_r, j_log_alpha, j_log_c0, j_log_tinfl, j_log_K, j_logit_p, j_log_a, j_log_b);
+    // NB: This interpretation is valid only in the absence of weekday effects
+    vector<Type> log_cum_inc = eval_log_cum_inc(t, Y, wlen, curve_flag, excess,
+						j_log_r, j_log_alpha, j_log_c0,
+						j_log_tinfl, j_log_K, j_logit_p,
+						j_log_a, j_log_b);
     // Log interval incidence
-    vector<Type> log_int_inc = eval_log_int_inc(log_cum_inc, wl);
+    vector<Type> log_int_inc = eval_log_int_inc(log_cum_inc, wlen, Y, dow0, weekday,
+						j_log_w1, j_log_w2, j_log_w3,
+						j_log_w4, j_log_w5, j_log_w6);
 
     // Negative log likelihood
     Type nll = Type(0);
     Type log_var_minus_mu;
     
-    for (int i1 = 0, i2 = 1, k = 0; k < wl.size(); k++) // loop over time series
+    for (int s = 0, k = 0; s < wlen.size(); s++) // loop over segments
     {
-        for (int j = 0; j < wl(k) - 1; j++) // loop over time points
+        for (int i = 0; i < wlen(s); i++) // loop over within-segment index
 	{
-	    if (!isNA_real_(x(i2+j)))
+	    if (!isNA_real_(x(k+i)))
 	    {
 	        switch (distr_flag)
 		{
 		case pois:
-		    nll -= dpois_robust(x(i2+j), log_int_inc(i1+j), true);
+		    nll -= dpois_robust(x(k+i), log_int_inc(k+i), true);
 		    // usage: dpois_robust(x, log_lambda, give_log)
 		    break;
 		case nbinom:
-		    log_var_minus_mu = Type(2) * log_int_inc(i1+j) - Y(i2+j, j_log_nbdisp);
-		    nll -= dnbinom_robust(x(i2+j), log_int_inc(i1+j), log_var_minus_mu, true);
+		    log_var_minus_mu = Type(2) * log_int_inc(k+i) - Y(s, j_log_nbdisp);
+		    nll -= dnbinom_robust(x(k+i), log_int_inc(k+i), log_var_minus_mu, true);
 		    // usage: dnbinom_robust(x, log_mu, log_var_minus_mu, give_log)
 		    break;
 		}
 	    }
 	}
-	i1 += wl(k) - 1;
-	i2 += wl(k);
+	k += wlen(s); // increment `x`/`log_int_inc` index
     }
     if (anyRE)
     {
-    	for (int r = 0; r < re_list.size(); r++) // loop over RE
+    	for (int m = 0; m < M; m++) // loop over blocks
     	{
-    	    for (int l = 0; l < rnl(r); l++) // loop over levels
+	    for (int j = 0; j < rncols(m); l++) // loop over block columns
     	    {
-    	        nll += density::MVNORM(cor_list(r))(re_list(r).row(l));
+    	        nll += density::MVNORM(cor_list(m))(block_list(m).col(j));
     	    }
     	}
     }
@@ -313,29 +303,22 @@ Type objective_function<Type>::operator() ()
     
 
     // Predict incidence =======================================================
-    // NOTE: enforcing on R side that there is only one time series here
     
     if (predict)
     {
+        // NB: Below assumes that prediction is for exactly one fitting window,
+        //     so we rely on R back-end to enforce this when `predict = TRUE`
+    
         DATA_VECTOR(t_new); // length=N_new
-	DATA_SPARSE_MATRIX(Xs_new); // nrow=N_new,  ncol=sum(nlevels(FE i))
-    	DATA_MATRIX(Xd_new); 
-	DATA_SPARSE_MATRIX(Z_new); // nrow=N_new,  ncol=sum(nlevels(RE i))
+	DATA_MATRIX(X_new); // nrow=1,  ncol=sum(fncoef)
+        DATA_MATRIX(Z_new); // nrow=1,  ncol=sum(rncoef)
 	DATA_IVECTOR(predict_lci_lii_lrt_flag); // predict (log_cum_inc, log_int_inc, log_rt)  (1=do,  0=don't)
 	DATA_INTEGER(se_flag); // report  (1=ADREPORT,  0=REPORT)
 
-	matrix<Type> Y_new(t_new.size(), np);
-	if (sparse_X)
-	{
-	    Y_new = Xs_new * beta2;
-	}
-	else
-	{
-	    Y_new = Xd_new * beta2;
-	}
-        if (anyRE)
+	matrix<Type> Y_new = Yo + X_new * beta_as_matrix;
+	if (anyRE)
     	{
-	    Y_new += Z_new * b2;
+	    Y_new += Z_new * b_scaled_as_matrix;
     	}
 
 	vector<Type> log_cum_inc_new = eval_log_cum_inc(t_new, Y_new, curve_flag, excess,

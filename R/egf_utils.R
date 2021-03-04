@@ -333,6 +333,12 @@ make_frames <- function(formula_ts, formula_glmm, data, window,
     nlevels(interaction(ts, window, drop = TRUE)) == nlevels(window),
     m = sprintf("`%s` must be constant in each level of `window`.", tsv)
   )
+  if (weekday) {
+    stop_if_not(
+      tapply(date, window, function(x) all(diff(x) == 1)),
+      n = sprintf("weekday = TRUE: `%s` must have 1-day spacing\nin all fitting windows.", dv)
+    )
+  }
   if (na_action == "fail") {
     stop_if_not(
       !tapply(cases, window, function(x) anyNA(x[-1L])),
@@ -616,7 +622,7 @@ make_Z <- function(x, frame) {
 #'
 #' @noRd
 #' @importFrom stats terms
-make_XZinfo <- function(xl, ml) {
+make_XZ_info <- function(xl, ml) {
   if (length(xl) == 0L) {
     cn <- c("colname", "par", "term", "group")
     m <- matrix(character(0L), ncol = 4L, dimnames = list(NULL, cn))
@@ -656,26 +662,27 @@ make_XZinfo <- function(xl, ml) {
 #' @return
 #' A `"tmb_data"` object, which is a list with elements:
 #' \item{`t`}{
-#'   An integer vector of length `nrow(frame_ts)` giving time as
-#'   a number of days since the earliest date in the relevant
-#'   fitting window.
+#'   An integer vector of length `sum(!is.na(frame_ts$.window))`
+#'   giving time as a number of days since the earliest time point
+#'   in the current fitting window.
 #' }
 #' \item{`x`}{
-#'   An integer vector of length `nrow(frame_ts)`. Within each fitting
-#'   window, the first element is `NA` and the remaining elements
-#'   are such that `x[i]` is the number of cases observed from the
-#'   end of day `t[i-1]` to the end of day `t[i]`.
+#'   An integer vector of length
+#'   `sum(!is.na(frame_ts$.window))-nlevels(frame_ts$.window)`
+#'   giving incidence in each fitting window. `x[i]` in window `k` is
+#'   the number of cases observed between times `t[k+i-1]` and `t[k+i]`.
 #' }
 #' \item{`wlen`}{
-#'   An integer vector of length `nlevels(frame_ts$.window)` giving
-#'   the length of each fitting window.
+#'   An integer vector of length `nlevels(frame_ts$.window)`
+#'   giving the length of each fitting window as a number of
+#'   intervals (one less than the number of time points).
 #' }
 #' \item{`dow0`}{
-#'   An integer vector giving the weekday of the earliest date in each
-#'   fitting window, with `i` in `0:6` mapping to the weekday `i` days
-#'   since the reference day specified by `weekday_ref`.
+#'   An integer vector giving the first weekday in each fitting
+#'   window, with values `i` in `0:6` mapping to the weekday `i`
+#'   days after the reference weekday specified by `weekday_ref`.
 #' }
-#' \item{`Yoffset`}{
+#' \item{`Yo`}{
 #'   The offsets matrix in dense format.
 #' }
 #' \item{`X`}{
@@ -690,7 +697,7 @@ make_XZinfo <- function(xl, ml) {
 #'   The random effects design matrix in sparse format.
 #'   If there are no random effects, then `Z` is an empty matrix.
 #' }
-#' \item{`Xinfo`, `Zinfo`}{
+#' \item{`X_info`, `Z_info`}{
 #'   Data frames with `ncol(X)` and `ncol(Z)` rows, respectively,
 #'   containing factors `colname`, `par`, `term`, and `group`.
 #'   Row `j` describes the coefficient associated with column `j`
@@ -700,7 +707,7 @@ make_XZinfo <- function(xl, ml) {
 #' }
 #' \item{`fncoef`, `rncoef`}{
 #'   Integer vectors of length `p` counting the columns of `X` and `Z`,
-#'   respectively, related to a common nonlinear model parameter.
+#'   respectively, pertaining to a common nonlinear model parameter.
 #' }
 #' \item{`fpar`, `rpar`}{
 #'   Integer vectors of length `ncol(X)` and `ncol(Z)`, respectively,
@@ -719,10 +726,9 @@ make_XZinfo <- function(xl, ml) {
 #'   An integer flag set equal to 0 so that prediction code is not run.
 #' }
 #' Additional integer elements of the form `j_link_parameter`
-#' (e.g., `j_log_r`) give the index (an element of `0:(p-1)`)
-#' of nonlinear model parameters (e.g., `"log_r"`) in
-#' `levels(Xinfo$par)`. Value -1 indicates that the parameter
-#' does not belong to the nonlinear model being fit.
+#' (e.g., `j_log_r`) give the 0-index of nonlinear model parameter
+#' names (e.g., `"log_r"`) in `levels(Xinfo$par)`. The value -1 is
+#' used for parameters not belonging to the nonlinear model being fit.
 #'
 #' @keywords internal
 #' @importFrom stats terms model.matrix model.offset
@@ -736,25 +742,24 @@ make_tmb_data <- function(frame_ts, frame_glmm,
                       distr = distr, weekday = weekday, link = TRUE)
   p <- length(pn)
 
-  ## Discard dates not belonging to fitting window
+  ## Discard dates not belonging to a fitting window
   frame_ts <- frame_ts[!is.na(frame_ts$.window), , drop = FALSE]
   window <- frame_ts$.window
-  firsts <- which(!duplicated(window))
 
-  ## Time as number of days since start of fitting window
+  ## Time as number of days since end of earliest date
   date_to_integer <- function(x) as.integer(julian(x, origin = x[[1L]]))
   t <- do.call(c, unname(tapply(frame_ts[[1L]], window, date_to_integer, simplify = FALSE)))
 
-  ## Incidence with unused first observations set to NA
-  x <- frame_ts[[2L]]
-  x[firsts] <- NA
+  ## Incidence without unused first elements
+  firsts <- which(!duplicated(window))
+  x <- frame_ts[[2L]][-firsts]
 
-  ## Fitting window lengths
-  wlen <- as.integer(table(window))
+  ## Fitting window length as a number of intervals
+  ## (one minus number of time points)
+  wlen <- as.integer(table(window)) - 1L
 
-  ## Weekdays of first observations:
-  ## i in {0,...,6} maps to reference day + i
-  d0 <- frame_ts[[1L]][firsts]
+  ## First weekday: i in {0,...,6} maps to reference day + i
+  d0 <- frame_ts[[1L]][firsts + 1L]
   dow0 <- as.integer(julian(d0, origin = as.Date("2021-02-28") + weekday_ref) %% 7) # "2021-02-28" was a Saturday
 
   ## Fixed effects formula and list of random effects terms
@@ -768,7 +773,7 @@ make_tmb_data <- function(frame_ts, frame_glmm,
   ## Offsets matrix
   offsets <- lapply(frame_glmm, model.offset)
   offsets[vapply(offsets, is.null, FALSE)] <- list(rep.int(0, nlevels(window)))
-  Yoffset <- do.call(cbind, offsets)
+  Yo <- do.call(cbind, offsets)
 
   ## Fixed effects design matrices
   Xl <- Map(make_X, x = fixed, frame = frame_glmm, sparse = sparse_X)
@@ -781,37 +786,37 @@ make_tmb_data <- function(frame_ts, frame_glmm,
   ## Nonlinear model parameter, formula term, and grouping term
   ## (g in (r | g)) associated with each column of each matrix
   ## FIXME: Preserve contrasts?
-  Xinfo <- make_XZinfo(xl = fixed, ml = Xl)
-  Zinfo <- make_XZinfo(xl = do.call(c, unname(random)), ml = Zl)
-  Xinfo$par <- factor(Xinfo$par, levels = pn)
-  Zinfo$par <- factor(Zinfo$par, levels = pn)
+  X_info <- make_XZ_info(xl = fixed, ml = Xl)
+  Z_info <- make_XZ_info(xl = do.call(c, unname(random)), ml = Zl)
+  X_info$par <- factor(X_info$par, levels = pn)
+  Z_info$par <- factor(Z_info$par, levels = pn)
 
   ## Random effects coefficients factored by relation
   ## to a correlation matrix and to a random vector
-  Zinfo$cor <- interaction(Zinfo[c("term", "group")], drop = TRUE)
-  Zinfo$vec <- interaction(Zinfo[c("term", "group", "colname")], drop = TRUE)
-  levels(Zinfo$cor) <- seq_len(nlevels(Zinfo$cor))
-  levels(Zinfo$vec) <- seq_len(nlevels(Zinfo$vec))
+  Z_info$cor <- interaction(Z_info[c("term", "group")], drop = TRUE)
+  Z_info$vec <- interaction(Z_info[c("term", "group", "colname")], drop = TRUE)
+  levels(Z_info$cor) <- seq_len(nlevels(Z_info$cor))
+  levels(Z_info$vec) <- seq_len(nlevels(Z_info$vec))
 
   ## Permutation of random effects coefficients producing
   ## correct arrangement in random effects blocks, given
   ## column-major order
-  ord <- do.call(order, Zinfo[c("cor", "vec", "par")])
-  Z <- Z[, ord]
-  Zinfo <- Zinfo[ord, ]
+  ord <- do.call(order, Z_info[c("cor", "vec", "par")])
+  Z <- Z[, ord, drop = FALSE]
+  Z_info <- Z_info[ord, , drop = FALSE]
 
   ## Number of coefficients for each nonlinear model parameter
-  fncoef <- as.integer(table(Xinfo$par))
-  rncoef <- as.integer(table(Zinfo$par))
+  fncoef <- as.integer(table(X_info$par))
+  rncoef <- as.integer(table(Z_info$par))
 
   ## Coefficients factored by nonlinear model parameter
-  fpar <- as.integer(Xinfo$par) - 1L
-  rpar <- as.integer(Zinfo$par) - 1L
+  fpar <- as.integer(X_info$par) - 1L
+  rpar <- as.integer(Z_info$par) - 1L
 
   ## Dimensions of random effects blocks whose column vectors
   ## are related by a covariance matrix
-  rnrow <- as.integer(colSums(table(Zinfo$par, Zinfo$cor) > 0L))
-  rncol <- as.integer(rowSums(table(Zinfo$cor, Zinfo$vec) > 0L))
+  rnrow <- as.integer(colSums(table(Z_info$par, Z_info$cor) > 0L))
+  rncol <- as.integer(rowSums(table(Z_info$cor, Z_info$vec) > 0L))
 
   ## Empty design matrices
   empty_dense_matrix <- matrix(integer(0L), nrow(X), 0L)
@@ -827,13 +832,13 @@ make_tmb_data <- function(frame_ts, frame_glmm,
     x = x,
     wlen = wlen,
     dow0 = dow0,
-    Yoffset = Yoffset,
+    Yo = Yo,
     X = X,
     Xs = if (sparse_X) X else empty_sparse_matrix,
     Xd = if (sparse_X) empty_dense_matrix else X,
     Z = if (is.null(Z)) empty_sparse_matrix else Z,
-    Xinfo = Xinfo,
-    Zinfo = Zinfo,
+    X_info = X_info,
+    Z_info = Z_info,
     fpar = fpar,
     rpar = rpar,
     fncoef = fncoef,
@@ -868,7 +873,7 @@ make_tmb_data <- function(frame_ts, frame_glmm,
 #' parameters are obtained for each fitting window as follows:
 #' \describe{
 #' \item{`r`}{
-#'   The slope of a linear model fit to `log1p(c(0, cumsum(x[-1])))`.
+#'   The slope of a linear model fit to `log1p(cumsum(x)))`.
 #' }
 #' \item{`alpha`}{
 #'   `r*c0^(1-p)` if `curve = "subexponential"`,
@@ -880,16 +885,16 @@ make_tmb_data <- function(frame_ts, frame_glmm,
 #' }
 #' \item{`c0`}{
 #'   `exp(log_c0)`, where `log_c0` is the intercept of a linear model
-#'   fit to `log1p(c(0, cumsum(x[-1])))`.
+#'   fit to `log1p(cumsum(x))`.
 #' }
 #' \item{`tinfl`}{
 #'   `max(t)`, assuming that the fitting window ends near the time
 #'   of a peak in interval incidence.
 #' }
 #' \item{`K`}{
-#'   `2*sum(x[-1])`, assuming that the fitting window ends near the
-#'   time of a peak in interval incidence _and_ that interval incidence
-#'   is roughly symmetric about the peak.
+#'   `2*sum(x)`, assuming that the fitting window ends near the time
+#'   of a peak in interval incidence _and_ that interval incidence is
+#'   roughly symmetric about the peak.
 #' }
 #' \item{`p`}{0.8}
 #' \item{`a`, `b`, `nbdisp`, `w[123456]`}{1}
@@ -922,6 +927,7 @@ make_tmb_data <- function(frame_ts, frame_glmm,
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis terms
 make_tmb_parameters <- function(tmb_data, frame_ts, frame_glmm, par_init) {
+  ## Lengths of parameter objects
   len <- c(
     beta = sum(tmb_data$fncoef),
     b = sum(tmb_data$rncoef),
@@ -930,22 +936,32 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_glmm, par_init) {
 
   ## If user does not specify a full parameter vector
   if (is.null(par_init)) {
+    ## Initialize each parameter object to a vector of zeros
+    ## of appropriate length
     par_init_split <- Map(rep.int, times = len, x = 0)
+
+    ## Get names of nonlinear model parameters whose mixed
+    ## effects formula has an intercept
     has_intercept <- function(frame) {
       attr(terms(frame), "intercept") == 1L
     }
     pn1 <- names(frame_glmm)[vapply(frame_glmm, has_intercept, FALSE)]
 
+    ## For each of these nonlinear model parameters, compute
+    ## and assign a default value to the coefficient of `beta`
+    ## corresponding to "(Intercept)". The default value is
+    ## the mean over fitting windows of the naive estimates.
     if (length(pn1) > 0L) {
+      ## Time series split by fitting window
       window <- frame_ts$.window[!is.na(frame_ts$.window)]
-      tx_split <- split(as.data.frame(tmb_data[c("t", "x")]), window)
+      firsts <- which(!duplicated(window))
+      tx_split <- split(data.frame(t = tmb_data$t[-firsts], x = tmb_data$x), window[-firsts])
 
+      ## Functions for computing naive estimates given a window
       get_r_c0 <- function(d) {
-        h <- max(2, nrow(d) / 2)
-        x <- d$t
-        y <- log1p(cumsum(c(0L, d$x[-1L])))
+        h <- max(2, trunc(nrow(d) / 2))
         ab <- tryCatch(
-          coef(lm(y ~ x, data = data.frame(x, y), subset = seq_len(h), na.action = na.omit)),
+          coef(lm(log1p(cumsum(x)) ~ t, data = d, subset = seq_len(h), na.action = na.omit)),
           error = function(e) c(0, 0.1)
         )
         c(ab[[2L]], exp(ab[[1L]]))
@@ -954,9 +970,10 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_glmm, par_init) {
         max(d$t)
       }
       get_K <- function(d) {
-        2 * sum(d$x[-1L], na.rm = TRUE)
+        2 * sum(d$x, na.rm = TRUE)
       }
 
+      ## Naive estimates for all windows
       r_c0 <- vapply(tx_split, get_r_c0, c(0, 0))
       r  <- r_c0[1L, ]
       c0 <- r_c0[2L, ]
@@ -968,21 +985,27 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_glmm, par_init) {
         gompertz = r / log(K / c0),
         NA_real_
       )
-
       Y_init <- data.frame(r, alpha, c0, tinfl, K, p)
       Y_init[c("a", "b", "nbdisp", paste0("w", 1:6))] <- 1
+
+      ## Link transform
       Y_init[] <- Map(function(x, s) get_link(s)(x),
         x = Y_init,
         s = get_link_string(names(Y_init))
       )
       names(Y_init) <- add_link_string(names(Y_init))
 
-      i1 <- match(pn1, tmb_data$Xinfo$par)
+      ## Index of elements of `beta` corresponding to "(Intercept)"
+      i1 <- match(pn1, tmb_data$X_info$par)
+
+      ## Assign means over windows
       par_init_split$beta[i1] <- colMeans(Y_init[pn1])
     }
 
   ## If user specifies a full parameter vector
   } else {
+    ## Validate and split full parameter vector,
+    ## producing list(beta, b, log_sd_b)
     stop_if_not(
       is.vector(par_init, "numeric"),
       length(par_init) == sum(len),
@@ -990,9 +1013,10 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_glmm, par_init) {
       m = sprintf("`par_init` must be a finite numeric vector of length %d.", sum(len))
     )
     names(par_init) <- NULL
-    par_init_split <- split(par_init, rep.int(factor(names(len)), len))
+    par_init_split <- split(par_init, rep.int(gl(3L, 1L, labels = names(len)), len))
   }
 
+  ## Replace unused parameter objects with NA_real_
   if (!has_random(tmb_data)) {
     par_init_split[c("b", "log_sd_b")] <- list(NA_real_)
   }
@@ -1033,10 +1057,15 @@ make_tmb_args <- function(frame_ts, frame_glmm,
     par_init = par_init
   )
   if (has_random(tmb_data)) {
+    ## Nothing to fix, since all parameter objects are used
     tmb_map <- list()
+    ## Declare that `b` contains random effects
     tmb_random <- "b"
   } else {
+    ## Fix `b` and `log_sd_b` (in this case to NA_real_),
+    ## since only `beta` is used
     tmb_map <- list(log_sd_b = factor(NA), b = factor(NA))
+    ## Declare that there are no random effects
     tmb_random <- NULL
   }
   list(
@@ -1051,7 +1080,7 @@ make_tmb_args <- function(frame_ts, frame_glmm,
 
 #' Check for random effects
 #'
-#' Determine whether an object specifies random effects.
+#' Determine whether an object specifies a random effects model.
 #'
 #' @param object
 #'   An `"egf"` object returned by [egf()] or a `"tmb_data"` object
@@ -1112,35 +1141,6 @@ optim_tmb_out <- function(tmb_out, method, ...) {
       ...
     )
   }
-}
-
-#' Enumerate TMB-generated parameter names
-#'
-#' Enumerates the names of a parameter vector generated by
-#' [TMB::MakeADFun()], making them unique.
-#'
-#' @param par
-#'   A TMB-generated parameter vector or, more generally,
-#'   a named numeric vector such that
-#'   `all(names(par) %in% c("beta", "b", "log_sd_b"))`.
-#'
-#' @return
-#' `par` with `names(par)` replaced with names of the form
-#' `"beta[i]"`, `"b[j]"`, or `"log_sd_b[k]"` (see Examples).
-#'
-#' @examples
-#' n <- 10L
-#' par <- numeric(n)
-#' names(par) <- sample(c("beta", "b", "log_sd_b"), n, replace = TRUE)
-#' rename_par(par)
-#'
-#' @noRd
-rename_par <- function(par) {
-  for (s in c("beta", "b", "log_sd_b")) {
-    i <- which(names(par) == s)
-    names(par)[i] <- sprintf("%s[%d]", s, seq_along(i))
-  }
-  par
 }
 
 #' Split up `ADREPORT()`ed variables

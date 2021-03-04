@@ -106,6 +106,38 @@ stop_if_not_character_string <- function(x, n = 1L) {
   )
 }
 
+#' Enumerate duplicated names
+#'
+#' Replaces the `i`th instance of `s` in `names(x)` with
+#' `sprintf("%s[%d]", s, i)`.
+#'
+#' @param x A named vector.
+#'
+#' @return
+#' `x` with `names(x)` enumerated.
+#'
+#' @examples
+#' n <- 10L
+#' x <- seq_len(n)
+#' names(x) <- sample(letters[1:4], n, replace = TRUE)
+#' enum_dupl_names(x)
+#'
+#' @noRd
+enum_dupl_names <- function(x) {
+  stop_if_not(
+    is.vector(x),
+    !is.null(names(x)),
+    m = "`x` must be a named vector."
+  )
+  f <- factor(names(x))
+  l <- Map(function(s, n) sprintf("%s[%d]", s, seq_len(n)),
+           s = levels(f),
+           n = as.integer(table(f))
+  )
+  names(x) <- unsplit(l, f)
+  x
+}
+
 is_constant_within_tol <- function(x, tol = sqrt(.Machine$double.eps), na.rm = FALSE) {
   if (length(x) == 0L || (na.rm && all(is.na(x)))) {
     return(TRUE)

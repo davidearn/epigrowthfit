@@ -18,15 +18,3 @@ bool isNA_real_(Type x)
 {
     return R_IsNA(asDouble(x));
 }
-
-template<class Type>
-matrix<Type> prune_dupl_rows(matrix<Type> Y, vector<int> wl)
-{
-    matrix<Type> Y_short(wl.size(), Y.cols());
-    for (int i = 0, k = 0; k < wl.size(); k++)
-    {
-        Y_short.row(k) = Y.row(i);
-	i += wl(k);
-    }
-    return Y_short;
-}
