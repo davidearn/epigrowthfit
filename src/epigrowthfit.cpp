@@ -25,10 +25,10 @@ Type objective_function<Type>::operator() ()
     // time series
     DATA_VECTOR(t); // length=N
     DATA_VECTOR(x); // length=N-w
-    // window lengths
-    DATA_IVECTOR(wlen); // length=w
+    // segment lengths
+    DATA_IVECTOR(slen); // length=w
     // earliest day-of-week
-    DATA_IVECTOR(dow0); // length=w,  val={0,...,6}  (0=reference)
+    DATA_IVECTOR(dow0); // length=w or 0 if weekday=false,  val={0,...,6}  (0=reference)
     // number of coefficients for each nonlinear model parameter
     DATA_IVECTOR(fncoef); // length=p
     DATA_IVECTOR(rncoef); // length=p
@@ -39,8 +39,8 @@ Type objective_function<Type>::operator() ()
     DATA_IVECTOR(rnrow); // length=M,  val={1,...,p}
     DATA_IVECTOR(rncol); // length=M
     // model matrices
-    DATA_MATRIX(Xd);
-    DATA_SPARSE_MATRIX(Xs); // nrow=w,  ncol=sum(fncoef)
+    DATA_MATRIX(Xd);        // nrow=w,  ncol=sum(fncoef) or 0 if sparse_X=true
+    DATA_SPARSE_MATRIX(Xs); // nrow=w,  ncol=sum(fncoef) or 0 if sparse_X=false
     DATA_SPARSE_MATRIX(Z);  // nrow=w,  ncol=sum(rncoef)
     DATA_MATRIX(Yo);        // nrow=w,  ncol=p
     // parameter indices
@@ -63,6 +63,7 @@ Type objective_function<Type>::operator() ()
     int N = t.size();
     int M = rnrow.size();
     int p = fncoef.size();
+    int w = slen.size();
     bool anyRE = (rncoef.sum() > 0);
     
     // Parameters
@@ -195,42 +196,43 @@ Type objective_function<Type>::operator() ()
     
     // Compute likelihood ======================================================
 
-    // Log cumulative incidence
-    // NB: This interpretation is valid only in the absence of weekday effects
-    vector<Type> log_cum_inc = eval_log_cum_inc(t, Y, wlen, curve_flag, excess,
-						j_log_r, j_log_alpha, j_log_c0,
-						j_log_tinfl, j_log_K, j_logit_p,
-						j_log_a, j_log_b);
-    // Log interval incidence
-    vector<Type> log_int_inc = eval_log_int_inc(log_cum_inc, wlen, Y, dow0, weekday,
-						j_log_w1, j_log_w2, j_log_w3,
-						j_log_w4, j_log_w5, j_log_w6);
-
+    // Log curve
+    vector<Type> log_curve =
+      eval_log_curve(t, Y, slen, curve_flag, excess,
+		     j_log_r, j_log_alpha, j_log_c0,
+		     j_log_tinfl, j_log_K,
+		     j_logit_p, j_log_a, j_log_b);
+    // Log cases
+    vector<Type> log_cases =
+      compute_log_cases(log_curve, slen, Y, dow0, weekday,
+		        j_log_w1, j_log_w2, j_log_w3,
+		        j_log_w4, j_log_w5, j_log_w6);
+    
     // Negative log likelihood
     Type nll = Type(0);
     Type log_var_minus_mu;
     
-    for (int s = 0, k = 0; s < wlen.size(); s++) // loop over segments
+    for (int s = 0, k = 0; s < w; s++) // loop over segments
     {
-        for (int i = 0; i < wlen(s); i++) // loop over within-segment index
+        for (int i = 0; i < slen(s); i++) // loop over within-segment index
 	{
 	    if (!isNA_real_(x(k+i)))
 	    {
 	        switch (distr_flag)
 		{
 		case pois:
-		    nll -= dpois_robust(x(k+i), log_int_inc(k+i), true);
+		    nll -= dpois_robust(x(k+i), log_cases(k+i), true);
 		    // usage: dpois_robust(x, log_lambda, give_log)
 		    break;
 		case nbinom:
-		    log_var_minus_mu = Type(2) * log_int_inc(k+i) - Y(s, j_log_nbdisp);
-		    nll -= dnbinom_robust(x(k+i), log_int_inc(k+i), log_var_minus_mu, true);
+		    log_var_minus_mu = Type(2) * log_cases(k+i) - Y(s, j_log_nbdisp);
+		    nll -= dnbinom_robust(x(k+i), log_cases(k+i), log_var_minus_mu, true);
 		    // usage: dnbinom_robust(x, log_mu, log_var_minus_mu, give_log)
 		    break;
 		}
 	    }
 	}
-	k += wlen(s); // increment `x`/`log_int_inc` index
+	k += slen(s); // increment `x` index
     }
     if (anyRE)
     {
@@ -306,60 +308,117 @@ Type objective_function<Type>::operator() ()
     
     if (predict)
     {
-        // NB: Below assumes that prediction is for exactly one fitting window,
-        //     so we rely on R back-end to enforce this when `predict = TRUE`
-    
-        DATA_VECTOR(t_new); // length=N_new
-	DATA_MATRIX(X_new); // nrow=1,  ncol=sum(fncoef)
-        DATA_MATRIX(Z_new); // nrow=1,  ncol=sum(rncoef)
-	DATA_IVECTOR(predict_lci_lii_lrt_flag); // predict (log_cum_inc, log_int_inc, log_rt)  (1=do,  0=don't)
+        // Flags
+        DATA_IVECTOR(what_flag); // length=3,  val={0,1}
 	DATA_INTEGER(se_flag); // report  (1=ADREPORT,  0=REPORT)
+	bool report_lii = (what_flag(1) == 1);
+	bool report_lci = (what_flag(0) == 1);
+	bool report_lrt = (what_flag(2) == 1);
+	bool report_se  = (se_flag == 1);
 
-	matrix<Type> Y_new = Yo + X_new * beta_as_matrix;
+	// Data
+	// time points
+        DATA_VECTOR(t_predict); // length=N'
+	// segment lengths
+	DATA_IVECTOR(slen_predict); // length=w'
+	// earliest day-of-week
+        DATA_IVECTOR(dow0_predict); // length=w' or 0 if weekday=false,  val={0,...,6}  (0=reference)
+	// model matrices
+	// (subsets of rows of original model matrices)
+	DATA_MATRIX(Xd_predict);        // nrow=w',  ncol=sum(fncoef) or 0 if sparse_X=true
+	DATA_SPARSE_MATRIX(Xs_predict); // nrow=w',  ncol=sum(fncoef) or 0 if sparse_X=false
+	DATA_SPARSE_MATRIX(Z_predict);  // nrow=w',  ncol=sum(rncoef)
+	DATA_MATRIX(Yo_predict);        // nrow=w',  ncol=p
+    
+	matrix<Type> Y_predict = Yo_predict;
+	if (sparse_X)
+	{
+	    Y_predict += Xs_predict * beta_as_matrix;
+	}
+	else
+	{
+	    Y_predict += Xd_predict * beta_as_matrix;
+	}
 	if (anyRE)
     	{
 	    Y_new += Z_new * b_scaled_as_matrix;
     	}
 
-	vector<Type> log_cum_inc_new = eval_log_cum_inc(t_new, Y_new, curve_flag, excess,
-							j_log_r, j_log_alpha, j_log_c0, j_log_tinfl, j_log_K, j_logit_p, j_log_a, j_log_b);
+	// Log curve
+        vector<Type> log_curve_predict =
+	  eval_log_curve(t_predict, Y_predict, slen_predict, curve_flag, excess,
+			 j_log_r, j_log_alpha, j_log_c0,
+			 j_log_tinfl, j_log_K, j_logit_p,
+			 j_log_a, j_log_b);
+
+        // Log interval incidence
+	vector<Type> log_int_inc =
+	  compute_log_cases(log_curve_predict, slen_predict, Y_predict, dow0_predict, weekday,
+			    j_log_w1, j_log_w2, j_log_w3,
+			    j_log_w4, j_log_w5, j_log_w6);
+
+        // Log cumulative incidence
+        vector<Type> log_cum_inc(log_int_inc.size());
+
+	if (weekday)
+	{
+	    for (int s = 0, k = 0; s < slen_predict.size(); s++) // loop over segments
+	    {
+	        log_cum_inc(k) = log_int_inc(k);
+		for (int i = 1; i < slen_predict(s); s++) // loop over within-segment index
+		{
+		    log_cum_inc(k+i) = logspace_add(log_cum_inc(k+i-1), log_int_inc(k+i));
+		}
+		k += slen_predict(s); // increment `log_cum_inc` index
+	    }
+	}
+	else
+	{
+	    for (int s = 0, k1 = 0, k2 = 0; s < slen_predict.size(); s++) // loop over segments
+	    {
+	        for (int i = 0; i < slen_predict(s); s++) // loop over within-segment index
+		{
+		    log_cum_inc(k1+i) = logspace_sub(log_curve(k2+i+1), log_curve(k2));
+		}
+		k1 += slen_predict(s); // increment `log_cum_inc` index
+		k2 += slen_predict(s) + 1; // increment `log_curve` index
+	    }
+	}
+
+	if (report_lii)
+	{
+	    if (report_se)
+	    {
+	        ADREPORT(log_int_inc);
+	    }
+	    else
+	    {
+	        REPORT(log_int_inc);
+	    }
+	}
+	if (report_lci)
+	{
+	    if (report_se)
+	    {
+	        ADREPORT(log_cum_inc);
+	    }
+	    else
+	    {
+	        REPORT(log_cum_inc);
+	    }
+	}
 	
-	if (predict_lci_lii_lrt_flag(0) == 1)
-	{
-	    vector<int> wl_new(1);
-	    wl_new(0) = t_new.size();
-	    vector<Type> log_int_inc_new = eval_log_int_inc(log_cum_inc_new, wl_new);
-	    if (se_flag == 1)
-	    {
-	        ADREPORT(log_int_inc_new);
-	    }
-	    else
-	    {
-	        REPORT(log_int_inc_new);
-	    }
-	}
-	if (predict_lci_lii_lrt_flag(1) == 1)
-	{
-	    if (se_flag == 1)
-	    {
-	        ADREPORT(log_cum_inc_new);
-	    }
-	    else
-	    {
-	        REPORT(log_cum_inc_new);
-	    }
-	}
-	if (predict_lci_lii_lrt_flag(2) == 1)
+	if (report_lrt)
 	{
 	    vector<Type> log_rt_new = eval_log_rt(log_cum_inc_new, Y_new, curve_flag,
 						  j_log_r, j_log_alpha, j_log_K, j_logit_p, j_log_a);
-	    if (se_flag == 1)
+	    if (report_se)
 	    {
-	        ADREPORT(log_rt_new);
+	        ADREPORT(log_rt);
 	    }
 	    else
 	    {
-	        REPORT(log_rt_new);
+	        REPORT(log_rt);
 	    }
 	}
     }
