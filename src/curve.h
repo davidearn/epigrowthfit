@@ -47,10 +47,10 @@ Type eval_log_richards(Type t, Type log_r, Type log_tinfl, Type log_K, Type log_
 
 template<class Type>
 vector<Type> eval_log_curve(vector<Type> t,
-			    matrix<Type> Y,
 			    vector<int> slen,
 			    int curve_flag,
 			    bool excess,
+			    matrix<Type> Y,
 			    int j_log_r,
 			    int j_log_alpha,
 			    int j_log_c0,
@@ -61,121 +61,152 @@ vector<Type> eval_log_curve(vector<Type> t,
 			    int j_log_b)
 {
     vector<Type> log_curve(t.size());
-    for (int s = 0, k = 0; s < slen.size(); s++) // loop over segments
+    for (int s = 0, i = 0; s < slen.size(); s++) // loop over segments
     {
-        for (int i = 0; i < slen(s) + 1; i++) // loop over within-segment index
+        for (int k = 0; k < slen(s); k++) // loop over within-segment index
 	{
 	    switch (curve_flag)
 	    {
 	    case exponential:
-	        log_curve(k+i) = eval_log_exponential(t(k+i), Y(s, j_log_r), Y(s, j_log_c0));
+	        log_curve(i+k) = eval_log_exponential(t(i+k), Y(s, j_log_r), Y(s, j_log_c0));
 		break;
 	    case subexponential:
-	        log_curve(k+i) = eval_log_subexponential(t(k+i), Y(s, j_log_alpha), Y(s, j_log_c0), Y(s, j_logit_p));
+	        log_curve(i+k) = eval_log_subexponential(t(i+k), Y(s, j_log_alpha), Y(s, j_log_c0), Y(s, j_logit_p));
 		break;
 	    case gompertz:
-	        log_curve(k+i) = eval_log_gompertz(t(k+i), Y(s, j_log_alpha), Y(s, j_log_c0), Y(s, j_log_K));
+	        log_curve(i+k) = eval_log_gompertz(t(i+k), Y(s, j_log_alpha), Y(s, j_log_c0), Y(s, j_log_K));
 		break;
 	    case logistic:
-	        log_curve(k+i) = eval_log_logistic(t(k+i), Y(s, j_log_r), Y(s, j_log_tinfl), Y(s, j_log_K));
+	        log_curve(i+k) = eval_log_logistic(t(i+k), Y(s, j_log_r), Y(s, j_log_tinfl), Y(s, j_log_K));
 		break;
 	    case richards:
-	        log_curve(k+i) = eval_log_richards(t(k+i), Y(s, j_log_r), Y(s, j_log_tinfl), Y(s, j_log_K), Y(s, j_log_a));
+	        log_curve(i+k) = eval_log_richards(t(i+k), Y(s, j_log_r), Y(s, j_log_tinfl), Y(s, j_log_K), Y(s, j_log_a));
 		break;
 	    }
 	    if (excess)
 	    {
-	        log_curve(k+i) = logspace_add(Y(s, j_log_b) + log(t(k+i)), log_curve(k+i));
+	        log_curve(i+k) = logspace_add(Y(s, j_log_b) + log(t(i+k)), log_curve(i+k));
 	    }
 	}
-	k += slen(s); // increment `t` index
+	i += slen(s); // increment reference index
     }
     return log_curve;
 }
 
 template<class Type>
-vector<Type> compute_log_cases(vector<Type> log_curve,
-			       vector<int> slen,
-			       matrix<Type> Y,
-			       vector<int> dow0,
-			       bool weekday,
-			       int j_log_w1,
-			       int j_log_w2,
-			       int j_log_w3,
-			       int j_log_w4,
-			       int j_log_w5,
-			       int j_log_w6)
+vector<Type> eval_log_cases(vector<Type> log_curve,
+			    vector<int> slen,
+			    bool weekday,
+			    // for weekday=true:
+			    vector<int> dow,
+			    matrix<Type> Y,
+			    int j_log_w1,
+			    int j_log_w2,
+			    int j_log_w3,
+			    int j_log_w4,
+			    int j_log_w5,
+			    int j_log_w6)
 {
-    vector<Type> log_cases(log_curve.size() - slen.size());
-    for (int s = 0, k1 = 0, k2 = 0; s < slen.size(); s++) // loop over segments
-    {
-        for (int i = 0; i < slen(s); i++) // loop over within-segment index
-	{
-	    log_cases(k1+i) = logspace_sub(log_curve(k2+i+1), log_curve(k2+i));
-	}
-	k1 += slen(s); // increment `log_cases` index
-	k2 += slen(s) + 1; // increment `log_curve` index
-    }
+    vector<Type> log_cases = logspace_diff_n(log_curve, slen);
 
     if (weekday)
     {
-        // NB: Below assumes that observations are daily, so we rely on
-        //     R back-end to enforce this when `weekday=true`
-      
-        vector<Type> log_w(7);
-	for (int s = 0, k = 0; s < slen.size(); s++) // loop over segments
+        // NB: Below assumes that observations are daily. We rely
+        //     on R back-end to enforce this when weekday=true.
+
+	vector<Type> log_w(7);
+	for (int s = 0, i = 0; s < slen.size(); s++) // loop over segments
 	{
 	    log_w << Type(0),
-	             Y(s, j_log_w1), Y(s, j_log_w2), Y(s, j_log_w3),
-	             Y(s, j_log_w4), Y(s, j_log_w5), Y(s, j_log_w6);
+		     Y(s, j_log_w1), Y(s, j_log_w2), Y(s, j_log_w3),
+		     Y(s, j_log_w4), Y(s, j_log_w5), Y(s, j_log_w6);
 
-	    for (int i = 0, d = dow0(s); i < slen(s); i++, d++) // loop over within-segment index
+	    for (int k = 0, d = dow(s); k < slen(s) - 1; k++, d++) // loop over within-segment index
 	    {
-	        log_cases(k+i) += log_w(d % 7);
+		log_cases(i+k) += log_w(d % 7);
 	    }
-	    k += slen(s); // increment `log_cases` index
+	    i += slen(s) - 1; // increment reference index
 	}
     }
-    return log_int_inc;
+    return log_cases;
 }
 
 template<class Type>
-vector<Type> eval_log_rt(vector<Type> log_cum_inc,
-			 matrix<Type> Y,
+vector<Type> eval_log_rt(vector<Type> t,
+			 vector<Type> log_curve,
+			 vector<Type> log_cases,
+			 vector<int> slen,
 			 int curve_flag,
+			 bool excess,
+			 bool weekday,
+			 matrix<Type> Y,
 			 int j_log_r,
 			 int j_log_alpha,
 			 int j_log_K,
 			 int j_logit_p,
-			 int j_log_a)
+			 int j_log_a,
+			 int j_log_b)
 {
-    vector<Type> log_rt(log_cum_inc.size());
-    Type one_minus_p;
-    for (int i = 0; i < log_cum_inc.size(); i++)
+    if (weekday)
     {
-        switch (curve_flag)
+        // Local linear regression on log cases
+        vector<Type> x(7);
+	vector<Type> y(7);
+	vector<Type> ybar(7);
+	for (i = 0; i < 7; i++)
 	{
-	case exponential:
-	    // log(c'(t) / c(t)) = log(r)
-	    log_rt(i) = Y(i, j_log_r);
-	    break;
-	case subexponential:
-	    // log(c'(t) / c(t)) = log(alpha) - (1 - p) * log(c(t))
-	    one_minus_p = Type(1) / (Type(1) + exp(Y(i, j_logit_p)));
-	    log_rt(i) = Y(i, j_log_alpha) - one_minus_p * log_cum_inc(i);
-	    break;
-	case gompertz:
-	    // log(c'(t) / c(t)) = log(alpha) + log(log(K) - log(c(t)))
-	    log_rt(i) = Y(i, j_log_alpha) + log(Y(i, j_log_K) - log_cum_inc(i));
-	    break;
-	case logistic:
-	    // log(c'(t) / c(t)) = log(r) + log(1 - c(t) / K)
-	    log_rt(i) = Y(i, j_log_r) + logspace_sub(Type(0), log_cum_inc(i) - Y(i, j_log_K));
-	    break;
-	case richards:
-	    // log(c'(t) / c(t)) = log(r) + log(1 - (c(t) / K)^a)
-	    log_rt(i) = Y(i, j_log_r) + logspace_sub(Type(0), exp(Y(i, j_log_a)) * (log_cum_inc(i) - Y(i, j_log_K)));
-	    break;
+	    x(i) = Type(i - 3);
+	}
+	
+        vector<Type> log_rt(t.size() - 7 * slen.size());
+	for (int s = 0, i1 = 0, i2 = 0; s < slen.size(); s++) // loop over segments
+	{
+	    for (int k = 0; k < slen(s) - 7; k++) // loop over within-segment index
+	    {
+	        y = log_cases.segment(i2+k, 7);
+		ybar.fill(y.sum() / Type(7));
+		log_rt(i1+k) = log((x * (y - ybar)).sum()) - log(Type(28));
+	    }
+	    i1 += slen(s) - 7;
+	    i2 += slen(s) - 1;
+	}
+	return log_rt;
+    }
+
+    vector<Type> log_rt(t.size());
+    Type one_minus_p;
+    for (int s = 0, i = 0; s < slen.size(); s++)
+    {
+	for (int k = 0; k < slen(s); k++)
+	{
+	    if (excess)
+	    {
+		log_curve(i+k) = logspace_sub(log_curve(i+k), Y(s, j_log_b) + log(t(i+k)));
+	    }
+	    switch (curve_flag)
+	    {
+	    case exponential:
+		// log(c'(t) / c(t)) = log(r)
+		log_rt(i+k) = Y(s, j_log_r);
+		break;
+	    case subexponential:
+		// log(c'(t) / c(t)) = log(alpha) - (1 - p) * log(c(t))
+		one_minus_p = Type(1) / (Type(1) + exp(Y(s, j_logit_p)));
+		log_rt(i+k) = Y(s, j_log_alpha) - one_minus_p * log_curve(i+k);
+		break;
+	    case gompertz:
+		// log(c'(t) / c(t)) = log(alpha) + log(log(K) - log(c(t)))
+		log_rt(i+k) = Y(s, j_log_alpha) + log(Y(s, j_log_K) - log_curve(i+k));
+		break;
+	    case logistic:
+		// log(c'(t) / c(t)) = log(r) + log(1 - c(t) / K)
+		log_rt(i+k) = Y(s, j_log_r) + logspace_sub(Type(0), log_curve(i+k) - Y(s, j_log_K));
+		break;
+	    case richards:
+		// log(c'(t) / c(t)) = log(r) + log(1 - (c(t) / K)^a)
+		log_rt(i+k) = Y(s, j_log_r) + logspace_sub(Type(0), exp(Y(s, j_log_a)) * (log_curve(i+k) - Y(s, j_log_K)));
+		break;
+	    }
 	}
     }
     return log_rt;
