@@ -8,7 +8,7 @@ Type eval_log_exponential(Type t, Type log_r, Type log_c0)
 }
 
 template<class Type>
-Type eval_log_subexponential(Type t1, Type log_alpha, Type log_c0, Type logit_p)
+Type eval_log_subexponential(Type t, Type log_alpha, Type log_c0, Type logit_p)
 {
     // log(c(t))
     // = log((c0^(1 - p) + (1 - p) * alpha * t)^(1 / (1 - p)))
@@ -153,7 +153,7 @@ vector<Type> eval_log_rt(vector<Type> t,
         vector<Type> x(7);
 	vector<Type> y(7);
 	vector<Type> ybar(7);
-	for (i = 0; i < 7; i++)
+	for (int i = 0; i < 7; i++)
 	{
 	    x(i) = Type(i - 3);
 	}

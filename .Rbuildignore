@@ -1,5 +1,7 @@
 ^data-raw$
 ^old$
+^R/old$
+^data$
 ^ontario$
 ^ref$
 ^sandbox$

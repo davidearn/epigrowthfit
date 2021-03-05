@@ -110,7 +110,7 @@ Type objective_function<Type>::operator() ()
     // 4. Add random effects component:
 
     // 4.(a) Set up random effects infrastructure
-    
+
     // A list of random effects blocks gathering related elements of `b`:
     // columns of each block are samples from a zero-mean, unit-variance,
     // multivariate normal distribution with a common covariance matrix
@@ -121,6 +121,13 @@ Type objective_function<Type>::operator() ()
 
     // A list of correlation matrices corresponding elementwise to `block_list`
     vector< matrix<Type> > cor_list(M);
+
+    // `b` with elements scaled by the appropriate s.d.
+    vector<Type> b_scaled(b.size());
+
+    // `b_scaled` with elements arranged in `p` columns of a matrix
+    // by relation to a nonlinear model parameter
+    matrix<Type> b_scaled_as_matrix(b.size(), p);
 
     if (anyRE)
     {
@@ -145,8 +152,7 @@ Type objective_function<Type>::operator() ()
 	    block_list(m) = block;
 
 	    // Form s.d. vector
-	    vector<Type> sd = exp(log_sd_b.segment(i2, rnrow(m)));
-	    sd_list(m) = sd;
+	    sd_list(m) = exp(log_sd_b.segment(i2, rnrow(m)));
 	    i2 += rnrow(m); // increment `log_sd_b` index
 
 	    // Form correlation matrix
@@ -167,18 +173,18 @@ Type objective_function<Type>::operator() ()
 
 	// 4.(b) Scale random effects coefficients (unit variance)
 	//       by corresponding standard deviations
-	vector<Type> b_scaled(b.size());
 	for (int m = 0, i = 0; m < M; m++) // loop over blocks
 	{
+	    vector<Type> v(rnrow(m));
 	    for (int j = 0; j < rncol(m); j++) // loop over block columns
 	    {
-	        b_scaled.segment(i, rnrow(m)) = sd_list(m) * block_list(m).col(j);
+	        v = block_list(m).col(j);
+	        b_scaled.segment(i, rnrow(m)) = sd_list(m) * v;
 		i += rnrow(m); // increment reference index
 	    }
 	}
 
 	// 4.(c) Construct block matrix `b_scaled_as_matrix` from vector `b_scaled`
-	matrix<Type> b_scaled_as_matrix(b.size(), p);
 	b_scaled_as_matrix.fill(Type(0));
         for (int i = 0; i < b.size(); i++)
 	{
@@ -193,7 +199,7 @@ Type objective_function<Type>::operator() ()
     vector<Type> Y_as_vector = Y.vec();
     ADREPORT(Y_as_vector);
 
-    
+
     // Compute likelihood ======================================================
 
     // Log curve
@@ -237,7 +243,7 @@ Type objective_function<Type>::operator() ()
     {
     	for (int m = 0; m < M; m++) // loop over blocks
     	{
-	    for (int j = 0; j < rncols(m); l++) // loop over block columns
+	    for (int j = 0; j < rncol(m); j++) // loop over block columns
     	    {
     	        nll += density::MVNORM(cor_list(m))(block_list(m).col(j));
     	    }
@@ -300,7 +306,7 @@ Type objective_function<Type>::operator() ()
 	}
 	REPORT(x);
     }
-    
+
 
     // Predict incidence =======================================================
     
@@ -312,7 +318,7 @@ Type objective_function<Type>::operator() ()
 	bool predict_lii = (what_flag(0) == 1);
 	bool predict_lci = (what_flag(1) == 1);
 	bool predict_lrt = (what_flag(2) == 1);
-	bool report_se   = (se_flag == 1);
+	bool report_se   = (se_flag      == 1);
 
 	// Data
 	// time points
@@ -344,7 +350,7 @@ Type objective_function<Type>::operator() ()
 	}
 	if (anyRE)
     	{
-	    Y_predict += Z_new * b_scaled_as_matrix;
+	    Y_predict += Z_predict * b_scaled_as_matrix;
     	}
 
 	// Log curve
@@ -361,7 +367,7 @@ Type objective_function<Type>::operator() ()
 			   j_log_w4, j_log_w5, j_log_w6);
 
 
-	if (report_lii)
+	if (predict_lii)
 	{
 	    // Log interval incidence
 	    vector<Type> log_int_inc = log_cases_predict;
@@ -375,15 +381,15 @@ Type objective_function<Type>::operator() ()
 	    }
 	}
 	
-	if (report_lci)
+	if (predict_lci)
 	{
 	    // Log cumulative incidence
 	    // (since the earliest time point in the current segment)
-	    vector<Type> log_cum_inc(log_int_inc.size());
+	    vector<Type> log_cum_inc(log_cases.size());
 	    for (int s = 0, i = 0; s < N_predict; s++) // loop over segments
 	    {
-		log_cum_inc.segment(i, slen_predict(s) - 1) =
-		    logspace_cumsum_1(log_int_inc.segment(i, slen_predict(s) - 1));
+	        vector<Type> log_cases_predict_segment = log_cases_predict.segment(i, slen_predict(s) - 1);
+		log_cum_inc.segment(i, slen_predict(s) - 1) = logspace_cumsum_1(log_cases_predict_segment);
 		i += slen_predict(s) - 1; // increment reference index
 	    }
 	    
@@ -397,7 +403,7 @@ Type objective_function<Type>::operator() ()
 	    }
 	}
 	
-	if (report_lrt)
+	if (predict_lrt)
 	{
 	    // Log per capita growth rate
 	    // (approximated by local linear regression if weekend=true)
@@ -416,6 +422,6 @@ Type objective_function<Type>::operator() ()
 	    }
 	}
     }
-
+    
     return nll;
 }

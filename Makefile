@@ -30,7 +30,7 @@ rd: R/*.R inst/REFERENCES.bib
 	sed -i.bak 's/\\text{/\\textrm{/ g' man/*.Rd
 	rm man/*.Rd.bak
 
-src/$(PACKAGE).so: src/$(PACKAGE).cpp
+src/$(PACKAGE).so: src/$(PACKAGE).cpp src/*.h
 	$(MAKE) -C src
 
 manual: $(MANUAL)

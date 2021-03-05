@@ -37,7 +37,8 @@ vector<Type> logspace_diff_n(vector<Type> log_x, vector<int> len)
     vector<Type> log_diff_x(log_x.size() - len.size());
     for (int s = 0, i = 0; s < len.size(); s++) // loop over segments
     {
-        log_diff_x.segment(i, len(s) - 1) = logspace_diff_1(log_x.segment(i + s, len(s))); 
+        vector<Type> log_x_segment = log_x.segment(i + s, len(s));
+        log_diff_x.segment(i, len(s) - 1) = logspace_diff_1(log_x_segment); 
         i += len(s) - 1; // increment reference index
     }
     return log_diff_x;
@@ -61,7 +62,8 @@ vector<Type> logspace_cumsum_n(vector<Type> log_x, vector<int> len)
     vector<Type> log_cumsum_x(log_x.size());
     for (int s = 0, i = 0; s < len.size(); s++) // loop over segments
     {
-        log_cumsum_x.segment(i, len(s)) = logspace_cumsum_1(log_x.segment(i, len(s))); 
+        vector<Type> log_x_segment = log_x.segment(i, len(s));
+        log_cumsum_x.segment(i, len(s)) = logspace_cumsum_1(log_x_segment); 
         i += len(s); // increment reference index
     }
     return log_cumsum_x;
