@@ -151,7 +151,7 @@ is_bar <- function(x) {
 #' expand_terms(~x * y + (1 | f/g) + (a | f) + (0 + b | f:g))
 #'
 #' @export
-#' @importFrom stats terms
+#' @importFrom stats terms as.formula
 expand_terms <- function(x) {
   if (inherits(x, "formula")) {
     x[-1L] <- lapply(x[-1L], expand_terms)
@@ -229,6 +229,7 @@ gsub_bar_plus <- function(x) {
   unsplit_terms(tl)
 }
 
+#' @importFrom stats as.formula
 split_effects <- function(x) {
   tl <- split_terms(x)
   tl_is_bar <- vapply(tl, is_bar, FALSE)

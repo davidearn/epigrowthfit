@@ -4,91 +4,117 @@
 \alias{make_tmb_data}
 \title{Construct data objects for C++ template}
 \usage{
-make_tmb_data(frame, curve, distr, excess, sparse_X)
+make_tmb_data(
+  frame_ts,
+  frame_glmm,
+  curve,
+  excess,
+  distr,
+  weekday,
+  weekday_ref,
+  sparse_X
+)
 }
 \arguments{
-\item{frame}{A model frame returned by \code{\link[=make_frame]{make_frame()}}.}
+\item{frame_ts}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
+
+\item{frame_glmm}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
+rate is estimated. Set to \code{TRUE} if what is observed (\code{y} if
+\code{formula = y ~ x | ts}) is multiple causes mortality rather than
+disease mortality or disease incidence.}
+
 \item{distr}{A character string specifying an observation model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
-mortality rate is estimated. Set to \code{TRUE} if what is
-observed (\code{y} if \code{formula = y ~ x}) is multiple causes
-mortality rather than disease mortality or disease incidence.}
+\item{weekday}{A logical scalar. If \code{TRUE}, then weekday effects are estimated,
+though this currently requires daily observation of incidence in
+all fitting windows.}
 
-\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design matrix
-will be constructed in sparse format.}
+\item{weekday_ref}{An integer indicating a weekday, with 1 mapping to Sunday,
+2 mapping to Monday, and so on. Weekday effects are estimated
+as offsets relative to the indicated day.}
+
+\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects
+design matrix will be constructed in sparse format.
+(The random effects design matrix is always constructed
+in sparse format.)}
 }
 \value{
 A \code{"tmb_data"} object, which is a list with elements:
-\item{\code{index}}{
-A copy of \code{attr(frame, "index")}. See \code{\link[=make_frame]{make_frame()}}.
-}
 \item{\code{t}}{
-An integer vector of length \code{nrow(frame)} giving time as
-a number of days since the earliest date in the relevant
-fitting window.
+An integer vector of length \code{sum(!is.na(frame_ts$.window))}
+giving time as a number of days since the earliest time point
+in the current fitting window.
 }
 \item{\code{x}}{
-An integer vector of length \code{nrow(frame)}. Within each fitting
-window, the first element is \code{NA} and the remaining elements
-are such that \code{x[i]} is the number of cases observed from \code{t[i-1]}
-to \code{t[i]}.
+An integer vector of length
+\code{sum(!is.na(frame_ts$.window))-nlevels(frame_ts$.window)}
+giving incidence in each fitting window. \code{x[i]} in window \code{k} is
+the number of cases observed between times \code{t[k+i-1]} and \code{t[k+i]}.
 }
-\item{\code{wl}}{
-An integer vector of length \code{nlevels(index)} giving the length
-of each fitting window.
+\item{\code{wlen}}{
+An integer vector of length \code{nlevels(frame_ts$.window)}
+giving the length of each fitting window as a number of
+intervals (one less than the number of time points).
+}
+\item{\code{dow0}}{
+An integer vector giving the first weekday in each fitting
+window, with values \code{i} in \code{0:6} mapping to the weekday \code{i}
+days after the reference weekday specified by \code{weekday_ref}.
+}
+\item{\code{Yo}}{
+The offsets matrix in dense format.
+}
+\item{\code{X}}{
+The fixed effects design matrix in sparse or dense format,
+depending on \code{sparse_X}.
 }
 \item{\code{Xs}, \code{Xd}}{
-The fixed effects design matrix in sparse and dense format.
-If \code{sparse_X = TRUE}, then \code{Xd} is empty. If \code{sparse_X = FALSE},
-then \code{Xs} is empty. Uses zero-sum contrasts.
+If \code{sparse_X = TRUE}, then \code{Xs = X} and \code{Xd} is an empty dense
+matrix. Otherwise, \code{Xd = X} and \code{Xs} is an empty sparse matrix.
 }
 \item{\code{Z}}{
-The random effects design matrix in sparse format, without
-contrasts.
+The random effects design matrix in sparse format.
+If there are no random effects, then \code{Z} is an empty matrix.
 }
-\item{\code{ffr}, \code{rfr}}{
-Data frames containing the factors referenced by the elements
-of \code{frame} attributes \code{fixed_term_labels} and \code{random_term_labels}.
-See \code{\link[=make_frame]{make_frame()}}.
+\item{\code{X_info}, \code{Z_info}}{
+Data frames with \code{ncol(X)} and \code{ncol(Z)} rows, respectively,
+containing factors \code{colname}, \code{par}, \code{term}, and \code{group}.
+Row \code{j} describes the coefficient associated with column \code{j}
+of \code{X} or \code{Z}. \code{Zinfo} has additional factors \code{cor} and \code{vec}
+splitting coefficients by relation to a common correlation
+matrix and random vector, respectively.
 }
-\item{\code{fnl}, \code{rnl}}{
-Integer vectors listing the number of levels of each factor in
-\code{ffr} and \code{rfr}.
+\item{\code{fncoef}, \code{rncoef}}{
+Integer vectors of length \code{p} counting the columns of \code{X} and \code{Z},
+respectively, pertaining to a common nonlinear model parameter.
 }
-\item{\code{fid}, \code{rid}}{
-Indicator matrices with term labels for row names and parameter
-names (with prefixes) for column names. Element \verb{[i, j]} is equal
-to 1 if and only if term \code{i} appears in the mixed effects model
-(fixed/random component) for parameter \code{j}.
+\item{\code{fpar}, \code{rpar}}{
+Integer vectors of length \code{ncol(X)} and \code{ncol(Z)}, respectively,
+with values in \code{0:(p-1)}. These split the columns of \code{X} and \code{Z}
+by relation to a common nonlinear model parameter.
 }
-\item{\code{curve_flag}, \code{distr_flag}, \code{excess_flag}, \code{sparse_X_flag}}{
-Integer flags referencing \code{curve}, \code{distr}, \code{excess}, and
-\code{sparse_X}.
+\item{\code{rnrow}, \code{rncol}}{
+Integer vectors together giving the dimensions of each block of
+the random effects matrix.
+}
+\item{\code{curve_flag}, \code{excess_flag}, \code{distr_flag}, \code{weekday_flag}, \code{sparse_X_flag}}{
+Integer flags referencing \code{curve}, \code{excess}, \code{distr}, \code{weekday},
+and \code{sparse_X}.
 }
 \item{\code{predict_flag}}{
 An integer flag set equal to 0 so that prediction code is not run.
 }
 Additional integer elements of the form \code{j_link_parameter}
-(e.g., \code{j_log_r}) give the index of response variables
-(e.g., \code{"log_r"}) in \code{colnames(rid)}. Indexing starts at 0,
-and the value -1 indicates that the parameter does not
-belong to the incidence model being fit.
+(e.g., \code{j_log_r}) give the 0-index of nonlinear model parameter
+names (e.g., \code{"log_r"}) in \code{levels(Xinfo$par)}. The value -1 is
+used for parameters not belonging to the nonlinear model being fit.
 }
 \description{
 Gathers in a list data objects to be passed to the C++ template
 via TMB's \code{DATA_} macros. See \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.
-}
-\examples{
-example("make_frame", package = "epigrowthfit")
-tmb_data <- epigrowthfit:::make_tmb_data(
-  frame,
-  curve, distr, excess,
-  sparse_X = FALSE
-)
-
 }
 \keyword{internal}

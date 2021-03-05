@@ -4,25 +4,48 @@
 \alias{make_tmb_args}
 \title{Create TMB infrastructure}
 \usage{
-make_tmb_args(frame, curve, distr, excess, sparse_X, par_init)
+make_tmb_args(
+  frame_ts,
+  frame_glmm,
+  curve,
+  distr,
+  excess,
+  weekday,
+  weekday_ref,
+  sparse_X,
+  par_init
+)
 }
 \arguments{
-\item{frame}{A model frame returned by \code{\link[=make_frame]{make_frame()}}.}
+\item{frame_ts, frame_glmm}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
-mortality rate is estimated. Set to \code{TRUE} if what is
-observed (\code{y} if \code{formula = y ~ x}) is multiple causes
-mortality rather than disease mortality or disease incidence.}
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
+rate is estimated. Set to \code{TRUE} if what is observed (\code{y} if
+\code{formula = y ~ x | ts}) is multiple causes mortality rather than
+disease mortality or disease incidence.}
 
-\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design matrix
-will be constructed in sparse format.}
+\item{weekday}{A logical scalar. If \code{TRUE}, then weekday effects are estimated,
+though this currently requires daily observation of incidence in
+all fitting windows.}
 
-\item{par_init}{A user-specified full parameter vector, or otherwise \code{NULL}.
-See \code{\link[=egf]{egf()}}.}
+\item{weekday_ref}{An integer indicating a weekday, with 1 mapping to Sunday,
+2 mapping to Monday, and so on. Weekday effects are estimated
+as offsets relative to the indicated day.}
+
+\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects
+design matrix will be constructed in sparse format.
+(The random effects design matrix is always constructed
+in sparse format.)}
+
+\item{par_init}{A full parameter vector for the first likelihood evaluation.
+Set to \code{NULL} to accept the internally generated default. If
+the default causes errors, then use \code{debug = TRUE} to retrieve
+its value, which will have the correct length, and modify as
+necessary.}
 }
 \value{
 A list with elements \code{data}, \code{parameters}, \code{map}, \code{random},
@@ -30,17 +53,6 @@ A list with elements \code{data}, \code{parameters}, \code{map}, \code{random},
 }
 \description{
 Gathers necessary components of a call to \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.
-}
-\examples{
-example("make_frame", package = "epigrowthfit")
-tmb_args <- epigrowthfit:::make_tmb_args(
-  frame,
-  curve, distr, excess,
-  sparse_X = FALSE,
-  par_init = NULL
-)
-tmb_out <- do.call(TMB::MakeADFun, tmb_args)
-
 }
 \seealso{
 \code{\link[=make_tmb_data]{make_tmb_data()}}, \code{\link[=make_tmb_parameters]{make_tmb_parameters()}}

@@ -150,7 +150,7 @@ get_link_string <- function(s) {
 #'
 #' @examples
 #' get_link("log")
-#' get_inverse_link("logit)
+#' get_inverse_link("logit")
 #' get_link("logit")
 #' get_inverse_link("log")
 #'
@@ -211,7 +211,7 @@ get_inverse_link <- function(s) {
 #' }
 #'
 #' @export
-#' @importFrom stats terms model.frame
+#' @importFrom stats terms model.frame na.pass as.formula
 make_frames <- function(formula_ts, formula_glmm, data, window,
                         curve, excess, distr, weekday, na_action,
                         par_init) {
@@ -469,7 +469,7 @@ make_frames <- function(formula_ts, formula_glmm, data, window,
     m = "`formula_glmm` variables must not have missing values."
   )
   any_infinite <- function(d) {
-    i <- vapply(x, is.double, FALSE)
+    i <- vapply(d, is.double, FALSE)
     any(vapply(d[i], function(x) any(is.infinite(x)), FALSE))
   }
   stop_if_not(
@@ -567,7 +567,7 @@ make_X <- function(x, frame, sparse) {
 }
 
 #' @importFrom methods as
-#' @importFrom stats model.matrix
+#' @importFrom stats model.matrix as.formula
 #' @importFrom Matrix KhatriRao
 make_Z <- function(x, frame) {
   X <- make_X(as.formula(call("~", x[[2L]])), frame = frame, sparse = FALSE)
@@ -621,7 +621,7 @@ make_Z <- function(x, frame) {
 #' }
 #'
 #' @noRd
-#' @importFrom stats terms
+#' @importFrom stats terms as.formula
 make_XZ_info <- function(xl, ml) {
   if (length(xl) == 0L) {
     cn <- c("colname", "par", "term", "group")
@@ -926,7 +926,8 @@ make_tmb_data <- function(frame_ts, frame_glmm,
 #'
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis terms
-make_tmb_parameters <- function(tmb_data, frame_ts, frame_glmm, par_init) {
+make_tmb_parameters <- function(tmb_data, frame_ts, frame_glmm,
+                                curve, par_init) {
   ## Lengths of parameter objects
   len <- c(
     beta = sum(tmb_data$fncoef),

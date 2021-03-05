@@ -4,40 +4,39 @@
 \alias{make_tmb_parameters}
 \title{Construct parameter objects for C++ template}
 \usage{
-make_tmb_parameters(tmb_data, curve, distr, excess, par_init)
+make_tmb_parameters(tmb_data, frame_ts, frame_glmm, curve, par_init)
 }
 \arguments{
 \item{tmb_data}{A \code{"tmb_data"} object returned by \code{\link[=make_tmb_data]{make_tmb_data()}}.}
 
+\item{frame_ts}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
+
+\item{frame_glmm}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
+
 \item{curve}{A character string specifying a cumulative incidence model.}
 
-\item{distr}{A character string specifying an observation model.}
-
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
-mortality rate is estimated. Set to \code{TRUE} if what is
-observed (\code{y} if \code{formula = y ~ x}) is multiple causes
-mortality rather than disease mortality or disease incidence.}
-
-\item{par_init}{A user-specified full parameter vector, or otherwise \code{NULL}.
-See \code{\link[=egf]{egf()}}.}
+\item{par_init}{A full parameter vector for the first likelihood evaluation.
+Set to \code{NULL} to accept the internally generated default. If
+the default causes errors, then use \code{debug = TRUE} to retrieve
+its value, which will have the correct length, and modify as
+necessary.}
 }
 \value{
 A list with elements:
 \item{\code{beta}}{
-A numeric vector of length \code{sum(tmb_data$fnl)} listing initial
-values for the fixed effects coefficients, each of which represents
-the mean of a set of within-group means or a within-group offset
-from that mean.
-}
-\item{\code{log_sd_b}}{
-If there are random effects, then a numeric vector of length
-\code{sum(tmb_data$rid)} listing initial values for the log standard
-deviations of the within-group random effects. Otherwise, \code{NA_real_}.
+A numeric vector of length \code{sum(tmb_data$fncoef)}
+listing initial values for the fixed effects coefficients.
 }
 \item{\code{b}}{
 If there are random effects, then a numeric vector of length
-\code{sum(tmb_data$rnl * rowSums(tmb_data$rid))} listing initial
-values for the within-group random effects. Otherwise, \code{NA_real_}.
+\code{sum(tmb_data$rncoef)} listing initial values for the (unit
+variance) random effects coefficients. Otherwise, \code{NA_real_}.
+}
+\item{\code{log_sd_b}}{
+If there are random effects, then a numeric vector of
+length \code{sum(tmb_data$rnrow)} listing initial values
+for the log standard deviations of the random effects
+coefficients. Otherwise, \code{NA_real_}.
 }
 }
 \description{
@@ -46,11 +45,11 @@ via TMB's \code{PARAMETER_} macros during the first likelihood evaluation.
 See \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.
 }
 \details{
-When \code{par_init = NULL}, naive estimates of incidence model parameters
-are obtained for each fitting window as follows:
+When \code{par_init = NULL}, naive estimates of nonlinear model
+parameters are obtained for each fitting window as follows:
 \describe{
 \item{\code{r}}{
-The slope of a linear model fit to \code{log1p(c(0, cumsum(x[-1])))}.
+The slope of a linear model fit to \verb{log1p(cumsum(x)))}.
 }
 \item{\code{alpha}}{
 \code{r*c0^(1-p)} if \code{curve = "subexponential"},
@@ -62,37 +61,25 @@ of \code{r}, \code{c0}, \code{K}, and \code{p}, and solving for \code{alpha}.
 }
 \item{\code{c0}}{
 \code{exp(log_c0)}, where \code{log_c0} is the intercept of a linear model
-fit to \code{log1p(c(0, cumsum(x[-1])))}.
+fit to \code{log1p(cumsum(x))}.
 }
 \item{\code{tinfl}}{
 \code{max(t)}, assuming that the fitting window ends near the time
 of a peak in interval incidence.
 }
 \item{\code{K}}{
-\code{2*sum(x[-1])}, assuming that the fitting window ends near the
-time of a peak in interval incidence \emph{and} that interval incidence
-is roughly symmetric about the peak.
+\code{2*sum(x)}, assuming that the fitting window ends near the time
+of a peak in interval incidence \emph{and} that interval incidence is
+roughly symmetric about the peak.
 }
 \item{\code{p}}{0.8}
-\item{\code{a}}{1}
-\item{\code{b}}{1}
-\item{\code{nbdisp}}{1}
+\item{\code{a}, \code{b}, \code{nbdisp}, \code{w[123456]}}{1}
 }
-The naive estimates are log-transformed (all but \code{p}) or
-logit-transformed (\code{p} only), and coefficients are obtained
-from the within-group means (assuming zero-sum contrasts)
-to form segments of the parameter object \code{beta}.
-
-When \code{par_init = NULL} and there are random effects,
-\code{log_sd_b} and \code{b} are for simplicity initialized as zero vectors.
-}
-\examples{
-example("make_tmb_data", package = "epigrowthfit")
-tmb_parameters <- epigrowthfit:::make_tmb_parameters(
-  tmb_data,
-  curve, distr, excess,
-  par_init = NULL
-)
-
+The naive estimates are log- or logit-transformed (all but \code{p}
+use a log link), and, for each nonlinear model parameter, the
+initial value of the \code{"(Intercept)"} coefficient in its fixed
+effects model (if any) is taken to be the mean of the link scale
+estimates across fitting windows. All other mixed effects model
+parameters take initial value 0.
 }
 \keyword{internal}

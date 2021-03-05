@@ -2,34 +2,44 @@
 % Please edit documentation in R/egf_utils.R
 \name{get_par_names}
 \alias{get_par_names}
-\title{Get parameter names}
+\title{Get nonlinear model parameter names}
 \usage{
-get_par_names(curve = NULL, distr = NULL, excess = NULL, link = TRUE)
+get_par_names(
+  curve = NULL,
+  excess = NULL,
+  distr = NULL,
+  weekday = NULL,
+  link = TRUE
+)
 }
 \arguments{
-\item{curve, distr, excess}{Character strings specifying an incidence model. See \code{\link[=egf]{egf()}}.
-Alternatively, \code{curve} can be an \code{"egf"} object returned by
-\code{\link[=egf]{egf()}} or a \code{"tmb_data"} object returned by \code{\link[=make_tmb_data]{make_tmb_data()}},
-in which case \code{distr} and \code{excess} are ignored.}
+\item{curve, excess, distr, weekday}{Character or logical flags specifying an incidence model;
+see \code{\link[=egf]{egf()}}. Alternatively, \code{curve} can be an \code{"egf"} object
+returned by \code{\link[=egf]{egf()}} or a \code{"tmb_data"} object returned by
+\code{\link[=make_tmb_data]{make_tmb_data()}}, in which case \code{excess}, \code{distr}, and
+\code{weekday} are ignored.}
 
 \item{link}{A logical scalar. If \code{TRUE}, then a prefix indicating the
 link function used internally (either \code{"log_"} or \code{"logit_"})
 is prepended to each parameter name.}
 }
 \value{
-If \code{link = FALSE}, then the default method returned the subset
-of \code{c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp")}
-relevant to \code{curve}, \code{distr}, and \code{excess}.
+A subset of \code{"r"}, \code{"alpha"}, \code{"c0"}, \code{"tinfl"}, \code{"K"},
+\code{"p"}, \code{"a"}, \code{"b"}, \code{"nbdisp"}, and \code{paste0("w", 1:6)},
+with or without prefixes depending on \code{link}.
 }
 \description{
-Returns the names used internally for parameters of the specified
-incidence model.
+Returns the names used internally for nonlinear model parameters.
 }
 \examples{
-pn  <- get_par_names(curve = "exponential", distr = "pois",
-                     excess = FALSE, link = FALSE)
-lpn <- get_par_names(curve = "exponential", distr = "pois",
-                     excess = FALSE, link = TRUE)
-identical(pn, sub("^(log|logit)_", "", lpn))
+a <- list(
+  curve = "logistic",
+  excess = FALSE,
+  distr = "nbinom",
+  weekday = TRUE
+)
+pn_l0  <- do.call(get_par_names, c(a, list(link = FALSE)))
+pn_l1  <- do.call(get_par_names, c(a, list(link = TRUE)))
+identical(pn_l0, sub("^(log|logit)_", "", pn_l1))
 
 }
