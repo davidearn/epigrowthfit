@@ -1,12 +1,9 @@
 ## Code
-* Add R back end
+* Add R back-end for likelihood optimization
 * Write tests
-* Add generalized Richards
+* Write RK4 in template to allow fitting, e.g., generalized Richards
 * Plot method for parametric bootstrap
 * Print and summary methods
-* Allow for day-of-week offsets
-* Allow continuous numeric predictors
-* Allow random slopes models
 
 ## Documentation
 * Vignette
