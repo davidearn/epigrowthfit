@@ -128,12 +128,36 @@ enum_dupl_str <- function(x) {
   sprintf("%s[%d]", x, i)
 }
 
-
-
-#' Test whether a vector is "constant"
+#' Test whether an atomic vector is "constant"
 #'
+#' Tests whether the elements of an atomic vector are equal
+#' (or nearly equal in the case of numeric vectors).
 #'
+#' @param x
+#'   An atomic vector or data frame. For data frames `x`,
+#'   `is_constant(x)` tests whether all listed vectors are
+#'   (individually) constant.
+#' @param na.rm
+#'   A logical scalar. If `TRUE`, then `NA` in vectors `x` are ignored.
+#' @param tol
+#'   A positive number. Numeric vectors `x` are considered constant
+#'   if and only if the distance from `min(x)` to `max(x)` is less
+#'   than `tol`.
 #'
+#' @details
+#' `TRUE` is returned for zero-length `x`.
+#'
+#' @return
+#' `TRUE`, `FALSE`, or `NA`.
+#'
+#' @examples
+#' x <- c(0, 1e-03, NA)
+#' is_constant(x, na.rm = TRUE, tol = 1e-02)
+#' is_constant(x, na.rm = TRUE, tol = 1e-04)
+#' is_constant(x, na.rm = FALSE, tol = 1e-02)
+#' is_constant(x, na.rm = FALSE, tol = 1e-04)
+#'
+#' @noRd
 is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
   if (is.data.frame(x)) {
     return(all(vapply(x, is_constant, FALSE, na.rm, tol)))
@@ -146,7 +170,7 @@ is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
   } else {
     yes <- length(unique(x[!is.na(x)])) == 1L
   }
-  if (yes && anyNA(x) && !na.rm) {
+  if (yes && !na.rm && anyNA(x)) {
     return(NA)
   }
   yes

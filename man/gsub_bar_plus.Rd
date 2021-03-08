@@ -13,9 +13,9 @@ gsub_bar_plus(x)
 A call, name, or atomic scalar.
 }
 \description{
-Replaces the \code{|} operator in formulae and formula terms
-with the \code{+} operator, enabling construction of model frames
-from mixed effects formulae using \code{\link[stats:model.frame]{stats::model.frame()}}.
+Replaces the \code{|} operator in formulae and formula terms with
+the \code{+} operator, enabling construction of model frames from
+mixed effects formulae using \code{\link[stats:model.frame]{stats::model.frame()}}.
 }
 \examples{
 gsub_bar_plus(~x + (1 | f))

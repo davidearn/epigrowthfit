@@ -202,8 +202,8 @@ egf <- function(formula_ts,
   tmb_out <- do.call(MakeADFun, tmb_args)
   optim_out <- optim_tmb_out(tmb_out, method = method, ...)
 
-  par_init <- enum_dupl_names(tmb_out$env$par)
-  par <- enum_dupl_names(tmb_out$env$last.par.best)
+  par_init <- enum_dupl_str(tmb_out$env$par)
+  par <- enum_dupl_str(tmb_out$env$last.par.best)
   nonrandom <- grep("^b\\[", names(par), invert = TRUE)
 
   s <- switch(method, nlminb = "objective", nlm = "minimum", "value")

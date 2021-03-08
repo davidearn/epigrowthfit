@@ -63,7 +63,7 @@ all fitting windows.}
 \item{na_action}{A character string indicating how \code{NA} in incidence
 (\code{y} if \code{formula_ts = y ~ x | ts}) are handled.
 \code{NA} in other \code{formula_ts} variables are an error.
-\code{NA} in \code{formula_glmm} variables \emph{inside fitting windows}
+\code{NA} in \code{formula_glmm} variables \emph{within fitting windows}
 are an error.}
 
 \item{par_init}{A full parameter vector for the first likelihood evaluation.
@@ -75,12 +75,13 @@ necessary.}
 \value{
 A list with elements:
 \item{\code{frame_ts}}{
-The model frame for time series formula \code{formula_ts}
-(see Details), storing \code{terms(formula_ts)} as an attribute.
+The model frame for time series formula \code{formula_ts},
+storing \code{terms(formula_ts)} as an attribute.
 }
 \item{\code{frame_glmm}}{
 A list containing the model frame for each mixed effects formula
-in \code{formula_glmm} (after completion). \code{frame_glmm[[i]]} stores
+listed in \code{formula_glmm} (after completion with the default \code{~1}
+or recycling, depending on the input). \code{frame_glmm[[i]]} stores
 \code{terms(formula_glmm[[i]])} as an attribute.
 }
 }
@@ -89,18 +90,21 @@ Constructs model frames to be used by \code{\link[=egf]{egf()}},
 while performing myriad checks on the input.
 }
 \details{
-\code{frame_ts} is not constructed by \code{\link[stats:model.frame]{stats::model.frame()}}. Without
-loss of generality, if \code{formula_ts = y ~ x | ts}, then \code{frame_ts}
-has variables \code{x} (Date), \code{y} (numeric), \code{ts} (factor),
-and \code{.window} (factor). It is obtained (roughly) by evaluating the
-expressions for \code{x}, \code{y}, and \code{ts} in \code{data} (with \code{data} enclosed
-by \code{environment(formula_ts)}), joining the resulting vectors and
-\code{window} in a data frame, discarding rows belonging to time series
-without fitting windows, and ordering the remaining rows according
-to \code{order(ts)}.
+\code{frame_ts} is constructed from \code{formula_ts}, though not using
+\code{\link[stats:model.frame]{stats::model.frame()}} machinery. Without loss of generality,
+if \code{formula_ts = y ~ x | ts}, then \code{frame_ts} has variables
+\code{x} (Date), \code{y} (numeric), \code{ts} (factor), and \code{.window} (factor).
+Roughly, it is obtained by evaluating the expressions for \code{x},
+\code{y}, and \code{ts} in \code{data} (enclosed by \code{environment(formula_ts)}),
+joining the resulting vectors and \code{window} in a data frame,
+discarding rows belonging to time series without fitting windows,
+and ordering the remaining rows according to \code{order(ts)}.
 
-\code{frame_glmm} model frames are constructed by \code{\link[stats:model.frame]{stats::model.frame()}}.
-They each have \code{nlevels(window) < nrow(frame_ts)} rows, because all
-nonlinear model parameters (and by consequence all \code{formula_glmm}
-variables) are required to be constant within fitting windows.
+\code{frame_glmm} model frames are constructed by passing modified
+\code{formula_glmm} formulae to \code{\link[stats:model.frame]{stats::model.frame()}}, applying to
+the resulting data frames the same subset operations applied to
+construct \code{frame_ts}, then discarding all but the first row of
+each fitting window, so that each data frame has \code{nlevels(window)}
+rows. (There is no loss of information here, as all \code{formula_glmm}
+variables are required to be constant within fitting windows.)
 }

@@ -47,22 +47,23 @@ A \code{"tmb_data"} object, which is a list with elements:
 \item{\code{t}}{
 An integer vector of length \code{sum(!is.na(frame_ts$.window))}
 giving time as a number of days since the earliest time point
-in the current fitting window.
+in the current segment.
 }
 \item{\code{x}}{
 An integer vector of length
 \code{sum(!is.na(frame_ts$.window))-nlevels(frame_ts$.window)}
-giving incidence in each fitting window. \code{x[i]} in window \code{k} is
-the number of cases observed between times \code{t[k+i-1]} and \code{t[k+i]}.
+giving incidence in each segment. \code{x[i]} in segment \code{k}
+is the number of cases observed between times \code{t[k+i-1]}
+and \code{t[k+i]}.
 }
-\item{\code{wlen}}{
+\item{\code{t_seg_len}}{
 An integer vector of length \code{nlevels(frame_ts$.window)}
-giving the length of each fitting window as a number of
-intervals (one less than the number of time points).
+giving the length of each time series segment as a number
+of time points (rather than subintervals).
 }
-\item{\code{dow0}}{
-An integer vector giving the first weekday in each fitting
-window, with values \code{i} in \code{0:6} mapping to the weekday \code{i}
+\item{\code{dow}}{
+An integer vector giving the first weekday in each time series
+segment, with values \code{i} in \code{0:6} mapping to the weekday \code{i}
 days after the reference weekday specified by \code{weekday_ref}.
 }
 \item{\code{Yo}}{
@@ -72,32 +73,32 @@ The offsets matrix in dense format.
 The fixed effects design matrix in sparse or dense format,
 depending on \code{sparse_X}.
 }
-\item{\code{Xs}, \code{Xd}}{
-If \code{sparse_X = TRUE}, then \code{Xs = X} and \code{Xd} is an empty dense
-matrix. Otherwise, \code{Xd = X} and \code{Xs} is an empty sparse matrix.
-}
 \item{\code{Z}}{
 The random effects design matrix in sparse format.
 If there are no random effects, then \code{Z} is an empty matrix.
 }
+\item{\code{Xs}, \code{Xd}}{
+If \code{sparse_X = TRUE}, then \code{Xs = X} and \code{Xd} is an empty dense
+matrix. Otherwise, \code{Xd = X} and \code{Xs} is an empty sparse matrix.
+}
 \item{\code{X_info}, \code{Z_info}}{
 Data frames with \code{ncol(X)} and \code{ncol(Z)} rows, respectively,
-containing factors \code{colname}, \code{par}, \code{term}, and \code{group}.
-Row \code{j} describes the coefficient associated with column \code{j}
-of \code{X} or \code{Z}. \code{Zinfo} has additional factors \code{cor} and \code{vec}
+listing factors \code{colname}, \code{par}, \code{term}, and \code{group}. Row
+\code{j} describes the coefficient associated with column \code{j} of
+\code{X} or \code{Z}. \code{Zinfo} has additional factors \code{cor} and \code{vec}
 splitting coefficients by relation to a common correlation
 matrix and random vector, respectively.
 }
-\item{\code{fncoef}, \code{rncoef}}{
+\item{\code{beta_seg_len}, \code{b_seg_len}}{
 Integer vectors of length \code{p} counting the columns of \code{X} and \code{Z},
 respectively, pertaining to a common nonlinear model parameter.
 }
-\item{\code{fpar}, \code{rpar}}{
+\item{\code{beta_seg_index}, \code{b_seg_index}}{
 Integer vectors of length \code{ncol(X)} and \code{ncol(Z)}, respectively,
 with values in \code{0:(p-1)}. These split the columns of \code{X} and \code{Z}
 by relation to a common nonlinear model parameter.
 }
-\item{\code{rnrow}, \code{rncol}}{
+\item{\code{block_rows}, \code{block_cols}}{
 Integer vectors together giving the dimensions of each block of
 the random effects matrix.
 }

@@ -29,7 +29,7 @@ A subset of \code{"r"}, \code{"alpha"}, \code{"c0"}, \code{"tinfl"}, \code{"K"},
 with or without prefixes depending on \code{link}.
 }
 \description{
-Returns the names used internally for nonlinear model parameters.
+Retrieves the names used internally for nonlinear model parameters.
 }
 \examples{
 a <- list(

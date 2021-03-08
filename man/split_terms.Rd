@@ -32,11 +32,6 @@ Extraneous \code{(} calls, as in the expression
 not replaced when unsplitting. In these cases,
 \code{identical(x, unsplit_terms(split_terms(x)))}
 may return \code{FALSE}.
-
-In contrast to the behaviour of \code{\link[stats:terms]{stats::terms()}},
-zeros (0) and ones (1) are not treated specially,
-and expressions like \code{x * y - y} are not expanded
-and simplified prior to splitting.
 }
 \examples{
 x <- str2lang("1 + a + b * c - c + (d | e) + (0 + f * g | h)")

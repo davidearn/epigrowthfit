@@ -75,7 +75,7 @@ as offsets relative to the indicated day.}
 \item{na_action}{A character string indicating how \code{NA} in incidence
 (\code{y} if \code{formula_ts = y ~ x | ts}) are handled.
 \code{NA} in other \code{formula_ts} variables are an error.
-\code{NA} in \code{formula_glmm} variables \emph{inside fitting windows}
+\code{NA} in \code{formula_glmm} variables \emph{within fitting windows}
 are an error.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects

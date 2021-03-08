@@ -24,17 +24,18 @@ necessary.}
 \value{
 A list with elements:
 \item{\code{beta}}{
-A numeric vector of length \code{sum(tmb_data$fncoef)}
+A numeric vector of length \code{sum(tmb_data$beta_seg_len)}
 listing initial values for the fixed effects coefficients.
 }
 \item{\code{b}}{
-If there are random effects, then a numeric vector of length
-\code{sum(tmb_data$rncoef)} listing initial values for the (unit
-variance) random effects coefficients. Otherwise, \code{NA_real_}.
+If there are random effects, then a numeric vector of
+length \code{sum(tmb_data$b_seg_len)} listing initial values
+for the (unit variance) random effects coefficients.
+Otherwise, \code{NA_real_}.
 }
 \item{\code{log_sd_b}}{
 If there are random effects, then a numeric vector of
-length \code{sum(tmb_data$rnrow)} listing initial values
+length \code{sum(tmb_data$block_rows)} listing initial values
 for the log standard deviations of the random effects
 coefficients. Otherwise, \code{NA_real_}.
 }
