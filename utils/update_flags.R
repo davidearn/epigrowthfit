@@ -1,3 +1,10 @@
+filename_h <- "../src/enum.h"
+filename_r   <- "../R/enum.R"
+lines_h <- readLines(filename_h)
+lines_r   <- readLines(filename_r)
+
+## Function to extract enumerator names from lines
+## of file declaring enumerated type
 get_enum_names <- function(lines, type) {
   start <- sprintf("^enum %s", type)
   i_start <- grep(start, lines)[1L]
@@ -11,21 +18,23 @@ get_enum_names <- function(lines, type) {
   strsplit(text, ",")[[1L]]
 }
 
-fn_h <- "../src/enum.h"
-fn_r   <- "../R/enum.R"
-
-lines_h <- readLines(fn_h)
-lines_r   <- readLines(fn_r)
-
+## Character vectors listing enumerator names
 curve_names <- get_enum_names(lines_h, "curve")
 distr_names <- get_enum_names(lines_h, "distr")
 
-pattern <- "^(  curve_names <- c\\().*(\\) # GREP_FLAG)$"
-replacement <- sprintf("\\1%s\\2", paste(sprintf("\"%s\"", curve_names), collapse = ", "))
-lines_r <- sub(pattern, replacement, lines_r)
+## String giving quote-delimited, comma-separated list
+curve_str <- paste(sprintf("\"%s\"", curve_names), collapse = ", ")
+distr_str <- paste(sprintf("\"%s\"", distr_names), collapse = ", ")
 
-pattern <- "^(  distr_names <- c\\().*(\\) # GREP_FLAG)$"
-replacement <- sprintf("\\1%s\\2", paste(sprintf("\"%s\"", distr_names), collapse = ", "))
-lines_r <- sub(pattern, replacement, lines_r)
-
-writeLines(lines_r, fn_r)
+## Replace argument of c() in matched line with string
+lines_r <- sub(
+  pattern = "^(  curve_names <- c\\().*(\\) # GREP_FLAG)$",
+  replacement = sprintf("\\1%s\\2", curve_str),
+  x = lines_r
+)
+lines_r <- sub(
+  pattern = "^(  distr_names <- c\\().*(\\) # GREP_FLAG)$",
+  replacement = sprintf("\\1%s\\2", distr_str),
+  x = lines_r
+)
+writeLines(lines_r, filename_r)

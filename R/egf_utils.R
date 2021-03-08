@@ -1,6 +1,6 @@
 #' Get nonlinear model parameter names
 #'
-#' Returns the names used internally for nonlinear model parameters.
+#' Retrieves the names used internally for nonlinear model parameters.
 #'
 #' @param curve,excess,distr,weekday
 #'   Character or logical flags specifying an incidence model;
@@ -183,30 +183,34 @@ get_inverse_link <- function(s) {
 #' @inheritParams egf
 #'
 #' @details
-#' `frame_ts` is not constructed by [stats::model.frame()]. Without
-#' loss of generality, if `formula_ts = y ~ x | ts`, then `frame_ts`
-#' has variables `x` (Date), `y` (numeric), `ts` (factor),
-#' and `.window` (factor). It is obtained (roughly) by evaluating the
-#' expressions for `x`, `y`, and `ts` in `data` (with `data` enclosed
-#' by `environment(formula_ts)`), joining the resulting vectors and
-#' `window` in a data frame, discarding rows belonging to time series
-#' without fitting windows, and ordering the remaining rows according
-#' to `order(ts)`.
+#' `frame_ts` is constructed from `formula_ts`, though not using
+#' [stats::model.frame()] machinery. Without loss of generality,
+#' if `formula_ts = y ~ x | ts`, then `frame_ts` has variables
+#' `x` (Date), `y` (numeric), `ts` (factor), and `.window` (factor).
+#' Roughly, it is obtained by evaluating the expressions for `x`,
+#' `y`, and `ts` in `data` (enclosed by `environment(formula_ts)`),
+#' joining the resulting vectors and `window` in a data frame,
+#' discarding rows belonging to time series without fitting windows,
+#' and ordering the remaining rows according to `order(ts)`.
 #'
-#' `frame_glmm` model frames are constructed by [stats::model.frame()].
-#' They each have `nlevels(window) < nrow(frame_ts)` rows, because all
-#' nonlinear model parameters (and by consequence all `formula_glmm`
-#' variables) are required to be constant within fitting windows.
+#' `frame_glmm` model frames are constructed by passing modified
+#' `formula_glmm` formulae to [stats::model.frame()], applying to
+#' the resulting data frames the same subset operations applied to
+#' construct `frame_ts`, then discarding all but the first row of
+#' each fitting window, so that each data frame has `nlevels(window)`
+#' rows. (There is no loss of information here, as all `formula_glmm`
+#' variables are required to be constant within fitting windows.)
 #'
 #' @return
 #' A list with elements:
 #' \item{`frame_ts`}{
-#'   The model frame for time series formula `formula_ts`
-#'   (see Details), storing `terms(formula_ts)` as an attribute.
+#'   The model frame for time series formula `formula_ts`,
+#'   storing `terms(formula_ts)` as an attribute.
 #' }
 #' \item{`frame_glmm`}{
 #'   A list containing the model frame for each mixed effects formula
-#'   in `formula_glmm` (after completion). `frame_glmm[[i]]` stores
+#'   listed in `formula_glmm` (after completion with the default `~1`
+#'   or recycling, depending on the input). `frame_glmm[[i]]` stores
 #'   `terms(formula_glmm[[i]])` as an attribute.
 #' }
 #'
@@ -261,15 +265,15 @@ make_frames <- function(formula_ts, formula_glmm, data, window,
     m = sprintf("`%s` must be non-negative.", cv)
   )
   if (is.double(cases)) {
+    cases[is.infinite(cases)] <- NA
     ## Round to nearest integer, with warning if distance
     ## exceeds tolerance
     is_integer_within_tol <- function(x, tol = sqrt(.Machine$double.eps)) {
       abs(x - round(x)) < tol
     }
-    cases[is.infinite(cases)] <- NA
     warn_if_not(
-      is_integer_within_tol(cases),
-      m = sprintf("Non-integer numeric elements of `%s` rounded.", cv)
+      all(is_integer_within_tol(cases), na.rm = TRUE),
+      m = sprintf("Non-integer numeric elements of `%s`\n rounded to nearest integer.", cv)
     )
     cases <- round(cases)
   }
@@ -664,22 +668,23 @@ make_XZ_info <- function(xl, ml) {
 #' \item{`t`}{
 #'   An integer vector of length `sum(!is.na(frame_ts$.window))`
 #'   giving time as a number of days since the earliest time point
-#'   in the current fitting window.
+#'   in the current segment.
 #' }
 #' \item{`x`}{
 #'   An integer vector of length
 #'   `sum(!is.na(frame_ts$.window))-nlevels(frame_ts$.window)`
-#'   giving incidence in each fitting window. `x[i]` in window `k` is
-#'   the number of cases observed between times `t[k+i-1]` and `t[k+i]`.
+#'   giving incidence in each segment. `x[i]` in segment `k`
+#'   is the number of cases observed between times `t[k+i-1]`
+#'   and `t[k+i]`.
 #' }
-#' \item{`wlen`}{
+#' \item{`t_seg_len`}{
 #'   An integer vector of length `nlevels(frame_ts$.window)`
-#'   giving the length of each fitting window as a number of
-#'   intervals (one less than the number of time points).
+#'   giving the length of each time series segment as a number
+#'   of time points (rather than subintervals).
 #' }
-#' \item{`dow0`}{
-#'   An integer vector giving the first weekday in each fitting
-#'   window, with values `i` in `0:6` mapping to the weekday `i`
+#' \item{`dow`}{
+#'   An integer vector giving the first weekday in each time series
+#'   segment, with values `i` in `0:6` mapping to the weekday `i`
 #'   days after the reference weekday specified by `weekday_ref`.
 #' }
 #' \item{`Yo`}{
@@ -689,32 +694,32 @@ make_XZ_info <- function(xl, ml) {
 #'   The fixed effects design matrix in sparse or dense format,
 #'   depending on `sparse_X`.
 #' }
-#' \item{`Xs`, `Xd`}{
-#'   If `sparse_X = TRUE`, then `Xs = X` and `Xd` is an empty dense
-#'   matrix. Otherwise, `Xd = X` and `Xs` is an empty sparse matrix.
-#' }
 #' \item{`Z`}{
 #'   The random effects design matrix in sparse format.
 #'   If there are no random effects, then `Z` is an empty matrix.
 #' }
+#' \item{`Xs`, `Xd`}{
+#'   If `sparse_X = TRUE`, then `Xs = X` and `Xd` is an empty dense
+#'   matrix. Otherwise, `Xd = X` and `Xs` is an empty sparse matrix.
+#' }
 #' \item{`X_info`, `Z_info`}{
 #'   Data frames with `ncol(X)` and `ncol(Z)` rows, respectively,
-#'   containing factors `colname`, `par`, `term`, and `group`.
-#'   Row `j` describes the coefficient associated with column `j`
-#'   of `X` or `Z`. `Zinfo` has additional factors `cor` and `vec`
+#'   listing factors `colname`, `par`, `term`, and `group`. Row
+#'   `j` describes the coefficient associated with column `j` of
+#'   `X` or `Z`. `Zinfo` has additional factors `cor` and `vec`
 #'   splitting coefficients by relation to a common correlation
 #'   matrix and random vector, respectively.
 #' }
-#' \item{`fncoef`, `rncoef`}{
+#' \item{`beta_seg_len`, `b_seg_len`}{
 #'   Integer vectors of length `p` counting the columns of `X` and `Z`,
 #'   respectively, pertaining to a common nonlinear model parameter.
 #' }
-#' \item{`fpar`, `rpar`}{
+#' \item{`beta_seg_index`, `b_seg_index`}{
 #'   Integer vectors of length `ncol(X)` and `ncol(Z)`, respectively,
 #'   with values in `0:(p-1)`. These split the columns of `X` and `Z`
 #'   by relation to a common nonlinear model parameter.
 #' }
-#' \item{`rnrow`, `rncol`}{
+#' \item{`block_rows`, `block_cols`}{
 #'   Integer vectors together giving the dimensions of each block of
 #'   the random effects matrix.
 #' }
@@ -754,13 +759,12 @@ make_tmb_data <- function(frame_ts, frame_glmm,
   firsts <- which(!duplicated(window))
   x <- frame_ts[[2L]][-firsts]
 
-  ## Fitting window length as a number of intervals
-  ## (one minus number of time points)
-  wlen <- as.integer(table(window)) - 1L
+  ## Fitting window length as a number of time points
+  t_seg_len <- tabulate(window) - 1L
 
   ## First weekday: i in {0,...,6} maps to reference day + i
   d0 <- frame_ts[[1L]][firsts + 1L]
-  dow0 <- as.integer(julian(d0, origin = as.Date("2021-02-28") + weekday_ref) %% 7) # "2021-02-28" was a Saturday
+  dow <- as.integer(julian(d0, origin = as.Date("2021-02-28") + weekday_ref) %% 7) # "2021-02-28" was a Saturday
 
   ## Fixed effects formula and list of random effects terms
   ## extracted from each mixed effects formula
@@ -806,17 +810,17 @@ make_tmb_data <- function(frame_ts, frame_glmm,
   Z_info <- Z_info[ord, , drop = FALSE]
 
   ## Number of coefficients for each nonlinear model parameter
-  fncoef <- as.integer(table(X_info$par))
-  rncoef <- as.integer(table(Z_info$par))
+  beta_seg_len <- as.integer(table(X_info$par))
+  b_seg_len <- as.integer(table(Z_info$par))
 
   ## Coefficients factored by nonlinear model parameter
-  fpar <- as.integer(X_info$par) - 1L
-  rpar <- as.integer(Z_info$par) - 1L
+  beta_seg_index <- as.integer(X_info$par) - 1L
+  b_seg_index <- as.integer(Z_info$par) - 1L
 
   ## Dimensions of random effects blocks whose column vectors
   ## are related by a covariance matrix
-  rnrow <- as.integer(colSums(table(Z_info$par, Z_info$cor) > 0L))
-  rncol <- as.integer(rowSums(table(Z_info$cor, Z_info$vec) > 0L))
+  block_rows <- as.integer(colSums(table(Z_info$par, Z_info$cor) > 0L))
+  block_cols <- as.integer(rowSums(table(Z_info$cor, Z_info$vec) > 0L))
 
   ## Empty design matrices
   empty_dense_matrix <- matrix(integer(0L), nrow(X), 0L)
@@ -830,21 +834,21 @@ make_tmb_data <- function(frame_ts, frame_glmm,
   l1 <- list(
     t = t,
     x = x,
-    wlen = wlen,
-    dow0 = dow0,
+    t_seg_len = t_seg_len,
+    dow = dow,
     Yo = Yo,
     X = X,
+    Z = if (is.null(Z)) empty_sparse_matrix else Z,
     Xs = if (sparse_X) X else empty_sparse_matrix,
     Xd = if (sparse_X) empty_dense_matrix else X,
-    Z = if (is.null(Z)) empty_sparse_matrix else Z,
     X_info = X_info,
     Z_info = Z_info,
-    fpar = fpar,
-    rpar = rpar,
-    fncoef = fncoef,
-    rncoef = rncoef,
-    rnrow = rnrow,
-    rncol = rncol,
+    beta_seg_len = beta_seg_len,
+    b_seg_len = b_seg_len,
+    beta_seg_index = beta_seg_index,
+    b_seg_index = b_seg_index,
+    block_rows = block_rows,
+    block_cols = block_cols,
     curve_flag = get_flag("curve", curve),
     excess_flag = 1L * excess,
     distr_flag = get_flag("distr", distr),
@@ -909,17 +913,18 @@ make_tmb_data <- function(frame_ts, frame_glmm,
 #' @return
 #' A list with elements:
 #' \item{`beta`}{
-#'   A numeric vector of length `sum(tmb_data$fncoef)`
+#'   A numeric vector of length `sum(tmb_data$beta_seg_len)`
 #'   listing initial values for the fixed effects coefficients.
 #' }
 #' \item{`b`}{
-#'   If there are random effects, then a numeric vector of length
-#'   `sum(tmb_data$rncoef)` listing initial values for the (unit
-#'   variance) random effects coefficients. Otherwise, `NA_real_`.
+#'   If there are random effects, then a numeric vector of
+#'   length `sum(tmb_data$b_seg_len)` listing initial values
+#'   for the (unit variance) random effects coefficients.
+#'   Otherwise, `NA_real_`.
 #' }
 #' \item{`log_sd_b`}{
 #'   If there are random effects, then a numeric vector of
-#'   length `sum(tmb_data$rnrow)` listing initial values
+#'   length `sum(tmb_data$block_rows)` listing initial values
 #'   for the log standard deviations of the random effects
 #'   coefficients. Otherwise, `NA_real_`.
 #' }
@@ -930,9 +935,9 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_glmm,
                                 curve, par_init) {
   ## Lengths of parameter objects
   len <- c(
-    beta = sum(tmb_data$fncoef),
-    b = sum(tmb_data$rncoef),
-    log_sd_b = sum(tmb_data$rnrow)
+    beta = sum(tmb_data$beta_seg_len),
+    b = sum(tmb_data$b_seg_len),
+    log_sd_b = sum(tmb_data$block_rows)
   )
 
   ## If user does not specify a full parameter vector
@@ -1144,10 +1149,10 @@ optim_tmb_out <- function(tmb_out, method, ...) {
   }
 }
 
-#' Split up `ADREPORT()`ed variables
+#' Split `ADREPORT()`ed variables
 #'
-#' Extracts reported variables from an `"sdreport"` object and
-#' returns them in a list.
+#' Extracts reported variables from an `"sdreport"` object
+#' and returns them in a list.
 #'
 #' @param sdreport An `"sdreport"` object returned by [TMB::sdreport()].
 #'

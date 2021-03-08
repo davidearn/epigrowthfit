@@ -57,7 +57,7 @@
 #'   A character string indicating how `NA` in incidence
 #'   (`y` if `formula_ts = y ~ x | ts`) are handled.
 #'   `NA` in other `formula_ts` variables are an error.
-#'   `NA` in `formula_glmm` variables _inside fitting windows_
+#'   `NA` in `formula_glmm` variables _within fitting windows_
 #'   are an error.
 #' @param sparse_X
 #'   A logical scalar. If `TRUE`, then the fixed effects
@@ -189,12 +189,12 @@ egf <- function(formula_ts,
       par_init_split <- par_init_split["beta"]
     }
     par_init <- unlist(par_init_split)
-    names(par_init) <- rep.int(names(par_init_split), lengths(par_init_split))
+    names(par_init) <- enum_dupl_str(rep.int(names(par_init_split), lengths(par_init_split)))
     out <- list(
       frame_ts = mf_out$frame_ts,
       frame_glmm = mf_out$frame_glmm,
       tmb_args = tmb_args,
-      par_init = enum_dupl_names(par_init)
+      par_init = par_init
     )
     return(out)
   }

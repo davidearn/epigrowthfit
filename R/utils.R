@@ -106,51 +106,48 @@ stop_if_not_character_string <- function(x, n = 1L) {
   )
 }
 
-#' Enumerate duplicated names
+#' Enumerate duplicated strings
 #'
-#' Replaces the `i`th instance of `s` in `names(x)` with
-#' `sprintf("%s[%d]", s, i)`.
+#' Replaces the `i`th instance of string `s` in character vector `x`
+#' with `sprintf("%s[%d]", s, i)`.
 #'
-#' @param x A named vector.
+#' @param x A character vector.
 #'
 #' @return
-#' `x` with `names(x)` enumerated.
+#' `x` with elements enumerated.
 #'
 #' @examples
-#' n <- 10L
-#' x <- seq_len(n)
-#' names(x) <- sample(letters[1:4], n, replace = TRUE)
-#' enum_dupl_names(x)
+#' x <- sample(letters[1:3], 10L, replace = TRUE)
+#' enum_dupl_str(x)
 #'
 #' @noRd
-enum_dupl_names <- function(x) {
-  stop_if_not(
-    is.vector(x),
-    !is.null(names(x)),
-    m = "`x` must be a named vector."
-  )
-  f <- factor(names(x))
-  l <- Map(function(s, n) sprintf("%s[%d]", s, seq_len(n)),
-           s = levels(f),
-           n = as.integer(table(f))
-  )
-  names(x) <- unsplit(l, f)
-  x
+enum_dupl_str <- function(x) {
+  f <- factor(x)
+  n <- tabulate(f)
+  i <- unsplit(lapply(n, seq_len), f)
+  sprintf("%s[%d]", x, i)
 }
 
-is_constant_within_tol <- function(x, tol = sqrt(.Machine$double.eps), na.rm = FALSE) {
+
+
+#' Test whether a vector is "constant"
+#'
+#'
+#'
+is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
+  if (is.data.frame(x)) {
+    return(all(vapply(x, is_constant, FALSE, na.rm, tol)))
+  }
   if (length(x) == 0L || (na.rm && all(is.na(x)))) {
     return(TRUE)
   }
-  abs(max(x, na.rm = na.rm) - min(x, na.rm = na.rm)) < tol
-}
-
-is_constant <- function(x) {
-  if (is.data.frame(x)) {
-    return(all(vapply(x, is_constant, FALSE)))
+  if (is.numeric(x)) {
+    yes <- abs(max(x, na.rm = TRUE) - min(x, na.rm = TRUE)) < tol
+  } else {
+    yes <- length(unique(x[!is.na(x)])) == 1L
   }
-  if (typeof(x) == "double") {
-    return(is_constant_within_tol(x))
+  if (yes && anyNA(x) && !na.rm) {
+    return(NA)
   }
-  length(unique(x)) < 2L
+  yes
 }

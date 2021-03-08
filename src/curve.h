@@ -47,7 +47,7 @@ Type eval_log_richards(Type t, Type log_r, Type log_tinfl, Type log_K, Type log_
 
 template<class Type>
 vector<Type> eval_log_curve(vector<Type> t,
-			    vector<int> slen,
+			    vector<int> t_seg_len,
 			    int curve_flag,
 			    bool excess,
 			    matrix<Type> Y,
@@ -61,9 +61,9 @@ vector<Type> eval_log_curve(vector<Type> t,
 			    int j_log_b)
 {
     vector<Type> log_curve(t.size());
-    for (int s = 0, i = 0; s < slen.size(); s++) // loop over segments
+    for (int s = 0, i = 0; s < t_seg_len.size(); s++) // loop over segments
     {
-        for (int k = 0; k < slen(s); k++) // loop over within-segment index
+        for (int k = 0; k < t_seg_len(s); k++) // loop over within-segment index
 	{
 	    switch (curve_flag)
 	    {
@@ -88,14 +88,14 @@ vector<Type> eval_log_curve(vector<Type> t,
 	        log_curve(i+k) = logspace_add(Y(s, j_log_b) + log(t(i+k)), log_curve(i+k));
 	    }
 	}
-	i += slen(s); // increment reference index
+	i += t_seg_len(s); // increment reference index
     }
     return log_curve;
 }
 
 template<class Type>
 vector<Type> eval_log_cases(vector<Type> log_curve,
-			    vector<int> slen,
+			    vector<int> t_seg_len,
 			    bool weekday,
 			    // for weekday=true:
 			    vector<int> dow,
@@ -107,7 +107,7 @@ vector<Type> eval_log_cases(vector<Type> log_curve,
 			    int j_log_w5,
 			    int j_log_w6)
 {
-    vector<Type> log_cases = logspace_diff_n(log_curve, slen);
+    vector<Type> log_cases = logspace_diff_n(log_curve, t_seg_len);
 
     if (weekday)
     {
@@ -115,17 +115,17 @@ vector<Type> eval_log_cases(vector<Type> log_curve,
         //     on R back-end to enforce this when weekday=true.
 
 	vector<Type> log_w(7);
-	for (int s = 0, i = 0; s < slen.size(); s++) // loop over segments
+	for (int s = 0, i = 0; s < t_seg_len.size(); s++) // loop over segments
 	{
 	    log_w << Type(0),
 		     Y(s, j_log_w1), Y(s, j_log_w2), Y(s, j_log_w3),
 		     Y(s, j_log_w4), Y(s, j_log_w5), Y(s, j_log_w6);
 
-	    for (int k = 0, d = dow(s); k < slen(s) - 1; k++, d++) // loop over within-segment index
+	    for (int k = 0, d = dow(s); k < t_seg_len(s) - 1; k++, d++) // loop over within-segment index
 	    {
 		log_cases(i+k) += log_w(d % 7);
 	    }
-	    i += slen(s) - 1; // increment reference index
+	    i += t_seg_len(s) - 1; // increment reference index
 	}
     }
     return log_cases;
@@ -135,7 +135,7 @@ template<class Type>
 vector<Type> eval_log_rt(vector<Type> t,
 			 vector<Type> log_curve,
 			 vector<Type> log_cases,
-			 vector<int> slen,
+			 vector<int> t_seg_len,
 			 int curve_flag,
 			 bool excess,
 			 bool weekday,
@@ -157,27 +157,29 @@ vector<Type> eval_log_rt(vector<Type> t,
 	{
 	    x(i) = Type(i - 3);
 	}
-	
-        vector<Type> log_rt(t.size() - 7 * slen.size());
-	for (int s = 0, i1 = 0, i2 = 0; s < slen.size(); s++) // loop over segments
+
+	// In each segment, we lose 1 element due to differencing
+	// and 6 elements due to insufficient data at edges
+        vector<Type> log_rt(t.size() - 7 * t_seg_len.size());
+	for (int s = 0, i1 = 0, i2 = 0; s < t_seg_len.size(); s++) // loop over segments
 	{
-	    for (int k = 0; k < slen(s) - 7; k++) // loop over within-segment index
+	    for (int k = 0; k < t_seg_len(s) - 7; k++) // loop over within-segment index
 	    {
 	        y = log_cases.segment(i2+k, 7);
 		ybar.fill(y.sum() / Type(7));
 		log_rt(i1+k) = log((x * (y - ybar)).sum()) - log(Type(28));
 	    }
-	    i1 += slen(s) - 7;
-	    i2 += slen(s) - 1;
+	    i1 += t_seg_len(s) - 7;
+	    i2 += t_seg_len(s) - 1;
 	}
 	return log_rt;
     }
 
     vector<Type> log_rt(t.size());
     Type one_minus_p;
-    for (int s = 0, i = 0; s < slen.size(); s++)
+    for (int s = 0, i = 0; s < t_seg_len.size(); s++)
     {
-	for (int k = 0; k < slen(s); k++)
+	for (int k = 0; k < t_seg_len(s); k++)
 	{
 	    if (excess)
 	    {

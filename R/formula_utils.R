@@ -41,11 +41,6 @@ do_minus <- function(x) {
 #' `identical(x, unsplit_terms(split_terms(x)))`
 #' may return `FALSE`.
 #'
-#' In contrast to the behaviour of [stats::terms()],
-#' zeros (0) and ones (1) are not treated specially,
-#' and expressions like `x * y - y` are not expanded
-#' and simplified prior to splitting.
-#'
 #' @return
 #' A list of calls, names, and atomic scalars.
 #'
@@ -198,9 +193,9 @@ expand_terms <- function(x) {
 
 #' Replace ```|``` with ```+``` in formula terms
 #'
-#' Replaces the ```|``` operator in formulae and formula terms
-#' with the ```+``` operator, enabling construction of model frames
-#' from mixed effects formulae using [stats::model.frame()].
+#' Replaces the ```|``` operator in formulae and formula terms with
+#' the ```+``` operator, enabling construction of model frames from
+#' mixed effects formulae using [stats::model.frame()].
 #'
 #' @param x A call, name, or atomic scalar.
 #'
@@ -229,17 +224,55 @@ gsub_bar_plus <- function(x) {
   unsplit_terms(tl)
 }
 
+#' Split fixed and random effects terms
+#'
+#' Retrieve from a mixed effects formula the corresponding
+#' fixed effects formula and a list of all random effects terms.
+#'
+#' @param x A formula.
+#'
+#' @return
+#' A list with elements:
+#' \item{`fixed`}{
+#'   A fixed effects formula.
+#' }
+#' \item{`random`}{
+#'   A list of random effects terms (calls to the ```|``` operator).
+#' }
+#'
+#' @examples
+#' split_effects(y ~ 0 + x + (1 | f) + (a | g))
+#'
+#' @export
 #' @importFrom stats as.formula
 split_effects <- function(x) {
+  stop_if_not(
+    inherits(x, "formula"),
+    m = "`x` must be a formula."
+  )
   tl <- split_terms(x)
   tl_is_bar <- vapply(tl, is_bar, FALSE)
-  fixed_rhs <- if (all(tl_is_bar)) 1 else unsplit_terms(tl[!tl_is_bar])
-  list(
-    fixed = as.formula(call("~", fixed_rhs), env = environment(x)),
-    random = tl[tl_is_bar]
-  )
+  x[[length(x)]] <- if (all(tl_is_bar)) 1 else unsplit_terms(tl[!tl_is_bar])
+  list(fixed = x, random = tl[tl_is_bar])
 }
 
+#' Split an interaction term
+#'
+#' From an interaction term, recursively construct a list
+#' of the interacted variables.
+#'
+#' @param x A call, name, or atomic scalar.
+#'
+#' @return
+#' If `x` is a (possibly nested) call to the ```:``` operator, then
+#' a list of the arguments to ```:``` that are not themselves calls
+#' to ```:```. Otherwise, `list(x)`.
+#'
+#' @examples
+#' x <- str2lang("f:g:I(a:b):log(x)")
+#' split_interaction(x)
+#'
+#' @noRd
 split_interaction <- function(x) {
   if (is.call(x) && x[[1L]] == as.name(":")) {
     return(do.call(c, lapply(x[-1L], split_interaction)))

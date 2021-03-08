@@ -26,25 +26,25 @@ Type objective_function<Type>::operator() ()
     DATA_VECTOR(t); // length=n
     DATA_VECTOR(x); // length=n-N
     // model matrices
-    DATA_MATRIX(Xd);        // nrow=N,  ncol=sum(fncoef) or 0 if sparse_X=true
-    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(fncoef) or 0 if sparse_X=false
-    DATA_SPARSE_MATRIX(Z);  // nrow=N,  ncol=sum(rncoef)
+    DATA_MATRIX(Xd);        // nrow=N,  ncol=sum(beta_seg_len) or 0 if sparse_X=true
+    DATA_SPARSE_MATRIX(Xs); // nrow=N,  ncol=sum(beta_seg_len) or 0 if sparse_X=false
+    DATA_SPARSE_MATRIX(Z);  // nrow=N,  ncol=sum(b_seg_len)
     DATA_MATRIX(Yo);        // nrow=N,  ncol=p
 
     // Metadata
-    // segment lengths
-    DATA_IVECTOR(slen); // length=N
+    // time series segment lengths
+    DATA_IVECTOR(t_seg_len); // length=N
     // earliest day-of-week
     DATA_IVECTOR(dow); // length=N or 0 if weekday=false,  val={0,...,6}  (0=reference)
-    // number of coefficients
-    DATA_IVECTOR(fncoef); // length=p
-    DATA_IVECTOR(rncoef); // length=p
-    // coefficients factored by response vector
-    DATA_IVECTOR(fpar); // length=sum(fncoef),  val={0,...,p-1}
-    DATA_IVECTOR(rpar); // length=sum(rncoef),  val={0,...,p-1}
+    // number of coefficients used to compute each response vector
+    DATA_IVECTOR(beta_seg_len); // length=p
+    DATA_IVECTOR(b_seg_len); // length=p
+    // index of response vector corresponding to each coefficient
+    DATA_IVECTOR(beta_seg_index); // length=sum(beta_seg_len),  val={0,...,p-1}
+    DATA_IVECTOR(b_seg_index); // length=sum(b_seg_len),  val={0,...,p-1}
     // dimensions of random effects blocks
-    DATA_IVECTOR(rnrow); // length=M,  val={1,...,p}
-    DATA_IVECTOR(rncol); // length=M
+    DATA_IVECTOR(block_rows); // length=M,  val={1,...,p}
+    DATA_IVECTOR(block_cols); // length=M
     // parameter indices
     DATA_INTEGER(j_log_r);
     DATA_INTEGER(j_log_alpha);
@@ -62,18 +62,18 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(j_log_w5);
     DATA_INTEGER(j_log_w6);
     // misc.
-    int M = rnrow.size(); // number of random effects blocks
-    int N = slen.size(); // number of segments (fitting windows)
-    int p = Yo.cols(); // number of response vectors (nonlinear model parameters)
-    bool anyRE = (rncoef.sum() > 0);
+    int M = block_rows.size(); // number of random effects blocks
+    int N = t_seg_len.size(); // number of time series segments
+    int p = Yo.cols(); // number of response vectors
+    bool anyRE = (b_seg_len.sum() > 0);
     
     // Parameters
     // fixed effects coefficients
-    PARAMETER_VECTOR(beta); // length=sum(fncoef)
+    PARAMETER_VECTOR(beta); // length=sum(beta_seg_len)
     // random effects coefficients (unit variance)
-    PARAMETER_VECTOR(b); // length=sum(rncoef)
+    PARAMETER_VECTOR(b); // length=sum(b_seg_len)
     // log sd random effects coefficients
-    PARAMETER_VECTOR(log_sd_b); // length=sum(rnrow)
+    PARAMETER_VECTOR(log_sd_b); // length=sum(block_rows)
     
     
     // Compute nonlinear model parameter values ================================
@@ -86,14 +86,14 @@ Type objective_function<Type>::operator() ()
 
     // 2.(a) Construct block matrix `beta_as_matrix` from vector `beta`
     Eigen::SparseMatrix<Type> beta_as_matrix(beta.size(), p);
-    beta_as_matrix.reserve(fncoef); // declare nnz
+    beta_as_matrix.reserve(beta_seg_len); // declare nnz
     for (int i = 0; i < beta.size(); i++) // loop over `beta` elements
     {
-        beta_as_matrix.insert(i, fpar(i)) = beta(i);
+        beta_as_matrix.insert(i, beta_seg_index(i)) = beta(i);
     }
 
     // 2.(b) Matrix multiply  X * beta_as_matrix
-    //                          = (N x sum(fncoef)) * (sum(fncoef) x p)
+    //                          = (N x sum(beta_seg_len)) * (sum(beta_seg_len) x p)
     //                          = (N x p)
     if (sparse_X)
     {
@@ -143,27 +143,27 @@ Type objective_function<Type>::operator() ()
         for (int m = 0, i1 = 0, i2 = 0; m < M; m++) // loop over list elements
 	{
 	    // Form random effects block 
-	    matrix<Type> block(rnrow(m), rncol(m));
-	    for (int j = 0; j < rncol(m); j++) // loop over block columns
+	    matrix<Type> block(block_rows(m), block_cols(m));
+	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
 	    {
-		block.col(j) = b.segment(i1, rnrow(m));
-		i1 += rnrow(m); // increment `b` index
+		block.col(j) = b.segment(i1, block_rows(m));
+		i1 += block_rows(m); // increment `b` index
 	    }
 	    block_list(m) = block;
 
 	    // Form s.d. vector
-	    sd_list(m) = exp(log_sd_b.segment(i2, rnrow(m)));
-	    i2 += rnrow(m); // increment `log_sd_b` index
+	    sd_list(m) = exp(log_sd_b.segment(i2, block_rows(m)));
+	    i2 += block_rows(m); // increment `log_sd_b` index
 
 	    // Form correlation matrix
 	    // NB: UNSTRUCTURED_CORR() does not tolerate `ltri.size() == 0`
-	    if (rnrow(m) == 1)
+	    if (block_rows(m) == 1)
 	    {
 		cor_list(m) = cor1d;
 	    }
 	    else
 	    {
-	        vector<Type> ltri(rnrow(m) * (rnrow(m) - 1) / 2);
+	        vector<Type> ltri(block_rows(m) * (block_rows(m) - 1) / 2);
 		cor_list(m) = density::UNSTRUCTURED_CORR(ltri).cov();
 	    }
 	}
@@ -175,12 +175,12 @@ Type objective_function<Type>::operator() ()
 	//       by corresponding standard deviations
 	for (int m = 0, i = 0; m < M; m++) // loop over blocks
 	{
-	    vector<Type> v(rnrow(m));
-	    for (int j = 0; j < rncol(m); j++) // loop over block columns
+	    vector<Type> v(block_rows(m));
+	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
 	    {
 	        v = block_list(m).col(j);
-	        b_scaled.segment(i, rnrow(m)) = sd_list(m) * v;
-		i += rnrow(m); // increment reference index
+	        b_scaled.segment(i, block_rows(m)) = sd_list(m) * v;
+		i += block_rows(m); // increment reference index
 	    }
 	}
 
@@ -188,11 +188,11 @@ Type objective_function<Type>::operator() ()
 	b_scaled_as_matrix.fill(Type(0));
         for (int i = 0; i < b.size(); i++)
 	{
-	    b_scaled_as_matrix(i, rpar(i)) = b_scaled(i);
+	    b_scaled_as_matrix(i, b_seg_index(i)) = b_scaled(i);
 	}
 
 	// 4.(d) Matrix multiply  Z * b_scaled_as_matrix
-	//                          = (N x sum(rncoef)) * (sum(rncoef) x p)
+	//                          = (N x sum(b_seg_len)) * (sum(b_seg_len) x p)
 	//                          = (N x p) 
 	Y += Z * b_scaled_as_matrix;
     }
@@ -203,13 +203,13 @@ Type objective_function<Type>::operator() ()
     // Compute likelihood ======================================================
 
     // Log curve
-    vector<Type> log_curve = eval_log_curve(t, slen, curve_flag, excess, Y,
+    vector<Type> log_curve = eval_log_curve(t, t_seg_len, curve_flag, excess, Y,
 					    j_log_r, j_log_alpha, j_log_c0,
 					    j_log_tinfl, j_log_K,
 					    j_logit_p, j_log_a, j_log_b);
 
     // Log cases
-    vector<Type> log_cases = eval_log_cases(log_curve, slen, weekday, dow, Y,
+    vector<Type> log_cases = eval_log_cases(log_curve, t_seg_len, weekday, dow, Y,
 					    j_log_w1, j_log_w2, j_log_w3,
 					    j_log_w4, j_log_w5, j_log_w6);
 
@@ -219,7 +219,7 @@ Type objective_function<Type>::operator() ()
 
     for (int s = 0, i = 0; s < N; s++) // loop over segments
     {
-        for (int k = 0; k < slen(s) - 1; k++) // loop over within-segment index
+        for (int k = 0; k < t_seg_len(s) - 1; k++) // loop over within-segment index
 	{
 	    if (!is_NA_real_(x(i+k)))
 	    {
@@ -237,13 +237,13 @@ Type objective_function<Type>::operator() ()
 		}
 	    }
 	}
-	i += slen(s) - 1; // increment reference index
+	i += t_seg_len(s) - 1; // increment reference index
     }
     if (anyRE)
     {
     	for (int m = 0; m < M; m++) // loop over blocks
     	{
-	    for (int j = 0; j < rncol(m); j++) // loop over block columns
+	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
     	    {
     	        nll += density::MVNORM(cor_list(m))(block_list(m).col(j));
     	    }
@@ -260,35 +260,35 @@ Type objective_function<Type>::operator() ()
 	    vector<Type> b_simulate_scaled(b.size());
 	    for (int m = 0, i = 0; m < M; m++) // loop over blocks
 	    {
-	        for (int j = 0; j < rncol(m); j++) // loop over block columns
+	        for (int j = 0; j < block_cols(m); j++) // loop over block columns
 		{
-		    b_simulate_scaled.segment(i, rnrow(m)) = sd_list(m) * density::MVNORM(cor_list(m)).simulate();
-		    i += rnrow(m); // increment reference index
+		    b_simulate_scaled.segment(i, block_rows(m)) = sd_list(m) * density::MVNORM(cor_list(m)).simulate();
+		    i += block_rows(m); // increment reference index
 		}
 	    }
 	    matrix<Type> b_simulate_scaled_as_matrix(b.size(), p);
 	    b_simulate_scaled_as_matrix.fill(Type(0));
 	    for (int i = 0; i < b.size(); i++)
 	    {
-		b_simulate_scaled_as_matrix(i, rpar(i)) = b_simulate_scaled(i);
+		b_simulate_scaled_as_matrix(i, b_seg_index(i)) = b_simulate_scaled(i);
 	    }
 	    Y_simulate += Z * b_simulate_scaled_as_matrix;
 	}
         // vector<Type> Y_simulate_as_vector = Y_simulate.vec();
 	// ADREPORT(Y_simulate_as_vector);
 
-        log_curve = eval_log_curve(t, slen, curve_flag, excess, Y_simulate,
+        log_curve = eval_log_curve(t, t_seg_len, curve_flag, excess, Y_simulate,
 				   j_log_r, j_log_alpha, j_log_c0,
 				   j_log_tinfl, j_log_K,
 				   j_logit_p, j_log_a, j_log_b);
 	
-        log_cases = eval_log_cases(log_curve, slen, weekday, dow, Y_simulate,
+        log_cases = eval_log_cases(log_curve, t_seg_len, weekday, dow, Y_simulate,
 				   j_log_w1, j_log_w2, j_log_w3,
 				   j_log_w4, j_log_w5, j_log_w6);
 
 	for (int s = 0, i = 0; s < N; s++) // loop over segments
 	{
-	    for (int k = 0; k < slen(s) - 1; k++) // loop over within-segment index
+	    for (int k = 0; k < t_seg_len(s) - 1; k++) // loop over within-segment index
 	    {
 	        switch(distr_flag)
 		{
@@ -302,7 +302,7 @@ Type objective_function<Type>::operator() ()
 		    break;
 		}
 	    }
-	    i += slen(s) - 1; // increment reference index
+	    i += t_seg_len(s) - 1; // increment reference index
 	}
 	REPORT(x);
     }
@@ -325,18 +325,18 @@ Type objective_function<Type>::operator() ()
         DATA_VECTOR(t_predict); // length=n'
 	// model matrices
 	// (subsets of rows of original model matrices)
-	DATA_MATRIX(Xd_predict);        // nrow=N',  ncol=sum(fncoef) or 0 if sparse_X=true
-	DATA_SPARSE_MATRIX(Xs_predict); // nrow=N',  ncol=sum(fncoef) or 0 if sparse_X=false
-	DATA_SPARSE_MATRIX(Z_predict);  // nrow=N',  ncol=sum(rncoef)
+	DATA_MATRIX(Xd_predict);        // nrow=N',  ncol=sum(beta_seg_len) or 0 if sparse_X=true
+	DATA_SPARSE_MATRIX(Xs_predict); // nrow=N',  ncol=sum(beta_seg_len) or 0 if sparse_X=false
+	DATA_SPARSE_MATRIX(Z_predict);  // nrow=N',  ncol=sum(b_seg_len)
 	DATA_MATRIX(Yo_predict);        // nrow=N',  ncol=p
 
 	// Metadata
-	// segment lengths
-	DATA_IVECTOR(slen_predict); // length=N'
+	// time series segment lengths
+	DATA_IVECTOR(t_predict_seg_len); // length=N'
 	// earliest day-of-week
         DATA_IVECTOR(dow_predict); // length=N' or 0 if weekday=false,  val={0,...,6}  (0=reference)
 	// misc.
-	int N_predict = slen_predict.size();
+	int N_predict = t_predict_seg_len.size();
 
 	// (N' x p) matrix of nonlinear model parameter values (link scale)
 	matrix<Type> Y_predict = Yo_predict;
@@ -355,14 +355,14 @@ Type objective_function<Type>::operator() ()
 
 	// Log curve
         vector<Type> log_curve_predict =
-	    eval_log_curve(t_predict, slen_predict, curve_flag, excess, Y_predict, 
+	    eval_log_curve(t_predict, t_predict_seg_len, curve_flag, excess, Y_predict, 
 			   j_log_r, j_log_alpha, j_log_c0,
 			   j_log_tinfl, j_log_K,
 			   j_logit_p, j_log_a, j_log_b);
 
         // Log cases
 	vector<Type> log_cases_predict =
-	    eval_log_cases(log_curve_predict, slen_predict, weekday, dow_predict, Y_predict,
+	    eval_log_cases(log_curve_predict, t_predict_seg_len, weekday, dow_predict, Y_predict,
 			   j_log_w1, j_log_w2, j_log_w3,
 			   j_log_w4, j_log_w5, j_log_w6);
 
@@ -388,9 +388,9 @@ Type objective_function<Type>::operator() ()
 	    vector<Type> log_cum_inc(log_cases.size());
 	    for (int s = 0, i = 0; s < N_predict; s++) // loop over segments
 	    {
-	        vector<Type> log_cases_predict_segment = log_cases_predict.segment(i, slen_predict(s) - 1);
-		log_cum_inc.segment(i, slen_predict(s) - 1) = logspace_cumsum_1(log_cases_predict_segment);
-		i += slen_predict(s) - 1; // increment reference index
+	        vector<Type> log_cases_predict_segment = log_cases_predict.segment(i, t_predict_seg_len(s) - 1);
+		log_cum_inc.segment(i, t_predict_seg_len(s) - 1) = logspace_cumsum_1(log_cases_predict_segment);
+		i += t_predict_seg_len(s) - 1; // increment reference index
 	    }
 	    
 	    if (report_se)
@@ -406,9 +406,9 @@ Type objective_function<Type>::operator() ()
 	if (predict_lrt)
 	{
 	    // Log per capita growth rate
-	    // (approximated by local linear regression if weekend=true)
+	    // (approximated by local linear regression if weekday=true)
 	    vector<Type> log_rt =
-	        eval_log_rt(t_predict, log_curve_predict, log_cases_predict, slen_predict,
+	        eval_log_rt(t_predict, log_curve_predict, log_cases_predict, t_predict_seg_len,
 			    curve_flag, excess, weekday, Y_predict,
 			    j_log_r, j_log_alpha, j_log_K, j_logit_p, j_log_a, j_log_b);
 	    
