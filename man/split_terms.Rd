@@ -34,10 +34,11 @@ not replaced when unsplitting. In these cases,
 may return \code{FALSE}.
 }
 \examples{
-x <- str2lang("1 + a + b * c - c + (d | e) + (0 + f * g | h)")
-l <- split_terms(x)
-y <- unsplit_terms(l)
-identical(x, y)
-# [1] FALSE
+# x <- str2lang("1 + a + b * c - c + (d | e) + (0 + f * g | h)")
+# l <- split_terms(x)
+# y <- unsplit_terms(l)
+# identical(x, y)
+# # [1] FALSE
 
 }
+\keyword{internal}

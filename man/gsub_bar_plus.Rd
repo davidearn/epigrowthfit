@@ -18,6 +18,7 @@ the \code{+} operator, enabling construction of model frames from
 mixed effects formulae using \code{\link[stats:model.frame]{stats::model.frame()}}.
 }
 \examples{
-gsub_bar_plus(~x + (1 | f))
+# gsub_bar_plus(~x + (1 | f))
 
 }
+\keyword{internal}

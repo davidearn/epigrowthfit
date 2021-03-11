@@ -8,12 +8,12 @@
 #' A call, name, or atomic scalar.
 #'
 #' @examples
-#' x <- as.name(x)
-#' minus_x <- call("-", x)
-#' do_minus(x)
-#' do_minus(minus_x)
+#' # x <- as.name("x")
+#' # minus_x <- call("-", x)
+#' # do_minus(x)
+#' # do_minus(minus_x)
 #'
-#' @noRd
+#' @keywords internal
 do_minus <- function(x) {
   if (is.call(x) && x[[1L]] == as.name("-") && length(x) == 2L) {
     return(x[[2L]])
@@ -45,17 +45,17 @@ do_minus <- function(x) {
 #' A list of calls, names, and atomic scalars.
 #'
 #' @examples
-#' x <- str2lang("1 + a + b * c - c + (d | e) + (0 + f * g | h)")
-#' l <- split_terms(x)
-#' y <- unsplit_terms(l)
-#' identical(x, y)
-#' # [1] FALSE
+#' # x <- str2lang("1 + a + b * c - c + (d | e) + (0 + f * g | h)")
+#' # l <- split_terms(x)
+#' # y <- unsplit_terms(l)
+#' # identical(x, y)
+#' # # [1] FALSE
 #'
 #' @name split_terms
+#' @keywords internal
 NULL
 
 #' @rdname split_terms
-#' @export
 split_terms <- function(x) {
   if (inherits(x, "formula")) {
     x <- x[[length(x)]]
@@ -86,7 +86,6 @@ split_terms <- function(x) {
 }
 
 #' @rdname split_terms
-#' @export
 unsplit_terms <- function(l) {
   stop_if_not(
     inherits(l, "list"),
@@ -119,12 +118,12 @@ unsplit_terms <- function(l) {
 #' `TRUE` or `FALSE`.
 #'
 #' @examples
-#' x <- call("|", as.name("f"), as.name("g"))
-#' x_plus_x <- call("+", x, x)
-#' is_bar(x)
-#' is_bar(x_plus_x)
+#' # x <- call("|", as.name("f"), as.name("g"))
+#' # x_plus_x <- call("+", x, x)
+#' # is_bar(x)
+#' # is_bar(x_plus_x)
 #'
-#' @noRd
+#' @keywords internal
 is_bar <- function(x) {
   is.call(x) && x[[1L]] == as.name("|")
 }
@@ -203,9 +202,9 @@ expand_terms <- function(x) {
 #' A call, name, or atomic scalar.
 #'
 #' @examples
-#' gsub_bar_plus(~x + (1 | f))
+#' # gsub_bar_plus(~x + (1 | f))
 #'
-#' @export
+#' @keywords internal
 gsub_bar_plus <- function(x) {
   if (inherits(x, "formula")) {
     x[-1L] <- lapply(x[-1L], gsub_bar_plus)
@@ -269,10 +268,10 @@ split_effects <- function(x) {
 #' to ```:```. Otherwise, `list(x)`.
 #'
 #' @examples
-#' x <- str2lang("f:g:I(a:b):log(x)")
-#' split_interaction(x)
+#' # x <- str2lang("f:g:I(a:b):log(x)")
+#' # split_interaction(x)
 #'
-#' @noRd
+#' @keywords internal
 split_interaction <- function(x) {
   if (is.call(x) && x[[1L]] == as.name(":")) {
     return(do.call(c, lapply(x[-1L], split_interaction)))

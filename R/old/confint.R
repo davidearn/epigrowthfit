@@ -81,8 +81,10 @@
 #' @export
 #' @importFrom stats qchisq confint profile
 #' @import parallel
-confint.egf <- function(object, parm = get_par_names(object),
-                        level = 0.95, link = TRUE,
+confint.egf <- function(object,
+                        parm = get_par_names(object, link = TRUE),
+                        level = 0.95,
+                        link = TRUE,
                         method = c("wald", "profile", "uniroot"),
                         grid_len = 12, max_width = 7,
                         trace = TRUE,

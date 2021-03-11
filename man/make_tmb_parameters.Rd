@@ -30,7 +30,7 @@ listing initial values for the fixed effects coefficients.
 \item{\code{b}}{
 If there are random effects, then a numeric vector of
 length \code{sum(tmb_data$b_seg_len)} listing initial values
-for the (unit variance) random effects coefficients.
+for the (unit variance scale) random effects coefficients.
 Otherwise, \code{NA_real_}.
 }
 \item{\code{log_sd_b}}{

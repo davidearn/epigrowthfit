@@ -70,7 +70,7 @@ Type objective_function<Type>::operator() ()
     // Parameters
     // fixed effects coefficients
     PARAMETER_VECTOR(beta); // length=sum(beta_seg_len)
-    // random effects coefficients (unit variance)
+    // random effects coefficients (unit variance scale)
     PARAMETER_VECTOR(b); // length=sum(b_seg_len)
     // log sd random effects coefficients
     PARAMETER_VECTOR(log_sd_b); // length=sum(block_rows)
@@ -171,7 +171,7 @@ Type objective_function<Type>::operator() ()
 	REPORT(sd_list);
 	REPORT(cor_list);
 
-	// 4.(b) Scale random effects coefficients (unit variance)
+	// 4.(b) Scale random effects coefficients (unit variance scale)
 	//       by corresponding standard deviations
 	for (int m = 0, i = 0; m < M; m++) // loop over blocks
 	{

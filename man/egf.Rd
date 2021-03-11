@@ -50,7 +50,9 @@ looking in formula environments.}
 
 \item{window}{A factor of length \code{nrow(data)} such that \code{split(data, window)}
 splits \code{data} by fitting window, with \code{is.na(window)} indexing
-rows of \code{data} not belonging to a fitting window.}
+rows of \code{data} not belonging to a fitting window. (Such a factor
+can be constructed from a list of fitting window endpoints using
+\code{\link[=make_window]{make_window()}}.)}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 

@@ -45,7 +45,9 @@ looking in formula environments.}
 
 \item{window}{A factor of length \code{nrow(data)} such that \code{split(data, window)}
 splits \code{data} by fitting window, with \code{is.na(window)} indexing
-rows of \code{data} not belonging to a fitting window.}
+rows of \code{data} not belonging to a fitting window. (Such a factor
+can be constructed from a list of fitting window endpoints using
+\code{\link[=make_window]{make_window()}}.)}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
@@ -102,8 +104,8 @@ and ordering the remaining rows according to \code{order(ts)}.
 
 \code{frame_glmm} model frames are constructed by passing modified
 \code{formula_glmm} formulae to \code{\link[stats:model.frame]{stats::model.frame()}}, applying to
-the resulting data frames the same subset operations applied to
-construct \code{frame_ts}, then discarding all but the first row of
+the resulting data frames the same subset operations performed
+to construct \code{frame_ts}, then discarding all but the first row of
 each fitting window, so that each data frame has \code{nlevels(window)}
 rows. (There is no loss of information here, as all \code{formula_glmm}
 variables are required to be constant within fitting windows.)
