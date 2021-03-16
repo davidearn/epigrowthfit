@@ -40,6 +40,7 @@
 #'   (For `parm = "R0"`.) Arguments to `compute_R0()`.
 #' @inheritParams check_parallel
 #' @inheritParams fitted.egf
+#' @inheritParams profile.egf
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -148,7 +149,7 @@ confint.egf <- function(object,
   par[par %in% spec] <- "log_r"
   par <- unique(par)
 
-  frame <- do.call(cbind, object$frame_par)
+  frame <- do.call(cbind, unname(object$frame_par))
   frame <- frame[unique(names(frame))]
 
   subset <- subset_to_index(substitute(subset), frame, parent.frame(),
@@ -180,21 +181,23 @@ confint.egf <- function(object,
       elu
     }
     elul <- lapply(match(par, pn), get_elu)
-    if (!link) {
+    if (link) {
+      f <- identity
+    } else {
       elul <- Map(function(m, s) get_inverse_link(s)(m),
         m = elul,
         s = get_link_string(par)
       )
+      f <- remove_link_string
     }
 
-    f <- if (link) identity else remove_link_string
     out <- data.frame(
       par = rep(factor(f(par), levels = f(pn)), each = w),
       ts = ts[k][subset],
       window = window[k][subset],
       do.call(rbind, elul), # "estimate" "lower" "upper"
       frame[subset, append, drop = FALSE],
-      row.names = FALSE,
+      row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
@@ -237,7 +240,7 @@ confint.egf <- function(object,
         sd.range = max_width,
         trace = FALSE
       )
-      i_of_m <- function(i, m = m) {
+      i_of_m <- function(i) {
         sprintf("%*d of %d", nchar(m), i, m)
       }
 
@@ -311,9 +314,10 @@ confint.egf <- function(object,
   k_elu <- match(s_elu, names(out))
   pl_bak <- levels(out$par)
   if (any(par_bak %in% spec)) {
-    f <- if (link) exp else identity
     s <- if (link) "log_r" else "r"
-    d_r <- f(out[out$par == s, , drop = FALSE])
+    f <- if (link) exp else identity
+    d_r <- out[out$par == s, , drop = FALSE]
+    d_r[s_elu] <- f(d_r[s_elu])
     if ("R0" %in% par_bak) {
       d_R0 <- d_r
       d_R0[k_elu] <- lapply(d_r[k_elu], compute_R0, breaks = breaks, probs = probs)
@@ -406,7 +410,7 @@ plot.egf_confint <- function(x,
   order <- order_to_index(substitute(order), x, parent.frame())
   label <- substitute(label)
   if (is.null(label)) {
-    label <- as.character(frame[[switch(type, bars = "window", "ts")]])
+    label <- as.character(x[[switch(type, bars = "window", "ts")]])
     label_format <- switch(type, bars = "fitting window", "time series")
   } else {
     label <- label_to_character(label, x, parent.frame())
@@ -420,7 +424,7 @@ plot.egf_confint <- function(x,
     origin <- attr(a$endpoints, "origin") + shift
     x <- cbind(a$endpoints[match(x$window, a$endpoints$window, 0L), c("start", "end"), drop = FALSE] - shift, x)
   }
-  x_split <- split(x, x$par)
+  x_split <- split(x, x$par, drop = TRUE)
 
   if (type == "bars") {
     op <- par(mar = c(3.5, 5, 1.5, 1))

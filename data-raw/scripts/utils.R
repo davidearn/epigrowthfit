@@ -1,27 +1,24 @@
 #' Safely convert decimal dates to dates
 #'
-#' @description
-#' Converts decimal dates to dates in a way that avoids
-#' truncation by [base::as.Date()]. See Details.
+#' Converts decimal dates to dates in a way that avoids truncation
+#' by [as.Date()] (see Details).
 #'
-#' @param dd
-#'   A numeric vector listing decimal dates.
+#' @param x A numeric vector listing decimal dates.
 #'
 #' @return
-#' A Date vector with length equal to `length(time)`.
+#' A Date vector with length equal to `length(dd)`.
 #'
 #' @details
 #' [lubridate::date_decimal()] converts numeric vectors to POSIXct
 #' objects. The naive way to convert POSIXct objects (storing both
 #' date and time) to Date objects (storing just date) is to apply
-#' [base::as.Date()] directly. However, [base::as.Date.POSIXct()]
-#' performs this conversion by "ignoring the time after midnight
-#' in the representation of the time in the specified time zone".
-#' Hence the error will be undesirably large if the time is past
-#' noon. The solution is to round beforehand by applying apply
-#' [base::round()] with argument `units = "days"` before applying
-#' [base::as.Date()] to ensure that date-times are rounded ahead
-#' of time.
+#' [as.Date()] directly. However, [as.Date.POSIXct()] performs
+#' this conversion by "ignoring the time after midnight in the
+#' representation of the time in the specified time zone". Hence
+#' the error will be undesirably large if the time is past noon.
+#' The solution is to round date-times beforehand by calling
+#' [round.POSIXt()] with argument `units = "days"`, before calling
+#' [as.Date.POSIXct()].
 #'
 #' @examples
 #' datetime_numeric <- 2001.002
@@ -32,8 +29,8 @@
 #' identical(date_good, safe_Date(datetime_numeric))
 #'
 #' @keywords internal
-safe_Date <- function(dd) {
-  as.Date(round(lubridate::date_decimal(dd), units = "days"))
+safe_Date <- function(x) {
+  as.Date(round(lubridate::date_decimal(x), units = "days"))
 }
 
 #' Aggregate count data

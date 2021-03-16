@@ -56,9 +56,16 @@ on inverse link-transformed fitted values are returned.}
 \item{method}{A character string indicating how confidence intervals
 should be calculated (see Details).}
 
+\item{grid_len}{A positive integer. Step sizes chosen adaptively by
+\code{\link[TMB:tmbprofile]{TMB::tmbprofile()}} will generate approximately this
+many points on each side of a profile's minimum point.}
+
 \item{max_width}{(For \code{method = "uniroot"}.) A positive number. \code{\link[TMB:tmbroot]{TMB::tmbroot()}}
 will search for roots in the interval from \code{x-max_width}
 to \code{x+max_width}, where \code{x} is the fitted value (link scale).}
+
+\item{trace}{A logical scalar. If \code{TRUE}, then basic tracing messages
+are printed.}
 
 \item{breaks, probs}{(For \code{parm = "R0"}.) Arguments to \code{compute_R0()}.}
 
@@ -159,7 +166,8 @@ use \code{.subset} and \code{.append}.
 }
 
 \section{Warning}{
-The combined model frame is \code{do.call(cbind, object$frame_par)}.
+The combined model frame is
+\code{do.call(cbind, unname(object$frame_par))}.
 If a variable occurs more than once there, because it appears
 in multiple model frames, then only the earliest instance is
 retained. Except in unusual cases, all instances of a variable

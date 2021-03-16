@@ -1,9 +1,8 @@
 #' \loadmathjax
 #' Generation interval distribution
 #'
-#' @description
 #' Generation interval density, distribution, and quantile functions.
-#' Assumes:
+#' These functions assume:
 #' * that the latent and infectious periods are integer-valued,
 #' * that the latent period and infectious waiting time are independent, and
 #' * that infectiousness is constant over the infectious period.
@@ -24,7 +23,7 @@
 #'   weight) for all \mjseqn{i \in \lbrace 1,\ldots,n \rbrace}.
 #'
 #' @return
-#' A numeric vector with length equal to the length of the
+#' A numeric vector with length equal to the that of the
 #' first argument, or with length `n` in the case of `rgi()`.
 #'
 #' `dgi()` evaluates the density function \mjseqn{f_\text{gen}}.
@@ -68,9 +67,9 @@
 #'
 #' In this case, \mjseqn{f_\text{gen}} is supported on the interval
 #' \mjseqn{\lbrack 1,m+n)} and is constant on the unit intervals
-#' \mjseqn{\lbrack i,i+1)}. Hence evaluation of \mjseqn{f_\text{gen}}
-#' (as well as the corresponding distribution and quantile functions)
-#' is straightforward and fast.
+#' \mjseqn{\lbrack i,i+1)}. (Hence evaluation of \mjseqn{f_\text{gen}},
+#' as well as the corresponding distribution and quantile functions,
+#' is straightforward and fast.)
 #'
 #' @references
 #' \insertRef{Sven07}{epigrowthfit}
@@ -123,7 +122,7 @@ dgi <- function(x, lat, inf) {
     m = "`x` must be numeric."
   )
   if (length(x) == 0L) {
-    return(numeric(0L))
+    return(x)
   }
   check_gi(lat, inf)
   lat <- lat / sum(lat)
@@ -131,14 +130,15 @@ dgi <- function(x, lat, inf) {
   m <- length(lat)
   n <- length(inf)
 
-  d <- rep.int(NA_real_, length(x))
+  d <- x
+  d[] <- NA
   d[x < 1 | x >= m + n] <- 0
 
-  is_x_in_1_mpn <- (!is.na(x) & x >= 1 & x < m + n)
-  if (any(is_x_in_1_mpn)) {
+  l <- !is.na(x) & x >= 1 & x < m + n
+  if (any(l)) {
     ## Take advantage of the fact that the generation interval density
     ## is constant on intervals [i,i+1)
-    x_floor <- floor(x[is_x_in_1_mpn])
+    x_floor <- floor(x[l])
     x_floor_unique <- unique(x_floor)
     k <- match(x_floor, x_floor_unique)
 
@@ -146,9 +146,8 @@ dgi <- function(x, lat, inf) {
     i <- .row(ij_dim)
     j <- .col(ij_dim)
 
-    d[is_x_in_1_mpn] <- colSums(lat * dwait(x_floor_unique[j] - i, inf = inf))[k]
+    d[l] <- colSums(lat * dwait(x_floor_unique[j] - i, inf = inf))[k]
   }
-  dim(d) <- dim(x)
   d
 }
 
@@ -161,23 +160,23 @@ pgi <- function(q, lat, inf) {
     m = "`q` must be numeric."
   )
   if (length(q) == 0L) {
-    return(numeric(0L))
+    return(q)
   }
   m <- length(lat)
   n <- length(inf)
 
-  p <- rep.int(NA_real_, length(q))
+  p <- q
+  p[] <- NA
   p[q <= 1] <- 0
   p[q >= m + n] <- 1
-  is_q_in_1_mpn <- (!is.na(q) & q > 1 & q < m + n)
-  if (any(is_q_in_1_mpn)) {
-    p[is_q_in_1_mpn] <- approx(
+  l <- !is.na(q) & q > 1 & q < m + n
+  if (any(l)) {
+    p[l] <- approx(
       x = seq_len(m + n),
       y = c(0, cumsum(dgi(seq_len(m + n - 1L), lat = lat, inf = inf))),
-      xout = q[is_q_in_1_mpn]
+      xout = q[l]
     )$y
   }
-  dim(p) <- dim(q)
   p
 }
 
@@ -190,24 +189,24 @@ qgi <- function(p, lat, inf) {
     m = "`p` must be numeric."
   )
   if (length(p) == 0L) {
-    return(numeric(0L))
+    return(p)
   }
   m <- length(lat)
   n <- length(inf)
 
-  q <- rep.int(NA_real_, length(p))
+  q <- p
+  q[] <- NA
   q[p < 0 | p > 1] <- NaN
   q[p == 0] <- -Inf
   q[p == 1] <- m + n
-  is_p_in_0_1 <- (!is.na(p) & p > 0 & p < 1)
-  if (any(is_p_in_0_1)) {
-    q[is_p_in_0_1] <- approx(
+  l <- !is.na(p) & p > 0 & p < 1
+  if (any(l)) {
+    q[l] <- approx(
       x = c(0, cumsum(dgi(seq_len(m + n - 1L), lat = lat, inf = inf))),
       y = seq_len(m + n),
-      xout = p[is_p_in_0_1]
+      xout = p[l]
     )$y
   }
-  dim(q) <- dim(p)
   q
 }
 
@@ -218,11 +217,10 @@ rgi <- function(n, lat, inf) {
   stop_if_not(
     is.numeric(n),
     length(n) == 1L,
-    is.finite(n),
     n >= 0,
     m = "`n` must be a non-negative number."
   )
-  if (n == 0L) {
+  if (n == 0) {
     return(numeric(0L))
   }
   check_gi(lat, inf)
@@ -230,7 +228,7 @@ rgi <- function(n, lat, inf) {
   inf <- inf / sum(inf)
 
   ## Latent period is integer-valued,
-  ## equal to  `i` with probability `lat[i]`
+  ## equal to `i` with probability `lat[i]`
   rlat <- sample(seq_along(lat), size = n, replace = TRUE, prob = lat)
 
   ## Infectious waiting time is real-valued, with

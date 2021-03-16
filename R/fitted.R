@@ -48,7 +48,8 @@
 #'
 #' # Warning
 #'
-#' The combined model frame is `do.call(cbind, object$frame_par)`.
+#' The combined model frame is
+#' `do.call(cbind, unname(object$frame_par))`.
 #' If a variable occurs more than once there, because it appears
 #' in multiple model frames, then only the earliest instance is
 #' retained. Except in unusual cases, all instances of a variable
@@ -81,7 +82,7 @@ fitted.egf <- function(object,
                        ...) {
   stop_if_not_true_false(link)
 
-  frame <- do.call(cbind, object$frame_par)
+  frame <- do.call(cbind, unname(object$frame_par))
   frame <- frame[!duplicated(names(frame))]
 
   par <- unique(match.arg(par, several.ok = TRUE))
@@ -102,16 +103,18 @@ fitted.egf <- function(object,
   colnames(Y) <- pn
 
   Y <- Y[subset, par, drop = FALSE]
-  if (!link) {
+  if (link) {
+    f <- identity
+  } else {
     Y <- mapply(function(x, s) get_inverse_link(s)(x),
       x = as.data.frame(Y),
       s = get_link_string(par)
     )
-    colnames(Y) <- remove_link_string(par)
+    f <- remove_link_string
   }
 
   d <- data.frame(
-    par = rep(factor(par, levels = pn), each = length(subset)),
+    par = rep(factor(par, levels = pn, labels = f(pn)), each = length(subset)),
     ts = ts[k][subset],
     window = window[k][subset],
     value = as.numeric(Y),

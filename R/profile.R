@@ -161,7 +161,7 @@ profile.egf <- function(fitted,
   ## If profiling population fitted values of nonlinear model parameters
   } else if (!is.null(par)) {
     method <- "par"
-    frame <- do.call(cbind, fitted$frame_par)
+    frame <- do.call(cbind, unname(fitted$frame_par))
     frame <- frame[!duplicated(names(frame))]
 
     par <- unique(match.arg(par, several.ok = TRUE))
@@ -206,7 +206,7 @@ profile.egf <- function(fitted,
     ystep = ystep,
     trace = FALSE
   )
-  i_of_m <- function(i, m = m) {
+  i_of_m <- function(i) {
     sprintf("%*d of %d", nchar(m), i, m)
   }
 
@@ -278,7 +278,7 @@ profile.egf <- function(fitted,
   structure(out,
     class = c("egf_profile", "data.frame"),
     A = A,
-    x = fitted$best[fitted$nonrandom],
+    x = fitted$best[fitted$nonrandom]
   )
 }
 

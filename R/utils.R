@@ -297,7 +297,7 @@ ymd <- function(x, which = 1:3, drop = TRUE) {
 #' @noRd
 dceiling <- function(x, to = c("month", "year")) {
   if (length(x) == 0L) {
-    return(x)
+    return(.Date(numeric(0L)))
   }
   to <- match.arg(to)
   X <- as.data.frame(ymd(x, drop = FALSE))

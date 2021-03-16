@@ -1,18 +1,16 @@
 #' \loadmathjax
 #' Compute expected epidemic final size
 #'
-#' @description
 #' Computes, as a function of the basic reproduction number,
 #' the proportion of the population expected to be infected
 #' over the course of an epidemic.
 #'
 #' @param R0
-#'   A numeric vector listing non-negative values
-#'   for the basic reproduction number.
+#'   A non-negative numeric vector listing basic reproduction numbers.
 #' @param S0,I0
-#'   Numeric vectors listing values in the interval \[0,1\] for the
-#'   initial susceptible and infected proportions, respectively.
-#'   (Hence `S0 + I0` should not exceed 1.)
+#'   Numeric vectors listing values in the interval \[0,1\]
+#'   for the initial susceptible and infected proportions,
+#'   respectively. (Hence `S0 + I0` should not exceed 1.)
 #'
 #' @return
 #' A numeric vector of length `max(lengths(list(R0, S0, I0)))`
@@ -45,15 +43,14 @@
 #' `max(lengths(list(R0, S0, I0)))`
 #' and \mjseqn{Z} is evaluated at each resulting
 #' \mjseqn{(\mathcal{R}USCORE0,S_0,I_0)} triple.
-#' For invalid or incomplete triples, the value
-#' is `NA`.
 #'
 #' @references
 #' \insertRef{MaEarn06}{epigrowthfit}
 #'
 #' @examples
-#' R0 <- 10^seq(-3, log10(10), length.out = 150L)
+#' R0 <- 10^seq(-3, 1, length.out = 150L)
 #' final_size <- compute_final_size(R0)
+#'
 #' plot(R0, final_size, type = "l", las = 1,
 #'   xlab = "basic reproduction number",
 #'   ylab = "final size"
@@ -68,34 +65,34 @@ compute_final_size <- function(R0, S0 = 1, I0 = 0) {
     is.numeric(I0),
     m = "`R0`, `S0`, and `I0` must be numeric."
   )
-  l <- lengths(list(R0, S0, I0))
-  if (min(l) == 0L) {
+  len <- lengths(list(R0, S0, I0))
+  if (min(len) == 0L) {
     return(numeric(0L))
   }
 
-  n <- max(l)
-  R0 <- rep(R0, length.out = n)
-  S0 <- rep(S0, length.out = n)
-  I0 <- rep(I0, length.out = n)
+  n <- max(len)
+  R0 <- rep_len(R0, n)
+  S0 <- rep_len(S0, n)
+  I0 <- rep_len(I0, n)
+  fs <- rep_len(NA_real_, n)
+
+  ## Degenerate cases
   is_bad_triple <- (is.na(R0) | is.na(S0) | is.na(I0) |
                       R0 < 0 | S0 < 0 | I0 < 0 | S0 + I0 > 1)
-  if (any(is_bad_triple, na.rm = TRUE)) {
-    warning("There were invalid or incomplete (R0,S0,I0) triples.\n",
-            "Result is NA for these.")
+  if (any(is_bad_triple)) {
+    warning("NA returned for invalid or incomplete (R0,S0,I0) triples.")
   }
 
-  fs <- rep.int(NA_real_, n)
-
   ## Limiting cases
-  is_zero_R0 <- (R0 == 0)
-  fs[is_zero_R0] <- 0
-  is_infinite_R0 <- is.infinite(R0)
-  fs[is_infinite_R0] <- S0[is_infinite_R0]
+  l1 <- !is_bad_triple & R0 == 0
+  l2 <- !is_bad_triple & R0 == Inf
+  fs[l1] <- 0
+  fs[l2] <- S0[l2]
 
   ## Usual cases
-  i <- which(!(is_bad_triple | is_zero_R0 | is_infinite_R0))
-  if (length(i) > 0L) {
-    fs[i] <- S0[i] + (1 / R0[i]) * lambertW(-R0[i] * S0[i] * exp(-R0[i] * (S0[i] + I0[i])))
+  l <- !(is_bad_triple | l1 | l2)
+  if (any(l)) {
+    fs[l] <- S0[l] + (1 / R0[l]) * lambertW(-R0[l] * S0[l] * exp(-R0[l] * (S0[l] + I0[l])))
   }
   fs
 }

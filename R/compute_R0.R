@@ -5,19 +5,20 @@
 #' growth rates and a binned generation interval distribution.
 #'
 #' @param r
-#'   A numeric vector with non-negative elements listing initial
-#'   exponential growth rates \mjseqn{r}. Alternatively, an `"egf"`
-#'   object returned by [egf()].
+#'   A non-negative numeric vector listing initial exponential
+#'   growth rates. Alternatively, an `"egf"` object returned by
+#'   [egf()].
 #' @param breaks
 #'   A numeric vector of length 2 or greater listing increasing
-#'   break points \mjseqn{t_i} in the support of the generation
-#'   interval distribution, in reciprocal units of `r` (days if
-#'   `r` is an `"egf"` object).
+#'   break points in the support of the generation interval
+#'   distribution, in reciprocal units of `r`
+#'   (days if `inherits(r, "egf")`).
 #' @param probs
-#'   A numeric vector of length `length(breaks)-1`. `probs[i]`
-#'   is the probability \mjseqn{p_i} that the generation interval
-#'   is between `breaks[i]` and `breaks[i+1]`. If `sum(probs) != 1`,
-#'   then `probs` is replaced with `probs / sum(probs)`.
+#'   A numeric vector of length `length(breaks)-1`.
+#'   `probs[i]` is the probability that the generation interval
+#'   is between `breaks[i]` and `breaks[i+1]`.
+#'   If `sum(probs) != 1`, then `probs` is replaced with
+#'   `probs / sum(probs)`.
 #' @inheritParams compute_tdoubling
 #'
 #' @details
@@ -38,24 +39,16 @@
 #' (see Details).
 #'
 #' The method for class `"egf"` constructs the data frame
-#' `d = fitted(r, subset, link = TRUE)`, appends
-#' `R0 = compute_R0.default(r = exp(d$log_r), breaks, probs)`,
-#' and returns the result omitting extraneous variables.
+#' `fitted(r, par = "log_r", link = FALSE, ...)`, replaces
+#' variable `value` with `compute_R0(value, breaks, probs)`,
+#' and returns the result.
 #'
 #' @examples
-#' data(plague_latent_period)
-#' lat <- plague_latent_period$relfreq
-#' m <- length(lat)
-#'
-#' data(plague_infectious_period)
-#' inf <- plague_infectious_period$relfreq
-#' n <- length(inf)
-#'
-#' r <- seq(0, 1, by = 0.02) # per day
-#' breaks <- seq(1, m + n, by = 1) # days
-#' probs <- diff(pgi(breaks, lat, inf))
-#'
+#' r <- seq(0, 1, by = 0.02)
+#' breaks <- 0:20
+#' probs <- diff(pgamma(breaks, shape = 1, scale = 2.5))
 #' R0 <- compute_R0(r, breaks, probs)
+#'
 #' plot(r, R0, las = 1,
 #'   xlab = "initial exponential growth rate, per day",
 #'   ylab = "basic reproduction number"
@@ -84,10 +77,7 @@ compute_R0.default <- function(r, breaks, probs, ...) {
     is.numeric(breaks),
     length(breaks) >= 2L,
     is.finite(breaks),
-    m = paste0(
-      "`breaks` must be a finite numeric vector\n",
-      "of length 2 or greater."
-    )
+    m = "`breaks` must be a finite numeric vector\nof length 2 or greater."
   )
   stop_if_not(
     diff(breaks) > 0,
@@ -96,39 +86,32 @@ compute_R0.default <- function(r, breaks, probs, ...) {
   stop_if_not(
     is.numeric(probs),
     length(probs) == length(breaks) - 1L,
-    is.finite(breaks),
-    m = paste0(
-      "`probs` must be a finite numeric vector\n",
-      "of length `length(breaks)-1`."
-    )
+    is.finite(probs),
+    m = "`probs` must be a finite numeric vector\nof length `length(breaks)-1`."
   )
   stop_if_not(
     probs >= 0,
     any(probs > 0),
-    m = paste0(
-      "Elements of `probs` must be non-negative\n",
-      "and sum to a positive number."
-    )
+    m = "Elements of `probs` must be non-negative\nand sum to a positive number."
   )
+
+  R0 <- rep_len(NA_real_, length(r))
+
+  ## Degenerate cases
   if (any(r < 0, na.rm = TRUE)) {
-    r[r < 0] <- NA
-    warning("Negative elements of `r` replaced with NA.")
+    warning("NA returned for negative elements `r`.")
   }
 
-  R0 <- rep.int(NA_real_, length(r))
-
   ## Limiting cases
-  is_zero_r <- (r == 0)
-  R0[is_zero_r] <- 1
-  is_infinite_r <- is.infinite(r)
-  R0[is_infinite_r] <- Inf
+  R0[r == 0] <- 1
+  R0[r == Inf] <- Inf
 
   ## Usual cases
-  i <- which(!(is.na(r) | is_zero_r | is_infinite_r))
-  if (length(i) > 0L) {
-    e1 <- exp(outer(breaks[-length(breaks)], -r[i]))
-    e2 <- exp(outer(breaks[-1L], -r[i]))
-    R0[i] <- r[i] / colSums(probs * (e1 - e2) / diff(breaks))
+  l <- is.finite(r) & r > 0
+  if (any(l)) {
+    e1 <- exp(outer(breaks[-length(breaks)], -r[l]))
+    e2 <- exp(outer(breaks[-1L], -r[l]))
+    R0[l] <- r[l] / colSums(probs * (e1 - e2) / diff(breaks))
   }
   R0
 }
@@ -136,19 +119,14 @@ compute_R0.default <- function(r, breaks, probs, ...) {
 #' @rdname compute_R0
 #' @export
 #' @importFrom stats fitted
-compute_R0.egf <- function(r, breaks, probs, subset, ...) {
+compute_R0.egf <- function(r, breaks, probs, ...) {
   s <- c("exponential", "logistic", "richards")
   stop_if_not(
     r$curve %in% s,
-    m = paste0(
-      "`r$curve` must be one of:\n",
-      paste(sprintf("\"%s\"", s), collapse = ", ")
-    )
+    m = paste0("`r$curve` must be one of:\n", paste(dQuote(s, FALSE), collapse = ", "))
   )
-
-  d <- fitted(r, subset = subset, link = TRUE)
-  cbind(
-    d[vapply(d, is.factor, FALSE)],
-    R0 = compute_R0(exp(d$log_r), breaks, probs)
-  )
+  d <- fitted(r, par = "log_r", link = FALSE, ...)
+  d$par <- factor(d$par, levels = "r", labels = "R0")
+  d$value <- compute_R0(d$value, breaks, probs)
+  d
 }

@@ -145,7 +145,8 @@ use \code{.subset} and \code{.append}.
 }
 
 \section{Warning}{
-The combined model frame is \code{do.call(cbind, object$frame_par)}.
+The combined model frame is
+\code{do.call(cbind, unname(object$frame_par))}.
 If a variable occurs more than once there, because it appears
 in multiple model frames, then only the earliest instance is
 retained. Except in unusual cases, all instances of a variable

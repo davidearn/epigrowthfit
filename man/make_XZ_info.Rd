@@ -34,8 +34,6 @@ Level of the interaction specified by \code{group}.
 \item{\code{colname}}{
 Column name.
 }
-\code{par}, \code{term}, \code{group}, and \code{level} are factors.
-\code{colname} is a character vector.
 }
 \description{
 A utility allowing combined design matrices and parameter vectors to

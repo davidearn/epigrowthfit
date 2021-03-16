@@ -73,7 +73,7 @@ get_par_names.default <- function(curve = NULL, excess = NULL,
 
 #' @export
 get_par_names.tmb_data <- function(curve, excess, distr, weekday, link = TRUE) {
-  pn <- levels(curve$Zinfo$par)
+  pn <- levels(curve$Z_info$par)
   if (link) {
     return(pn)
   }
@@ -329,12 +329,10 @@ make_wave <- function(window, ts) {
     !anyNA(ts),
     m = "`ts` must not have missing values."
   )
-  f <- function(x) {
-    x <- droplevels(x)
-    levels(x) <- seq_len(nlevels(x))
-    x
-  }
-  unsplit(tapply(window, ts, f, simplify = FALSE), ts, drop = TRUE)
+  wave_split <- tapply(window, ts, droplevels, simplify = FALSE)
+  n <- max(vapply(wave_split, nlevels, 0L))
+  f <- function(x) factor(unclass(x), levels = seq_len(n))
+  unsplit(lapply(wave_split, f), ts)
 }
 
 #' Validate model formulae and construct model frames
@@ -608,7 +606,8 @@ make_frames <- function(formula_ts, formula_par, data, window,
 
   ## Store time as a number of days since the earliest time point
   ## NB: `julian(., origin)` stores `origin` as an attribute
-  frame_ts$time <- julian(frame_ts$time, origin = min(frame_ts$time))
+  origin <- min(frame_ts$time)
+  frame_ts$time <- julian(frame_ts$time, origin = origin)
 
   ## Keep only those rows of mixed effects model frames
   ## belonging to a fitting window
@@ -673,6 +672,7 @@ make_frames <- function(formula_ts, formula_par, data, window,
   frame_ts <- finish(frame_ts, formula_ts)
   frame_par <- Map(finish, frame_par, formula_par)
   attr(frame_ts, "names_bak") <- names_bak
+  attr(frame_ts, "origin") <- origin
 
   list(frame_ts = frame_ts, frame_par = frame_par)
 }
@@ -716,9 +716,9 @@ make_frames <- function(formula_ts, formula_par, data, window,
 #'   `labels(terms(~foo))` for `x = ~foo` and `x = (foo | group)`.
 #' }
 #' \item{`group`}{
-#'   `make_Z()` only. For `x = (foo | group)`, a factor of length
-#'   `ncol(Z)` with levels `levels(group)`, useful for splitting
-#'   `Z` into group-specific submatrices.
+#'   (`make_Z()` only.) For `x = (foo | group)`, a factor of length
+#'   `ncol(Z)` with levels `levels(group)`, useful for splitting `Z`
+#'   into group-specific submatrices.
 #' }
 #'
 #' @name make_X
@@ -799,41 +799,39 @@ make_Z <- function(x, frame) {
 #' \item{`colname`}{
 #'   Column name.
 #' }
-#' `par`, `term`, `group`, and `level` are factors.
-#' `colname` is a character vector.
 #'
 #' @keywords internal
 #' @importFrom stats terms as.formula
 make_XZ_info <- function(xl, ml) {
   if (length(xl) == 0L) {
     cn <- c("colname", "par", "term", "group", "level")
-    m <- matrix(character(0L), ncol = 4L, dimnames = list(NULL, cn))
+    m <- matrix(character(0L), ncol = 5L, dimnames = list(NULL, cn))
     return(data.frame(m, stringsAsFactors = TRUE))
   }
   ml_ncol <- vapply(ml, ncol, 0L)
   if (inherits(xl[[1L]], "formula")) { # X case
-    group <- factor(NA)
-    level <- factor(NA)
+    group <- NA_character_
+    level <- NA_character_
   } else { # Z case
     bar_lhs <- lapply(xl, `[[`, 2L)
     bar_rhs <- lapply(xl, `[[`, 3L)
     xl <- lapply(bar_lhs, function(x) as.formula(call("~", x)))
-    group <- rep(factor(vapply(bar_rhs, deparse, "")), ml_ncol)
-    level <- factor(unlist(lapply(ml, attr, "group")))
+    group <- rep(vapply(bar_rhs, deparse, ""), ml_ncol)
+    level <- unlist(lapply(ml, attr, "group"))
   }
   get_term_labels <- function(formula) {
     labels(terms(formula))
   }
-  rep_factor_term_labels <- function(term_labels, assign) {
-    factor(c("(Intercept)", term_labels))[assign + 1L]
+  rep_term_labels <- function(term_labels, assign) {
+    c("(Intercept)", term_labels)[assign + 1L]
   }
-  term <- unlist(Map(rep_factor_term_labels,
+  term <- unlist(Map(rep_term_labels,
     term_labels = lapply(xl, get_term_labels),
     assign = lapply(ml, attr, "assign")
   ))
-  par <- rep(factor(names(xl)), ml_ncol)
+  par <- rep(names(xl), ml_ncol)
   colname <- unlist(lapply(ml, colnames))
-  data.frame(par, term, group, level, colname, row.names = NULL, stringsAsFactors = FALSE)
+  data.frame(par, term, group, level, colname, row.names = NULL, stringsAsFactors = TRUE)
 }
 
 #' Construct data objects for C++ template
@@ -928,6 +926,7 @@ make_tmb_data <- function(frame_ts, frame_par,
   p <- length(pn)
 
   ## Discard time points not belonging to a fitting window
+  origin <- attr(frame_ts, "origin")
   frame_ts <- frame_ts[!is.na(frame_ts$window), , drop = FALSE]
 
   ## Fitting window length as a number of time points
@@ -942,7 +941,7 @@ make_tmb_data <- function(frame_ts, frame_par,
 
   ## First weekday (within segment):
   ## i in {0,...,6} maps to i days after reference day
-  date_1 <- attr(frame_ts$time, "origin") + 1 + frame_ts$time[firsts] # reason for adding 1 is subtle, see help for `egf()` argument `formula_ts`
+  date_1 <- origin + 1 + frame_ts$time[firsts] # reason for adding 1 is subtle, see help for `egf()` argument `formula_ts`
   weekday_1 <- julian(date_1, origin = .Date(2 + weekday_ref)) %% 7 # Sunday <-> 0
   dow <- as.integer(weekday_1)
 
@@ -1347,7 +1346,7 @@ optim_tmb_out <- function(tmb_out, method, ...) {
 #' @keywords internal
 split_sdreport <- function(sdreport) {
   sdr <- summary(sdreport, select = "report")
-  colnames(ssdr) <- c("estimate", "se")
+  colnames(sdr) <- c("estimate", "se")
   lapply(split(as.data.frame(sdr), rownames(sdr)), `row.names<-`, NULL)
 }
 
@@ -1449,8 +1448,11 @@ label_to_character <- function(label, frame, enclos, .label = NULL) {
     length(a) == n,
     m = sprintf("`label` must evaluate to an atomic vector\nof length %d", n)
   )
-  nf <- names(frame)
+  nf <- as.list(names(frame))
   names(nf) <- nf
-  s <- tryCatch(eval(label, nf, enclos), error = function(e) deparse(label))
+  s <- tryCatch(eval(label, nf, enclos),
+    warning = function(w) deparse(label),
+    error   = function(e) deparse(label)
+  )
   structure(as.character(a), format = s)
 }
