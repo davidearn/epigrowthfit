@@ -6,7 +6,7 @@
 \usage{
 make_tmb_data(
   frame_ts,
-  frame_glmm,
+  frame_par,
   curve,
   excess,
   distr,
@@ -18,14 +18,15 @@ make_tmb_data(
 \arguments{
 \item{frame_ts}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
 
-\item{frame_glmm}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
+\item{frame_par}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate is estimated. Set to \code{TRUE} if what is observed (\code{y} if
-\code{formula = y ~ x | ts}) is multiple causes mortality rather than
-disease mortality or disease incidence.}
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
+mortality rate is estimated. Set to \code{TRUE} if what is
+observed (\code{x} if \code{formula_ts = x ~ time | ts}) is
+multiple causes mortality rather than disease mortality
+or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
@@ -37,33 +38,31 @@ all fitting windows.}
 2 mapping to Monday, and so on. Weekday effects are estimated
 as offsets relative to the indicated day.}
 
-\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects
-design matrix will be constructed in sparse format.
-(The random effects design matrix is always constructed
-in sparse format.)}
+\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
+matrix is constructed in sparse format.}
 }
 \value{
 A \code{"tmb_data"} object, which is a list with elements:
 \item{\code{t}}{
-An integer vector of length \code{sum(!is.na(frame_ts$.window))}
+A numeric vector of length \code{sum(!is.na(frame_ts$window))}
 giving time as a number of days since the earliest time point
-in the current segment.
+in the current fitting window.
 }
 \item{\code{x}}{
-An integer vector of length
-\code{sum(!is.na(frame_ts$.window))-nlevels(frame_ts$.window)}
-giving incidence in each segment. \code{x[i]} in segment \code{k}
-is the number of cases observed between times \code{t[k+i-1]}
-and \code{t[k+i]}.
+A numeric vector of length
+\code{sum(!is.na(frame_ts$window))-nlevels(frame_ts$window)}
+giving incidence in each fitting window. \code{x[i]} in window \code{k}
+is the number of cases observed from time \code{t[k+i-1]} to time
+\code{t[k+i]}.
 }
 \item{\code{t_seg_len}}{
-An integer vector of length \code{nlevels(frame_ts$.window)}
-giving the length of each time series segment as a number
-of time points (rather than subintervals).
+An integer vector of length \code{nlevels(frame_ts$window)}
+giving the length of each fitting window as
+a number of time points (rather than intervals).
 }
 \item{\code{dow}}{
-An integer vector giving the first weekday in each time series
-segment, with values \code{i} in \code{0:6} mapping to the weekday \code{i}
+An integer vector giving the first weekday in each fitting
+window, with values \code{i} in \code{0:6} mapping to the weekday \code{i}
 days after the reference weekday specified by \code{weekday_ref}.
 }
 \item{\code{Yo}}{

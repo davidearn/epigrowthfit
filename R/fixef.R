@@ -10,14 +10,15 @@
 #' A data frame inheriting from class `"egf_fixef"`,
 #' with one row per coefficient and variables:
 #' \item{`name`}{
-#'   Coefficient name in the full parameter vector `object$par`.
+#'   Coefficient name in the full parameter vector `object$best`.
 #' }
 #' \item{`par`}{
 #'   Nonlinear model parameter, from
 #'   `get_par_names(object, link = TRUE)`.
 #' }
 #' \item{`term`}{
-#'   Term from fixed effects component of mixed effects formula.
+#'   Term from fixed effects component of mixed effects formula
+#'   for nonlinear model parameter `par`.
 #' }
 #' \item{`colname`}{
 #'   Corresponding column name in the fixed effects design matrix
@@ -32,7 +33,7 @@
 #' @export fixef
 #' @importFrom nlme fixef
 fixef.egf <- function(object, ...) {
-  beta <- object$par[grep("^beta\\[", names(object$par))]
+  beta <- object$best[grep("^beta\\[", names(object$best))]
   d <- data.frame(
     name = names(beta),
     object$tmb_args$data$X_info[c("par", "term", "colname")],

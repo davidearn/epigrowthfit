@@ -9,10 +9,10 @@
 \arguments{
 \item{x}{An \code{"egf_profile"} object returned by \code{\link[=profile.egf]{profile.egf()}}.}
 
-\item{subset}{A list of logical expressions to be evaluated in \code{x[-(2:3)]}
-(\code{x} without variables \code{value} and \code{deviance}). Only indexed
-profiles are plotted. Use the default (\code{NULL}) to plot all
-profiles.}
+\item{subset}{An expression to be evaluated in \code{x}. Must evaluate to a
+logical vector or list of logical vectors indexing rows of
+\code{x}. Only indexed profiles are plotted. The default (\code{NULL})
+is to plot all profiles.}
 
 \item{sqrt}{A logical scalar. If \code{TRUE}, then square root-transformed
 deviance is plotted.}

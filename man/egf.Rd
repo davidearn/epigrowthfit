@@ -6,7 +6,7 @@
 \usage{
 egf(
   formula_ts,
-  formula_glmm,
+  formula_par,
   data = parent.frame(),
   window,
   curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
@@ -18,48 +18,51 @@ egf(
   na_action = c("pass", "fail"),
   sparse_X = FALSE,
   debug = FALSE,
-  par_init = NULL,
+  init = NULL,
   ...
 )
 }
 \arguments{
-\item{formula_ts}{A formula of the form \code{y ~ x} or \code{y ~ x | ts} specifying
-one or more incidence time series in long format. \code{x} and \code{y}
-must evaluate to Date and numeric vectors, respectively. \code{ts}
-must evaluate to a factor splitting the data by time series.
-\code{y ~ x} is equivalent to \code{y ~ x | ts} with \code{ts} evaluating
-to \code{rep(factor(1), length(x))}. In each time series, \code{y[i]}
-should give the number of cases observed from \code{23:59:59} on
-date \code{x[i-1]} to \code{23:59:59} on date \code{x[i]} (hence time series
-may have unequal spacing).}
+\item{formula_ts}{A formula of the form \code{x ~ time} or \code{x ~ time | ts} specifying
+one or more incidence time series in long format. \code{time} must
+evaluate to a Date vector. Elements \code{"YYYY-MM-DD"} of \code{time}
+are read as "time 23:59:59 on date YYYY-MM-DD". \code{x} must
+evaluate to a numeric vector. Within a time series, \code{x[i]}
+should specify the number of cases observed from \code{time[i-1]}
+to \code{time[i]}. Finally, \code{ts} must evaluate to a factor, such
+that \code{split(data.frame(time, x), ts)} returns a list of time
+series. Note that \code{x ~ time} is equivalent to \code{x ~ time | ts}
+with \code{ts} set equal to \code{rep(factor(1), length(x))}.}
 
-\item{formula_glmm}{A named list of formulae of the form \code{~terms}, specifying
-mixed effects models (with \code{\link[lme4:lmer]{lme4}}-like syntax)
-for nonlinear model parameters.
-In this case, \code{names(formula_glmm)} must be a subset of
-\code{get_par_names(curve, distr, excess, weekday, link = TRUE)},
-and \code{~1} is used as a default for parameters not assigned a
-formula. Alternatively, a formula of the form \code{~terms} to be
-recycled for all nonlinear model parameters. Mixed effects
-variables must match the length of time series variables and
-be constant in each fitting window.}
+\item{formula_par}{A named list of formulae of the form \code{~terms}, specifying
+mixed effects models (\code{\link[lme4:lmer]{lme4}}-like syntax)
+for nonlinear model parameters. \code{names(formula_par)} must
+be a subset of
+\code{get_par_names(curve, distr, excess, weekday, link = TRUE)}.
+\code{~1} is the default for parameters not assigned a formula.
+Alternatively, \code{formula_par} may itself be a formula of
+the form \code{~terms}. In this case, the formula is recycled
+for all nonlinear model parameters. Mixed effects variables
+must match the length of the time series variables and be
+constant in each level of \code{window}.}
 
-\item{data}{A data frame, list, or environment. \code{egf()} looks here for
-variables used in \code{formula_ts} and \code{formula_glmm}, before
-looking in formula environments.}
+\item{data}{A data frame, list, or environment. \code{egf()} looks here
+for variables used in \code{formula_ts} and \code{formula_par},
+before looking in formula environments.}
 
 \item{window}{A factor of length \code{nrow(data)} such that \code{split(data, window)}
 splits \code{data} by fitting window, with \code{is.na(window)} indexing
-rows of \code{data} not belonging to a fitting window. (Such a factor
-can be constructed from a list of fitting window endpoints using
-\code{\link[=make_window]{make_window()}}.)}
+rows of \code{data} not belonging to a fitting window. Note that
+such a factor can be constructed from a table of fitting window
+endpoints using \code{\link[=make_window]{make_window()}}.)}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate is estimated. Set to \code{TRUE} if what is observed (\code{y} if
-\code{formula = y ~ x | ts}) is multiple causes mortality rather than
-disease mortality or disease incidence.}
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
+mortality rate is estimated. Set to \code{TRUE} if what is
+observed (\code{x} if \code{formula_ts = x ~ time | ts}) is
+multiple causes mortality rather than disease mortality
+or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
@@ -74,25 +77,21 @@ as offsets relative to the indicated day.}
 \item{method}{A character string specifying an optimizer available through
 \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}.}
 
-\item{na_action}{A character string indicating how \code{NA} in incidence
-(\code{y} if \code{formula_ts = y ~ x | ts}) are handled.
-\code{NA} in other \code{formula_ts} variables are an error.
-\code{NA} in \code{formula_glmm} variables \emph{within fitting windows}
-are an error.}
+\item{na_action}{A character string indicating how \code{NA} in incidence (\code{x}
+if \code{formula_ts = x ~ time | ts}) are handled. Note that \code{NA}
+in other \code{formula_ts} variables are an error, and \code{NA} in
+\code{formula_par} variables within fitting windows are an error.}
 
-\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects
-design matrix will be constructed in sparse format.
-(The random effects design matrix is always constructed
-in sparse format.)}
+\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
+matrix is constructed in sparse format.}
 
 \item{debug}{A logical scalar used for debugging. If \code{TRUE}, then
 \code{egf()} returns early with a list of optimization inputs.}
 
-\item{par_init}{A full parameter vector for the first likelihood evaluation.
-Set to \code{NULL} to accept the internally generated default. If
-the default causes errors, then use \code{debug = TRUE} to retrieve
-its value, which will have the correct length, and modify as
-necessary.}
+\item{init}{A full parameter vector for the first likelihood evaluation.
+Set to \code{NULL} to accept the internally generated default.
+Use \code{debug = TRUE} to retrieve this default, which is useful
+as a template.}
 
 \item{...}{Optional arguments to the optimizer specified by \code{method}.}
 }
@@ -100,11 +99,13 @@ necessary.}
 If \code{debug = FALSE}, then a list inheriting from class \code{"egf"},
 with elements:
 \item{\code{frame_ts}}{
-The time series model frame. See \code{\link[=make_frames]{make_frames()}}.
+The time series model frame, constructed from \code{formula_ts}.
+See \code{\link[=make_frames]{make_frames()}}.
 }
-\item{\code{frame_glmm}}{
-A list containing the mixed effects model frames,
-one for each nonlinear model parameter. See \code{\link[=make_frames]{make_frames()}}.
+\item{\code{frame_par}}{
+A list of mixed effects model frames (one per nonlinear model
+parameter), constructed from \code{formula_par} (after completion).
+See \code{\link[=make_frames]{make_frames()}}.
 }
 \item{\code{curve}, \code{excess}, \code{distr}, \code{weekday}, \code{weekday_ref}, \code{method}}{
 Copies of the so-named arguments (after matching).
@@ -118,15 +119,14 @@ The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}} (after optimiza
 \item{\code{optim_out}}{
 The list output of the optimizer specified by \code{method}.
 }
-\item{\code{par_init}}{
+\item{\code{init}}{
 The full parameter vector of the first likelihood evaluation.
-Matches the so-named argument if given.
 }
-\item{\code{par}}{
+\item{\code{best}}{
 The full parameter vector of the best likelihood evaluation.
 }
 \item{\code{nonrandom}}{
-An integer vector indexing the nonrandom segment of \code{par}.
+An integer vector indexing the nonrandom segment of \code{best}.
 }
 \item{\code{report}}{
 A list containing all variables \code{REPORT()}ed and \code{ADREPORT()}ed
@@ -136,7 +136,7 @@ covariance matrix corresponding to \code{par[nonrandom]}.
 \item{\code{nll}}{
 A numeric scalar giving the value of the negative log
 Laplace approximation of the marginal likelihood function
-at \code{par[nonrandom]}.
+at \code{best[nonrandom]}.
 }
 \item{\code{nll_func}, \code{nll_grad}}{
 Closures taking a numeric vector \code{x} as an argument and returning
@@ -148,7 +148,7 @@ The call to \code{egf()}, allowing for updates to the \code{"egf"} object
 via \code{\link[stats:update]{stats::update()}}.
 }
 If \code{debug = TRUE}, then a list with only the elements \code{frame_ts},
-\code{frame_glmm}, \code{tmb_args}, and \code{par_init}.
+\code{frame_par}, \code{init}, and \code{tmb_args}.
 }
 \description{
 Fits nonlinear mixed effects models of epidemic growth to one

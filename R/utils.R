@@ -25,7 +25,7 @@
 #' @examples
 #' # x <- 1.1
 #' # stop_if_not(
-#' #   is.vector(x, "numeric"),
+#' #   is.numeric(x),
 #' #   length(x) == 1L,
 #' #   x > 0,
 #' #   x < 1,
@@ -65,7 +65,7 @@ warn_if_not <- function(..., m, n = 1L) {
 stop_if_not_true_false <- function(x, n = 1L) {
   s <- deparse(substitute(x))
   stop_if_not(
-    is.vector(x, "logical"),
+    is.logical(x),
     length(x) == 1L,
     !is.na(x),
     m = sprintf("`%s` must be TRUE or FALSE.", s),
@@ -76,7 +76,7 @@ stop_if_not_true_false <- function(x, n = 1L) {
 stop_if_not_integer <- function(x, n = 1L) {
   s <- deparse(substitute(x))
   stop_if_not(
-    is.vector(x, "numeric"),
+    is.numeric(x),
     length(x) == 1L,
     x %% 1 == 0,
     m = sprintf("`%s` must be an integer.", s),
@@ -87,7 +87,7 @@ stop_if_not_integer <- function(x, n = 1L) {
 stop_if_not_positive_integer <- function(x, n = 1L) {
   s <- deparse(substitute(x))
   stop_if_not(
-    is.vector(x, "numeric"),
+    is.numeric(x),
     length(x) == 1L,
     x >= 1,
     x %% 1 == 0,
@@ -97,19 +97,21 @@ stop_if_not_positive_integer <- function(x, n = 1L) {
 }
 
 stop_if_not_number_in_interval <- function(x, a, b, include = c("()", "(]", "[)", "[]"), n = 1L) {
-  s <- deparse(substitute(x))
   include <- match.arg(include)
   e1 <- substr(include, 1L, 1L)
   e2 <- substr(include, 2L, 2L)
   f1 <- switch(e1, `(` = `>`, `[` = `>=`)
   f2 <- switch(e2, `)` = `<`, `]` = `<=`)
-  interval <- paste0(e1, deparse(substitute(a)), ",", deparse(substitute(b)), e2)
+
+  s_x <- deparse(substitute(x))
+  s_I <- paste0(e1, deparse(substitute(a)), ",",
+                deparse(substitute(b)), e2)
   stop_if_not(
-    is.vector(x, "numeric"),
+    is.numeric(x),
     length(x) == 1L,
     f1(x, a),
     f2(x, b),
-    m = sprintf("`%s` must be a number in the interval %s.", s, interval),
+    m = sprintf("`%s` must be a number in the interval %s.", s_x, s_I),
     n = 1L + n
   )
 }
@@ -117,7 +119,7 @@ stop_if_not_number_in_interval <- function(x, a, b, include = c("()", "(]", "[)"
 stop_if_not_character_string <- function(x, n = 1L) {
   s <- deparse(substitute(x))
   stop_if_not(
-    is.vector(x, "character"),
+    is.character(x),
     length(x) == 1L,
     !is.na(x),
     m = sprintf("`%s` must be a character string.", s),
@@ -198,15 +200,17 @@ is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
   if (is.data.frame(x)) {
     return(all(vapply(x, is_constant, FALSE, na.rm, tol)))
   }
-  if (length(x) == 0L || (na.rm && all(is.na(x)))) {
+  ok <- !is.na(x)
+  x <- x[ok]
+  if (length(x) == 0L) {
     return(TRUE)
   }
   if (is.numeric(x)) {
-    yes <- abs(max(x, na.rm = TRUE) - min(x, na.rm = TRUE)) < tol
+    yes <- abs(max(x) - min(x)) < tol
   } else {
-    yes <- length(unique(x[!is.na(x)])) == 1L
+    yes <- length(unique(x)) == 1L
   }
-  if (yes && !na.rm && anyNA(x)) {
+  if (yes && !na.rm && any(!ok)) {
     return(NA)
   }
   yes
@@ -241,10 +245,69 @@ cor2cov <- function(cor, sd) {
     m = "`cor` must be a square numeric matrix."
   )
   stop_if_not(
-    is.vector(sd, "numeric"),
+    is.numeric(sd),
     length(sd) == d[1L],
     m = "`sd` must be a numeric vector of length `nrow(cor)`."
   )
   cor[] <- sd * cor * rep(sd, each = length(sd))
   cor
+}
+
+#' Decompose a vector of dates
+#'
+#' Extracts year, month, and day from a Date vector.
+#'
+#' @param x
+#'   A Date vector.
+#' @param which
+#'   A subset of `1:3` indicating which of year, month, and day
+#'   should be returned.
+#' @param drop
+#'   A logical scalar. If `drop = TRUE`, then an integer vector
+#'   is returned instead of a matrix when one of `x` and `which`
+#'   has length less than 2,
+#'
+#' @return
+#' `X[, which, drop]`, where `X` is an integer matrix with
+#' `length(x)` rows and 3 columns listing year, month, and day.
+#'
+#' @noRd
+ymd <- function(x, which = 1:3, drop = TRUE) {
+  X <- matrix(as.integer(unlist(strsplit(as.character(x), "-"))),
+    nrow = length(x),
+    ncol = 3L,
+    byrow = TRUE,
+    dimnames = list(NULL, c("y", "m", "d"))
+  )
+  X[, which, drop = drop]
+}
+
+#' Get ceiling of a date
+#'
+#' Rounds each Date in a Date vector to the next first-of-the-month
+#' or first-of-the-year.
+#'
+#' @param x A Date vector.
+#' @param to A character string.
+#'
+#' @return
+#' `x` with elements replaced by firsts-of-the-month (`"YYYY-MM-01"`)
+#' or firsts-of-the-year (`"YYYY-01-01"`), depending on `to`.
+#'
+#' @noRd
+dceiling <- function(x, to = c("month", "year")) {
+  if (length(x) == 0L) {
+    return(x)
+  }
+  to <- match.arg(to)
+  X <- as.data.frame(ymd(x, drop = FALSE))
+  if (to == "month") {
+    X$m <- X$m + (X$d > 1L)
+    X$y <- X$y + (i <- X$m == 13L)
+    X$m[i] <- 1L
+    as.Date(paste(X$y, X$m, "1", sep = "-"), format = "%Y-%m-%d")
+  } else { # "year"
+    X$y <- X$y + (X$m > 1L || X$d > 1L)
+    as.Date(paste(X$y, "1", "1", sep = "-"), format = "%Y-%m-%d")
+  }
 }

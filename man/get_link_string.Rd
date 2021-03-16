@@ -34,9 +34,10 @@ Prepend, strip, and retrieve link prefixes
 from nonlinear model parameter names.
 }
 \examples{
-# get_link_string("r")
 # add_link_string("r")
 # remove_link_string("log_r")
+# get_link_string("r")
+# get_link_string("log_r")
 
 }
 \keyword{internal}

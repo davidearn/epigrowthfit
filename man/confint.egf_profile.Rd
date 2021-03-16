@@ -11,29 +11,22 @@
 
 \item{parm}{Unused argument included for generic consistency.}
 
-\item{level}{A number in the interval (0,1), indicating a confidence level.}
+\item{level}{A number in the interval (0,1). The desired confidence level.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
 A data frame with variables:
-\item{\code{index}}{
-Row index of linear combination, from \code{levels(object$index)}.
+\item{\code{linear_combination}}{
+Row index of linear combination,
+from \code{seq_len(nrow(attr(object, "A")))}.
 }
 \item{\code{estimate}, \code{lower}, \code{upper}}{
-Estimate and (approximate) lower and upper confidence limits
-of linear combination.
+Estimate of linear combination
+and approximate lower and upper confidence limits.
 }
-\item{\code{par}}{
-(If \code{object$par} is non-\code{NULL}.)
-Nonlinear model parameter, from \code{levels(object$par)}.
-}
-\item{\code{window}}{
-(If \code{object$window} is non-\code{NULL}.)
-Fitting window, from \code{levels(object$window)}.
-}
-\code{level} and attributes \code{A} and \code{par} of \code{object} are retained
-as attributes.
+\code{level}, \code{A = attr(object, "A")}, and \code{x = attr(object, "x")}
+are retained as attributes.
 }
 \description{
 Computes confidence intervals on fixed effects coefficients,
@@ -42,8 +35,10 @@ linear combinations thereof from their univariate likelihood
 profiles.
 }
 \details{
-For each supplied likelihood profile (level of \code{object$index}),
-\code{\link[stats:approxfun]{stats::approx()}} is called to approximate (via linear interpolation)
-the two solutions of \code{deviance(value) = qchisq(level, df = 1)},
-which provide the lower and upper confidence limits of interest.
+Each supplied likelihood profile
+(level of \code{object$linear_combination}),
+is linearly interpolated to approximate the two solutions of
+\code{deviance(value) = qchisq(level, df = 1)}.
+These provide the lower and upper confidence limits of interest
+(see Wilks' theorem).
 }

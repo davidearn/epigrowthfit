@@ -19,7 +19,7 @@ standard deviations of random effects coefficients are retained.}
 \value{
 A covariance or correlation matrix inheriting from class
 \code{"egf_vcov"}. The number of rows is equal to the length
-of the \code{"beta"} component of \code{object$par} plus the length
+of the \code{"beta"} component of \code{object$best} plus the length
 the \code{"log_sd_b"} component (if \code{full = TRUE}).
 }
 \description{

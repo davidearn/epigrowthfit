@@ -29,8 +29,8 @@ See \code{\link[stats:model.matrix]{stats::model.matrix()}}.
 }
 \item{\code{group}}{
 \code{make_Z()} only. For \code{x = (foo | group)}, a factor of length
-\code{ncol(Z)} with levels \code{levels(group)}. Used to split \code{Z} back
-into group-specific submatrices.
+\code{ncol(Z)} with levels \code{levels(group)}, useful for splitting
+\code{Z} into group-specific submatrices.
 }
 }
 \description{

@@ -16,16 +16,17 @@
 A data frame inheriting from class \code{"egf_ranef"},
 with one row per coefficient and variables:
 \item{\code{name}}{
-Coefficient name in the full parameter vector \code{object$par}.
+Coefficient name in the full parameter vector \code{object$best}.
 }
 \item{\code{par}}{
 Nonlinear model parameter, from
 \code{get_par_names(object, link = TRUE)}.
 }
 \item{\code{term}, \code{group}}{
-Term from random effects component of mixed effects formula.
-\code{term} and \code{group} give the left and right hand sides of the
-\code{|} operator, respectively.
+Term from random effects component of mixed effects formula
+for nonlinear model parameter \code{par}. \code{term} and \code{group}
+give the left and right hand sides of the \code{|} operator,
+respectively.
 }
 \item{\code{level}}{
 Level of the interaction specified by \code{group}.
@@ -34,7 +35,7 @@ Level of the interaction specified by \code{group}.
 Corresponding column name in the random effects design matrix
 \code{object$tmb_args$data$Z}.
 }
-\item{\code{mode}, \code{sd}}{
+\item{\code{mode}}{
 Conditional mode (unit variance scale).
 }
 \item{\code{sd}}{

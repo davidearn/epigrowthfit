@@ -8,38 +8,49 @@
   fitted,
   which = NULL,
   A = NULL,
-  parm = get_par_names(fitted, link = TRUE),
+  par = get_par_names(fitted, link = TRUE),
+  subset = NULL,
+  append = NULL,
   max_level = 0.99,
-  grid_len = 12L,
+  grid_len = 12,
   trace = TRUE,
   parallel = c("serial", "multicore", "snow"),
   cores = getOption("egf.cores", 2L),
   outfile = NULL,
   cl = NULL,
+  .subset = NULL,
+  .append = NULL,
   ...
 )
 }
 \arguments{
 \item{fitted}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
-\item{which}{An integer vector indexing coefficients in \code{fitted$par}
+\item{which}{An integer vector indexing coefficients in \code{fitted$best}
 to be profiled. Must be a subset of \code{fitted$nonrandom}.}
 
 \item{A}{A numeric matrix with \code{length(fitted$nonrandom)} columns.
-Each row specifies a linear combination of the elements
-of \code{fitted$par[fitted$nonrandom]} to be profiled. Ignored
-if \code{which} is non-\code{NULL}.}
+Each row specifies a linear combination of the elements of
+\code{fitted$best[fitted$nonrandom]} to be profiled. Ignored if
+\code{which} is non-\code{NULL}.}
 
-\item{parm}{A character vector listing nonlinear model parameters whose
-population fitted values should be profiled. Must be a subset
-of \code{get_par_names(fitted, link = TRUE)}. Ignored if one of
-\code{which} and \code{lin_comb} is non-\code{NULL}. (Here, "population
-fitted value" refers to the fixed effects component of the
-individual or overall fitted value, which accounts for both
-fixed and random effects.)}
+\item{par}{A subset of \code{get_par_names(fitted, link = TRUE)} naming nonlinear
+model parameters whose population fitted values should be profiled.
+Ignored if \code{which} or \code{A} is non-\code{NULL}.}
 
-\item{max_level}{A number in the interval (0,1). Profiles will be computed
-up to a deviance of \code{qchisq(max_level, df = 1)}.}
+\item{subset}{An expression to be evaluated in the combined model frame. Must
+evaluate to a logical vector or list of logical vectors indexing
+rows of the model frame, and thus fitting windows. Only population
+fitted values for the indexed fitting windows are profiled. The
+default (\code{NULL}) is to consider all fitting windows. Ignored if
+\code{which} or \code{A} is non-\code{NULL}.}
+
+\item{append}{An expression indicating variables in the combined model frame
+to be included with the result. The default (\code{NULL}) is to
+append nothing. Ignored if \code{which} or \code{A} is non-\code{NULL}.}
+
+\item{max_level}{A number in the interval (0,1). Profiles will be computed up to
+a deviance of \code{qchisq(max_level, df = 1)}.}
 
 \item{grid_len}{A positive integer. Step sizes chosen adaptively by
 \code{\link[TMB:tmbprofile]{TMB::tmbprofile()}} will generate approximately this
@@ -67,11 +78,17 @@ may be necessary to view output.}
 when \code{parallel = "snow"}. If non-\code{NULL},
 then \code{cores} and \code{outfile} are ignored.}
 
+\item{.subset}{A logical vector, to be used (if non-\code{NULL}) in place
+of the result of evaluating \code{subset}.}
+
+\item{.append}{A character vector listing variable names, to be used
+(if non-\code{NULL}) in place of the result of evaluating \code{append}.}
+
 \item{...}{Unused optional arguments.}
 }
 \value{
 A data frame inheriting from class \code{"egf_profile"}, with variables:
-\item{\code{index}}{
+\item{\code{linear_combination}}{
 Row index of linear combination, from \code{seq_len(nrow(A))}.
 }
 \item{\code{value}}{
@@ -82,14 +99,19 @@ Deviance of the restricted model that assumes \code{value}
 for the linear combination being profiled.
 }
 \item{\code{par}}{
-(\code{parm}-based calls only.)
-Nonlinear model parameter, from \code{parm}.
+(\code{par}-based calls only.)
+Nonlinear model parameter,
+from \code{get_par_names(fitted, link = TRUE)}.
+}
+\item{\code{ts}}{
+(\code{par}-based calls only.)
+Time series, from \code{levels(fitted$frame_ts$ts)}.
 }
 \item{\code{window}}{
-(\code{parm}-based calls only.)
-Fitting window, from \code{levels(fitted$frame_ts$.window)}.
+(\code{par}-based calls only.)
+Fitting window, from \code{levels(fitted$frame_ts$window)}.
 }
-Matrix \code{A} and vector \code{par = fitted$par[fitted$nonrandom]}
+\code{A} and \code{x = fitted$best[fitted$nonrandom]}
 are retained as attributes.
 }
 \description{
@@ -98,16 +120,38 @@ coefficients, log standard deviations of random effects
 coefficients, and linear combinations thereof.
 }
 \details{
+The population fitted value is the fixed effects component of the
+fitted value (see \code{\link[=fitted.egf]{fitted.egf()}}). In fixed effects models, there
+is no distinction.
+
 \code{which} is mapped to an \code{A} matrix composed of unit row vectors,
 with 1 at array index \verb{[i, which[i]]} for all \code{i}.
-\code{A \%*\% fitted$par[fitted$nonrandom]} reproduces \code{fitted$par[which]}.
+\code{A \%*\% fitted$best[fitted$nonrandom]} is precisely
+\code{fitted$best[which]}.
 
-\code{parm} is mapped to an \code{A} matrix composed of blocks that
-are precisely the fixed effects design matrices for nonlinear
-model parameters \code{parm}. \code{A \%*\% fitted$par[fitted$nonrandom]}
-is a vector listing each parameters' population fitted values
-(one per fitting window per parameter).
+\code{par} and \code{subset} are mapped to a block \code{A} matrix. Block \code{k}
+(from the top) is composed of rows of the fixed effects design
+matrix for parameter \code{par[k]} (those rows indexed by \code{subset}).
+\code{A \%*\% fitted$par[fitted$nonrandom]} is a vector listing the
+population fitted values for each parameter named in \code{par},
+for each fitting window indexed by \code{subset}.
 }
+\section{Nonstandard evaluation}{
+\code{subset} and \code{append} are evaluated in a nonstandard way
+to make interactive use more convenient. They are handled
+much like the \code{\link[=subset]{subset()}} arguments \code{subset} and \code{select}.
+To avoid unexpected behaviour, especially when programming,
+use \code{.subset} and \code{.append}.
+}
+
+\section{Warning}{
+The combined model frame is \code{do.call(cbind, object$frame_par)}.
+If a variable occurs more than once there, because it appears
+in multiple model frames, then only the earliest instance is
+retained. Except in unusual cases, all instances of a variable
+will be identical, so no information will be lost.
+}
+
 \seealso{
 \code{\link[=confint.egf_profile]{confint.egf_profile()}}, \code{\link[=plot.egf_profile]{plot.egf_profile()}}
 }

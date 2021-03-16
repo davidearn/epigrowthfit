@@ -37,7 +37,7 @@ a warning instead of an error.
 \examples{
 # x <- 1.1
 # stop_if_not(
-#   is.vector(x, "numeric"),
+#   is.numeric(x),
 #   length(x) == 1L,
 #   x > 0,
 #   x < 1,

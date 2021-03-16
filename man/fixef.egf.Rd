@@ -16,14 +16,15 @@
 A data frame inheriting from class \code{"egf_fixef"},
 with one row per coefficient and variables:
 \item{\code{name}}{
-Coefficient name in the full parameter vector \code{object$par}.
+Coefficient name in the full parameter vector \code{object$best}.
 }
 \item{\code{par}}{
 Nonlinear model parameter, from
 \code{get_par_names(object, link = TRUE)}.
 }
 \item{\code{term}}{
-Term from fixed effects component of mixed effects formula.
+Term from fixed effects component of mixed effects formula
+for nonlinear model parameter \code{par}.
 }
 \item{\code{colname}}{
 Corresponding column name in the fixed effects design matrix

@@ -4,22 +4,21 @@
 \alias{make_tmb_parameters}
 \title{Construct parameter objects for C++ template}
 \usage{
-make_tmb_parameters(tmb_data, frame_ts, frame_glmm, curve, par_init)
+make_tmb_parameters(tmb_data, frame_ts, frame_par, curve, init)
 }
 \arguments{
 \item{tmb_data}{A \code{"tmb_data"} object returned by \code{\link[=make_tmb_data]{make_tmb_data()}}.}
 
 \item{frame_ts}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
 
-\item{frame_glmm}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
+\item{frame_par}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
-\item{par_init}{A full parameter vector for the first likelihood evaluation.
-Set to \code{NULL} to accept the internally generated default. If
-the default causes errors, then use \code{debug = TRUE} to retrieve
-its value, which will have the correct length, and modify as
-necessary.}
+\item{init}{A full parameter vector for the first likelihood evaluation.
+Set to \code{NULL} to accept the internally generated default.
+Use \code{debug = TRUE} to retrieve this default, which is useful
+as a template.}
 }
 \value{
 A list with elements:
@@ -46,8 +45,8 @@ via TMB's \code{PARAMETER_} macros during the first likelihood evaluation.
 See \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.
 }
 \details{
-When \code{par_init = NULL}, naive estimates of nonlinear model
-parameters are obtained for each fitting window as follows:
+When \code{init = NULL}, naive estimates of nonlinear model parameters are
+obtained for each fitting window as follows:
 \describe{
 \item{\code{r}}{
 The slope of a linear model fit to \verb{log1p(cumsum(x)))}.

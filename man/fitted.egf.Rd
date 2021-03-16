@@ -7,63 +7,68 @@
 \usage{
 \method{fitted}{egf}(
   object,
+  par = get_par_names(object, link = TRUE),
   subset = NULL,
-  select = NULL,
+  append = NULL,
   link = TRUE,
-  append_frame = TRUE,
+  .subset = NULL,
+  .append = NULL,
   ...
 )
 
 \method{coef}{egf}(
   object,
+  par = get_par_names(object, link = TRUE),
   subset = NULL,
-  select = NULL,
+  append = NULL,
   link = TRUE,
-  append_frame = TRUE,
+  .subset = NULL,
+  .append = NULL,
   ...
 )
 }
 \arguments{
 \item{object}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
-\item{subset}{A list of logical expressions to be evaluated in the combined
-model frame \code{do.call(cbind, object$frame_glmm)}. Fitted values
-are returned only for the indexed fitting windows. Use the
-default (\code{NULL}) to retrieve fitted values for all fitting
-windows.}
+\item{par}{A subset of \code{get_par_names(object, link = TRUE)} naming nonlinear
+model parameters for which fitted values should be retrieved.}
 
-\item{select}{A subset of \code{get_par_names(object, link = TRUE)} naming
-nonlinear model parameters for which fitted values should
-be returned. Use the default (\code{NULL}) to retrieve fitted
-values for all nonlinear model parameters.}
+\item{subset}{An expression to be evaluated in the combined model frame. Must
+evaluate to a logical vector or list of logical vectors indexing
+rows of the data frame, and thus fitting windows. Fitted values
+are retrieved only for the indexed fitting windows. The default
+(\code{NULL}) is to consider all fitting windows.}
+
+\item{append}{An expression indicating variables in the combined model frame
+to be included with the result. The default (\code{NULL}) is to append
+nothing.}
 
 \item{link}{A logical scalar. If \code{FALSE}, then fitted values are inverse
 link-transformed.}
 
-\item{append_frame}{A logical scalar. If \code{TRUE}, then observed values of covariates
-are reported alongside fitted values.}
+\item{.subset}{A logical vector, to be used (if non-\code{NULL}) in place
+of the result of evaluating \code{subset}.}
+
+\item{.append}{A character vector listing variable names, to be used
+(if non-\code{NULL}) in place of the result of evaluating \code{append}.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
 A data frame inheriting from class \code{"egf_fitted"}, with variables:
-\item{\code{.par}}{
-Nonlinear model parameter, from \code{get_par_names(object, link)}.
+\item{\code{par}}{
+Nonlinear model parameter,
+from \code{get_par_names(object, link = link)}.
 }
-\item{\code{.window}}{
-Fitting window, from \code{levels(object$frame_ts$.window)}.
+\item{\code{ts}}{
+Time series, from \code{levels(object$frame_ts$ts)}.
 }
-\item{\code{.value}}{
-Fitted value of parameter \code{.par} in fitting window \code{.window}.
+\item{\code{window}}{
+Fitting window, from \code{levels(object$frame_ts$window)}.
 }
-
-If \code{append_frame = TRUE}, then observed values of covariates
-from the combined model frame \code{do.call(cbind, object$frame_glmm)}
-are also reported. (If a variable occurs more than once there,
-because it appears in multiple model frames, then only the
-earliest instance is retained. Except in very unusual cases,
-all instances of the variable are identical, so no information
-is lost.)
+\item{\code{value}}{
+Fitted value of parameter \code{par} in fitting window \code{window}.
+}
 }
 \description{
 Extracts the fitted values of nonlinear model parameters.
@@ -77,3 +82,19 @@ coefficients set equal to their conditional modes.
 \details{
 \code{coef.egf()} is currently an alias for \code{fitted.egf()}.
 }
+\section{Nonstandard evaluation}{
+\code{subset} and \code{append} are evaluated in a nonstandard way
+to make interactive use more convenient. They are handled
+much like the \code{\link[=subset]{subset()}} arguments \code{subset} and \code{select}.
+To avoid unexpected behaviour, especially when programming,
+use \code{.subset} and \code{.append}.
+}
+
+\section{Warning}{
+The combined model frame is \code{do.call(cbind, object$frame_par)}.
+If a variable occurs more than once there, because it appears
+in multiple model frames, then only the earliest instance is
+retained. Except in unusual cases, all instances of a variable
+will be identical, so no information will be lost.
+}
+

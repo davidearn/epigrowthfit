@@ -6,7 +6,7 @@
 \usage{
 make_frames(
   formula_ts,
-  formula_glmm,
+  formula_par,
   data,
   window,
   curve,
@@ -14,47 +14,50 @@ make_frames(
   distr,
   weekday,
   na_action,
-  par_init
+  init
 )
 }
 \arguments{
-\item{formula_ts}{A formula of the form \code{y ~ x} or \code{y ~ x | ts} specifying
-one or more incidence time series in long format. \code{x} and \code{y}
-must evaluate to Date and numeric vectors, respectively. \code{ts}
-must evaluate to a factor splitting the data by time series.
-\code{y ~ x} is equivalent to \code{y ~ x | ts} with \code{ts} evaluating
-to \code{rep(factor(1), length(x))}. In each time series, \code{y[i]}
-should give the number of cases observed from \code{23:59:59} on
-date \code{x[i-1]} to \code{23:59:59} on date \code{x[i]} (hence time series
-may have unequal spacing).}
+\item{formula_ts}{A formula of the form \code{x ~ time} or \code{x ~ time | ts} specifying
+one or more incidence time series in long format. \code{time} must
+evaluate to a Date vector. Elements \code{"YYYY-MM-DD"} of \code{time}
+are read as "time 23:59:59 on date YYYY-MM-DD". \code{x} must
+evaluate to a numeric vector. Within a time series, \code{x[i]}
+should specify the number of cases observed from \code{time[i-1]}
+to \code{time[i]}. Finally, \code{ts} must evaluate to a factor, such
+that \code{split(data.frame(time, x), ts)} returns a list of time
+series. Note that \code{x ~ time} is equivalent to \code{x ~ time | ts}
+with \code{ts} set equal to \code{rep(factor(1), length(x))}.}
 
-\item{formula_glmm}{A named list of formulae of the form \code{~terms}, specifying
-mixed effects models (with \code{\link[lme4:lmer]{lme4}}-like syntax)
-for nonlinear model parameters.
-In this case, \code{names(formula_glmm)} must be a subset of
-\code{get_par_names(curve, distr, excess, weekday, link = TRUE)},
-and \code{~1} is used as a default for parameters not assigned a
-formula. Alternatively, a formula of the form \code{~terms} to be
-recycled for all nonlinear model parameters. Mixed effects
-variables must match the length of time series variables and
-be constant in each fitting window.}
+\item{formula_par}{A named list of formulae of the form \code{~terms}, specifying
+mixed effects models (\code{\link[lme4:lmer]{lme4}}-like syntax)
+for nonlinear model parameters. \code{names(formula_par)} must
+be a subset of
+\code{get_par_names(curve, distr, excess, weekday, link = TRUE)}.
+\code{~1} is the default for parameters not assigned a formula.
+Alternatively, \code{formula_par} may itself be a formula of
+the form \code{~terms}. In this case, the formula is recycled
+for all nonlinear model parameters. Mixed effects variables
+must match the length of the time series variables and be
+constant in each level of \code{window}.}
 
-\item{data}{A data frame, list, or environment. \code{egf()} looks here for
-variables used in \code{formula_ts} and \code{formula_glmm}, before
-looking in formula environments.}
+\item{data}{A data frame, list, or environment. \code{egf()} looks here
+for variables used in \code{formula_ts} and \code{formula_par},
+before looking in formula environments.}
 
 \item{window}{A factor of length \code{nrow(data)} such that \code{split(data, window)}
 splits \code{data} by fitting window, with \code{is.na(window)} indexing
-rows of \code{data} not belonging to a fitting window. (Such a factor
-can be constructed from a list of fitting window endpoints using
-\code{\link[=make_window]{make_window()}}.)}
+rows of \code{data} not belonging to a fitting window. Note that
+such a factor can be constructed from a table of fitting window
+endpoints using \code{\link[=make_window]{make_window()}}.)}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate is estimated. Set to \code{TRUE} if what is observed (\code{y} if
-\code{formula = y ~ x | ts}) is multiple causes mortality rather than
-disease mortality or disease incidence.}
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
+mortality rate is estimated. Set to \code{TRUE} if what is
+observed (\code{x} if \code{formula_ts = x ~ time | ts}) is
+multiple causes mortality rather than disease mortality
+or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
@@ -62,29 +65,33 @@ disease mortality or disease incidence.}
 though this currently requires daily observation of incidence in
 all fitting windows.}
 
-\item{na_action}{A character string indicating how \code{NA} in incidence
-(\code{y} if \code{formula_ts = y ~ x | ts}) are handled.
-\code{NA} in other \code{formula_ts} variables are an error.
-\code{NA} in \code{formula_glmm} variables \emph{within fitting windows}
-are an error.}
+\item{na_action}{A character string indicating how \code{NA} in incidence (\code{x}
+if \code{formula_ts = x ~ time | ts}) are handled. Note that \code{NA}
+in other \code{formula_ts} variables are an error, and \code{NA} in
+\code{formula_par} variables within fitting windows are an error.}
 
-\item{par_init}{A full parameter vector for the first likelihood evaluation.
-Set to \code{NULL} to accept the internally generated default. If
-the default causes errors, then use \code{debug = TRUE} to retrieve
-its value, which will have the correct length, and modify as
-necessary.}
+\item{init}{A full parameter vector for the first likelihood evaluation.
+Set to \code{NULL} to accept the internally generated default.
+Use \code{debug = TRUE} to retrieve this default, which is useful
+as a template.}
 }
 \value{
 A list with elements:
 \item{\code{frame_ts}}{
-The model frame for time series formula \code{formula_ts},
-storing \code{terms(formula_ts)} as an attribute.
+The time series model frame, constructed from \code{formula_ts}.
+Retains \code{terms = terms(formula_ts)} as an attribute.
+Attribute \code{names_bak} is a replacement for \code{names(frame_ts)}.
+It preserves deparsed formula components, so that if
+\code{formula_ts = foo ~ bar | baz}, then \code{names_bak} is
+\code{c("bar", "foo", "baz", "window")}, whereas \code{names(frame_ts)}
+is always \code{c("time", "x", "ts", "window")}, regardless
+of \code{formula_ts}.
 }
-\item{\code{frame_glmm}}{
-A list containing the model frame for each mixed effects formula
-listed in \code{formula_glmm} (after completion with the default \code{~1}
-or recycling, depending on the input). \code{frame_glmm[[i]]} stores
-\code{terms(formula_glmm[[i]])} as an attribute.
+\item{\code{frame_par}}{
+A list of mixed effects model frames (one per nonlinear model
+parameter), constructed from \code{formula_par} (after completion).
+\code{frame_par[[i]]} retains \code{terms = terms(formula_par[[i]])} as
+an attribute.
 }
 }
 \description{
@@ -92,21 +99,23 @@ Constructs model frames to be used by \code{\link[=egf]{egf()}},
 while performing myriad checks on the input.
 }
 \details{
-\code{frame_ts} is constructed from \code{formula_ts}, though not using
-\code{\link[stats:model.frame]{stats::model.frame()}} machinery. Without loss of generality,
-if \code{formula_ts = y ~ x | ts}, then \code{frame_ts} has variables
-\code{x} (Date), \code{y} (numeric), \code{ts} (factor), and \code{.window} (factor).
-Roughly, it is obtained by evaluating the expressions for \code{x},
-\code{y}, and \code{ts} in \code{data} (enclosed by \code{environment(formula_ts)}),
-joining the resulting vectors and \code{window} in a data frame,
-discarding rows belonging to time series without fitting windows,
-and ordering the remaining rows according to \code{order(ts)}.
+The \code{frame_ts} model frame is constructed from \code{formula_ts},
+without use of \code{\link[stats:model.frame]{stats::model.frame()}} machinery. Without loss
+of generality, if \code{formula_ts = x ~ time | ts}, then \code{frame_ts}
+is obtained by evaluating expressions \code{time}, \code{x}, and \code{ts}
+in \code{data} (enclosed by \code{environment(formula_ts)}), joining
+the resulting vectors and \code{window} in a data frame, discarding
+rows belonging to time series without fitting windows,
+permuting the remaining rows so that \code{order(ts)} is increasing,
+permuting \code{levels(window)} so that \code{order(window)} is increasing,
+and finally replacing Date vector \code{time} with numeric vector
+\code{julian(time, min(time))}.
 
-\code{frame_glmm} model frames are constructed by passing modified
-\code{formula_glmm} formulae to \code{\link[stats:model.frame]{stats::model.frame()}}, applying to
+The \code{frame_par} model frames are constructed by passing modified
+\code{formula_par} formulae to \code{\link[stats:model.frame]{stats::model.frame()}}, applying to
 the resulting data frames the same subset operations performed
 to construct \code{frame_ts}, then discarding all but the first row of
 each fitting window, so that each data frame has \code{nlevels(window)}
-rows. (There is no loss of information here, as all \code{formula_glmm}
+rows. (There is no loss of information here, as all \code{formula_par}
 variables are required to be constant within fitting windows.)
 }
