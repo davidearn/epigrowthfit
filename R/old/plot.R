@@ -6,46 +6,45 @@
 #' @param x
 #'   An `"egf"` object returned by [egf()].
 #' @param type
-#'   A character string indicating a type of plot. Options are
+#'   A character string indicating a type of plot. Options are:
 #'   `"interval"` (interval incidence),
 #'   `"cumulative"` (cumulative incidence),
-#'   `"rt1"`, and `"rt2"` (instantaneous exponential growth rate).
+#'   `"rt1"` (per capita growth rate as curve), and
+#'   `"rt2"` (per capita growth rate as heat map).
 #' @param subset
-#'   A named list of atomic vectors with elements specifying levels of
-#'   factors in `x$frame`. Only the subset of fitting windows belonging
-#'   to these levels is plotted. Use `NULL` (the default) to plot all
-#'   fitting windows or if `x$frame` has no factors.
+#'
 #' @param log
-#'   A logical scalar. If `TRUE`, then the dependent variable is plotted
-#'   on a logarithmic scale. Unused by `type %in% c("rt1", "rt2")`.
+#'   A logical scalar. If `TRUE`, then the dependent variable is
+#'   plotted on a logarithmic scale. Unused by `type = "rt[12]"`.
 #' @param tol
 #'   A non-negative number or `Inf`. Used to define "exceptional"
-#'   points when `type = "interval"`. `cases[-1]` is highlighted
-#'   according to `control$points_short` if `diff(date) < (1-tol)*m`
-#'   and according to `control$points_long` if `diff(date) > (1+tol)*m`,
-#'   where `m = median(diff(date))`. In both cases, the value of
-#'   `diff(date)` is printed above the point. Assign 0 to highlight
+#'   points when `type = "interval"`. With a time series, `x[-1]`
+#'   is highlighted
+#'   according to `control$points_short` if `diff(time) < (1-tol)*m` and
+#'   according to `control$points_long`  if `diff(time) > (1+tol)*m`,
+#'   where `m = median(diff(time))`. In both cases, the value of
+#'   `diff(time)` is printed above the point. Assign 0 to highlight
 #'   all deviations from `m`. Assign `Inf` to disable highlighting.
 #' @param legend
 #'   A logical scalar. If `TRUE`, then a legend is displayed in the
-#'   right margin. Unused by `type != "rt2"`.
+#'   right margin. Unused by `type = "rt2"`.
 #' @param level
 #'   A number in the interval (0,1). The confidence level represented
-#'   by confidence intervals on doubling times and confidence bands on
-#'   predicted values. Unused by `type = "rt2"`.
+#'   by confidence intervals on doubling times and confidence bands
+#'   on predicted curves. Unused by `type = "rt2"`.
 #' @param bands
 #'   A logical scalar. If `TRUE`, then confidence bands on predicted
-#'   curves are displayed. Longer run times can be anticipated in this
-#'   case. Unused by `type = "rt2"`.
+#'   curve are drawn. Longer run times can be anticipated in this case.
+#'   Unused by `type = "rt2"`.
 #' @param control
 #'   A list of lists defining the appearance of various plot elements,
 #'   or otherwise `NULL` (see Details).
 #' @param per_plot
-#'   A positive integer. One plot will display this many time series
+#'   A positive integer. The number of panels displayed in one plot
 #'   when `type = "rt2"`.
-#' @param bw_panels
-#'   A non-negative number. The spacing between panels as a number of
-#'   margin lines used when `type = "rt2"`.
+#' @param between_panels
+#'   A non-negative number. The spacing between panels when
+#'   `type = "rt2"`, expressed as a number of margin lines.
 #' @param ...
 #'   Optional arguments specifying additional graphical parameters
 #'   to be recycled for all plots. Currently, only `xlim`, `ylim`,
@@ -58,12 +57,12 @@
 #'   title from subtitle.
 #'
 #' @return
-#' `NULL` (invisibly).
+#' A list inheriting from class `sprintf("egf_plot_%s", type)`
+#' (invisibly). The list preserves computed plot elements for reuse.
 #'
 #' @details
-#' `control` must be `NULL` or a named list containing some subset
-#' of the elements ("control parameters") below:
-#'
+#' `control` must be `NULL` or a named list of named lists,
+#' defining some subset of the following control parameters:
 #' \describe{
 #' \item{`box`}{
 #'   A named list of arguments to [graphics::box()], affecting
@@ -71,7 +70,7 @@
 #' }
 #' \item{`xax`, `yax`}{
 #'   Named lists of arguments to [graphics::axis()], affecting the
-#'   appearance of the bottom and left axes. Option `mgp2` defines
+#'   appearance of the bottom and left axes. Option `mgp2` sets
 #'   the second component of the usual `mgp` argument. The minor
 #'   (day or month) and major (month or year) bottom axes can be
 #'   controlled separately by listing vectors of length 2.
@@ -109,7 +108,7 @@
 #' }
 #' \item{`text_tdoubling`}{
 #'   A named list of arguments to [graphics::text()], affecting
-#'   the appearance of printed initial doubling times when
+#'   the appearance of initial doubling times printed when
 #'   `x$curve %in% c("exponential", "logistic", "richards")`.
 #'   The estimate, confidence interval, and caption can be
 #'   controlled separately by listing vectors of length 3.
@@ -127,7 +126,7 @@
 #' \item{`colorRamp`}{
 #'   A named list of arguments to [grDevices::colorRamp()],
 #'   affecting the color palette used when `type = "rt2"`.
-#'   (Currently, this is the only control parameter for
+#'   (Currently, `colorRamp` is the only control parameter for
 #'   `type = "rt2"`.)
 #' }
 #' }
@@ -135,10 +134,9 @@
 #' A catalogue of modifiable options for each control parameter can
 #' be obtained with `get_control_default("plot.egf", type = type)`.
 #' Unspecified options take their values in this list. Unsupported
-#' options are discarded.
-#'
-#' To suppress a plot element, set the corresponding control parameter
-#' to `NULL`, as in `control = list(box = NULL)`.
+#' options are discarded. To suppress a plot element,
+#' set the corresponding control parameter to `NULL`,
+#' as in `control = list(box = NULL)`.
 #'
 #' @export
 plot.egf <- function(x,
@@ -151,91 +149,17 @@ plot.egf <- function(x,
                      bands = FALSE,
                      control = NULL,
                      per_plot = 6L,
-                     bw_panels = 0.25,
+                     between_panels = 0.25,
                      ...) {
   type <- match.arg(type)
-  interaction0 <- function(...) interaction(..., drop = TRUE, sep = ":")
+  control <- clean_control(control, "plot.egf", type = type)
 
-  group_by <- attr(x$frame, "group_by")
-  any_groups <- (length(group_by) > 0L) # TRUE: multiple time series
-  any_factors <- (length(x$frame) > 2L) # TRUE: mixed effects model
+  frame <- do.call(cbind, unname(object$frame_par))
+  frame <- frame[!duplicated(names(frame))]
+  subset <- subset_to_index(substitute(subset), frame, parent.frame(),
+                            .subset = .subset)
 
-  ## Augmented frame
-  frame_aug <- rbind(x$frame, attr(x$frame, "extra"))
-  frame_aug <- cbind(frame_aug, .index = `length<-`(x$index, nrow(frame_aug)))
 
-  ## Reduced frame
-  if (any_factors) {
-    frame_red <- x$frame[!duplicated(x$index), -(1:2), drop = FALSE]
-  }
-
-  ## Subset
-  if (any_factors && !is.null(subset)) {
-    stop_if_not(
-      is.list(subset),
-      length(subset) > 0L,
-      !is.null(names(subset)),
-      m = "`subset` must be a named list or NULL."
-    )
-    stop_if_not(
-      vapply(subset, is.atomic, FALSE),
-      lengths(subset) > 0L,
-      names(subset) %in% names(frame_red),
-      !duplicated(names(subset)),
-      unlist(Map(`%in%`, subset, lapply(frame_red[names(subset)], levels))),
-      m = "`subset` must specify levels of factors in `x$frame`."
-    )
-    l <- Map(`%in%`, frame_red[names(subset)], subset)
-    w <- Reduce(`&`, l)
-    stop_if_not(
-      any(w),
-      m = "`subset` does not match any fitting windows."
-    )
-    ## Omit excluded fitting windows
-    frame_aug$.index <- factor(frame_aug$.index, levels = levels(x$index)[w])
-  }
-
-  ## Split augmented frame by time series
-  if (any_groups) {
-    ts <- interaction0(frame_aug[group_by])
-    frame_aug_split <- split(frame_aug, ts)
-  } else {
-    frame_aug_split <- list(`1` = frame_aug)
-  }
-
-  ## Omit time series now without fitting windows
-  omit <- vapply(frame_aug_split, function(d) all(is.na(d$.index)), FALSE)
-  frame_aug_split <- frame_aug_split[!omit]
-
-  ## Order time series by date
-  frame_aug_split <- lapply(frame_aug_split, function(d) d[order(d[[1L]]), ])
-
-  ## Drop unused levels
-  frame_aug_split <- lapply(frame_aug_split, droplevels)
-
-  ## Order data frames according to `subset`
-  if (any_groups && !is.null(subset) && any(group_by %in% names(subset))) {
-    subset <- subset[intersect(group_by, names(subset))]
-    frame_red[names(subset)] <- Map(factor, x = frame_red[names(subset)], levels = subset)
-    ord <- order(match(names(frame_aug_split), levels(interaction0(frame_red[names(subset)]))))
-    frame_aug_split <- frame_aug_split[ord]
-  }
-
-  ## Validate `control` structure (quietly)
-  if (is.null(control) || !inherits(control, "list") || is.null(names(control))) {
-    control <- get_control_default("plot.egf", type = type)
-  } else {
-    control_default <- get_control_default("plot.egf", type = type)
-    for (pe in intersect(names(control), names(control_default))) {
-      if (is.null(control[[pe]])) {
-        control_default[pe] <- list(NULL)
-      } else if (inherits(control[[pe]], "list") && !is.null(names(control[[pe]]))) {
-        s <- intersect(names(control[[pe]]), names(control_default[[pe]]))
-        control_default[[pe]][s] <- control[[pe]][s]
-      }
-    }
-    control <- control_default
-  }
 
   if (type %in% c("interval", "cumulative", "rt1")) {
     plot.egf.main(x,

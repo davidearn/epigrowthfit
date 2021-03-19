@@ -37,16 +37,14 @@
 #' identical(apn_l0, sub("^(log|logit)_", "", apn_l1))
 #'
 #' @export
-get_par_names <- function(curve = NULL, excess = NULL,
-                          distr = NULL, weekday = NULL,
-                          link = TRUE) {
+get_par_names <- function(curve, ...) {
   UseMethod("get_par_names", curve)
 }
 
 #' @export
 get_par_names.default <- function(curve = NULL, excess = NULL,
                                   distr = NULL, weekday = NULL,
-                                  link = TRUE) {
+                                  link = TRUE, ...) {
   if (is.null(curve)) {
     pn <- c("r", "alpha", "c0", "tinfl", "K", "p", "a")
   } else {
@@ -75,7 +73,7 @@ get_par_names.default <- function(curve = NULL, excess = NULL,
 }
 
 #' @export
-get_par_names.tmb_data <- function(curve, excess, distr, weekday, link = TRUE) {
+get_par_names.tmb_data <- function(curve, link = TRUE, ...) {
   pn <- levels(curve$X_info$par)
   if (link) {
     return(pn)
@@ -84,7 +82,7 @@ get_par_names.tmb_data <- function(curve, excess, distr, weekday, link = TRUE) {
 }
 
 #' @export
-get_par_names.egf <- function(curve, excess, distr, weekday, link = TRUE) {
+get_par_names.egf <- function(curve, link = TRUE, ...) {
   get_par_names(curve$tmb_args$data, link = link)
 }
 
@@ -1000,8 +998,8 @@ make_tmb_data <- function(frame_ts, frame_par,
   b_seg_len <- as.integer(table(Z_info$par))
 
   ## Coefficients factored by nonlinear model parameter
-  beta_seg_index <- unclass(X_info$par) - 1L
-  b_seg_index <- unclass(Z_info$par) - 1L
+  beta_seg_index <- as.integer(X_info$par) - 1L
+  b_seg_index <- as.integer(Z_info$par) - 1L
 
   ## Dimensions of random effects blocks whose column vectors
   ## are related by a covariance matrix

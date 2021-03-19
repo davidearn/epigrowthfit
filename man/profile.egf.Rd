@@ -46,8 +46,8 @@ default (\code{NULL}) is to consider all fitting windows. Ignored if
 \code{which} or \code{A} is non-\code{NULL}.}
 
 \item{append}{An expression indicating variables in the combined model frame
-to be included with the result. The default (\code{NULL}) is to
-append nothing. Ignored if \code{which} or \code{A} is non-\code{NULL}.}
+to be included with the result. The default (\code{NULL}) is to append
+nothing. Ignored if \code{which} or \code{A} is non-\code{NULL}.}
 
 \item{max_level}{A number in the interval (0,1). Profiles will be computed up to
 a deviance of \code{qchisq(max_level, df = 1)}.}
@@ -150,7 +150,7 @@ The combined model frame is
 If a variable occurs more than once there, because it appears
 in multiple model frames, then only the earliest instance is
 retained. Except in unusual cases, all instances of a variable
-will be identical, so no information will be lost.
+are identical, and no information is lost.
 }
 
 \seealso{

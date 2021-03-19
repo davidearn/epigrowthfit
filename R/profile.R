@@ -27,8 +27,8 @@
 #'   `which` or `A` is non-`NULL`.
 #' @param append
 #'   An expression indicating variables in the combined model frame
-#'   to be included with the result. The default (`NULL`) is to
-#'   append nothing. Ignored if `which` or `A` is non-`NULL`.
+#'   to be included with the result. The default (`NULL`) is to append
+#'   nothing. Ignored if `which` or `A` is non-`NULL`.
 #' @param max_level
 #'   A number in the interval (0,1). Profiles will be computed up to
 #'   a deviance of `qchisq(max_level, df = 1)`.
@@ -321,8 +321,7 @@ profile.egf <- function(fitted,
 #'
 #' @export
 #' @importFrom stats qchisq approx
-confint.egf_profile <- function(object, parm, level = 0.95,
-                                link = FALSE, ...) {
+confint.egf_profile <- function(object, parm, level = 0.95, link = FALSE, ...) {
   stop_if_not_number_in_interval(level, 0, 1, "()")
   stop_if_not_true_false(link)
 

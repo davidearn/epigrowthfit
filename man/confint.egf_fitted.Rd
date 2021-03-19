@@ -21,7 +21,7 @@ on inverse link-transformed fitted values are returned.}
 }
 \value{
 If \code{link = TRUE}, then \code{object} but with variable \code{se} replaced
-with variables \code{lower} and \code{upper} supplying confidence limits o
+with variables \code{lower} and \code{upper} supplying confidence limits
 on link scale fitted values.
 
 Otherwise, the same object but with variables \code{estimate}, \code{lower},

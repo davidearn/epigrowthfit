@@ -1,46 +1,54 @@
 #' Compute predicted values
 #'
-#' Computes predicted values of log interval incidence,
-#' log cumulative incidence, and log per capita growth rate
+#' Computes predicted values of interval incidence,
+#' cumulative incidence, and the per capita growth rate
 #' conditional on observed data and an estimated model.
 #'
 #' @param object
 #'   An `"egf"` object returned by [egf()].
+#' @param what
+#'   A character vector listing one or more variables for which
+#'   predicted values are desired.
 #' @param time
 #'   A numeric or Date vector supplying time points at which
 #'   predicted values are sought. Numeric `time` is assumed
 #'   to measure time as a number of days since the end of date
-#'   `origin = attr(object$endpoints, "origin")`. Date `time`
-#'   is coerced to numeric `julian(time, origin)`.
+#'   `origin = attr(object$frame_ts, "origin")`. Date `time`
+#'   is coerced to numeric `julian(time, origin)`. When missing,
+#'   `object$frame_ts$time` is used.
 #' @param window
-#'   A factor of length `length(time)` such that
-#'   `split(time, window)` splits `time` by fitting window.
-#'   Levels not belonging to `levels(object$endpoints$window)`
-#'   are ignored.
-#' @param what
-#'   A character vector listing one or more variables for which
-#'   predicted values are desired.
+#'   A factor of length `length(time)` such that `split(time, window)`
+#'   splits `time` by fitting window. Levels not belonging to
+#'   `levels(object$frame_ts$window)` are ignored. When `time`
+#'   is missing, `object$frame_ts$window` is used.
+#' @param append
+#'   An expression indicating variables in the combined model frame
+#'   to be included with the result. The default (`NULL`) is to append
+#'   nothing.
+#' @param log
+#'   A logical scalar. If `FALSE`, then inverse log-transformed
+#'   predicted values are returned.
 #' @param se
-#'   A logical scalar. If `TRUE`, then approximate (delta method)
-#'   standard errors on predicted values are reported.
-#'   `TRUE` is required for subsequent use of [confint.egf_predict()].
+#'   A logical scalar. If `log = TRUE` and `se = TRUE`, then
+#'   approximate (delta method) standard errors on predicted values
+#'   are reported. Note that standard errors are required for
+#'   subsequent use of [confint.egf_predict()].
 #' @param ...
 #'   Unused optional arguments.
 #'
 #' @details
-#' In the returned data frame, `exp(estimate[i])` can be interpreted
-#' as follows:
+#' In the returned data frame, assuming `log = FALSE`,
+#' `estimate[i]` can be interpreted as follows:
 #' \describe{
-#' \item{`log_int_inc`}{
-#'   If `window[i-1] = window[i]`, then the number of cases predicted
-#'   from `time[i-1]` to `time[i]` in `window[i]` (interval incidence).
-#'   Otherwise, `NA`.
+#' \item{`int_inc`}{
+#'   The number of cases predicted from `time[i-1]` to `time[i]`
+#'   in `window[i]` (interval incidence).
 #' }
-#' \item{`log_cum_inc`}{
+#' \item{`cum_inc`}{
 #'   The number of cases predicted from the start of `window[i]`
 #'   to `time[i]` (cumulative incidence).
 #' }
-#' \item{`log_rt`}{
+#' \item{`rt`}{
 #'   The per capita growth rate at `time[i]`. This is obtained
 #'   exactly from the differential equation model associated with
 #'   `object$curve`, unless `object$weekday > 0`, in which case
@@ -68,7 +76,7 @@
 #'   conditional on `object$frame_par` and `object$best`.
 #' }
 #' \item{`se`}{
-#'   (If `se = TRUE`.)
+#'   (If `log = TRUE` and `se = TRUE`.)
 #'   Approximate (delta method) standard error on `estimate`.
 #' }
 #' `attr(object$endpoints, "origin")` is retained as an attribute.
@@ -76,97 +84,116 @@
 #' @export
 #' @importFrom TMB MakeADFun sdreport
 predict.egf <- function(object,
-                        time = NULL,
-                        window = NULL,
                         what = c("log_int_inc", "log_cum_inc", "log_rt"),
+                        time,
+                        window,
+                        append = NULL,
+                        log = TRUE,
                         se = FALSE,
+                        .append = NULL,
                         ...) {
   what <- unique(match.arg(what, several.ok = TRUE))
   stop_if_not_true_false(se)
 
+  frame <- do.call(cbind, unname(object$frame_par))
+  frame <- frame[!duplicated(names(frame))]
+  append <- append_to_index(substitute(append), frame, parent.frame(),
+                            .append = .append)
+
   endpoints <- object$endpoints
   origin <- attr(endpoints, "origin")
-  if (inherits(time, "Date")) {
-    time <- julian(time, origin = origin)
-  }
-  stop_if_not(
-    is.numeric(time),
-    m = "`time` must be a numeric or Date vector."
-  )
   weekday <- object$weekday
-  if (weekday > 0L) {
-    stop_if_not(
-      all.equal(time, z <- round(time)),
-      m = "weekday > 0: `time` must be an integer vector\n(in the sense of `all.equal(time, round(time))`)."
-    )
-    time <- z
-  }
-  stop_if_not(
-    !anyNA(time),
-    m = "`time` must not have missing values."
-  )
-  stop_if_not(
-    is.factor(window),
-    length(window) == length(time),
-    m = "`window` must be a factor of length `length(time)`."
-  )
-  k <- match(levels(window), levels(endpoints$window), 0L)
-  window <- factor(window, levels = levels(endpoints$window)[k])
-  stop_if_not(
-    nlevels(window) > 0L,
-    m = "`window` must have at least one valid level."
-  )
   min_window_len <- max(2L, 8L * (weekday > 0L) * ("log_rt" %in% what))
+
+  if (no_time <- missing(time)) {
+    time <- object$frame_ts$time
+    window <- object$frame_ts$window
+    subset <- seq_along(levels(window))
+  } else {
+    if (inherits(time, "Date")) {
+      time <- julian(time, origin = origin)
+    }
+    stop_if_not(
+      is.numeric(time),
+      m = "`time` must be a numeric or Date vector."
+    )
+    if (weekday > 0L) {
+      stop_if_not(
+        all.equal(time, z <- round(time)),
+        m = "weekday > 0: `time` must be an integer vector\n(in the sense of `all.equal(time, round(time))`)."
+      )
+      time <- z
+    }
+    stop_if_not(
+      !anyNA(time),
+      m = "`time` must not have missing values."
+    )
+    stop_if_not(
+      is.factor(window),
+      length(window) == length(time),
+      m = "`window` must be a factor of length `length(time)`."
+    )
+    subset <- match(levels(window), levels(endpoints$window), 0L)
+    window <- factor(window, levels = levels(endpoints$window)[subset])
+    stop_if_not(
+      nlevels(window) > 0L,
+      m = "`window` must have at least one valid level."
+    )
+  }
   stop_if_not(
     tabulate(window) > min_window_len,
     m = sprintf("`time` must have length %d or greater\nin each level of `window`.", min_window_len)
   )
   time_split <- split(time, window)
-  starts <- endpoints$start[k]
-  ends <- endpoints$end[k]
-  stop_if_not(
-    vapply(time_split, min, 0) >= starts,
-    vapply(time_split, max, 0) <= ends,
-    m = "`time[i]` must not be before/after\nthe start/end of `window[i]`."
-  )
-  if (weekday > 0L) {
+  starts <- endpoints$start[subset]
+  ends <- endpoints$end[subset]
+  if (no_time) {
     stop_if_not(
-      vapply(time_split, function(x) all(diff(x) == 1), FALSE),
-      n = "weekday > 0: `time` must have 1-day spacing\nin each level of `window`."
+      vapply(time_split, min, 0) >= starts,
+      vapply(time_split, max, 0) <= ends,
+      m = "`time[i]` must not be before/after\nthe start/end of `window[i]`."
     )
-  } else {
-    stop_if_not(
-      vapply(time_split, function(x) all(diff(x) > 0), FALSE),
-      m = "`time` must be increasing in each level of `window`."
-    )
-  }
-  if ("log_cum_inc" %in% what) {
-    f <- function(x, x0) {
-      if (weekday > 0L) {
-        return(seq.int(x0, x[length(x)]))
-      }
-      if (x[1L] > x0) {
-        return(c(x0, x))
-      }
-      x
+    if (weekday > 0L) {
+      stop_if_not(
+        vapply(time_split, function(x) all(diff(x) == 1), FALSE),
+        n = "weekday > 0: `time` must have 1-day spacing\nin each level of `window`."
+      )
+    } else {
+      stop_if_not(
+        vapply(time_split, function(x) all(diff(x) > 0), FALSE),
+        m = "`time` must be increasing in each level of `window`."
+      )
     }
-    time_split <- Map(f, x = time_split, x0 = starts)
+    ## To compute cumulative incidence since the start of a window,
+    ## the start of the window must be included as a time point
+    if ("log_cum_inc" %in% what) {
+      f <- function(x, x0) {
+        if (weekday > 0L) {
+          return(seq.int(x0, x[length(x)]))
+        }
+        if (x[1L] > x0) {
+          return(c(x0, x))
+        }
+        x
+      }
+      time_split <- Map(f, x = time_split, x0 = starts)
+    }
+    time <- unlist(time_split, use.names = FALSE)
   }
-  time <- unlist(time_split, use.names = FALSE)
-  lens <- lengths(time_split, use.names = FALSE)
 
   ## Additional data objects needed to run prediction code
   ## in C++ template
+  lens <- lengths(time_split, use.names = FALSE)
   l <- list(
-    what_flag = as.integer(c("log_int_inc", "log_cum_inc", "log_rt") %in% what),
+    what_flag = as.integer(formals("predict.egf")$what %in% what),
     se_flag = as.integer(se),
     t_predict = time - rep.int(starts, lens),
     t_predict_seg_len = lens,
-    dow_predict = object$tmb_args$data$dow[k],
-    Xd_predict = object$tmb_args$data$Xd[k, , drop = FALSE],
-    Xs_predict = object$tmb_args$data$Xs[k, , drop = FALSE],
-    Z_predict = object$tmb_args$data$Z[k, , drop = FALSE],
-    Yo_predict = object$tmb_args$data$Yo[k, , drop = FALSE]
+    dow_predict = object$tmb_args$data$dow[subset],
+    Xd_predict = object$tmb_args$data$Xd[subset, , drop = FALSE],
+    Xs_predict = object$tmb_args$data$Xs[subset, , drop = FALSE],
+    Z_predict = object$tmb_args$data$Z[subset, , drop = FALSE],
+    Yo_predict = object$tmb_args$data$Yo[subset, , drop = FALSE]
   )
   object$tmb_args$data$predict_flag <- 1L
   object$tmb_args$data <- c(object$tmb_args$data, l)
@@ -176,7 +203,7 @@ predict.egf <- function(object,
     tmb_out$fn(object$best[object$nonrandom])
     r <- split_sdreport(sdreport(tmb_out))[what]
   } else {
-    r <- tmb_out$report(object$par)[what]
+    r <- tmb_out$report(object$best)[what]
     r <- lapply(r, function(x) list(estimate = x))
   }
 
@@ -184,12 +211,15 @@ predict.egf <- function(object,
   x <- rep_len(NA_real_, length(time))
   el <- data.frame(
     var = rep_len(factor("foo"), length(time)),
-    ts = rep.int(endpoints$ts[k], lens),
-    window = rep.int(endpoints$window[k], lens),
-    time = time
+    ts = rep.int(endpoints$ts[subset], lens),
+    window = rep.int(endpoints$window[subset], lens),
+    time = time,
+    estimate = x,
+    se = x,
+    frame[rep.int(subset, lens), append, drop = FALSE]
   )
   lasts <- cumsum(lens)
-  firsts <- c(1L, lasts[-length(lasts)] + 1L)
+  firsts <- c(0L, lasts[-length(lasts)]) + 1L
   edges <- unlist(Map(function(a, b) c(a + 0:3, b - 2:0), a = firsts, b = lasts))
 
   if ("log_int_inc" %in% what) {
@@ -224,10 +254,10 @@ predict.egf <- function(object,
     out$log_rt <- el
   }
 
-  structure(do.call(rbind, unname(out)),
+  structure(do.call(rbind, out),
     origin = origin,
     se = se,
-    class = c("egf_predict", "list")
+    class = c("egf_predict", "data.frame")
   )
 }
 
@@ -262,11 +292,10 @@ predict.egf <- function(object,
 #' `level` is retained as an attribute.
 #'
 #' @export
-confint.egf_predict <- function(object, parm, level = 0.95,
-                                log = TRUE, ...) {
+confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
   stop_if_not(
     attr(object, "se"),
-    m = "`object` must supply standard errors on predicted values.\nRepeat `predict()` with `se = TRUE`."
+    m = "`object` must supply standard errors on predicted values.\nRepeat `predict()` with `log = TRUE` and `se = TRUE`."
   )
   stop_if_not_number_in_interval(level, 0, 1, "()")
   stop_if_not_true_false(log)

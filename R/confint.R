@@ -32,15 +32,21 @@
 #' @param method
 #'   A character string indicating how confidence intervals
 #'   should be calculated (see Details).
-#' @param max_width
-#'   (For `method = "uniroot"`.) A positive number. [TMB::tmbroot()]
-#'   will search for roots in the interval from `x-max_width`
-#'   to `x+max_width`, where `x` is the fitted value (link scale).
-#' @param breaks,probs
-#'   (For `parm = "R0"`.) Arguments to `compute_R0()`.
+#' @param grid_len (For `method = "profile"`.)
+#'   A positive integer. Step sizes chosen adaptively by
+#'   [TMB::tmbprofile()] will generate approximately this
+#'   many points on each side of a profile's minimum point.
+#' @param max_width (For `method = "uniroot"`.)
+#'   A positive number. [TMB::tmbroot()] will search for roots
+#'   in the interval from `x-max_width` to `x+max_width`, where
+#'   `x` is the fitted value (link scale).
+#' @param trace (For `method != "wald"`.)
+#'   A logical scalar. If `TRUE`, then basic tracing messages
+#'   are printed.
+#' @param breaks,probs (For `parm = "R0"`.)
+#'   Arguments to `compute_R0()`.
 #' @inheritParams check_parallel
 #' @inheritParams fitted.egf
-#' @inheritParams profile.egf
 #' @param ...
 #'   Unused optional arguments.
 #'

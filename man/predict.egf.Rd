@@ -6,33 +6,45 @@
 \usage{
 \method{predict}{egf}(
   object,
-  time = NULL,
-  window = NULL,
   what = c("log_int_inc", "log_cum_inc", "log_rt"),
+  time,
+  window,
+  append = NULL,
+  log = TRUE,
   se = FALSE,
+  .append = NULL,
   ...
 )
 }
 \arguments{
 \item{object}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
-\item{time}{A numeric or Date vector supplying time points at which
-predicted values are sought. Numeric \code{time} is assumed
-to measure time as a number of days since the end of date
-\code{origin = attr(object$endpoints, "origin")}. Date \code{time}
-is coerced to numeric \code{julian(time, origin)}.}
-
-\item{window}{A factor of length \code{length(time)} such that
-\code{split(time, window)} splits \code{time} by fitting window.
-Levels not belonging to \code{levels(object$endpoints$window)}
-are ignored.}
-
 \item{what}{A character vector listing one or more variables for which
 predicted values are desired.}
 
-\item{se}{A logical scalar. If \code{TRUE}, then approximate (delta method)
-standard errors on predicted values are reported.
-\code{TRUE} is required for subsequent use of \code{\link[=confint.egf_predict]{confint.egf_predict()}}.}
+\item{time}{A numeric or Date vector supplying time points at which
+predicted values are sought. Numeric \code{time} is assumed
+to measure time as a number of days since the end of date
+\code{origin = attr(object$frame_ts, "origin")}. Date \code{time}
+is coerced to numeric \code{julian(time, origin)}. When missing,
+\code{object$frame_ts$time} is used.}
+
+\item{window}{A factor of length \code{length(time)} such that \code{split(time, window)}
+splits \code{time} by fitting window. Levels not belonging to
+\code{levels(object$frame_ts$window)} are ignored. When \code{time}
+is missing, \code{object$frame_ts$window} is used.}
+
+\item{append}{An expression indicating variables in the combined model frame
+to be included with the result. The default (\code{NULL}) is to append
+nothing.}
+
+\item{log}{A logical scalar. If \code{FALSE}, then inverse log-transformed
+predicted values are returned.}
+
+\item{se}{A logical scalar. If \code{log = TRUE} and \code{se = TRUE}, then
+approximate (delta method) standard errors on predicted values
+are reported. Note that standard errors are required for
+subsequent use of \code{\link[=confint.egf_predict]{confint.egf_predict()}}.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -55,30 +67,29 @@ Predicted value of \code{var} "at" \code{time} in \code{window} (see Details),
 conditional on \code{object$frame_par} and \code{object$best}.
 }
 \item{\code{se}}{
-(If \code{se = TRUE}.)
+(If \code{log = TRUE} and \code{se = TRUE}.)
 Approximate (delta method) standard error on \code{estimate}.
 }
 \code{attr(object$endpoints, "origin")} is retained as an attribute.
 }
 \description{
-Computes predicted values of log interval incidence,
-log cumulative incidence, and log per capita growth rate
+Computes predicted values of interval incidence,
+cumulative incidence, and the per capita growth rate
 conditional on observed data and an estimated model.
 }
 \details{
-In the returned data frame, \code{exp(estimate[i])} can be interpreted
-as follows:
+In the returned data frame, assuming \code{log = FALSE},
+\code{estimate[i]} can be interpreted as follows:
 \describe{
-\item{\code{log_int_inc}}{
-If \code{window[i-1] = window[i]}, then the number of cases predicted
-from \code{time[i-1]} to \code{time[i]} in \code{window[i]} (interval incidence).
-Otherwise, \code{NA}.
+\item{\code{int_inc}}{
+The number of cases predicted from \code{time[i-1]} to \code{time[i]}
+in \code{window[i]} (interval incidence).
 }
-\item{\code{log_cum_inc}}{
+\item{\code{cum_inc}}{
 The number of cases predicted from the start of \code{window[i]}
 to \code{time[i]} (cumulative incidence).
 }
-\item{\code{log_rt}}{
+\item{\code{rt}}{
 The per capita growth rate at \code{time[i]}. This is obtained
 exactly from the differential equation model associated with
 \code{object$curve}, unless \code{object$weekday > 0}, in which case

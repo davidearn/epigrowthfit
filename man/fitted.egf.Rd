@@ -11,6 +11,7 @@
   subset = NULL,
   append = NULL,
   link = TRUE,
+  se = FALSE,
   .subset = NULL,
   .append = NULL,
   ...
@@ -22,6 +23,7 @@
   subset = NULL,
   append = NULL,
   link = TRUE,
+  se = FALSE,
   .subset = NULL,
   .append = NULL,
   ...
@@ -44,8 +46,12 @@ to be included with the result. The default (\code{NULL}) is to append
 nothing.}
 
 \item{link}{A logical scalar. If \code{FALSE}, then fitted values are inverse
-link-transformed. \code{TRUE} is required for subsequent use of
-\code{\link[=confint.egf_fitted]{confint.egf_fitted()}}.}
+link-transformed.}
+
+\item{se}{A logical scalar. If \code{link = TRUE} and \code{se = TRUE}, then
+approximate (delta method) standard errors on fitted values
+are reported. Note that standard errors are required for
+subsequent use of \code{\link[=confint.egf_fitted]{confint.egf_fitted()}}.}
 
 \item{.subset}{A logical vector, to be used (if non-\code{NULL}) in place
 of the result of evaluating \code{subset}.}
@@ -71,7 +77,7 @@ Fitting window, from \code{levels(object$endpoints$window)}.
 Fitted value of parameter \code{par} in fitting window \code{window}.
 }
 \item{\code{se}}{
-(If \code{link = TRUE}.)
+(If \code{link = TRUE} and \code{se = TRUE}.)
 Approximate (delta method) standard error on \code{value}.
 }
 }
@@ -101,7 +107,7 @@ The combined model frame is
 If a variable occurs more than once there, because it appears
 in multiple model frames, then only the earliest instance is
 retained. Except in unusual cases, all instances of a variable
-will be identical, so no information will be lost.
+are identical, and no information is lost.
 }
 
 \seealso{

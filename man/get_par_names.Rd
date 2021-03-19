@@ -4,13 +4,7 @@
 \alias{get_par_names}
 \title{Get nonlinear model parameter names}
 \usage{
-get_par_names(
-  curve = NULL,
-  excess = NULL,
-  distr = NULL,
-  weekday = NULL,
-  link = TRUE
-)
+get_par_names(curve, ...)
 }
 \arguments{
 \item{curve, excess, distr, weekday}{For the default method, atomic scalar flags specifying an
