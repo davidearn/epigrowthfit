@@ -44,7 +44,8 @@ to be included with the result. The default (\code{NULL}) is to append
 nothing.}
 
 \item{link}{A logical scalar. If \code{FALSE}, then fitted values are inverse
-link-transformed.}
+link-transformed. \code{TRUE} is required for subsequent use of
+\code{\link[=confint.egf_fitted]{confint.egf_fitted()}}.}
 
 \item{.subset}{A logical vector, to be used (if non-\code{NULL}) in place
 of the result of evaluating \code{subset}.}
@@ -61,22 +62,26 @@ Nonlinear model parameter,
 from \code{get_par_names(object, link = link)}.
 }
 \item{\code{ts}}{
-Time series, from \code{levels(object$frame_ts$ts)}.
+Time series, from \code{levels(object$endpoints$ts)}.
 }
 \item{\code{window}}{
-Fitting window, from \code{levels(object$frame_ts$window)}.
+Fitting window, from \code{levels(object$endpoints$window)}.
 }
-\item{\code{value}}{
+\item{\code{estimate}}{
 Fitted value of parameter \code{par} in fitting window \code{window}.
+}
+\item{\code{se}}{
+(If \code{link = TRUE}.)
+Approximate (delta method) standard error on \code{value}.
 }
 }
 \description{
 Extracts the fitted values of nonlinear model parameters.
 The fitted value for a given fitting window is obtained
 by adding
-(i) the population fitted value computed from the relevant
-fixed effects coefficients and
-(ii) all random effects terms (if any), with random effects
+(i) the population fitted value computed from the
+relevant fixed effects coefficients and
+(ii) all random effects (if any), with random effects
 coefficients set equal to their conditional modes.
 }
 \details{
@@ -99,3 +104,6 @@ retained. Except in unusual cases, all instances of a variable
 will be identical, so no information will be lost.
 }
 
+\seealso{
+\code{\link[=confint.egf_fitted]{confint.egf_fitted()}}
+}

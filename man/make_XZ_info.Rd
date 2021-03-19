@@ -7,16 +7,17 @@
 make_XZ_info(xl, ml)
 }
 \arguments{
-\item{xl}{A named list of fixed effects formulae of the form \code{~terms}, or
-a named list of random effects terms of the form \code{(terms | group)}.
-\code{names(xl)} must specify the respective nonlinear model parameters.}
+\item{xl}{A named list of fixed effects formulae of the form
+\code{~terms}, or a named list of random effects terms of
+the form \code{(terms | group)}. \code{names(xl)} must specify
+the respective nonlinear model parameters.}
 
-\item{ml}{A list of \code{X} or \code{Z} matrices obtained by applying \code{\link[=make_X]{make_X()}} or
-\code{\link[=make_Z]{make_Z()}} to the to the elements of \code{xl}.}
+\item{ml}{A list of \code{X} or \code{Z} matrices obtained by applying
+\code{\link[=make_X]{make_X()}} or \code{\link[=make_Z]{make_Z()}} to the to the elements of \code{xl}.}
 }
 \value{
-A data frame with \code{sum(vapply(ml, ncol, 0L))} with one row
-per column of \code{do.call(cbind, ml)} and variables:
+A data frame with rows corresponding to columns of
+\code{do.call(cbind, ml)}, and variables:
 \item{\code{par}}{
 Nonlinear model parameter.
 }
@@ -36,8 +37,9 @@ Column name.
 }
 }
 \description{
-A utility allowing combined design matrices and parameter vectors to
-be split by nonlinear model parameter, term, group, or interactions
-thereof.
+A utility allowing columns of combined design matrices
+and elements of combined parameter vectors to be split
+by nonlinear model parameter, formula term, group, and
+group level.
 }
 \keyword{internal}

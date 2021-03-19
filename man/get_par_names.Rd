@@ -13,11 +13,12 @@ get_par_names(
 )
 }
 \arguments{
-\item{curve, excess, distr, weekday}{Character or logical flags specifying an incidence model;
-see \code{\link[=egf]{egf()}}. Alternatively, \code{curve} can be an \code{"egf"} object
-returned by \code{\link[=egf]{egf()}} or a \code{"tmb_data"} object returned by
-\code{\link[=make_tmb_data]{make_tmb_data()}}, in which case \code{excess}, \code{distr}, and
-\code{weekday} are ignored.}
+\item{curve, excess, distr, weekday}{For the default method, atomic scalar flags specifying an
+incidence model; see \code{\link[=egf]{egf()}}. Set to \code{NULL} or \code{NA} to
+retrieve or suppress, respectively, all names associated
+with an argument. For other methods, \code{curve} is an object
+returned by \code{\link[=egf]{egf()}} or \code{\link[=make_tmb_data]{make_tmb_data()}}, and the remaining
+arguments are ignored.}
 
 \item{link}{A logical scalar. If \code{TRUE}, then a prefix indicating the
 link function used internally (either \code{"log_"} or \code{"logit_"})
@@ -32,14 +33,20 @@ with or without prefixes depending on \code{link}.
 Retrieves the names used internally for nonlinear model parameters.
 }
 \examples{
-a <- list(
+## For a specific model
+get_par_names(
   curve = "logistic",
   excess = FALSE,
   distr = "nbinom",
-  weekday = TRUE
+  weekday = 0L,
+  link = FALSE
 )
-pn_l0  <- do.call(get_par_names, c(a, list(link = FALSE)))
-pn_l1  <- do.call(get_par_names, c(a, list(link = TRUE)))
-identical(pn_l0, sub("^(log|logit)_", "", pn_l1))
+
+## Across all possible models
+(apn_l0 <- get_par_names(NULL, NULL, NULL, NULL, link = FALSE))
+
+## With prefixes
+(apn_l1 <- get_par_names(NULL, NULL, NULL, NULL, link = TRUE))
+identical(apn_l0, sub("^(log|logit)_", "", apn_l1))
 
 }

@@ -88,6 +88,19 @@ of the result of evaluating \code{subset}.}
 }
 \value{
 A data frame inheriting from class \code{"egf_profile"}, with variables:
+\item{\code{par}}{
+(\code{par}-based calls only.)
+Nonlinear model parameter,
+from \code{get_par_names(fitted, link = TRUE)}.
+}
+\item{\code{ts}}{
+(\code{par}-based calls only.)
+Time series, from \code{levels(fitted$endpoints$ts)}.
+}
+\item{\code{window}}{
+(\code{par}-based calls only.)
+Fitting window, from \code{levels(fitted$endpoints$window)}.
+}
 \item{\code{linear_combination}}{
 Row index of linear combination, from \code{seq_len(nrow(A))}.
 }
@@ -98,19 +111,6 @@ Value of linear combination being profiled.
 Deviance of the restricted model that assumes \code{value}
 for the linear combination being profiled.
 }
-\item{\code{par}}{
-(\code{par}-based calls only.)
-Nonlinear model parameter,
-from \code{get_par_names(fitted, link = TRUE)}.
-}
-\item{\code{ts}}{
-(\code{par}-based calls only.)
-Time series, from \code{levels(fitted$frame_ts$ts)}.
-}
-\item{\code{window}}{
-(\code{par}-based calls only.)
-Fitting window, from \code{levels(fitted$frame_ts$window)}.
-}
 \code{A} and \code{x = fitted$best[fitted$nonrandom]}
 are retained as attributes.
 }
@@ -120,9 +120,9 @@ coefficients, log standard deviations of random effects
 coefficients, and linear combinations thereof.
 }
 \details{
-The population fitted value is the fixed effects component of the
-fitted value (see \code{\link[=fitted.egf]{fitted.egf()}}). In fixed effects models, there
-is no distinction.
+The population fitted value is the fixed effects component of
+the individual fitted value (see \code{\link[=fitted.egf]{fitted.egf()}}).
+In fixed effects models, there is no distinction.
 
 \code{which} is mapped to an \code{A} matrix composed of unit row vectors,
 with 1 at array index \verb{[i, which[i]]} for all \code{i}.

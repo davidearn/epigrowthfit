@@ -5,16 +5,17 @@
 #' or more disease incidence time series.
 #'
 #' @param formula_ts
-#'   A formula of the form `x ~ time` or `x ~ time | ts` specifying
-#'   one or more incidence time series in long format. `time` must
-#'   evaluate to a Date vector. Elements `"YYYY-MM-DD"` of `time`
-#'   are read as "time 23:59:59 on date YYYY-MM-DD". `x` must
-#'   evaluate to a numeric vector. Within a time series, `x[i]`
-#'   should specify the number of cases observed from `time[i-1]`
-#'   to `time[i]`. Finally, `ts` must evaluate to a factor, such
-#'   that `split(data.frame(time, x), ts)` returns a list of time
-#'   series. Note that `x ~ time` is equivalent to `x ~ time | ts`
-#'   with `ts` set equal to `rep(factor(1), length(x))`.
+#'   A formula of the form `x ~ time` or `x ~ time | ts` specifying one
+#'   or more incidence time series in long format. `time` must evaluate
+#'   to a numeric or Date vector. Numeric `time` is assumed to measure
+#'   time as a number of days since _the end of_ date `origin`. Date
+#'   `time` is coerced to numeric `julian(time, origin)` (see Details).
+#'   `x` must evaluate to a numeric vector. Within a time series,
+#'   `x[i]` should specify the number of cases observed from `time[i-1]`
+#'   to `time[i]`. Finally, `ts` must evaluate to a factor, such that
+#'   `split(data.frame(time, x), ts)` returns a list of time series.
+#'   Note that `x ~ time` is equivalent to `x ~ time | ts` with `ts`
+#'   set equal to `rep(factor(1), length(x))`.
 #' @param formula_par
 #'   A named list of formulae of the form `~terms`, specifying
 #'   mixed effects models ([`lme4`][lme4::lmer()]-like syntax)
@@ -37,24 +38,25 @@
 #'   rows of `data` not belonging to a fitting window. Note that
 #'   such a factor can be constructed from a table of fitting window
 #'   endpoints using [make_window()].)
+#' @param origin
+#'   A Date specifying a reference time (see `formula_ts`).
 #' @param curve
 #'   A character string specifying a cumulative incidence model.
 #' @param excess
-#'   A logical scalar. If `TRUE`, then a constant baseline
-#'   mortality rate is estimated. Set to `TRUE` if what is
-#'   observed (`x` if `formula_ts = x ~ time | ts`) is
+#'   A logical scalar. If `TRUE`, then a constant baseline mortality
+#'   rate is estimated. Set to `TRUE` if what is observed is
 #'   multiple causes mortality rather than disease mortality
 #'   or disease incidence.
 #' @param distr
 #'   A character string specifying an observation model.
 #' @param weekday
-#'   A logical scalar. If `TRUE`, then weekday effects are estimated,
-#'   though this currently requires daily observation of incidence in
-#'   all fitting windows.
-#' @param weekday_ref
-#'   An integer indicating a weekday, with 1 mapping to Sunday,
-#'   2 mapping to Monday, and so on. Weekday effects are estimated
-#'   as offsets relative to the indicated day.
+#'   An integer or logical scalar. If `weekday > 0`, then weekday
+#'   effects are estimated as offsets relative to the indicated day
+#'   (Sunday if `weekday = 1`, Monday if `weekday = 2`, and so on).
+#'   Currently, weekday effect estimation requires time (that is,
+#'   the value of `foo` in `formula_ts = x ~ foo | ts`) to be an
+#'   integer (in the sense of `all.equal(foo, round(foo))`) or Date
+#'   vector with 1-day spacing in all fitting windows.
 #' @param method
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
@@ -77,19 +79,31 @@
 #' @param ...
 #'   Optional arguments to the optimizer specified by `method`.
 #'
+#' @details
+#' Coercion of Date `time` to numeric `julian(time, origin)` assumes
+#' that each element `time[i]` can be read as "end of date `time[i]`",
+#' so that observation `x[i]` in a given time series is the number of
+#' cases observed from the end of date `time[i-1]` to the end of date
+#' `time[i]`.
+#'
 #' @return
 #' If `debug = FALSE`, then a list inheriting from class `"egf"`,
 #' with elements:
 #' \item{`frame_ts`}{
 #'   The time series model frame, constructed from `formula_ts`.
-#'   See [make_frames()].
+#'   `origin` is retained as an attribute. See [make_frames()].
 #' }
 #' \item{`frame_par`}{
 #'   A list of mixed effects model frames (one per nonlinear model
 #'   parameter), constructed from `formula_par` (after completion).
 #'   See [make_frames()].
 #' }
-#' \item{`curve`, `excess`, `distr`, `weekday`, `weekday_ref`, `method`}{
+#' \item{`endpoints`}{
+#'   A data frame with variables `ts`, `window`, `start`, and `end`
+#'   listing fitting window endpoints as numbers of days since time
+#'   23:59:59 on a reference date, which is stored as an attribute.
+#' }
+#' \item{`curve`, `excess`, `distr`, `weekday`, `method`}{
 #'   Copies of the so-named arguments (after matching).
 #' }
 #' \item{`tmb_args`}{
@@ -139,23 +153,33 @@ egf <- function(formula_ts,
                 formula_par,
                 data = parent.frame(),
                 window,
+                origin = .Date(0),
                 curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
                 excess = FALSE,
                 distr = c("nbinom", "pois"),
                 weekday = FALSE,
-                weekday_ref = 2L,
                 method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
                 na_action = c("pass", "fail"),
                 sparse_X = FALSE,
                 debug = FALSE,
                 init = NULL,
                 ...) {
+  stop_if_not(
+    inherits(origin, "Date"),
+    length(origin) == 1L,
+    !is.na(origin),
+    m = "`origin` must be a Date vector of length 1."
+  )
   curve <- match.arg(curve)
   distr <- match.arg(distr)
   stop_if_not_true_false(excess)
-  stop_if_not_true_false(weekday)
-  stop_if_not_integer(weekday_ref)
-  weekday_ref <- as.integer(1 + (weekday_ref - 1) %% 7)
+  if (is.logical(weekday) && length(weekday) == 1L && !is.na(weekday)) {
+    weekday <- as.integer(weekday)
+  } else {
+    stop_if_not_integer(weekday)
+    ## Coercion to element of 0:7
+    weekday <- (weekday > 0) * as.integer(1 + (weekday - 1) %% 7)
+  }
   method <- match.arg(method)
   na_action <- match.arg(na_action)
   stop_if_not_true_false(sparse_X)
@@ -166,6 +190,7 @@ egf <- function(formula_ts,
     formula_par = formula_par,
     data = data,
     window = window,
+    origin = origin,
     curve = curve,
     distr = distr,
     excess = excess,
@@ -180,7 +205,6 @@ egf <- function(formula_ts,
     distr = distr,
     excess = excess,
     weekday = weekday,
-    weekday_ref = weekday_ref,
     sparse_X = sparse_X,
     init = init
   )
@@ -191,11 +215,11 @@ egf <- function(formula_ts,
       init_split <- init_split["beta"]
     }
     init <- unlist(init_split)
-    names(init) <- rep.int(names(init_split), lengths(init_split))
+    names(init) <- enum_dupl_string(rep.int(names(init_split), lengths(init_split)))
     out <- list(
       frame_ts = frames$frame_ts,
       frame_par = frames$frame_par,
-      init = enum_dupl_names(init),
+      init = init,
       tmb_args = tmb_args
     )
     return(out)
@@ -223,11 +247,11 @@ egf <- function(formula_ts,
   out <- list(
     frame_ts = frames$frame_ts,
     frame_par = frames$frame_par,
+    endpoints = get_endpoints(frames$frame_ts),
     curve = curve,
     excess = excess,
     distr = distr,
     weekday = weekday,
-    weekday_ref = weekday_ref,
     method = method,
     tmb_args = tmb_args,
     tmb_out = tmb_out,

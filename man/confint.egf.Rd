@@ -104,16 +104,15 @@ Nonlinear model parameter,
 from \code{get_par_names(object, link = TRUE)}.
 }
 \item{\code{ts}}{
-Time series, from \code{levels(object$frame_ts$window)}.
+Time series, from \code{levels(object$endpoints$window)}.
 }
 \item{\code{window}}{
-Fitting window, from \code{levels(object$frame_ts$window)}.
+Fitting window, from \code{levels(object$endpoints$window)}.
 }
 \item{\code{estimate}, \code{lower}, \code{upper}}{
 Fitted value and approximate lower and upper confidence limits.
 }
-\code{level} and a data frame \code{endpoints} listing fitting window
-endpoints are retained as attributes.
+\code{level} and \code{object$endpoints} are retained as attributes.
 }
 \description{
 Computes confidence intervals on fitted values (see \code{\link[=fitted.egf]{fitted.egf()}})
@@ -124,18 +123,10 @@ the basic reproduction number and initial doubling time (in days).
 Three methods are provided for calculating confidence intervals:
 \describe{
 \item{\code{wald}}{
-Confidence limits on fitted values (link scale) are computed
-as \code{estimate + c(-1, 1) * sqrt(q) * se}, where \code{estimate}
-is a fitted value, \code{se} is its approximate (delta method)
-standard error, and \code{q = qchisq(level, df = 1)}.
+See \code{\link[=fitted.egf]{fitted.egf()}} and \code{\link[=confint.egf_fitted]{confint.egf_fitted()}}.
 }
 \item{\code{profile}}{
-Discrete approximations of the likelihood profiles of fitted
-values (link scale) are computed using \code{\link[TMB:tmbprofile]{TMB::tmbprofile()}}.
-The profiles are linearly interpolated to approximate the
-two solutions of \code{deviance(value) = qchisq(level, df = 1)},
-which provide the lower and upper confidence limits of interest
-(see Wilks' theorem).
+See \code{\link[=profile.egf]{profile.egf()}} and \code{\link[=confint.egf_profile]{confint.egf_profile()}}.
 }
 \item{\code{uniroot}}{
 Similar to \code{"profile"}, except that the two solutions of
@@ -145,17 +136,17 @@ internally).
 }
 }
 For nonlinear model parameters following random effects models,
-\code{"wald"} returns confidence intervals on fitted values,
+\code{"wald"} returns confidence intervals on individual fitted values,
 whereas \code{"profile"} and \code{"uniroot"} return confidence intervals
-on the fixed effects components only, namely the \emph{population}
-fitted values (see \code{\link[=fitted.egf]{fitted.egf()}}).
+on the fixed effects components only, namely the population fitted
+values.
 
 \code{"wald"} requires minimal computation time but assumes, e.g.,
 asymptotic normality of the maximum likelihood estimator.
 A further limitation of \code{"wald"} is functional non-invariance.
 \code{"profile"} and \code{"uniroot"} avoid these issues but are much
 slower, requiring estimation of restricted models. Of the two,
-\code{"profile"} is typically more robust.
+\code{"profile"} is more robust.
 }
 \section{Nonstandard evaluation}{
 \code{subset} and \code{append} are evaluated in a nonstandard way

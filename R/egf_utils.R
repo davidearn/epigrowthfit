@@ -3,11 +3,12 @@
 #' Retrieves the names used internally for nonlinear model parameters.
 #'
 #' @param curve,excess,distr,weekday
-#'   Character or logical flags specifying an incidence model;
-#'   see [egf()]. Alternatively, `curve` can be an `"egf"` object
-#'   returned by [egf()] or a `"tmb_data"` object returned by
-#'   [make_tmb_data()], in which case `excess`, `distr`, and
-#'   `weekday` are ignored.
+#'   For the default method, atomic scalar flags specifying an
+#'   incidence model; see [egf()]. Set to `NULL` or `NA` to
+#'   retrieve or suppress, respectively, all names associated
+#'   with an argument. For other methods, `curve` is an object
+#'   returned by [egf()] or [make_tmb_data()], and the remaining
+#'   arguments are ignored.
 #' @param link
 #'   A logical scalar. If `TRUE`, then a prefix indicating the
 #'   link function used internally (either `"log_"` or `"logit_"`)
@@ -19,15 +20,21 @@
 #' with or without prefixes depending on `link`.
 #'
 #' @examples
-#' a <- list(
+#' ## For a specific model
+#' get_par_names(
 #'   curve = "logistic",
 #'   excess = FALSE,
 #'   distr = "nbinom",
-#'   weekday = TRUE
+#'   weekday = 0L,
+#'   link = FALSE
 #' )
-#' pn_l0  <- do.call(get_par_names, c(a, list(link = FALSE)))
-#' pn_l1  <- do.call(get_par_names, c(a, list(link = TRUE)))
-#' identical(pn_l0, sub("^(log|logit)_", "", pn_l1))
+#'
+#' ## Across all possible models
+#' (apn_l0 <- get_par_names(NULL, NULL, NULL, NULL, link = FALSE))
+#'
+#' ## With prefixes
+#' (apn_l1 <- get_par_names(NULL, NULL, NULL, NULL, link = TRUE))
+#' identical(apn_l0, sub("^(log|logit)_", "", apn_l1))
 #'
 #' @export
 get_par_names <- function(curve = NULL, excess = NULL,
@@ -40,30 +47,26 @@ get_par_names <- function(curve = NULL, excess = NULL,
 get_par_names.default <- function(curve = NULL, excess = NULL,
                                   distr = NULL, weekday = NULL,
                                   link = TRUE) {
-  if (all(vapply(list(curve, distr, excess, weekday), is.null, FALSE))) {
-    pn <- c("r", "alpha", "c0", "tinfl", "K", "p", "a", "b", "nbdisp",
-            paste0("w", 1:6))
+  if (is.null(curve)) {
+    pn <- c("r", "alpha", "c0", "tinfl", "K", "p", "a")
   } else {
-    pn <- character(0L)
-    if (!is.null(curve)) {
-      a <- switch(curve,
-        exponential    = c("r", "c0"),
-        logistic       = c("r", "tinfl", "K"),
-        richards       = c("r", "tinfl", "K", "a"),
-        subexponential = c("alpha", "c0", "p"),
-        gompertz       = c("alpha", "c0", "K")
-      )
-      pn <- c(pn, a)
-    }
-    if (!is.null(excess) && excess) {
-      pn <- c(pn, "b")
-    }
-    if (!is.null(distr) && distr == "nbinom") {
-      pn <- c(pn, "nbdisp")
-    }
-    if (!is.null(weekday) && weekday) {
-      pn <- c(pn, paste0("w", 1:6))
-    }
+    pn <- switch(curve,
+      exponential    = c("r", "c0"),
+      logistic       = c("r", "tinfl", "K"),
+      richards       = c("r", "tinfl", "K", "a"),
+      subexponential = c("alpha", "c0", "p"),
+      gompertz       = c("alpha", "c0", "K"),
+      character(0L)
+    )
+  }
+  if (is.null(excess) || isTRUE(excess)) {
+    pn <- c(pn, "b")
+  }
+  if (is.null(distr) || isTRUE(distr == "nbinom")) {
+    pn <- c(pn, "nbdisp")
+  }
+  if (is.null(weekday) || isTRUE(weekday > 0L)) {
+    pn <- c(pn, paste0("w", 1:6))
   }
   if (link) {
     return(add_link_string(pn))
@@ -73,7 +76,7 @@ get_par_names.default <- function(curve = NULL, excess = NULL,
 
 #' @export
 get_par_names.tmb_data <- function(curve, excess, distr, weekday, link = TRUE) {
-  pn <- levels(curve$Z_info$par)
+  pn <- levels(curve$X_info$par)
   if (link) {
     return(pn)
   }
@@ -189,18 +192,19 @@ get_inverse_link <- function(s) {
 #' from a data frame listing fitting window endpoints.
 #'
 #' @param time
-#'   A Date vector listing time points from one or more time series
-#'   in long format. Must be increasing in each level of `ts`.
-#'   Missing values are an error.
+#'   A numeric or Date vector listing time points from one or more
+#'   time series in long format. Must be increasing in each level
+#'   of `ts`. Missing values are an error.
 #' @param ts
 #'   A factor of length `length(time)` such that `split(time, ts)`
 #'   splits `time` by time series. Missing values are an error.
 #' @param endpoints
-#'   A data frame with variables `ts` (factor), `start` (Date), and
-#'   `end` (Date) and one row per fitting window. Window `i` runs
-#'   from time `start[i]` to time `end[i]` in time series `ts[i]`.
-#'   Intervals `[start[i], end[i]]` not containing at least two
-#'   time points in time series `ts[i]` are an error.
+#'   A data frame with variables `ts`, `start`, and `end` and one
+#'   row per fitting window. `ts` must be a factor. `start` and `end`
+#'   must be numeric or Date vectors, depending on `class(time)`.
+#'   Window `i` runs from time `start[i]` to time `end[i]` in time
+#'   series `ts[i]`. Intervals `[start[i], end[i]]` not containing
+#'   at least two time points from time series `ts[i]` are an error.
 #' @param window
 #'   A factor returned by `make_window(time, ts, endpoints)`.
 #'
@@ -216,46 +220,38 @@ get_inverse_link <- function(s) {
 #' a mixed effects model.
 #'
 #' @return
-#' A factor of length `length(time)`. For `make_window()`, there are
-#' as many levels as windows. For `make_wave()`, the number of levels
-#' is equal to the maximum number of windows found in one time series.
+#' A factor of length `length(time)`.
 #'
 #' @examples
-#' time <- rep(.Date(0:99), 4L)
-#' ts <- gl(4L, 100L, labels = letters[1:4])
+#' time <- rep(.Date(0:49), 4L)
+#' ts <- gl(4L, 50L, labels = letters[1:4])
 #' endpoints <- data.frame(
 #'   ts    = gl(4L, 2L, labels = letters[1:4]),
-#'   start = rep(time[c(21L, 61L)], 4L),
-#'   end   = rep(time[c(40L, 80L)], 4L)
+#'   start = rep(time[c(11L, 31L)], 4L),
+#'   end   = rep(time[c(20L, 40L)], 4L)
 #' )
 #'
 #' window <- make_window(time, ts, endpoints)
-#' ww <- data.frame(time, ts, window, wave = make_wave(window, ts))
+#' (d <- data.frame(time, ts, window, wave = make_wave(window, ts)))
 #'
 #' @name make_window
 NULL
 
 #' @rdname make_window
 #' @export
-#' @importFrom stats complete.cases
+#' @importFrom stats na.fail complete.cases
 make_window <- function(time, ts, endpoints) {
   stop_if_not(
-    inherits(time, "Date"),
-    m = "`time` must be a Date vector."
+    is.numeric(time) || inherits(time, "Date"),
+    m = "`time` must be a numeric or Date vector."
   )
   stop_if_not(
     is.factor(ts),
-    m = "`ts` must be a factor."
+    length(ts) == length(time),
+    m = "`ts` must be a factor of length `length(time)`."
   )
-  stop_if_not(
-    length(time) == length(ts),
-    m = "`time` and `ts` must have equal length."
-  )
-  stop_if_not(
-    !anyNA(time),
-    !anyNA(ts),
-    m = "`time` and `ts` must not have missing values."
-  )
+  time <- na.fail(time)
+  ts <- na.fail(droplevels(ts, exclude = NA))
   stop_if_not(
     tapply(time, ts, function(x) all(diff(x) > 0)),
     m = "`time` must be increasing in each level of `ts`."
@@ -265,80 +261,76 @@ make_window <- function(time, ts, endpoints) {
     is.data.frame(endpoints),
     !is.null(names(endpoints)),
     epn %in% names(endpoints),
+    m = paste0(
+      "`endpoints` must be a data frame with variables:\n",
+      paste(sQuote(epn), collapse = ", ")
+    )
+  )
+  stop_if_not(
     is.factor(endpoints$ts),
-    inherits(endpoints$start, "Date"),
-    inherits(endpoints$end, "Date"),
-    m = "`endpoints` must be a data frame with variables\n`ts` (factor), `start` (Date), and `end` (Date)."
+    m = "`endpoints` variable `ts` must be a factor."
+  )
+  if (is.numeric(time)) {
+    ok <- vapply(endpoints[epn[-1L]], is.numeric, FALSE)
+  } else {
+    ok <- vapply(endpoints[epn[-1L]], inherits, FALSE, "Date")
+  }
+  stop_if_not(
+    ok,
+    m = "Class mismatch between `time` and `endpoints` variables\n`start` and `end`."
   )
 
-  tsl <- intersect(levels(droplevels(ts)), levels(droplevels(endpoints$ts)))
-  ts <- factor(ts, levels = tsl)
-  endpoints$ts <- factor(endpoints$ts, levels = tsl)
-
+  endpoints$ts <- factor(endpoints$ts, levels = levels(ts))
   endpoints <- endpoints[complete.cases(endpoints[epn]), epn, drop = FALSE]
   endpoints <- endpoints[do.call(order, endpoints), , drop = FALSE]
   stop_if_not(
     endpoints$start < endpoints$end,
-    m = "Window start times must precede window end times."
+    m = "In `endpoints`: `start` must precede `end`."
   )
 
   make_segment <- function(time, endpoints, prev) {
+    m <- nrow(endpoints)
+    n <- length(time)
+    w <- rep_len(NA_integer_, n)
+    if (m == 0L || n == 0L) {
+      return(w)
+    }
     stop_if_not(
       endpoints$start[-1L] > endpoints$end[-nrow(endpoints)],
-      m = "Windows must be disjoint."
+      m = "In `endpoints`: Intervals [start, end]\nmust be disjoint within time series."
     )
-    endpoints_to_index <- function(start, end) {
-      which(time >= start & time <= end)
-    }
-    index <- Map(endpoints_to_index,
+    il <- Map(function(start, end) which(time >= start & time <= end),
       start = endpoints$start,
       end = endpoints$end
     )
     stop_if_not(
-      lengths(index) >= 2L,
-      m = "Windows must contain at least two time points."
+      lengths(il) >= 2L,
+      m = "In `endpoints`: Intervals [start, end]\nmust contain at least two time points."
     )
-    w <- rep_len(NA_integer_, length(time))
-    w[unlist(index)] <- rep.int(prev + seq_along(index), lengths(index))
+    w[unlist(il)] <- rep.int(prev + seq_along(il), lengths(il))
     w
   }
 
-  window <- rep_len(NA_integer_, length(time))
-  split(window, ts) <-
-    Map(make_segment,
-      time = split(time, ts),
-      endpoints = split(endpoints, endpoints$ts),
-      prev = c(0L, cumsum(tabulate(endpoints$ts)[-nlevels(ts)]))
-    )
-  factor(window)
+  window_split <- Map(make_segment,
+    time = split(time, ts),
+    endpoints = split(endpoints, endpoints$ts),
+    prev = cumsum(c(0L, table(endpoints$ts)))[-(nlevels(ts) + 1L)]
+  )
+  factor(unsplit(window_split, ts))
 }
 
 #' @rdname make_window
 #' @export
 make_wave <- function(window, ts) {
-  stop_if_not(
-    is.factor(window),
-    is.factor(ts),
-    m = "`window` and `ts` must be factors."
-  )
-  stop_if_not(
-    length(window) == length(ts),
-    m = "`window` and `ts` must have equal length."
-  )
-  stop_if_not(
-    !anyNA(ts),
-    m = "`ts` must not have missing values."
-  )
-  wave_split <- tapply(window, ts, droplevels, simplify = FALSE)
-  n <- max(vapply(wave_split, nlevels, 0L))
-  f <- function(x) factor(unclass(x), levels = seq_len(n))
-  unsplit(lapply(wave_split, f), ts)
+  f <- function(x) unclass(droplevels(x))
+  wave_split <- tapply(window, ts, f, simplify = FALSE)
+  factor(unsplit(wave_split, ts))
 }
 
 #' Validate model formulae and construct model frames
 #'
 #' Constructs model frames to be used by [egf()],
-#' while performing myriad checks on the input.
+#' while completing a battery of checks on the input.
 #'
 #' @inheritParams egf
 #'
@@ -347,13 +339,14 @@ make_wave <- function(window, ts) {
 #' without use of [stats::model.frame()] machinery. Without loss
 #' of generality, if `formula_ts = x ~ time | ts`, then `frame_ts`
 #' is obtained by evaluating expressions `time`, `x`, and `ts`
-#' in `data` (enclosed by `environment(formula_ts)`), joining
-#' the resulting vectors and `window` in a data frame, discarding
-#' rows belonging to time series without fitting windows,
+#' in `data` (enclosed by `environment(formula_ts)`), joining the
+#' resulting vectors (which are named `"time"`, `"x"`, and `"ts"`
+#' regardless of `formula_ts`) and `window` in a data frame,
+#' discarding rows belonging to time series without fitting windows,
 #' permuting the remaining rows so that `order(ts)` is increasing,
 #' permuting `levels(window)` so that `order(window)` is increasing,
-#' and finally replacing Date vector `time` with numeric vector
-#' `julian(time, min(time))`.
+#' and finally, if necessary, replacing Date vector `time` with
+#' numeric vector `julian(time, origin)`.
 #'
 #' The `frame_par` model frames are constructed by passing modified
 #' `formula_par` formulae to [stats::model.frame()], applying to
@@ -367,13 +360,7 @@ make_wave <- function(window, ts) {
 #' A list with elements:
 #' \item{`frame_ts`}{
 #'   The time series model frame, constructed from `formula_ts`.
-#'   Retains `terms = terms(formula_ts)` as an attribute.
-#'   Attribute `names_bak` is a replacement for `names(frame_ts)`.
-#'   It preserves deparsed formula components, so that if
-#'   `formula_ts = foo ~ bar | baz`, then `names_bak` is
-#'   `c("bar", "foo", "baz", "window")`, whereas `names(frame_ts)`
-#'   is always `c("time", "x", "ts", "window")`, regardless
-#'   of `formula_ts`.
+#'   Retains `terms = terms(formula_ts)` and `origin` as attributes.
 #' }
 #' \item{`frame_par`}{
 #'   A list of mixed effects model frames (one per nonlinear model
@@ -384,13 +371,13 @@ make_wave <- function(window, ts) {
 #'
 #' @export
 #' @importFrom stats terms model.frame na.pass as.formula
-make_frames <- function(formula_ts, formula_par, data, window,
+make_frames <- function(formula_ts, formula_par, data, window, origin,
                         curve, excess, distr, weekday, na_action, init) {
   ## Nonlinear model parameter names
   pn <- get_par_names(curve = curve, excess = excess,
                       distr = distr, weekday = weekday, link = TRUE)
   p <- length(pn)
-  min_window_length <- 1L + p
+  min_window_len <- 1L + p
 
   ## Check data
   stop_if_not(
@@ -401,18 +388,18 @@ make_frames <- function(formula_ts, formula_par, data, window,
   ## Check time series formula
   stop_if_not(
     inherits(formula_ts, "formula"),
-    m = "`formula_ts` must be a formula."
+    length(formula_ts) == 3L,
+    m = "`formula_ts` must be a formula with a response."
   )
   formula_ts <- expand_terms(formula_ts)
   a <- attributes(terms(formula_ts))
   stop_if_not(
-    a$response > 0L,
     a$intercept == 1L,
     is.null(a$offset),
     length(a$term.labels) == 1L,
     m = paste0(
       "To be parsed correctly, `formula_ts` must have\n",
-      "a response, intercept, no offsets, and exactly one term."
+      "an intercept, no offsets, and exactly one term."
     )
   )
 
@@ -424,7 +411,8 @@ make_frames <- function(formula_ts, formula_par, data, window,
   cases <- try_eval1(formula_ts[[2L]])
   stop_if_not(
     is.numeric(cases),
-    m = sprintf("`%s` must evaluate to a numeric vector.", cn)
+    (n <- length(cases)) > 0L,
+    m = sprintf("`%s` must evaluate to a numeric vector\nof nonzero length.", cn)
   )
   stop_if_not(
     cases[!is.na(cases)] >= 0,
@@ -434,46 +422,50 @@ make_frames <- function(formula_ts, formula_par, data, window,
     cases[is.infinite(cases)] <- NA
     ## Round to nearest integer,
     ## with warning if distance exceeds tolerance
-    is_integer_within_tol <- function(x, tol = sqrt(.Machine$double.eps)) {
-      abs(x - round(x)) < tol
-    }
     warn_if_not(
-      all(is_integer_within_tol(cases), na.rm = TRUE),
+      all.equal(cases, z <- round(cases)),
       m = sprintf("Non-integer numeric elements of `%s`\nrounded to nearest integer.", cn)
     )
-    cases <- round(cases)
+    cases <- z
   }
   if (is_bar(formula_ts[[3L]])) {
     gn <- deparse(formula_ts[[3L]][[3L]])
     ts <- try_eval1(formula_ts[[3L]][[3L]])
     stop_if_not(
       is.factor(ts),
-      m = sprintf("`%s` must evaluate to a factor.", gn)
+      length(ts) == n,
+      m = sprintf("`%s` must evaluate to a factor\nof length `length(%s)`.", gn, cn)
+    )
+    ts <- droplevels(ts, exclude = NA)
+    stop_if_not(
+      !anyNA(ts),
+      m = sprintf("`%s` must not have missing values.", gn)
     )
   } else {
     gn <- "ts"
-    ts <- rep_len(factor(1), length(cases))
+    ts <- rep_len(factor(1), n)
     formula_ts[[3L]] <- call("|", formula_ts[[3L]], as.name(gn))
   }
   tn <- deparse(formula_ts[[3L]][[2L]])
   time <- try_eval1(formula_ts[[3L]][[2L]])
+  if (inherits(time, "Date")) {
+    time <- julian(time, origin = origin)
+  }
   stop_if_not(
-    inherits(time, "Date"),
-    m = sprintf("`%s` must evaluate to a Date vector.", tn)
+    is.numeric(time),
+    length(time) == n,
+    m = sprintf("`%s` must evaluate to a numeric or Date vector\nof length `length(%s)`.", tn, cn)
   )
-  stop_if_not(
-    diff(range(lengths(list(time, cases, ts)))) == 0L,
-    m = sprintf("`%s`, `%s`, and `%s`\nmust have a common length.", tn, cn, gn)
-  )
-  ts <- droplevels(ts, exclude = NA)
+  if (weekday > 0L) {
+    stop_if_not(
+      all.equal(time, z <- round(time)),
+      m = sprintf("weekday > 0: `%s` must be an integer vector\n(in the sense of `all.equal(%s, round(%s))`).", tn, tn, tn)
+    )
+    time <- z
+  }
   stop_if_not(
     !anyNA(time),
-    !anyNA(ts),
-    m = sprintf("`%s` and `%s` must not have missing values.", tn, gn)
-  )
-  stop_if_not(
-    table(ts) >= min_window_length,
-    m = sprintf("Time series must have length %d or greater.", min_window_length)
+    m = sprintf("`%s` must not have missing values.", tn)
   )
   stop_if_not(
     tapply(time, ts, function(x) all(diff(x) > 0)),
@@ -481,46 +473,43 @@ make_frames <- function(formula_ts, formula_par, data, window,
   )
 
   ## Check fitting windows
-  if (is.data.frame(window))
   stop_if_not(
     is.factor(window),
-    length(window) == nrow(frame_ts),
-    m = sprintf("`window` must be a factor of length `length(%s)`.", tn)
+    length(window) == n,
+    m = sprintf("`window` must be a factor of length `length(%s)`.", cn)
   )
   window <- droplevels(window, exclude = NA)
   stop_if_not(
     nlevels(window) > 0L,
-    m = "`window` must have at least one used level."
+    m = "`window` must have at least one nonempty level."
+  )
+  ind_ts_window <- table(ts, window) > 0L
+  stop_if_not(
+    colSums(ind_ts_window) == 1,
+    m = sprintf("Levels of `window` must not occur\nin more than one level of `%s`.", gn)
   )
   stop_if_not(
-    table(window) >= min_window_length,
-    m = sprintf("Used levels of `window` must have\nfrequency %d or greater.", min_window_length)
+    tapply(cases, window, function(x) sum(!is.na(x[-1L])) >= min_window_len - 1L),
+    m = sprintf("Insufficient data: `%s` has fewer than %d observations\nin at least one level of `window`.", cn, min_window_len - 1L)
   )
-  stop_if_not(
-    nlevels(interaction(ts, window, drop = TRUE)) == nlevels(window),
-    m = sprintf("`%s` must be constant in each level of `window`.", gn)
-  )
-  if (weekday) {
-    stop_if_not(
-      tapply(time, window, function(x) all(diff(x) == 1)),
-      n = sprintf("weekday = TRUE: `%s` must have 1-day spacing\nin all fitting windows.", tn)
-    )
-  }
   if (na_action == "fail") {
     stop_if_not(
       !tapply(cases, window, function(x) anyNA(x[-1L])),
-      m = sprintf("na_action = \"fail\": `%s` has missing values\nin at least one fitting window.", cn)
+      m = sprintf("na_action = \"fail\": `%s` has missing values\nin at least one level of `window`.", cn)
     )
-  } else {
+  }
+  if (weekday > 0L) {
     stop_if_not(
-      tapply(cases, window, function(x) sum(!is.na(x[-1L])) >= min_window_length - 1L),
-      m = sprintf("`%s` has insufficient data\n(fewer than %d observations)\nin at least one fitting window.", cn, min_window_length - 1L)
+      tapply(time, window, function(x) all(diff(x) == 1)),
+      n = sprintf("weekday > 0: `%s` must have 1-day spacing\nin each level of `window`.", tn)
     )
   }
 
+  ## Consider valid only those time series with fitting windows
+  ts <- factor(ts, levels = levels(ts)[rowSums(ind_ts_window) > 0])
+
   ## Construct time series model frame
-  frame_ts <- data.frame(time = time, x = cases, ts, window)
-  names_bak <- c(tn, cn, gn, "window")
+  frame_ts <- data.frame(time, x = cases, ts, window)
 
   ## Check mixed effects formulae
   if (inherits(formula_par, "formula") && length(formula_par) == 2L) {
@@ -535,9 +524,8 @@ make_frames <- function(formula_ts, formula_par, data, window,
       !is.null(names(formula_par)),
       names(formula_par) %in% pn,
       m = paste0(
-        "`formula_par` must be a formula of the form\n",
-        "`~terms` or a named list of such formulae with\n",
-        "`names(formula_par)` a subset of\n",
+        "`formula_par` must be a formula of the form `~terms`,\n",
+        "or otherwise a list of such formulae with names in\n",
         "`get_par_names(curve, distr, excess, weekday, link = TRUE)`."
       )
     )
@@ -555,7 +543,7 @@ make_frames <- function(formula_ts, formula_par, data, window,
         "Default initial values for coefficients of\n",
         "fixed effects models without an intercept\n",
         "are not reliable. Consider including an\n",
-        "intercept or setting `init` explicitly."
+        "intercept or setting argument `init` explicitly."
       )
     )
   }
@@ -568,25 +556,23 @@ make_frames <- function(formula_ts, formula_par, data, window,
     drop.unused.levels = TRUE
   )
   fix_empty <- function(d, n) {
-    if (sum(dim(d)) != 0L) {
+    if (length(d) > 0L) {
       return(d)
     }
-    structure(as.data.frame(seq_len(n))[-1L], terms = attr(d, "terms"))
+    `attr<-`(data.frame(row.names = seq_len(n)), "terms", attr(d, "terms"))
   }
-  frame_par <- lapply(frame_par, fix_empty, n = nrow(frame_ts))
+  frame_par <- lapply(frame_par, fix_empty, n = n)
   stop_if_not(
-    vapply(frame_par, nrow, 0L) == nrow(frame_ts),
-    m = sprintf("`formula_par` variables must have length `length(%s)`.", tn)
+    vapply(frame_par, nrow, 0L) == n,
+    m = sprintf("`formula_par` variables must have length `length(%s)`.", cn)
   )
 
-  ## Discard time series without fitting windows
-  has_window <- rowSums(table(frame_ts$ts, frame_ts$window) > 0L) > 0L
-  frame_ts$ts <- factor(frame_ts$ts, levels = levels(frame_ts$ts)[has_window])
+  ## Discard data from time series without fitting windows
   keep <- !is.na(frame_ts$ts)
   frame_ts <- frame_ts[keep, , drop = FALSE]
   frame_par <- lapply(frame_par, `[`, keep, , drop = FALSE)
 
-  ## Order rows by time series
+  ## Order remaining rows by time series
   ord <- order(frame_ts$ts)
   frame_ts <- frame_ts[ord, , drop = FALSE]
   frame_par <- lapply(frame_par, `[`, ord, , drop = FALSE)
@@ -599,20 +585,16 @@ make_frames <- function(formula_ts, formula_par, data, window,
   )
 
   ## Check that fitting windows are contiguous
+  ## NB: Much easier to check now that time series are ordered
   stop_if_not(
     tapply(seq_len(nrow(frame_ts)), frame_ts$window, function(i) all(diff(i) == 1L)),
-    m = "Fitting windows must be contiguous."
+    m = sprintf("Within levels of `%s`, `split(%s, window)`\nshould list _contiguous_ segments of `%s`.", gn, tn, tn)
   )
-
-  ## Store time as a number of days since the earliest time point
-  ## NB: `julian(., origin)` stores `origin` as an attribute
-  origin <- min(frame_ts$time)
-  frame_ts$time <- julian(frame_ts$time, origin = origin)
 
   ## Keep only those rows of mixed effects model frames
   ## belonging to a fitting window
-  keep <- !is.na(frame_ts$window)
-  frame_par <- lapply(frame_par, `[`, keep, , drop = FALSE)
+  keepkeep <- !is.na(frame_ts$window)
+  frame_par <- lapply(frame_par, `[`, keepkeep, , drop = FALSE)
 
   ## Check mixed effects variables
   get_var_names <- function(x) {
@@ -648,20 +630,23 @@ make_frames <- function(formula_ts, formula_par, data, window,
     !vapply(frame_par, any_infinite, FALSE),
     m = "Numeric `formula_par` variables must be finite."
   )
-  ## FIXME: Require exact equality for double vectors?
-  stop_if_not(
-    vapply(split(do.call(cbind, frame_par), frame_ts$window[!is.na(frame_ts$window)]), is_constant, FALSE),
-    m = "`formula_par` variables must be constant\nin each level of `window`."
-  )
-  stop_if_not(
-    !vapply(frame_par[lengths(frame_par) > 0L], is_constant, FALSE),
-    m = "`formula_par` variables must not be constant\nacross all levels of `window`."
-  )
+  if (sum(lengths(frame_par)) > 0L) {
+    ## NB: `is_constant()` checks that double vectors are nearly constant
+    frame_par_combined <- do.call(cbind, frame_par)
+    stop_if_not(
+      vapply(split(frame_par_combined, frame_ts$window[keepkeep]), is_constant, FALSE),
+      m = "`formula_par` variables must be constant\nin each level of `window`."
+    )
+    stop_if_not(
+      !is_constant(frame_par_combined),
+      m = "`formula_par` variables must not be constant\nacross all levels of `window`."
+    )
+  }
 
   ## Keep just one row of mixed effects model frames from each
   ## fitting window
-  keep <- !duplicated(frame_ts$window[keep])
-  frame_par <- lapply(frame_par, `[`, keep, , drop = FALSE)
+  keepkeepkeep <- !duplicated(frame_ts$window[keepkeep])
+  frame_par <- lapply(frame_par, `[`, keepkeepkeep, , drop = FALSE)
 
   ## Set attributes
   finish <- function(frame, formula) {
@@ -671,7 +656,6 @@ make_frames <- function(formula_ts, formula_par, data, window,
   }
   frame_ts <- finish(frame_ts, formula_ts)
   frame_par <- Map(finish, frame_par, formula_par)
-  attr(frame_ts, "names_bak") <- names_bak
   attr(frame_ts, "origin") <- origin
 
   list(frame_ts = frame_ts, frame_par = frame_par)
@@ -734,7 +718,7 @@ make_X <- function(x, frame, sparse) {
   if (ncol(X) == 0L) {
     return(X)
   }
-  j <- (colSums(abs(X)) > 0L)
+  j <- colSums(abs(X)) > 0
   structure(X[, j, drop = FALSE],
     contrasts = attr(X, "contrasts"),
     assign = attr(X, "assign")[j]
@@ -767,21 +751,23 @@ make_Z <- function(x, frame) {
 
 #' Describe design matrix columns
 #'
-#' A utility allowing combined design matrices and parameter vectors to
-#' be split by nonlinear model parameter, term, group, or interactions
-#' thereof.
+#' A utility allowing columns of combined design matrices
+#' and elements of combined parameter vectors to be split
+#' by nonlinear model parameter, formula term, group, and
+#' group level.
 #'
 #' @param xl
-#'   A named list of fixed effects formulae of the form `~terms`, or
-#'   a named list of random effects terms of the form `(terms | group)`.
-#'   `names(xl)` must specify the respective nonlinear model parameters.
+#'   A named list of fixed effects formulae of the form
+#'   `~terms`, or a named list of random effects terms of
+#'   the form `(terms | group)`. `names(xl)` must specify
+#'   the respective nonlinear model parameters.
 #' @param ml
-#'   A list of `X` or `Z` matrices obtained by applying [make_X()] or
-#'   [make_Z()] to the to the elements of `xl`.
+#'   A list of `X` or `Z` matrices obtained by applying
+#'   [make_X()] or [make_Z()] to the to the elements of `xl`.
 #'
 #' @return
-#' A data frame with `sum(vapply(ml, ncol, 0L))` with one row
-#' per column of `do.call(cbind, ml)` and variables:
+#' A data frame with rows corresponding to columns of
+#' `do.call(cbind, ml)`, and variables:
 #' \item{`par`}{
 #'   Nonlinear model parameter.
 #' }
@@ -842,50 +828,57 @@ make_XZ_info <- function(xl, ml) {
 #' @inheritParams make_tmb_args
 #'
 #' @return
+#' \[Below,
+#' `n = sum(!is.na(frame_ts$window))`
+#' denotes the total number of time points belonging a fitting window,
+#' `N = nlevels(frame_ts$window)`
+#' denotes the number of fitting windows, and
+#' `p = length(frame_par)`
+#' denotes the number of nonlinear model parameters.\]
+#'
 #' A `"tmb_data"` object, which is a list with elements:
 #' \item{`t`}{
-#'   A numeric vector of length `sum(!is.na(frame_ts$window))`
-#'   giving time as a number of days since the earliest time point
-#'   in the current fitting window.
-#' }
-#' \item{`x`}{
-#'   A numeric vector of length
-#'   `sum(!is.na(frame_ts$window))-nlevels(frame_ts$window)`
-#'   giving incidence in each fitting window. `x[i]` in window `k`
-#'   is the number of cases observed from time `t[k+i-1]` to time
-#'   `t[k+i]`.
+#'   A numeric vector of length `n` giving time as a number of days
+#'   since the earliest time point in the current fitting window.
 #' }
 #' \item{`t_seg_len`}{
-#'   An integer vector of length `nlevels(frame_ts$window)`
-#'   giving the length of each fitting window as
-#'   a number of time points (rather than intervals).
+#'   An integer vector of length `N` specifying the length of each
+#'   fitting window as a number of time points.
+#' }
+#' \item{`x`}{
+#'   A numeric vector of length `n-N` giving incidence in each
+#'   fitting window. `x[i]` in window `k` is the number of cases
+#'   observed from time `t[k+i-1]` to time `t[k+i]`.
 #' }
 #' \item{`dow`}{
-#'   An integer vector giving the first weekday in each fitting
-#'   window, with values `i` in `0:6` mapping to the weekday `i`
-#'   days after the reference weekday specified by `weekday_ref`.
+#'   If `weekday > 0L`, then an integer vector of length `N`
+#'   indicating the first weekday in each fitting window, with
+#'   value `i` in `0:6` mapping to the weekday `i` days after
+#'   the reference weekday specified by `weekday`. Otherwise,
+#'   an integer vector of the same length filled with `-1`.
 #' }
 #' \item{`Yo`}{
-#'   The offsets matrix in dense format.
+#'   The offsets matrix in dense format, with `N` rows and
+#'   `p` columns.
 #' }
 #' \item{`X`}{
 #'   The fixed effects design matrix in sparse or dense format,
-#'   depending on `sparse_X`.
+#'   depending on `sparse_X`, with `N` rows.
 #' }
 #' \item{`Z`}{
-#'   The random effects design matrix in sparse format.
-#'   If there are no random effects, then `Z` is an empty matrix.
+#'   The random effects design matrix in sparse format, with
+#'   `N` rows. If there are no random effects, then `Z` is an
+#'   empty sparse matrix.
 #' }
 #' \item{`Xs`, `Xd`}{
 #'   If `sparse_X = TRUE`, then `Xs = X` and `Xd` is an empty dense
 #'   matrix. Otherwise, `Xd = X` and `Xs` is an empty sparse matrix.
 #' }
 #' \item{`X_info`, `Z_info`}{
-#'   Data frames with `ncol(X)` and `ncol(Z)` rows, respectively,
-#'   listing factors `colname`, `par`, `term`, and `group`. Row
-#'   `j` describes the coefficient associated with column `j` of
-#'   `X` or `Z`. `Zinfo` has additional factors `cor` and `vec`
-#'   splitting coefficients by relation to a common correlation
+#'   Data frames with `ncol(X)` and `ncol(Z)` rows, respectively.
+#'   Row `j` describes the coefficient associated with column `j`
+#'   of `X` or `Z`. `Z_info` has additional factors `cor` and `vec`
+#'   splitting coefficients by relation to a common covariance
 #'   matrix and random vector, respectively.
 #' }
 #' \item{`beta_seg_len`, `b_seg_len`}{
@@ -902,15 +895,15 @@ make_XZ_info <- function(xl, ml) {
 #'   the random effects matrix.
 #' }
 #' \item{`curve_flag`, `excess_flag`, `distr_flag`, `weekday_flag`, `sparse_X_flag`}{
-#'   Integer flags referencing `curve`, `excess`, `distr`, `weekday`,
-#'   and `sparse_X`.
+#'   Integer flags referencing `curve`, `excess`, `distr`,
+#'   `weekday > 0`, and `sparse_X`.
 #' }
 #' \item{`predict_flag`}{
 #'   An integer flag set equal to 0 so that prediction code is not run.
 #' }
 #' Additional integer elements of the form `j_link_parameter`
 #' (e.g., `j_log_r`) give the 0-index of nonlinear model parameter
-#' names (e.g., `"log_r"`) in `levels(Xinfo$par)`. The value -1 is
+#' names (e.g., `"log_r"`) in `levels(X_info$par)`. The value `-1` is
 #' used for parameters not belonging to the nonlinear model being fit.
 #'
 #' @keywords internal
@@ -918,32 +911,47 @@ make_XZ_info <- function(xl, ml) {
 #' @importFrom methods as
 #' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
 make_tmb_data <- function(frame_ts, frame_par,
-                          curve, excess, distr, weekday, weekday_ref,
-                          sparse_X) {
+                          curve, excess, distr, weekday, sparse_X) {
   ## Nonlinear model parameter names
-  pn <- get_par_names(curve = curve, excess = excess,
-                      distr = distr, weekday = weekday, link = TRUE)
-  p <- length(pn)
+  pn <- names(frame_par)
+  p <- length(frame_par)
 
-  ## Discard time points not belonging to a fitting window
+  ## Time series model frame excluding rows not associated
+  ## with a fitting window
   origin <- attr(frame_ts, "origin")
   frame_ts <- frame_ts[!is.na(frame_ts$window), , drop = FALSE]
 
   ## Fitting window length as a number of time points
   t_seg_len <- tabulate(frame_ts$window)
+  N <- length(t_seg_len)
 
-  ## Time as number of days since earliest time point (within segment)
+  ## Time as number of days since earliest time point
   firsts <- which(!duplicated(frame_ts$window))
   t <- frame_ts$time - rep.int(frame_ts$time[firsts], t_seg_len)
 
-  ## Incidence without unused first elements (within segment)
+  ## Incidence without unused first elements
   x <- frame_ts$x[-firsts]
 
-  ## First weekday (within segment):
-  ## i in {0,...,6} maps to i days after reference day
-  date_1 <- origin + 1 + frame_ts$time[firsts] # reason for adding 1 is subtle, see help for `egf()` argument `formula_ts`
-  weekday_1 <- julian(date_1, origin = .Date(2 + weekday_ref)) %% 7 # Sunday <-> 0
-  dow <- as.integer(weekday_1)
+  if (weekday > 0L) {
+    ## Weekday during 1-day interval starting at earliest time point
+    ## NB: When `weekday > 0`, time points are integer numbers
+    ##     of days since the 23:59:59 on a reference date, so this
+    ##     1-day interval is guaranteed to occur on a single weekday
+
+    ## Date during that interval
+    ## NB: Reason for adding 1 is that the earliest time points are
+    ##     23:59:59 on dates `origin + time[firsts]`, so the 1-day
+    ##     intervals that we seek occur on the following dates
+    date_day1 <- origin + frame_ts$time[firsts] + 1
+    ## Weekday during that interval, coded as an integer `i` in `0:6`
+    ## NB: `i` maps to the weekday `i` days after the reference
+    ##     weekday, which is the weekday `weekday` days after an
+    ##     arbitrary Saturday, in this case `.Date(2)`
+    weekday_day1 <- julian(date_day1, origin = .Date(2 + weekday)) %% 7
+    dow <- as.integer(weekday_day1)
+  } else {
+    dow <- rep_len(-1L, N)
+  }
 
   ## Fixed effects formula and list of random effects terms
   ## extracted from each mixed effects formula
@@ -955,7 +963,7 @@ make_tmb_data <- function(frame_ts, frame_par,
 
   ## Offsets matrix
   offsets <- lapply(frame_par, model.offset)
-  offsets[vapply(offsets, is.null, FALSE)] <- list(rep_len(0, nlevels(frame_ts$window)))
+  offsets[vapply(offsets, is.null, FALSE)] <- list(rep_len(0, N))
   Yo <- do.call(cbind, offsets)
 
   ## Fixed effects design matrices
@@ -966,8 +974,8 @@ make_tmb_data <- function(frame_ts, frame_par,
   Zl <- Map(make_Z, x = do.call(c, unname(random)), frame = rep.int(frame_par, lengths(random)))
   Z <- do.call(cbind, Zl)
 
-  ## Nonlinear model parameter, formula term, and grouping term
-  ## (g in (r | g)) associated with each column of each matrix
+  ## Nonlinear model parameter, formula term, group (g in (r | g)),
+  ## and group level associated with each column of each matrix
   ## FIXME: Preserve contrasts?
   X_info <- make_XZ_info(xl = fixed, ml = Xl)
   Z_info <- make_XZ_info(xl = do.call(c, unname(random)), ml = Zl)
@@ -992,8 +1000,8 @@ make_tmb_data <- function(frame_ts, frame_par,
   b_seg_len <- as.integer(table(Z_info$par))
 
   ## Coefficients factored by nonlinear model parameter
-  beta_seg_index <- as.integer(X_info$par) - 1L
-  b_seg_index <- as.integer(Z_info$par) - 1L
+  beta_seg_index <- unclass(X_info$par) - 1L
+  b_seg_index <- unclass(Z_info$par) - 1L
 
   ## Dimensions of random effects blocks whose column vectors
   ## are related by a covariance matrix
@@ -1001,7 +1009,7 @@ make_tmb_data <- function(frame_ts, frame_par,
   block_cols <- as.integer(rowSums(table(Z_info$cor, Z_info$vec) > 0L))
 
   ## Empty design matrices
-  empty_dense_matrix <- matrix(integer(0L), nrow(X), 0L)
+  empty_dense_matrix <- `dim<-`(integer(0L), c(nrow(X), 0L))
   empty_sparse_matrix <- sparseMatrix(
     i = integer(0L),
     j = integer(0L),
@@ -1011,8 +1019,8 @@ make_tmb_data <- function(frame_ts, frame_par,
 
   l1 <- list(
     t = t,
-    x = x,
     t_seg_len = t_seg_len,
+    x = x,
     dow = dow,
     Yo = Yo,
     X = X,
@@ -1028,10 +1036,10 @@ make_tmb_data <- function(frame_ts, frame_par,
     block_rows = block_rows,
     block_cols = block_cols,
     curve_flag = get_flag("curve", curve),
-    excess_flag = 1L * excess,
+    excess_flag = as.integer(excess),
     distr_flag = get_flag("distr", distr),
-    weekday_flag = 1L * weekday,
-    sparse_X_flag = 1L * sparse_X,
+    weekday_flag = as.integer(weekday > 0L),
+    sparse_X_flag = as.integer(sparse_X),
     predict_flag = 0L
   )
   pn0 <- get_par_names(link = TRUE)
@@ -1112,7 +1120,7 @@ make_tmb_data <- function(frame_ts, frame_par,
 make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
                                 curve, init) {
   ## Lengths of parameter objects
-  len <- c(
+  lens <- c(
     beta = sum(tmb_data$beta_seg_len),
     b = sum(tmb_data$b_seg_len),
     log_sd_b = sum(tmb_data$block_rows)
@@ -1122,7 +1130,7 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
   if (is.null(init)) {
     ## Initialize each parameter object to a vector of zeros
     ## of appropriate length
-    init_split <- Map(rep_len, length.out = len, x = 0)
+    init_split <- Map(rep_len, length.out = lens, x = 0)
 
     ## Get names of nonlinear model parameters whose mixed
     ## effects formula has an intercept
@@ -1180,7 +1188,7 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
       names(Y_init) <- add_link_string(names(Y_init))
 
       ## Index of elements of `beta` corresponding to "(Intercept)"
-      i1 <- match(pn1, tmb_data$X_info$par)
+      i1 <- match(pn1, tmb_data$X_info$par, 0L)
 
       ## Assign means over windows
       init_split$beta[i1] <- colMeans(Y_init[pn1])
@@ -1192,12 +1200,12 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
     ## producing list(beta, b, log_sd_b)
     stop_if_not(
       is.numeric(init),
-      length(init) == sum(len),
+      length(init) == sum(lens),
       is.finite(init),
-      m = sprintf("`init` must be a finite numeric vector of length %d.", sum(len))
+      m = sprintf("`init` must be a finite numeric vector of length %d.", sum(lens))
     )
     names(init) <- NULL
-    init_split <- split(init, rep.int(gl(3L, 1L, labels = names(len)), len))
+    init_split <- split(init, rep.int(gl(3L, 1L, labels = names(lens)), lens))
   }
 
   ## Replace unused parameter objects with NA_real_
@@ -1222,7 +1230,7 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
 #' @seealso [make_tmb_data()], [make_tmb_parameters()]
 #' @keywords internal
 make_tmb_args <- function(frame_ts, frame_par,
-                          curve, distr, excess, weekday, weekday_ref,
+                          curve, distr, excess, weekday,
                           sparse_X, init) {
   tmb_data <- make_tmb_data(
     frame_ts = frame_ts,
@@ -1231,7 +1239,6 @@ make_tmb_args <- function(frame_ts, frame_par,
     distr = distr,
     excess = excess,
     weekday = weekday,
-    weekday_ref = weekday_ref,
     sparse_X = sparse_X
   )
   tmb_parameters <- make_tmb_parameters(
@@ -1345,25 +1352,47 @@ optim_tmb_out <- function(tmb_out, method, ...) {
 #'
 #' @keywords internal
 split_sdreport <- function(sdreport) {
-  sdr <- summary(sdreport, select = "report")
-  colnames(sdr) <- c("estimate", "se")
-  lapply(split(as.data.frame(sdr), rownames(sdr)), `row.names<-`, NULL)
+  ssdr <- summary(sdreport, select = "report")
+  colnames(ssdr) <- c("estimate", "se")
+  lapply(split(as.data.frame(ssdr), rownames(ssdr)), `row.names<-`, NULL)
 }
 
-get_window_endpoints <- function(object) {
-  time <- object$frame_ts$time
-  ts <- object$frame_ts$ts
-  window <- object$frame_ts$window
+do_wald <- function(estimate, se, level) {
+  q <- qchisq(level, df = 1)
+  n <- length(estimate)
+  lu <- estimate + rep.int(sqrt(q) * c(-1, 1), c(n, n)) * se
+  dim(lu) <- c(n, 2L)
+  colnames(lu) <- c("lower", "upper")
+  lu
+}
+
+apply_inverse_link <- function(x, g) {
+  f <- function(d, s) {
+    d[] <- lapply(d, get_inverse_link(s))
+    d
+  }
+  x_split <- split(x, g, drop = TRUE)
+  x_split <- Map(f,
+    d = x_split,
+    s = get_link_string(names(x_split))
+  )
+  unsplit(x_split, g, drop = TRUE)
+}
+
+get_endpoints <- function(frame_ts) {
+  time <- frame_ts$time
+  ts <- frame_ts$ts
+  window <- frame_ts$window
 
   d <- data.frame(
     ts = rep.int(gl(nlevels(ts), 1L, labels = levels(ts)), rowSums(table(ts, window) > 0L)),
-    window = levels(window),
+    window = gl(nlevels(window), 1L, labels = levels(window)),
     start = tapply(time, window, min),
     end = tapply(time, window, max),
     row.names = NULL,
     stringsAsFactors = FALSE
   )
-  attr(d, "origin") <- attr(time, "origin")
+  attr(d, "origin") <- attr(frame_ts, "origin")
   d
 }
 

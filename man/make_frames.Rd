@@ -9,6 +9,7 @@ make_frames(
   formula_par,
   data,
   window,
+  origin,
   curve,
   excess,
   distr,
@@ -18,16 +19,17 @@ make_frames(
 )
 }
 \arguments{
-\item{formula_ts}{A formula of the form \code{x ~ time} or \code{x ~ time | ts} specifying
-one or more incidence time series in long format. \code{time} must
-evaluate to a Date vector. Elements \code{"YYYY-MM-DD"} of \code{time}
-are read as "time 23:59:59 on date YYYY-MM-DD". \code{x} must
-evaluate to a numeric vector. Within a time series, \code{x[i]}
-should specify the number of cases observed from \code{time[i-1]}
-to \code{time[i]}. Finally, \code{ts} must evaluate to a factor, such
-that \code{split(data.frame(time, x), ts)} returns a list of time
-series. Note that \code{x ~ time} is equivalent to \code{x ~ time | ts}
-with \code{ts} set equal to \code{rep(factor(1), length(x))}.}
+\item{formula_ts}{A formula of the form \code{x ~ time} or \code{x ~ time | ts} specifying one
+or more incidence time series in long format. \code{time} must evaluate
+to a numeric or Date vector. Numeric \code{time} is assumed to measure
+time as a number of days since \emph{the end of} date \code{origin}. Date
+\code{time} is coerced to numeric \code{julian(time, origin)} (see Details).
+\code{x} must evaluate to a numeric vector. Within a time series,
+\code{x[i]} should specify the number of cases observed from \code{time[i-1]}
+to \code{time[i]}. Finally, \code{ts} must evaluate to a factor, such that
+\code{split(data.frame(time, x), ts)} returns a list of time series.
+Note that \code{x ~ time} is equivalent to \code{x ~ time | ts} with \code{ts}
+set equal to \code{rep(factor(1), length(x))}.}
 
 \item{formula_par}{A named list of formulae of the form \code{~terms}, specifying
 mixed effects models (\code{\link[lme4:lmer]{lme4}}-like syntax)
@@ -51,19 +53,24 @@ rows of \code{data} not belonging to a fitting window. Note that
 such a factor can be constructed from a table of fitting window
 endpoints using \code{\link[=make_window]{make_window()}}.)}
 
+\item{origin}{A Date specifying a reference time (see \code{formula_ts}).}
+
 \item{curve}{A character string specifying a cumulative incidence model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
-mortality rate is estimated. Set to \code{TRUE} if what is
-observed (\code{x} if \code{formula_ts = x ~ time | ts}) is
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
+rate is estimated. Set to \code{TRUE} if what is observed is
 multiple causes mortality rather than disease mortality
 or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{weekday}{A logical scalar. If \code{TRUE}, then weekday effects are estimated,
-though this currently requires daily observation of incidence in
-all fitting windows.}
+\item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
+effects are estimated as offsets relative to the indicated day
+(Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
+Currently, weekday effect estimation requires time (that is,
+the value of \code{foo} in \code{formula_ts = x ~ foo | ts}) to be an
+integer (in the sense of \code{all.equal(foo, round(foo))}) or Date
+vector with 1-day spacing in all fitting windows.}
 
 \item{na_action}{A character string indicating how \code{NA} in incidence (\code{x}
 if \code{formula_ts = x ~ time | ts}) are handled. Note that \code{NA}
@@ -79,13 +86,7 @@ as a template.}
 A list with elements:
 \item{\code{frame_ts}}{
 The time series model frame, constructed from \code{formula_ts}.
-Retains \code{terms = terms(formula_ts)} as an attribute.
-Attribute \code{names_bak} is a replacement for \code{names(frame_ts)}.
-It preserves deparsed formula components, so that if
-\code{formula_ts = foo ~ bar | baz}, then \code{names_bak} is
-\code{c("bar", "foo", "baz", "window")}, whereas \code{names(frame_ts)}
-is always \code{c("time", "x", "ts", "window")}, regardless
-of \code{formula_ts}.
+Retains \code{terms = terms(formula_ts)} and \code{origin} as attributes.
 }
 \item{\code{frame_par}}{
 A list of mixed effects model frames (one per nonlinear model
@@ -96,20 +97,21 @@ an attribute.
 }
 \description{
 Constructs model frames to be used by \code{\link[=egf]{egf()}},
-while performing myriad checks on the input.
+while completing a battery of checks on the input.
 }
 \details{
 The \code{frame_ts} model frame is constructed from \code{formula_ts},
 without use of \code{\link[stats:model.frame]{stats::model.frame()}} machinery. Without loss
 of generality, if \code{formula_ts = x ~ time | ts}, then \code{frame_ts}
 is obtained by evaluating expressions \code{time}, \code{x}, and \code{ts}
-in \code{data} (enclosed by \code{environment(formula_ts)}), joining
-the resulting vectors and \code{window} in a data frame, discarding
-rows belonging to time series without fitting windows,
+in \code{data} (enclosed by \code{environment(formula_ts)}), joining the
+resulting vectors (which are named \code{"time"}, \code{"x"}, and \code{"ts"}
+regardless of \code{formula_ts}) and \code{window} in a data frame,
+discarding rows belonging to time series without fitting windows,
 permuting the remaining rows so that \code{order(ts)} is increasing,
 permuting \code{levels(window)} so that \code{order(window)} is increasing,
-and finally replacing Date vector \code{time} with numeric vector
-\code{julian(time, min(time))}.
+and finally, if necessary, replacing Date vector \code{time} with
+numeric vector \code{julian(time, origin)}.
 
 The \code{frame_par} model frames are constructed by passing modified
 \code{formula_par} formulae to \code{\link[stats:model.frame]{stats::model.frame()}}, applying to

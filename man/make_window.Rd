@@ -10,25 +10,24 @@ make_window(time, ts, endpoints)
 make_wave(window, ts)
 }
 \arguments{
-\item{time}{A Date vector listing time points from one or more time series
-in long format. Must be increasing in each level of \code{ts}.
-Missing values are an error.}
+\item{time}{A numeric or Date vector listing time points from one or more
+time series in long format. Must be increasing in each level
+of \code{ts}. Missing values are an error.}
 
 \item{ts}{A factor of length \code{length(time)} such that \code{split(time, ts)}
 splits \code{time} by time series. Missing values are an error.}
 
-\item{endpoints}{A data frame with variables \code{ts} (factor), \code{start} (Date), and
-\code{end} (Date) and one row per fitting window. Window \code{i} runs
-from time \code{start[i]} to time \code{end[i]} in time series \code{ts[i]}.
-Intervals \verb{[start[i], end[i]]} not containing at least two
-time points in time series \code{ts[i]} are an error.}
+\item{endpoints}{A data frame with variables \code{ts}, \code{start}, and \code{end} and one
+row per fitting window. \code{ts} must be a factor. \code{start} and \code{end}
+must be numeric or Date vectors, depending on \code{class(time)}.
+Window \code{i} runs from time \code{start[i]} to time \code{end[i]} in time
+series \code{ts[i]}. Intervals \verb{[start[i], end[i]]} not containing
+at least two time points from time series \code{ts[i]} are an error.}
 
 \item{window}{A factor returned by \code{make_window(time, ts, endpoints)}.}
 }
 \value{
-A factor of length \code{length(time)}. For \code{make_window()}, there are
-as many levels as windows. For \code{make_wave()}, the number of levels
-is equal to the maximum number of windows found in one time series.
+A factor of length \code{length(time)}.
 }
 \description{
 Constructs a factor suitable for \code{\link[=egf]{egf()}} argument \code{window}
@@ -46,15 +45,15 @@ waves and one wants to include epidemic wave as a variable in
 a mixed effects model.
 }
 \examples{
-time <- rep(.Date(0:99), 4L)
-ts <- gl(4L, 100L, labels = letters[1:4])
+time <- rep(.Date(0:49), 4L)
+ts <- gl(4L, 50L, labels = letters[1:4])
 endpoints <- data.frame(
   ts    = gl(4L, 2L, labels = letters[1:4]),
-  start = rep(time[c(21L, 61L)], 4L),
-  end   = rep(time[c(40L, 80L)], 4L)
+  start = rep(time[c(11L, 31L)], 4L),
+  end   = rep(time[c(20L, 40L)], 4L)
 )
 
 window <- make_window(time, ts, endpoints)
-ww <- data.frame(time, ts, window, wave = make_wave(window, ts))
+(d <- data.frame(time, ts, window, wave = make_wave(window, ts)))
 
 }

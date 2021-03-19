@@ -4,7 +4,7 @@
 \alias{confint.egf_profile}
 \title{Confidence intervals from likelihood profiles}
 \usage{
-\method{confint}{egf_profile}(object, parm, level = 0.95, ...)
+\method{confint}{egf_profile}(object, parm, level = 0.95, link = FALSE, ...)
 }
 \arguments{
 \item{object}{An \code{"egf_profile"} object returned by \code{\link[=profile.egf]{profile.egf()}}.}
@@ -12,6 +12,11 @@
 \item{parm}{Unused argument included for generic consistency.}
 
 \item{level}{A number in the interval (0,1). The desired confidence level.}
+
+\item{link}{A logical scalar. If \code{FALSE} and \code{object} supplies
+likelihood profiles of population fitted values of
+nonlinear model parameters, then confidence intervals
+on inverse link-transformed fitted values are returned.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -22,10 +27,12 @@ Row index of linear combination,
 from \code{seq_len(nrow(attr(object, "A")))}.
 }
 \item{\code{estimate}, \code{lower}, \code{upper}}{
-Estimate of linear combination
-and approximate lower and upper confidence limits.
+Estimate of linear combination and approximate lower
+and upper confidence limits, inverse-link transformed
+if \code{link = FALSE} and linear combinations represent
+population fitted values of nonlinear model parameter.
 }
-\code{level}, \code{A = attr(object, "A")}, and \code{x = attr(object, "x")}
+\code{level}, \code{attr(object, "A")}, and \code{attr(object, "x")}
 are retained as attributes.
 }
 \description{

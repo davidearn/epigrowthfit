@@ -11,7 +11,6 @@ make_tmb_args(
   distr,
   excess,
   weekday,
-  weekday_ref,
   sparse_X,
   init
 )
@@ -23,19 +22,18 @@ make_tmb_args(
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
-mortality rate is estimated. Set to \code{TRUE} if what is
-observed (\code{x} if \code{formula_ts = x ~ time | ts}) is
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
+rate is estimated. Set to \code{TRUE} if what is observed is
 multiple causes mortality rather than disease mortality
 or disease incidence.}
 
-\item{weekday}{A logical scalar. If \code{TRUE}, then weekday effects are estimated,
-though this currently requires daily observation of incidence in
-all fitting windows.}
-
-\item{weekday_ref}{An integer indicating a weekday, with 1 mapping to Sunday,
-2 mapping to Monday, and so on. Weekday effects are estimated
-as offsets relative to the indicated day.}
+\item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
+effects are estimated as offsets relative to the indicated day
+(Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
+Currently, weekday effect estimation requires time (that is,
+the value of \code{foo} in \code{formula_ts = x ~ foo | ts}) to be an
+integer (in the sense of \code{all.equal(foo, round(foo))}) or Date
+vector with 1-day spacing in all fitting windows.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
 matrix is constructed in sparse format.}

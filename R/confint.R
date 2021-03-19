@@ -48,18 +48,10 @@
 #' Three methods are provided for calculating confidence intervals:
 #' \describe{
 #' \item{`wald`}{
-#'   Confidence limits on fitted values (link scale) are computed
-#'   as `estimate + c(-1, 1) * sqrt(q) * se`, where `estimate`
-#'   is a fitted value, `se` is its approximate (delta method)
-#'   standard error, and `q = qchisq(level, df = 1)`.
+#'   See [fitted.egf()] and [confint.egf_fitted()].
 #' }
 #' \item{`profile`}{
-#'   Discrete approximations of the likelihood profiles of fitted
-#'   values (link scale) are computed using [TMB::tmbprofile()].
-#'   The profiles are linearly interpolated to approximate the
-#'   two solutions of `deviance(value) = qchisq(level, df = 1)`,
-#'   which provide the lower and upper confidence limits of interest
-#'   (see Wilks' theorem).
+#'   See [profile.egf()] and [confint.egf_profile()].
 #' }
 #' \item{`uniroot`}{
 #'   Similar to `"profile"`, except that the two solutions of
@@ -69,17 +61,17 @@
 #' }
 #' }
 #' For nonlinear model parameters following random effects models,
-#' `"wald"` returns confidence intervals on fitted values,
+#' `"wald"` returns confidence intervals on individual fitted values,
 #' whereas `"profile"` and `"uniroot"` return confidence intervals
-#' on the fixed effects components only, namely the _population_
-#' fitted values (see [fitted.egf()]).
+#' on the fixed effects components only, namely the population fitted
+#' values.
 #'
 #' `"wald"` requires minimal computation time but assumes, e.g.,
 #' asymptotic normality of the maximum likelihood estimator.
 #' A further limitation of `"wald"` is functional non-invariance.
 #' `"profile"` and `"uniroot"` avoid these issues but are much
 #' slower, requiring estimation of restricted models. Of the two,
-#' `"profile"` is typically more robust.
+#' `"profile"` is more robust.
 #'
 #' @inheritSection fitted.egf Nonstandard evaluation
 #' @inheritSection fitted.egf Warning
@@ -92,20 +84,19 @@
 #'   from `get_par_names(object, link = TRUE)`.
 #' }
 #' \item{`ts`}{
-#'   Time series, from `levels(object$frame_ts$window)`.
+#'   Time series, from `levels(object$endpoints$window)`.
 #' }
 #' \item{`window`}{
-#'   Fitting window, from `levels(object$frame_ts$window)`.
+#'   Fitting window, from `levels(object$endpoints$window)`.
 #' }
 #' \item{`estimate`, `lower`, `upper`}{
 #'   Fitted value and approximate lower and upper confidence limits.
 #' }
-#' `level` and a data frame `endpoints` listing fitting window
-#' endpoints are retained as attributes.
+#' `level` and `object$endpoints` are retained as attributes.
 #'
 #' @seealso [plot.egf_confint()]
 #' @export
-#' @importFrom stats qchisq confint profile
+#' @importFrom stats qchisq fitted profile confint
 #' @importFrom TMB tmbroot
 #' @import parallel
 confint.egf <- function(object,
@@ -131,6 +122,7 @@ confint.egf <- function(object,
   stop_if_not_number_in_interval(level, 0, 1, "()")
   stop_if_not_true_false(link)
   method <- match.arg(method)
+  s_elu <- c("estimate", "lower", "upper")
 
   pn <- pn_bak <- get_par_names(object, link = TRUE)
   spec <- c("R0", "tdoubling")
@@ -151,183 +143,128 @@ confint.egf <- function(object,
 
   frame <- do.call(cbind, unname(object$frame_par))
   frame <- frame[unique(names(frame))]
-
   subset <- subset_to_index(substitute(subset), frame, parent.frame(),
                             .subset = .subset)
+  .subset <- replace(rep_len(FALSE, nrow(object$endpoints)), subset, TRUE)
   append <- append_to_index(substitute(append), frame, parent.frame(),
                             .append = .append)
-
-  p <- length(par)
-  w <- length(subset)
-  q <- qchisq(level, df = 1)
-  s_elu <- c("estimate", "lower", "upper")
-
-  ts <- object$frame_ts$ts
-  window <- object$frame_ts$window
-  k <- !is.na(window) & !duplicated(window)
+  .append <- names(frame[append])
 
   if (method == "wald") {
-    Y <- object$report$Y_as_vector$estimate
-    Y_se <- object$report$Y_as_vector$se
-    dim(Y) <- dim(Y_se) <- c(nlevels(window), length(pn_bak))
-    Y <- Y[subset, , drop = FALSE]
-    Y_se <- Y_se[subset, , drop = FALSE]
+    ft <- fitted(object, par = par, .subset = .subset, .append = .append)
+    out <- confint(ft, level = level, link = link)
 
-    rep_mp_sqrt_q <- rep.int(sqrt(q) * c(-1, 1), c(w, w))
-    get_elu <- function(j) {
-      elu <- c(Y[, j], Y[, j] + Y_se[, j] * rep_mp_sqrt_q)
-      dim(elu) <- c(w, 3L)
-      colnames(elu) <- s_elu
-      elu
+  } else if (method == "profile") {
+    pf <- profile(object, par = par, .subset = .subset, .append = .append,
+      max_level = level + min(0.01, 0.1 * (1 - level)),
+      grid_len = grid_len,
+      trace = trace,
+      parallel = parallel,
+      cores = cores,
+      outfile = outfile,
+      cl = cl
+    )
+    out <- confint(pf, level = level, link = link)
+    out$linear_combination <- NULL
+
+  } else { "uniroot"
+    stop_if_not_number_in_interval(max_width, 0, Inf, "()")
+
+    p <- length(par)
+    w <- length(subset)
+    m <- p * w
+    n <- length(object$nonrandom)
+    A <- rep.int(0, m * n)
+    dim(A) <- c(m, n)
+    for (k in seq_len(p)) {
+      i <- (k - 1L) * w + seq_len(w)
+      j <- which(object$tmb_args$data$X_info$par == par[k])
+      A[i, j] <- object$tmb_args$data$X[subset, j]
     }
-    elul <- lapply(match(par, pn), get_elu)
-    if (link) {
-      f <- identity
+    A_rows <- lapply(seq_len(m), function(i) A[i, ])
+
+    a <- list(
+      obj = object$tmb_out,
+      target = qchisq(level, df = 1) / 2, # y := diff(nll) = deviance / 2
+      sd.range = max_width,
+      trace = FALSE
+    )
+    i_of_m <- function(i) {
+      sprintf("%*d of %d", nchar(m), i, m)
+    }
+
+    do_uniroot <- function(r, i) {
+      if (trace) {
+        cat("Computing confidence interval", i_of_m(i), "...\n")
+      }
+      a$lincomb <- r
+      do.call(tmbroot, a)
+    }
+
+    if (parallel == "snow") {
+      environment(do_uniroot) <- environment(i_of_m) <- .GlobalEnv # see R/boot.R
+      if (is.null(cl)) {
+        if (is.null(outfile)) {
+          outfile <- ""
+        }
+        cl <- makePSOCKcluster(cores, outfile = outfile)
+        on.exit(stopCluster(cl))
+      }
+      clusterEvalQ(cl, library("TMB"))
+      clusterExport(cl, varlist = c("a", "i_of_m", "m"), envir = environment())
+      lul <- clusterMap(cl, do_uniroot, r = A_rows, i = seq_len(m))
     } else {
-      elul <- Map(function(m, s) get_inverse_link(s)(m),
-        m = elul,
-        s = get_link_string(par)
-      )
-      f <- remove_link_string
+      if (!is.null(outfile)) {
+        sink(outfile, type = "output")
+        sink(outfile, type = "message")
+      }
+      if (parallel == "multicore") {
+        lul <- mcmapply(do_uniroot, r = A_rows, i = seq_len(m),
+                        SIMPLIFY = FALSE, mc.cores = cores)
+      } else { # serial
+        lul <- Map(do_uniroot, r = A_rows, i = seq_len(m))
+      }
+      if (!is.null(outfile)) {
+        sink(type = "output")
+        sink(type = "message")
+      }
     }
 
     out <- data.frame(
-      par = rep(factor(f(par), levels = f(pn)), each = w),
-      ts = ts[k][subset],
-      window = window[k][subset],
-      do.call(rbind, elul), # "estimate" "lower" "upper"
+      par = rep(factor(par, levels = pn), each = w),
+      ts = object$endpoints$ts[subset],
+      window = object$endpoints$window[subset],
+      estimate = as.numeric(A %*% object$best[object$nonrandom]),
+      do.call(rbind, lul), # "lower" "upper"
       frame[subset, append, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
 
-  } else {
-    if (method == "profile") {
-      pf <- profile(object,
-        par = par,
-        .subset = replace(rep.int(FALSE, nlevels(window)), subset, TRUE),
-        .append = names(frame[append]),
-        max_level = level + min(0.01, 0.1 * (1 - level)),
-        grid_len = grid_len,
-        trace = trace,
-        parallel = parallel,
-        cores = cores,
-        outfile = outfile,
-        cl = cl
-      )
-      out <- confint(pf, level = level)
-      out <- out[c(5:7, 2:4, seq_along(out)[-(1:7)])] # FIXME: risk of breakage
-      ## "par" "ts" "window" "estimate" "lower" "upper" append
-
-    } else if (method == "uniroot") {
-      stop_if_not_number_in_interval(max_width, 0, Inf, "()")
-
-      m <- p * w
-      n <- length(object$nonrandom)
-      A <- rep.int(0, m * n)
-      dim(A) <- c(m, n)
-      for (k in seq_len(p)) {
-        i <- (k - 1L) * w + seq_len(w)
-        j <- which(object$tmb_args$data$X_info$par == par[k])
-        A[i, j] <- object$tmb_args$data$X[subset, j]
-      }
-      A_rows <- lapply(seq_len(m), function(i) A[i, ])
-
-      a <- list(
-        obj = object$tmb_out,
-        target = q / 2, # y := diff(nll) = deviance / 2
-        sd.range = max_width,
-        trace = FALSE
-      )
-      i_of_m <- function(i) {
-        sprintf("%*d of %d", nchar(m), i, m)
-      }
-
-      do_uniroot <- function(r, i) {
-        if (trace) {
-          cat("Computing confidence interval", i_of_m(i), "...\n")
-        }
-        a$lincomb <- r
-        do.call(tmbroot, a)
-      }
-
-      if (parallel == "snow") {
-        environment(do_uniroot) <- environment(i_of_m) <- .GlobalEnv # see R/boot.R
-        if (is.null(cl)) {
-          if (is.null(outfile)) {
-            outfile <- ""
-          }
-          cl <- makePSOCKcluster(cores, outfile = outfile)
-          on.exit(stopCluster(cl))
-        }
-        clusterEvalQ(cl, library("TMB"))
-        clusterExport(cl, varlist = c("a", "i_of_m", "m"), envir = environment())
-        lul <- clusterMap(cl, do_uniroot, r = A_rows, i = seq_len(m))
-      } else {
-        if (!is.null(outfile)) {
-          sink(outfile, type = "output")
-          sink(outfile, type = "message")
-        }
-        if (parallel == "multicore") {
-          lul <- mcmapply(do_uniroot, r = A_rows, i = seq_len(m),
-                          SIMPLIFY = FALSE, mc.cores = cores)
-        } else { # serial
-          lul <- Map(do_uniroot, r = A_rows, i = seq_len(m))
-        }
-        if (!is.null(outfile)) {
-          sink(type = "output")
-          sink(type = "message")
-        }
-      }
-
-      out <- data.frame(
-        par = rep(factor(par, levels = pn), each = w),
-        ts = ts[k][subset],
-        window = window[k][subset],
-        estimate = as.numeric(A %*% object$best[object$nonrandom]),
-        do.call(rbind, lul), # "lower" "upper"
-        frame[subset, append, drop = FALSE],
-        row.names = FALSE,
-        check.names = FALSE,
-        stringsAsFactors = FALSE
-      )
-    }
-
     if (!link) {
-      ## FIXME: Assuming here that inverse link function is increasing.
-      do_inverse_link <- function(d, s) {
-        d[] <- lapply(d, get_inverse_link(s))
-        d
-      }
-      out[s_elu] <- unsplit(
-        Map(do_inverse_link,
-          d = split(out[s_elu], out$par),
-          s = get_link_string(levels(out$par))
-        ),
-        out$par
-      )
+      out[s_elu] <- apply_inverse_link(out[s_elu], g = out$par)
       levels(out$par) <- remove_link_string(levels(out$par))
     }
   }
 
-  k_elu <- match(s_elu, names(out))
-  pl_bak <- levels(out$par)
   if (any(par_bak %in% spec)) {
     s <- if (link) "log_r" else "r"
-    f <- if (link) exp else identity
     d_r <- out[out$par == s, , drop = FALSE]
-    d_r[s_elu] <- f(d_r[s_elu])
+    if (link) {
+      d_r[s_elu] <- exp(d_r[s_elu])
+    }
+
     if ("R0" %in% par_bak) {
       d_R0 <- d_r
-      d_R0[k_elu] <- lapply(d_r[k_elu], compute_R0, breaks = breaks, probs = probs)
+      d_R0[s_elu] <- lapply(d_r[s_elu], compute_R0, breaks = breaks, probs = probs)
       d_R0$par <- factor("R0")
       out <- rbind(out, d_R0)
     }
     if ("tdoubling" %in% par_bak) {
-      k_eul <- k_elu[c(1L, 3L, 2L)]
+      s_eul <- s_elu[c(1L, 3L, 2L)]
       d_tdoubling <- d_r
-      d_tdoubling[k_elu] <- log(2) / d_r[k_eul]
+      d_tdoubling[s_elu] <- log(2) / d_r[s_eul]
       d_tdoubling$par <- factor("tdoubling")
       out <- rbind(out, d_tdoubling)
     }
@@ -339,7 +276,7 @@ confint.egf <- function(object,
   row.names(out) <- NULL
   structure(out,
     level = level,
-    endpoints = get_window_endpoints(object), # for plot.egf_confint()
+    endpoints = object$endpoints, # for `plot.egf_confint()`
     class = c("egf_confint", "data.frame")
   )
 }

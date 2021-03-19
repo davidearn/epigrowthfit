@@ -3,9 +3,9 @@
 #' Extracts the fitted values of nonlinear model parameters.
 #' The fitted value for a given fitting window is obtained
 #' by adding
-#' (i) the population fitted value computed from the relevant
-#' fixed effects coefficients and
-#' (ii) all random effects terms (if any), with random effects
+#' (i) the population fitted value computed from the
+#' relevant fixed effects coefficients and
+#' (ii) all random effects (if any), with random effects
 #' coefficients set equal to their conditional modes.
 #'
 #' @param object
@@ -25,7 +25,8 @@
 #'   nothing.
 #' @param link
 #'   A logical scalar. If `FALSE`, then fitted values are inverse
-#'   link-transformed.
+#'   link-transformed. `TRUE` is required for subsequent use of
+#'   [confint.egf_fitted()].
 #' @param .subset
 #'   A logical vector, to be used (if non-`NULL`) in place
 #'   of the result of evaluating `subset`.
@@ -62,15 +63,20 @@
 #'   from `get_par_names(object, link = link)`.
 #' }
 #' \item{`ts`}{
-#'   Time series, from `levels(object$frame_ts$ts)`.
+#'   Time series, from `levels(object$endpoints$ts)`.
 #' }
 #' \item{`window`}{
-#'   Fitting window, from `levels(object$frame_ts$window)`.
+#'   Fitting window, from `levels(object$endpoints$window)`.
 #' }
-#' \item{`value`}{
+#' \item{`estimate`}{
 #'   Fitted value of parameter `par` in fitting window `window`.
 #' }
+#' \item{`se`}{
+#'   (If `link = TRUE`.)
+#'   Approximate (delta method) standard error on `value`.
+#' }
 #'
+#' @seealso [confint.egf_fitted()]
 #' @export
 fitted.egf <- function(object,
                        par = get_par_names(object, link = TRUE),
@@ -84,49 +90,97 @@ fitted.egf <- function(object,
 
   frame <- do.call(cbind, unname(object$frame_par))
   frame <- frame[!duplicated(names(frame))]
-
+  pn <- get_par_names(object, link = TRUE)
   par <- unique(match.arg(par, several.ok = TRUE))
   subset <- subset_to_index(substitute(subset), frame, parent.frame(),
                             .subset = .subset)
   append <- append_to_index(substitute(append), frame, parent.frame(),
                             .append = .append)
 
-  ts <- object$frame_ts$ts
-  window <- object$frame_ts$window
-  k <- !is.na(window) & !duplicated(window)
-  pn <- get_par_names(object, link = TRUE)
-
   ## `Y[i, j]` is fitted value of nonlinear model parameter `j`
-  ## in fitting window `i`
+  ## in fitting window `i`. `Y_se[i, j]` is the standard error.
   Y <- object$report$Y_as_vector$estimate
-  dim(Y) <- c(nlevels(window), length(pn))
-  colnames(Y) <- pn
-
+  Y_se <- object$report$Y_as_vector$se
+  dim(Y) <- dim(Y_se) <- c(nrow(object$endpoints), length(pn))
+  colnames(Y) <- colnames(Y_se) <- pn
   Y <- Y[subset, par, drop = FALSE]
-  if (link) {
-    f <- identity
-  } else {
-    Y <- mapply(function(x, s) get_inverse_link(s)(x),
-      x = as.data.frame(Y),
-      s = get_link_string(par)
-    )
-    f <- remove_link_string
-  }
+  Y_se <- Y[subset, par, drop = FALSE]
 
   d <- data.frame(
-    par = rep(factor(par, levels = pn, labels = f(pn)), each = length(subset)),
-    ts = ts[k][subset],
-    window = window[k][subset],
-    value = as.numeric(Y),
+    par = rep(factor(par, levels = pn), each = length(subset)),
+    ts = object$endpoints$ts[subset],
+    window = object$endpoints$window[subset],
+    estimate = as.numeric(Y),
     frame[subset, append, drop = FALSE],
     row.names = NULL,
     check.names = FALSE,
     stringsAsFactors = FALSE
   )
-  class(d) <- c("egf_fitted", "data.frame")
-  d
+  if (link) {
+    d$se <- as.numeric(Y_se)
+  } else {
+    d["estimate"] <- apply_inverse_link(d["estimate"], g = d$par)
+  }
+  structure(d, se = link, class = c("egf_fitted", "data.frame"))
 }
 
 #' @rdname fitted.egf
 #' @export
 coef.egf <- fitted.egf
+
+#' Confidence intervals on fitted values
+#'
+#' Computes confidence intervals on fitted values of nonlinear
+#' model parameters.
+#'
+#' @param object
+#'   An `"egf_fitted"` object returned by [fitted.egf()].
+#'   Must supply standard errors on fitted values.
+#' @inheritParams confint.egf
+#' @param ...
+#'   Unused optional arguments.
+#'
+#' @details
+#' Confidence limits on fitted values (link scale) are computed
+#' as `estimate + c(-1, 1) * sqrt(q) * se`, with `estimate` and
+#' `se` obtained from `object` and `q = qchisq(level, df = 1)`.
+#'
+#' @return
+#' If `link = TRUE`, then `object` but with variable `se` replaced
+#' with variables `lower` and `upper` supplying confidence limits o
+#' on link scale fitted values.
+#'
+#' Otherwise, the same object but with variables `estimate`, `lower`,
+#' and `upper` inverse link transformed and link prefixes stripped
+#' from `levels(par)`.
+#'
+#' `level` is retained as an attribute.
+#'
+#' @export
+confint.egf_fitted <- function(object, parm, level = 0.95,
+                               link = TRUE, ...) {
+  stop_if_not(
+    attr(object, "se"),
+    m = "`object` must supply standard errors on fitted values.\nRepeat `fitted()` with `link = TRUE`."
+  )
+  stop_if_not_number_in_interval(level, 0, 1, "()")
+  stop_if_not_true_false(link)
+
+  s <- c("par", "ts", "window", "estimate", "se")
+  d <- data.frame(
+    object[s[1:4]],
+    do_wald(estimate = object$estimate, se = object$se, level = level),
+    object[-match(s, names(object), 0L)],
+    row.names = NULL,
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
+  attr(d, "level") <- level
+  if (link) {
+    return(d)
+  }
+  s_elu <- c("estimate", "lower", "upper")
+  d[s_elu] <- apply_inverse_link(d[s_elu], g = d$par)
+  levels(d$par) <- remove_link_string(levels(d$par))
+  d
+}

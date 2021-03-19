@@ -4,16 +4,7 @@
 \alias{make_tmb_data}
 \title{Construct data objects for C++ template}
 \usage{
-make_tmb_data(
-  frame_ts,
-  frame_par,
-  curve,
-  excess,
-  distr,
-  weekday,
-  weekday_ref,
-  sparse_X
-)
+make_tmb_data(frame_ts, frame_par, curve, excess, distr, weekday, sparse_X)
 }
 \arguments{
 \item{frame_ts}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
@@ -22,70 +13,76 @@ make_tmb_data(
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
-mortality rate is estimated. Set to \code{TRUE} if what is
-observed (\code{x} if \code{formula_ts = x ~ time | ts}) is
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
+rate is estimated. Set to \code{TRUE} if what is observed is
 multiple causes mortality rather than disease mortality
 or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{weekday}{A logical scalar. If \code{TRUE}, then weekday effects are estimated,
-though this currently requires daily observation of incidence in
-all fitting windows.}
-
-\item{weekday_ref}{An integer indicating a weekday, with 1 mapping to Sunday,
-2 mapping to Monday, and so on. Weekday effects are estimated
-as offsets relative to the indicated day.}
+\item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
+effects are estimated as offsets relative to the indicated day
+(Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
+Currently, weekday effect estimation requires time (that is,
+the value of \code{foo} in \code{formula_ts = x ~ foo | ts}) to be an
+integer (in the sense of \code{all.equal(foo, round(foo))}) or Date
+vector with 1-day spacing in all fitting windows.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
 matrix is constructed in sparse format.}
 }
 \value{
+[Below,
+\code{n = sum(!is.na(frame_ts$window))}
+denotes the total number of time points belonging a fitting window,
+\code{N = nlevels(frame_ts$window)}
+denotes the number of fitting windows, and
+\code{p = length(frame_par)}
+denotes the number of nonlinear model parameters.]
+
 A \code{"tmb_data"} object, which is a list with elements:
 \item{\code{t}}{
-A numeric vector of length \code{sum(!is.na(frame_ts$window))}
-giving time as a number of days since the earliest time point
-in the current fitting window.
-}
-\item{\code{x}}{
-A numeric vector of length
-\code{sum(!is.na(frame_ts$window))-nlevels(frame_ts$window)}
-giving incidence in each fitting window. \code{x[i]} in window \code{k}
-is the number of cases observed from time \code{t[k+i-1]} to time
-\code{t[k+i]}.
+A numeric vector of length \code{n} giving time as a number of days
+since the earliest time point in the current fitting window.
 }
 \item{\code{t_seg_len}}{
-An integer vector of length \code{nlevels(frame_ts$window)}
-giving the length of each fitting window as
-a number of time points (rather than intervals).
+An integer vector of length \code{N} specifying the length of each
+fitting window as a number of time points.
+}
+\item{\code{x}}{
+A numeric vector of length \code{n-N} giving incidence in each
+fitting window. \code{x[i]} in window \code{k} is the number of cases
+observed from time \code{t[k+i-1]} to time \code{t[k+i]}.
 }
 \item{\code{dow}}{
-An integer vector giving the first weekday in each fitting
-window, with values \code{i} in \code{0:6} mapping to the weekday \code{i}
-days after the reference weekday specified by \code{weekday_ref}.
+If \code{weekday > 0L}, then an integer vector of length \code{N}
+indicating the first weekday in each fitting window, with
+value \code{i} in \code{0:6} mapping to the weekday \code{i} days after
+the reference weekday specified by \code{weekday}. Otherwise,
+an integer vector of the same length filled with \code{-1}.
 }
 \item{\code{Yo}}{
-The offsets matrix in dense format.
+The offsets matrix in dense format, with \code{N} rows and
+\code{p} columns.
 }
 \item{\code{X}}{
 The fixed effects design matrix in sparse or dense format,
-depending on \code{sparse_X}.
+depending on \code{sparse_X}, with \code{N} rows.
 }
 \item{\code{Z}}{
-The random effects design matrix in sparse format.
-If there are no random effects, then \code{Z} is an empty matrix.
+The random effects design matrix in sparse format, with
+\code{N} rows. If there are no random effects, then \code{Z} is an
+empty sparse matrix.
 }
 \item{\code{Xs}, \code{Xd}}{
 If \code{sparse_X = TRUE}, then \code{Xs = X} and \code{Xd} is an empty dense
 matrix. Otherwise, \code{Xd = X} and \code{Xs} is an empty sparse matrix.
 }
 \item{\code{X_info}, \code{Z_info}}{
-Data frames with \code{ncol(X)} and \code{ncol(Z)} rows, respectively,
-listing factors \code{colname}, \code{par}, \code{term}, and \code{group}. Row
-\code{j} describes the coefficient associated with column \code{j} of
-\code{X} or \code{Z}. \code{Zinfo} has additional factors \code{cor} and \code{vec}
-splitting coefficients by relation to a common correlation
+Data frames with \code{ncol(X)} and \code{ncol(Z)} rows, respectively.
+Row \code{j} describes the coefficient associated with column \code{j}
+of \code{X} or \code{Z}. \code{Z_info} has additional factors \code{cor} and \code{vec}
+splitting coefficients by relation to a common covariance
 matrix and random vector, respectively.
 }
 \item{\code{beta_seg_len}, \code{b_seg_len}}{
@@ -102,15 +99,15 @@ Integer vectors together giving the dimensions of each block of
 the random effects matrix.
 }
 \item{\code{curve_flag}, \code{excess_flag}, \code{distr_flag}, \code{weekday_flag}, \code{sparse_X_flag}}{
-Integer flags referencing \code{curve}, \code{excess}, \code{distr}, \code{weekday},
-and \code{sparse_X}.
+Integer flags referencing \code{curve}, \code{excess}, \code{distr},
+\code{weekday > 0}, and \code{sparse_X}.
 }
 \item{\code{predict_flag}}{
 An integer flag set equal to 0 so that prediction code is not run.
 }
 Additional integer elements of the form \code{j_link_parameter}
 (e.g., \code{j_log_r}) give the 0-index of nonlinear model parameter
-names (e.g., \code{"log_r"}) in \code{levels(Xinfo$par)}. The value -1 is
+names (e.g., \code{"log_r"}) in \code{levels(X_info$par)}. The value \code{-1} is
 used for parameters not belonging to the nonlinear model being fit.
 }
 \description{

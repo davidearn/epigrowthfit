@@ -9,11 +9,11 @@ egf(
   formula_par,
   data = parent.frame(),
   window,
+  origin = .Date(0),
   curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
   excess = FALSE,
   distr = c("nbinom", "pois"),
   weekday = FALSE,
-  weekday_ref = 2L,
   method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
   na_action = c("pass", "fail"),
   sparse_X = FALSE,
@@ -23,16 +23,17 @@ egf(
 )
 }
 \arguments{
-\item{formula_ts}{A formula of the form \code{x ~ time} or \code{x ~ time | ts} specifying
-one or more incidence time series in long format. \code{time} must
-evaluate to a Date vector. Elements \code{"YYYY-MM-DD"} of \code{time}
-are read as "time 23:59:59 on date YYYY-MM-DD". \code{x} must
-evaluate to a numeric vector. Within a time series, \code{x[i]}
-should specify the number of cases observed from \code{time[i-1]}
-to \code{time[i]}. Finally, \code{ts} must evaluate to a factor, such
-that \code{split(data.frame(time, x), ts)} returns a list of time
-series. Note that \code{x ~ time} is equivalent to \code{x ~ time | ts}
-with \code{ts} set equal to \code{rep(factor(1), length(x))}.}
+\item{formula_ts}{A formula of the form \code{x ~ time} or \code{x ~ time | ts} specifying one
+or more incidence time series in long format. \code{time} must evaluate
+to a numeric or Date vector. Numeric \code{time} is assumed to measure
+time as a number of days since \emph{the end of} date \code{origin}. Date
+\code{time} is coerced to numeric \code{julian(time, origin)} (see Details).
+\code{x} must evaluate to a numeric vector. Within a time series,
+\code{x[i]} should specify the number of cases observed from \code{time[i-1]}
+to \code{time[i]}. Finally, \code{ts} must evaluate to a factor, such that
+\code{split(data.frame(time, x), ts)} returns a list of time series.
+Note that \code{x ~ time} is equivalent to \code{x ~ time | ts} with \code{ts}
+set equal to \code{rep(factor(1), length(x))}.}
 
 \item{formula_par}{A named list of formulae of the form \code{~terms}, specifying
 mixed effects models (\code{\link[lme4:lmer]{lme4}}-like syntax)
@@ -56,23 +57,24 @@ rows of \code{data} not belonging to a fitting window. Note that
 such a factor can be constructed from a table of fitting window
 endpoints using \code{\link[=make_window]{make_window()}}.)}
 
+\item{origin}{A Date specifying a reference time (see \code{formula_ts}).}
+
 \item{curve}{A character string specifying a cumulative incidence model.}
 
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline
-mortality rate is estimated. Set to \code{TRUE} if what is
-observed (\code{x} if \code{formula_ts = x ~ time | ts}) is
+\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
+rate is estimated. Set to \code{TRUE} if what is observed is
 multiple causes mortality rather than disease mortality
 or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{weekday}{A logical scalar. If \code{TRUE}, then weekday effects are estimated,
-though this currently requires daily observation of incidence in
-all fitting windows.}
-
-\item{weekday_ref}{An integer indicating a weekday, with 1 mapping to Sunday,
-2 mapping to Monday, and so on. Weekday effects are estimated
-as offsets relative to the indicated day.}
+\item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
+effects are estimated as offsets relative to the indicated day
+(Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
+Currently, weekday effect estimation requires time (that is,
+the value of \code{foo} in \code{formula_ts = x ~ foo | ts}) to be an
+integer (in the sense of \code{all.equal(foo, round(foo))}) or Date
+vector with 1-day spacing in all fitting windows.}
 
 \item{method}{A character string specifying an optimizer available through
 \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}.}
@@ -100,14 +102,19 @@ If \code{debug = FALSE}, then a list inheriting from class \code{"egf"},
 with elements:
 \item{\code{frame_ts}}{
 The time series model frame, constructed from \code{formula_ts}.
-See \code{\link[=make_frames]{make_frames()}}.
+\code{origin} is retained as an attribute. See \code{\link[=make_frames]{make_frames()}}.
 }
 \item{\code{frame_par}}{
 A list of mixed effects model frames (one per nonlinear model
 parameter), constructed from \code{formula_par} (after completion).
 See \code{\link[=make_frames]{make_frames()}}.
 }
-\item{\code{curve}, \code{excess}, \code{distr}, \code{weekday}, \code{weekday_ref}, \code{method}}{
+\item{\code{endpoints}}{
+A data frame with variables \code{ts}, \code{window}, \code{start}, and \code{end}
+listing fitting window endpoints as numbers of days since time
+23:59:59 on a reference date, which is stored as an attribute.
+}
+\item{\code{curve}, \code{excess}, \code{distr}, \code{weekday}, \code{method}}{
 Copies of the so-named arguments (after matching).
 }
 \item{\code{tmb_args}}{
@@ -153,4 +160,11 @@ If \code{debug = TRUE}, then a list with only the elements \code{frame_ts},
 \description{
 Fits nonlinear mixed effects models of epidemic growth to one
 or more disease incidence time series.
+}
+\details{
+Coercion of Date \code{time} to numeric \code{julian(time, origin)} assumes
+that each element \code{time[i]} can be read as "end of date \code{time[i]}",
+so that observation \code{x[i]} in a given time series is the number of
+cases observed from the end of date \code{time[i-1]} to the end of date
+\code{time[i]}.
 }

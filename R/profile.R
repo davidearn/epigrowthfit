@@ -45,9 +45,9 @@
 #'   Unused optional arguments.
 #'
 #' @details
-#' The population fitted value is the fixed effects component of the
-#' fitted value (see [fitted.egf()]). In fixed effects models, there
-#' is no distinction.
+#' The population fitted value is the fixed effects component of
+#' the individual fitted value (see [fitted.egf()]).
+#' In fixed effects models, there is no distinction.
 #'
 #' `which` is mapped to an `A` matrix composed of unit row vectors,
 #' with 1 at array index `[i, which[i]]` for all `i`.
@@ -66,6 +66,19 @@
 #'
 #' @return
 #' A data frame inheriting from class `"egf_profile"`, with variables:
+#' \item{`par`}{
+#'   (`par`-based calls only.)
+#'   Nonlinear model parameter,
+#'   from `get_par_names(fitted, link = TRUE)`.
+#' }
+#' \item{`ts`}{
+#'   (`par`-based calls only.)
+#'   Time series, from `levels(fitted$endpoints$ts)`.
+#' }
+#' \item{`window`}{
+#'   (`par`-based calls only.)
+#'   Fitting window, from `levels(fitted$endpoints$window)`.
+#' }
 #' \item{`linear_combination`}{
 #'   Row index of linear combination, from `seq_len(nrow(A))`.
 #' }
@@ -75,19 +88,6 @@
 #' \item{`deviance`}{
 #'   Deviance of the restricted model that assumes `value`
 #'   for the linear combination being profiled.
-#' }
-#' \item{`par`}{
-#'   (`par`-based calls only.)
-#'   Nonlinear model parameter,
-#'   from `get_par_names(fitted, link = TRUE)`.
-#' }
-#' \item{`ts`}{
-#'   (`par`-based calls only.)
-#'   Time series, from `levels(fitted$frame_ts$ts)`.
-#' }
-#' \item{`window`}{
-#'   (`par`-based calls only.)
-#'   Fitting window, from `levels(fitted$frame_ts$window)`.
 #' }
 #' `A` and `x = fitted$best[fitted$nonrandom]`
 #' are retained as attributes.
@@ -163,7 +163,7 @@ profile.egf <- function(fitted,
     method <- "par"
     frame <- do.call(cbind, unname(fitted$frame_par))
     frame <- frame[!duplicated(names(frame))]
-
+    pn <- get_par_names(fitted, link = TRUE)
     par <- unique(match.arg(par, several.ok = TRUE))
     subset <- subset_to_index(substitute(subset), frame, parent.frame(),
                               .subset = .subset)
@@ -259,16 +259,11 @@ profile.egf <- function(fitted,
     row.names = NULL
   )
   if (method == "par") {
-    ts <- fitted$frame_ts$ts
-    window <- fitted$frame_ts$window
-    k <- !is.na(window) & !duplicated(window)
-    pn <- get_par_names(fitted, link = TRUE)
-
     out <- data.frame(
-      out,
       par = rep.int(rep.int(factor(par, levels = pn), w), dl_nrow),
-      ts = rep.int(rep.int(ts[k][subset], p), dl_nrow),
-      window = rep.int(rep.int(window[k][subset], p), dl_nrow),
+      ts = rep.int(rep.int(fitted$endpoints$ts[subset], p), dl_nrow),
+      window = rep.int(rep.int(fitted$endpoints$window[subset], p), dl_nrow),
+      out,
       frame[rep.int(rep.int(subset, p), dl_nrow), append, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
@@ -278,7 +273,8 @@ profile.egf <- function(fitted,
   structure(out,
     class = c("egf_profile", "data.frame"),
     A = A,
-    x = fitted$best[fitted$nonrandom]
+    x = fitted$best[fitted$nonrandom],
+    method = method
   )
 }
 
@@ -291,10 +287,12 @@ profile.egf <- function(fitted,
 #'
 #' @param object
 #'   An `"egf_profile"` object returned by [profile.egf()].
-#' @param parm
-#'   Unused argument included for generic consistency.
-#' @param level
-#'   A number in the interval (0,1). The desired confidence level.
+#' @param link
+#'   A logical scalar. If `FALSE` and `object` supplies
+#'   likelihood profiles of population fitted values of
+#'   nonlinear model parameters, then confidence intervals
+#'   on inverse link-transformed fitted values are returned.
+#' @inheritParams confint.egf
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -313,16 +311,20 @@ profile.egf <- function(fitted,
 #'   from `seq_len(nrow(attr(object, "A")))`.
 #' }
 #' \item{`estimate`, `lower`, `upper`}{
-#'   Estimate of linear combination
-#'   and approximate lower and upper confidence limits.
+#'   Estimate of linear combination and approximate lower
+#'   and upper confidence limits, inverse-link transformed
+#'   if `link = FALSE` and linear combinations represent
+#'   population fitted values of nonlinear model parameter.
 #' }
-#' `level`, `A = attr(object, "A")`, and `x = attr(object, "x")`
+#' `level`, `attr(object, "A")`, and `attr(object, "x")`
 #' are retained as attributes.
 #'
 #' @export
 #' @importFrom stats qchisq approx
-confint.egf_profile <- function(object, parm, level = 0.95, ...) {
+confint.egf_profile <- function(object, parm, level = 0.95,
+                                link = FALSE, ...) {
   stop_if_not_number_in_interval(level, 0, 1, "()")
+  stop_if_not_true_false(link)
 
   q <- qchisq(level, df = 1)
   stop_if_not(
@@ -332,6 +334,16 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
       "Reprofile with higher `max_level` or retry with lower `level`."
     )
   )
+  object_split <- split(object, object$linear_combination)
+
+  s <- c("par", "ts", "window", "linear_combination", "value", "deviance")
+  if (attr(object, "method") == "par") {
+    k1 <- s[1:4]
+    k2 <- -match(s, names(object), 0L)
+  } else {
+    k1 <- 4L
+    k2 <- -match(s[4:6], names(object), 0L)
+  }
 
   f <- function(d) {
     i_min <- which.min(d$deviance)
@@ -350,18 +362,23 @@ confint.egf_profile <- function(object, parm, level = 0.95, ...) {
       xout = q
     )$y
     data.frame(
-      d[1L, 1L, drop = FALSE],
+      d[1L, k1, drop = FALSE],
       estimate,
       lower,
       upper,
-      d[1L, -(1:3), drop = FALSE],
+      d[1L, k2, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
   }
+  out <- do.call(rbind, lapply(object_split, f))
+  if (attr(object, "method") == "par" && !link) {
+    s_elu <- c("estimate", "lower", "upper")
+    out[s_elu] <- apply_inverse_link(out[s_elu], g = out$par)
+    levels(out$par) <- remove_link_string(levels(out$par))
+  }
 
-  out <- do.call(rbind, lapply(split(object, object$linear_combination), f))
   out$linear_combination <- as.integer(as.character(out$linear_combination))
   row.names(out) <- NULL
   structure(out,

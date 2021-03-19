@@ -133,17 +133,17 @@ stop_if_not_character_string <- function(x, n = 1L) {
 #' with `sprintf("%s[%d]", s, i)`.
 #'
 #' @param x
-#'   For `enum_dupl_str()`, a character vector.
+#'   For `enum_dupl_string()`, a character vector.
 #'   For `enum_dupl_names()`, an \R object with a `names` attribute.
 #'
 #' @return
-#' `enum_dupl_str(x)` returns an enumerated copy of `x`.
+#' `enum_dupl_string(x)` returns an enumerated copy of `x`.
 #' `enum_dupl_names(x)` returns a copy of `x` with `names(x)`
-#' replaced by `enum_dupl_str(names(x))`.
+#' replaced by `enum_dupl_string(names(x))`.
 #'
 #' @examples
 #' # x <- sample(letters[1:3], 10L, replace = TRUE)
-#' # enum_dupl_str(x)
+#' # enum_dupl_string(x)
 #' #
 #' # y <- seq_along(x)
 #' # names(y) <- x
@@ -154,7 +154,7 @@ stop_if_not_character_string <- function(x, n = 1L) {
 NULL
 
 #' @rdname enum_dupl_str
-enum_dupl_str <- function(x) {
+enum_dupl_string <- function(x) {
   f <- factor(x)
   n <- tabulate(f)
   i <- unsplit(lapply(n, seq_len), f)
@@ -163,7 +163,7 @@ enum_dupl_str <- function(x) {
 
 #' @rdname enum_dupl_str
 enum_dupl_names <- function(x) {
-  `names<-`(x, enum_dupl_str(names(x)))
+  `names<-`(x, enum_dupl_string(names(x)))
 }
 
 #' Test whether an atomic vector is "constant"

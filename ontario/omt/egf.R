@@ -18,13 +18,13 @@ object <- egf(
   data        = cbind(on_by_region, wave),
   window      = window,
   curve       = "logistic",
-  distr       = "nbinom",
+  obs_distr   = "nbinom"
 )
 
-ci <- confint(object, par = "tdoubling", append = c(region, wave))
+ci <- confint(object, par = "log_r", link = FALSE, append = c(region, wave))
 endpoints <- epigrowthfit:::get_window_endpoints(object)
 endpoints[c("start", "end")] <- lapply(endpoints[c("start", "end")], `+`, attr(endpoints, "origin"))
-on_td <- cbind(
+on_r <- cbind(
   ci[c("region", "wave")],
   endpoints[c("start", "end")],
   ci[c("estimate", "lower", "upper")]
@@ -33,17 +33,12 @@ on_td <- cbind(
 
 
 #pdf("on_td1.pdf", width = 6, height = 4, onefile = TRUE)
-plot(ci, type = "bars", label = region:wave)
+plot(ci, type = "bars", order = order(wave, region, estimate), label = wave:region)
 #dev.off()
 
 #pdf("on_td2.pdf", width = 6, height = 4, onefile = TRUE)
 plot(ci, type = "boxes", label = region)
 #dev.off()
-
-
-
-
-
 
 # subset <- list(region = census_divisions)
 # xlim <- c("2020-03-01", "2021-02-02")
