@@ -46,6 +46,9 @@ approximate (delta method) standard errors on predicted values
 are reported. Note that standard errors are required for
 subsequent use of \code{\link[=confint.egf_predict]{confint.egf_predict()}}.}
 
+\item{.append}{A character vector listing variable names, to be used
+(if non-\code{NULL}) in place of the result of evaluating \code{append}.}
+
 \item{...}{Unused optional arguments.}
 }
 \value{

@@ -6,78 +6,104 @@
 #' @param x
 #'   An `"egf"` object returned by [egf()].
 #' @param type
-#'   A character string indicating a type of plot. Options are:
-#'   `"interval"` (interval incidence),
-#'   `"cumulative"` (cumulative incidence),
-#'   `"rt1"` (per capita growth rate as curve), and
-#'   `"rt2"` (per capita growth rate as heat map).
+#'   A character string indicating a type of plot. The options are:
+#'   interval incidence (`"interval"`),
+#'   cumulative incidence (`"cumulative"`),
+#'   per capita growth rate as curve (`"rt1"`), and
+#'   per capita growth rate as heat map (`"rt2"`).
 #' @param subset
-#'
+#'   An expression to be evaluated in the combined model frame.
+#'   Must evaluate to a logical vector or list of logical vectors
+#'   indexing rows of the model frame. Only indexed fitting windows
+#'   are plotted. The default (`NULL`) is to plot all fitting windows.
+#' @param order
+#'   An expression to be evaluated in the combined model frame,
+#'   typically a call to [order()], determining the order in which
+#'   time series are plotted. Must evaluate to a permutation of
+#'   `seq_len(nrow)`. The default (`NULL`) is equivalent to
+#'   `seq_len(nrow)`.
+#' @param cache
+#'   An `"egf_plot_cache"` object returned by a previous evaluation of
+#'   `plot.egf(x)`. Predicted values and confidence intervals stored
+#'   in `cache` will be reused (rather than recomputed) if relevant to
+#'   the current function call, i.e., to `type` and `subset`.
+#' @param time_as
+#'   A character string indicating how time is displayed on the
+#'   bottom axis. The options are: as a calendar (`"Date"`) and
+#'   as a number of days since the earliest time point (`"numeric"`).
 #' @param log
 #'   A logical scalar. If `TRUE`, then the dependent variable is
 #'   plotted on a logarithmic scale. Unused by `type = "rt[12]"`.
-#' @param tol
-#'   A non-negative number or `Inf`. Used to define "exceptional"
-#'   points when `type = "interval"`. With a time series, `x[-1]`
-#'   is highlighted
-#'   according to `control$points_short` if `diff(time) < (1-tol)*m` and
-#'   according to `control$points_long`  if `diff(time) > (1+tol)*m`,
-#'   where `m = median(diff(time))`. In both cases, the value of
-#'   `diff(time)` is printed above the point. Assign 0 to highlight
-#'   all deviations from `m`. Assign `Inf` to disable highlighting.
-#' @param legend
-#'   A logical scalar. If `TRUE`, then a legend is displayed in the
-#'   right margin. Unused by `type = "rt2"`.
 #' @param level
-#'   A number in the interval (0,1). The confidence level represented
-#'   by confidence intervals on doubling times and confidence bands
-#'   on predicted curves. Unused by `type = "rt2"`.
-#' @param bands
+#'   A number in the interval (0,1). The desired confidence level
+#'   when `show_tdoubling = TRUE` or `show_bands = TRUE`.
+#' @param show_tdoubling
+#'   A logical scalar. If `TRUE`, then confidence intervals on initial
+#'   doubling times
+#' @param show_bands
 #'   A logical scalar. If `TRUE`, then confidence bands on predicted
-#'   curve are drawn. Longer run times can be anticipated in this case.
-#'   Unused by `type = "rt2"`.
-#' @param control
-#'   A list of lists defining the appearance of various plot elements,
-#'   or otherwise `NULL` (see Details).
+#'   curves are drawn. Unused by `type = "rt2"`.
+#' @param show_legend
+#'   A logical scalar. If `TRUE`, then a legend is displayed in the
+#'   right margin when `type = "interval"`.
 #' @param per_plot
 #'   A positive integer. The number of panels displayed in one plot
 #'   when `type = "rt2"`.
-#' @param between_panels
-#'   A non-negative number. The spacing between panels when
-#'   `type = "rt2"`, expressed as a number of margin lines.
+#' @param control
+#'   A named list controlling the appearance of various plot elements,
+#'   or otherwise `NULL` (see Details).
 #' @param ...
 #'   Optional arguments specifying additional graphical parameters
 #'   to be recycled for all plots. Currently, only `xlim`, `ylim`,
-#'   `ylab`, and `main` are used; see [graphics::plot()]. `xlim`
-#'   can be numeric, Date, or character coercible to Date with
-#'   `as.Date(xlim)`. If `main` is a character string, then flags
-#'   of the form `"%f"`, where `f` is the name of any factor present
-#'   in `group_by`, are replaced in a given plot by the factor level
-#'   relevant to that plot. Use `"\n"` within `main` to separate
-#'   title from subtitle.
+#'   `xlab`, `ylab`, and `main` are used (see Details).
 #'
 #' @return
-#' A list inheriting from class `sprintf("egf_plot_%s", type)`
-#' (invisibly). The list preserves computed plot elements for reuse.
+#' An `"egf_plot_cache"` object. If `cache` was used, then this object
+#' is the result of augmenting `cache` with any new computations.
 #'
 #' @details
-#' `control` must be `NULL` or a named list of named lists,
-#' defining some subset of the following control parameters:
+#' `plot.egf()` will _not_ detect mismatch between `x` and `cache`.
+#' In other words, constructions like `plot(x2, cache = plot(x1))`
+#' should _not_ be expected to produce correct results.
+#'
+#' `control` must be `NULL` or a named list defining some subset of
+#' the available control parameters (see section "Control parameters").
+#' A list of modifiable options for each control parameter and their
+#' default values can be obtained with
+#' `get_control_default("plot.egf", type = type)`. Unspecified options
+#' take their values in this list. Unsupported options are silently
+#' discarded. To suppress a plot element, set the corresponding control
+#' parameter to `NULL`, as in `control = list(box = NULL)`.
+#'
+#' If `xty = "Date"`, then `xlim` can be a Date vector or character
+#' vector coercible to Date via `as.Date(xlim)`.
+#'
+#' `main` is evaluated as an expression in the combined model frame,
+#' so it can be used to define a template for all plot titles. For
+#' example, if plotted time series correspond to levels of a factor
+#' named `country` found in the combined model frame, then one might
+#' set `main = sprintf("disease incidence in %s", country)` or simply
+#' `main = country`.
+#'
+#' Characters appearing before and after the first instance of `"\n"`
+#' in `main` are displayed according to control parameters `main` and
+#' `sub`, respectively (see section "Control parameters").
+#'
+#' @inheritSection fitted.egf Warning
+#'
+#' # Control parameters
+#'
+#' For `type != "rt2"`:
 #' \describe{
 #' \item{`box`}{
 #'   A named list of arguments to [graphics::box()], affecting
 #'   the appearance of the box drawn around the plot region.
 #' }
-#' \item{`xax`, `yax`}{
-#'   Named lists of arguments to [graphics::axis()], affecting the
-#'   appearance of the bottom and left axes. Option `mgp2` sets
-#'   the second component of the usual `mgp` argument. The minor
-#'   (day or month) and major (month or year) bottom axes can be
-#'   controlled separately by listing vectors of length 2.
-#'   For example, setting `xax = list(col.axis = c("black", "red"))`
-#'   makes the minor axis black and major axis red.
+#' \item{`xax_*`, `yax`}{
+#'   Named lists of arguments to [graphics::axis()], affecting
+#'   the appearance of the bottom and left axes.
 #' }
-#' \item{`main`, `ylab`}{
+#' \item{`main`, `sub`, `xlab`, `ylab`}{
 #'   Named lists of arguments to [graphics::title()], affecting
 #'   the appearance of axis titles.
 #' }
@@ -97,91 +123,183 @@
 #'   A named list of arguments to [graphics::points()], affecting
 #'   the appearance of observed data.
 #' }
-#' \item{`points_short`, `points_long`}{
-#'   Alternatives to `points` used to highlight certain points
-#'   when `type = "interval"`. See argument `tol`.
+#' \item{`text_tdoubling_*`}{
+#'   Named lists of arguments to [graphics::text()], affecting
+#'   the appearance of initial doubling times printed when
+#'   `x$curve %in% c("exponential", "logistic", "richards")`.
+#'   The caption, estimate, and confidence interval are controlled
+#'   separately.
+#' }
+#' }
+#' For `type = "interval"`:
+#' \describe{
+#' \item{`tol`}{
+#'   A non-negative number or `Inf`, defining "exceptional" points.
+#'   Within a time series, `x[-1]` is highlighted
+#'   according to `points_short` if `diff(time) < (1-tol)*m` and
+#'   according to `points_long`  if `diff(time) > (1+tol)*m`,
+#'   where `m = median(diff(time))`. In both cases, the value
+#'   of `diff(time)` is printed above the point according to
+#'   `text_short_long`.
+#'   Assign 0 to highlight all deviations from `m`.
+#'   Assign `Inf` to disable highlighting.
+#' }
+#' \item{`points_short`,`points_long`}{
+#'   Alternatives to `points` used for exceptional points. See `tol`.
 #' }
 #' \item{`text_short_long`}{
 #'   A named list of arguments to [graphics::text()], affecting
-#'   the appearance of text above highlighted points when
-#'   `type = "interval"`. See argument `tol`.
+#'   the appearance of text above exceptional points. See `tol`.
 #' }
-#' \item{`text_tdoubling`}{
-#'   A named list of arguments to [graphics::text()], affecting
-#'   the appearance of initial doubling times printed when
-#'   `x$curve %in% c("exponential", "logistic", "richards")`.
-#'   The estimate, confidence interval, and caption can be
-#'   controlled separately by listing vectors of length 3.
 #' }
+#' For `type = "rt1"`:
+#' \describe{
 #' \item{`abline`}{
-#'   A named list of arguments to [graphics::abline()], affecting
-#'   the appearance of the line drawn at `y = 0` when `type = "rt1"`.
+#'   A named list of arguments to [graphics::abline()],
+#'   affecting the appearance of the line drawn at `y = 0`.
 #' }
 #' \item{`segments`}{
-#'   A named list of arguments to [graphics::segments()], affecting
-#'   the appearance of the line segments drawn at `y = r` when
-#'   `type = "rt1"` and
-#'   `x$curve %in% c("exponential", "logistic", "richards")`.
+#'   A named list of arguments to [graphics::segments()],
+#'   affecting the appearance of line segments drawn at `y = r`
+#'   when `x$curve %in% c("exponential", "logistic", "richards")`.
 #' }
+#' }
+#' For `type = "rt2"`:
+#' \describe{
 #' \item{`colorRamp`}{
 #'   A named list of arguments to [grDevices::colorRamp()],
-#'   affecting the color palette used when `type = "rt2"`.
-#'   (Currently, `colorRamp` is the only control parameter for
-#'   `type = "rt2"`.)
+#'   defining the heat map's color palette.
+#' }
+#' \item{`ips`}{
+#'   A non-negative number, defining the space between panels
+#'   as a number of margin lines.
 #' }
 #' }
-#'
-#' A catalogue of modifiable options for each control parameter can
-#' be obtained with `get_control_default("plot.egf", type = type)`.
-#' Unspecified options take their values in this list. Unsupported
-#' options are discarded. To suppress a plot element,
-#' set the corresponding control parameter to `NULL`,
-#' as in `control = list(box = NULL)`.
 #'
 #' @export
 plot.egf <- function(x,
                      type = c("interval", "cumulative", "rt1", "rt2"),
                      subset = NULL,
+                     order = NULL,
+                     cache = NULL,
+                     time_as = c("Date", "numeric"),
                      log = TRUE,
-                     tol = 0,
-                     legend = FALSE,
                      level = 0.95,
-                     bands = FALSE,
-                     control = NULL,
+                     show_tdoubling = FALSE,
+                     show_bands = FALSE,
+                     show_legend = FALSE,
                      per_plot = 6L,
-                     between_panels = 0.25,
+                     control = NULL,
                      ...) {
   type <- match.arg(type)
-  control <- clean_control(control, "plot.egf", type = type)
+  time_as <- match.arg(time_as)
+  control <- get_clean_control(control, "plot.egf", type = type)
+  if (!grepl("^rt[12]$", type)) {
+    stop_if_not_true_false(log)
+  }
+  if (type == "rt2") {
+    stop_if_not_positive_integer(per_plot)
+  } else {
+    if (x$curve %in% c("exponential", "logistic", "richards") &&
+        (!is.null(control$text_tdoubling_estimate) || !is.null(control$text_tdoubling_ci))) {
+      stop_if_not_true_false(show_tdoubling)
+    } else {
+      show_tdoubling <- FALSE
+    }
+    if (!is.null(control$bands)) {
+      stop_if_not_true_false(show_bands)
+    } else {
+      show_bands <- FALSE
+    }
+    if (type == "interval") {
+      stop_if_not_true_false(show_legend)
+    }
+  }
 
   frame <- do.call(cbind, unname(object$frame_par))
   frame <- frame[!duplicated(names(frame))]
-  subset <- subset_to_index(substitute(subset), frame, parent.frame(),
-                            .subset = .subset)
+  subset <- subset_bak <- subset_to_index(substitute(subset), frame, parent.frame())
+  order <- order_to_index(substitute(order), frame, parent.frame())
+
+  what <- switch(type, interval = "log_int_inc", cumulative = "log_cum_inc", "log_rt")
+  window <- x$frame_ts$window
+  need <- levels(window)[subset]
+  if (!is.null(cache)) {
+    stop_if_not(
+      inherits(cache, "egf_plot_cache"),
+      m = "`cache` must be NULL or inherit from class \"egf_plot_cache\"."
+    )
+    useful <- (cache$var == sub("^log_", "", what)) & (!show_bands | !is.na(cache$lower))
+    have <- levels(droplevels(cache$window[useful]))
+    need <- setdiff(need, have)
+    subset <- match(need, levels(window), 0L)
+  }
+  cn <- c("var", "ts", "window", "time" "estimate", "lower", "upper")
+  if (length(need) > 0L) {
+    window <- factor(window, levels = need)
+    if (type == "interval") {
+      dt <- tapply(time, window, function(x) median(diff(x)), 0)
+    } else {
+      dt <- 1
+    }
+    time_split <- Map(seq.int,
+      from = x$endpoints$start[subset],
+      to = x$endpoints$end[subset],
+      by = dt
+    )
+    pd <- predict(x,
+      what = what,
+      time = unlist(time_split),
+      window = rep.int(x$endpoints$window[subset], lengths(time_split)),
+      log = show_bands,
+      se = show_bands
+    )
+    if (show_bands) {
+      cache <- rbind(cache, confint(pd, level = level, log = FALSE)[cn])
+    } else {
+      pd$lower <- pd$upper <- NA_real_
+      cache <- rbind(cache, pd[cn])
+    }
+    cache <- cache[do.call(order, cache[cn]), , drop = FALSE]
+    cache <- cache[!duplicated(cache[cn[1:5]]), , drop = FALSE]
+  }
+  if (show_tdoubling && !"tdoubling" %in% levels(cache$var)) {
+    ci <- confint(x, level = level, par = "tdoubling", method = "wald")
+    names(ci) <- sub("^par$", "var", names(ci))
+    ci$time <- NA_real_
+    cache <- rbind(ci[cn], cache)
+  }
+
+  dots <- list(...)
 
 
-
-  if (type %in% c("interval", "cumulative", "rt1")) {
-    plot.egf.main(x,
-      type = type,
-      log = log,
-      tol = tol,
-      legend = legend,
-      bands = bands,
-      level = level,
+  if (type == "rt2") {
+    plot.egf_heat(x,
+      cache = cache,
+      time_as = time_as,
+      per_plot = per_plot,
       control = control,
-      frame_aug_split = frame_aug_split,
       ...
     )
-  } else if (type %in% c("rt2")) {
-    plot.egf.heat(x,
-      per_plot = per_plot,
-      bw_panels = bw_panels,
+  } else {
+    plot.egf_curve(x,
+      type = type,
+      subset = subset_bak,
+      order = order,
+      cache = cache,
+      time_as = time_as,
+      log = log,
+      level = level,
+      show_tdoubling = show_tdoubling,
+      show_bands = show_bands,
+      show_legend = show_legend,
       control = control,
-      frame_aug_split = frame_aug_split,
       ...
     )
   }
+
+  class(cache) <- c("egf_plot_cache", "data.frame")
+  cache
 }
 
 #' @import graphics
@@ -210,18 +328,6 @@ plot.egf.main <- function(x, type, log, tol, legend, bands, level,
       m = "`tol` must be a non-negative number or `Inf`."
     )
   }
-  if (type %in% c("interval", "cumulative")) {
-    stop_if_not_tf(log)
-  } else {
-    log <- FALSE
-  }
-  if (type == "interval") {
-    stop_if_not_tf(legend)
-  } else {
-    legend <- FALSE
-  }
-  stop_if_not_tf(bands)
-  stop_if_not_in_0_1(level)
 
   ### Set-up ==============================================
 

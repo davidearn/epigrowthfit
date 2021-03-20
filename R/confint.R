@@ -22,10 +22,6 @@
 #'   Confidence intervals are computed only for the indexed
 #'   fitting windows. The default (`NULL`) is to consider all
 #'   fitting windows.
-#' @param append
-#'   An expression indicating variables in the combined model frame
-#'   to be included with the result. The default (`NULL`) is to append
-#'   nothing.
 #' @param link
 #'   A logical scalar. If `FALSE`, then confidence intervals
 #'   on inverse link-transformed fitted values are returned.
@@ -151,7 +147,7 @@ confint.egf <- function(object,
   frame <- frame[unique(names(frame))]
   subset <- subset_to_index(substitute(subset), frame, parent.frame(),
                             .subset = .subset)
-  .subset <- replace(rep_len(FALSE, nrow(object$endpoints)), subset, TRUE)
+  .subset <- replace(rep_len(FALSE, nrow(frame)), subset, TRUE)
   append <- append_to_index(substitute(append), frame, parent.frame(),
                             .append = .append)
   .append <- names(frame[append])
@@ -311,10 +307,10 @@ confint.egf <- function(object,
 #'   The default (`NULL`) is equivalent to `seq_len(nrow(x))`.
 #' @param label
 #'   An expression to be evaluated in `x`, typically a factor,
-#'   interaction, or call to [sprintf()]. Used to create
-#'   appropriate labels for confidence intervals and time series
-#'   (depending on `type`). The default (`NULL`) is to take
-#'   labels from `x$window` and `x$ts`, respectively.
+#'   interaction of factors, or call to [sprintf()]. Used to
+#'   create appropriate labels for confidence intervals and
+#'   time series (depending on `type`). The default (`NULL`)
+#'   is to take labels from `x$window` and `x$ts`, respectively.
 #' @param per_plot
 #'   A positive integer. One plot will display at most this many
 #'   confidence intervals or time series (depending on `type`).
@@ -531,9 +527,10 @@ plot.egf_confint <- function(x,
           left = xlim[1L],
           right = xlim[2L],
           origin = origin + 1,
-          tcl = -0.2,
-          mgp2 = c(0.25, 1.25),
-          cex.axis = c(0.85, 1.15)
+          minor = list(mgp = c(3, 0.25, 0), tcl = -0.2, gap.axis = 0,
+                       lwd = 0, lwd.ticks = 1, cex.axis = 0.85, xpd = TRUE),
+          major = list(mgp = c(3, 1.25, 0), tcl = 0,    gap.axis = 0,
+                       lwd = 0, lwd.ticks = 0, cex.axis = 0.85, xpd = TRUE)
         )
         j <- j + per_plot
       } # loop over plots

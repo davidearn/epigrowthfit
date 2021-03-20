@@ -2,9 +2,25 @@
 % Please edit documentation in R/egf_utils.R
 \name{get_par_names}
 \alias{get_par_names}
+\alias{get_par_names.default}
+\alias{get_par_names.tmb_data}
+\alias{get_par_names.egf}
 \title{Get nonlinear model parameter names}
 \usage{
 get_par_names(curve, ...)
+
+\method{get_par_names}{default}(
+  curve = NULL,
+  excess = NULL,
+  distr = NULL,
+  weekday = NULL,
+  link = TRUE,
+  ...
+)
+
+\method{get_par_names}{tmb_data}(curve, link = TRUE, ...)
+
+\method{get_par_names}{egf}(curve, link = TRUE, ...)
 }
 \arguments{
 \item{curve, excess, distr, weekday}{For the default method, atomic scalar flags specifying an
@@ -13,6 +29,8 @@ retrieve or suppress, respectively, all names associated
 with an argument. For other methods, \code{curve} is an object
 returned by \code{\link[=egf]{egf()}} or \code{\link[=make_tmb_data]{make_tmb_data()}}, and the remaining
 arguments are ignored.}
+
+\item{...}{Arguments passed to methods by the generic function.}
 
 \item{link}{A logical scalar. If \code{TRUE}, then a prefix indicating the
 link function used internally (either \code{"log_"} or \code{"logit_"})

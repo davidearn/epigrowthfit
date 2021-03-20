@@ -13,6 +13,8 @@
 #'   A logical scalar. If `TRUE`, then a prefix indicating the
 #'   link function used internally (either `"log_"` or `"logit_"`)
 #'   is prepended to each parameter name.
+#' @param ...
+#'   Arguments passed to methods by the generic function.
 #'
 #' @return
 #' A subset of `"r"`, `"alpha"`, `"c0"`, `"tinfl"`, `"K"`,
@@ -41,6 +43,7 @@ get_par_names <- function(curve, ...) {
   UseMethod("get_par_names", curve)
 }
 
+#' @rdname get_par_names
 #' @export
 get_par_names.default <- function(curve = NULL, excess = NULL,
                                   distr = NULL, weekday = NULL,
@@ -72,6 +75,7 @@ get_par_names.default <- function(curve = NULL, excess = NULL,
   pn
 }
 
+#' @rdname get_par_names
 #' @export
 get_par_names.tmb_data <- function(curve, link = TRUE, ...) {
   pn <- levels(curve$X_info$par)
@@ -81,6 +85,7 @@ get_par_names.tmb_data <- function(curve, link = TRUE, ...) {
   remove_link_string(pn)
 }
 
+#' @rdname get_par_names
 #' @export
 get_par_names.egf <- function(curve, link = TRUE, ...) {
   get_par_names(curve$tmb_args$data, link = link)
@@ -119,7 +124,7 @@ NULL
 
 #' @rdname get_link_string
 add_link_string <- function(s) {
-  ok <- s %in% get_par_names(link = FALSE)
+  ok <- s %in% get_par_names(curve = NULL, link = FALSE)
   s[ok] <- paste(get_link_string(s[ok]), s[ok], sep = "_")
   s[!ok] <- NA_character_
   s
@@ -127,7 +132,7 @@ add_link_string <- function(s) {
 
 #' @rdname get_link_string
 remove_link_string <- function(s) {
-  ok <- s %in% get_par_names(link = TRUE)
+  ok <- s %in% get_par_names(curve = NULL, link = TRUE)
   s[ok] <- sub("^(log|logit)_", "", s[ok])
   s[!ok] <- NA_character_
   s
@@ -135,10 +140,10 @@ remove_link_string <- function(s) {
 
 #' @rdname get_link_string
 get_link_string <- function(s) {
-  ok <- s %in% get_par_names(link = FALSE)
+  ok <- s %in% get_par_names(curve = NULL, link = FALSE)
   s[ok] <- ifelse(s[ok] == "p", "logit", "log")
   if (any(!ok)) { # avoids infinite recursion with `get_par_names()`
-    ok_also <- !ok & s %in% get_par_names(link = TRUE)
+    ok_also <- !ok & s %in% get_par_names(curve = NULL, link = TRUE)
     s[ok_also] <- sub("^(log|logit)_.*$", "\\1", s[ok_also])
     s[!(ok | ok_also)] <- NA_character_
   }
@@ -1040,7 +1045,7 @@ make_tmb_data <- function(frame_ts, frame_par,
     sparse_X_flag = as.integer(sparse_X),
     predict_flag = 0L
   )
-  pn0 <- get_par_names(link = TRUE)
+  pn0 <- get_par_names(curve = NULL, link = TRUE)
   l2 <- as.list(match(pn0, pn, 0L) - 1L)
   names(l2) <- sprintf("j_%s", pn0)
   structure(c(l1, l2), class = c("tmb_data", "list"))

@@ -32,10 +32,10 @@ plotted. Must evaluate to a permutation of \code{seq_len(nrow(x))}.
 The default (\code{NULL}) is equivalent to \code{seq_len(nrow(x))}.}
 
 \item{label}{An expression to be evaluated in \code{x}, typically a factor,
-interaction, or call to \code{\link[=sprintf]{sprintf()}}. Used to create
-appropriate labels for confidence intervals and time series
-(depending on \code{type}). The default (\code{NULL}) is to take
-labels from \code{x$window} and \code{x$ts}, respectively.}
+interaction of factors, or call to \code{\link[=sprintf]{sprintf()}}. Used to
+create appropriate labels for confidence intervals and
+time series (depending on \code{type}). The default (\code{NULL})
+is to take labels from \code{x$window} and \code{x$ts}, respectively.}
 
 \item{per_plot}{A positive integer. One plot will display at most this many
 confidence intervals or time series (depending on \code{type}).}

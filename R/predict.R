@@ -21,10 +21,6 @@
 #'   splits `time` by fitting window. Levels not belonging to
 #'   `levels(object$frame_ts$window)` are ignored. When `time`
 #'   is missing, `object$frame_ts$window` is used.
-#' @param append
-#'   An expression indicating variables in the combined model frame
-#'   to be included with the result. The default (`NULL`) is to append
-#'   nothing.
 #' @param log
 #'   A logical scalar. If `FALSE`, then inverse log-transformed
 #'   predicted values are returned.
@@ -33,6 +29,7 @@
 #'   approximate (delta method) standard errors on predicted values
 #'   are reported. Note that standard errors are required for
 #'   subsequent use of [confint.egf_predict()].
+#' @inheritParams fitted.egf
 #' @param ...
 #'   Unused optional arguments.
 #'

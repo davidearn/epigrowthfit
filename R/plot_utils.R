@@ -2,32 +2,30 @@
 #'
 #' Adds an axis to the bottom of the current plot and labels
 #' it with day, month, and year, taking care to ensure that
-#' labels areZ nicely spaced.
+#' labels are nicely spaced.
 #'
-#' @param left
-#'   Left endpoint of the bottom axis in user coordinates.
-#' @param right
-#'   Right endpoint of the bottom axis in user coordinates.
+#' @param left,right
+#'   Left and right endpoints of the bottom axis in user coordinates.
+#'   Taken from `par("usr")` if not supplied.
 #' @param origin
-#'   A Date scalar.
+#'   A Date scalar. It is assumed that horizontal user coordinates
+#'   measure time as a number of days since time 00:00:00 on date
+#'   `origin`.
 #' @param plot
 #'   A logical scalar. If `FALSE`, then an axis is not drawn.
-#'   Useful if only the return value is desired.
-#' @param tcl,mgp2,col.axis,cex.axis,font.axis
-#'   Arguments to [graphics::axis()], to be recycled to length 2.
-#'   (`mgp2` is passed as the second component of argument `mgp`.)
-#'   The first and second elements control the appearance of the
-#'   minor and major axes, respectively. The default (`NULL`) for
-#'   each argument `a` is `par("a")`.
+#'   Useful when the return value is desired but graphical
+#'   output is not.
+#' @param minor,major
+#'   Named lists of arguments to [graphics::axis()], affecting the
+#'   appearance of the minor (day or month) and major (month or year)
+#'   axes, respectively.
 #'
 #' @return
-#' An integer vector listing positions of minor axis labels
-#' in user coordinates.
+#' A list of numeric vectors `minor` and `major` giving
+#' the positions of minor and major axis labels in user
+#' coordinates.
 #'
 #' @details
-#' `daxis()` assumes that horizontal user coordinates measure time
-#' as a number of days since time 00:00:00 on date `origin`.
-#'
 #' The date axis consists of minor and major axes. The content
 #' of these axes depends entirely on `w = floor(right)-ceiling(left)`,
 #' the difference between the extreme times in days.
@@ -51,8 +49,7 @@
 #' @keywords internal
 #' @importFrom graphics axis par
 daxis <- function(left, right, origin = .Date(0), plot = TRUE,
-                  tcl = NULL, mgp2 = NULL,
-                  col.axis = NULL, cex.axis = NULL, font.axis = NULL) {
+                  minor = NULL, major = NULL) {
   if (missing(left)) {
     left <- par("usr")[1L]
   }
@@ -121,67 +118,27 @@ daxis <- function(left, right, origin = .Date(0), plot = TRUE,
   }
 
   if (plot) {
-    if (is.null(tcl)) {
-      tcl <- par("tcl")
-    }
-    tcl <- tcl[1L]
-    if (is.null(mgp2)) {
-      mgp2 <- par("mgp2")[2L] + c(0, 1)
-    }
-    mgp2 <- rep_len(mgp2, 2L)
-    if (is.null(col.axis)) {
-      col.axis <- par("col.axis")
-    }
-    col.axis <- rep_len(col.axis, 2L)
-    if (is.null(cex.axis)) {
-      cex.axis <- par("cex.axis")
-    }
-    cex.axis <- rep_len(cex.axis, 2L)
-    if (is.null(font.axis)) {
-      font.axis <- par("font.axis")
-    }
-    font.axis <- rep_len(font.axis, 2L)
-
-    ## Axis line
-    axis(
-      side = 1L,
-      at = c(left, right),
-      labels = c("", ""),
-      lwd.ticks = 0
-    )
     ## Minor axis
-    axis(
-      side = 1L,
+    l <- list(
+      side = 1,
       at = t0 + at_minor,
-      labels = labels_minor,
-      xpd = TRUE,
-      gap.axis = 0,
-      lwd = 0,
-      lwd.ticks = 1,
-      tcl = tcl[1L],
-      mgp = c(3, mgp2[1L], 0),
-      col.axis = col.axis[1L],
-      cex.axis = cex.axis[1L],
-      font.axis = font.axis[1L]
+      labels = labels_minor
     )
+    a <- c(l, minor)
+    do.call(axis, a[!duplicated(names(a))])
     ## Major axis
     if (any_major) {
-      axis(
-        side = 1L,
-        at = t0 + at_major,
-        labels = labels_major,
-        xpd = TRUE,
-        gap.axis = 0,
-        lwd = 0,
-        mgp = c(3, mgp2[2L], 0),
-        col.axis = col.axis[2L],
-        cex.axis = cex.axis[2L],
-        font.axis = font.axis[2L]
-      )
+      l$at <- t0 + at_major
+      l$labels <- labels_major
+      a <- c(l, major)
+      do.call(axis, a[!duplicated(names(a))])
     }
   }
 
-  t0 + at_minor
+  list(
+    minor = t0 + at_minor,
+    major = if (any_major) t0 + at_major else numeric(0L)
+  )
 }
 
 #' Get nicely formatted tick labels

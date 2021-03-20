@@ -4,47 +4,35 @@
 \alias{daxis}
 \title{Annotate a date axis}
 \usage{
-daxis(
-  left,
-  right,
-  origin = .Date(0),
-  plot = TRUE,
-  tcl = NULL,
-  mgp2 = NULL,
-  col.axis = NULL,
-  cex.axis = NULL,
-  font.axis = NULL
-)
+daxis(left, right, origin = .Date(0), plot = TRUE, minor = NULL, major = NULL)
 }
 \arguments{
-\item{left}{Left endpoint of the bottom axis in user coordinates.}
+\item{left, right}{Left and right endpoints of the bottom axis in user coordinates.
+Taken from \code{par("usr")} if not supplied.}
 
-\item{right}{Right endpoint of the bottom axis in user coordinates.}
-
-\item{origin}{A Date scalar.}
+\item{origin}{A Date scalar. It is assumed that horizontal user coordinates
+measure time as a number of days since time 00:00:00 on date
+\code{origin}.}
 
 \item{plot}{A logical scalar. If \code{FALSE}, then an axis is not drawn.
-Useful if only the return value is desired.}
+Useful when the return value is desired but graphical
+output is not.}
 
-\item{tcl, mgp2, col.axis, cex.axis, font.axis}{Arguments to \code{\link[graphics:axis]{graphics::axis()}}, to be recycled to length 2.
-(\code{mgp2} is passed as the second component of argument \code{mgp}.)
-The first and second elements control the appearance of the
-minor and major axes, respectively. The default (\code{NULL}) for
-each argument \code{a} is \code{par("a")}.}
+\item{minor, major}{Named lists of arguments to \code{\link[graphics:axis]{graphics::axis()}}, affecting the
+appearance of the minor (day or month) and major (month or year)
+axes, respectively.}
 }
 \value{
-An integer vector listing positions of minor axis labels
-in user coordinates.
+A list of numeric vectors \code{minor} and \code{major} giving
+the positions of minor and major axis labels in user
+coordinates.
 }
 \description{
 Adds an axis to the bottom of the current plot and labels
 it with day, month, and year, taking care to ensure that
-labels areZ nicely spaced.
+labels are nicely spaced.
 }
 \details{
-\code{daxis()} assumes that horizontal user coordinates measure time
-as a number of days since time 00:00:00 on date \code{origin}.
-
 The date axis consists of minor and major axes. The content
 of these axes depends entirely on \code{w = floor(right)-ceiling(left)},
 the difference between the extreme times in days.
