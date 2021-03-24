@@ -1006,7 +1006,7 @@ make_tmb_parameters <- function(tmb_data, curve, distr, excess,
     get_log_r_log_c0 <- function(d) {
       h <- max(2, nrow(d) / 2)
       x <- d$t
-      y <- log1p(c(0L, cumsum(d$x)))
+      y <- log1p(cumsum(c(0, d$x[-1L])))
       ab <- tryCatch(
         coef(lm(y ~ x, data = data.frame(x, y), subset = seq_len(h), na.action = na.omit)),
         error = function(e) c(0, 0.1)
