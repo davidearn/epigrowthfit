@@ -177,7 +177,7 @@ get_yax_labels <- function(at) {
   if (all(as.numeric(man) %in% c(0, 1))) {
     labels <- parse(text = sprintf("10^%s", pow))
   } else {
-    labels <- parse(text = sprintf("%s %*% 10^%s", man, pow))
+    labels <- parse(text = sprintf("%s %%*%% 10^%s", man, pow))
   }
   if (0 %in% at) {
     labels[at == 0] <- expression(0)
