@@ -16,7 +16,7 @@
 #' @param subset
 #'   An expression to be evaluated in the combined model frame. Must
 #'   evaluate to a logical vector or list of logical vectors indexing
-#'   rows of the data frame, and thus fitting windows. Fitted values
+#'   rows of the model frame, and thus fitting windows. Fitted values
 #'   are retrieved only for the indexed fitting windows. The default
 #'   (`NULL`) is to consider all fitting windows.
 #' @param append
@@ -109,7 +109,7 @@ fitted.egf <- function(object,
   dim(Y) <- dim(Y_se) <- c(nrow(object$endpoints), length(pn))
   colnames(Y) <- colnames(Y_se) <- pn
   Y <- Y[subset, par, drop = FALSE]
-  Y_se <- Y[subset, par, drop = FALSE]
+  Y_se <- Y_se[subset, par, drop = FALSE]
 
   d <- data.frame(
     par = rep(factor(par, levels = pn), each = length(subset)),

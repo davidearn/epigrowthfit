@@ -1121,7 +1121,7 @@ make_tmb_data <- function(frame_ts, frame_par,
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis terms
 make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
-                                curve, init) {
+                                curve, init, debug) {
   ## Lengths of parameter objects
   lens <- c(
     beta = sum(tmb_data$beta_seg_len),
@@ -1143,16 +1143,17 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
     pn1 <- names(frame_par)[vapply(frame_par, has_intercept, FALSE)]
 
     ## For each of these nonlinear model parameters, compute
-    ## and assign a default value to the coefficient of `beta`
+    ## and assign the default value of the coefficient of `beta`
     ## corresponding to "(Intercept)". The default value is
     ## the mean over fitting windows of the naive estimates.
-    if (length(pn1) > 0L) {
+    if (length(pn1) > 0L || debug) {
       ## Time series split by fitting window
       window <- frame_ts$window[!is.na(frame_ts$window)]
       firsts <- which(!duplicated(window))
       tx_split <- split(data.frame(t = tmb_data$t[-firsts], x = tmb_data$x), window[-firsts])
 
-      ## Functions for computing naive estimates given a window
+      ## Functions for computing naive estimates given
+      ## a fitting window
       get_r_c0 <- function(d) {
         h <- max(2, trunc(nrow(d) / 2))
         ab <- tryCatch(
@@ -1215,6 +1216,11 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
   if (!has_random(tmb_data)) {
     init_split[c("b", "log_sd_b")] <- list(NA_real_)
   }
+
+  ## Retain all naive estimates for `debug`
+  if (is.null(init) && debug) {
+    attr(init_split, "Y_init") <- Y_init[names(frame_par)]
+  }
   init_split
 }
 
@@ -1234,7 +1240,7 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
 #' @keywords internal
 make_tmb_args <- function(frame_ts, frame_par,
                           curve, distr, excess, weekday,
-                          sparse_X, init) {
+                          sparse_X, init, debug) {
   tmb_data <- make_tmb_data(
     frame_ts = frame_ts,
     frame_par = frame_par,
@@ -1249,7 +1255,8 @@ make_tmb_args <- function(frame_ts, frame_par,
     frame_ts = frame_ts,
     frame_par = frame_par,
     curve = curve,
-    init = init
+    init = init,
+    debug = debug
   )
   if (has_random(tmb_data)) {
     ## Nothing to fix, since all parameter objects are used
@@ -1397,94 +1404,4 @@ get_endpoints <- function(frame_ts) {
   )
   attr(d, "origin") <- attr(frame_ts, "origin")
   d
-}
-
-subset_to_index <- function(subset, frame, enclos, .subset = NULL) {
-  n <- nrow(frame)
-  if (!is.null(.subset)) {
-    stop_if_not(
-      is.logical(.subset),
-      length(.subset) == n,
-      m = sprintf("`.subset` must be a logical vector\nof length %d.", n)
-    )
-    return(which(.subset))
-  }
-  if (is.null(subset)) {
-    return(seq_len(n))
-  }
-  l <- eval(subset, frame, enclos)
-  if (is.logical(l)) {
-    l <- list(l)
-  }
-  stop_if_not(
-    is.list(l),
-    vapply(l, is.logical, FALSE),
-    lengths(l) == n,
-    m = sprintf("`subset` must evaluate to a logical vector\nof length %d or a list of such vectors.", n)
-  )
-  which(Reduce(`&`, l))
-}
-
-append_to_index <- function(append, frame, enclos, .append = NULL) {
-  if (!is.null(.append)) {
-    return(unique(match.arg(.append, names(frame), several.ok = TRUE)))
-  }
-  if (is.null(append)) {
-    return(integer(0L))
-  }
-  l <- as.list(seq_along(frame))
-  names(l) <- names(frame)
-  eval(append, l, enclos)
-}
-
-order_to_index <- function(order, frame, enclos, .order = NULL) {
-  n <- nrow(frame)
-  if (!is.null(.order)) {
-    stop_if_not(
-      is.numeric(.order),
-      length(.order) == n,
-      sort(.order) == seq_len(n),
-      m = sprintf("`.order` must be a permutation\nof `seq_len(%d)`.", n)
-    )
-    return(.order)
-  }
-  if (is.null(order)) {
-    return(seq_len(n))
-  }
-  o <- eval(order, frame, enclos)
-  stop_if_not(
-    is.numeric(o),
-    length(o) == n,
-    sort(o) == seq_len(n),
-    m = sprintf("`order` must evaluate to a permutation\nof `seq_len(%d)`.", n)
-  )
-  o
-}
-
-label_to_character <- function(label, frame, enclos, .label = NULL) {
-  n <- nrow(frame)
-  if (!is.null(.label)) {
-    stop_if_not(
-      is.atomic(.label),
-      length(.label) == n,
-      m = sprintf("`.label` must be an atomic vector\nof length %d.", n)
-    )
-    return(as.character(.label))
-  }
-  if (is.null(label)) {
-    return(NULL)
-  }
-  a <- eval(label, frame, enclos)
-  stop_if_not(
-    is.atomic(a),
-    length(a) == n,
-    m = sprintf("`label` must evaluate to an atomic vector\nof length %d", n)
-  )
-  nf <- as.list(names(frame))
-  names(nf) <- nf
-  s <- tryCatch(eval(label, nf, enclos),
-    warning = function(w) deparse(label),
-    error   = function(e) deparse(label)
-  )
-  structure(as.character(a), format = s)
 }

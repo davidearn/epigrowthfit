@@ -12,7 +12,8 @@ make_tmb_args(
   excess,
   weekday,
   sparse_X,
-  init
+  init,
+  debug
 )
 }
 \arguments{
@@ -42,6 +43,9 @@ matrix is constructed in sparse format.}
 Set to \code{NULL} to accept the internally generated default.
 Use \code{debug = TRUE} to retrieve this default, which is useful
 as a template.}
+
+\item{debug}{A logical scalar used for debugging. If \code{TRUE}, then
+\code{egf()} returns early with a list of optimization inputs.}
 }
 \value{
 A list with elements \code{data}, \code{parameters}, \code{map}, \code{random},

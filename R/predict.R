@@ -130,8 +130,9 @@ predict.egf <- function(object,
       length(window) == length(time),
       m = "`window` must be a factor of length `length(time)`."
     )
-    subset <- match(levels(window), levels(endpoints$window), 0L)
-    window <- factor(window, levels = levels(endpoints$window)[subset])
+    wl <- as.character(endpoints$window)
+    subset <- match(levels(droplevels(window)), wl, 0L)
+    window <- factor(window, levels = wl[subset])
     stop_if_not(
       nlevels(window) > 0L,
       m = "`window` must have at least one valid level."
@@ -182,7 +183,7 @@ predict.egf <- function(object,
   ## in C++ template
   lens <- lengths(time_split, use.names = FALSE)
   l <- list(
-    what_flag = as.integer(formals("predict.egf")$what %in% what),
+    what_flag = as.integer(c("log_int_inc", "log_cum_inc", "log_rt") %in% what),
     se_flag = as.integer(se),
     t_predict = time - rep.int(starts, lens),
     t_predict_seg_len = lens,
@@ -250,8 +251,9 @@ predict.egf <- function(object,
     }
     out$log_rt <- el
   }
-
-  structure(do.call(rbind, out),
+  out <- do.call(rbind, out)
+  row.names(out) <- NULL
+  structure(out,
     origin = origin,
     se = se,
     class = c("egf_predict", "data.frame")

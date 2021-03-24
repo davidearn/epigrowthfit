@@ -37,7 +37,7 @@ model parameters for which fitted values should be retrieved.}
 
 \item{subset}{An expression to be evaluated in the combined model frame. Must
 evaluate to a logical vector or list of logical vectors indexing
-rows of the data frame, and thus fitting windows. Fitted values
+rows of the model frame, and thus fitting windows. Fitted values
 are retrieved only for the indexed fitting windows. The default
 (\code{NULL}) is to consider all fitting windows.}
 

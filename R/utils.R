@@ -311,3 +311,126 @@ dceiling <- function(x, to = c("month", "year")) {
     as.Date(paste(X$y, "1", "1", sep = "-"), format = "%Y-%m-%d")
   }
 }
+
+clean <- function(x, template) {
+  if (is.null(x)) {
+    return(NULL)
+  }
+  if ((is.list(template) && is.list(x)) ||
+      (is.atomic(template) && is.atomic(x))) {
+    if (is.null(tn <- names(template))) {
+      return(rep_len(x, length(template)))
+    }
+    if (!is.null(xn <- names(x))) {
+      s <- intersect(tn, xn)
+      template[s] <- Map(clean, x = x[s], template = template[s])
+      return(template)
+    }
+  }
+  template
+}
+
+rsplit <- function(x, by = character(0L), drop = FALSE) {
+  if (length(by) == 0L) {
+    return(x)
+  }
+  l <- split(x, x[[by[1L]]], drop = drop)
+  if (length(by) == 1L) {
+    return(l)
+  }
+  lapply(l, rsplit, by = by[-1L], drop = drop)
+}
+
+subset_to_index <- function(subset, frame, enclos, .subset = NULL) {
+  n <- nrow(frame)
+  if (!is.null(.subset)) {
+    stop_if_not(
+      is.logical(.subset),
+      length(.subset) == n,
+      m = "`.subset` must be a logical vector\nof length `nrow(frame)`."
+    )
+    return(which(.subset))
+  }
+  if (is.null(subset)) {
+    return(seq_len(n))
+  }
+  l <- eval(subset, frame, enclos)
+  if (is.logical(l)) {
+    l <- list(l)
+  }
+  stop_if_not(
+    is.list(l),
+    vapply(l, is.logical, FALSE),
+    lengths(l) == n,
+    m = paste0(
+      "`subset` must evaluate to a logical vector\n",
+      "of length `nrow(frame)`, or otherwise a list\n",
+      "of such vectors."
+    )
+  )
+  which(Reduce(`&`, l))
+}
+
+append_to_index <- function(append, frame, enclos, .append = NULL) {
+  if (!is.null(.append)) {
+    return(unique(match.arg(.append, names(frame), several.ok = TRUE)))
+  }
+  if (is.null(append)) {
+    return(integer(0L))
+  }
+  l <- as.list(seq_along(frame))
+  names(l) <- names(frame)
+  eval(append, l, enclos)
+}
+
+order_to_index <- function(order, frame, enclos, .order = NULL) {
+  n <- nrow(frame)
+  if (!is.null(.order)) {
+    stop_if_not(
+      is.numeric(.order),
+      length(.order) == n,
+      sort(.order) == seq_len(n),
+      m = "`.order` must be a permutation\nof `seq_len(nrow(frame))`."
+    )
+    return(.order)
+  }
+  if (is.null(order)) {
+    return(seq_len(n))
+  }
+  o <- eval(order, frame, enclos)
+  stop_if_not(
+    is.numeric(o),
+    length(o) == n,
+    sort(o) == seq_len(n),
+    m = "`order` must evaluate to a permutation\nof `seq_len(nrow(frame))`."
+  )
+  o
+}
+
+label_to_character <- function(label, frame, enclos, .label = NULL) {
+  n <- nrow(frame)
+  if (!is.null(.label)) {
+    stop_if_not(
+      is.atomic(.label),
+      any(length(.label) == c(1L, n)),
+      m = "`.label` must be an atomic vector\nof length 1 or `nrow(frame)`."
+    )
+    return(rep_len(as.character(.label), n))
+  }
+  if (is.null(label)) {
+    return(NULL)
+  }
+  a <- eval(label, frame, enclos)
+  stop_if_not(
+    is.atomic(a),
+    any(length(a) == c(1L, n)),
+    m = "`label` must evaluate to an atomic vector\nof length 1 or `nrow(frame)`."
+  )
+  nf <- as.list(names(frame))
+  names(nf) <- nf
+  s <- tryCatch(eval(label, nf, enclos),
+    warning = function(w) deparse(label),
+    error   = function(e) deparse(label)
+  )
+  structure(rep_len(as.character(a), n), format = s)
+}

@@ -212,37 +212,32 @@ get_yax_cex <- function(labels, mex, csi = NULL) {
   mex * csi / max(strwidth(labels, units = "inches", cex = 1))
 }
 
-#' add_height_to_user <- function(h, y0, log) {
-#'   if (log) y0 * 10^h else y0 + h
-#' }
-#'
-#' #' @importFrom graphics par
-#' add_lines_to_user <- function(n, y0, log) {
-#'   if (log) {
-#'     ## Height of top margin in user coordinates
-#'     u_m3 <- par("mai")[3L] * diff(par("usr")[3:4]) / par("pin")[2L]
-#'     ## Height of one line in user coordinates
-#'     u_1l <- u_m3 / par("mar")[3L]
-#'     y0 * 10^(n * u_1l)
-#'   } else {
-#'     y0 + n * par("cxy")[2L]
-#'   }
-#' }
-#'
-#' #' @importFrom graphics par
-#' user_to_lines <- function(y, log) {
-#'   if (log) {
-#'     ## Height of top margin in user coordinates
-#'     u_m3 <- par("mai")[3L] * diff(par("usr")[3:4]) / par("pin")[2L]
-#'     ## Height of one line in user coordinates
-#'     u_1l <- u_m3 / par("mar")[3L]
-#'     (log10(y) - par("usr")[4L]) / u_1l
-#'   } else {
-#'     (y - par("usr")[4L]) / par("cxy")[2L]
-#'   }
-#' }
-#'
-#' inv_log10 <- function(x, log) {
-#'   if (log) 10^x else x
-#' }
-#'
+add_height_to_user <- function(h, y0, log) {
+  if (log) y0 * 10^h else y0 + h
+}
+
+#' @importFrom graphics par
+add_lines_to_user <- function(n, y0, log) {
+  if (log) {
+    ## Height of top margin in user coordinates
+    u_m3 <- par("mai")[3L] * diff(par("usr")[3:4]) / par("pin")[2L]
+    ## Height of one line in user coordinates
+    u_1l <- u_m3 / par("mar")[3L]
+    y0 * 10^(n * u_1l)
+  } else {
+    y0 + n * par("cxy")[2L]
+  }
+}
+
+#' @importFrom graphics par
+user_to_lines <- function(y, log) {
+  if (log) {
+    ## Height of top margin in user coordinates
+    u_m3 <- par("mai")[3L] * diff(par("usr")[3:4]) / par("pin")[2L]
+    ## Height of one line in user coordinates
+    u_1l <- u_m3 / par("mar")[3L]
+    (log10(y) - par("usr")[4L]) / u_1l
+  } else {
+    (y - par("usr")[4L]) / par("cxy")[2L]
+  }
+}

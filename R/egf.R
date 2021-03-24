@@ -206,11 +206,13 @@ egf <- function(formula_ts,
     excess = excess,
     weekday = weekday,
     sparse_X = sparse_X,
-    init = init
+    init = init,
+    debug = debug
   )
 
   if (debug) {
     init_split <- tmb_args$parameters
+    Y_init <- attr(init_split, "Y_init")
     if (!has_random(tmb_args$data)) {
       init_split <- init_split["beta"]
     }
@@ -220,6 +222,7 @@ egf <- function(formula_ts,
       frame_ts = frames$frame_ts,
       frame_par = frames$frame_par,
       init = init,
+      Y_init = Y_init,
       tmb_args = tmb_args
     )
     return(out)

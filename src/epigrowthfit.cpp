@@ -385,7 +385,7 @@ Type objective_function<Type>::operator() ()
 	{
 	    // Log cumulative incidence
 	    // (since the earliest time point in the current segment)
-	    vector<Type> log_cum_inc(log_cases.size());
+	    vector<Type> log_cum_inc(log_cases_predict.size());
 	    for (int s = 0, i = 0; s < N_predict; s++) // loop over segments
 	    {
 	        vector<Type> log_cases_predict_segment = log_cases_predict.segment(i, t_predict_seg_len(s) - 1);
