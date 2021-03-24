@@ -793,7 +793,7 @@ make_Z <- function(x, frame) {
 #' @importFrom stats terms as.formula
 make_XZ_info <- function(xl, ml) {
   if (length(xl) == 0L) {
-    cn <- c("colname", "par", "term", "group", "level")
+    cn <- c("par", "term", "group", "level", "colname")
     m <- matrix(character(0L), ncol = 5L, dimnames = list(NULL, cn))
     return(data.frame(m, stringsAsFactors = TRUE))
   }
