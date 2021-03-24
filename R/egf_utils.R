@@ -1132,7 +1132,6 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
   ## If user does not specify a full parameter vector
   if (is.null(init)) {
     ## Initialize each parameter object to a vector of zeros
-    ## of appropriate length
     init_split <- Map(rep_len, length.out = lens, x = 0)
 
     ## Get names of nonlinear model parameters whose mixed
@@ -1143,21 +1142,21 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
     pn1 <- names(frame_par)[vapply(frame_par, has_intercept, FALSE)]
 
     ## For each of these nonlinear model parameters, compute
-    ## and assign the default value of the coefficient of `beta`
-    ## corresponding to "(Intercept)". The default value is
-    ## the mean over fitting windows of the naive estimates.
-    if (length(pn1) > 0L || debug) {
+    ## the mean over all fitting windows of the naive estimate,
+    ## and assign the result to the the coefficient of `beta`
+    ## corresponding to "(Intercept)".
+    if (length(pn1) > 0L) {
       ## Time series split by fitting window
       window <- frame_ts$window[!is.na(frame_ts$window)]
       firsts <- which(!duplicated(window))
       tx_split <- split(data.frame(t = tmb_data$t[-firsts], x = tmb_data$x), window[-firsts])
 
-      ## Functions for computing naive estimates given
-      ## a fitting window
+      ## Functions for computing naive estimates
+      ## given a time series segment
       get_r_c0 <- function(d) {
-        h <- max(2, trunc(nrow(d) / 2))
+        n <- max(2, trunc(nrow(d) / 2))
         ab <- tryCatch(
-          coef(lm(log1p(cumsum(x)) ~ t, data = d, subset = seq_len(h), na.action = na.omit)),
+          coef(lm(log1p(cumsum(x)) ~ t, data = d, subset = seq_len(n), na.action = na.omit)),
           error = function(e) c(0, 0.1)
         )
         c(ab[[2L]], exp(ab[[1L]]))
@@ -1169,7 +1168,7 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
         2 * sum(d$x, na.rm = TRUE)
       }
 
-      ## Naive estimates for all windows
+      ## Naive estimates for each fitting window
       r_c0 <- vapply(tx_split, get_r_c0, c(0, 0))
       r  <- r_c0[1L, ]
       c0 <- r_c0[2L, ]
@@ -1217,7 +1216,7 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
     init_split[c("b", "log_sd_b")] <- list(NA_real_)
   }
 
-  ## Retain all naive estimates for `debug`
+  ## Retain all naive estimates when debugging
   if (is.null(init) && debug) {
     attr(init_split, "Y_init") <- Y_init[names(frame_par)]
   }

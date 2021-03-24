@@ -154,8 +154,8 @@ the marginal likelihood function at \code{x[nonrandom]}.
 The call to \code{egf()}, allowing for updates to the \code{"egf"} object
 via \code{\link[stats:update]{stats::update()}}.
 }
-If \code{debug = TRUE}, then a list with only the elements \code{frame_ts},
-\code{frame_par}, \code{init}, and \code{tmb_args}.
+If \code{debug = TRUE}, then a list containing only
+\code{frame_ts}, \code{frame_par}, \code{init}, \code{tmb_args}, and \code{call}.
 }
 \description{
 Fits nonlinear mixed effects models of epidemic growth to one

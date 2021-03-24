@@ -143,8 +143,8 @@
 #'   The call to `egf()`, allowing for updates to the `"egf"` object
 #'   via [stats::update()].
 #' }
-#' If `debug = TRUE`, then a list with only the elements `frame_ts`,
-#' `frame_par`, `init`, and `tmb_args`.
+#' If `debug = TRUE`, then a list containing only
+#' `frame_ts`, `frame_par`, `init`, `tmb_args`, and `call`.
 #'
 #' @export
 #' @importFrom TMB MakeADFun sdreport
@@ -222,8 +222,9 @@ egf <- function(formula_ts,
       frame_ts = frames$frame_ts,
       frame_par = frames$frame_par,
       init = init,
+      tmb_args = tmb_args,
       Y_init = Y_init,
-      tmb_args = tmb_args
+      call = match.call()
     )
     return(out)
   }
