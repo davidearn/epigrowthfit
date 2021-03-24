@@ -31,5 +31,5 @@ object <- update(object, debug = FALSE, init = init)
 plot(object,
   type = "interval",
   show_tdoubling = TRUE,
-  xlim = c("2020-03-01", "2021-02-01")
+  xlim = c("2020-03-01", "2021-03-15")
 )
