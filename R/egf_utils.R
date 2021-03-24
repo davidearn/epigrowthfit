@@ -671,7 +671,7 @@ get_factor <- function(term_label, frame) {
     return(rep(factor(1), nrow(frame)))
   }
   s <- unique(strsplit(term_label, ":")[[1L]])
-  interaction(frame[s], drop = TRUE, sep = ":")
+  interaction(frame[s], drop = TRUE, sep = ":", lex.order = TRUE)
 }
 
 #' Construct a design matrix from a factor
