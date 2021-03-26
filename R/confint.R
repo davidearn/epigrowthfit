@@ -437,12 +437,7 @@ plot.egf_confint <- function(x,
     on.exit(par(op))
 
     xlim <- c(0L, max(x$end))
-    xax_at <- daxis(
-      left = xlim[1L],
-      right = xlim[2L],
-      origin = origin + 1,
-      plot = FALSE
-    )
+    xax_at <- daxis(origin = origin + 1, plot = FALSE)
 
     for (i in seq_along(x_split)) { # loop over nonlinear model parameters
       xi <- x_split[[i]]
@@ -524,8 +519,6 @@ plot.egf_confint <- function(x,
           cex = 0.8
         )
         daxis(
-          left = xlim[1L],
-          right = xlim[2L],
           origin = origin + 1,
           minor = list(mgp = c(3, 0.25, 0), tcl = -0.2, gap.axis = 0,
                        lwd = 0, lwd.ticks = 1, cex.axis = 0.85, xpd = TRUE),

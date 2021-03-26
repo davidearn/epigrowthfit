@@ -1,12 +1,58 @@
-#' Annotate a date axis
+#' Better axis
+#'
+#' A replacement for [graphics::axis()] allowing the user
+#' to define the extent of the axis line.
+#'
+#' @param a,b
+#'   Lower and upper limits of the axis line in user coordinates.
+#'   The default (`NULL`) is to use values from `par("usr")`.
+#' @param side,at,labels,...
+#'   Arguments to [graphics::axis()].
+#'
+#' @return
+#' A numeric vector. The value of `axis(side, at, labels, ...)`.
+#'
+#' @importFrom graphics axis
+baxis <- function(side, a = NULL, b = NULL,
+                  at = NULL, labels = TRUE, ...) {
+  if (is.null(a) || is.null(b)) {
+    gp <- par("usr", "xlog", "ylog")
+    if (trunc(side[1L]) %% 2 == 1) {
+      usr <- gp$usr[1:2]
+      if (gp$xlog) {
+        usr <- 10^usr
+      }
+    } else {
+      usr <- gp$usr[3:4]
+      if (gp$ylog) {
+        usr <- 10^usr
+      }
+    }
+    if (is.null(a)) {
+      a <- usr[1L]
+    }
+    if (is.null(b)) {
+      b <- usr[2L]
+    }
+  }
+  dots <- list(...)
+  bak <- dots$lwd.ticks
+  dots$lwd.ticks <- 0
+  l <- list(side = side, at = c(a, b), labels = c("", ""))
+  do.call(axis, c(l, dots))
+
+  dots$lwd <- 0
+  dots$lwd.ticks <- bak
+  l <- list(side = side, at = at, labels = labels)
+  do.call(axis, c(l, dots))
+}
+
+#' Date axis
 #'
 #' Adds an axis to the bottom of the current plot and labels
 #' it with day, month, and year, taking care to ensure that
 #' labels are nicely spaced.
 #'
-#' @param left,right
-#'   Left and right endpoints of the bottom axis in user coordinates.
-#'   Taken from `par("usr")` if not supplied.
 #' @param origin
 #'   A Date scalar. It is assumed that horizontal user coordinates
 #'   measure time as a number of days since time 00:00:00 on date
@@ -27,7 +73,7 @@
 #'
 #' @details
 #' The date axis consists of minor and major axes. The content
-#' of these axes depends entirely on `w = floor(right)-ceiling(left)`,
+#' of these axes depends entirely on `w = diff(par("usr"))[1:2]`,
 #' the difference between the extreme times in days.
 #'
 #' If `w <= 210` (7 months), then days are placed on the minor
@@ -48,16 +94,11 @@
 #'
 #' @keywords internal
 #' @importFrom graphics axis par
-daxis <- function(left, right, origin = .Date(0), plot = TRUE,
+daxis <- function(origin = .Date(0), plot = TRUE,
                   minor = NULL, major = NULL) {
-  if (missing(left)) {
-    left <- par("usr")[1L]
-  }
-  if (missing(right)) {
-    right <- par("usr")[2L]
-  }
-  t0 <- min(ceiling(left), floor(right))
-  t1 <- max(ceiling(left), floor(right), t0 + 1)
+  usr <- par("usr")
+  t0 <- min(ceiling(usr[1L]), floor(usr[2L]))
+  t1 <- max(ceiling(usr[1L]), floor(usr[2L]), t0 + 1)
   d0 <- origin + t0
   d1 <- origin + t1
   w <- t1 - t0
@@ -124,14 +165,16 @@ daxis <- function(left, right, origin = .Date(0), plot = TRUE,
       at = t0 + at_minor,
       labels = labels_minor
     )
-    a <- c(l, minor)
-    do.call(axis, a[!duplicated(names(a))])
+    do.call(baxis, c(l, minor))
+
     ## Major axis
     if (any_major) {
-      l$at <- t0 + at_major
-      l$labels <- labels_major
-      a <- c(l, major)
-      do.call(axis, a[!duplicated(names(a))])
+      l <- list(
+        side = 1,
+        at = t0 + at_major,
+        labels = labels_major
+      )
+      do.call(baxis, c(l, major))
     }
   }
 
@@ -156,10 +199,7 @@ daxis <- function(left, right, origin = .Date(0), plot = TRUE,
 #' @noRd
 get_yax_labels <- function(at) {
   ## Exponential notation split into mantissa and power
-  mp <- matrix(unlist(strsplit(sprintf("%.6e", at), "e")),
-    ncol = 2L,
-    byrow = TRUE
-  )
+  mp <- matrix(unlist(strsplit(sprintf("%.6e", at), "e")), ncol = 2L, byrow = TRUE)
 
   ## Greatest number of digits after mantissa decimal,
   ## ignoring trailing zeros
@@ -180,7 +220,7 @@ get_yax_labels <- function(at) {
     labels <- parse(text = sprintf("%s %%*%% 10^%s", man, pow))
   }
   if (0 %in% at) {
-    labels[at == 0] <- expression(0)
+    labels[at == 0] <- 0
   }
   labels
 }

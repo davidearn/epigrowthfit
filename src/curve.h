@@ -210,6 +210,7 @@ vector<Type> eval_log_rt(vector<Type> t,
 		break;
 	    }
 	}
+	i += t_seg_len(s);
     }
     return log_rt;
 }

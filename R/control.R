@@ -39,7 +39,7 @@ get_control_default <- function(f = c("plot.egf"), ...) {
               col.axis = 1,
               cex.axis = 0.85,
               font.axis = 1,
-              xpd = TRUE
+              xpd = FALSE
             ),
             major = list(
               mgp = c(3, 1.25, 0),
@@ -52,7 +52,7 @@ get_control_default <- function(f = c("plot.egf"), ...) {
               col.axis = 1,
               cex.axis = switch(type, rt2 = 1.25, 1.15),
               font.axis = 1,
-              xpd = TRUE
+              xpd = FALSE
             )
           ), # Date
           numeric = list(
@@ -66,9 +66,9 @@ get_control_default <- function(f = c("plot.egf"), ...) {
             col.axis = 1,
             cex.axis = 0.85,
             font.axis = 1,
-            xpd = TRUE
+            xpd = FALSE
           )
-        ), # x
+        )[[time_as]], # x
         y = list(
           mgp = c(3, 0.7, 0),
           lwd = 1,
@@ -80,7 +80,7 @@ get_control_default <- function(f = c("plot.egf"), ...) {
           col.axis = 1,
           cex.axis = 0.85,
           font.axis = 1,
-          xpd = TRUE
+          xpd = FALSE
         )
       ), # axis
       title = list(
@@ -182,8 +182,33 @@ get_control_default <- function(f = c("plot.egf"), ...) {
         lty = 3,
         lwd = 2,
         col = "black"
-      ),
-      colorRamp = list(
+      )
+    )
+
+    if (type == "rt2") {
+      default <- default[c("axis", "title")]
+      default$title$sub <- NULL
+      default$title$ylab$adj <- NULL
+      default$title$plab <- list(
+        col.lab = 0,
+        cex.lab = 1,
+        font.lab = 2
+      )
+      default$rect <- list(
+        bg = list(
+          col = 1,
+          border = NA,
+          lty = 1,
+          lwd = 1
+        ),
+        plab = list(
+          col = "#00000080",
+          border = NA,
+          lty = 1,
+          lwd = 1
+        )
+      )
+      default$colorRamp <- list(
         colors = c(
           "#364B9A", "#4A7BB7", "#6EA6CD", "#98CAE1",
           "#C2E4EF", "#EAECCC", "#FEDA8B", "#FDB366",
@@ -192,13 +217,9 @@ get_control_default <- function(f = c("plot.egf"), ...) {
         bias = 1,
         space = "rgb",
         interpolate = "linear"
-      ),
-      ips = 0.25
-    )
-
-    default$axis$x <- default$axis$x[[time_as]]
-    if (type == "rt2") {
-      return(default[c("colorRamp", "ips")])
+      )
+      default$ips <- 0.25
+      return(default)
     }
     if (type != "interval") {
       default$special <- NULL

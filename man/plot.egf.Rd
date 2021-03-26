@@ -66,7 +66,7 @@ bottom axis. The options are: as a calendar (\code{"Date"}) and
 as a number of days since the earliest time point (\code{"numeric"}).}
 
 \item{log}{A logical scalar. If \code{TRUE}, then the dependent variable is
-plotted on a logarithmic scale. Unused by \code{type = "rt[12]"}.}
+plotted on a logarithmic scale. Unsupported for \code{type = "rt1"}.}
 
 \item{show_fits}{A logical scalar. If \code{TRUE}, then predicted curves are drawn.
 Unused by \code{type = "rt2"}.}
@@ -99,10 +99,10 @@ to Date via \code{as.Date(xlim)}. \code{ylim} is unused by \code{type = "rt2"}.}
 
 \item{main, sub, xlab, ylab, ylab_outer, plab}{Optional character strings or expressions used to generate plot
 (\code{main}, \code{sub}), axis (\code{xlab}, \code{ylab}, \code{ylab_outer}), and panel
-(\code{plab}) titles. \code{sub} is unused by \code{type = "rt2"}. \code{ylab_outer}
-is used only by \code{type = "rt[12]"}. \code{plab} is used only by
-\code{type = "rt2"}. When \code{type != "rt2"}, \code{main} and \code{sub} are
-evaluated in the combined model frame to generate unique
+(\code{plab}) titles. \code{sub} is unsupported by \code{type = "rt2"}.
+\code{ylab_outer} is used only by \code{type = "rt[12]"}. \code{plab} is used
+only by \code{type = "rt2"}. When \code{type != "rt2"}, \code{main} and \code{sub}
+are evaluated in the combined model frame to generate unique
 (sub)titles for each plot. When \code{type = "rt2"}, \code{plab} is
 evaluated similarly to generate unique titles for each panel.
 Note that \code{\link[grDevices:plotmath]{plotmath}} expressions are
@@ -115,7 +115,7 @@ An \code{"egf_plot_cache"} object. If \code{cache} was used, then this object
 is the result of augmenting \code{cache} with any new computations.
 
 Note that this object is returned \emph{in spite of} any errors thrown
-during plotting, to avoid wasting computation time.
+during plotting, to avoid waste of computation time.
 }
 \description{
 Methods for plotting \code{"egf"} objects.
@@ -142,12 +142,8 @@ the corresponding control parameter to \code{NULL},
 as in \code{control = list(box = NULL)}.
 }
 \section{Control parameters}{
-For \code{type != "rt2"}:
+For all \code{type}:
 \describe{
-\item{\code{box}}{
-A named list of arguments to \code{\link[graphics:box]{graphics::box()}},
-affecting the appearance of the box drawn around the plot region.
-}
 \item{\code{axis}}{
 A named list of the form \code{list(x, y)} affecting the appearance of
 the bottom and left axes, respectively.
@@ -160,16 +156,23 @@ then \code{x} should itself be a named list of arguments to
 \code{\link[graphics:axis]{graphics::axis()}}.
 }
 \item{\code{title}}{
-A named list of the form \code{list(main, sub, xlab, ylab)}, affecting
-the appearance of plot and axis titles. \code{main}, \code{sub}, \code{xlab}, and
-\code{ylab} should all be lists of arguments to \code{\link[graphics:title]{graphics::title()}}.
-Note that subtitles are handled specially: they are placed under
-main titles in the top margin, rather than in the bottom margin
-(the usual behavior of \code{\link[graphics:title]{graphics::title()}}).
+A named list of the form \code{list(main, sub, xlab, ylab, plab)},
+affecting the appearance of plot and axis titles. \code{main}, \code{sub},
+\code{xlab}, \code{ylab}, and \code{plab} should all be lists of arguments to
+\code{\link[graphics:title]{graphics::title()}}. Note that subtitles are handled specially:
+they are placed under main titles in the top margin, rather than
+in the bottom margin (the usual behavior of \code{\link[graphics:title]{graphics::title()}}).
 }
 \item{\code{rect}}{
 A named list of arguments to \code{\link[graphics:rect]{graphics::rect()}},
 affecting the appearance of fitting windows.
+}
+}
+For \code{type != "rt2"}:
+\describe{
+\item{\code{box}}{
+A named list of arguments to \code{\link[graphics:box]{graphics::box()}},
+affecting the appearance of the box drawn around the plot region.
 }
 \item{\code{polygon}}{
 A named list of arguments to \code{\link[graphics:polygon]{graphics::polygon()}},

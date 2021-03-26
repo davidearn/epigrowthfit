@@ -1,6 +1,6 @@
 library("epigrowthfit")
-load("on_by_region.RData")
-load("endpoints.RData")
+load("ontario/on_by_region.RData")
+load("ontario/endpoints.RData")
 options(contrasts = c("contr.sum", "contr.poly"))
 
 window <- make_window(
@@ -29,7 +29,16 @@ init <- unlist(lapply(object$Y_init, f), use.names = FALSE)
 object <- update(object, debug = FALSE, init = init)
 
 plot(object,
-  type = "interval",
-  show_tdoubling = TRUE,
-  xlim = c("2020-03-01", "2021-03-15")
+     type = "interval",
+     show_tdoubling=TRUE,
+     xlim = c("2020-03-01", "2021-03-15"),
+     log=TRUE
+)
+
+
+plot(object,
+  type = "rt2",
+  per_plot = 12L,
+  xlim = c("2020-03-01", "2021-03-15"),
+  log=FALSE
 )

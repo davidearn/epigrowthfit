@@ -2,14 +2,11 @@
 % Please edit documentation in R/plot_utils.R
 \name{daxis}
 \alias{daxis}
-\title{Annotate a date axis}
+\title{Date axis}
 \usage{
-daxis(left, right, origin = .Date(0), plot = TRUE, minor = NULL, major = NULL)
+daxis(origin = .Date(0), plot = TRUE, minor = NULL, major = NULL)
 }
 \arguments{
-\item{left, right}{Left and right endpoints of the bottom axis in user coordinates.
-Taken from \code{par("usr")} if not supplied.}
-
 \item{origin}{A Date scalar. It is assumed that horizontal user coordinates
 measure time as a number of days since time 00:00:00 on date
 \code{origin}.}
@@ -34,7 +31,7 @@ labels are nicely spaced.
 }
 \details{
 The date axis consists of minor and major axes. The content
-of these axes depends entirely on \code{w = floor(right)-ceiling(left)},
+of these axes depends entirely on \code{w = diff(par("usr"))[1:2]},
 the difference between the extreme times in days.
 
 If \code{w <= 210} (7 months), then days are placed on the minor

@@ -38,7 +38,7 @@
 #'   as a number of days since the earliest time point (`"numeric"`).
 #' @param log
 #'   A logical scalar. If `TRUE`, then the dependent variable is
-#'   plotted on a logarithmic scale. Unused by `type = "rt[12]"`.
+#'   plotted on a logarithmic scale. Unsupported for `type = "rt1"`.
 #' @param show_fits
 #'   A logical scalar. If `TRUE`, then predicted curves are drawn.
 #'   Unused by `type = "rt2"`.
@@ -71,10 +71,10 @@
 #' @param main,sub,xlab,ylab,ylab_outer,plab
 #'   Optional character strings or expressions used to generate plot
 #'   (`main`, `sub`), axis (`xlab`, `ylab`, `ylab_outer`), and panel
-#'   (`plab`) titles. `sub` is unused by `type = "rt2"`. `ylab_outer`
-#'   is used only by `type = "rt[12]"`. `plab` is used only by
-#'   `type = "rt2"`. When `type != "rt2"`, `main` and `sub` are
-#'   evaluated in the combined model frame to generate unique
+#'   (`plab`) titles. `sub` is unsupported by `type = "rt2"`.
+#'   `ylab_outer` is used only by `type = "rt[12]"`. `plab` is used
+#'   only by `type = "rt2"`. When `type != "rt2"`, `main` and `sub`
+#'   are evaluated in the combined model frame to generate unique
 #'   (sub)titles for each plot. When `type = "rt2"`, `plab` is
 #'   evaluated similarly to generate unique titles for each panel.
 #'   Note that [`plotmath`][grDevices::plotmath] expressions are
@@ -87,7 +87,7 @@
 #' is the result of augmenting `cache` with any new computations.
 #'
 #' Note that this object is returned _in spite of_ any errors thrown
-#' during plotting, to avoid wasting computation time.
+#' during plotting, to avoid waste of computation time.
 #'
 #' @details
 #' The combined model frame is `do.call(cbind, unname(x$frame_par))`.
@@ -112,12 +112,8 @@
 #'
 #' # Control parameters
 #'
-#' For `type != "rt2"`:
+#' For all `type`:
 #' \describe{
-#' \item{`box`}{
-#'   A named list of arguments to [graphics::box()],
-#'   affecting the appearance of the box drawn around the plot region.
-#' }
 #' \item{`axis`}{
 #'   A named list of the form `list(x, y)` affecting the appearance of
 #'   the bottom and left axes, respectively.
@@ -130,16 +126,23 @@
 #'   [graphics::axis()].
 #' }
 #' \item{`title`}{
-#'   A named list of the form `list(main, sub, xlab, ylab)`, affecting
-#'   the appearance of plot and axis titles. `main`, `sub`, `xlab`, and
-#'   `ylab` should all be lists of arguments to [graphics::title()].
-#'   Note that subtitles are handled specially: they are placed under
-#'   main titles in the top margin, rather than in the bottom margin
-#'   (the usual behavior of [graphics::title()]).
+#'   A named list of the form `list(main, sub, xlab, ylab, plab)`,
+#'   affecting the appearance of plot and axis titles. `main`, `sub`,
+#'   `xlab`, `ylab`, and `plab` should all be lists of arguments to
+#'   [graphics::title()]. Note that subtitles are handled specially:
+#'   they are placed under main titles in the top margin, rather than
+#'   in the bottom margin (the usual behavior of [graphics::title()]).
 #' }
 #' \item{`rect`}{
 #'   A named list of arguments to [graphics::rect()],
 #'   affecting the appearance of fitting windows.
+#' }
+#' }
+#' For `type != "rt2"`:
+#' \describe{
+#' \item{`box`}{
+#'   A named list of arguments to [graphics::box()],
+#'   affecting the appearance of the box drawn around the plot region.
 #' }
 #' \item{`polygon`}{
 #'   A named list of arguments to [graphics::polygon()],
@@ -290,19 +293,18 @@ plot.egf <- function(x,
     }
 
     time_as <- match.arg(time_as)
+    if (type == "interval") {
+      stop_if_not_true_false(show_legend)
+    } else {
+      show_legend <- FALSE
+    }
+    if (type == "rt1") {
+      log <- FALSE
+    } else {
+      stop_if_not_true_false(log)
+    }
     if (type == "rt2") {
       stop_if_not_positive_integer(per_plot)
-    } else {
-      if (type == "rt1") {
-        log <- FALSE
-      } else {
-        stop_if_not_true_false(log)
-      }
-      if (type == "interval") {
-        stop_if_not_true_false(show_legend)
-      } else {
-        show_legend <- FALSE
-      }
     }
 
     frame_ts <- x$frame_ts
@@ -354,7 +356,7 @@ plot.egf <- function(x,
     )
   }
 
-  ## If necessary, augment with fitted values of "log_r" and
+  ## If possible, augment with fitted values of "log_r" and
   ## standard errors. Since `x` already stores both of these,
   ## no computation is required and it makes sense to include
   ## everything regardless of `show_tdoubling` and `subset`.
@@ -362,7 +364,7 @@ plot.egf <- function(x,
   if (x$curve %in% c("exponential", "logistic", "richards") &&
       !"log_r" %in% levels(cache$var)) {
     ft <- fitted(x, par = "log_r", link = TRUE, se = TRUE)
-    names(ft)[names(ft) == "par"] <- "var"
+    names(ft)[match("par", names(ft), 0L)] <- "var"
     ft$time <- NA_real_
     cache <- rbind(cache, ft[cn])
   }
@@ -463,6 +465,7 @@ plot.egf <- function(x,
       cache = cache1,
       origin = origin,
       time_as = time_as,
+      log = log,
       per_plot = per_plot,
       control = control,
       xlim = xlim,
@@ -535,7 +538,7 @@ do_curve_plot <- function(frame_ts, cache,
   ## Axis title (y)
   if (is.null(ylab)) {
     if (type == "rt1") {
-      ylab <- "per capita growth rate, per day"
+      ylab <- "growth rate, per day"
     } else {
       ylab <- paste(type, "incidence")
     }
@@ -546,8 +549,8 @@ do_curve_plot <- function(frame_ts, cache,
 
   ## Plot margins
   mar <- switch(type,
-    rt1 = c(3, 4 + (is.null(ylim) || ylim[2L] > 0) * 4, 4, 1) + 0.1,
-    c(3, 5, 4, 1 + 5.5 * show_legend) + 0.1
+    rt1 = c(3.5, 4 + (is.null(ylim) || ylim[2L] > 0) * 4, 4, 1) + 0.1,
+    c(3.5, 5, 4, 1 + 5.5 * show_legend) + 0.1
   )
   op <- par(mar = mar)
   on.exit(par(op))
@@ -644,19 +647,15 @@ do_curve_plot <- function(frame_ts, cache,
       yaxs = "i",
       log = if (log) "y" else ""
     )
-    cex <- par("cex")
-    csi <- par("csi")
-    cxy <- par("cxy")
-    pin <- par("pin")
-    usr <- par("usr")
+    gp <- par(c("cex", "csi", "cxy", "pin", "usr"))
 
     ## Fitting windows
     if (!is.null(control$rect)) {
       l <- list(
         xleft = t1,
-        ybottom = inv_log(usr[3L]),
+        ybottom = inv_log(gp$usr[3L]),
         xright = t2,
-        ytop = inv_log(usr[4L])
+        ytop = inv_log(gp$usr[4L])
       )
       do.call(rect, c(l, control$rect))
     }
@@ -701,7 +700,7 @@ do_curve_plot <- function(frame_ts, cache,
         pd$estimate <- exp(pd$estimate)
         if (type == "cumulative") {
           c0 <- data[[type]][match(pd$time[1L], data$time, 0L)]
-          pd$estimate <- c(0, c0 + pd$estimate[-1L])
+          pd$estimate <- c0 + pd$estimate
         }
         l <- list(formula = estimate ~ time, data = pd)
         do.call(lines, c(l, control$lines))
@@ -722,31 +721,23 @@ do_curve_plot <- function(frame_ts, cache,
     }
 
     ## Initial doubling times
-    if (show_tdoubling && !is.null(control$tdoubling)) {
+    if (show_tdoubling && !is.null(ct <- control$tdoubling)) {
       ## Much ado about finding the right user coordinates
       ## when log scale is in effect
-      ciy <- add_lines_to_user(0.25, inv_log(usr[4L]), log)
-      cih <- strheight("",
-        units = "user",
-        cex = control$tdoubling$ci$cex,
-        font = control$tdoubling$ci$font
-      )
+      ciy <- add_lines_to_user(0.25, inv_log(gp$usr[4L]), log)
+      cih <- strheight("", units = "user", cex = ct$ci$cex, font = ct$ci$font)
       ey <- add_lines_to_user(0.15, add_height_to_user(cih, ciy, log), log)
-      eh <- strheight("",
-        units = "user",
-        cex = control$tdoubling$estimate$cex,
-        font = control$tdoubling$estimate$font
-      )
+      eh <- strheight("", units = "user", cex = ct$estimate$cex, font = ct$estimate$font)
       e <- log(2) / exp(cache_log_r$estimate)
       l <- log(2) / exp(cache_log_r$upper)
       u <- log(2) / exp(cache_log_r$lower)
       n <- length(wl)
-      get_el <- function(el) sapply(control$tdoubling[c("estimate", "ci")], `[[`, el)
+      get_el <- function(el) sapply(ct[c("estimate", "ci")], `[[`, el)
       text(
         x = rep((t1 + t2) / 2, times = 2L),
         y = rep(c(ey, ciy), each = n),
         labels = c(sprintf("%.1f", e), sprintf("(%.1f, %.1f)", l, u)),
-        cex = rep(cex * get_el("cex"), each = n),
+        cex = rep(gp$cex * get_el("cex"), each = n),
         col = rep(get_el("col"), each = n),
         font = rep(get_el("font"), each = n),
         adj = c(0.5, 0),
@@ -754,28 +745,24 @@ do_curve_plot <- function(frame_ts, cache,
       )
       ciy_cap <- add_lines_to_user(0.5, add_height_to_user(eh, ey, log), log)
       ey_cap <- add_lines_to_user(0.15, add_height_to_user(cih, ciy_cap, log), log)
-      ew <- strwidth("estimate",
-        units = "user",
-        cex = control$tdoubling$estimate$cex,
-        font = control$tdoubling$estimate$font
-      )
+      ew <- strwidth("estimate", units = "user", cex = ct$estimate$cex, font = ct$estimate$font)
       text(
-        x = rep_len(usr[2L] - 0.5 * ew, 2L),
+        x = rep_len(gp$usr[2L] - 0.5 * ew, 2L),
         y = c(ey_cap, ciy_cap),
         labels = c("estimate", "(95% CI)"),
-        cex = cex * get_el("cex"),
+        cex = gp$cex * get_el("cex"),
         col = get_el("col"),
         font = get_el("font"),
         adj = c(0.5, 0),
         xpd = TRUE
       )
       text(
-        x = usr[2L],
+        x = gp$usr[2L],
         y = add_lines_to_user(0.25, add_height_to_user(eh, ey_cap, log), log),
         labels = "initial doubling time, days:",
-        cex = cex * control$tdoubling$caption$cex,
-        col = control$tdoubling$caption$col,
-        font = control$tdoubling$caption$font,
+        cex = gp$cex * ct$caption$cex,
+        col = ct$caption$col,
+        font = ct$caption$font,
         adj = c(1, 0),
         xpd = TRUE
       )
@@ -790,46 +777,41 @@ do_curve_plot <- function(frame_ts, cache,
     if (!is.null(control$axis$x)) {
       if (time_as == "Date") {
         daxis(
-          left = usr[1L],
-          right = usr[2L],
           origin = origin + shift + 1,
           minor = control$axis$x$minor,
           major = control$axis$x$major
         )
       } else {
         l <- list(side = 1)
-        do.call(axis, c(l, control$axis$x))
+        do.call(baxis, c(l, control$axis$x))
       }
     }
 
     ## Axis (y)
-    if (!is.null(control$axis$y)) {
-      l1 <- list(side = 2, las = 1)
-      l2 <- control$axis$y
-      l1$at <- axTicks(side = 2)
-      if (type != "rt1" && (max(l1$at) >= 1e05)) {
-        l1$labels <- get_yax_labels(l1$at)
-        l2$cex.axis <- min(l2$cex.axis, get_yax_cex(l1$labels, mex = 3.5 - l2$mgp[2L]))
+    if (!is.null(ct <- control$axis$y)) {
+      l <- list(
+        side = 2,
+        at = axTicks(side = 2),
+        las = 1
+      )
+      if (type != "rt1" && max(l$at) >= 1e05) {
+        l$labels <- get_yax_labels(l$at)
+        ct$cex.axis <- min(ct$cex.axis, get_yax_cex(l$labels, mex = 3.5 - ct$mgp[2L]))
       }
-      do.call(axis, c(l1, l2))
-      if (type == "rt1" && usr[4L] > 0) {
-        axis(
+      do.call(baxis, c(l, ct))
+      if (type == "rt1" && gp$usr[4L] > 0) {
+        tdoubling <- c(1:5, 10, 20, 50, 100)
+        l <- list(
           side = 2,
-          line = 4.5,
-          at = c(0, usr[4L]),
-          labels = c("", ""),
-          lwd = l2$lwd,
-          col = l2$col,
-          lwd.ticks = 0,
-          xpd = TRUE
+          a = 0,
+          b = gp$usr[4L],
+          at = log(2) / tdoubling,
+          labels = tdoubling,
+          las = 1
         )
-        tdoubling <- c(1:5, 10, 50, 100)
-        l1$at <- log(2) / tdoubling
-        l1$labels <- tdoubling
-        ## FIXME: why `mgp[4] = 4 + foo`, not `mgp[2] = 4.5 + foo`?
-        l2$mgp <- c(3, 4 + l2$mgp[2L], 4.5)
-        l2$lwd <- 0
-        do.call(axis, c(l1, l2))
+        ct_outer <- ct
+        ct_outer$mgp <- ct$mgp + 4
+        do.call(baxis, c(l, ct_outer))
       }
 
       ## Axis title (x)
@@ -843,37 +825,38 @@ do_curve_plot <- function(frame_ts, cache,
         if (type == "rt1") {
           mlw <- max(strwidth(axTicks(side = 2),
             units = "inches",
-            cex = control$axis$y$cex.axis,
-            font = control$axis$y$font.axis
+            cex = gp$cex * ct$cex.axis,
+            font = ct$font.axis
           ))
-          line0 <- 0.5 + mlw / csi + control$axis$y$mgp[2L]
+          line0 <- 0.5 + mlw / gp$csi + ct$mgp[2L]
         } else {
           line0 <- 4
         }
         l <- list(ylab = ylab, line = line0)
         do.call(title, c(l, control$title$ylab))
-        if (type == "rt1" && usr[4L] > 0) {
+        if (type == "rt1" && gp$usr[4L] > 0) {
           mlw <- max(strwidth(tdoubling,
             units = "inches",
-            cex = control$axis$y$cex.axis,
-            font = control$axis$y$font.axis
+            cex = gp$cex * ct$cex.axis,
+            font = ct$font.axis
           ))
           tw <- strwidth(ylab_outer,
             units = "inches",
-            cex = control$title$ylab$cex.lab,
+            cex = gp$cex * control$title$ylab$cex.lab,
             font = control$title$ylab$font.lab
           )
           ## `tw` relative to 0.8 times the distance from 0 to `usr[4]`
-          rtw <- (tw * diff(usr[3:4]) / pin[2L]) / (0.8 * (usr[4L] - max(0, usr[3L])))
+          rtw <- (tw * (gp$usr[4L] - gp$usr[3L]) / gp$pin[2L]) /
+            (0.8 * (gp$usr[4L] - max(0, gp$usr[3L])))
           text(
-            ## FIXME: why 7.5, not 5 = 4.5 + 0.5?
-            x = usr[1L] - cxy[1L] * (7.5 + mlw / csi + control$axis$y$mgp[2L]),
-            y = mean(c(max(0, usr[3L]), usr[4L])),
+            ## FIXME: Unexpected behavior
+            x = gp$usr[1L] - gp$cxy[1L] * (2.5 + mlw / gp$csi + ct_outer$mgp[2L]),
+            y = mean(c(max(0, gp$usr[3L]), gp$usr[4L])),
             labels = ylab_outer,
             adj = c(0.5, 0),
             srt = 90,
             xpd = NA,
-            cex = cex * control$title$ylab$cex.lab / max(1, rtw),
+            cex = gp$cex * control$title$ylab$cex.lab / max(1, rtw),
             col = control$title$ylab$col.lab,
             font = control$title$ylab$font.lab
           )
@@ -888,16 +871,12 @@ do_curve_plot <- function(frame_ts, cache,
       } else {
         line0 <- 0.5
       }
-      if (!is.null(sub) && !is.null(control$title$sub)) {
-        names(control$title$sub) <- base::sub("\\.sub$", ".main", names(control$title$sub))
-        th <- strheight(sub[k],
-          units = "inches",
-          cex = control$title$sub$cex.main,
-          font = control$title$sub$font.main
-        )
+      if (!is.null(sub) && !is.null(ct <- control$title$sub)) {
+        names(ct) <- base::sub("\\.sub$", ".main", names(ct))
+        th <- strheight(sub[k], units = "inches", cex = ct$cex.main, font = ct$font.main)
         l <- list(main = sub[k], line = line0)
-        do.call(title, c(l, control$title$sub))
-        line0 <- line0 + th / csi + 0.25
+        do.call(title, c(l, ct))
+        line0 <- line0 + th / gp$csi + 0.25
       }
       l <- list(main = main[k], line = line0)
       do.call(title, c(l, control$title$main))
@@ -905,8 +884,8 @@ do_curve_plot <- function(frame_ts, cache,
 
     ## Legend
     if (show_legend) {
-      lx <- usr[2L] + 0.02 * diff(usr[1:2])
-      ly <- inv_log(usr[4L] - 0.02 * diff(usr[3:4]), log)
+      lx <- gp$usr[2L] + 0.02 * (gp$usr[2L] - gp$usr[1L])
+      ly <- inv_log(gp$usr[4L] - 0.02 * (gp$usr[4L] - gp$usr[3L]), log)
       cond <- all(data$dt[data$pty == pty[1L]] == m, na.rm = TRUE)
       lexpr <- parse(
         text = sprintf("'%s,' ~ Delta * 't %s %g day%s'",
@@ -940,11 +919,30 @@ do_curve_plot <- function(frame_ts, cache,
 
 #' @import graphics
 #' @importFrom grDevices colorRamp rgb
-do_heat_plot <- function(cache, origin, time_as, per_plot, control,
+do_heat_plot <- function(cache, origin, time_as, log, per_plot, control,
                          xlim, main, xlab, ylab, ylab_outer, plab) {
-  ## Axis limits
-  tr <- range(cache$time, na.rm = FALSE)
+  tr <- range(cache$time) # t range
   shift <- tr[1L]
+  cache$time <- cache$time - shift
+
+  lrr <- range(cache$estimate, na.rm = TRUE) # log(r(t)) range
+  dlrr <- lrr[2L] - lrr[1L]
+  rr <- exp(lrr) # r(t) range
+
+  to_unit <- function(x, log) {
+    if (log) (x - lrr[1L]) / dlrr else exp(x) / rr[2L]
+  }
+  inv_log <- if (log) function(x) 10^x else identity
+
+  cache_split <- split(cache, cache$ts)
+  tsl <- levels(cache$ts)
+  N <- length(tsl)
+
+  ## Heat map color palette
+  pal <- do.call(colorRamp, control$colorRamp)
+  ips <- control$ips
+
+  ## Axis limits
   if (is.null(xlim)) {
     xlim <- tr - shift
   } else {
@@ -971,118 +969,115 @@ do_heat_plot <- function(cache, origin, time_as, per_plot, control,
     ylab_outer <- "doubling\ntime,\ndays"
   }
   if (is.null(plab)) {
-    plab <- levels(cache$ts)
+    plab <- tsl
   }
 
-  ## Heat map color palette
-  pal <- do.call(colorRamp, control$colorRamp)
-  ips <- control$ips
-
-  op <- par(oma = c(2.5, 0, 3.5, 0))
+  op <- par(oma = c(3.5, 0, 3.5, 0))
   on.exit(par(op))
 
   ### Loop over plots =====================================
-
-  cache$time <- cache$time - shift
-  cache$estimate <- exp(cache$estimate)
-  cache_split <- split(cache, cache$ts)
-  tsl <- levels(cache$ts)
-  N <- length(tsl)
-  M <- max(cache$estimate, na.rm = TRUE)
 
   K <- 0L
   while (K < N) {
     L <- c(seq_len(per_plot), rep_len(per_plot + 1L, per_plot))
     dim(L) <- c(per_plot, 2L)
-    layout(L, widths = c(par("din")[1L] - 1.2, 1.2))
-    par(mar = c(0.5 * ips, 1.5, 0.5 * ips, 0.5))
+    layout(L, widths = c(par("din")[1L] - 1.3, 1.3))
+    par(mar = c(0.5 * ips, 2, 0.5 * ips, 1))
 
     ### Loop over panels ==================================
 
     for (k in K + seq_len(min(per_plot, N - K))) {
+      d <- cache_split[[k]]
       plot.new()
       plot.window(xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i")
-
-      cxy <- par("cxy")
-      pin <- par("pin")
-      usr <- par("usr")
-
-      d <- cache_split[[k]]
+      gp <- par(c("cex", "csi", "cxy", "pin", "usr"))
 
       ## Panel background
-      polygon(
-        x = xlim[c(1L, 2L, 2L, 1L)],
-        y = ylim[c(1L, 1L, 2L, 2L)],
-        border = NA,
-        col = 1
-      )
+      if (!is.null(control$rect$bg)) {
+        l <- list(
+          xleft   = gp$usr[1L],
+          xright  = gp$usr[2L],
+          ybottom = gp$usr[3L],
+          ytop    = gp$usr[4L]
+        )
+        do.call(rect, c(l, control$rect$bg))
+      }
 
       ## Panel pixels
       for (i in seq_len(nrow(d))) {
-        polygon(
-          x = (d$time[i] + c(-0.5, 0.5))[c(1L, 2L, 2L, 1L)],
-          y = ylim[c(1L, 1L, 2L, 2L)],
+        rect(
+          xleft   = d$time[i] - 0.5,
+          xright  = d$time[i] + 0.5,
+          ybottom = 0,
+          ytop    = 1,
           border = NA,
-          col = rgb(pal(d$estimate[i] / M), maxColorValue = 255)
+          col = rgb(pal(to_unit(d$estimate[i], log)), maxColorValue = 255)
         )
       }
 
-      ## Panel title background
-      px <- diff(usr[1:2]) * (0.075 * pin[2L] / pin[1L])
-      py <- 0.075 * diff(usr[3:4])
-      tw <- strwidth(plab[k], cex = 1, font = 2)
-      th <- strheight(plab[k], cex = 1, font = 2)
-      rect(
-        xleft = usr[1L],
-        ybottom = usr[4L] - th - 2 * px,
-        xright = usr[1L] + tw + 2 * py,
-        ytop = usr[4L],
-        border = NA,
-        col = "#00000080"
-      )
-
       ## Panel title
-      text(
-        x = usr[1L] + px,
-        y = usr[4L] - py,
-        labels = plab[k],
-        adj = c(0, 1)
-      )
+      if (!is.null(ct <- control$title$plab)) {
+        names(ct) <- sub("\\.lab$", "", names(ct))
+        ct$cex <- gp$cex * ct$cex
+
+        ## Pad from top left corner
+        px <- (gp$usr[2L] - gp$usr[1L]) * (0.075 * gp$pin[2L] / gp$pin[1L])
+        py <- 0.075 * (gp$usr[4L] - gp$usr[3L])
+
+        ## Background
+        if (!is.null(control$rect$plab)) {
+          tw <- strwidth( plab[k], units = "user", cex = ct$cex, font = ct$font)
+          th <- strheight(plab[k], units = "user", cex = ct$cex, font = ct$font)
+          l <- list(
+            xleft   = gp$usr[1L],
+            xright  = gp$usr[1L] + tw + 2 * px,
+            ybottom = gp$usr[4L] - th - 2 * py,
+            ytop    = gp$usr[4L]
+          )
+          do.call(rect, c(l, control$rect$plab))
+        }
+
+        ## Text
+        l <- list(
+          x = gp$usr[1L] + px,
+          y = gp$usr[4L] - py,
+          labels = plab[k],
+          adj = c(0, 1)
+        )
+        do.call(text, c(l, ct))
+      }
 
       ## Plot title
-      if (k == K + 1L) {
-        title(
-          main = main,
-          line = 0.5,
-          adj = 0,
-          cex.main = 1.3,
-          font = 2,
-          xpd = NA
-        )
+      if (k == K + 1L && !is.null(ct <- control$title$main)) {
+        ct$cex.main <- ct$cex.main / gp$cex
+        l <- list(main = main, line = 0.5, xpd = NA)
+        do.call(title, c(l, ct))
       }
     }
 
     ## Axis (x)
-    axis(
-      side = 1,
-      at = usr[1:2],
-      labels = c("", ""),
-      lwd.ticks = 0
-    )
-    if (time_as == "Date") {
-      daxis(
-        left = xlim[1L],
-        right = xlim[2L],
-        origin = origin + shift + 1,
-        minor = list(mgp = c(3, 0.25, 0), tcl = -0.2, cex.axis = 1,   gap.axis = 0, xpd = TRUE),
-        major = list(mgp = c(3, 1.25, 0), tcl = 0,    cex.axis = 1.3, gap.axis = 0, xpd = TRUE)
-      )
-    } else {
-      axis(side = 1, mgp = c(3, 0.7, 0), gap.axis = 0, xpd = TRUE)
+    if (!is.null(ct <- control$axis$x)) {
+      if (time_as == "Date") {
+        ct$minor$cex.axis <- ct$minor$cex.axis / gp$cex
+        ct$major$cex.axis <- ct$major$cex.axis / gp$cex
+        daxis(
+          origin = origin + shift + 1,
+          minor = ct$minor,
+          major = ct$major
+        )
+      } else {
+        ct$cex.axis <- ct$cex.axis / gp$cex
+        l <- list(side = 1)
+        do.call(baxis, c(l, ct))
+      }
     }
 
     ## Axis title (x)
-    title(xlab = xlab, line = 2.5)
+    if (!is.null(ct <- control$title$xlab)) {
+      ct$cex.lab <- ct$cex.lab / gp$cex
+      l <- list(xlab = xlab, line = 2.5, xpd = NA)
+      do.call(title, c(l, ct))
+    }
 
     ## Skip empty panels to get to the last
     for (i in seq_len((per_plot - (K %% per_plot)) %% per_plot)) {
@@ -1090,78 +1085,84 @@ do_heat_plot <- function(cache, origin, time_as, per_plot, control,
     }
 
     ## Color scale
-    par(mar = c(0.5 * ips, 1, 0.5 * ips, 7))
+    par(mar = c(0.5 * ips, 1, 0.5 * ips, 8))
     plot.new()
-    dy2 <- 0.0025
     plot.window(
       xlim = c(0, 1),
-      ylim = c(-dy2, 1 + dy2) * M,
+      ylim = c(0, 1),
       xaxs = "i",
       yaxs = "i"
     )
-    for (y in seq.int(0, 1, by = 2 * dy2)) {
-      polygon(
-        x = c(0, 1)[c(1L, 2L, 2L, 1L)],
-        y = ((y + c(-dy2, dy2)) * M)[c(1L, 1L, 2L, 2L)],
+    dy <- 0.001
+    for (y in seq.int(0, 1, by = 2 * dy)) {
+      rect(
+        xleft   = 0,
+        xright  = 1,
+        ybottom = y - dy,
+        ytop    = y + dy,
         border = NA,
         col = rgb(pal(y), maxColorValue = 255)
       )
     }
 
-    ## Axis (y, inner)
-    axis(
-      side = 4,
-      at = usr[3:4],
-      labels = c("", ""),
-      lwd.ticks = 0
-    )
-    axis(
-      side = 4,
-      mgp = c(3, 0.7, 0),
-      las = 1,
-      lwd = 0,
-      lwd.ticks = 1
-    )
+    if (!is.null(ct <- control$axis$y)) {
+      par(new = TRUE)
+      plot.window(
+        xlim = c(0, 1),
+        ylim = if (log) rr else c(0, rr[2L]),
+        xaxs = "i",
+        yaxs = "i",
+        log = if (log) "y" else ""
+      )
+      gp <- par(c("cex", "csi", "cxy", "usr"))
+      ct$cex.axis <- ct$cex.axis / gp$cex
 
-    ## Axis (y, outer)
-    tdoubling <- c(1:5, 10, 50, 100)
-    axis(
-      side = 4,
-      at = usr[3:4],
-      labels = c("", ""),
-      mgp = c(3, 4.7, 4),
-      lwd.ticks = 0
-    )
-    axis(
-      side = 4,
-      at = log(2) / tdoubling,
-      labels = tdoubling,
-      mgp = c(3, 4.7, 4),
-      las = 1,
-      lwd = 0,
-      lwd.ticks = 1
-    )
+      ## Axis (y, inner)
+      l <- list(side = 4, las = 1)
+      do.call(baxis, c(l, ct))
 
-    ## Axis title (y, inner)
-    text(
-      x = usr[2L] + 0 * cxy[1L],
-      y = usr[4L] + 0.5 * cxy[2L],
-      labels = ylab,
-      cex = 1,
-      adj = c(0, 0),
-      xpd = NA
-    )
+      ## Axis (y, outer)
+      mlw <- max(strwidth(axTicks(side = 4),
+        units = "inches",
+        cex = gp$cex * ct$cex.axis,
+        font = ct$font.axis
+      ))
+      ## FIXME: Unexpected behaviour
+      ct$mgp <- ct$mgp + c(4.5, 4, 4.5)
+      tdoubling <- c(1:5, 10, 20, 50, 100)
+      l <- list(
+        side = 4,
+        at = base::log(2) / tdoubling,
+        labels = tdoubling,
+        las = 1
+      )
+      do.call(baxis, c(l, ct))
 
-    ## Axis title (y, outer)
-    text(
-      x = usr[2L] + 3.5 * cxy[1L],
-      y = usr[4L] + 0.5 * cxy[2L],
-      labels = ylab_outer,
-      cex = 1,
-      adj = c(0, 0),
-      xpd = NA
-    )
+      if (!is.null(ct <- control$title$y)) {
+        names(ct) <- sub("\\.lab$", "", names(ct))
+        y0 <- add_lines_to_user(0.5, inv_log(gp$usr[4L]), log)
 
+        ## Axis title (y, inner)
+        l <- list(
+          x = gp$usr[2L],
+          y = y0,
+          labels = ylab,
+          adj = c(0, 0),
+          xpd = NA
+        )
+        do.call(text, c(l, ct))
+
+        ## Axis title (y, outer)
+        l <- list(
+          x = gp$usr[2L] + 4 * gp$cxy[1L],
+          y = y0,
+          labels = ylab_outer,
+          adj = c(0, 0),
+          xpd = NA
+        )
+        do.call(text, c(l, ct))
+      }
+    }
     K <- K + per_plot
   }
 
