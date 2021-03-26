@@ -1,6 +1,6 @@
 library("epigrowthfit")
-load("ontario/on_by_region.RData")
-load("ontario/endpoints.RData")
+load("on_by_region.RData")
+load("endpoints.RData")
 options(contrasts = c("contr.sum", "contr.poly"))
 
 window <- make_window(
