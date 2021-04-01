@@ -14,16 +14,16 @@
 #'   `type != "rt2"` displays one time series per plot.
 #'   `type = "rt2"` displays `per_plot` time series per plot.
 #' @param subset
-#'   An expression to be evaluated in the combined model frame.
-#'   Must evaluate to a logical vector or list of logical vectors
-#'   indexing rows of the model frame, and thus fitting windows.
-#'   Only indexed fitting windows are plotted. The default (`NULL`)
-#'   is to plot all fitting windows.
+#'   An expression to be evaluated in the combined model frame
+#'   (see [make_combined()]). Must evaluate to a logical vector
+#'   indexing rows of the data frame, and thus fitting windows.
+#'   Only indexed fitting windows are plotted.
+#'   The default (`NULL`) is to plot all fitting windows.
 #' @param order
-#'   An expression to be evaluated in the combined model frame,
-#'   typically a call to [order()], determining the order in which
-#'   time series are plotted. The default (`NULL`) is equivalent
-#'   to `seq_len(nrow(frame))`.
+#'   An expression to be evaluated in the combined model frame
+#'   (see [make_combined()]), typically a call to [order()],
+#'   determining the order in which time series are plotted.
+#'   The default (`NULL`) is equivalent to `seq_len(nrow(combined))`.
 #' @param cache
 #'   An `"egf_plot_cache"` object returned by a previous evaluation
 #'   of `plot.egf(x)`. Predicted values and standard errors stored
@@ -71,12 +71,15 @@
 #' @param main,sub,xlab,ylab,ylab_outer,plab
 #'   Optional character strings or expressions used to generate plot
 #'   (`main`, `sub`), axis (`xlab`, `ylab`, `ylab_outer`), and panel
-#'   (`plab`) titles. `sub` is unsupported by `type = "rt2"`.
-#'   `ylab_outer` is used only by `type = "rt[12]"`. `plab` is used
-#'   only by `type = "rt2"`. When `type != "rt2"`, `main` and `sub`
-#'   are evaluated in the combined model frame to generate unique
-#'   (sub)titles for each plot. When `type = "rt2"`, `plab` is
-#'   evaluated similarly to generate unique titles for each panel.
+#'   (`plab`) titles.
+#'   `sub` is used only by `type != "rt2"`.
+#'   `ylab_outer` is used only by `type = "rt[12]"`.
+#'   `plab` is used only by `type = "rt2"`.
+#'   When `type != "rt2"`, `main` and `sub` are evaluated in the
+#'   combined model frame (see [make_combined()]) to generate unique
+#'   (sub)titles for each plot.
+#'   When `type = "rt2"`, `plab` is evaluated similarly to generate
+#'   unique titles for each panel.
 #'   Note that [`plotmath`][grDevices::plotmath] expressions are
 #'   not supported for `main`, `sub`, and `plab` in these cases.
 #' @param ...
@@ -86,19 +89,16 @@
 #' An `"egf_plot_cache"` object. If `cache` was used, then this object
 #' is the result of augmenting `cache` with any new computations.
 #'
-#' Note that this object is returned _in spite of_ any errors thrown
-#' during plotting, to avoid waste of computation time.
+#' Note that this object is returned _in spite of_ any unrelated errors
+#' thrown during plotting, to avoid waste of computation time.
 #'
 #' @details
-#' The combined model frame is `do.call(cbind, unname(x$frame_par))`.
-#' If a variable occurs more than once there, because it appears
-#' in multiple model frames, then only the earliest instance is
-#' retained. Except in unusual cases, all instances of a variable
-#' are identical, and no information is lost.
-#'
 #' `plot.egf()` will _not_ detect mismatch between `x` and `cache`.
 #' In other words, constructions like `plot(x2, cache = plot(x1))`
 #' should _not_ be expected to produce correct results.
+#'
+#' See topic [`nse`] for details on nonstandard evaluation
+#' of `subset` and `order`.
 #'
 #' `control` is a named list defining some subset of the available
 #' control parameters and their respective components (see section
@@ -127,15 +127,12 @@
 #' }
 #' \item{`title`}{
 #'   A named list of the form `list(main, sub, xlab, ylab, plab)`,
-#'   affecting the appearance of plot and axis titles. `main`, `sub`,
-#'   `xlab`, `ylab`, and `plab` should all be lists of arguments to
-#'   [graphics::title()]. Note that subtitles are handled specially:
-#'   they are placed under main titles in the top margin, rather than
-#'   in the bottom margin (the usual behavior of [graphics::title()]).
-#' }
-#' \item{`rect`}{
-#'   A named list of arguments to [graphics::rect()],
-#'   affecting the appearance of fitting windows.
+#'   affecting the appearance of plot, axis, and panel titles.
+#'   `main`, `sub`, `xlab`, `ylab`, and `plab` should all be lists
+#'   of arguments to [graphics::title()]. Note that subtitles are
+#'   handled specially: they are placed under main titles in the
+#'   top margin, rather than in the bottom margin
+#'   (the usual behavior of [graphics::title()]).
 #' }
 #' }
 #' For `type != "rt2"`:
@@ -143,6 +140,10 @@
 #' \item{`box`}{
 #'   A named list of arguments to [graphics::box()],
 #'   affecting the appearance of the box drawn around the plot region.
+#' }
+#' \item{`rect`}{
+#'   A named list of arguments to [graphics::rect()],
+#'   affecting the appearance of fitting windows.
 #' }
 #' \item{`polygon`}{
 #'   A named list of arguments to [graphics::polygon()],
@@ -232,8 +233,8 @@ plot.egf <- function(x,
                      ylab_outer = NULL,
                      plab = NULL,
                      ...) {
-  ## FIXME: `order` _actually_ permutes `seq_along(levels(window))`
-  ## instead of `seq_along(levels(ts))`, leading to indexing gore ...
+  ## FIXME: `order` _actually_ orders `levels(window)`,
+  ## note `levels(ts)`, leading to some indexing gore ...
 
   type <- match.arg(type)
   stop_if_not_true_false(plot)
@@ -251,9 +252,8 @@ plot.egf <- function(x,
       stop_if_not_number_in_interval(level, 0, 1, "()")
     }
   }
-  frame_par <- do.call(cbind, unname(x$frame_par))
-  frame_par <- frame_par[!duplicated(names(frame_par))]
-  subset <- subset_to_index(substitute(subset), frame_par, parent.frame())
+  combined <- make_combined(x)
+  subset <- subset_to_index(substitute(subset), combined, parent.frame())
   stop_if_not(
     length(subset) > 0L,
     m = "`subset` must index at least one fitting window."
@@ -264,12 +264,12 @@ plot.egf <- function(x,
   ## time in the event of errors. This really only matters
   ## for users who have not assigned `plot(x)`.
   if (plot) {
-    order <- order_to_index(substitute(order), frame_par, parent.frame())
+    order <- order_to_index(substitute(order), combined, parent.frame())
     if (type == "rt2") {
-      plab <- label_to_character(substitute(plab), frame_par, parent.frame())
+      plab <- label_to_character(substitute(plab), combined, parent.frame())
     } else {
-      main <- label_to_character(substitute(main), frame_par, parent.frame())
-      sub <- label_to_character(substitute(sub), frame_par, parent.frame())
+      main <- label_to_character(substitute(main), combined, parent.frame())
+      sub <- label_to_character(substitute(sub), combined, parent.frame())
     }
 
     if (!is.null(xlim)) {
@@ -308,8 +308,8 @@ plot.egf <- function(x,
     }
 
     frame_ts <- x$frame_ts
-    wl <- as.character(x$endpoints$window)
-    tsl <- as.character(x$endpoints$ts)
+    wl <- as.character(x$endpoints$window) # same as levels
+    tsl <- as.character(x$endpoints$ts) # same as levels but with duplicates
 
     wl_subset <- wl[subset]
     frame_ts$window <- factor(frame_ts$window, levels = wl_subset)
@@ -402,10 +402,10 @@ plot.egf <- function(x,
         pd$se <- NA_real_
       }
       cache <- rbind(cache, pd[cn])
-      ord <- do.call(base::order, cache[cn[c(1L, 3:4, 6L)]])
-      cache <- cache[ord, , drop = FALSE]
-      keep <- !duplicated(cache[cn[c(1L, 3:4)]])
-      cache <- cache[keep, , drop = FALSE]
+      o <- do.call(base::order, cache[cn[c(1L, 3:4, 6L)]])
+      cache <- cache[o, , drop = FALSE]
+      i <- !duplicated(cache[cn[c(1L, 3:4)]])
+      cache <- cache[i, , drop = FALSE]
     }
   }
   class(cache) <- c("egf_plot_cache", "data.frame")
@@ -452,7 +452,7 @@ plot.egf <- function(x,
   if (is.null(control)) {
     control <- control_default
   } else {
-    control <- clean(control, template = control_default)
+    control <- rlmerge(control, template = control_default)
   }
 
   ## Need to subset and order plot/axis/panel titles so that they
@@ -518,7 +518,7 @@ do_curve_plot <- function(frame_ts, cache,
   N <- nlevels(frame_ts$ts)
   frame_ts_split <- split(frame_ts, frame_ts$ts)
   cache_split <- split(cache, cache$ts)
-  inv_log <- if (log) function(x) 10^x else identity
+  inv_log10 <- if (log) function(x) 10^x else identity
   formula <- as.formula(call("~", as.name(type), as.name("time")))
   what <- switch(type, interval = "log_int_inc", cumulative = "log_cum_inc", "log_rt")
 
@@ -652,10 +652,10 @@ do_curve_plot <- function(frame_ts, cache,
     ## Fitting windows
     if (!is.null(control$rect)) {
       l <- list(
-        xleft = t1,
-        ybottom = inv_log(gp$usr[3L]),
-        xright = t2,
-        ytop = inv_log(gp$usr[4L])
+        xleft   = t1,
+        ybottom = inv_log10(gp$usr[3L]),
+        xright  = t2,
+        ytop    = inv_log10(gp$usr[4L])
       )
       do.call(rect, c(l, control$rect))
     }
@@ -724,7 +724,7 @@ do_curve_plot <- function(frame_ts, cache,
     if (show_tdoubling && !is.null(ct <- control$tdoubling)) {
       ## Much ado about finding the right user coordinates
       ## when log scale is in effect
-      ciy <- add_lines_to_user(0.25, inv_log(gp$usr[4L]), log)
+      ciy <- add_lines_to_user(0.25, inv_log10(gp$usr[4L]), log)
       cih <- strheight("", units = "user", cex = ct$ci$cex, font = ct$ci$font)
       ey <- add_lines_to_user(0.15, add_height_to_user(cih, ciy, log), log)
       eh <- strheight("", units = "user", cex = ct$estimate$cex, font = ct$estimate$font)
@@ -737,8 +737,8 @@ do_curve_plot <- function(frame_ts, cache,
         x = rep((t1 + t2) / 2, times = 2L),
         y = rep(c(ey, ciy), each = n),
         labels = c(sprintf("%.1f", e), sprintf("(%.1f, %.1f)", l, u)),
-        cex = rep(gp$cex * get_el("cex"), each = n),
         col = rep(get_el("col"), each = n),
+        cex = rep(get_el("cex"), each = n),
         font = rep(get_el("font"), each = n),
         adj = c(0.5, 0),
         xpd = TRUE
@@ -750,8 +750,8 @@ do_curve_plot <- function(frame_ts, cache,
         x = rep_len(gp$usr[2L] - 0.5 * ew, 2L),
         y = c(ey_cap, ciy_cap),
         labels = c("estimate", "(95% CI)"),
-        cex = gp$cex * get_el("cex"),
         col = get_el("col"),
+        cex = get_el("cex"),
         font = get_el("font"),
         adj = c(0.5, 0),
         xpd = TRUE
@@ -760,8 +760,8 @@ do_curve_plot <- function(frame_ts, cache,
         x = gp$usr[2L],
         y = add_lines_to_user(0.25, add_height_to_user(eh, ey_cap, log), log),
         labels = "initial doubling time, days:",
-        cex = gp$cex * ct$caption$cex,
         col = ct$caption$col,
+        cex = ct$caption$cex,
         font = ct$caption$font,
         adj = c(1, 0),
         xpd = TRUE
@@ -825,7 +825,7 @@ do_curve_plot <- function(frame_ts, cache,
         if (type == "rt1") {
           mlw <- max(strwidth(axTicks(side = 2),
             units = "inches",
-            cex = gp$cex * ct$cex.axis,
+            cex = ct$cex.axis,
             font = ct$font.axis
           ))
           line0 <- 0.5 + mlw / gp$csi + ct$mgp[2L]
@@ -837,12 +837,12 @@ do_curve_plot <- function(frame_ts, cache,
         if (type == "rt1" && gp$usr[4L] > 0) {
           mlw <- max(strwidth(tdoubling,
             units = "inches",
-            cex = gp$cex * ct$cex.axis,
+            cex = ct$cex.axis,
             font = ct$font.axis
           ))
           tw <- strwidth(ylab_outer,
             units = "inches",
-            cex = gp$cex * control$title$ylab$cex.lab,
+            cex = control$title$ylab$cex.lab,
             font = control$title$ylab$font.lab
           )
           ## `tw` relative to 0.8 times the distance from 0 to `usr[4]`
@@ -856,8 +856,8 @@ do_curve_plot <- function(frame_ts, cache,
             adj = c(0.5, 0),
             srt = 90,
             xpd = NA,
-            cex = gp$cex * control$title$ylab$cex.lab / max(1, rtw),
             col = control$title$ylab$col.lab,
+            cex = control$title$ylab$cex.lab / max(1, rtw),
             font = control$title$ylab$font.lab
           )
         }
@@ -885,7 +885,7 @@ do_curve_plot <- function(frame_ts, cache,
     ## Legend
     if (show_legend) {
       lx <- gp$usr[2L] + 0.02 * (gp$usr[2L] - gp$usr[1L])
-      ly <- inv_log(gp$usr[4L] - 0.02 * (gp$usr[4L] - gp$usr[3L]), log)
+      ly <- inv_log10(gp$usr[4L] - 0.02 * (gp$usr[4L] - gp$usr[3L]), log)
       cond <- all(data$dt[data$pty == pty[1L]] == m, na.rm = TRUE)
       lexpr <- parse(
         text = sprintf("'%s,' ~ Delta * 't %s %g day%s'",
@@ -932,7 +932,7 @@ do_heat_plot <- function(cache, origin, time_as, log, per_plot, control,
   to_unit <- function(x, log) {
     if (log) (x - lrr[1L]) / dlrr else exp(x) / rr[2L]
   }
-  inv_log <- if (log) function(x) 10^x else identity
+  inv_log10 <- if (log) function(x) 10^x else identity
 
   cache_split <- split(cache, cache$ts)
   tsl <- levels(cache$ts)
@@ -981,6 +981,9 @@ do_heat_plot <- function(cache, origin, time_as, log, per_plot, control,
   while (K < N) {
     L <- c(seq_len(per_plot), rep_len(per_plot + 1L, per_plot))
     dim(L) <- c(per_plot, 2L)
+    ## FIXME: Graphical parameter `din` isn't updated until
+    ## `plot.new()` is called or R session is restarted...
+    ## Use here could cause unexpected behavior in RStudio?
     layout(L, widths = c(par("din")[1L] - 1.3, 1.3))
     par(mar = c(0.5 * ips, 2, 0.5 * ips, 1))
 
@@ -1080,7 +1083,7 @@ do_heat_plot <- function(cache, origin, time_as, log, per_plot, control,
     }
 
     ## Skip empty panels to get to the last
-    for (i in seq_len((per_plot - (K %% per_plot)) %% per_plot)) {
+    for (i in seq_len((per_plot - (k %% per_plot)) %% per_plot)) {
       plot.new()
     }
 
@@ -1122,13 +1125,7 @@ do_heat_plot <- function(cache, origin, time_as, log, per_plot, control,
       do.call(baxis, c(l, ct))
 
       ## Axis (y, outer)
-      mlw <- max(strwidth(axTicks(side = 4),
-        units = "inches",
-        cex = gp$cex * ct$cex.axis,
-        font = ct$font.axis
-      ))
-      ## FIXME: Unexpected behaviour
-      ct$mgp <- ct$mgp + c(4.5, 4, 4.5)
+      ct$mgp <- ct$mgp + c(4.5, 4, 4.5) # FIXME: Behaving unexpectedly...
       tdoubling <- c(1:5, 10, 20, 50, 100)
       l <- list(
         side = 4,
@@ -1140,7 +1137,7 @@ do_heat_plot <- function(cache, origin, time_as, log, per_plot, control,
 
       if (!is.null(ct <- control$title$y)) {
         names(ct) <- sub("\\.lab$", "", names(ct))
-        y0 <- add_lines_to_user(0.5, inv_log(gp$usr[4L]), log)
+        y0 <- add_lines_to_user(0.5, inv_log10(gp$usr[4L]), log)
 
         ## Axis title (y, inner)
         l <- list(

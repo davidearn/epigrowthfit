@@ -42,16 +42,16 @@ per capita growth rate as heat map (\code{"rt2"}).
 \code{type != "rt2"} displays one time series per plot.
 \code{type = "rt2"} displays \code{per_plot} time series per plot.}
 
-\item{subset}{An expression to be evaluated in the combined model frame.
-Must evaluate to a logical vector or list of logical vectors
-indexing rows of the model frame, and thus fitting windows.
-Only indexed fitting windows are plotted. The default (\code{NULL})
-is to plot all fitting windows.}
+\item{subset}{An expression to be evaluated in the combined model frame
+(see \code{\link[=make_combined]{make_combined()}}). Must evaluate to a logical vector
+indexing rows of the data frame, and thus fitting windows.
+Only indexed fitting windows are plotted.
+The default (\code{NULL}) is to plot all fitting windows.}
 
-\item{order}{An expression to be evaluated in the combined model frame,
-typically a call to \code{\link[=order]{order()}}, determining the order in which
-time series are plotted. The default (\code{NULL}) is equivalent
-to \code{seq_len(nrow(frame))}.}
+\item{order}{An expression to be evaluated in the combined model frame
+(see \code{\link[=make_combined]{make_combined()}}), typically a call to \code{\link[=order]{order()}},
+determining the order in which time series are plotted.
+The default (\code{NULL}) is equivalent to \code{seq_len(nrow(combined))}.}
 
 \item{cache}{An \code{"egf_plot_cache"} object returned by a previous evaluation
 of \code{plot.egf(x)}. Predicted values and standard errors stored
@@ -99,12 +99,15 @@ to Date via \code{as.Date(xlim)}. \code{ylim} is unused by \code{type = "rt2"}.}
 
 \item{main, sub, xlab, ylab, ylab_outer, plab}{Optional character strings or expressions used to generate plot
 (\code{main}, \code{sub}), axis (\code{xlab}, \code{ylab}, \code{ylab_outer}), and panel
-(\code{plab}) titles. \code{sub} is unsupported by \code{type = "rt2"}.
-\code{ylab_outer} is used only by \code{type = "rt[12]"}. \code{plab} is used
-only by \code{type = "rt2"}. When \code{type != "rt2"}, \code{main} and \code{sub}
-are evaluated in the combined model frame to generate unique
-(sub)titles for each plot. When \code{type = "rt2"}, \code{plab} is
-evaluated similarly to generate unique titles for each panel.
+(\code{plab}) titles.
+\code{sub} is used only by \code{type != "rt2"}.
+\code{ylab_outer} is used only by \code{type = "rt[12]"}.
+\code{plab} is used only by \code{type = "rt2"}.
+When \code{type != "rt2"}, \code{main} and \code{sub} are evaluated in the
+combined model frame (see \code{\link[=make_combined]{make_combined()}}) to generate unique
+(sub)titles for each plot.
+When \code{type = "rt2"}, \code{plab} is evaluated similarly to generate
+unique titles for each panel.
 Note that \code{\link[grDevices:plotmath]{plotmath}} expressions are
 not supported for \code{main}, \code{sub}, and \code{plab} in these cases.}
 
@@ -114,22 +117,19 @@ not supported for \code{main}, \code{sub}, and \code{plab} in these cases.}
 An \code{"egf_plot_cache"} object. If \code{cache} was used, then this object
 is the result of augmenting \code{cache} with any new computations.
 
-Note that this object is returned \emph{in spite of} any errors thrown
-during plotting, to avoid waste of computation time.
+Note that this object is returned \emph{in spite of} any unrelated errors
+thrown during plotting, to avoid waste of computation time.
 }
 \description{
 Methods for plotting \code{"egf"} objects.
 }
 \details{
-The combined model frame is \code{do.call(cbind, unname(x$frame_par))}.
-If a variable occurs more than once there, because it appears
-in multiple model frames, then only the earliest instance is
-retained. Except in unusual cases, all instances of a variable
-are identical, and no information is lost.
-
 \code{plot.egf()} will \emph{not} detect mismatch between \code{x} and \code{cache}.
 In other words, constructions like \code{plot(x2, cache = plot(x1))}
 should \emph{not} be expected to produce correct results.
+
+See topic \code{\link{nse}} for details on nonstandard evaluation
+of \code{subset} and \code{order}.
 
 \code{control} is a named list defining some subset of the available
 control parameters and their respective components (see section
@@ -157,15 +157,12 @@ then \code{x} should itself be a named list of arguments to
 }
 \item{\code{title}}{
 A named list of the form \code{list(main, sub, xlab, ylab, plab)},
-affecting the appearance of plot and axis titles. \code{main}, \code{sub},
-\code{xlab}, \code{ylab}, and \code{plab} should all be lists of arguments to
-\code{\link[graphics:title]{graphics::title()}}. Note that subtitles are handled specially:
-they are placed under main titles in the top margin, rather than
-in the bottom margin (the usual behavior of \code{\link[graphics:title]{graphics::title()}}).
-}
-\item{\code{rect}}{
-A named list of arguments to \code{\link[graphics:rect]{graphics::rect()}},
-affecting the appearance of fitting windows.
+affecting the appearance of plot, axis, and panel titles.
+\code{main}, \code{sub}, \code{xlab}, \code{ylab}, and \code{plab} should all be lists
+of arguments to \code{\link[graphics:title]{graphics::title()}}. Note that subtitles are
+handled specially: they are placed under main titles in the
+top margin, rather than in the bottom margin
+(the usual behavior of \code{\link[graphics:title]{graphics::title()}}).
 }
 }
 For \code{type != "rt2"}:
@@ -173,6 +170,10 @@ For \code{type != "rt2"}:
 \item{\code{box}}{
 A named list of arguments to \code{\link[graphics:box]{graphics::box()}},
 affecting the appearance of the box drawn around the plot region.
+}
+\item{\code{rect}}{
+A named list of arguments to \code{\link[graphics:rect]{graphics::rect()}},
+affecting the appearance of fitting windows.
 }
 \item{\code{polygon}}{
 A named list of arguments to \code{\link[graphics:polygon]{graphics::polygon()}},

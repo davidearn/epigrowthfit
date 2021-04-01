@@ -39,16 +39,15 @@ model parameters for which confidence intervals should be computed.
 If \code{object$curve \%in\% c("exponential", "logistic", "richards")},
 then \code{par} may also contain \code{"R0"} and \code{"tdoubling"}.}
 
-\item{subset}{An expression to be evaluated in the combined model frame.
-Must evaluate to a logical vector or list of logical vectors
-indexing rows of the model frame, and thus fitting windows.
-Confidence intervals are computed only for the indexed
-fitting windows. The default (\code{NULL}) is to consider all
-fitting windows.}
+\item{subset}{An expression to be evaluated in the combined model frame
+(see \code{\link[=make_combined]{make_combined()}}). Must evaluate to a logical vector
+indexing rows of the data frame, and thus fitting windows.
+Confidence intervals are computed only for indexed windows.
+The default (\code{NULL}) is to consider all windows.}
 
 \item{append}{An expression indicating variables in the combined model frame
-to be included with the result. The default (\code{NULL}) is to append
-nothing.}
+(see \code{\link[=make_combined]{make_combined()}}) to be included with the result.
+The default (\code{NULL}) is to append nothing.}
 
 \item{link}{A logical scalar. If \code{FALSE}, then confidence intervals
 on inverse link-transformed fitted values are returned.}
@@ -108,7 +107,7 @@ Nonlinear model parameter,
 from \code{get_par_names(object, link = TRUE)}.
 }
 \item{\code{ts}}{
-Time series, from \code{levels(object$endpoints$window)}.
+Time series, from \code{levels(object$endpoints$ts)}.
 }
 \item{\code{window}}{
 Fitting window, from \code{levels(object$endpoints$window)}.
@@ -151,24 +150,10 @@ A further limitation of \code{"wald"} is functional non-invariance.
 \code{"profile"} and \code{"uniroot"} avoid these issues but are much
 slower, requiring estimation of restricted models. Of the two,
 \code{"profile"} is more robust.
-}
-\section{Nonstandard evaluation}{
-\code{subset} and \code{append} are evaluated in a nonstandard way
-to make interactive use more convenient. They are handled
-much like the \code{\link[=subset]{subset()}} arguments \code{subset} and \code{select}.
-To avoid unexpected behaviour, especially when programming,
-use \code{.subset} and \code{.append}.
-}
 
-\section{Warning}{
-The combined model frame is
-\code{do.call(cbind, unname(object$frame_par))}.
-If a variable occurs more than once there, because it appears
-in multiple model frames, then only the earliest instance is
-retained. Except in unusual cases, all instances of a variable
-are identical, and no information is lost.
+See topic \code{\link{nse}} for details on nonstandard evaluation
+of \code{subset} and \code{append}.
 }
-
 \seealso{
 \code{\link[=plot.egf_confint]{plot.egf_confint()}}
 }

@@ -1,11 +1,11 @@
 #' Extract fitted values
 #'
-#' Extracts the fitted values of nonlinear model parameters.
+#' Extracts fitted values of nonlinear model parameters.
 #' The fitted value for a given fitting window is obtained
 #' by adding
 #' (i) the population fitted value computed from the
 #' relevant fixed effects coefficients and
-#' (ii) all random effects (if any), with random effects
+#' (ii) all (if any) random effects, with random effects
 #' coefficients set equal to their conditional modes.
 #'
 #' @param object
@@ -14,15 +14,15 @@
 #'   A subset of `get_par_names(object, link = TRUE)` naming nonlinear
 #'   model parameters for which fitted values should be retrieved.
 #' @param subset
-#'   An expression to be evaluated in the combined model frame. Must
-#'   evaluate to a logical vector or list of logical vectors indexing
-#'   rows of the model frame, and thus fitting windows. Fitted values
-#'   are retrieved only for the indexed fitting windows. The default
-#'   (`NULL`) is to consider all fitting windows.
+#'   An expression to be evaluated in the combined model frame
+#'   (see [make_combined()]). Must evaluate to a logical vector
+#'   indexing rows of the data frame, and thus fitting windows.
+#'   Fitted values are retrieved only for indexed windows.
+#'   The default (`NULL`) is to consider all windows.
 #' @param append
 #'   An expression indicating variables in the combined model frame
-#'   to be included with the result. The default (`NULL`) is to append
-#'   nothing.
+#'   (see [make_combined()]) to be included with the result.
+#'   The default (`NULL`) is to append nothing.
 #' @param link
 #'   A logical scalar. If `FALSE`, then fitted values are inverse
 #'   link-transformed.
@@ -43,22 +43,8 @@
 #' @details
 #' `coef.egf()` is currently an alias for `fitted.egf()`.
 #'
-#' # Nonstandard evaluation
-#'
-#' `subset` and `append` are evaluated in a nonstandard way
-#' to make interactive use more convenient. They are handled
-#' much like the [subset()] arguments `subset` and `select`.
-#' To avoid unexpected behaviour, especially when programming,
-#' use `.subset` and `.append`.
-#'
-#' # Warning
-#'
-#' The combined model frame is
-#' `do.call(cbind, unname(object$frame_par))`.
-#' If a variable occurs more than once there, because it appears
-#' in multiple model frames, then only the earliest instance is
-#' retained. Except in unusual cases, all instances of a variable
-#' are identical, and no information is lost.
+#' See topic [`nse`] for details on nonstandard evaluation
+#' of `subset` and `append`.
 #'
 #' @return
 #' A data frame inheriting from class `"egf_fitted"`, with variables:
@@ -93,13 +79,12 @@ fitted.egf <- function(object,
                        ...) {
   stop_if_not_true_false(link)
 
-  frame <- do.call(cbind, unname(object$frame_par))
-  frame <- frame[!duplicated(names(frame))]
+  combined <- make_combined(object)
   pn <- get_par_names(object, link = TRUE)
   par <- unique(match.arg(par, several.ok = TRUE))
-  subset <- subset_to_index(substitute(subset), frame, parent.frame(),
+  subset <- subset_to_index(substitute(subset), combined, parent.frame(),
                             .subset = .subset)
-  append <- append_to_index(substitute(append), frame, parent.frame(),
+  append <- append_to_index(substitute(append), combined, parent.frame(),
                             .append = .append)
 
   ## `Y[i, j]` is fitted value of nonlinear model parameter `j`
@@ -116,7 +101,7 @@ fitted.egf <- function(object,
     ts = object$endpoints$ts[subset],
     window = object$endpoints$window[subset],
     estimate = as.numeric(Y),
-    frame[subset, append, drop = FALSE],
+    combined[subset, append, drop = FALSE],
     row.names = NULL,
     check.names = FALSE,
     stringsAsFactors = FALSE
@@ -125,9 +110,11 @@ fitted.egf <- function(object,
     d$se <- as.numeric(Y_se)
   }
   if (!link) {
-    d["estimate"] <- apply_inverse_link(d["estimate"], g = d$par)
+    d$estimate <- apply_inverse_link(d$estimate, g = d$par)
   }
-  structure(d, se = link && se, class = c("egf_fitted", "data.frame"))
+  attr(d, "se") <- link && se
+  class(d) <- c("egf_fitted", "data.frame")
+  d
 }
 
 #' @rdname fitted.egf

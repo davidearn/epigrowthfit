@@ -35,15 +35,15 @@
 \item{par}{A subset of \code{get_par_names(object, link = TRUE)} naming nonlinear
 model parameters for which fitted values should be retrieved.}
 
-\item{subset}{An expression to be evaluated in the combined model frame. Must
-evaluate to a logical vector or list of logical vectors indexing
-rows of the model frame, and thus fitting windows. Fitted values
-are retrieved only for the indexed fitting windows. The default
-(\code{NULL}) is to consider all fitting windows.}
+\item{subset}{An expression to be evaluated in the combined model frame
+(see \code{\link[=make_combined]{make_combined()}}). Must evaluate to a logical vector
+indexing rows of the data frame, and thus fitting windows.
+Fitted values are retrieved only for indexed windows.
+The default (\code{NULL}) is to consider all windows.}
 
 \item{append}{An expression indicating variables in the combined model frame
-to be included with the result. The default (\code{NULL}) is to append
-nothing.}
+(see \code{\link[=make_combined]{make_combined()}}) to be included with the result.
+The default (\code{NULL}) is to append nothing.}
 
 \item{link}{A logical scalar. If \code{FALSE}, then fitted values are inverse
 link-transformed.}
@@ -82,34 +82,20 @@ Approximate (delta method) standard error on \code{value}.
 }
 }
 \description{
-Extracts the fitted values of nonlinear model parameters.
+Extracts fitted values of nonlinear model parameters.
 The fitted value for a given fitting window is obtained
 by adding
 (i) the population fitted value computed from the
 relevant fixed effects coefficients and
-(ii) all random effects (if any), with random effects
+(ii) all (if any) random effects, with random effects
 coefficients set equal to their conditional modes.
 }
 \details{
 \code{coef.egf()} is currently an alias for \code{fitted.egf()}.
-}
-\section{Nonstandard evaluation}{
-\code{subset} and \code{append} are evaluated in a nonstandard way
-to make interactive use more convenient. They are handled
-much like the \code{\link[=subset]{subset()}} arguments \code{subset} and \code{select}.
-To avoid unexpected behaviour, especially when programming,
-use \code{.subset} and \code{.append}.
-}
 
-\section{Warning}{
-The combined model frame is
-\code{do.call(cbind, unname(object$frame_par))}.
-If a variable occurs more than once there, because it appears
-in multiple model frames, then only the earliest instance is
-retained. Except in unusual cases, all instances of a variable
-are identical, and no information is lost.
+See topic \code{\link{nse}} for details on nonstandard evaluation
+of \code{subset} and \code{append}.
 }
-
 \seealso{
 \code{\link[=confint.egf_fitted]{confint.egf_fitted()}}
 }

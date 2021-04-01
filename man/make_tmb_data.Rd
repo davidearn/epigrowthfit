@@ -14,19 +14,18 @@ make_tmb_data(frame_ts, frame_par, curve, excess, distr, weekday, sparse_X)
 \item{curve}{A character string specifying a cumulative incidence model.}
 
 \item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate is estimated. Set to \code{TRUE} if what is observed is
-multiple causes mortality rather than disease mortality
-or disease incidence.}
+rate is estimated. Set to \code{TRUE} if what is observed is multiple
+causes mortality rather than disease mortality or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
 \item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
 effects are estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
-Currently, weekday effect estimation requires time (that is,
-the value of \code{foo} in \code{formula_ts = x ~ foo | ts}) to be an
-integer (in the sense of \code{all.equal(foo, round(foo))}) or Date
-vector with 1-day spacing in all fitting windows.}
+Currently, weekday effect estimation requires \code{time} in
+\code{formula_ts = x ~ time | ts}) to evaluate to an integer
+(in the sense of \code{all.equal(time, round(time))}) or Date vector
+with 1-day spacing in all fitting windows.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
 matrix is constructed in sparse format.}
@@ -107,7 +106,7 @@ An integer flag set equal to 0 so that prediction code is not run.
 }
 Additional integer elements of the form \code{j_link_parameter}
 (e.g., \code{j_log_r}) give the 0-index of nonlinear model parameter
-names (e.g., \code{"log_r"}) in \code{levels(X_info$par)}. The value \code{-1} is
+names (e.g., \code{"log_r"}) in \code{names(frame_par)}. The value \code{-1} is
 used for parameters not belonging to the nonlinear model being fit.
 }
 \description{

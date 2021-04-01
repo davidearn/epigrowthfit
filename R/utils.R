@@ -271,7 +271,7 @@ cor2cov <- function(cor, sd) {
 #' `X[, which, drop]`, where `X` is an integer matrix with
 #' `length(x)` rows and 3 columns listing year, month, and day.
 #'
-#' @noRd
+#' @keywords internal
 ymd <- function(x, which = 1:3, drop = TRUE) {
   X <- matrix(as.integer(unlist(strsplit(as.character(x), "-"))),
     nrow = length(x),
@@ -294,7 +294,7 @@ ymd <- function(x, which = 1:3, drop = TRUE) {
 #' `x` with elements replaced by firsts-of-the-month (`"YYYY-MM-01"`)
 #' or firsts-of-the-year (`"YYYY-01-01"`), depending on `to`.
 #'
-#' @noRd
+#' @keywords internal
 dceiling <- function(x, to = c("month", "year")) {
   if (length(x) == 0L) {
     return(.Date(numeric(0L)))
@@ -312,25 +312,125 @@ dceiling <- function(x, to = c("month", "year")) {
   }
 }
 
-clean <- function(x, template) {
+#' Recursively merge lists
+#'
+#' Recursively merge elements of a partially specified list
+#' into a completely specified list of defaults.
+#'
+#' @param x
+#'   A list.
+#' @param template
+#'   A list into which `x` is merged.
+#'
+#' @details
+#' The recursion proceeds as follows:
+#'
+#' If `x` is `NULL`, then `template` is replaced with `NULL`.
+#'
+#' Otherwise, if `x` and `template` are both lists or are both
+#' atomic vectors and `template` is unnamed, then `x` is recycled
+#' to the length of `template`.
+#'
+#' Otherwise, if `x` and `template` are both lists and `template`
+#' is named, then elements of `x` are recursively merged into the
+#' so-named elements of `template`.
+#'
+#' Otherwise, if `x` and `template` are both atomic vectors and
+#' `template` is named, then elements of `x` replace the so-named
+#' elements of `template`.
+#'
+#' Otherwise, `x` is discarded and `template` is preserved as is.
+#'
+#' @return
+#' A list.
+#'
+#' @examples
+#' x <- list(
+#'   a = NULL,
+#'   b = 1,
+#'   c = list(
+#'     c1 = list(
+#'       c11 = 1,
+#'       c12 = "a"
+#'     ),
+#'     c2 = c(Jan = 12L, Dec = 1L),
+#'     c3 = FALSE
+#'   )
+#' )
+#' template <- list(
+#'   a = list(
+#'     a1 = 0,
+#'     a2 = "",
+#'     a3 = FALSE
+#'   ),
+#'   b = seq_len(10L),
+#'   c = list(
+#'     c1 = list(
+#'       c11 = 0,
+#'       c12 = "",
+#'       c13 = FALSE
+#'     ),
+#'     c2 = `names<-`(seq_len(12L), month.abb),
+#'     c3 = list(TRUE)
+#'   )
+#' )
+#'
+#' ## Not run
+#' \dontrun{
+#' rlmerge(x, template)
+#' }
+#'
+#' @keywords internal
+rlmerge <- function(x, template) {
   if (is.null(x)) {
     return(NULL)
   }
   if ((is.list(template) && is.list(x)) ||
       (is.atomic(template) && is.atomic(x))) {
     if (is.null(tn <- names(template))) {
+      names(x) <- NULL
       return(rep_len(x, length(template)))
     }
     if (!is.null(xn <- names(x))) {
       s <- intersect(tn, xn)
-      template[s] <- Map(clean, x = x[s], template = template[s])
+      if (is.list(template)) {
+        template[s] <- Map(rlmerge, x = x[s], template = template[s])
+      } else {
+        template[s] <- x[s]
+      }
       return(template)
     }
   }
   template
 }
 
-rsplit <- function(x, by = character(0L), drop = FALSE) {
+#' Recursively split data frames
+#'
+#' Splits a supplied data frame on one or more variables in turn.
+#'
+#' @param x
+#'   A data frame.
+#' @param by
+#'   A subset of `seq_along(x)` or `names(x)` indicating (in order)
+#'   variables on which to split `x`.
+#' @param drop
+#'   A logical scalar passed to [split()].
+#'
+#' @return
+#' A recursive list of data frames with `n = length(by)` levels,
+#' unless `n` is zero, in which case `x` is returned as is.
+#'
+#' @examples
+#' f <- function() sample(letters[1:5], 20L, replace = TRUE)
+#' d <- as.data.frame(replicate(3L, f()))
+#'
+#' ## Not run
+#' \dontrun{
+#' rsplit(d, 1:3)
+#' }
+#'
+#' @keywords internal
+rsplit <- function(x, by = integer(0L), drop = FALSE) {
   if (length(by) == 0L) {
     return(x)
   }
@@ -341,96 +441,165 @@ rsplit <- function(x, by = character(0L), drop = FALSE) {
   lapply(l, rsplit, by = by[-1L], drop = drop)
 }
 
-subset_to_index <- function(subset, frame, enclos, .subset = NULL) {
-  n <- nrow(frame)
-  if (!is.null(.subset)) {
-    stop_if_not(
-      is.logical(.subset),
-      length(.subset) == n,
-      m = "`.subset` must be a logical vector\nof length `nrow(frame)`."
-    )
-    return(which(.subset))
-  }
-  if (is.null(subset)) {
-    return(seq_len(n))
-  }
-  l <- eval(subset, frame, enclos)
-  if (is.logical(l)) {
-    l <- list(l)
+#' Utilities for nonstandard evaluation
+#'
+#' Utilities for obtaining index vectors from unevaluated `subset`,
+#' `append`, and `order` expressions and character vectors from
+#' unevaluated `label` expressions (`xlab`, `ylab`, etc.). Used by
+#' several methods for class `"egf"`.
+#'
+#' @param subset,order,label
+#'   Expressions to be evaluated in `data`.
+#' @param append
+#'   An expression to be evaluated in
+#'   ````names<-```(as.list(seq_along(data)), names(data))`.
+#' @param data
+#'   A data frame.
+#' @param enclos
+#'   An environment to enclose `data`.
+#' @param .subset,.order,.append,`.label`
+#'   Atomic vectors to be used (if non-`NULL`) in place of
+#'   the result of evaluating the undotted argument.
+#'
+#' @details
+#' `subset` must evaluate to a logical vector of length
+#' `n = nrow(data)`.
+#' `NULL` is equivalent to `rep_len(TRUE, n)`.
+#'
+#' `order` must evaluate to a permutation of `seq_len(n)`.
+#' `NULL` is equivalent to `seq_len(n)`.
+#'
+#' `append` must evaluate to an atomic vector indexing `data`.
+#' `NULL` is equivalent to `integer(0L)`.
+#'
+#' `label` must evaluate to an atomic vector of length 1 or `n`.
+#' `NULL` is a no-op.
+#'
+#' Note that `subset` and `append` are processed similarly to
+#' [subset()] arguments `subset` and `select`. See [subset()]
+#' for additional usage examples.
+#'
+#' # Warning
+#'
+#' Nonstandard evaluation of `subset`, `order`, `append`, and `label`
+#' is intended only to make interactive use more convenient. To avoid
+#' unexpected behaviour, especially when programming, use the dotted
+#' versions.
+#'
+#' @return
+#' Let `r` be the result of evaluating the supplied expression
+#' or, otherwise, the dotted argument.
+#'
+#' `subset_to_index()` returns `which(r)`.
+#'
+#' `order_to_index()` returns `r` as is.
+#'
+#' `append_to_index()` returns
+#' `match(names(data[r]), names(data), 0L)`, without zeros.
+#'
+#' `label_to_character()` returns
+#' `rep_len(as.character(r), nrow(data))`.
+#'
+#' @examples
+#' year <- 2021L
+#' data <- data.frame(
+#'   month = sample(month.abb, 20L, replace = TRUE),
+#'   day = sample(30L, 20L, replace = TRUE)
+#' )
+#'
+#' subset <- substitute(grepl("^J", month) & day < 16L)
+#' order <- substitute(order(month, day))
+#' append <- substitute(-day)
+#' label <- substitute(sprintf("%d-%02d-%02d", year, match(month, month.abb, 0L), day))
+#'
+#' ## Not run
+#' \dontrun{
+#' subset_to_index(subset, data, parent.frame())
+#' order_to_index(order, data, parent.frame())
+#' append_to_index(append, data, parent.frame())
+#' label_to_character(label, data, parent.frame())
+#' }
+#'
+#' @name nse
+#' @keywords internal
+NULL
+
+#' @rdname nse
+subset_to_index <- function(subset, data, enclos, .subset = NULL) {
+  n <- nrow(data)
+  if (is.null(.subset)) {
+    if (is.null(subset)) {
+      return(seq_len(n))
+    }
+    r <- eval(subset, data, enclos)
+    s <- "`subset` must evaluate to"
+  } else {
+    r <- .subset
+    s <- "`.subset` must be"
   }
   stop_if_not(
-    is.list(l),
-    vapply(l, is.logical, FALSE),
-    lengths(l) == n,
-    m = paste0(
-      "`subset` must evaluate to a logical vector\n",
-      "of length `nrow(frame)`, or otherwise a list\n",
-      "of such vectors."
-    )
+    is.logical(r),
+    length(r) == n,
+    m = paste(s, "a logical vector of length `nrow(data)`.")
   )
-  which(Reduce(`&`, l))
+  which(r)
 }
 
-append_to_index <- function(append, frame, enclos, .append = NULL) {
-  if (!is.null(.append)) {
-    return(unique(match.arg(.append, names(frame), several.ok = TRUE)))
+#' @rdname nse
+append_to_index <- function(append, data, enclos, .append = NULL) {
+  if (is.null(.append)) {
+    if (is.null(append)) {
+      return(integer(0L))
+    }
+    l <- as.list(seq_along(data))
+    names(l) <- names(data)
+    r <- eval(append, l, enclos)
+  } else {
+    r <- .append
   }
-  if (is.null(append)) {
-    return(integer(0L))
-  }
-  l <- as.list(seq_along(frame))
-  names(l) <- names(frame)
-  eval(append, l, enclos)
+  m <- match(names(data[r]), names(data), 0L)
+  m[m > 0L]
 }
 
-order_to_index <- function(order, frame, enclos, .order = NULL) {
-  n <- nrow(frame)
-  if (!is.null(.order)) {
-    stop_if_not(
-      is.numeric(.order),
-      length(.order) == n,
-      sort(.order) == seq_len(n),
-      m = "`.order` must be a permutation\nof `seq_len(nrow(frame))`."
-    )
-    return(.order)
+#' @rdname nse
+order_to_index <- function(order, data, enclos, .order = NULL) {
+  n <- nrow(data)
+  if (is.null(.order)) {
+    if (is.null(order)) {
+      return(seq_len(n))
+    }
+    r <- eval(order, data, enclos)
+    s <- "`order` must evaluate to "
+  } else {
+    r <- .order
+    s <- "`.order` must be "
   }
-  if (is.null(order)) {
-    return(seq_len(n))
-  }
-  o <- eval(order, frame, enclos)
   stop_if_not(
-    is.numeric(o),
-    length(o) == n,
-    sort(o) == seq_len(n),
-    m = "`order` must evaluate to a permutation\nof `seq_len(nrow(frame))`."
+    is.numeric(r),
+    length(r) == n,
+    sort(r) == seq_len(n),
+    m = paste0(s, "a permutation\nof `seq_len(nrow(data))`.")
   )
-  o
+  r
 }
 
-label_to_character <- function(label, frame, enclos, .label = NULL) {
-  n <- nrow(frame)
-  if (!is.null(.label)) {
-    stop_if_not(
-      is.atomic(.label),
-      any(length(.label) == c(1L, n)),
-      m = "`.label` must be an atomic vector\nof length 1 or `nrow(frame)`."
-    )
-    return(rep_len(as.character(.label), n))
+#' @rdname nse
+label_to_character <- function(label, data, enclos, .label = NULL) {
+  n <- nrow(data)
+  if (is.null(.label)) {
+    if (is.null(label)) {
+      return(NULL)
+    }
+    r <- eval(label, data, enclos)
+    s <- "`label` must evaluate to "
+  } else {
+    r <- .label
+    s <- "`.label` must be "
   }
-  if (is.null(label)) {
-    return(NULL)
-  }
-  a <- eval(label, frame, enclos)
   stop_if_not(
-    is.atomic(a),
-    any(length(a) == c(1L, n)),
-    m = "`label` must evaluate to an atomic vector\nof length 1 or `nrow(frame)`."
+    is.atomic(label),
+    any(length(label) == c(1L, n)),
+    m = paste0(s, "an atomic vector\nof length 1 or `nrow(data)`.")
   )
-  nf <- as.list(names(frame))
-  names(nf) <- nf
-  s <- tryCatch(eval(label, nf, enclos),
-    warning = function(w) deparse(label),
-    error   = function(e) deparse(label)
-  )
-  structure(rep_len(as.character(a), n), format = s)
+  rep_len(as.character(r), n)
 }

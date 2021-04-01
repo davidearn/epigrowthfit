@@ -9,8 +9,9 @@
   type = c("bars", "boxes"),
   subset = NULL,
   order = NULL,
-  label = NULL,
   per_plot = switch(type, bars = 12L, 4L),
+  main = NULL,
+  label = NULL,
   ...
 )
 }
@@ -20,25 +21,29 @@
 \item{type}{A character string determining how confidence intervals
 are displayed (see Details).}
 
-\item{subset}{An expression to be evaluated in \code{x}. Must evaluate to a
-logical vector or list of logical vectors indexing rows
-of \code{x}. Only indexed confidence intervals are plotted.
-The default (\code{NULL}) is to plot all confidence intervals.}
+\item{subset}{An expression to be evaluated in \code{x}. Must evaluate to
+a logical vector indexing rows of \code{x}. Only indexed
+confidence intervals are plotted. The default (\code{NULL})
+is to plot all confidence intervals.}
 
 \item{order}{An expression to be evaluated in \code{x}, typically a call
 to \code{\link[=order]{order()}}, determining the order in which confidence
-intervals and time series (depending on \code{type}) are
-plotted. Must evaluate to a permutation of \code{seq_len(nrow(x))}.
+intervals or time series (depending on \code{type}) are plotted.
+Must evaluate to a permutation of \code{seq_len(nrow(x))}.
 The default (\code{NULL}) is equivalent to \code{seq_len(nrow(x))}.}
-
-\item{label}{An expression to be evaluated in \code{x}, typically a factor,
-interaction of factors, or call to \code{\link[=sprintf]{sprintf()}}. Used to
-create appropriate labels for confidence intervals and
-time series (depending on \code{type}). The default (\code{NULL})
-is to take labels from \code{x$window} and \code{x$ts}, respectively.}
 
 \item{per_plot}{A positive integer. One plot will display at most this many
 confidence intervals or time series (depending on \code{type}).}
+
+\item{main}{An expression or character string indicating a plot title,
+to be recycled for all plots.}
+
+\item{label}{An expression to be evaluated in \code{x}, typically a factor,
+interaction of factor, or call to \code{\link[=sprintf]{sprintf()}}. Used to
+create appropriate \emph{y}-axis labels for confidence intervals
+when \code{type = "bars"} and approprate panel labels for
+time series when \code{type = "boxes"}. The default (\code{NULL})
+is to take labels from \code{x$window} and \code{x$ts}, respectively.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -57,7 +62,8 @@ confidence intervals drawn as stacked horizontal line segments.
 \code{type = "boxes"} creates a two-dimensional plot for each
 time series (level of \code{x$ts}), each containing shaded boxes.
 Projection of boxes onto the horizontal and vertical axes
-yields fitting windows and corresponding confidence intervals.
+yields fitting windows and corresponding confidence intervals,
+respectively.
 
 If an endpoint of a confidence interval is \code{NA}, then dashed
 lines are drawn from the point estimate to the boundary of the

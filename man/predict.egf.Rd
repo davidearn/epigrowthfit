@@ -20,23 +20,24 @@
 \item{object}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
 \item{what}{A character vector listing one or more variables for which
-predicted values are desired.}
+predicted values are sought.}
 
 \item{time}{A numeric or Date vector supplying time points at which
 predicted values are sought. Numeric \code{time} is assumed
-to measure time as a number of days since the end of date
-\code{origin = attr(object$frame_ts, "origin")}. Date \code{time}
-is coerced to numeric \code{julian(time, origin)}. When missing,
-\code{object$frame_ts$time} is used.}
+to measure time as a number of days since \emph{the end of}
+date \code{origin = attr(object$frame_ts, "origin")}.
+Date \code{time} is coerced to numeric \code{julian(time, origin)}.
+When missing, \code{object$frame_ts$time} is used.}
 
-\item{window}{A factor of length \code{length(time)} such that \code{split(time, window)}
-splits \code{time} by fitting window. Levels not belonging to
-\code{levels(object$frame_ts$window)} are ignored. When \code{time}
-is missing, \code{object$frame_ts$window} is used.}
+\item{window}{A factor of length \code{length(time)} such that
+\code{split(time, window)} splits \code{time} by fitting window.
+Levels not belonging to \code{levels(object$frame_ts$window)}
+are ignored.
+When \code{time} is missing, \code{object$frame_ts$window} is used.}
 
 \item{append}{An expression indicating variables in the combined model frame
-to be included with the result. The default (\code{NULL}) is to append
-nothing.}
+(see \code{\link[=make_combined]{make_combined()}}) to be included with the result.
+The default (\code{NULL}) is to append nothing.}
 
 \item{log}{A logical scalar. If \code{FALSE}, then inverse log-transformed
 predicted values are returned.}
@@ -66,7 +67,7 @@ Fitting window, from \code{levels(object$endpoints$window)}.
 Time, after possible coercion from Date to numeric.
 }
 \item{\code{estimate}}{
-Predicted value of \code{var} "at" \code{time} in \code{window} (see Details),
+Predicted value of \code{var} at \code{time} in \code{window} (see Details),
 conditional on \code{object$frame_par} and \code{object$best}.
 }
 \item{\code{se}}{
@@ -100,4 +101,6 @@ it is approximated by 7-point local linear regression of the
 log interval incidence time series.
 }
 }
+
+See topic \code{\link{nse}} for details on nonstandard evaluation of \code{append}.
 }

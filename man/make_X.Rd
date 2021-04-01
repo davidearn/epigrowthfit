@@ -11,10 +11,10 @@ make_Z(x, frame)
 }
 \arguments{
 \item{x}{For \code{make_X()}, a fixed effects formula of the form \code{~terms}.
-For \code{make_Z()}, a random effects term of the form \code{(terms | group)}.}
+For \code{make_Z()}, a random effects term of the form \code{(terms | g)}.}
 
-\item{frame}{A model frame (a data frame with an appropriate \code{terms} attribute)
-defining the variables used in \code{x}.}
+\item{frame}{A model frame (i.e., a data frame with an appropriate \code{terms}
+attribute) containing the variables used in \code{x}.}
 
 \item{sparse}{A logical scalar. If \code{TRUE}, then the design matrix is returned
 in sparse format.}
@@ -24,12 +24,12 @@ A matrix with attributes:
 \item{\code{contrasts}, \code{assign}}{
 See \code{\link[stats:model.matrix]{stats::model.matrix()}}.
 \code{contrasts} will be absent if \code{foo} in \code{x = ~foo} or
-\code{x = (foo | group)} does not use factors. \code{assign} indexes
-\code{labels(terms(~foo))} for \code{x = ~foo} and \code{x = (foo | group)}.
+\code{x = (foo | g)} does not use factors. \code{assign} indexes
+\code{labels(terms(~foo))} for \code{x = ~foo} and \code{x = (foo | g)}.
 }
 \item{\code{group}}{
-(\code{make_Z()} only.) For \code{x = (foo | group)}, a factor of length
-\code{ncol(Z)} with levels \code{levels(group)}, useful for splitting \code{Z}
+(\code{make_Z()} only.) For \code{x = (foo | g)}, a factor of length
+\code{ncol(Z)} with levels \code{levels(g)}, useful for splitting \code{Z}
 into group-specific submatrices.
 }
 }

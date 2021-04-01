@@ -234,22 +234,30 @@ get_yax_labels <- function(at) {
 #'   A character or expression vector listing _y_-axis tick labels.
 #' @param mex
 #'   A positive number. The (desired) width of the widest tick label
-#'   as a number of margin lines. See [graphics::par()].
-#' @param csi
-#'   A positive number. The width of one margin line in inches.
-#'   The default is `par("csi")`. See [graphics::par()].
+#'   as a number of margin lines.
+#' @param cex,font,csi
+#'   Graphical parameters affecting the width of a string as a number
+#'   of margin lines. The default (`NULL`) is to obtain values using
+#'   [graphics::par()].
 #'
 #' @return
 #' `mex * csi / mlw`, where `mlw` is the width of the widest tick label
-#' in inches.
+#' in inches given `cex` and `font`.
 #'
 #' @keywords internal
 #' @importFrom graphics par strwidth
-get_yax_cex <- function(labels, mex, csi = NULL) {
-  if (is.null(csi)) {
-    csi <- par("csi")
+get_yax_cex <- function(labels, mex, cex = NULL, font = NULL, csi = NULL) {
+  gp <- par(c("cex", "font", "csi"))
+  if (is.null(cex)) {
+    cex <- gp$cex
   }
-  mex * csi / max(strwidth(labels, units = "inches", cex = 1))
+  if (is.null(font)) {
+    font <- gp$font
+  }
+  if (is.null(csi)) {
+    csi <- gp$csi
+  }
+  mex * csi / max(strwidth(labels, units = "inches", cex = cex, font = font))
 }
 
 add_height_to_user <- function(h, y0, log) {
@@ -258,26 +266,26 @@ add_height_to_user <- function(h, y0, log) {
 
 #' @importFrom graphics par
 add_lines_to_user <- function(n, y0, log) {
+  gp <- par(c("cxy", "mai", "mar", "pin", "usr"))
   if (log) {
     ## Height of top margin in user coordinates
-    u_m3 <- par("mai")[3L] * diff(par("usr")[3:4]) / par("pin")[2L]
+    u_m3 <- gp$mai[3L] * (gp$usr[4L] - gp$usr[3L]) / gp$pin[2L]
     ## Height of one line in user coordinates
-    u_1l <- u_m3 / par("mar")[3L]
-    y0 * 10^(n * u_1l)
-  } else {
-    y0 + n * par("cxy")[2L]
+    u_1l <- u_m3 / gp$mar[3L]
+    return(y0 * 10^(n * u_1l))
   }
+  y0 + n * gp$cxy[2L]
 }
 
 #' @importFrom graphics par
 user_to_lines <- function(y, log) {
+  gp <- par(c("cxy", "mai", "mar", "pin", "usr"))
   if (log) {
     ## Height of top margin in user coordinates
-    u_m3 <- par("mai")[3L] * diff(par("usr")[3:4]) / par("pin")[2L]
+    u_m3 <- gp$mai[3L] * (gp$usr[4L] - gp$usr[3L]) / gp$pin[2L]
     ## Height of one line in user coordinates
-    u_1l <- u_m3 / par("mar")[3L]
-    (log10(y) - par("usr")[4L]) / u_1l
-  } else {
-    (y - par("usr")[4L]) / par("cxy")[2L]
+    u_1l <- u_m3 / gp$mar[3L]
+    return((log10(y) - gp$usr[4L]) / u_1l)
   }
+  (y - gp$usr[4L]) / gp$cxy[2L]
 }

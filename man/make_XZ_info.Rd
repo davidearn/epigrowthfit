@@ -9,8 +9,8 @@ make_XZ_info(xl, ml)
 \arguments{
 \item{xl}{A named list of fixed effects formulae of the form
 \code{~terms}, or a named list of random effects terms of
-the form \code{(terms | group)}. \code{names(xl)} must specify
-the respective nonlinear model parameters.}
+the form \code{(terms | g)}. \code{names(xl)} must specify the
+respective nonlinear model parameters.}
 
 \item{ml}{A list of \code{X} or \code{Z} matrices obtained by applying
 \code{\link[=make_X]{make_X()}} or \code{\link[=make_Z]{make_Z()}} to the to the elements of \code{xl}.}

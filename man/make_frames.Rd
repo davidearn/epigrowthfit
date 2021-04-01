@@ -2,122 +2,105 @@
 % Please edit documentation in R/egf_utils.R
 \name{make_frames}
 \alias{make_frames}
-\title{Validate model formulae and construct model frames}
+\title{Construct model frames}
 \usage{
 make_frames(
   formula_ts,
   formula_par,
-  data,
-  window,
+  data_ts,
+  data_par,
+  endpoints,
   origin,
   curve,
   excess,
   distr,
   weekday,
   na_action,
-  init
+  init,
+  append
 )
 }
 \arguments{
-\item{formula_ts}{A formula of the form \code{x ~ time} or \code{x ~ time | ts} specifying one
-or more incidence time series in long format. \code{time} must evaluate
-to a numeric or Date vector. Numeric \code{time} is assumed to measure
-time as a number of days since \emph{the end of} date \code{origin}. Date
-\code{time} is coerced to numeric \code{julian(time, origin)} (see Details).
-\code{x} must evaluate to a numeric vector. Within a time series,
-\code{x[i]} should specify the number of cases observed from \code{time[i-1]}
-to \code{time[i]}. Finally, \code{ts} must evaluate to a factor, such that
-\code{split(data.frame(time, x), ts)} returns a list of time series.
-Note that \code{x ~ time} is equivalent to \code{x ~ time | ts} with \code{ts}
-set equal to \code{rep(factor(1), length(x))}.}
+\item{formula_ts}{A formula of the form \code{x ~ time} or \code{x ~ time | ts} specifying
+one or more incidence time series in long format. \code{time} must
+evaluate to a numeric or Date vector. Numeric \code{time} is assumed
+to measure time as a number of days since \emph{the end of} date
+\code{origin}. Date \code{time} is coerced to numeric \code{julian(time, origin)}
+(see Details). \code{x} must evaluate to a numeric vector. Within a
+time series, \code{x[i]} should specify the number of cases observed
+from \code{time[i-1]} to \code{time[i]}. Finally, \code{ts} must evaluate to
+a factor such that \code{split(data.frame(time, x), ts)} returns
+a list of time series. Note that \code{x ~ time} is equivalent to
+\code{x ~ time | ts} with \code{ts} set equal to \code{rep(factor(1), length(x))}.}
 
-\item{formula_par}{A named list of formulae of the form \code{~terms}, specifying
+\item{formula_par}{A named list of formulae of the form \code{~terms} specifying
 mixed effects models (\code{\link[lme4:lmer]{lme4}}-like syntax)
 for nonlinear model parameters. \code{names(formula_par)} must
 be a subset of
 \code{get_par_names(curve, distr, excess, weekday, link = TRUE)}.
 \code{~1} is the default for parameters not assigned a formula.
-Alternatively, \code{formula_par} may itself be a formula of
-the form \code{~terms}. In this case, the formula is recycled
-for all nonlinear model parameters. Mixed effects variables
-must match the length of the time series variables and be
-constant in each level of \code{window}.}
+Alternatively, \code{formula_par} may itself be a formula of the
+form \code{~terms}. In this case, the formula is recycled for all
+nonlinear model parameters. Note that "individuals" in each
+model are fitting windows, and model frames constructed
+from \code{formula_par} and \code{data_par} are expected to correspond
+rowwise to \code{endpoints} (see Details).}
 
-\item{data}{A data frame, list, or environment. \code{egf()} looks here
-for variables used in \code{formula_ts} and \code{formula_par},
-before looking in formula environments.}
+\item{data_ts}{Data frames, lists, or environments. These are searched prior
+to formula environments for variables used in \code{formula_ts} and
+\code{formula_par}, respectively.}
 
-\item{window}{A factor of length \code{nrow(data)} such that \code{split(data, window)}
-splits \code{data} by fitting window, with \code{is.na(window)} indexing
-rows of \code{data} not belonging to a fitting window. Note that
-such a factor can be constructed from a table of fitting window
-endpoints using \code{\link[=make_window]{make_window()}}.)}
+\item{data_par}{Data frames, lists, or environments. These are searched prior
+to formula environments for variables used in \code{formula_ts} and
+\code{formula_par}, respectively.}
 
-\item{origin}{A Date specifying a reference time (see \code{formula_ts}).}
+\item{endpoints}{A data frame with variables \code{start} (numeric or Date),
+\code{end} (numeric or Date), and \code{ts} (factor) listing start and
+end times for all fitting windows. If \code{formula_ts = x ~ time | g},
+then \code{levels(ts)} must be a subset of \code{levels(g)}.
+Within time series, fitting windows must be nonoverlapping and
+contain at least two time points. To be precise: for all \code{k},
+intervals \verb{[start[i], end[i]]} such that \code{ts[i] = levels(g)[k]}
+must be disjoint and contain at least two elements of
+\code{time[g == levels(g)[k]]}. When \code{nlevels(g) = 1}, \code{ts} is
+redundant, and \code{endpoints} need only specify \code{start} and \code{end}.}
+
+\item{origin}{A Date specifying a reference time.}
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
 \item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate is estimated. Set to \code{TRUE} if what is observed is
-multiple causes mortality rather than disease mortality
-or disease incidence.}
+rate is estimated. Set to \code{TRUE} if what is observed is multiple
+causes mortality rather than disease mortality or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
 \item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
 effects are estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
-Currently, weekday effect estimation requires time (that is,
-the value of \code{foo} in \code{formula_ts = x ~ foo | ts}) to be an
-integer (in the sense of \code{all.equal(foo, round(foo))}) or Date
-vector with 1-day spacing in all fitting windows.}
+Currently, weekday effect estimation requires \code{time} in
+\code{formula_ts = x ~ time | ts}) to evaluate to an integer
+(in the sense of \code{all.equal(time, round(time))}) or Date vector
+with 1-day spacing in all fitting windows.}
 
-\item{na_action}{A character string indicating how \code{NA} in incidence (\code{x}
-if \code{formula_ts = x ~ time | ts}) are handled. Note that \code{NA}
-in other \code{formula_ts} variables are an error, and \code{NA} in
-\code{formula_par} variables within fitting windows are an error.}
+\item{na_action}{A character vector indicating how \code{NA} are handled (see Details).}
 
 \item{init}{A full parameter vector for the first likelihood evaluation.
 Set to \code{NULL} to accept the internally generated default.
 Use \code{debug = TRUE} to retrieve this default, which is useful
 as a template.}
+
+\item{append}{An expression indicating variables in \code{data_par} to be preserved
+in the returned \code{"egf"} object for use by methods.
+It is evaluated similarly to the \code{select} argument of \code{\link[=subset]{subset()}}.
+Currently, usage is supported only if \code{data_par} is a data frame.}
 }
 \value{
-A list with elements:
-\item{\code{frame_ts}}{
-The time series model frame, constructed from \code{formula_ts}.
-Retains \code{terms = terms(formula_ts)} and \code{origin} as attributes.
-}
-\item{\code{frame_par}}{
-A list of mixed effects model frames (one per nonlinear model
-parameter), constructed from \code{formula_par} (after completion).
-\code{frame_par[[i]]} retains \code{terms = terms(formula_par[[i]])} as
-an attribute.
-}
+A list with elements \code{endpoints}, \code{frame_ts}, \code{frame_par},
+and \code{frame_append}. See descriptions in \code{\link[=egf]{egf()}}.
 }
 \description{
-Constructs model frames to be used by \code{\link[=egf]{egf()}},
-while completing a battery of checks on the input.
-}
-\details{
-The \code{frame_ts} model frame is constructed from \code{formula_ts},
-without use of \code{\link[stats:model.frame]{stats::model.frame()}} machinery. Without loss
-of generality, if \code{formula_ts = x ~ time | ts}, then \code{frame_ts}
-is obtained by evaluating expressions \code{time}, \code{x}, and \code{ts}
-in \code{data} (enclosed by \code{environment(formula_ts)}), joining the
-resulting vectors (which are named \code{"time"}, \code{"x"}, and \code{"ts"}
-regardless of \code{formula_ts}) and \code{window} in a data frame,
-discarding rows belonging to time series without fitting windows,
-permuting the remaining rows so that \code{order(ts)} is increasing,
-permuting \code{levels(window)} so that \code{order(window)} is increasing,
-and finally, if necessary, replacing Date vector \code{time} with
-numeric vector \code{julian(time, origin)}.
-
-The \code{frame_par} model frames are constructed by passing modified
-\code{formula_par} formulae to \code{\link[stats:model.frame]{stats::model.frame()}}, applying to
-the resulting data frames the same subset operations performed
-to construct \code{frame_ts}, then discarding all but the first row of
-each fitting window, so that each data frame has \code{nlevels(window)}
-rows. (There is no loss of information here, as all \code{formula_par}
-variables are required to be constant within fitting windows.)
+Constructs time series and mixed effects model frames
+to be used by \code{\link[=egf]{egf()}}, while completing a battery of
+checks on the supplied formulae and data.
 }

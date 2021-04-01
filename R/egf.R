@@ -5,66 +5,68 @@
 #' or more disease incidence time series.
 #'
 #' @param formula_ts
-#'   A formula of the form `x ~ time` or `x ~ time | ts` specifying one
-#'   or more incidence time series in long format. `time` must evaluate
-#'   to a numeric or Date vector. Numeric `time` is assumed to measure
-#'   time as a number of days since _the end of_ date `origin`. Date
-#'   `time` is coerced to numeric `julian(time, origin)` (see Details).
-#'   `x` must evaluate to a numeric vector. Within a time series,
-#'   `x[i]` should specify the number of cases observed from `time[i-1]`
-#'   to `time[i]`. Finally, `ts` must evaluate to a factor, such that
-#'   `split(data.frame(time, x), ts)` returns a list of time series.
-#'   Note that `x ~ time` is equivalent to `x ~ time | ts` with `ts`
-#'   set equal to `rep(factor(1), length(x))`.
+#'   A formula of the form `x ~ time` or `x ~ time | ts` specifying
+#'   one or more incidence time series in long format. `time` must
+#'   evaluate to a numeric or Date vector. Numeric `time` is assumed
+#'   to measure time as a number of days since _the end of_ date
+#'   `origin`. Date `time` is coerced to numeric `julian(time, origin)`
+#'   (see Details). `x` must evaluate to a numeric vector. Within a
+#'   time series, `x[i]` should specify the number of cases observed
+#'   from `time[i-1]` to `time[i]`. Finally, `ts` must evaluate to
+#'   a factor such that `split(data.frame(time, x), ts)` returns
+#'   a list of time series. Note that `x ~ time` is equivalent to
+#'   `x ~ time | ts` with `ts` set equal to `rep(factor(1), length(x))`.
 #' @param formula_par
-#'   A named list of formulae of the form `~terms`, specifying
+#'   A named list of formulae of the form `~terms` specifying
 #'   mixed effects models ([`lme4`][lme4::lmer()]-like syntax)
 #'   for nonlinear model parameters. `names(formula_par)` must
-#'    be a subset of
+#'   be a subset of
 #'   `get_par_names(curve, distr, excess, weekday, link = TRUE)`.
 #'   `~1` is the default for parameters not assigned a formula.
-#'   Alternatively, `formula_par` may itself be a formula of
-#'   the form `~terms`. In this case, the formula is recycled
-#'   for all nonlinear model parameters. Mixed effects variables
-#'   must match the length of the time series variables and be
-#'   constant in each level of `window`.
-#' @param data
-#'   A data frame, list, or environment. `egf()` looks here
-#'   for variables used in `formula_ts` and `formula_par`,
-#'   before looking in formula environments.
-#' @param window
-#'   A factor of length `nrow(data)` such that `split(data, window)`
-#'   splits `data` by fitting window, with `is.na(window)` indexing
-#'   rows of `data` not belonging to a fitting window. Note that
-#'   such a factor can be constructed from a table of fitting window
-#'   endpoints using [make_window()].)
+#'   Alternatively, `formula_par` may itself be a formula of the
+#'   form `~terms`. In this case, the formula is recycled for all
+#'   nonlinear model parameters. Note that "individuals" in each
+#'   model are fitting windows, and model frames constructed
+#'   from `formula_par` and `data_par` are expected to correspond
+#'   rowwise to `endpoints` (see Details).
+#' @param data_ts,data_par
+#'   Data frames, lists, or environments. These are searched prior
+#'   to formula environments for variables used in `formula_ts` and
+#'   `formula_par`, respectively.
+#' @param endpoints
+#'   A data frame with variables `start` (numeric or Date),
+#'   `end` (numeric or Date), and `ts` (factor) listing start and
+#'   end times for all fitting windows. If `formula_ts = x ~ time | g`,
+#'   then `levels(ts)` must be a subset of `levels(g)`.
+#'   Within time series, fitting windows must be nonoverlapping and
+#'   contain at least two time points. To be precise: for all `k`,
+#'   intervals `[start[i], end[i]]` such that `ts[i] = levels(g)[k]`
+#'   must be disjoint and contain at least two elements of
+#'   `time[g == levels(g)[k]]`. When `nlevels(g) = 1`, `ts` is
+#'   redundant, and `endpoints` need only specify `start` and `end`.
 #' @param origin
-#'   A Date specifying a reference time (see `formula_ts`).
+#'   A Date specifying a reference time.
 #' @param curve
 #'   A character string specifying a cumulative incidence model.
 #' @param excess
 #'   A logical scalar. If `TRUE`, then a constant baseline mortality
-#'   rate is estimated. Set to `TRUE` if what is observed is
-#'   multiple causes mortality rather than disease mortality
-#'   or disease incidence.
+#'   rate is estimated. Set to `TRUE` if what is observed is multiple
+#'   causes mortality rather than disease mortality or disease incidence.
 #' @param distr
 #'   A character string specifying an observation model.
 #' @param weekday
 #'   An integer or logical scalar. If `weekday > 0`, then weekday
 #'   effects are estimated as offsets relative to the indicated day
 #'   (Sunday if `weekday = 1`, Monday if `weekday = 2`, and so on).
-#'   Currently, weekday effect estimation requires time (that is,
-#'   the value of `foo` in `formula_ts = x ~ foo | ts`) to be an
-#'   integer (in the sense of `all.equal(foo, round(foo))`) or Date
-#'   vector with 1-day spacing in all fitting windows.
+#'   Currently, weekday effect estimation requires `time` in
+#'   `formula_ts = x ~ time | ts`) to evaluate to an integer
+#'   (in the sense of `all.equal(time, round(time))`) or Date vector
+#'   with 1-day spacing in all fitting windows.
 #' @param method
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
 #' @param na_action
-#'   A character string indicating how `NA` in incidence (`x`
-#'   if `formula_ts = x ~ time | ts`) are handled. Note that `NA`
-#'   in other `formula_ts` variables are an error, and `NA` in
-#'   `formula_par` variables within fitting windows are an error.
+#'   A character vector indicating how `NA` are handled (see Details).
 #' @param sparse_X
 #'   A logical scalar. If `TRUE`, then the fixed effects design
 #'   matrix is constructed in sparse format.
@@ -76,32 +78,69 @@
 #'   Set to `NULL` to accept the internally generated default.
 #'   Use `debug = TRUE` to retrieve this default, which is useful
 #'   as a template.
+#' @param append
+#'   An expression indicating variables in `data_par` to be preserved
+#'   in the returned `"egf"` object for use by methods.
+#'   It is evaluated similarly to the `select` argument of [subset()].
+#'   Currently, usage is supported only if `data_par` is a data frame.
 #' @param ...
 #'   Optional arguments to the optimizer specified by `method`.
 #'
 #' @details
-#' Coercion of Date `time` to numeric `julian(time, origin)` assumes
-#' that each element `time[i]` can be read as "end of date `time[i]`",
-#' so that observation `x[i]` in a given time series is the number of
-#' cases observed from the end of date `time[i-1]` to the end of date
-#' `time[i]`.
+#' If `formula_ts = x ~ time | ts`, then coercion of Date `time` to
+#' numeric `julian(time, origin)` assumes that each element `time[i]`
+#' can be read as "end of date `time[i]`", so that observation `x[i]`
+#' in a given time series is the number of cases observed from the
+#' end of date `time[i-1]` to the end of date `time[i]`.
+#'
+#' `na_action` is recycled to length 2. `na_action[1L]` affects the
+#' handling of `NA` in `x`. `"fail"` is to throw an error. `"exclude"`
+#' is to ignore `NA` when fitting and to retain `NA` in predictions.
+#' `"pass"` is to ignore `NA` when fitting and to predict `NA`. Note
+#' that `NA` in `time` and `ts` are an error regardless of `na_action`.
+#'
+#' `na_action[2L]` affects the handling of `NA` in `endpoints` and
+#' `formula_par` variables. `"fail"` is to throw an error. `"exclude"`
+#' and `"pass"` are to discard fitting windows with incomplete data.
+#'
+#' To avoid unintended mismatch between `endpoints` and mixed effects
+#' model frames constructed from `formula_par` and `data_par`, keep
+#' `endpoints` and `formula_par` variables in a common data frame `d`
+#' and set `endpoints = d` and `data_par = d`.
 #'
 #' @return
 #' If `debug = FALSE`, then a list inheriting from class `"egf"`,
 #' with elements:
+#' \item{`endpoints`}{
+#'   A data frame with variables `start`, `end`, `ts`, and `window`
+#'   listing start and end times for all fitting windows.
+#'   It is a processed version of the so-named argument.
+#'   `origin` is retained as an attribute.
+#' }
 #' \item{`frame_ts`}{
-#'   The time series model frame, constructed from `formula_ts`.
-#'   `origin` is retained as an attribute. See [make_frames()].
+#'   The time series model frame, constructed from `formula_ts`
+#'   and `data_ts`, with variables `time`, `x`, `ts`, and `window`.
+#'   `ts` and `window` are factors that can be used to split
+#'   `frame_ts` by time series and by fitting window, respectively.
+#'   Rows are ordered by time series and chronologically within
+#'   time series. `terms(formula_ts)` and `origin` are retained
+#'   as attributes. `levels(window)` corresponds elementwise to
+#'   the rows of `endpoints`.
 #' }
 #' \item{`frame_par`}{
-#'   A list of mixed effects model frames (one per nonlinear model
-#'   parameter), constructed from `formula_par` (after completion).
-#'   See [make_frames()].
+#'   A list of mixed effects model frames, constructed from
+#'   `formula_par` and `data_par`. There is one model frame
+#'   for each nonlinear model parameter listed in
+#'   `get_par_names(curve, excess, distr, weekday, link = TRUE)`.
+#'   `frame_par[[name]]` retains `terms(formula_par[[name]])`
+#'   as an attribute. Model frames correspond rowwise to
+#'   `endpoints`. That is, data on the fitting window defined
+#'   by row `i` of `endpoints` can be found in row `i` of each
+#'   model frame.
 #' }
-#' \item{`endpoints`}{
-#'   A data frame with variables `ts`, `window`, `start`, and `end`
-#'   listing fitting window endpoints as numbers of days since time
-#'   23:59:59 on a reference date, which is stored as an attribute.
+#' \item{`frame_append`}{
+#'   A data frame preserving the variables from `data_par`
+#'   indicated by `append`. Corresponds rowwise to `endpoints`.
 #' }
 #' \item{`curve`, `excess`, `distr`, `weekday`, `method`}{
 #'   Copies of the so-named arguments (after matching).
@@ -144,25 +183,27 @@
 #'   via [stats::update()].
 #' }
 #' If `debug = TRUE`, then a list containing only
-#' `frame_ts`, `frame_par`, `init`, `tmb_args`, and `call`.
+#' `endpoints`, `frame_ts`, `frame_par`, `init`, `tmb_args`, and `call`.
 #'
 #' @export
 #' @importFrom TMB MakeADFun sdreport
 #' @useDynLib epigrowthfit
 egf <- function(formula_ts,
                 formula_par,
-                data = parent.frame(),
-                window,
+                data_ts = parent.frame(),
+                data_par = parent.frame(),
+                endpoints,
                 origin = .Date(0),
                 curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
                 excess = FALSE,
                 distr = c("nbinom", "pois"),
                 weekday = FALSE,
                 method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
-                na_action = c("pass", "fail"),
+                na_action = c("fail", "fail"),
                 sparse_X = FALSE,
                 debug = FALSE,
                 init = NULL,
+                append = NULL,
                 ...) {
   stop_if_not(
     inherits(origin, "Date"),
@@ -181,22 +222,24 @@ egf <- function(formula_ts,
     weekday <- (weekday > 0) * as.integer(1 + (weekday - 1) %% 7)
   }
   method <- match.arg(method)
-  na_action <- match.arg(na_action)
+  na_action <- match.arg(na_action, c("fail", "exclude", "pass"), several.ok = TRUE)
+  na_action <- rep_len(na_action, 2L)
   stop_if_not_true_false(sparse_X)
   stop_if_not_true_false(debug)
 
   frames <- make_frames(
     formula_ts = formula_ts,
     formula_par = formula_par,
-    data = data,
-    window = window,
+    data_ts = data_ts,
+    endpoints = endpoints,
     origin = origin,
     curve = curve,
     distr = distr,
     excess = excess,
     weekday = weekday,
     na_action = na_action,
-    init = init
+    init = init,
+    append = substitute(append)
   )
   tmb_args <- make_tmb_args(
     frame_ts = frames$frame_ts,
@@ -249,9 +292,10 @@ egf <- function(formula_ts,
   )
 
   out <- list(
+    endpoints = frames$endpoints,
     frame_ts = frames$frame_ts,
     frame_par = frames$frame_par,
-    endpoints = get_endpoints(frames$frame_ts),
+    frame_append = frame$frame_append,
     curve = curve,
     excess = excess,
     distr = distr,

@@ -23,9 +23,9 @@
 #'
 #' @return
 #' A covariance or correlation matrix inheriting from class
-#' `"egf_vcov"`. The number of rows is equal to the length
-#' of the `"beta"` component of `object$best` plus the length
-#' the `"log_sd_b"` component (if `full = TRUE`).
+#' `"egf_vcov"`. The number of rows is equal to
+#' the length of the `"beta"` component of `object$best` plus
+#' (if `full = TRUE`) the length the `"log_sd_b"` component.
 #'
 #' @export
 #' @importFrom stats cov2cor
@@ -33,17 +33,17 @@ vcov.egf <- function(object, full = FALSE, cor = FALSE, ...) {
   stop_if_not_true_false(full)
   stop_if_not_true_false(cor)
 
+  nb <- names(object$best)
   if (full) {
     k <- object$nonrandom
   } else {
-    k <- grep("^beta\\[", names(object$best))
+    k <- grep("^beta\\[", nb)
   }
+  m <- object$report$cov[k, k]
   if (cor) {
-    m <- cov2cor(object$report$cov[k, k])
-  } else {
-    m <- object$report$cov[k, k]
+    m <- cov2cor(m)
   }
-  dimnames(m) <- rep_len(list(names(object$best)[k]), 2L)
+  dimnames(m) <- rep_len(list(nb[k]), 2L)
   class(m) <- c("egf_vcov", "matrix", "array")
   m
 }

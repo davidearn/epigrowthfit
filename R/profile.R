@@ -19,19 +19,20 @@
 #'   model parameters whose population fitted values should be profiled.
 #'   Ignored if `which` or `A` is non-`NULL`.
 #' @param subset
-#'   An expression to be evaluated in the combined model frame. Must
-#'   evaluate to a logical vector or list of logical vectors indexing
-#'   rows of the model frame, and thus fitting windows. Only population
-#'   fitted values for the indexed fitting windows are profiled. The
-#'   default (`NULL`) is to consider all fitting windows. Ignored if
+#'   An expression to be evaluated in the combined model frame
+#'   (see [make_combined()]). Must evaluate to a logical vector
+#'   indexing rows of the data frame, and thus fitting windows.
+#'   Only population fitted values for indexed windows are profiled.
+#'   The default (`NULL`) is to consider all windows. Ignored if
 #'   `which` or `A` is non-`NULL`.
 #' @param append
 #'   An expression indicating variables in the combined model frame
-#'   to be included with the result. The default (`NULL`) is to append
-#'   nothing. Ignored if `which` or `A` is non-`NULL`.
+#'   (see [make_combined()]) to be included with the result.
+#'   The default (`NULL`) is to append nothing.
+#'   Ignored if `which` or `A` is non-`NULL`.
 #' @param max_level
-#'   A number in the interval (0,1). Profiles will be computed up to
-#'   a deviance of `qchisq(max_level, df = 1)`.
+#'   A number in the interval (0,1). Profiles will be computed
+#'   up to a deviance of `qchisq(max_level, df = 1)`.
 #' @param grid_len
 #'   A positive integer. Step sizes chosen adaptively by
 #'   [TMB::tmbprofile()] will generate approximately this
@@ -61,8 +62,8 @@
 #' population fitted values for each parameter named in `par`,
 #' for each fitting window indexed by `subset`.
 #'
-#' @inheritSection fitted.egf Nonstandard evaluation
-#' @inheritSection fitted.egf Warning
+#' See topic [`nse`] for details on nonstandard evaluation
+#' of `subset` and `append`.
 #'
 #' @return
 #' A data frame inheriting from class `"egf_profile"`, with variables:
@@ -161,13 +162,12 @@ profile.egf <- function(fitted,
   ## If profiling population fitted values of nonlinear model parameters
   } else if (!is.null(par)) {
     method <- "par"
-    frame <- do.call(cbind, unname(fitted$frame_par))
-    frame <- frame[!duplicated(names(frame))]
+    combined <- make_combined(fitted)
     pn <- get_par_names(fitted, link = TRUE)
     par <- unique(match.arg(par, several.ok = TRUE))
-    subset <- subset_to_index(substitute(subset), frame, parent.frame(),
+    subset <- subset_to_index(substitute(subset), combined, parent.frame(),
                               .subset = .subset)
-    append <- append_to_index(substitute(append), frame, parent.frame(),
+    append <- append_to_index(substitute(append), combined, parent.frame(),
                               .append = .append)
 
     p <- length(par)
@@ -264,18 +264,17 @@ profile.egf <- function(fitted,
       ts = rep.int(rep.int(fitted$endpoints$ts[subset], p), dl_nrow),
       window = rep.int(rep.int(fitted$endpoints$window[subset], p), dl_nrow),
       out,
-      frame[rep.int(rep.int(subset, p), dl_nrow), append, drop = FALSE],
+      combined[rep.int(rep.int(subset, p), dl_nrow), append, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
   }
-  structure(out,
-    class = c("egf_profile", "data.frame"),
-    A = A,
-    x = fitted$best[fitted$nonrandom],
-    method = method
-  )
+  attr(out, "A") <- A
+  attr(out, "x") <- fitted$best[fitted$nonrandom]
+  attr(out, "method") <- method
+  class(out) <- c("egf_profile", "data.frame")
+  out
 }
 
 #' Confidence intervals from likelihood profiles
@@ -316,7 +315,7 @@ profile.egf <- function(fitted,
 #'   if `link = FALSE` and linear combinations represent
 #'   population fitted values of nonlinear model parameter.
 #' }
-#' `level`, `attr(object, "A")`, and `attr(object, "x")`
+#' `attr(object, "A")`, `attr(object, "x")`, and `level`
 #' are retained as attributes.
 #'
 #' @export
@@ -380,11 +379,10 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = FALSE, ...) {
 
   out$linear_combination <- as.integer(as.character(out$linear_combination))
   row.names(out) <- NULL
-  structure(out,
-    level = level,
-    A = attr(object, "A"),
-    x = attr(object, "x")
-  )
+  attr(out, "A") <- attr(object, "A")
+  attr(out, "x") <- attr(object, "x")
+  attr(out, "level") <- level
+  out
 }
 
 #' Plot likelihood profiles
@@ -395,9 +393,8 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = FALSE, ...) {
 #'   An `"egf_profile"` object returned by [profile.egf()].
 #' @param subset
 #'   An expression to be evaluated in `x`. Must evaluate to a
-#'   logical vector or list of logical vectors indexing rows of
-#'   `x`. Only indexed profiles are plotted. The default (`NULL`)
-#'   is to plot all profiles.
+#'   logical vector indexing rows of `x`. Only indexed profiles
+#'   are plotted. The default (`NULL`) is to plot all profiles.
 #' @param sqrt
 #'   A logical scalar. If `TRUE`, then square root-transformed
 #'   deviance is plotted.
@@ -410,6 +407,9 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = FALSE, ...) {
 #'   Optional graphical parameters passed to [graphics::plot()],
 #'   such as `type = "o"`. Note that `axes = FALSE` and `ann = FALSE`
 #'   are hard-coded, so axes and axis titles cannot be modified.
+#'
+#' @details
+#' See topic [`nse`] for details on nonstandard evaluation of `subset`.
 #'
 #' @return
 #' `NULL` (invisibly).

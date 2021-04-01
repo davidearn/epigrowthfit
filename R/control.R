@@ -23,7 +23,7 @@ get_control_default <- function(f = c("plot.egf"), ...) {
         bty = "l",
         lty = 1,
         lwd = 1,
-        col = 1
+        col = "black"
       ),
       axis = list(
         x = list(
@@ -31,12 +31,12 @@ get_control_default <- function(f = c("plot.egf"), ...) {
             minor = list(
               mgp = c(3, 0.25, 0),
               lwd = 1,
-              col = 1,
+              col = "black",
               lwd.ticks = 1,
-              col.ticks = 1,
+              col.ticks = "black",
               tcl = -0.2,
               gap.axis = 0,
-              col.axis = 1,
+              col.axis = "black",
               cex.axis = 0.85,
               font.axis = 1,
               xpd = FALSE
@@ -44,12 +44,12 @@ get_control_default <- function(f = c("plot.egf"), ...) {
             major = list(
               mgp = c(3, 1.25, 0),
               lwd = 1,
-              col = 1,
+              col = "black",
               lwd.ticks = 1,
-              col.ticks = 1,
+              col.ticks = "black",
               tcl = 0,
               gap.axis = 0,
-              col.axis = 1,
+              col.axis = "black",
               cex.axis = switch(type, rt2 = 1.25, 1.15),
               font.axis = 1,
               xpd = FALSE
@@ -58,12 +58,12 @@ get_control_default <- function(f = c("plot.egf"), ...) {
           numeric = list(
             mgp = c(3, 0.7, 0),
             lwd = 1,
-            col = 1,
+            col = "black",
             lwd.ticks = 1,
-            col.ticks = 1,
+            col.ticks = "black",
             tcl = -0.5,
             gap.axis = 0,
-            col.axis = 1,
+            col.axis = "black",
             cex.axis = 0.85,
             font.axis = 1,
             xpd = FALSE
@@ -72,12 +72,12 @@ get_control_default <- function(f = c("plot.egf"), ...) {
         y = list(
           mgp = c(3, 0.7, 0),
           lwd = 1,
-          col = 1,
+          col = "black",
           lwd.ticks = 1,
-          col.ticks = 1,
+          col.ticks = "black",
           tcl = -0.5,
           gap.axis = NA,
-          col.axis = 1,
+          col.axis = "black",
           cex.axis = 0.85,
           font.axis = 1,
           xpd = FALSE
@@ -86,25 +86,25 @@ get_control_default <- function(f = c("plot.egf"), ...) {
       title = list(
         main = list(
           adj = 0,
-          col.main = 1,
+          col.main = "black",
           cex.main = 1,
           font.main = 2
         ),
         sub = list(
           adj = 0,
-          col.sub = 1,
+          col.sub = "black",
           cex.sub = 0.75,
           font.sub = 2
         ),
         xlab = list(
           adj = 0.5,
-          col.lab = 1,
+          col.lab = "black",
           cex.lab = 1,
           font.lab = 1
         ),
         ylab = list(
           adj = 0.5,
-          col.lab = 1,
+          col.lab = "black",
           cex.lab = 1,
           font.lab = 1
         )
@@ -134,17 +134,17 @@ get_control_default <- function(f = c("plot.egf"), ...) {
       ),
       tdoubling = list(
         caption = list(
-          col = 1,
+          col = "black",
           cex = 0.7,
           font = 1
         ),
         estimate = list(
-          col = 1,
+          col = "black",
           cex = 0.7,
           font = 2
         ),
         ci = list(
-          col = 1,
+          col = "black",
           cex = 0.7,
           font = 1
         )
@@ -176,7 +176,7 @@ get_control_default <- function(f = c("plot.egf"), ...) {
       abline <- list(
         lty = 2,
         lwd = 1,
-        col = 1
+        col = "black"
       ),
       segments <- list(
         lty = 3,
@@ -190,13 +190,13 @@ get_control_default <- function(f = c("plot.egf"), ...) {
       default$title$sub <- NULL
       default$title$ylab$adj <- NULL
       default$title$plab <- list(
-        col.lab = 0,
+        col.lab = "white",
         cex.lab = 1,
         font.lab = 2
       )
       default$rect <- list(
         bg = list(
-          col = 1,
+          col = "black",
           border = NA,
           lty = 1,
           lwd = 1

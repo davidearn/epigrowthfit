@@ -16,12 +16,11 @@
 #'   If `object$curve %in% c("exponential", "logistic", "richards")`,
 #'   then `par` may also contain `"R0"` and `"tdoubling"`.
 #' @param subset
-#'   An expression to be evaluated in the combined model frame.
-#'   Must evaluate to a logical vector or list of logical vectors
-#'   indexing rows of the model frame, and thus fitting windows.
-#'   Confidence intervals are computed only for the indexed
-#'   fitting windows. The default (`NULL`) is to consider all
-#'   fitting windows.
+#'   An expression to be evaluated in the combined model frame
+#'   (see [make_combined()]). Must evaluate to a logical vector
+#'   indexing rows of the data frame, and thus fitting windows.
+#'   Confidence intervals are computed only for indexed windows.
+#'   The default (`NULL`) is to consider all windows.
 #' @param link
 #'   A logical scalar. If `FALSE`, then confidence intervals
 #'   on inverse link-transformed fitted values are returned.
@@ -75,8 +74,8 @@
 #' slower, requiring estimation of restricted models. Of the two,
 #' `"profile"` is more robust.
 #'
-#' @inheritSection fitted.egf Nonstandard evaluation
-#' @inheritSection fitted.egf Warning
+#' See topic [`nse`] for details on nonstandard evaluation
+#' of `subset` and `append`.
 #'
 #' @return
 #' A data frame inheriting from class `"egf_confint"`,
@@ -86,7 +85,7 @@
 #'   from `get_par_names(object, link = TRUE)`.
 #' }
 #' \item{`ts`}{
-#'   Time series, from `levels(object$endpoints$window)`.
+#'   Time series, from `levels(object$endpoints$ts)`.
 #' }
 #' \item{`window`}{
 #'   Fitting window, from `levels(object$endpoints$window)`.
@@ -143,14 +142,13 @@ confint.egf <- function(object,
   par[par %in% spec] <- "log_r"
   par <- unique(par)
 
-  frame <- do.call(cbind, unname(object$frame_par))
-  frame <- frame[unique(names(frame))]
-  subset <- subset_to_index(substitute(subset), frame, parent.frame(),
+  combined <- make_combined(object)
+  subset <- subset_to_index(substitute(subset), combined, parent.frame(),
                             .subset = .subset)
-  .subset <- replace(rep_len(FALSE, nrow(frame)), subset, TRUE)
-  append <- append_to_index(substitute(append), frame, parent.frame(),
+  .subset <- replace(rep_len(FALSE, nrow(combined)), subset, TRUE)
+  append <- append_to_index(substitute(append), combined, parent.frame(),
                             .append = .append)
-  .append <- names(frame[append])
+  .append <- append
 
   if (method == "wald") {
     ft <- fitted(object, par = par, .subset = .subset, .append = .append)
@@ -238,7 +236,7 @@ confint.egf <- function(object,
       window = object$endpoints$window[subset],
       estimate = as.numeric(A %*% object$best[object$nonrandom]),
       do.call(rbind, lul), # "lower" "upper"
-      frame[subset, append, drop = FALSE],
+      combined[subset, append, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
@@ -276,11 +274,10 @@ confint.egf <- function(object,
   }
 
   row.names(out) <- NULL
-  structure(out,
-    level = level,
-    endpoints = object$endpoints, # for `plot.egf_confint()`
-    class = c("egf_confint", "data.frame")
-  )
+  attr(out, "level") <- level
+  attr(out, "endpoints") <- object$endpoints # for `plot.egf_confint()`
+  class(out) <- c("egf_confint", "data.frame")
+  out
 }
 
 #' Plot confidence intervals
@@ -295,25 +292,29 @@ confint.egf <- function(object,
 #'   A character string determining how confidence intervals
 #'   are displayed (see Details).
 #' @param subset
-#'   An expression to be evaluated in `x`. Must evaluate to a
-#'   logical vector or list of logical vectors indexing rows
-#'   of `x`. Only indexed confidence intervals are plotted.
-#'   The default (`NULL`) is to plot all confidence intervals.
+#'   An expression to be evaluated in `x`. Must evaluate to
+#'   a logical vector indexing rows of `x`. Only indexed
+#'   confidence intervals are plotted. The default (`NULL`)
+#'   is to plot all confidence intervals.
 #' @param order
 #'   An expression to be evaluated in `x`, typically a call
 #'   to [order()], determining the order in which confidence
-#'   intervals and time series (depending on `type`) are
-#'   plotted. Must evaluate to a permutation of `seq_len(nrow(x))`.
+#'   intervals or time series (depending on `type`) are plotted.
+#'   Must evaluate to a permutation of `seq_len(nrow(x))`.
 #'   The default (`NULL`) is equivalent to `seq_len(nrow(x))`.
-#' @param label
-#'   An expression to be evaluated in `x`, typically a factor,
-#'   interaction of factors, or call to [sprintf()]. Used to
-#'   create appropriate labels for confidence intervals and
-#'   time series (depending on `type`). The default (`NULL`)
-#'   is to take labels from `x$window` and `x$ts`, respectively.
 #' @param per_plot
 #'   A positive integer. One plot will display at most this many
 #'   confidence intervals or time series (depending on `type`).
+#' @param main
+#'   An expression or character string indicating a plot title,
+#'   to be recycled for all plots.
+#' @param label
+#'   An expression to be evaluated in `x`, typically a factor,
+#'   interaction of factor, or call to [sprintf()]. Used to
+#'   create appropriate _y_-axis labels for confidence intervals
+#'   when `type = "bars"` and approprate panel labels for
+#'   time series when `type = "boxes"`. The default (`NULL`)
+#'   is to take labels from `x$window` and `x$ts`, respectively.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -324,7 +325,8 @@ confint.egf <- function(object,
 #' `type = "boxes"` creates a two-dimensional plot for each
 #' time series (level of `x$ts`), each containing shaded boxes.
 #' Projection of boxes onto the horizontal and vertical axes
-#' yields fitting windows and corresponding confidence intervals.
+#' yields fitting windows and corresponding confidence intervals,
+#' respectively.
 #'
 #' If an endpoint of a confidence interval is `NA`, then dashed
 #' lines are drawn from the point estimate to the boundary of the
@@ -334,201 +336,239 @@ confint.egf <- function(object,
 #' `NULL` (invisibly).
 #'
 #' @export
-#' @import graphics
 plot.egf_confint <- function(x,
                              type = c("bars", "boxes"),
                              subset = NULL,
                              order = NULL,
-                             label = NULL,
                              per_plot = switch(type, bars = 12L, 4L),
+                             main = NULL,
+                             label = NULL,
                              ...) {
   type <- match.arg(type)
   stop_if_not_positive_integer(per_plot)
 
   subset <- subset_to_index(substitute(subset), x, parent.frame())
   order <- order_to_index(substitute(order), x, parent.frame())
-  label <- substitute(label)
-  if (is.null(label)) {
-    label <- as.character(x[[switch(type, bars = "window", "ts")]])
-    label_format <- switch(type, bars = "fitting window", "time series")
-  } else {
-    label <- label_to_character(label, x, parent.frame())
-    label_format <- attr(label, "format")
-  }
+
   a <- attributes(x)
-  x <- cbind(label, x)
-  x <- x[order[subset], , drop = FALSE]
-  if (type == "boxes") {
-    shift <- min(a$endpoints$start)
-    origin <- attr(a$endpoints, "origin") + shift
-    x <- cbind(a$endpoints[match(x$window, a$endpoints$window, 0L), c("start", "end"), drop = FALSE] - shift, x)
+  x <- x[order[order %in% subset], , drop = FALSE]
+
+  if (is.null(main)) {
+    s <- switch(type, bars = "fitting window", "time series")
+    main <- sprintf("%.3g%% CI by %s", 100 * a$level, s)
   }
-  x_split <- split(x, x$par, drop = TRUE)
+
+  label <- label_to_character(substitute(label), x, parent.frame())
+  if (is.null(label)) {
+    s <- switch(type, bars = "window", "ts")
+    label <- as.character(x[[s]])
+  }
+
+  nx <- c("par", "ts", "window", "estimate", "lower", "upper")
+  x <- data.frame(x[nx], label, stringsAsFactors = FALSE)
 
   if (type == "bars") {
-    op <- par(mar = c(3.5, 5, 1.5, 1))
-    on.exit(par(op))
+    do_bars_plot(x, per_plot = per_plot, main = main)
+  } else {
+    shift <- min(a$endpoints$start)
+    origin <- attr(a$endpoints, "origin") + shift
+    iep <- match(x$window, a$endpoints$window, 0L)
+    endpoints <- a$endpoints[iep, c("start", "end"), drop = FALSE] - shift
+    x <- data.frame(x, endpoints)
 
-    msw <- max(strwidth(x$label, units = "inches", cex = 0.8, font = 1))
-    yax_cex <- 0.8 / max(1, msw / (0.92 * par("mai")[2L]))
+    do_boxes_plot(x, origin = origin, per_plot = per_plot, main = main)
+  }
+  invisible(NULL)
+}
 
-    for (i in seq_along(x_split)) { # loop over nonlinear model parameters
-      xi <- x_split[[i]]
-      xlab <- names(x_split)[i]
-      xlim <- range(xi[c("estimate", "lower", "upper")], na.rm = TRUE)
-      is_na_lower <- is.na(xi$lower)
-      is_na_upper <- is.na(xi$upper)
+#' @keywords internal
+#' @import graphics
+do_bars_plot <- function(x, per_plot, main) {
+  mar <- c(3.5, 5, 1.5, 1)
+  csi <- par("csi")
+  op <- par(mar = mar)
+  on.exit(par(op))
 
-      j <- 0L
-      while (j < nrow(xi)) { # loop over plots
-        k <- j + seq_len(min(per_plot, nrow(xi) - j))
+  x_split <- split(x, factor(x$par, levels = unique(x$par)))
+  nxs <- names(x_split)
+
+  yax_cex <- get_yax_cex(x$label, mex = 0.92 * mar[2L], cex = 0.8, font = 1, csi = csi)
+  yax_cex <- min(0.8, yax_cex)
+
+  for (i in seq_along(x_split)) { # loop over nonlinear model parameters
+    xi <- x_split[[i]]
+    xlab <- nxs[i]
+    xlim <- range(xi[c("estimate", "lower", "upper")], na.rm = TRUE)
+    lna <- is.na(xi$lower)
+    una <- is.na(xi$upper)
+
+    K <- 0L
+    while (K < nrow(xi)) { # loop over plots
+      k <- K + seq_len(min(per_plot, nrow(xi) - K))
+      plot.new()
+      plot.window(xlim = xlim, ylim = c(per_plot + 1, 0), xaxs = "r", yaxs = "i")
+      usr <- par("usr")
+      abline(v = axTicks(side = 1), lty = 3, col = "grey75")
+      segments(
+        x0  = replace(xi$lower[k], lna[k], usr[1L]),
+        x1  = xi$estimate[k],
+        y0  = seq_along(k),
+        y1  = seq_along(k),
+        lty = c(1, 2)[1L + lna[k]],
+        lwd = c(2, 1)[1L + lna[k]]
+      )
+      segments(
+        x0  = xi$estimate[k],
+        x1  = replace(xi$upper[k], una[k], usr[2L]),
+        y0  = seq_along(k),
+        y1  = seq_along(k),
+        lty = c(1, 2)[1L + una[k]],
+        lwd = c(2, 1)[1L + una[k]]
+      )
+      points(
+        x   = xi$estimate[k],
+        y   = seq_along(k),
+        pch = 21,
+        bg  = "grey75"
+      )
+      box()
+      axis(
+        side = 1,
+        tcl = -0.4,
+        mgp = c(3, 0.3, 0),
+        cex.axis = yax_cex
+      )
+      axis(
+        side = 2,
+        at = seq_along(k),
+        labels = xi$label[k],
+        tick = FALSE,
+        las = 1,
+        mgp = c(3, 0.2, 0),
+        cex.axis = 0.8
+      )
+      title(xlab = xlab, line = 2, cex.lab = 0.9)
+      title(main, line = 0.25, adj = 0, cex.main = 0.9)
+      K <- K + per_plot
+    } # loop over plots
+  } # loop over nonlinear model parameters
+
+  invisible(NULL)
+}
+
+#' @keywords internal
+#' @import graphics
+do_boxes_plot <- function(x, origin, per_plot, main) {
+  op <- par(
+    mfrow = c(per_plot, 1),
+    mar = c(0, 3, 0.25, 0.5),
+    oma = c(2.5, 1.5, 1.5, 0)
+  )
+  on.exit(par(op))
+
+  x_split <- split(x, factor(x$par, levels = unique(x$par)))
+  nxs <- names(x_split)
+
+  xlim <- c(0, max(x$end))
+  xax_at <- daxis(origin = origin + 1, plot = FALSE)
+
+  for (i in seq_along(x_split)) { # loop over nonlinear model parameters
+    xi <- x_split[[i]]
+    xi_split <- split(xi, factor(xi$ts, levels = unique(xi$ts)))
+    ylab <- nxs[i]
+    ylim <- range(xi[c("estimate", "lower", "upper")], na.rm = TRUE)
+
+    K <- 0L
+    while (K < length(xi_split)) { # loop over plots
+      for (k in K + seq_len(min(per_plot, length(xi_split) - K))) { # loop over panels
+        xik <- xi_split[[k]]
+
         plot.new()
-        plot.window(xlim = xlim, ylim = c(per_plot + 1, 0), yaxs = "i")
-        abline(v = axTicks(side = 1), lty = 3, col = "grey75")
-        segments(
-          x0 = ifelse(is_na_lower[k], par("usr")[1L], xi$lower[k]),
-          x1 = xi$estimate[k],
-          y0 = seq_along(k),
-          y1 = seq_along(k),
-          lty = c(1, 2)[1L + is_na_lower[k]],
-          lwd = c(2, 1)[1L + is_na_lower[k]]
-        )
-        segments(
-          x0 = xi$estimate[k],
-          x1 = ifelse(is_na_upper[k], par("usr")[2L], xi$upper[k]),
-          y0 = seq_along(k),
-          y1 = seq_along(k),
-          lty = c(1, 2)[1L + is_na_upper[k]],
-          lwd = c(2, 1)[1L + is_na_upper[k]]
-        )
-        points(
-          x = xi$estimate[k],
-          y = seq_along(k),
-          pch = 21,
-          bg = "grey75"
-        )
+        plot.window(xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "r")
+        gp <- par(c("usr", "cex", "mai", "omi", "pin", "din"))
+        abline(v = xax_at, lty = 3, col = "grey75")
+
+        xik$lower[lna <- is.na(xik$lower)] <- gp$usr[3L]
+        xik$upper[una <- is.na(xik$upper)] <- gp$usr[4L]
+
+        for (l in seq_len(nrow(xik))) { # loop over boxes
+          rect(
+            xleft   = xik$start[l],
+            xright  = xik$end[l],
+            ybottom = xik$lower[l],
+            ytop    = xik$estimate[l],
+            col     = if (lna[l]) NA else "grey75",
+            border  = "grey50",
+            lty     = if (lna[l]) 2 else 1
+          )
+          rect(
+            xleft   = xik$start[l],
+            xright  = xik$end[l],
+            ybottom = xik$estimate[l],
+            ytop    = xik$upper[l],
+            col     = if (una[l]) NA else "grey75",
+            border  = "grey50",
+            lty     = if (una[l]) 2 else 1
+          )
+          segments(
+            x0  = xik$start[l],
+            x1  = xik$end[l],
+            y0  = xik$estimate[l],
+            y1  = xik$estimate[l],
+            col = "grey50",
+            lwd = 2
+          )
+        } # loop over boxes
+
         box()
-        axis(side = 1,
-          tcl = -0.4,
-          mgp = c(3, 0.3, 0),
-          cex.axis = yax_cex
-        )
-        axis(side = 2,
-          at = seq_along(k),
-          labels = xi$label[k],
-          tick = FALSE,
+        axis(
+          side = 2,
           las = 1,
-          mgp = c(3, 0.2, 0),
+          mgp = c(3, 0.7, 0),
           cex.axis = 0.8
         )
-        title(xlab = xlab, line = 2, cex.lab = 0.9)
-        main <- sprintf("%.3g%% CI by %s", 100 * a$level, label_format)
-        title(main, line = 0.25, adj = 0, cex.main = 0.9)
-        j <- j + per_plot
-      } # loop over plots
-    } # loop over nonlinear model parameters
-
-  } else { # "boxes"
-    op <- par(
-      mfrow = c(per_plot, 1),
-      mar = c(0, 3, 0.25, 0.5),
-      oma = c(2.5, 1.5, 1.5, 0)
-    )
-    on.exit(par(op))
-
-    xlim <- c(0L, max(x$end))
-    xax_at <- daxis(origin = origin + 1, plot = FALSE)
-
-    for (i in seq_along(x_split)) { # loop over nonlinear model parameters
-      xi <- x_split[[i]]
-      ylim <- range(xi[c("estimate", "lower", "upper")], na.rm = TRUE)
-      xi_split <- split(xi, xi$ts, drop = TRUE)
-
-      j <- 0L
-      while (j < length(xi_split)) { # loop over plots
-        for (k in j + seq_len(min(per_plot, length(xi_split) - j))) { # loop over panels
-          xik <- xi_split[[k]]
-          plot.new()
-          plot.window(xlim = xlim, ylim = ylim, xaxs = "i")
-          abline(v = xax_at, lty = 3, col = "grey75")
-
-          for (l in seq_len(nrow(xik))) { # loop over boxes
-            t12 <- unlist(xik[l, c("start", "end")], use.names = FALSE)
-            elu <- unlist(xik[l, c("estimate", "lower", "upper")], use.names = FALSE)
-            if (lna <- is.na(elu[2L])) {
-              elu[2L] <- par("usr")[3L]
-            }
-            if (una <- is.na(elu[3L])) {
-              elu[3L] <- par("usr")[4L]
-            }
-            rect(
-              xleft = t12[1L],
-              xright = t12[2L],
-              ybottom = elu[2L],
-              ytop = elu[1L],
-              col = if (lna) NA else "grey75",
-              border = "grey50",
-              lty = if (lna) 2 else 1
-            )
-            rect(
-              xleft = t12[1L],
-              xright = t12[2L],
-              ybottom = elu[1L],
-              ytop = elu[3L],
-              col = if (una) NA else "grey75",
-              border = "grey50",
-              lty = if (una) 2 else 1
-            )
-            segments(
-              x0 = t12[1L],
-              x1 = t12[2L],
-              y0 = elu[1L],
-              y1 = elu[1L],
-              col = "grey50",
-              lwd = 2,
-            )
-          } # loop over boxes
-
-          box()
-          axis(side = 2, las = 1, mgp = c(3, 0.7, 0), cex.axis = 0.85)
-          text(
-            x = par("usr")[1L] + (0.075 * par("pin")[2L] / par("pin")[1L]) * diff(par("usr")[1:2]),
-            y = par("usr")[4L] - 0.075 * diff(par("usr")[3:4]),
-            labels = xik$label[1L],
-            adj = c(0, 1),
-            cex = 0.8
-          )
-        } # loop over panels
-
-        main <- sprintf("%.3g%% CI by %s", 100 * a$level, label_format)
-        mtext(main,
-          side = 3,
-          line = 0,
-          outer = TRUE,
-          at = par("mai")[2L] / (par("din")[1L] - sum(par("omi")[c(2L, 4L)])),
-          adj = 0,
-          cex = 0.8,
-          font = 2
-        )
-        mtext(names(x_split)[i],
-          side = 2,
-          line = 0,
-          outer = TRUE,
-          at = 0.5,
-          adj = 0.5,
+        text(
+          x = gp$usr[1L] + 0.075 * (gp$usr[2L] - gp$usr[1L]) * (gp$pin[2L] / gp$pin[1L]),
+          y = gp$usr[4L] - 0.075 * (gp$usr[4L] - gp$usr[3L]),
+          labels = xik$label[1L],
+          adj = c(0, 1),
           cex = 0.8
         )
-        daxis(
-          origin = origin + 1,
-          minor = list(mgp = c(3, 0.25, 0), tcl = -0.2, gap.axis = 0,
-                       lwd = 0, lwd.ticks = 1, cex.axis = 0.85, xpd = TRUE),
-          major = list(mgp = c(3, 1.25, 0), tcl = 0,    gap.axis = 0,
-                       lwd = 0, lwd.ticks = 0, cex.axis = 0.85, xpd = TRUE)
+      } # loop over panels
+
+      mtext(main,
+        side = 3,
+        line = 0,
+        outer = TRUE,
+        at = gp$mai[2L] / (gp$din[1L] - sum(gp$omi[c(2L, 4L)])),
+        adj = 0,
+        cex = 0.9,
+        font = 2
+      )
+      mtext(ylab,
+        side = 2,
+        line = 0,
+        outer = TRUE,
+        at = 0.5,
+        adj = 0.5,
+        cex = 0.9
+      )
+      daxis(
+        origin = origin + 1,
+        minor = list(
+          mgp = c(3, 0.25, 0), xpd = TRUE,
+          lwd = 0, lwd.ticks = 1, tcl = -0.2,
+          gap.axis = 0, cex.axis = 0.8 / gp$cex
+        ),
+        major = list(
+          mgp = c(3, 1.25, 0), xpd = TRUE,
+          lwd = 0, lwd.ticks = 0, tcl = 0,
+          gap.axis = 0, cex.axis = 0.9 / gp$cex
         )
-        j <- j + per_plot
-      } # loop over plots
-    } # loop over nonlinear model parameters
-  }
+      )
+      K <- K + per_plot
+    } # loop over plots
+  } # loop over nonlinear model parameters
 
   invisible(NULL)
 }

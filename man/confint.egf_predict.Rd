@@ -33,7 +33,7 @@ from \code{levels(var)}.
 \description{
 Computes confidence intervals on predicted values of
 log cumulative incidence, log interval incidence, and
-log per capita growth rate growth rate.
+log per capita growth rate.
 }
 \details{
 Confidence limits on predicted values (log scale) are computed

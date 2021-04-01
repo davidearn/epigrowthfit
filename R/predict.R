@@ -8,19 +8,20 @@
 #'   An `"egf"` object returned by [egf()].
 #' @param what
 #'   A character vector listing one or more variables for which
-#'   predicted values are desired.
+#'   predicted values are sought.
 #' @param time
 #'   A numeric or Date vector supplying time points at which
 #'   predicted values are sought. Numeric `time` is assumed
-#'   to measure time as a number of days since the end of date
-#'   `origin = attr(object$frame_ts, "origin")`. Date `time`
-#'   is coerced to numeric `julian(time, origin)`. When missing,
-#'   `object$frame_ts$time` is used.
+#'   to measure time as a number of days since _the end of_
+#'   date `origin = attr(object$frame_ts, "origin")`.
+#'   Date `time` is coerced to numeric `julian(time, origin)`.
+#'   When missing, `object$frame_ts$time` is used.
 #' @param window
-#'   A factor of length `length(time)` such that `split(time, window)`
-#'   splits `time` by fitting window. Levels not belonging to
-#'   `levels(object$frame_ts$window)` are ignored. When `time`
-#'   is missing, `object$frame_ts$window` is used.
+#'   A factor of length `length(time)` such that
+#'   `split(time, window)` splits `time` by fitting window.
+#'   Levels not belonging to `levels(object$frame_ts$window)`
+#'   are ignored.
+#'   When `time` is missing, `object$frame_ts$window` is used.
 #' @param log
 #'   A logical scalar. If `FALSE`, then inverse log-transformed
 #'   predicted values are returned.
@@ -54,6 +55,8 @@
 #' }
 #' }
 #'
+#' See topic [`nse`] for details on nonstandard evaluation of `append`.
+#'
 #' @return
 #' A data frame inheriting from class `"egf_predict"`, with variables:
 #' \item{`var`}{
@@ -69,7 +72,7 @@
 #'   Time, after possible coercion from Date to numeric.
 #' }
 #' \item{`estimate`}{
-#'   Predicted value of `var` "at" `time` in `window` (see Details),
+#'   Predicted value of `var` at `time` in `window` (see Details),
 #'   conditional on `object$frame_par` and `object$best`.
 #' }
 #' \item{`se`}{
@@ -92,9 +95,8 @@ predict.egf <- function(object,
   what <- unique(match.arg(what, several.ok = TRUE))
   stop_if_not_true_false(se)
 
-  frame <- do.call(cbind, unname(object$frame_par))
-  frame <- frame[!duplicated(names(frame))]
-  append <- append_to_index(substitute(append), frame, parent.frame(),
+  combined <- make_combined(object)
+  append <- append_to_index(substitute(append), combined, parent.frame(),
                             .append = .append)
 
   endpoints <- object$endpoints
@@ -114,23 +116,26 @@ predict.egf <- function(object,
       is.numeric(time),
       m = "`time` must be a numeric or Date vector."
     )
-    if (weekday > 0L) {
-      stop_if_not(
-        all.equal(time, z <- round(time)),
-        m = "weekday > 0: `time` must be an integer vector\n(in the sense of `all.equal(time, round(time))`)."
-      )
-      time <- z
-    }
     stop_if_not(
       !anyNA(time),
       m = "`time` must not have missing values."
     )
+    if (weekday > 0L) {
+      stop_if_not(
+        all.equal(time, z <- round(time)),
+        m = paste0(
+          "weekday > 0: `time` must be an integer vector\n",
+          "(in the sense of `all.equal(time, round(time))`)."
+        )
+      )
+      time <- z
+    }
     stop_if_not(
       is.factor(window),
       length(window) == length(time),
       m = "`window` must be a factor of length `length(time)`."
     )
-    wl <- as.character(endpoints$window)
+    wl <- levels(object$frame_ts$window)
     subset <- match(levels(droplevels(window)), wl, 0L)
     window <- factor(window, levels = wl[subset])
     stop_if_not(
@@ -149,7 +154,7 @@ predict.egf <- function(object,
     stop_if_not(
       vapply(time_split, min, 0) >= starts,
       vapply(time_split, max, 0) <= ends,
-      m = "`time[i]` must not be before/after\nthe start/end of `window[i]`."
+      m = "`time[i]` must not occur before (after)\nthe start (end) of `window[i]`."
     )
     if (weekday > 0L) {
       stop_if_not(
@@ -214,7 +219,7 @@ predict.egf <- function(object,
     time = time,
     estimate = x,
     se = x,
-    frame[rep.int(subset, lens), append, drop = FALSE]
+    combined[rep.int(subset, lens), append, drop = FALSE]
   )
   lasts <- cumsum(lens)
   firsts <- c(0L, lasts[-length(lasts)]) + 1L
@@ -253,18 +258,17 @@ predict.egf <- function(object,
   }
   out <- do.call(rbind, out)
   row.names(out) <- NULL
-  structure(out,
-    origin = origin,
-    se = se,
-    class = c("egf_predict", "data.frame")
-  )
+  attr(out, "origin") <- origin
+  attr(out, "se") <- se
+  class(out) <- c("egf_predict", "data.frame")
+  out
 }
 
 #' Confidence intervals on predicted values
 #'
 #' Computes confidence intervals on predicted values of
 #' log cumulative incidence, log interval incidence, and
-#' log per capita growth rate growth rate.
+#' log per capita growth rate.
 #'
 #' @param object
 #'   An `"egf_predict"` object returned by [predict.egf()].
@@ -294,7 +298,10 @@ predict.egf <- function(object,
 confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
   stop_if_not(
     attr(object, "se"),
-    m = "`object` must supply standard errors on predicted values.\nRepeat `predict()` with `log = TRUE` and `se = TRUE`."
+    m = paste0(
+      "`object` must supply standard errors on predicted values.\n",
+      "Repeat `predict()` with `log = TRUE` and `se = TRUE`."
+    )
   )
   stop_if_not_number_in_interval(level, 0, 1, "()")
   stop_if_not_true_false(log)

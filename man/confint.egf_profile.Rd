@@ -32,7 +32,7 @@ and upper confidence limits, inverse-link transformed
 if \code{link = FALSE} and linear combinations represent
 population fitted values of nonlinear model parameter.
 }
-\code{level}, \code{attr(object, "A")}, and \code{attr(object, "x")}
+\code{attr(object, "A")}, \code{attr(object, "x")}, and \code{level}
 are retained as attributes.
 }
 \description{

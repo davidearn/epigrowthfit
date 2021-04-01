@@ -38,19 +38,20 @@ Each row specifies a linear combination of the elements of
 model parameters whose population fitted values should be profiled.
 Ignored if \code{which} or \code{A} is non-\code{NULL}.}
 
-\item{subset}{An expression to be evaluated in the combined model frame. Must
-evaluate to a logical vector or list of logical vectors indexing
-rows of the model frame, and thus fitting windows. Only population
-fitted values for the indexed fitting windows are profiled. The
-default (\code{NULL}) is to consider all fitting windows. Ignored if
+\item{subset}{An expression to be evaluated in the combined model frame
+(see \code{\link[=make_combined]{make_combined()}}). Must evaluate to a logical vector
+indexing rows of the data frame, and thus fitting windows.
+Only population fitted values for indexed windows are profiled.
+The default (\code{NULL}) is to consider all windows. Ignored if
 \code{which} or \code{A} is non-\code{NULL}.}
 
 \item{append}{An expression indicating variables in the combined model frame
-to be included with the result. The default (\code{NULL}) is to append
-nothing. Ignored if \code{which} or \code{A} is non-\code{NULL}.}
+(see \code{\link[=make_combined]{make_combined()}}) to be included with the result.
+The default (\code{NULL}) is to append nothing.
+Ignored if \code{which} or \code{A} is non-\code{NULL}.}
 
-\item{max_level}{A number in the interval (0,1). Profiles will be computed up to
-a deviance of \code{qchisq(max_level, df = 1)}.}
+\item{max_level}{A number in the interval (0,1). Profiles will be computed
+up to a deviance of \code{qchisq(max_level, df = 1)}.}
 
 \item{grid_len}{A positive integer. Step sizes chosen adaptively by
 \code{\link[TMB:tmbprofile]{TMB::tmbprofile()}} will generate approximately this
@@ -135,24 +136,10 @@ matrix for parameter \code{par[k]} (those rows indexed by \code{subset}).
 \code{A \%*\% fitted$par[fitted$nonrandom]} is a vector listing the
 population fitted values for each parameter named in \code{par},
 for each fitting window indexed by \code{subset}.
-}
-\section{Nonstandard evaluation}{
-\code{subset} and \code{append} are evaluated in a nonstandard way
-to make interactive use more convenient. They are handled
-much like the \code{\link[=subset]{subset()}} arguments \code{subset} and \code{select}.
-To avoid unexpected behaviour, especially when programming,
-use \code{.subset} and \code{.append}.
-}
 
-\section{Warning}{
-The combined model frame is
-\code{do.call(cbind, unname(object$frame_par))}.
-If a variable occurs more than once there, because it appears
-in multiple model frames, then only the earliest instance is
-retained. Except in unusual cases, all instances of a variable
-are identical, and no information is lost.
+See topic \code{\link{nse}} for details on nonstandard evaluation
+of \code{subset} and \code{append}.
 }
-
 \seealso{
 \code{\link[=confint.egf_profile]{confint.egf_profile()}}, \code{\link[=plot.egf_profile]{plot.egf_profile()}}
 }
