@@ -212,7 +212,10 @@ make_frames <- function(formula_ts, formula_par,
 
   stop_if_not(
     vapply(list(data_ts, data_par, endpoints), inherits, FALSE, c("data.frame", "list", "environment")),
-    m = "`data_ts`, `data_par`, and `endpoints`\nmust be data frames, lists, or environments."
+    m = paste0(
+      "`data_ts`, `data_par`, and `endpoints`\n",
+      "must be data frames, lists, or environments."
+    )
   )
 
 
@@ -248,8 +251,8 @@ make_frames <- function(formula_ts, formula_par,
   if (inherits(formula_par, "formula") && length(formula_par) == 2L) {
     formula_par <- rep_len(list(expand_terms(formula_par)), p)
     names(formula_par) <- pn
-  ## Otherwise, test for a valid list of formulae and complete with
-  ## default `~1` to obtain a list of length `p`
+  ## Otherwise, test for a valid list of formulae and complete
+  ## with the default `~1` to obtain a list of length `p`
   } else {
     stop_if_not(
       inherits(formula_par, "list"),
@@ -269,8 +272,7 @@ make_frames <- function(formula_ts, formula_par,
   }
 
   ## Warn about fixed effects formulae without an intercept
-  ## (other than `~0`) when relying on default initial values
-  ## of linear coefficients
+  ## when relying on default initial values of linear coefficients
   if (is.null(init)) {
     is_intercept_ok <- function(formula) {
       a <- attributes(terms(split_effects(formula)$fixed))
@@ -279,10 +281,10 @@ make_frames <- function(formula_ts, formula_par,
     warn_if_not(
       vapply(formula_par, is_intercept_ok, FALSE),
       m = paste0(
-        "Default initial values for coefficients of\n",
-        "fixed effects models without an intercept\n",
-        "are not reliable. Consider including an\n",
-        "intercept or setting argument `init` explicitly."
+        "Default initial values for fixed effects coefficients\n",
+        "are unreliable when fixed effects model does not have\n",
+        "an intercept. Consider setting `init` explicitly or\n",
+        "including an intercept."
       )
     )
   }
@@ -299,11 +301,8 @@ make_frames <- function(formula_ts, formula_par,
   stop_if_not(
     is.numeric(cases),
     (n <- length(cases)) > 0L,
-    m = sprintf("`%s` must evaluate to a numeric vector\nof nonzero length.", cn)
-  )
-  stop_if_not(
     cases[!is.na(cases)] >= 0,
-    m = sprintf("`%s` must be non-negative.", cn)
+    m = sprintf("`%s` must evaluate to a nonempty,\nnon-negative, numeric vector.", cn)
   )
   if (is.double(cases)) {
     ## Round observations to nearest integer,
@@ -323,12 +322,14 @@ make_frames <- function(formula_ts, formula_par,
     ts <- try_eval1(formula_ts[[3L]][[3L]])
     stop_if_not(
       is.factor(ts),
-      length(ts) == n,
-      m = sprintf("`%s` must evaluate to a factor\nof length `length(%s)`.", gn, cn)
+      m = sprintf("`%s` must evaluate to a factor.", gn)
     )
-    ts <- droplevels(ts, exclude = NA)
     stop_if_not(
-      !anyNA(ts),
+      length(ts) == n,
+      m = sprintf("`length(%s)` must equal `length(%s)`.", gn, cn)
+    )
+    stop_if_not(
+      !anyNA(ts <- droplevels(ts, exclude = NA)),
       m = sprintf("`%s` must not have missing values.", gn)
     )
   ## Otherwise, assume that there is only one time series
@@ -348,8 +349,11 @@ make_frames <- function(formula_ts, formula_par,
   }
   stop_if_not(
     is.numeric(time),
+    m = sprintf("`%s` must evaluate to a numeric or Date vector.", tn)
+  )
+  stop_if_not(
     length(time) == n,
-    m = sprintf("`%s` must evaluate to a numeric or Date vector\nof length `length(%s)`.", tn, cn)
+    m = sprintf("`length(%s)` must equal `length(%s)`.", tn, cn)
   )
   if (weekday > 0L && is.double(time)) {
     ## Weekday effect estimation requires integer time points,
@@ -387,15 +391,12 @@ make_frames <- function(formula_ts, formula_par,
   stop_if_not(
     is.numeric(start),
     is.numeric(end),
-    m = "In `endpoints`: `start` and `end` must be\nnumeric or Date vectors."
+    m = "In `endpoints`: `start` and `end` must be numeric or Date vectors."
   )
   stop_if_not(
     (N <- length(start)) > 0L, # tentative number of fitting windows
-    m = "In `endpoints`: `start` must have nonzero length."
-  )
-  stop_if_not(
     length(end) == N,
-    m = "In `endpoints`: `start` and `end` must have equal length."
+    m = "In `endpoints`: `start` and `end` must have equal, nonzero lengths."
   )
   stop_if_not(
     all(endpoints$start < endpoints$end, na.rm = TRUE),
@@ -409,7 +410,7 @@ make_frames <- function(formula_ts, formula_par,
     )
     stop_if_not(
       length(epts) == N,
-      m = sprintf("In `endpoints`: `start` and `%s` must have equal length.", gn)
+      m = sprintf("In `endpoints`: `start` and `%s` must have equal lengths.", gn)
     )
     warn_if_not(
       levels(epts) %in% lts,
@@ -427,8 +428,8 @@ make_frames <- function(formula_ts, formula_par,
 
   ## Order complete rows by time series and chronologically
   ## within time series
-  oep <- do.call(order, endpoints[c("ts", "start", "end")])
-  ccep <- oep[oep %in% which(complete.cases(endpoints))]
+  o <- do.call(order, endpoints[c("ts", "start", "end")])
+  ccep <- o[o %in% which(complete.cases(endpoints))]
   if (length(ccep) < N) {
     if (na_action[2L] == "fail") {
       stop("na_action = \"fail\": `endpoints` must not have missing values.")
@@ -450,9 +451,10 @@ make_frames <- function(formula_ts, formula_par,
     drop.unused.levels = TRUE
   )
 
-  ## `model.frame()` returns `data.frame()` for `~1`, etc.
-  ## causing mismatch in number of rows between empty and
-  ## non-empty results
+  ## `model.frame()` returns a model frame with zero rows
+  ## for formulae without variables, such as `~1`, causing
+  ## mismatch in number of rows between empty and non-empty
+  ## results
   frame_par[lengths(frame_par) == 0L] <- list(data.frame(row.names = seq_len(N)))
   stop_if_not(
     vapply(frame_par, nrow, 0L) == N,
@@ -484,17 +486,17 @@ make_frames <- function(formula_ts, formula_par,
   get_var_names <- function(x) {
     vapply(attr(terms(as.formula(call("~", x))), "variables")[-1L], deparse, "")
   }
-  is_bar_ok <- function(bar, frame) {
+  is_bar_ok <- function(bar, data) {
     v <- lapply(bar[-1L], get_var_names)
-    all(vapply(frame[v[[1L]]], is.numeric, FALSE),
-        vapply(frame[v[[2L]]], is.factor,  FALSE))
+    all(vapply(data[v[[1L]]], is.numeric, FALSE),
+        vapply(data[v[[2L]]], is.factor,  FALSE))
   }
-  all_bars_ok <- function(formula, frame) {
+  all_bars_ok <- function(formula, data) {
     bars <- split_effects(formula)$random
-    all(vapply(bars, is_bar_ok, FALSE, frame))
+    all(vapply(bars, is_bar_ok, FALSE, data))
   }
   stop_if_not(
-    mapply(all_bars_ok, formula = formula_par, frame = frame_par),
+    mapply(all_bars_ok, formula = formula_par, data = frame_par),
     m = paste0(
       "`formula_par` variables on left and right hand\n",
       "sides of `|` must evaluate to numeric vectors\n",
@@ -745,7 +747,7 @@ make_XZ_info <- function(xl, ml) {
   if (length(xl) == 0L) {
     cn <- c("par", "term", "group", "level", "colname")
     m <- matrix(character(0L), ncol = 5L, dimnames = list(NULL, cn))
-    return(data.frame(m, stringsAsFactors = TRUE))
+    return(as.data.frame(m, stringsAsFactors = TRUE))
   }
   ml_ncol <- vapply(ml, ncol, 0L)
   if (inherits(xl[[1L]], "formula")) { # X case
@@ -944,9 +946,9 @@ make_tmb_data <- function(frame_ts, frame_par,
   ## Permutation of random effects coefficients producing
   ## correct arrangement in random effects blocks, given
   ## column-major order
-  ord <- do.call(order, Z_info[c("cor", "vec", "par")])
-  Z <- Z[, ord, drop = FALSE]
-  Z_info <- Z_info[ord, , drop = FALSE]
+  o <- do.call(order, Z_info[c("cor", "vec", "par")])
+  Z <- Z[, o, drop = FALSE]
+  Z_info <- Z_info[o, , drop = FALSE]
 
   ## Number of coefficients for each nonlinear model parameter
   beta_seg_len <- as.integer(table(X_info$par))
@@ -962,12 +964,12 @@ make_tmb_data <- function(frame_ts, frame_par,
   block_cols <- as.integer(rowSums(table(Z_info$cor, Z_info$vec) > 0L))
 
   ## Empty design matrices
-  empty_dense_matrix <- `dim<-`(integer(0L), c(nrow(X), 0L))
+  empty_dense_matrix <- `dim<-`(integer(0L), c(N, 0L))
   empty_sparse_matrix <- sparseMatrix(
     i = integer(0L),
     j = integer(0L),
     x = integer(0L),
-    dims = c(nrow(X), 0L)
+    dims = c(N, 0L)
   )
 
   l1 <- list(

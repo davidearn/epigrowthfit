@@ -14,7 +14,7 @@ l <- list(
   YORK = list(
     c("2020-03-09", "2020-04-18"),
     c("2020-08-12", "2020-10-26"),
-    c("2020-11-12", "2020-12-10")
+    c("2020-12-12", "2021-01-02")
   ),
   OTTAWA = list(
     c("2020-03-09", "2020-04-29"),
@@ -42,7 +42,7 @@ l <- list(
     c("2020-03-03", "2020-04-25"),
     c("2020-09-04", "2020-09-23"),
     c("2020-10-24", "2020-11-27"),
-    c("2020-12-03", "2021-01-13")
+    c("2020-12-20", "2021-01-13")
   ),
   SIMCOE = list(
     c("2020-03-11", "2020-04-23"),
@@ -64,6 +64,7 @@ l <- list(
     c("2020-10-20", "2021-01-02")
   )
 )
+l <- l[sort(names(l))]
 se <- matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, c("start", "end")))
 se <- as.data.frame(se, stringsAsFactors = FALSE)
 se[] <- lapply(se, as.Date)
@@ -71,5 +72,7 @@ region <- rep.int(gl(length(l), 1L, labels = names(l)), lengths(l))
 f <- function(x) x[do.call(order, x), , drop = FALSE]
 se <- unsplit(by(se, region, f, simplify = FALSE), region)
 wave <- factor(unsplit(lapply(l, seq_along), region))
-endpoints <- data.frame(se, region, wave)
+load("populations.RData")
+population <- populations[match(region, names(populations), 0L)]
+endpoints <- data.frame(se, region, wave, population, row.names = NULL)
 save(endpoints, file = "endpoints.RData")
