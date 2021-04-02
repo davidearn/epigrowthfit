@@ -69,24 +69,27 @@ f <- function(x) {m <- mean(x); c(m, x[-length(x)] - m)}
 init <- unlist(lapply(object$Y_init, f), use.names = FALSE)
 object <- update(object, debug = FALSE, init = init)
 save(object, file = "object.RData")
-# load("object.RData")
+load("object.RData")
 
 pdf("world_incidence.pdf", width = 8, height = 4, onefile = TRUE)
 plot(object,
   type = "interval",
   show_tdoubling = TRUE,
-  xlim = c("2020-03-01", "2021-03-25"),
+  xlim = c("2020-02-01", "2021-04-01"),
   log = TRUE,
-  order = order(population, decreasing = TRUE)
+  order = order(population, decreasing = TRUE),
+  sub = country_name
 )
 dev.off()
 
 pdf("world_heat_map.pdf", width = 6, height = 4, onefile = TRUE)
 plot(object,
   type = "rt2",
-  per_plot = 12L,
-  xlim = c("2020-03-01", "2021-03-25"),
+  per_plot = 15L,
+  xlim = c("2020-02-01", "2021-04-01"),
   log = TRUE,
-  order = order(population, decreasing = TRUE)
+  order = order(population, decreasing = TRUE),
+  plab = country_name,
+  main = "Per capita growth rate, by country"
 )
 dev.off()
