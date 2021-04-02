@@ -34,16 +34,14 @@
 #'   to formula environments for variables used in `formula_ts` and
 #'   `formula_par`, respectively.
 #' @param endpoints
-#'   A data frame with variables `start` (numeric or Date),
-#'   `end` (numeric or Date), and `ts` (factor) listing start and
-#'   end times for all fitting windows. If `formula_ts = x ~ time | g`,
-#'   then `levels(ts)` must be a subset of `levels(g)`.
-#'   Within time series, fitting windows must be nonoverlapping and
-#'   contain at least two time points. To be precise: for all `k`,
-#'   intervals `[start[i], end[i]]` such that `ts[i] = levels(g)[k]`
-#'   must be disjoint and contain at least two elements of
-#'   `time[g == levels(g)[k]]`. When `nlevels(g) = 1`, `ts` is
-#'   redundant, and `endpoints` need only specify `start` and `end`.
+#'   A data frame, list, or environment with variables `start`
+#'   and `end`, and any further variables necessary to evaluate
+#'   `ts` if `formula_ts = x ~ time | ts`. `start` and `end`
+#'   must be numeric or Date vectors listing start and end times
+#'   for all fitting windows. `ts` must evaluate to a factor
+#'   indicating the time series in which each window is found.
+#'   Within time series, intervals `[start[i], end[i]]` must be
+#'   disjoint and contain at least two time points from `time`.
 #' @param origin
 #'   A Date specifying a reference time.
 #' @param curve
@@ -103,19 +101,18 @@
 #' `formula_par` variables. `"fail"` is to throw an error. `"exclude"`
 #' and `"pass"` are to discard fitting windows with incomplete data.
 #'
-#' To avoid unintended mismatch between `endpoints` and mixed effects
-#' model frames constructed from `formula_par` and `data_par`, keep
-#' `endpoints` and `formula_par` variables in a common data frame `d`
-#' and set `endpoints = d` and `data_par = d`.
+#' To avoid unexpected mismatch between `endpoints` and mixed effects
+#' model frames constructed from `formula_par` and `data_par`, it is
+#' helpful to keep all `endpoints` and `formula_par` variables in a
+#' common data frame `d` and set `endpoints = d` and `data_par = d`.
 #'
 #' @return
 #' If `debug = FALSE`, then a list inheriting from class `"egf"`,
 #' with elements:
 #' \item{`endpoints`}{
 #'   A data frame with variables `start`, `end`, `ts`, and `window`
-#'   listing start and end times for all fitting windows.
-#'   It is a processed version of the so-named argument.
-#'   `origin` is retained as an attribute.
+#'   listing start and end times for all fitting windows. `origin`
+#'   is retained as an attribute.
 #' }
 #' \item{`frame_ts`}{
 #'   The time series model frame, constructed from `formula_ts`
@@ -231,11 +228,12 @@ egf <- function(formula_ts,
     formula_ts = formula_ts,
     formula_par = formula_par,
     data_ts = data_ts,
+    data_par = data_par,
     endpoints = endpoints,
     origin = origin,
     curve = curve,
-    distr = distr,
     excess = excess,
+    distr = distr,
     weekday = weekday,
     na_action = na_action,
     init = init,
@@ -262,6 +260,7 @@ egf <- function(formula_ts,
     init <- unlist(init_split)
     names(init) <- enum_dupl_string(rep.int(names(init_split), lengths(init_split)))
     out <- list(
+      endpoints = frames$endpoints,
       frame_ts = frames$frame_ts,
       frame_par = frames$frame_par,
       init = init,
@@ -295,7 +294,7 @@ egf <- function(formula_ts,
     endpoints = frames$endpoints,
     frame_ts = frames$frame_ts,
     frame_par = frames$frame_par,
-    frame_append = frame$frame_append,
+    frame_append = frames$frame_append,
     curve = curve,
     excess = excess,
     distr = distr,

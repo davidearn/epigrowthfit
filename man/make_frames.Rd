@@ -54,16 +54,14 @@ to formula environments for variables used in \code{formula_ts} and
 to formula environments for variables used in \code{formula_ts} and
 \code{formula_par}, respectively.}
 
-\item{endpoints}{A data frame with variables \code{start} (numeric or Date),
-\code{end} (numeric or Date), and \code{ts} (factor) listing start and
-end times for all fitting windows. If \code{formula_ts = x ~ time | g},
-then \code{levels(ts)} must be a subset of \code{levels(g)}.
-Within time series, fitting windows must be nonoverlapping and
-contain at least two time points. To be precise: for all \code{k},
-intervals \verb{[start[i], end[i]]} such that \code{ts[i] = levels(g)[k]}
-must be disjoint and contain at least two elements of
-\code{time[g == levels(g)[k]]}. When \code{nlevels(g) = 1}, \code{ts} is
-redundant, and \code{endpoints} need only specify \code{start} and \code{end}.}
+\item{endpoints}{A data frame, list, or environment with variables \code{start}
+and \code{end}, and any further variables necessary to evaluate
+\code{ts} if \code{formula_ts = x ~ time | ts}. \code{start} and \code{end}
+must be numeric or Date vectors listing start and end times
+for all fitting windows. \code{ts} must evaluate to a factor
+indicating the time series in which each window is found.
+Within time series, intervals \verb{[start[i], end[i]]} must be
+disjoint and contain at least two time points from \code{time}.}
 
 \item{origin}{A Date specifying a reference time.}
 

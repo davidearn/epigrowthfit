@@ -208,6 +208,14 @@ make_frames <- function(formula_ts, formula_par,
                         endpoints, origin,
                         curve, excess, distr, weekday,
                         na_action, init, append) {
+  ### Check data ##########################################
+
+  stop_if_not(
+    vapply(list(data_ts, data_par, endpoints), inherits, FALSE, c("data.frame", "list", "environment")),
+    m = "`data_ts`, `data_par`, and `endpoints`\nmust be data frames, lists, or environments."
+  )
+
+
   ### Check time series formula ###########################
 
   ## Test for formula of the form `x ~ time` or `x ~ time | ts`
@@ -279,18 +287,11 @@ make_frames <- function(formula_ts, formula_par,
     )
   }
 
-  ### Check data ##########################################
+  ### Check time series variables #########################
 
-  stop_if_not(
-    vapply(list(data_ts, data_par), inherits, c("data.frame", "list", "environment")),
-    m = "`data_ts` and `data_par` must be data frames,\nlists, or environments."
-  )
   try_eval1 <- function(expr) {
     try(eval(expr, envir = data_ts, enclos = environment(formula_ts)))
   }
-
-
-  ### Check time series variables #########################
 
   ## Validate incidence variable
   cn <- deparse(formula_ts[[2L]])
@@ -337,7 +338,7 @@ make_frames <- function(formula_ts, formula_par,
     formula_ts[[3L]] <- call("|", formula_ts[[3L]], as.name(gn))
   }
   lts <- levels(ts)
-  M <- length(lts) # number of time series
+  M <- length(lts) # tentative number of time series
 
   ## Validate time variable
   tn <- deparse(formula_ts[[3L]][[2L]])
@@ -372,45 +373,61 @@ make_frames <- function(formula_ts, formula_par,
   ### Check fitting windows ###############################
 
   stop_if_not(
-    is.data.frame(endpoints),
-    (N <- nrow(endpoints)) > 0L, # number of fitting windows
-    m = "`endpoints` must be a data frame with at least 1 row."
+    c("start", "end") %in% names(endpoints),
+    m = "`endpoints` must have variables `start` and `end`."
   )
-  nep <- c("start", "end", if (M > 1L) "ts")
+  start <- endpoints$start
+  end <- endpoints$end
+  if (inherits(start, "Date")) {
+    start <- julian(start, origin = origin)
+  }
+  if (inherits(end, "Date")) {
+    end <- julian(end, origin = origin)
+  }
   stop_if_not(
-    !is.null(names(endpoints)),
-    nep %in% names(endpoints),
-    m = paste0("`endpoints` must list variables:\n", paste(sQuote(nep), collapse = ", "))
+    is.numeric(start),
+    is.numeric(end),
+    m = "In `endpoints`: `start` and `end` must be\nnumeric or Date vectors."
   )
-  if (M > 1L) {
-    stop_if_not(
-      is.factor(endpoints$ts),
-      levels(endpoints$ts) %in% lts,
-      m = sprintf("In `endpoints`: `ts` must be a factor with\n`levels(ts)` a subset of `levels(%s)`.", gn)
-    )
-    endpoints$ts <- factor(endpoints$ts, levels = lts)
-  } else{
-    endpoints$ts <- rep_len(factor(lts), N)
-    nep <- c(nep, "ts")
-  }
-  for (s in nep[1:2]) {
-    if (inherits(endpoints[[s]], "Date")) {
-      endpoints[[s]] <- julian(endpoints[[s]], origin = origin)
-    }
-    stop_if_not(
-      is.numeric(endpoints[[s]]),
-      m = sprintf("In `endpoints`: `%s` must be a numeric or Date vector.", s)
-    )
-  }
+  stop_if_not(
+    (N <- length(start)) > 0L, # tentative number of fitting windows
+    m = "In `endpoints`: `start` must have nonzero length."
+  )
+  stop_if_not(
+    length(end) == N,
+    m = "In `endpoints`: `start` and `end` must have equal length."
+  )
   stop_if_not(
     all(endpoints$start < endpoints$end, na.rm = TRUE),
     m = "In `endpoints`: `start` must precede `end`."
   )
-  endpoints <- endpoints[nep]
+  if (M > 1L) {
+    epts <- try(eval(formula_ts[[3L]][[3L]], endpoints, environment(formula_ts)))
+    stop_if_not(
+      is.factor(epts),
+      m = sprintf("In `endpoints`: `%s` must evaluate to a factor.", gn)
+    )
+    stop_if_not(
+      length(epts) == N,
+      m = sprintf("In `endpoints`: `start` and `%s` must have equal length.", gn)
+    )
+    warn_if_not(
+      levels(epts) %in% lts,
+      m = sprintf("In `endpoints`: Levels of `%s` discarded\n(corresponding incidence data not supplied).", gn)
+    )
+    epts <- factor(epts, levels = lts)
+  } else {
+    epts <- rep_len(factor(lts), N)
+  }
+
+
+  ### Construct clean table of fitting windows ############
+
+  endpoints <- data.frame(start, end, ts = epts)
 
   ## Order complete rows by time series and chronologically
   ## within time series
-  oep <- do.call(order, endpoints)
+  oep <- do.call(order, endpoints[c("ts", "start", "end")])
   ccep <- oep[oep %in% which(complete.cases(endpoints))]
   if (length(ccep) < N) {
     if (na_action[2L] == "fail") {
@@ -436,7 +453,7 @@ make_frames <- function(formula_ts, formula_par,
   ## `model.frame()` returns `data.frame()` for `~1`, etc.
   ## causing mismatch in number of rows between empty and
   ## non-empty results
-  frame_par[lengths(frame_par) > 0L] <- list(data.frame(row.names = seq_len(N)))
+  frame_par[lengths(frame_par) == 0L] <- list(data.frame(row.names = seq_len(N)))
   stop_if_not(
     vapply(frame_par, nrow, 0L) == N,
     m = "`formula_par` variables must have length\nequal to `nrow(endpoints)`."
@@ -497,7 +514,7 @@ make_frames <- function(formula_ts, formula_par,
   )
 
 
-  ### Check fitting windows again #########################
+  ### Continue checking fitting windows ###################
 
   ## Create a factor `window` such that `split(time, window)`
   ## splits `time` by fitting window
@@ -524,12 +541,12 @@ make_frames <- function(formula_ts, formula_par,
   endpoints$window <- gl(nrow(endpoints), 1L)
   endpoints_split <- split(endpoints, endpoints$ts)
   window_split <- Map(make_window_segment,
-    time = split(time, ts),
+    time  = split(time, ts),
     start = lapply(endpoints_split, `[[`, "start"),
-    end = lapply(endpoints_split, `[[`, "end"),
+    end   = lapply(endpoints_split, `[[`, "end"),
     label = lapply(endpoints_split, `[[`, "window")
   )
-  window <- unsplit(window_split, ts)
+  window <- factor(unsplit(window_split, ts))
 
   if (na_action[1L] == "fail") {
     stop_if_not(
@@ -561,22 +578,9 @@ make_frames <- function(formula_ts, formula_par,
     frame_ts <- frame_ts[!is.na(frame_ts$ts), , drop = FALSE]
 
     ## Order remaining rows by time series
-    ## NB: Chronological order within time series has already been checked
+    ## NB: Chronological order within time series already checked
     frame_ts <- frame_ts[order(frame_ts$ts), , drop = FALSE]
   }
-
-
-  ### Set attributes ######################################
-
-  row.names(frame_ts) <- NULL
-  frame_par <- lapply(frame_par, `row.names<-`, NULL)
-  row.names(endpoints) <- NULL
-
-  attr(frame_ts, "terms") <- terms(formula_ts)
-  frame_par <- Map(`attr<-`, frame_par, "terms", lapply(frame_par, terms))
-
-  attr(frame_ts, "origin") <- origin
-  attr(endpoints, "origin") <- origin
 
 
   ### Preserve user-specified `data_par` variables ########
@@ -588,11 +592,25 @@ make_frames <- function(formula_ts, formula_par,
     frame_append <- data.frame(row.names = seq_len(nrow(endpoints)))
   }
 
+
+  ### Set attributes ######################################
+
+  row.names(endpoints) <- NULL
+  row.names(frame_ts) <- NULL
+  frame_par <- lapply(frame_par, `row.names<-`, NULL)
+  row.names(frame_append) <- NULL
+
+  attr(frame_ts, "terms") <- terms(formula_ts)
+  frame_par <- Map(`attr<-`, frame_par, "terms", lapply(frame_par, terms))
+
+  attr(endpoints, "origin") <- origin
+  attr(frame_ts, "origin") <- origin
+
   list(
+    endpoints = endpoints,
     frame_ts = frame_ts,
     frame_par = frame_par,
-    frame_append = frame_append,
-    endpoints = endpoints
+    frame_append = frame_append
   )
 }
 

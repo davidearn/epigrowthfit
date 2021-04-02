@@ -100,18 +100,20 @@ fitted.egf <- function(object,
     par = rep(factor(par, levels = pn), each = length(subset)),
     ts = object$endpoints$ts[subset],
     window = object$endpoints$window[subset],
-    estimate = as.numeric(Y),
-    combined[subset, append, drop = FALSE],
-    row.names = NULL,
-    check.names = FALSE,
-    stringsAsFactors = FALSE
+    estimate = as.numeric(Y)
   )
-  if (link && se) {
-    d$se <- as.numeric(Y_se)
-  }
   if (!link) {
     d$estimate <- apply_inverse_link(d$estimate, g = d$par)
   }
+  if (link && se) {
+    d$se <- as.numeric(Y_se)
+  }
+  d <- data.frame(
+    d,
+    combined[subset, append, drop = FALSE],
+    row.names = NULL,
+    check.names = FALSE
+  )
   attr(d, "se") <- link && se
   class(d) <- c("egf_fitted", "data.frame")
   d

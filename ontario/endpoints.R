@@ -1,4 +1,3 @@
-## Ordered by population size
 l <- list(
   TORONTO = list(
     c("2020-03-05", "2020-04-23"),
@@ -65,11 +64,12 @@ l <- list(
     c("2020-10-20", "2021-01-02")
   )
 )
-se <- c("start", "end")
-endpoints <- data.frame(
-  ts = rep(gl(length(l), 1L, labels = names(l)), lengths(l)),
-  matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, se)),
-  stringsAsFactors = FALSE
-)
-endpoints[se] <- lapply(endpoints[se], as.Date)
+se <- matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, c("start", "end")))
+se <- as.data.frame(se, stringsAsFactors = FALSE)
+se[] <- lapply(se, as.Date)
+region <- rep.int(gl(length(l), 1L, labels = names(l)), lengths(l))
+f <- function(x) x[do.call(order, x), , drop = FALSE]
+se <- unsplit(by(se, region, f, simplify = FALSE), region)
+wave <- factor(unsplit(lapply(l, seq_along), region))
+endpoints <- data.frame(se, region, wave)
 save(endpoints, file = "endpoints.RData")

@@ -151,7 +151,7 @@ confint.egf <- function(object,
   .append <- append
 
   if (method == "wald") {
-    ft <- fitted(object, par = par, .subset = .subset, .append = .append)
+    ft <- fitted(object, par = par, se = TRUE, .subset = .subset, .append = .append)
     out <- confint(ft, level = level, link = link)
 
   } else if (method == "profile") {

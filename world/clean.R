@@ -5,14 +5,12 @@ loc <- paste0(
   "combined_dataset_latest.csv"
 )
 world_full <- read.csv(url(loc))
-
-## Extract incidence
 world <- world_full[c("DATE", "cases_new", "ISO", "country_name")]
-
-## Make nice
 names(world) <- c("date", "cases", "country_code", "country")
+
+## Clean
 world$date <- as.Date(world$date)
-world$cases <- as.integer(world$cases)
+world$cases[world$cases < 0] <- NA
 world$country_code <- factor(world$country_code)
 world$country <- factor(world$country)
 
@@ -66,36 +64,34 @@ new <- c(
   "Vietnam",
   "Virgin Islands (United States)"
 )
-lev[match(old, lev)] <- new
+lev[match(old, lev, 0L)] <- new
 levels(world$country) <- lev
 
-## Group countries by continent
+## Group countries by region and continent
 library("countrycode")
-world$continent <- factor(countrycode(
-  sourcevar = world$country_code,
-  origin = "iso3c",
-  destination = "un.region.name",
-  custom_match = `names<-`(c("Europe", "Asia"), c("RKS", "TWN"))
-))
 world$region <- factor(countrycode(
   sourcevar = world$country_code,
   origin = "iso3c",
   destination = "un.regionsub.name",
   custom_match = `names<-`(c("Southern Europe", "Eastern Asia"), c("RKS", "TWN"))
 ))
+world$continent <- factor(countrycode(
+  sourcevar = world$country_code,
+  origin = "iso3c",
+  destination = "un.region.name",
+  custom_match = `names<-`(c("Europe", "Asia"), c("RKS", "TWN"))
+))
 
-## Replace negative observations with NA
-world$cases[world$cases < 0L] <- NA
-
-## Omit leading NA from time series
-world_split <- lapply(split(world, world$country_code), function(d) {
-  i <- which(!is.na(d$cases))
-  if (length(i) > 0L) {
-    d[seq.int(i[1L], nrow(d)), , drop = FALSE]
-  } else {
-    NULL
+## Clean again
+f <- function(x) {
+  if (length(i <- which(!is.na(x))) == 0L) {
+    return(i)
   }
-})
+  seq.int(i[1L], length(x))
+}
+keep <- tapply(world$cases, world$country, f, simplify = FALSE)
+world_split <- split(world, world$country, drop = TRUE)
+world_split <- Map(`[`, world_split, keep, list(seq_along(world)), drop = FALSE)
 world <- droplevels(do.call(rbind, world_split))
 row.names(world) <- NULL
 

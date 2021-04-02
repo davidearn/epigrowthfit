@@ -597,8 +597,8 @@ label_to_character <- function(label, data, enclos, .label = NULL) {
     s <- "`.label` must be "
   }
   stop_if_not(
-    is.atomic(label),
-    any(length(label) == c(1L, n)),
+    is.atomic(r),
+    any(length(r) == c(1L, n)),
     m = paste0(s, "an atomic vector\nof length 1 or `nrow(data)`.")
   )
   rep_len(as.character(r), n)
