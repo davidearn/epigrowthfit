@@ -19,11 +19,14 @@ on_by_region <- data.frame(
   cases = as.integer(tt)
 )
 
-## Clean and save
+## Clean
 o <- do.call(order, on_by_region[c("region", "date")])
 on_by_region <- on_by_region[o, , drop = FALSE]
 row.names(on_by_region) <- NULL
-save(on_by_region, file = "on_by_region.RData")
+
+## Save
+ontario <- on_by_region
+save(ontario, file = "ontario.RData")
 
 ## Aggregate by age group
 tt <- table(interaction(d[c("date", "age")], drop = TRUE, sep = "::", lex.order = TRUE))
@@ -33,11 +36,14 @@ on_by_age <- data.frame(
   cases = as.vector(tt)
 )
 
-## Clean and save
+## Clean
 al <- levels(on_by_age$age)
 o_al <- order(as.numeric(sub("^([0-9]{1,3})-.*$", "\\1", al)))
 on_by_age$age <- ordered(on_by_age$age, levels = al[o_al])
 o <- do.call(order, on_by_age[c("age", "date")])
 on_by_age <- on_by_age[o, , drop = FALSE]
 row.names(on_by_age) <- NULL
-save(on_by_age, file = "on_by_age.RData")
+
+# ## Save
+# ontario_by_age <- on_by_age
+# save(ontario_by_age, file = "ontario_by_age.RData")
