@@ -17,14 +17,14 @@
 #'   a list of time series. Note that `x ~ time` is equivalent to
 #'   `x ~ time | ts` with `ts` set equal to `rep(factor(1), length(x))`.
 #' @param formula_par
-#'   A named list of formulae of the form `~terms` specifying
+#'   A list of formulae of the form `par ~ terms` specifying
 #'   mixed effects models ([`lme4`][lme4::lmer()]-like syntax)
-#'   for nonlinear model parameters. `names(formula_par)` must
-#'   be a subset of
+#'   for nonlinear model parameters. `deparse(par)` must be an
+#'   element of
 #'   `get_par_names(curve, distr, excess, weekday, link = TRUE)`.
 #'   `~1` is the default for parameters not assigned a formula.
-#'   Alternatively, `formula_par` may itself be a formula of the
-#'   form `~terms`. In this case, the formula is recycled for all
+#'   Alternatively, `formula_par` may be a formula of the form
+#'   `~terms`. In this case, the formula is recycled for all
 #'   nonlinear model parameters. Note that "individuals" in each
 #'   model are fitting windows, and model frames constructed
 #'   from `formula_par` and `data_par` are expected to correspond
@@ -57,14 +57,26 @@
 #'   effects are estimated as offsets relative to the indicated day
 #'   (Sunday if `weekday = 1`, Monday if `weekday = 2`, and so on).
 #'   Currently, weekday effect estimation requires `time` in
-#'   `formula_ts = x ~ time | ts`) to evaluate to an integer
+#'   `formula_ts = x ~ time | ts` to evaluate to an integer
 #'   (in the sense of `all.equal(time, round(time))`) or Date vector
 #'   with 1-day spacing in all fitting windows.
 #' @param method
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
 #' @param na_action
-#'   A character vector indicating how `NA` are handled (see Details).
+#'   A character vector to be recycled to length 2.
+#'   `na_action[1L]` affects the handling of `NA`
+#'   in `x` if `formula_ts = x ~ time | ts`.
+#'   `"fail"` is to throw an error.
+#'   `"exclude"` is to ignore `NA` when fitting and retain `NA`
+#'   in predictions.
+#'   `"pass"` is to ignore `NA` when fitting and predict `NA`.
+#'   `NA` in `time` and `ts` are an error regardless of `na_action`.
+#'   `na_action[2L]` affects the handling of `NA`
+#'   in `formula_par` variables.
+#'   `"fail"` is to throw an error.
+#'   `"exclude"` and `"pass"` are to discard fitting windows
+#'   with incomplete data.
 #' @param sparse_X
 #'   A logical scalar. If `TRUE`, then the fixed effects design
 #'   matrix is constructed in sparse format.
@@ -91,16 +103,6 @@
 #' in a given time series is the number of cases observed from the
 #' end of date `time[i-1]` to the end of date `time[i]`.
 #'
-#' `na_action` is recycled to length 2. `na_action[1L]` affects the
-#' handling of `NA` in `x`. `"fail"` is to throw an error. `"exclude"`
-#' is to ignore `NA` when fitting and to retain `NA` in predictions.
-#' `"pass"` is to ignore `NA` when fitting and to predict `NA`. Note
-#' that `NA` in `time` and `ts` are an error regardless of `na_action`.
-#'
-#' `na_action[2L]` affects the handling of `NA` in `endpoints` and
-#' `formula_par` variables. `"fail"` is to throw an error. `"exclude"`
-#' and `"pass"` are to discard fitting windows with incomplete data.
-#'
 #' To avoid unexpected mismatch between `endpoints` and mixed effects
 #' model frames constructed from `formula_par` and `data_par`, it is
 #' helpful to keep all `endpoints` and `formula_par` variables in a
@@ -110,28 +112,34 @@
 #' If `debug = FALSE`, then a list inheriting from class `"egf"`,
 #' with elements:
 #' \item{`endpoints`}{
-#'   A data frame with variables `start`, `end`, `ts`, and `window`
-#'   listing start and end times for all fitting windows. `origin`
-#'   is retained as an attribute.
+#'   A data frame with variables `ts`, `window`, `start`, and
+#'   `end` listing start and end times for all fitting windows.
+#'   (Supplied intervals are contracted internally so that
+#'   `start` and `end` are precisely the minimum and maximum
+#'   of the set of time points contained in the window.)
+#'   Rows are ordered by time series and chronologically
+#'   within time series. `origin` is retained as an attribute.
 #' }
 #' \item{`frame_ts`}{
 #'   The time series model frame, constructed from `formula_ts`
-#'   and `data_ts`, with variables `time`, `x`, `ts`, and `window`.
-#'   `ts` and `window` are factors that can be used to split
+#'   and `data_ts`, with variables `ts`, `window`, `time`, and
+#'   `x`. `ts` and `window` are factors that can be used to split
 #'   `frame_ts` by time series and by fitting window, respectively.
 #'   Rows are ordered by time series and chronologically within
 #'   time series. `terms(formula_ts)` and `origin` are retained
-#'   as attributes. `levels(window)` corresponds elementwise to
-#'   the rows of `endpoints`.
+#'   as attributes. `unclass(window)` indexes rows of `endpoints`.
+#'   That is, time series data for the fitting window defined by
+#'   row `i` of `endpoints` can be found in the rows of `frame_ts`
+#'   for which `window = levels(window)[i]`.
 #' }
 #' \item{`frame_par`}{
 #'   A list of mixed effects model frames, constructed from
 #'   `formula_par` and `data_par`. There is one model frame
 #'   for each nonlinear model parameter listed in
 #'   `get_par_names(curve, excess, distr, weekday, link = TRUE)`.
-#'   `frame_par[[name]]` retains `terms(formula_par[[name]])`
-#'   as an attribute. Model frames correspond rowwise to
-#'   `endpoints`. That is, data on the fitting window defined
+#'   `frame_par[[name]]` retains `terms(formula_par[[name]])` as
+#'   an attribute. Model frames correspond rowwise to `endpoints`.
+#'   That is, mixed effects data on the fitting window defined
 #'   by row `i` of `endpoints` can be found in row `i` of each
 #'   model frame.
 #' }

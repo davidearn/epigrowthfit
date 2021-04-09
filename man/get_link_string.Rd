@@ -6,38 +6,38 @@
 \alias{remove_link_string}
 \title{Manipulate nonlinear model parameter names}
 \usage{
+get_link_string(s)
+
 add_link_string(s)
 
 remove_link_string(s)
-
-get_link_string(s)
 }
 \arguments{
 \item{s}{A character vector.}
 }
 \value{
-\code{add_link_string(s)} replaces valid \code{s[i]} with
-\code{paste(get_link_string(s[i]), s[i], sep = "_")}.
-
-\code{remove_link_string(s)} replaces valid \code{s[i]} with
-\code{sub("^(log|logit)_.*$", "\\\\1", s[i])}.
-
 \code{get_link_string(s)} replaces valid \code{s[i]} with
 \code{"log"} or \code{"logit"} according to the link function
 used internally for \code{s[i]}.
+
+\code{add_link_string(s)} replaces valid \code{s[i]} with
+\code{sprintf("\%s(\%s)", get_link_string(s[i]), s[i])}.
+
+\code{remove_link_string(s)} replaces valid \code{s[i]} with
+\code{sub("^(log|logit)\\\\((.*)\\\\)$", "\\\\2", s[i])}.
 
 In all cases, invalid \code{s[i]} are replaced with
 \code{NA_character_}.
 }
 \description{
-Prepend, strip, and retrieve link prefixes
-from nonlinear model parameter names.
+Retrieve, add, and remove the link component of a string
+giving the name of a nonlinear model parameter.
 }
 \examples{
 # add_link_string("r")
-# remove_link_string("log_r")
+# remove_link_string("log(r)")
 # get_link_string("r")
-# get_link_string("log_r")
+# get_link_string("log(r)")
 
 }
 \keyword{internal}

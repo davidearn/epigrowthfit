@@ -23,23 +23,23 @@ get_par_names(curve, ...)
 \method{get_par_names}{egf}(curve, link = TRUE, ...)
 }
 \arguments{
-\item{curve, excess, distr, weekday}{For the default method, atomic scalar flags specifying an
-incidence model; see \code{\link[=egf]{egf()}}. Set to \code{NULL} or \code{NA} to
-retrieve or suppress, respectively, all names associated
+\item{curve, excess, distr, weekday}{For the default method, atomic scalar flags specifying
+an incidence model; see \code{\link[=egf]{egf()}}. Set to \code{NULL} or \code{NA}
+to retrieve or suppress, respectively, all names associated
 with an argument. For other methods, \code{curve} is an object
 returned by \code{\link[=egf]{egf()}} or \code{\link[=make_tmb_data]{make_tmb_data()}}, and the remaining
 arguments are ignored.}
 
 \item{...}{Arguments passed to methods by the generic function.}
 
-\item{link}{A logical scalar. If \code{TRUE}, then a prefix indicating the
-link function used internally (either \code{"log_"} or \code{"logit_"})
-is prepended to each parameter name.}
+\item{link}{A logical scalar. If \code{TRUE}, then \code{"name"} is replaced
+with \code{"log(name)"} or \code{"logit(name)"} depending on the
+link function used internally for the parameter.}
 }
 \value{
-A subset of \code{"r"}, \code{"alpha"}, \code{"c0"}, \code{"tinfl"}, \code{"K"},
-\code{"p"}, \code{"a"}, \code{"b"}, \code{"nbdisp"}, and \code{paste0("w", 1:6)},
-with or without prefixes depending on \code{link}.
+If \code{link = FALSE}, then a subset of \code{"r"}, \code{"alpha"},
+\code{"c0"}, \code{"tinfl"}, \code{"K"}, \code{"p"}, \code{"a"}, \code{"b"}, \code{"nbdisp"},
+and \code{paste0("w", 1:6)}.
 }
 \description{
 Retrieves the names used internally for nonlinear model parameters.
@@ -55,10 +55,9 @@ get_par_names(
 )
 
 ## Across all possible models
-(apn_l0 <- get_par_names(NULL, NULL, NULL, NULL, link = FALSE))
+get_par_names(NULL, NULL, NULL, NULL, link = FALSE)
 
-## With prefixes
-(apn_l1 <- get_par_names(NULL, NULL, NULL, NULL, link = TRUE))
-identical(apn_l0, sub("^(log|logit)_", "", apn_l1))
+## With link
+get_par_names(NULL, NULL, NULL, NULL, link = TRUE)
 
 }

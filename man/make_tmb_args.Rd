@@ -31,7 +31,7 @@ causes mortality rather than disease mortality or disease incidence.}
 effects are estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
 Currently, weekday effect estimation requires \code{time} in
-\code{formula_ts = x ~ time | ts}) to evaluate to an integer
+\code{formula_ts = x ~ time | ts} to evaluate to an integer
 (in the sense of \code{all.equal(time, round(time))}) or Date vector
 with 1-day spacing in all fitting windows.}
 

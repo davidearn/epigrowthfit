@@ -3,23 +3,23 @@
 #' Retrieves the names used internally for nonlinear model parameters.
 #'
 #' @param curve,excess,distr,weekday
-#'   For the default method, atomic scalar flags specifying an
-#'   incidence model; see [egf()]. Set to `NULL` or `NA` to
-#'   retrieve or suppress, respectively, all names associated
+#'   For the default method, atomic scalar flags specifying
+#'   an incidence model; see [egf()]. Set to `NULL` or `NA`
+#'   to retrieve or suppress, respectively, all names associated
 #'   with an argument. For other methods, `curve` is an object
 #'   returned by [egf()] or [make_tmb_data()], and the remaining
 #'   arguments are ignored.
 #' @param link
-#'   A logical scalar. If `TRUE`, then a prefix indicating the
-#'   link function used internally (either `"log_"` or `"logit_"`)
-#'   is prepended to each parameter name.
+#'   A logical scalar. If `TRUE`, then `"name"` is replaced
+#'   with `"log(name)"` or `"logit(name)"` depending on the
+#'   link function used internally for the parameter.
 #' @param ...
 #'   Arguments passed to methods by the generic function.
 #'
 #' @return
-#' A subset of `"r"`, `"alpha"`, `"c0"`, `"tinfl"`, `"K"`,
-#' `"p"`, `"a"`, `"b"`, `"nbdisp"`, and `paste0("w", 1:6)`,
-#' with or without prefixes depending on `link`.
+#' If `link = FALSE`, then a subset of `"r"`, `"alpha"`,
+#' `"c0"`, `"tinfl"`, `"K"`, `"p"`, `"a"`, `"b"`, `"nbdisp"`,
+#' and `paste0("w", 1:6)`.
 #'
 #' @examples
 #' ## For a specific model
@@ -32,11 +32,10 @@
 #' )
 #'
 #' ## Across all possible models
-#' (apn_l0 <- get_par_names(NULL, NULL, NULL, NULL, link = FALSE))
+#' get_par_names(NULL, NULL, NULL, NULL, link = FALSE)
 #'
-#' ## With prefixes
-#' (apn_l1 <- get_par_names(NULL, NULL, NULL, NULL, link = TRUE))
-#' identical(apn_l0, sub("^(log|logit)_", "", apn_l1))
+#' ## With link
+#' get_par_names(NULL, NULL, NULL, NULL, link = TRUE)
 #'
 #' @export
 get_par_names <- function(curve, ...) {
@@ -93,39 +92,51 @@ get_par_names.egf <- function(curve, link = TRUE, ...) {
 
 #' Manipulate nonlinear model parameter names
 #'
-#' Prepend, strip, and retrieve link prefixes
-#' from nonlinear model parameter names.
+#' Retrieve, add, and remove the link component of a string
+#' giving the name of a nonlinear model parameter.
 #'
 #' @param s A character vector.
 #'
 #' @return
-#' `add_link_string(s)` replaces valid `s[i]` with
-#' `paste(get_link_string(s[i]), s[i], sep = "_")`.
-#'
-#' `remove_link_string(s)` replaces valid `s[i]` with
-#' `sub("^(log|logit)_.*$", "\\1", s[i])`.
-#'
 #' `get_link_string(s)` replaces valid `s[i]` with
 #' `"log"` or `"logit"` according to the link function
 #' used internally for `s[i]`.
+#'
+#' `add_link_string(s)` replaces valid `s[i]` with
+#' `sprintf("%s(%s)", get_link_string(s[i]), s[i])`.
+#'
+#' `remove_link_string(s)` replaces valid `s[i]` with
+#' `sub("^(log|logit)\\((.*)\\)$", "\\2", s[i])`.
 #'
 #' In all cases, invalid `s[i]` are replaced with
 #' `NA_character_`.
 #'
 #' @examples
 #' # add_link_string("r")
-#' # remove_link_string("log_r")
+#' # remove_link_string("log(r)")
 #' # get_link_string("r")
-#' # get_link_string("log_r")
+#' # get_link_string("log(r)")
 #'
 #' @name get_link_string
 #' @keywords internal
 NULL
 
 #' @rdname get_link_string
+get_link_string <- function(s) {
+  ok <- s %in% get_par_names(curve = NULL, link = FALSE)
+  s[ok] <- replace(rep_len("log", sum(ok)), s[ok] == "p", "logit")
+  if (any(!ok)) { # avoids infinite recursion with `get_par_names()`
+    ok_also <- !ok & s %in% get_par_names(curve = NULL, link = TRUE)
+    s[ok_also] <- sub("^(log|logit)\\((.*)\\)$", "\\1", s[ok_also])
+    s[!(ok | ok_also)] <- NA_character_
+  }
+  s
+}
+
+#' @rdname get_link_string
 add_link_string <- function(s) {
   ok <- s %in% get_par_names(curve = NULL, link = FALSE)
-  s[ok] <- paste(get_link_string(s[ok]), s[ok], sep = "_")
+  s[ok] <- sprintf("%s(%s)", get_link_string(s[ok]), s[ok])
   s[!ok] <- NA_character_
   s
 }
@@ -133,20 +144,8 @@ add_link_string <- function(s) {
 #' @rdname get_link_string
 remove_link_string <- function(s) {
   ok <- s %in% get_par_names(curve = NULL, link = TRUE)
-  s[ok] <- sub("^(log|logit)_", "", s[ok])
+  s[ok] <- sub("^(log|logit)\\((.*)\\)$", "\\2", s[ok])
   s[!ok] <- NA_character_
-  s
-}
-
-#' @rdname get_link_string
-get_link_string <- function(s) {
-  ok <- s %in% get_par_names(curve = NULL, link = FALSE)
-  s[ok] <- ifelse(s[ok] == "p", "logit", "log")
-  if (any(!ok)) { # avoids infinite recursion with `get_par_names()`
-    ok_also <- !ok & s %in% get_par_names(curve = NULL, link = TRUE)
-    s[ok_also] <- sub("^(log|logit)_.*$", "\\1", s[ok_also])
-    s[!(ok | ok_also)] <- NA_character_
-  }
   s
 }
 
@@ -208,17 +207,6 @@ make_frames <- function(formula_ts, formula_par,
                         endpoints, origin,
                         curve, excess, distr, weekday,
                         na_action, init, append) {
-  ### Check data ##########################################
-
-  stop_if_not(
-    vapply(list(data_ts, data_par, endpoints), inherits, FALSE, c("data.frame", "list", "environment")),
-    m = paste0(
-      "`data_ts`, `data_par`, and `endpoints`\n",
-      "must be data frames, lists, or environments."
-    )
-  )
-
-
   ### Check time series formula ###########################
 
   ## Test for formula of the form `x ~ time` or `x ~ time | ts`
@@ -255,18 +243,20 @@ make_frames <- function(formula_ts, formula_par,
   ## with the default `~1` to obtain a list of length `p`
   } else {
     stop_if_not(
-      inherits(formula_par, "list"),
+      is.list(formula_par),
       length(formula_par) > 0L,
       vapply(formula_par, inherits, FALSE, "formula"),
-      lengths(formula_par) == 2L,
-      !is.null(names(formula_par)),
-      names(formula_par) %in% pn,
+      lengths(formula_par) == 3L,
+      (nfp <- vapply(formula_par, deparse, "")) %in% pn,
       m = paste0(
         "`formula_par` must be a formula of the form `~terms`\n",
-        "or a list of such formulae with names in\n",
-        "`get_par_names(curve, distr, excess, weekday, link = TRUE)`."
+        "or a list of formulae of the form `par ~ terms`, with\n",
+        "`deparse(par)` an element of\n",
+        "`get_par_names(curve, excess, distr, weekday, link = TRUE)`."
       )
     )
+    formula_par <- lapply(formula_par, `[`, -2L)
+    names(formula_par) <- nfp
     formula_par[setdiff(pn, names(formula_par))] <- list(~1)
     formula_par <- lapply(formula_par[pn], expand_terms)
   }
@@ -288,6 +278,18 @@ make_frames <- function(formula_ts, formula_par,
       )
     )
   }
+
+
+  ### Check data ##########################################
+
+  stop_if_not(
+    vapply(list(data_ts, data_par, endpoints), inherits, FALSE, c("data.frame", "list", "environment")),
+    m = paste0(
+      "`data_ts`, `data_par`, and `endpoints`\n",
+      "must be data frames, lists, or environments."
+    )
+  )
+
 
   ### Check time series variables #########################
 
@@ -316,7 +318,7 @@ make_frames <- function(formula_ts, formula_par,
   }
 
   ## If formula uses a `|` operator, then validate grouping variable
-  ## on the right hand side
+  ## on right hand side
   if (is_bar(formula_ts[[3L]])) {
     gn <- deparse(formula_ts[[3L]][[3L]])
     ts <- try_eval1(formula_ts[[3L]][[3L]])
@@ -355,6 +357,10 @@ make_frames <- function(formula_ts, formula_par,
     length(time) == n,
     m = sprintf("`length(%s)` must equal `length(%s)`.", tn, cn)
   )
+  stop_if_not(
+    !anyNA(time),
+    m = sprintf("`%s` must not have missing values.", tn)
+  )
   if (weekday > 0L && is.double(time)) {
     ## Weekday effect estimation requires integer time points,
     ## corresponding to 23:59:59 local time
@@ -364,10 +370,6 @@ make_frames <- function(formula_ts, formula_par,
     )
     time <- z
   }
-  stop_if_not(
-    !anyNA(time),
-    m = sprintf("`%s` must not have missing values.", tn)
-  )
   stop_if_not(
     tapply(time, ts, function(x) all(diff(x) > 0)),
     m = sprintf("`%s` must be increasing in each level of `%s`.", tn, gn)
@@ -399,7 +401,12 @@ make_frames <- function(formula_ts, formula_par,
     m = "In `endpoints`: `start` and `end` must have equal, nonzero lengths."
   )
   stop_if_not(
-    all(endpoints$start < endpoints$end, na.rm = TRUE),
+    !anyNA(start),
+    !anyNA(end),
+    m = "In `endpoints`: `start` and `end` must not have missing values."
+  )
+  stop_if_not(
+    all(endpoints$start < endpoints$end),
     m = "In `endpoints`: `start` must precede `end`."
   )
   if (M > 1L) {
@@ -412,34 +419,18 @@ make_frames <- function(formula_ts, formula_par,
       length(epts) == N,
       m = sprintf("In `endpoints`: `start` and `%s` must have equal lengths.", gn)
     )
-    warn_if_not(
-      levels(epts) %in% lts,
-      m = sprintf("In `endpoints`: Levels of `%s` discarded\n(corresponding incidence data not supplied).", gn)
+    stop_if_not(
+      !anyNA(epts),
+      m = sprintf("In `endpoints`: `%s` must not have missing values.", gn)
     )
     epts <- factor(epts, levels = lts)
+    stop_if_not(
+      !anyNA(epts),
+      m = sprintf("In `endpoints`: No time series data supplied\nfor at least one level of `%s`.", gn)
+    )
   } else {
     epts <- rep_len(factor(lts), N)
   }
-
-
-  ### Construct clean table of fitting windows ############
-
-  endpoints <- data.frame(start, end, ts = epts)
-
-  ## Order complete rows by time series and chronologically
-  ## within time series
-  o <- do.call(order, endpoints[c("ts", "start", "end")])
-  ccep <- o[o %in% which(complete.cases(endpoints))]
-  if (length(ccep) < N) {
-    if (na_action[2L] == "fail") {
-      stop("na_action = \"fail\": `endpoints` must not have missing values.")
-    }
-    warning("Incomplete rows of `endpoints` discarded.")
-    if (length(ccep) == 0L) {
-      stop("`endpoints` must have at least one complete row.")
-    }
-  }
-  endpoints <- endpoints[ccep, , drop = FALSE]
 
 
   ### Construct mixed effects model frames ################
@@ -451,38 +442,24 @@ make_frames <- function(formula_ts, formula_par,
     drop.unused.levels = TRUE
   )
 
-  ## `model.frame()` returns a model frame with zero rows
-  ## for formulae without variables, such as `~1`, causing
-  ## mismatch in number of rows between empty and non-empty
-  ## results
-  frame_par[lengths(frame_par) == 0L] <- list(data.frame(row.names = seq_len(N)))
+  ## Test that all model frames have one row per fitting window.
+  ## For formulae without variables, such as `~1`, `model.frame()`
+  ## returns zero-length model frames with zero rows. These should
+  ## be excluded from the test.
+  is_empty <- lengths(frame_par) == 0L
   stop_if_not(
-    vapply(frame_par, nrow, 0L) == N,
+    vapply(frame_par[!is_empty], nrow, 0L) == N,
     m = "`formula_par` variables must have length\nequal to `nrow(endpoints)`."
   )
 
-  ## Maintain rowwise correspondence with `endpoints`
-  frame_par <- lapply(frame_par, `[`, ccep, , drop = FALSE)
-
-  ## Retain only those fitting windows with complete
-  ## mixed effects data
-  ccfp <- which(do.call(complete.cases, frame_par))
-  if (length(ccfp) < length(ccep)) {
-    if (na_action[2L] == "fail") {
-      stop("na_action = \"fail\": `formula_par` variables\nmust not have missing values.")
-    }
-    warning("Fitting windows with incomplete mixed effects data discarded.")
-    if (length(ccfp) == 0L) {
-      stop("At least one fitting window must have complete mixed effects data.")
-    }
-    frame_par <- lapply(frame_par, `[`, ccfp, , drop = FALSE)
-    endpoints <- endpoints[ccfp, , drop = FALSE]
-  }
+  ## Still prefer the zero-length model frames to have one row
+  ## per fitting window
+  frame_par[is_empty] <- list(data.frame(row.names = seq_len(N)))
 
 
   ### Check mixed effects variables #######################
 
-  ## Test random effects variables for unexpected classes
+  ## Validate variable classes
   get_var_names <- function(x) {
     vapply(attr(terms(as.formula(call("~", x))), "variables")[-1L], deparse, "")
   }
@@ -512,43 +489,73 @@ make_frames <- function(formula_ts, formula_par,
   }
   stop_if_not(
     !vapply(frame_par, any_infinite, FALSE),
-    m = "Numeric `formula_par` variables must be finite."
+    m = "Numeric `formula_par` variables must be finite\n(not Inf or -Inf)."
   )
 
 
-  ### Continue checking fitting windows ###################
+  ### Construct clean table of fitting windows ##########
+
+  endpoints <- data.frame(ts = epts, start, end)
+
+  ## Discard fitting windows without observations
+  ## on all mixed effects variables
+  cc <- do.call(complete.cases, frame_par)
+  if (na_action[2L] == "fail" && !all(cc)) {
+    stop("na_action = \"fail\": `formula_par` variables\nmust not have missing values.")
+  }
+  warn_if_not(
+    all(cc),
+    m = "Fitting windows with incomplete mixed effects data discarded."
+  )
+  stop_if_not(
+    any(cc),
+    m = "At least one fitting window must have complete mixed effects data."
+  )
+  endpoints <- endpoints[cc, , drop = FALSE]
+  frame_par <- lapply(frame_par, `[`, cc, , drop = FALSE)
+  Ncc <- nrow(endpoints) # updated number of fitting windows
+
+  ## Order remaining fitting windows by time series
+  ## and chronologically within time series
+  o <- do.call(order, endpoints)
+  endpoints <- endpoints[o, , drop = FALSE]
+  frame_par <- lapply(frame_par, `[`, o, , drop = FALSE)
+
+  ## Assign labels
+  endpoints$window <- gl(Ncc, 1L, labels = sprintf("window_%0*d", nchar(Ncc), seq_len(Ncc)))
+  endpoints <- endpoints[c("ts", "window", "start", "end")]
+
+
+  ### Resume checking fitting windows #####################
 
   ## Create a factor `window` such that `split(time, window)`
   ## splits `time` by fitting window
-  make_window_segment <- function(time, start, end, label) {
-    m <- length(start)
+  make_window_segment <- function(time, endpoints) {
     n <- length(time)
-    w <- rep_len(NA_integer_, n)
-    if (m == 0L || n == 0L) {
-      return(w)
+    N <- nrow(endpoints)
+    lw <- levels(endpoints$window)
+    window <- rep_len(factor(NA, levels = lw), n)
+    if (n == 0L || N == 0L) {
+      return(window)
     }
     stop_if_not(
-      start[-1L] > end[-m],
+      endpoints$start[-1L] > endpoints$end[-N],
       m = "In `endpoints`: Intervals [start, end]\nmust be disjoint within time series."
     )
     f <- function(t0, t1) which(time >= t0 & time <= t1)
-    il <- Map(f, t0 = start, t1 = end)
+    il <- Map(f, t0 = endpoints$start, t1 = endpoints$end)
     stop_if_not(
       lengths(il) >= 2L,
       m = "In `endpoints`: Intervals [start, end]\nmust contain at least two time points."
     )
-    w[unlist(il)] <- rep.int(label, lengths(il))
-    w
+    window[unlist(il)] <- rep.int(endpoints$window, lengths(il))
+    window
   }
-  endpoints$window <- gl(nrow(endpoints), 1L)
-  endpoints_split <- split(endpoints, endpoints$ts)
   window_split <- Map(make_window_segment,
     time  = split(time, ts),
-    start = lapply(endpoints_split, `[[`, "start"),
-    end   = lapply(endpoints_split, `[[`, "end"),
-    label = lapply(endpoints_split, `[[`, "window")
+    endpoints = split(endpoints, endpoints$ts)
   )
-  window <- factor(unsplit(window_split, ts))
+  window <- unsplit(window_split, ts)
 
   if (na_action[1L] == "fail") {
     stop_if_not(
@@ -568,10 +575,14 @@ make_frames <- function(formula_ts, formula_par,
     )
   }
 
+  ## Shrink fitting windows to range of time points
+  endpoints$start <- tapply(time, window, min)
+  endpoints$end <- tapply(time, window, max)
+
 
   ### Construct time series model frame ###################
 
-  frame_ts <- data.frame(time, x = cases, ts, window)
+  frame_ts <- data.frame(ts, window, time, x = cases)
 
   if (M > 1L) {
     ## Omit rows from time series without fitting windows
@@ -589,9 +600,9 @@ make_frames <- function(formula_ts, formula_par,
 
   if (is.data.frame(data_par) && nrow(data_par) == N && !is.null(append)) {
     append <- append_to_index(append, data_par, parent.frame())
-    frame_append <- data_par[ccep[ccfp], append, drop = FALSE]
+    frame_append <- data_par[which(cc)[o], append, drop = FALSE]
   } else {
-    frame_append <- data.frame(row.names = seq_len(nrow(endpoints)))
+    frame_append <- data.frame(row.names = seq_len(Ncc))
   }
 
 
@@ -858,8 +869,8 @@ make_XZ_info <- function(xl, ml) {
 #' }
 #' Additional integer elements of the form `j_link_parameter`
 #' (e.g., `j_log_r`) give the 0-index of nonlinear model parameter
-#' names (e.g., `"log_r"`) in `names(frame_par)`. The value `-1` is
-#' used for parameters not belonging to the nonlinear model being fit.
+#' names (e.g., `"log(r)"`) in `names(frame_par)`. The value `-1`
+#' is used for parameters not belonging to the model being fit.
 #'
 #' @keywords internal
 #' @importFrom stats terms model.matrix model.offset
@@ -999,7 +1010,7 @@ make_tmb_data <- function(frame_ts, frame_par,
   )
   pn0 <- get_par_names(curve = NULL, link = TRUE)
   l2 <- as.list(match(pn0, pn, 0L) - 1L)
-  names(l2) <- sprintf("j_%s", pn0)
+  names(l2) <- sub("^(log|logit)\\((.*)\\)$", "j_\\1_\\2", pn0)
   structure(c(l1, l2), class = c("tmb_data", "list"))
 }
 

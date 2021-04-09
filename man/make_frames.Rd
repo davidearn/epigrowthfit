@@ -33,14 +33,14 @@ a factor such that \code{split(data.frame(time, x), ts)} returns
 a list of time series. Note that \code{x ~ time} is equivalent to
 \code{x ~ time | ts} with \code{ts} set equal to \code{rep(factor(1), length(x))}.}
 
-\item{formula_par}{A named list of formulae of the form \code{~terms} specifying
+\item{formula_par}{A list of formulae of the form \code{par ~ terms} specifying
 mixed effects models (\code{\link[lme4:lmer]{lme4}}-like syntax)
-for nonlinear model parameters. \code{names(formula_par)} must
-be a subset of
+for nonlinear model parameters. \code{deparse(par)} must be an
+element of
 \code{get_par_names(curve, distr, excess, weekday, link = TRUE)}.
 \code{~1} is the default for parameters not assigned a formula.
-Alternatively, \code{formula_par} may itself be a formula of the
-form \code{~terms}. In this case, the formula is recycled for all
+Alternatively, \code{formula_par} may be a formula of the form
+\code{~terms}. In this case, the formula is recycled for all
 nonlinear model parameters. Note that "individuals" in each
 model are fitting windows, and model frames constructed
 from \code{formula_par} and \code{data_par} are expected to correspond
@@ -77,11 +77,23 @@ causes mortality rather than disease mortality or disease incidence.}
 effects are estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
 Currently, weekday effect estimation requires \code{time} in
-\code{formula_ts = x ~ time | ts}) to evaluate to an integer
+\code{formula_ts = x ~ time | ts} to evaluate to an integer
 (in the sense of \code{all.equal(time, round(time))}) or Date vector
 with 1-day spacing in all fitting windows.}
 
-\item{na_action}{A character vector indicating how \code{NA} are handled (see Details).}
+\item{na_action}{A character vector to be recycled to length 2.
+\code{na_action[1L]} affects the handling of \code{NA}
+in \code{x} if \code{formula_ts = x ~ time | ts}.
+\code{"fail"} is to throw an error.
+\code{"exclude"} is to ignore \code{NA} when fitting and retain \code{NA}
+in predictions.
+\code{"pass"} is to ignore \code{NA} when fitting and predict \code{NA}.
+\code{NA} in \code{time} and \code{ts} are an error regardless of \code{na_action}.
+\code{na_action[2L]} affects the handling of \code{NA}
+in \code{formula_par} variables.
+\code{"fail"} is to throw an error.
+\code{"exclude"} and \code{"pass"} are to discard fitting windows
+with incomplete data.}
 
 \item{init}{A full parameter vector for the first likelihood evaluation.
 Set to \code{NULL} to accept the internally generated default.

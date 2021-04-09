@@ -139,7 +139,7 @@ confint.egf <- function(object,
       m = "par = \"R0\": `breaks` and `probs` must be non-NULL.\nSee `help(\"compute_R0\", \"epigrowthfit\")`."
     )
   }
-  par[par %in% spec] <- "log_r"
+  par[par %in% spec] <- "log(r)"
   par <- unique(par)
 
   combined <- make_combined(object)
@@ -249,7 +249,7 @@ confint.egf <- function(object,
   }
 
   if (any(par_bak %in% spec)) {
-    s <- if (link) "log_r" else "r"
+    s <- if (link) "log(r)" else "r"
     d_r <- out[out$par == s, , drop = FALSE]
     if (link) {
       d_r[s_elu] <- exp(d_r[s_elu])

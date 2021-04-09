@@ -37,14 +37,14 @@ a factor such that \code{split(data.frame(time, x), ts)} returns
 a list of time series. Note that \code{x ~ time} is equivalent to
 \code{x ~ time | ts} with \code{ts} set equal to \code{rep(factor(1), length(x))}.}
 
-\item{formula_par}{A named list of formulae of the form \code{~terms} specifying
+\item{formula_par}{A list of formulae of the form \code{par ~ terms} specifying
 mixed effects models (\code{\link[lme4:lmer]{lme4}}-like syntax)
-for nonlinear model parameters. \code{names(formula_par)} must
-be a subset of
+for nonlinear model parameters. \code{deparse(par)} must be an
+element of
 \code{get_par_names(curve, distr, excess, weekday, link = TRUE)}.
 \code{~1} is the default for parameters not assigned a formula.
-Alternatively, \code{formula_par} may itself be a formula of the
-form \code{~terms}. In this case, the formula is recycled for all
+Alternatively, \code{formula_par} may be a formula of the form
+\code{~terms}. In this case, the formula is recycled for all
 nonlinear model parameters. Note that "individuals" in each
 model are fitting windows, and model frames constructed
 from \code{formula_par} and \code{data_par} are expected to correspond
@@ -77,14 +77,26 @@ causes mortality rather than disease mortality or disease incidence.}
 effects are estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
 Currently, weekday effect estimation requires \code{time} in
-\code{formula_ts = x ~ time | ts}) to evaluate to an integer
+\code{formula_ts = x ~ time | ts} to evaluate to an integer
 (in the sense of \code{all.equal(time, round(time))}) or Date vector
 with 1-day spacing in all fitting windows.}
 
 \item{method}{A character string specifying an optimizer available through
 \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}.}
 
-\item{na_action}{A character vector indicating how \code{NA} are handled (see Details).}
+\item{na_action}{A character vector to be recycled to length 2.
+\code{na_action[1L]} affects the handling of \code{NA}
+in \code{x} if \code{formula_ts = x ~ time | ts}.
+\code{"fail"} is to throw an error.
+\code{"exclude"} is to ignore \code{NA} when fitting and retain \code{NA}
+in predictions.
+\code{"pass"} is to ignore \code{NA} when fitting and predict \code{NA}.
+\code{NA} in \code{time} and \code{ts} are an error regardless of \code{na_action}.
+\code{na_action[2L]} affects the handling of \code{NA}
+in \code{formula_par} variables.
+\code{"fail"} is to throw an error.
+\code{"exclude"} and \code{"pass"} are to discard fitting windows
+with incomplete data.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
 matrix is constructed in sparse format.}
@@ -108,28 +120,34 @@ Currently, usage is supported only if \code{data_par} is a data frame.}
 If \code{debug = FALSE}, then a list inheriting from class \code{"egf"},
 with elements:
 \item{\code{endpoints}}{
-A data frame with variables \code{start}, \code{end}, \code{ts}, and \code{window}
-listing start and end times for all fitting windows. \code{origin}
-is retained as an attribute.
+A data frame with variables \code{ts}, \code{window}, \code{start}, and
+\code{end} listing start and end times for all fitting windows.
+(Supplied intervals are contracted internally so that
+\code{start} and \code{end} are precisely the minimum and maximum
+of the set of time points contained in the window.)
+Rows are ordered by time series and chronologically
+within time series. \code{origin} is retained as an attribute.
 }
 \item{\code{frame_ts}}{
 The time series model frame, constructed from \code{formula_ts}
-and \code{data_ts}, with variables \code{time}, \code{x}, \code{ts}, and \code{window}.
-\code{ts} and \code{window} are factors that can be used to split
+and \code{data_ts}, with variables \code{ts}, \code{window}, \code{time}, and
+\code{x}. \code{ts} and \code{window} are factors that can be used to split
 \code{frame_ts} by time series and by fitting window, respectively.
 Rows are ordered by time series and chronologically within
 time series. \code{terms(formula_ts)} and \code{origin} are retained
-as attributes. \code{levels(window)} corresponds elementwise to
-the rows of \code{endpoints}.
+as attributes. \code{unclass(window)} indexes rows of \code{endpoints}.
+That is, time series data for the fitting window defined by
+row \code{i} of \code{endpoints} can be found in the rows of \code{frame_ts}
+for which \code{window = levels(window)[i]}.
 }
 \item{\code{frame_par}}{
 A list of mixed effects model frames, constructed from
 \code{formula_par} and \code{data_par}. There is one model frame
 for each nonlinear model parameter listed in
 \code{get_par_names(curve, excess, distr, weekday, link = TRUE)}.
-\code{frame_par[[name]]} retains \code{terms(formula_par[[name]])}
-as an attribute. Model frames correspond rowwise to
-\code{endpoints}. That is, data on the fitting window defined
+\code{frame_par[[name]]} retains \code{terms(formula_par[[name]])} as
+an attribute. Model frames correspond rowwise to \code{endpoints}.
+That is, mixed effects data on the fitting window defined
 by row \code{i} of \code{endpoints} can be found in row \code{i} of each
 model frame.
 }
@@ -190,16 +208,6 @@ numeric \code{julian(time, origin)} assumes that each element \code{time[i]}
 can be read as "end of date \code{time[i]}", so that observation \code{x[i]}
 in a given time series is the number of cases observed from the
 end of date \code{time[i-1]} to the end of date \code{time[i]}.
-
-\code{na_action} is recycled to length 2. \code{na_action[1L]} affects the
-handling of \code{NA} in \code{x}. \code{"fail"} is to throw an error. \code{"exclude"}
-is to ignore \code{NA} when fitting and to retain \code{NA} in predictions.
-\code{"pass"} is to ignore \code{NA} when fitting and to predict \code{NA}. Note
-that \code{NA} in \code{time} and \code{ts} are an error regardless of \code{na_action}.
-
-\code{na_action[2L]} affects the handling of \code{NA} in \code{endpoints} and
-\code{formula_par} variables. \code{"fail"} is to throw an error. \code{"exclude"}
-and \code{"pass"} are to discard fitting windows with incomplete data.
 
 To avoid unexpected mismatch between \code{endpoints} and mixed effects
 model frames constructed from \code{formula_par} and \code{data_par}, it is

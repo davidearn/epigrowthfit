@@ -486,7 +486,7 @@ l <- list(
     c("2020-07-15", "2020-08-20"),
     c("2021-02-01", "2021-02-22"),
     c("2021-02-25", "2021-04-01")
-  ) ,
+  ),
   UZB = list( # Uzbekistan
     c("2020-03-12", "2020-04-15"),
     c("2020-05-25", "2020-07-20"),
@@ -531,34 +531,3 @@ endpoints <- data.frame(
   row.names = NULL
 )
 save(endpoints, file = "endpoints.RData")
-
-# do_plot_ <- function(formula, data, spar = NULL, endpoints = NULL, ...) {
-#   op <- par(mar = c(2, 3, 1, 1), mgp = c(2, 0.7, 0), las = 1)
-#   on.exit(par(op))
-#   xat <- seq(as.Date("2020-01-01"), Sys.Date(), by = "1 month")
-#   plot(formula, data = data, xlab = "", xaxt = "n", ...)
-#   abline(v = xat, lty = 3, col = "grey80")
-#   axis(side = 1, at = xat, labels = months(xat, TRUE), gap.axis = 0)
-#   if (!is.null(spar)) {
-#     rhs <- eval(formula[[3L]], envir = data, enclos = parent.frame())
-#     lhs <- eval(formula[[2L]], envir = data, enclos = parent.frame())
-#     dd <- data.frame(x = rhs - rhs[1], y = lhs)[is.finite(lhs), , drop = FALSE]
-#     ss <- smooth.spline(x = dd$x, y = dd$y, spar = spar)
-#     lines(y ~ I(rhs[1] + x), data = ss[c("x", "y")], lwd = 2, col = "red")
-#   }
-#   if (!is.null(endpoints)) {
-#     abline(v = as.Date(unlist(endpoints)), lty = 3)
-#   }
-#   invisible(NULL)
-# }
-# do_plot <- function(country_iso3, spar = NULL, endpoints = NULL, ...) {
-#   do_plot_(log1p(cases) ~ date,
-#     data = world_split[[country_iso3]],
-#     spar = spar,
-#     endpoints = endpoints,
-#     ...
-#   )
-# }
-
-
-

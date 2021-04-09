@@ -5,72 +5,119 @@ loc <- paste0(
   "combined_dataset_latest.csv"
 )
 world_full <- read.csv(url(loc))
-world <- world_full[c("DATE", "cases_new", "ISO", "stats_population")]
-names(world) <- c("date", "cases", "country_iso3", "population")
+world <- world_full[c("ISO", "DATE", "cases_new")]
+names(world) <- c("country_iso3", "date", "cases")
 
-## Clean
-world$date <- as.Date(world$date)
-world$cases[world$cases < 0] <- NA
+## Use friendly classes
 world$country_iso3 <- factor(world$country_iso3)
-f <- function(d) {
-  if (sum(d$cases, na.rm = TRUE) > 1000) {
-    i <- seq.int(which.min(is.na(d$cases)), nrow(d))
-  } else {
-    i <- integer(0L)
-  }
-  d[i, , drop = FALSE]
+world$date <- as.Date(world$date)
+
+## Treat negative numbers as missing
+world$cases[world$cases < 0] <- NA
+
+## Discard time series with fewer than 1000 cases
+tot <- tapply(world$cases, world$country_iso3, sum, na.rm = TRUE)
+tot <- tot[tot >= 1000]
+world$country_iso3 <- factor(world$country_iso3, levels = names(tot))
+world <- world[!is.na(world$country_iso3), , drop = FALSE]
+
+## Discard leading NA
+f <- function(x) {
+  n <- length(x)
+  replace(rep_len(FALSE, n), seq.int(which.min(is.na(x)), n), TRUE)
 }
-world <- droplevels(do.call(rbind, lapply(split(world, world$country_iso3), f)))
+keep <- unlist(tapply(world$cases, world$country_iso3, f, simplify = FALSE))
+world <- world[keep, , drop = FALSE]
 row.names(world) <- NULL
 
-## Retrieve country name, region and continent from ISO codes
+## Aggregate time series with fewer than 10000 cases
+## and time series in which more than half of reports
+## are zero
+g <- function(d) {
+  n <- nrow(d)
+  n <- n - n %% 7L
+  d7 <- d[seq.int(7L, n, by = 7L), , drop = FALSE]
+  d7$cases <- tapply(d$cases[seq_len(n)], gl(n / 7L, 7L), sum)
+  r0 <- d[1L, , drop = FALSE]
+  r0$date <- r0$date - 1
+  r0$cases <- NA_real_
+  rbind(r0, d7)
+}
+p0 <- tapply(world$cases, world$country_iso3, function(x) sum(x == 0, na.rm = TRUE) / sum(!is.na(x)))
+agg <- tot < 10000 | p0 > 0.5
+world_split <- split(world, world$country_iso3)
+world_split[agg] <- lapply(world_split[agg], g)
+
+## Delete spurious zeros
+h_ <- function(x, b, tol) {
+  zero <- !is.na(x) & x == 0
+  if (any(zero)) {
+    if (b < 3 || b %% 2 != 1) {
+      stop("`b` must be an odd number greater than 1.")
+    }
+    p <- rep_len(NA_real_, (b - 1) / 2)
+    X <- embed(c(p, x, p), b)
+    zero[zero] <- apply(X[zero, , drop = FALSE] > tol, 1L, any, na.rm = TRUE)
+  }
+  !zero
+}
+h <- function(d, b, tol) {
+  ok <- h_(d$cases, b, tol)
+  d[ok, , drop = FALSE]
+}
+world_split[agg]  <- lapply(world_split[agg],  h, b = 3, tol = 90)
+world_split[!agg] <- lapply(world_split[!agg], h, b = 7, tol = 15)
+world <- do.call(rbind, world_split)
+row.names(world) <- NULL
+
+## Retrieve country name, region, continent, and population
+## from ISO codes
 library("countrycode")
 country_iso3 <- levels(world$country_iso3)
-country_name <- factor(countrycode(
+country_name <- countrycode(
   sourcevar = country_iso3,
   origin = "iso3c",
   destination = "country.name"
-))
-region <- factor(countrycode(
+)
+region <- countrycode(
   sourcevar = country_iso3,
   origin = "iso3c",
   destination = "un.regionsub.name",
   custom_match = c(TWN = "Eastern Asia")
-))
-continent <- factor(countrycode(
+)
+continent <- countrycode(
   sourcevar = country_iso3,
   origin = "iso3c",
   destination = "un.region.name",
   custom_match = c(TWN = "Asia")
-))
-
-## Retrieve population sizes
-population <- tapply(world$population, world$country_iso3, `[`, 1L)
+)
+population <- tapply(world_full$stats_population, world_full$ISO, `[`, 1L)
+population <- population[country_iso3]
 
 ## Compute population-weighted average latitude and longitude of cities
 load("cities/cities.RData")
-f <- function(d) {
+do_wmll <- function(d) {
   c(latitude  = weighted.mean(d$lat, d$population),
     longitude = weighted.mean(d$lng, d$population))
 }
-ll <- lapply(split(cities, cities$iso3), f)
+ll_list <- by(cities, cities$iso3, do_wmll, simplify = FALSE)
 m <- match("Jerusalem", cities$city, 0L)
-ll$PSE <- c(latitude = cities$lat[m], longitude = cities$lng[m])
-ll <- do.call(rbind, ll[country_iso3])
+ll_list$PSE <- c(latitude = cities$lat[m], longitude = cities$lng[m])
+ll_mat <- matrix(unlist(ll_list), ncol = 2L, byrow = TRUE,
+             dimnames = list(names(ll_list), names(ll_list[[1L]])))
 
-## Save time series
-world <- world[c("date", "cases", "country_iso3")]
-save(world, file = "world.RData")
-
-## Save time invariant variables in a separate data frame
+## Keep all time invariant variables in a separate data frame
 worldstats <- data.frame(
   country_iso3,
   country_name,
   region,
   continent,
   population,
-  ll,
+  ll_mat[country_iso3, , drop = FALSE],
   row.names = NULL,
   stringsAsFactors = TRUE
 )
-save(worldstats, file = "worldstats.RData")
+
+## Save everything
+save(world, worldstats, file = "world.RData")
+

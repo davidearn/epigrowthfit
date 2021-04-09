@@ -526,12 +526,16 @@ do_curve_plot <- function(frame_ts, cache,
   ylim_bak <- ylim
   xlab_bak <- xlab
 
-  ## Plot (sub)title
+  ## Plot title
   if (is.null(main)) {
     if (curve %in% c("gompertz", "richards")) {
       substr(curve, 1L, 1L) <- toupper(substr(curve, 1L, 1L))
     }
     main <- rep_len(sprintf("Fitted %s model", curve), N)
+  }
+
+  ## Plot subtitle
+  if (is.null(sub)) {
     sub <- names(frame_ts_split)
   }
 

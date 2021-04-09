@@ -23,7 +23,7 @@ causes mortality rather than disease mortality or disease incidence.}
 effects are estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
 Currently, weekday effect estimation requires \code{time} in
-\code{formula_ts = x ~ time | ts}) to evaluate to an integer
+\code{formula_ts = x ~ time | ts} to evaluate to an integer
 (in the sense of \code{all.equal(time, round(time))}) or Date vector
 with 1-day spacing in all fitting windows.}
 
@@ -106,8 +106,8 @@ An integer flag set equal to 0 so that prediction code is not run.
 }
 Additional integer elements of the form \code{j_link_parameter}
 (e.g., \code{j_log_r}) give the 0-index of nonlinear model parameter
-names (e.g., \code{"log_r"}) in \code{names(frame_par)}. The value \code{-1} is
-used for parameters not belonging to the nonlinear model being fit.
+names (e.g., \code{"log(r)"}) in \code{names(frame_par)}. The value \code{-1}
+is used for parameters not belonging to the model being fit.
 }
 \description{
 Gathers in a list data objects to be passed to the C++ template
