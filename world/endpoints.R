@@ -1028,3 +1028,22 @@ endpoints <- data.frame(
   row.names = NULL
 )
 save(endpoints, file = "endpoints.RData")
+
+### For finding endpoints by eye:
+# load("world.RData")
+# world_split <- split(world, world$country_iso3)
+# world7_split <- split(world7, world7$country_iso3)
+# source("utils.R")
+#
+# dev.off()
+# s <- "ZWE"
+# as.character(worldstats$country_name[match(s, worldstats$country_iso3, 0L)])
+# spar <- c(0.5, 0.5)
+# l <- list(
+#
+# )
+# do_plot(s, spar = spar, endpoints = l,
+#         xlim = as.Date(c("2020-01-01", "2021-05-01")),
+#         ylim = c(0,8))
+# do_plot(s, spar = spar, endpoints = l, ylim = NULL)
+# do_plot(s, spar = spar, endpoints = NULL, ylim = NULL)
