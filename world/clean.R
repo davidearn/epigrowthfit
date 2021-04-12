@@ -28,11 +28,9 @@ f <- function(x) {
 }
 keep <- unlist(tapply(world$cases, world$country_iso3, f, simplify = FALSE))
 world <- world[keep, , drop = FALSE]
-row.names(world) <- NULL
+world_split <- split(world, world$country_iso3)
 
-## Aggregate time series with fewer than 10000 cases
-## and time series in which more than half of reports
-## are zero
+## Aggregate weekly
 g <- function(d) {
   n <- nrow(d)
   n <- n - n %% 7L
@@ -43,12 +41,11 @@ g <- function(d) {
   r0$cases <- NA_real_
   rbind(r0, d7)
 }
-p0 <- tapply(world$cases, world$country_iso3, function(x) sum(x == 0, na.rm = TRUE) / sum(!is.na(x)))
-agg <- tot < 10000 | p0 > 0.5
-world_split <- split(world, world$country_iso3)
-world_split[agg] <- lapply(world_split[agg], g)
+world7_split <- lapply(world_split, g)
 
 ## Delete spurious zeros
+p0 <- tapply(world$cases, world$country_iso3,
+             function(x) sum(x == 0, na.rm = TRUE) / sum(!is.na(x)))
 h_ <- function(x, b, tol) {
   zero <- !is.na(x) & x == 0
   if (any(zero)) {
@@ -65,10 +62,12 @@ h <- function(d, b, tol) {
   ok <- h_(d$cases, b, tol)
   d[ok, , drop = FALSE]
 }
-world_split[agg]  <- lapply(world_split[agg],  h, b = 3, tol = 90)
-world_split[!agg] <- lapply(world_split[!agg], h, b = 7, tol = 15)
-world <- do.call(rbind, world_split)
-row.names(world) <- NULL
+world_split   <- lapply(world_split,  h, b = 15, tol = 15)
+world7_split  <- lapply(world7_split, h, b = 3,  tol = 90)
+world  <- do.call(rbind, world_split)
+world7 <- do.call(rbind, world7_split)
+row.names(world)  <- NULL
+row.names(world7) <- NULL
 
 ## Retrieve country name, region, continent, and population
 ## from ISO codes
@@ -77,7 +76,10 @@ country_iso3 <- levels(world$country_iso3)
 country_name <- countrycode(
   sourcevar = country_iso3,
   origin = "iso3c",
-  destination = "country.name"
+  destination = "country.name",
+  custom_match = c(MMR = "Myanmar",
+                   PSE = "Palestine",
+                   TTO = "Trinidad and Tobago")
 )
 region <- countrycode(
   sourcevar = country_iso3,
@@ -119,5 +121,7 @@ worldstats <- data.frame(
 )
 
 ## Save everything
-save(world, worldstats, file = "world.RData")
+tot <- sort(tot)
+p0 <- sort(p0, decreasing = TRUE)
+save(world, world7, worldstats, tot, p0, file = "world.RData")
 
