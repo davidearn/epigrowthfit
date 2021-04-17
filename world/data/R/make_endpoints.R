@@ -1015,7 +1015,7 @@ f <- function(x) x[do.call(order, x), , drop = FALSE]
 se <- unsplit(by(se, country_iso_alpha3, f, simplify = FALSE), country_iso_alpha3)
 
 endpoints <- data.frame(country_iso_alpha3, se, row.names = NULL)
-save(endpoints, file = "endpoints.RData")
+save(endpoints, file = "../endpoints.RData")
 
 ### For finding endpoints by eye:
 # load("world.RData")

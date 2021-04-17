@@ -1,6 +1,6 @@
 library("countrycode")
 
-covid <- read.csv("covid.csv")
+covid <- read.csv("../csv/covid.csv")
 covid$country_iso_alpha3 <- countrycode(
   sourcevar = covid$Country.Region,
   origin = "country.name",
@@ -33,9 +33,9 @@ split(covid$cases, covid$country_iso_alpha3) <-
   tapply(covid$total_cases, covid$country_iso_alpha3, function(x) c(NA, diff(x)), simplify = FALSE)
 covid$total_cases <- NULL
 row.names(covid) <- NULL
-save(covid, file = "covid.RData")
+save(covid, file = "../covid.RData")
 
-coords <- read.csv("coords.csv")
+coords <- read.csv("../csv/coords.csv")
 s <- c("iso3", "city", "population", "lat", "lng")
 i <- complete.cases(coords[s])
 coords <- coords[i, s, drop = FALSE]
@@ -47,20 +47,21 @@ coords$country_iso_alpha3 <- factor(coords$country_iso_alpha3)
 o <- do.call(order, coords[c("country_iso_alpha3", "population")])
 coords <- coords[o, , drop = FALSE]
 row.names(coords) <- NULL
-save(coords, file = "coords.RData")
+save(coords, file = "../coords.RData")
 
-population <- read.csv("population.csv")
-s <- c("LocID", "PopTotal")
-i <- population$Time == 2020L & population$Variant == "Medium"
+population <- read.csv("../csv/population.csv")
+s <- c("LocID", "Time", "PopTotal")
+i <- population$Variant == "Medium"
 population <- population[i, s, drop = FALSE]
-names(population) <- c("country_iso_numeric", "population")
+names(population) <- c("country_iso_numeric", "year", "population")
+population$year <- ordered(population$year)
 population$population <- 1000 * population$population
-o <- order(population$country_iso_numeric)
+o <- do.call(order, population[c("country_iso_numeric", "year")])
 population <- population[o, , drop = FALSE]
 row.names(population) <- NULL
-save(population, file = "population.RData")
+save(population, file = "../population.RData")
 
-mobility <- read.csv("mobility.csv")
+mobility <- read.csv("../csv/mobility.csv")
 varnames <- grep("_percent_change_from_baseline$", names(mobility), value = TRUE)
 s <- c("country_region_code", "date", varnames)
 i <-
@@ -77,9 +78,9 @@ mobility$Date <- as.Date(mobility$Date)
 o <- do.call(order, mobility[c("country_iso_alpha2", "Date")])
 mobility <- mobility[o, , drop = FALSE]
 row.names(mobility) <- NULL
-save(mobility, file = "mobility.RData")
+save(mobility, file = "../mobility.RData")
 
-npi <- read.csv("npi.csv")
+npi <- read.csv("../csv/npi.csv")
 s_indic <- grep("^(C|E|H)[0-9]+_(?!Flag)", names(npi), value = TRUE, perl = TRUE)
 s_flag  <- grep("^(C|E|H)[0-9]+_Flag$", names(npi), value = TRUE)
 s_index <- grep("^(?!.*Legacy).*Index$", names(npi), value = TRUE, perl = TRUE)
@@ -97,4 +98,36 @@ npi[s_ordered] <- lapply(npi[s_ordered], ordered)
 o <- do.call(order, npi[c("country_iso_alpha3", "Date")])
 npi <- npi[o, , drop = FALSE]
 row.names(npi) <- NULL
-save(npi, file = "npi.RData")
+save(npi, file = "../npi.RData")
+
+devel <- read.csv("../csv/devel.csv")
+s <- grep("^X[0-9]{4}$", names(devel), value = TRUE)
+devel <- data.frame(
+  country_iso_alpha3 = rep(factor(devel$Country.Code), times = length(s)),
+  indic = rep(factor(devel$Indicator.Name), times = length(s)),
+  indic_code = rep(factor(devel$Indicator.Code), times = length(s)),
+  year = rep(ordered(substr(s, 2L, 5L)), each = nrow(devel)),
+  value = unlist(devel[s], recursive = FALSE, use.names = FALSE)
+)
+m <- match(levels(devel$indic), devel$indic)
+devel$indic_code <- factor(devel$indic_code, levels = devel$indic_code[m])
+o <- do.call(order, devel[c("country_iso_alpha3", "indic", "year")])
+devel <- devel[o, , drop = FALSE]
+row.names(devel) <- NULL
+save(devel, file = "../devel.RData")
+
+equity <- read.csv("../csv/equity.csv")
+s <- grep("^X[0-9]{4}$", names(equity), value = TRUE)
+equity <- data.frame(
+  country_iso_alpha3 = rep(factor(equity$Country.Code), times = length(s)),
+  indic = rep(factor(equity$Indicator.Name), times = length(s)),
+  indic_code = rep(factor(equity$Indicator.Code), times = length(s)),
+  year = rep(factor(ordered(s, 2L, 5L)), each = nrow(equity)),
+  value = unlist(equity[s], recursive = FALSE, use.names = FALSE)
+)
+m <- match(levels(equity$indic), equity$indic)
+equity$indic_code <- factor(equity$indic_code, levels = equity$indic_code[m])
+o <- do.call(order, equity[c("country_iso_alpha3", "indic", "year")])
+equity <- equity[o, , drop = FALSE]
+row.names(equity) <- NULL
+save(equity, file = "../equity.RData")

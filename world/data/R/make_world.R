@@ -1,5 +1,6 @@
-load("covid.RData")
+load("../covid.RData")
 world <- covid
+rm(covid)
 
 ## Treat negative numbers as missing
 world$cases[world$cases < 0L] <- NA
@@ -50,5 +51,5 @@ row.names(world7) <- NULL
 ## Save everything
 totals <- sort(totals)
 p0 <- sort(p0, decreasing = TRUE)
-save(world, world7, totals, p0, file = "world.RData")
+save(world, world7, totals, p0, file = "../world.RData")
 

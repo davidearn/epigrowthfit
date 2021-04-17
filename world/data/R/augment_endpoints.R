@@ -1,6 +1,6 @@
 library("countrycode")
 source("utils.R")
-load("endpoints.RData")
+load("../endpoints.RData")
 
 ## ISO 3166-1 alpha-3 code
 country_iso_alpha3 <- levels(endpoints$country_iso_alpha3)
@@ -53,7 +53,7 @@ region <- countrycode(
 endpoints$region <- factor(region)[r]
 
 ## Population-weighted latitude and longitude
-load("coords.RData")
+load("../coords.RData")
 coords$country_iso_alpha3 <- factor(coords$country_iso_alpha3, levels = country_iso_alpha3)
 f <- function(d) {
   c(weighted.mean(d$latitude,  d$population),
@@ -62,6 +62,7 @@ f <- function(d) {
 ll_rows <- by(coords, coords$country_iso_alpha3, f, simplify = FALSE)
 ll <- matrix(unlist(ll_rows), ncol = 2L, byrow = TRUE)
 endpoints[c("latitude", "longitude")] <- ll[r, , drop = FALSE]
+rm(coords)
 
 ## Latitude and longitude bands
 latitude_band <- cut(ll[, 1L],
@@ -78,12 +79,14 @@ endpoints$latitude_band <- latitude_band[r]
 endpoints$longitude_band <- longitude_band[r]
 
 ## Population size
-load("population.RData")
+load("../population.RData")
+population <- population[population$year == "2020", , drop = FALSE]
 m <- match(country_iso_numeric, population$country_iso_numeric, 0L)
 endpoints$population <- population$population[m][r]
+rm(population)
 
 ## Mobility
-load("mobility.RData")
+load("../mobility.RData")
 s <- grep("^mobility_", names(mobility), value = TRUE)
 mobility$country_iso_alpha2 <- factor(mobility$country_iso_alpha2, levels = country_iso_alpha2)
 M <- get_summary(
@@ -104,9 +107,10 @@ M <- get_summary(
   geom = TRUE
 )
 endpoints[s] <- M[, s]
+rm(mobility)
 
 ## NPI
-load("npi.RData")
+load("../npi.RData")
 s <- grep("^npi_", names(npi), value = TRUE)
 s_ordered <- grep("^npi_(flag|indic_(?!(E3|E4|H4|H5))).*$", names(npi), value = TRUE, perl = TRUE)
 npi$country_iso_alpha3 <- factor(npi$country_iso_alpha3, levels = country_iso_alpha3)
@@ -123,7 +127,26 @@ M <- get_summary(
   method = "locf",
   x0 = 0L
 )
-endpoints[s] <-  M[, s]
+endpoints[s] <- M[, s]
 endpoints[s_ordered] <- lapply(endpoints[s_ordered], ordered)
+rm(npi)
 
-save(endpoints, file = "endpoints.RData")
+## Economic indicators
+load("../devel.RData")
+v <- c(
+  gdp_pc = "GDP per capita (constant 2010 US$)",
+  gini   = "Gini index (World Bank estimate)"
+)
+devel$country_iso_alpha3 <- factor(devel$country_iso_alpha3, levels = country_iso_alpha3)
+devel$indic <- factor(devel$indic, levels = v, labels = names(v))
+devel$year <- factor(devel$year, levels = 2001:2020)
+i <- complete.cases(devel[c("country_iso_alpha3", "indic", "year")])
+devel <- devel[i, , drop = FALSE]
+lo <- function(x) {
+  if (all(argna <- is.na(x))) NA else x[max(which(!argna))]
+}
+lodevel <- aggregate(devel["value"], by = devel[c("country_iso_alpha3", "indic")], lo, drop = FALSE)
+endpoints[levels(lodevel$indic)] <- tapply(lodevel$value, lodevel$indic, `[`, r, simplify = FALSE)
+rm(devel)
+
+save(endpoints, file = "../endpoints.RData")
