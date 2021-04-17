@@ -13,37 +13,41 @@ object <- egf(
   distr       = "nbinom",
   append      = -c(start, end),
   na_action   = c("exclude", "fail"),
-
   debug       = TRUE
 )
 ## FIXME:
 ## Below construction of `init` assumes that
 ## match(levels(endpoints$country_iso3), levels(world$country_iso3), 0L)
 ## is increasing
-f <- function(x) {m <- mean(x); c(m, x[-length(x)] - m)}
+f <- function(x) {
+  m <- mean(x)
+  c(m, x[-length(x)] - m)
+}
 init <- unlist(lapply(object$Y_init, f), use.names = FALSE)
+elapsed <- Sys.time()
 object <- update(object, debug = FALSE, init = init)
-save(object, file = "object.RData")
+elapsed <- Sys.time() - elapsed
+save(object, elapsed, file = "object.RData")
 # load("object.RData")
 
 pdf("world_incidence.pdf", width = 8, height = 4, onefile = TRUE)
 plot(object,
   type = "interval",
   show_tdoubling = TRUE,
-  xlim = c("2020-01-01", "2021-04-01"),
+  xlim = c("2020-01-01", "2021-04-10"),
   log = TRUE,
-  order = order(population, decreasing = TRUE),
+  order = order(latitude, decreasing = TRUE),
   sub = country_name
 )
 dev.off()
 
-pdf("world_heat_map_by_pop.pdf", width = 6, height = 4, onefile = TRUE)
+pdf("world_heat_map_by_latitude.pdf", width = 6, height = 4, onefile = TRUE)
 plot(object,
   type = "rt2",
   per_plot = 15L,
   xlim = c("2020-01-01", "2021-04-01"),
   log = TRUE,
-  order = order(population, decreasing = TRUE),
+  order = order(latitude, decreasing = TRUE),
   plab = country_name,
   main = "Per capita growth rate, by country"
 )

@@ -736,7 +736,6 @@ l <- list(
     c("2020-03-17", "2020-04-01"),
     c("2020-05-20", "2020-06-01"),
     c("2020-06-26", "2020-07-08"),
-    c("2020-05-20", "2020-08-15"),
     c("2021-02-28", "2021-03-30")
   ),
   PNG = list( # Papua New Guinea
@@ -1011,33 +1010,22 @@ l <- l[sort(names(l))]
 se <- matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, c("start", "end")))
 se <- as.data.frame(se, stringsAsFactors = FALSE)
 se[] <- lapply(se, as.Date)
-country_iso3 <- rep.int(gl(length(l), 1L, labels = names(l)), lengths(l))
+country_iso_alpha3 <- rep.int(gl(length(l), 1L, labels = names(l)), lengths(l))
 f <- function(x) x[do.call(order, x), , drop = FALSE]
-se <- unsplit(by(se, country_iso3, f, simplify = FALSE), country_iso3)
-wave <- factor(unsplit(lapply(l, seq_along), country_iso3))
+se <- unsplit(by(se, country_iso_alpha3, f, simplify = FALSE), country_iso_alpha3)
 
-load("worldstats.RData")
-m <- match(country_iso3, worldstats$country_iso3, 0L)
-worldstats <- worldstats[m, , drop = FALSE]
-endpoints <- data.frame(
-  se,
-  country_iso3,
-  wave,
-  worldstats[c("country_name", "region", "continent",
-               "population", "latitude", "longitude")],
-  row.names = NULL
-)
+endpoints <- data.frame(country_iso_alpha3, se, row.names = NULL)
 save(endpoints, file = "endpoints.RData")
 
 ### For finding endpoints by eye:
 # load("world.RData")
-# world_split <- split(world, world$country_iso3)
-# world7_split <- split(world7, world7$country_iso3)
+# world_split <- split(world, world$country_iso_alpha3)
+# world7_split <- split(world7, world7$country_iso_alpha3)
 # source("utils.R")
 #
 # dev.off()
 # s <- "ZWE"
-# as.character(worldstats$country_name[match(s, worldstats$country_iso3, 0L)])
+# as.character(worldstats$country_name[match(s, worldstats$country_iso_alpha3, 0L)])
 # spar <- c(0.5, 0.5)
 # l <- list(
 #

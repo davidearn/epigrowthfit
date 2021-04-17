@@ -13,5 +13,5 @@ ontario/*.tgz
 ontario/*.RData
 
 world/*.RData
-world/cities/
-!world/cities/cities.R
+world/data/*.RData
+world/data/*.csv
