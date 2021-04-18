@@ -1011,10 +1011,11 @@ se <- matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, c("start"
 se <- as.data.frame(se, stringsAsFactors = FALSE)
 se[] <- lapply(se, as.Date)
 country_iso_alpha3 <- rep.int(gl(length(l), 1L, labels = names(l)), lengths(l))
+window <- factor(unsplit(lapply(lengths(l), seq_len), country_iso_alpha3))
 f <- function(x) x[do.call(order, x), , drop = FALSE]
 se <- unsplit(by(se, country_iso_alpha3, f, simplify = FALSE), country_iso_alpha3)
 
-endpoints <- data.frame(country_iso_alpha3, se, row.names = NULL)
+endpoints <- data.frame(country_iso_alpha3, window, se, row.names = NULL)
 save(endpoints, file = "../endpoints.RData")
 
 ### For finding endpoints by eye:

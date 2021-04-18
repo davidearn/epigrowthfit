@@ -1,12 +1,11 @@
 load("../covid.RData")
-world <- covid
-rm(covid)
+world <- covid[c("country_iso_alpha3", "Date", "cases_new")]
 
 ## Treat negative numbers as missing
-world$cases[world$cases < 0L] <- NA
+world$cases_new[world$cases_new < 0L] <- NA
 
 ## Discard time series with fewer than 1000 cases
-totals <- tapply(world$cases, world$country_iso_alpha3, sum, na.rm = TRUE)
+totals <- tapply(covid$cases_total, covid$country_iso_alpha3, max, na.rm = TRUE)
 totals <- totals[totals >= 1000]
 world$country_iso_alpha3 <- factor(world$country_iso_alpha3, levels = names(totals))
 world <- world[!is.na(world$country_iso_alpha3), , drop = FALSE]
@@ -15,15 +14,15 @@ world <- world[!is.na(world$country_iso_alpha3), , drop = FALSE]
 g <- function(d) {
   n <- nrow(d) - 1L
   n <- n - n %% 7L
-  d7 <- d[rep_len(1L, n / 7L), , drop = FALSE]
-  d7$cases <- tapply(d$cases[-1L][seq_len(n)], gl(n / 7L, 7L), sum, na.rm = FALSE)
-  rbind(d[1L, , drop = FALSE], d7)
+  d7 <- d[seq.int(1L, 1L + n, by = 7L), , drop = FALSE]
+  d7$cases_new[-1L] <- tapply(d$cases_new[-1L][seq_len(n)], gl(n / 7L, 7L), sum, na.rm = FALSE)
+  d7
 }
 world_split <- split(world, world$country_iso_alpha3)
 world7_split <- lapply(world_split, g)
 
 ## Delete spurious zeros
-p0 <- tapply(world$cases, world$country_iso_alpha3,
+p0 <- tapply(world$cases_new, world$country_iso_alpha3,
              function(x) sum(x == 0, na.rm = TRUE) / sum(!is.na(x)))
 h_ <- function(x, b, tol) {
   zero <- !is.na(x) & x == 0
@@ -38,7 +37,7 @@ h_ <- function(x, b, tol) {
   !zero
 }
 h <- function(d, b, tol) {
-  ok <- h_(d$cases, b, tol)
+  ok <- h_(d$cases_new, b, tol)
   d[ok, , drop = FALSE]
 }
 world_split  <- lapply(world_split,  h, b = 15, tol = 15)

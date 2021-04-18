@@ -24,14 +24,13 @@ covid <- do.call(rbind, lapply(split(covid, covid$country_iso_alpha3), f))
 covid <- data.frame(
   country_iso_alpha3 = rep(factor(covid$country_iso_alpha3), times = length(s)),
   Date = rep(as.Date(s, format = "X%m.%d.%y"), each = nrow(covid)),
-  total_cases = unlist(covid[s], recursive = FALSE, use.names = FALSE),
-  cases = NA_integer_
+  cases_total = unlist(covid[s], recursive = FALSE, use.names = FALSE),
+  cases_new = NA_integer_
 )
 o <- do.call(order, covid[c("country_iso_alpha3", "Date")])
 covid <- covid[o, , drop = FALSE]
-split(covid$cases, covid$country_iso_alpha3) <-
-  tapply(covid$total_cases, covid$country_iso_alpha3, function(x) c(NA, diff(x)), simplify = FALSE)
-covid$total_cases <- NULL
+split(covid$cases_new, covid$country_iso_alpha3) <-
+  tapply(covid$cases_total, covid$country_iso_alpha3, function(x) c(NA, diff(x)), simplify = FALSE)
 row.names(covid) <- NULL
 save(covid, file = "../covid.RData")
 

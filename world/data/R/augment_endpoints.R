@@ -134,8 +134,8 @@ rm(npi)
 ## Economic indicators
 load("../devel.RData")
 v <- c(
-  gdp_pc = "GDP per capita (constant 2010 US$)",
-  gini   = "Gini index (World Bank estimate)"
+  econ_gdp_pc = "GDP per capita (constant 2010 US$)",
+  econ_gini   = "Gini index (World Bank estimate)"
 )
 devel$country_iso_alpha3 <- factor(devel$country_iso_alpha3, levels = country_iso_alpha3)
 devel$indic <- factor(devel$indic, levels = v, labels = names(v))
@@ -148,5 +148,26 @@ lo <- function(x) {
 lodevel <- aggregate(devel["value"], by = devel[c("country_iso_alpha3", "indic")], lo, drop = FALSE)
 endpoints[levels(lodevel$indic)] <- tapply(lodevel$value, lodevel$indic, `[`, r, simplify = FALSE)
 rm(devel)
+
+## Number of days since 50 cases, since 1 in 500,000 persons infected
+load("../covid.RData")
+covid$country_iso_alpha3 <- factor(covid$country_iso_alpha3, levels = country_iso_alpha3)
+f <- function(d, min = 1L, population = NULL) {
+  if (!is.null(population)) {
+    min <- min * population
+  }
+  if (is.na(min) | !any(geq <- d$cases_total >= min)) {
+    return(.Date(NA_real_))
+  }
+  d$Date[which.max(geq)]
+}
+Date_50 <- .Date(c(by(covid, covid$country_iso_alpha3, f, min = 50L)))
+Date_2in1m <- .Date(mapply(f,
+  d = split(covid, covid$country_iso_alpha3),
+  min = 2e-06,
+  population = endpoints$population[match(country_iso_alpha3, endpoints$country_iso_alpha3)]
+))
+endpoints$days_since_50 <- as.numeric(endpoints$start - Date_50[r])
+endpoints$days_since_2in1m <- as.numeric(endpoints$start - Date_2in1m[r])
 
 save(endpoints, file = "../endpoints.RData")
