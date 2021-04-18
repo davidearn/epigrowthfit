@@ -19,25 +19,9 @@ do_plot_ <- function(formula, data, spar = NULL, endpoints = NULL, ...) {
   invisible(NULL)
 }
 do_plot <- function(country_iso_alpha3, spar = NULL, endpoints = NULL, ...) {
-  formula <- log1p(cases / dt) ~ date
-  data <- world7_split[[country_iso_alpha3]]
-  data$dt <- c(7, diff(data$date))
-  dt7 <- data$dt == 7
-  do_plot_(formula,
-    data = data,
-    spar = spar[2L],
-    endpoints = endpoints,
-    pch = 21,
-    bg = c("blue", "grey80")[1L + dt7],
-    main = sprintf("%s (weekly)", country_iso_alpha3),
-    ...
-  )
-  if (!all(dt7)) {
-    text(formula, data = data, subset = !dt7, labels = data$dt,
-         pos = 3, offset = 0.3, col = "grey60", cex = 0.7)
-  }
+  formula <- log1p(cases_new / dt) ~ Date
   data <- world_split[[country_iso_alpha3]]
-  data$dt <- c(1, diff(data$date))
+  data$dt <- c(1, diff(data$Date))
   dt1 <- data$dt == 1
   do_plot_(formula,
     data = data,
@@ -54,3 +38,22 @@ do_plot <- function(country_iso_alpha3, spar = NULL, endpoints = NULL, ...) {
   }
   invisible(NULL)
 }
+
+## For finding endpoints by eye:
+# load("world.RData")
+world_split <- split(world, world$country_iso_alpha3)
+
+dev.off()
+s <- "ZWE"
+spar <- c(0.6, 0.5)
+l <- list( # Zimbabwe
+  c("2020-05-05", "2020-06-07"),
+  c("2020-06-25", "2020-08-04"),
+  c("2020-11-01", "2020-12-04"),
+  c("2020-12-28", "2021-01-15")
+)
+do_plot(s, spar = spar, endpoints = l,
+        xlim = as.Date(c("2020-05-01", "2021-08-01")),
+        ylim = c(6,10))
+do_plot(s, spar = spar, endpoints = l, ylim = NULL)
+do_plot(s, spar = spar, endpoints = NULL, ylim = NULL)

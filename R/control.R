@@ -164,13 +164,6 @@ get_control_default <- function(f = c("plot.egf"), ...) {
             bg = NA,
             cex = 1
           )
-        ),
-        text = list(
-          pos = 3,
-          offset = 0.3,
-          col = "#BBBBBB",
-          cex = 0.7,
-          font = 2
         )
       ), # special
       abline <- list(

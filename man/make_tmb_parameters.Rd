@@ -17,8 +17,8 @@ make_tmb_parameters(tmb_data, frame_ts, frame_par, curve, init, debug)
 
 \item{init}{A full parameter vector for the first likelihood evaluation.
 Set to \code{NULL} to accept the internally generated default.
-Use \code{debug = TRUE} to retrieve this default, which is useful
-as a template.}
+Use \code{debug = TRUE} to retrieve this default, which may be
+useful as a template.}
 
 \item{debug}{A logical scalar used for debugging. If \code{TRUE}, then
 \code{egf()} returns early with a list of optimization inputs.}

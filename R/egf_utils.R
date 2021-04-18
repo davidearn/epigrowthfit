@@ -576,8 +576,8 @@ make_frames <- function(formula_ts, formula_par,
   }
 
   ## Shrink fitting windows to range of time points
-  endpoints$start <- tapply(time, window, min)
-  endpoints$end <- tapply(time, window, max)
+  endpoints$start <- c(tapply(time, window, min))
+  endpoints$end <- c(tapply(time, window, max))
 
 
   ### Construct time series model frame ###################
@@ -598,8 +598,12 @@ make_frames <- function(formula_ts, formula_par,
 
   ### Preserve user-specified `data_par` variables ########
 
-  if (is.data.frame(data_par) && nrow(data_par) == N && !is.null(append)) {
-    append <- append_to_index(append, data_par, parent.frame())
+  if (is.data.frame(data_par) && nrow(data_par) == N) {
+    if (is.null(append)) {
+      append <- seq_along(data_par)
+    } else {
+      append <- append_to_index(append, data_par, parent.frame())
+    }
     frame_append <- data_par[which(cc)[o], append, drop = FALSE]
   } else {
     frame_append <- data.frame(row.names = seq_len(Ncc))

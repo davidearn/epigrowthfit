@@ -199,18 +199,17 @@ For \code{type = "interval"}:
 \describe{
 \item{\code{special}}{
 A named list of the form
-\code{list(tol, points = list(short, long), text)},
+\code{list(points = list(short, long), tol)},
 affecting the appearance of "exceptional" points.
-\code{tol} should be a non-negative number or \code{Inf}. \code{short} and \code{long}
-should be named lists of arguments to \code{\link[graphics:points]{graphics::points()}}, and
-\code{text} should be a named list of arguments to \code{\link[graphics:text]{graphics::text()}}.
-Within a time series \code{data.frame(time, x)}, \code{x[-1]} is highlighted
+\code{tol} should be a non-negative number or \code{Inf}.
+\code{short} and \code{long} should be named lists of arguments
+to \code{\link[graphics:points]{graphics::points()}}. Within a time series
+\code{data.frame(time, x)}, \code{x[-1]} is highlighted
 according to \code{short} if \code{diff(time) < (1-tol)*m} and
 according to \code{long}  if \code{diff(time) > (1+tol)*m},
-where \code{m = median(diff(time))}.
-In both cases, the value of \code{diff(time)} is printed above the point
-according to \code{text}. Use \code{tol = 0} to highlight all deviations from
-\code{m}. Use \code{tol = Inf} to disable highlighting.
+where \code{m} is the mode of \code{diff(time)}.
+Use \code{tol = 0} to highlight all deviations from \code{m}.
+Use \code{tol = Inf} to disable highlighting.
 }
 }
 For \code{type = "rt1"}:

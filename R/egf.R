@@ -26,7 +26,7 @@
 #'   Alternatively, `formula_par` may be a formula of the form
 #'   `~terms`. In this case, the formula is recycled for all
 #'   nonlinear model parameters. Note that "individuals" in each
-#'   model are fitting windows, and model frames constructed
+#'   model are fitting windows, hence model frames constructed
 #'   from `formula_par` and `data_par` are expected to correspond
 #'   rowwise to `endpoints` (see Details).
 #' @param data_ts,data_par
@@ -86,12 +86,13 @@
 #' @param init
 #'   A full parameter vector for the first likelihood evaluation.
 #'   Set to `NULL` to accept the internally generated default.
-#'   Use `debug = TRUE` to retrieve this default, which is useful
-#'   as a template.
+#'   Use `debug = TRUE` to retrieve this default, which may be
+#'   useful as a template.
 #' @param append
 #'   An expression indicating variables in `data_par` to be preserved
 #'   in the returned `"egf"` object for use by methods.
 #'   It is evaluated similarly to the `select` argument of [subset()].
+#'   The default (`NULL`) is to preserve all variables.
 #'   Currently, usage is supported only if `data_par` is a data frame.
 #' @param ...
 #'   Optional arguments to the optimizer specified by `method`.
@@ -104,9 +105,9 @@
 #' end of date `time[i-1]` to the end of date `time[i]`.
 #'
 #' To avoid unexpected mismatch between `endpoints` and mixed effects
-#' model frames constructed from `formula_par` and `data_par`, it is
-#' helpful to keep all `endpoints` and `formula_par` variables in a
-#' common data frame `d` and set `endpoints = d` and `data_par = d`.
+#' model frames constructed from `formula_par` and `data_par`,
+#' keep all necessary `endpoints` variables in `data_par`, and
+#' set `endpoints = data_par`.
 #'
 #' @return
 #' If `debug = FALSE`, then a list inheriting from class `"egf"`,

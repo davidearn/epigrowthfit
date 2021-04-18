@@ -1,17 +1,16 @@
 library("epigrowthfit")
-load("world.RData")
-load("endpoints.RData")
+load("data/world.RData")
+load("data/endpoints.RData")
 options(contrasts = c("contr.sum", "contr.poly"))
 
 object <- egf(
-  formula_ts  = cases ~ date | country_iso3,
+  formula_ts  = cases_new ~ Date | country_iso_alpha3,
   data_ts     = world,
-  formula_par = ~I(country_iso3:wave),
+  formula_par = ~I(country_iso_alpha3:window),
   data_par    = endpoints,
   endpoints   = endpoints,
   curve       = "logistic",
   distr       = "nbinom",
-  append      = -c(start, end),
   na_action   = c("exclude", "fail"),
   debug       = TRUE
 )
@@ -34,21 +33,19 @@ pdf("world_incidence.pdf", width = 8, height = 4, onefile = TRUE)
 plot(object,
   type = "interval",
   show_tdoubling = TRUE,
-  xlim = c("2020-01-01", "2021-04-10"),
+  xlim = c("2020-01-01", "2021-04-20"),
   log = TRUE,
-  order = order(latitude, decreasing = TRUE),
-  sub = country_name
+  sub = country
 )
 dev.off()
 
-pdf("world_heat_map_by_latitude.pdf", width = 6, height = 4, onefile = TRUE)
-plot(object,
-  type = "rt2",
-  per_plot = 15L,
-  xlim = c("2020-01-01", "2021-04-01"),
-  log = TRUE,
-  order = order(latitude, decreasing = TRUE),
-  plab = country_name,
-  main = "Per capita growth rate, by country"
-)
-dev.off()
+# pdf("world_heat_map_by_latitude.pdf", width = 6, height = 4, onefile = TRUE)
+# plot(object,
+#   type = "rt2",
+#   per_plot = 15L,
+#   xlim = c("2020-01-01", "2021-04-01"),
+#   log = TRUE,
+#   plab = country,
+#   main = "Per capita growth rate, by country"
+# )
+# dev.off()

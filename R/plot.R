@@ -169,18 +169,17 @@
 #' \describe{
 #' \item{`special`}{
 #'   A named list of the form
-#'   `list(tol, points = list(short, long), text)`,
+#'   `list(points = list(short, long), tol)`,
 #'   affecting the appearance of "exceptional" points.
-#'   `tol` should be a non-negative number or `Inf`. `short` and `long`
-#'   should be named lists of arguments to [graphics::points()], and
-#'   `text` should be a named list of arguments to [graphics::text()].
-#'   Within a time series `data.frame(time, x)`, `x[-1]` is highlighted
+#'   `tol` should be a non-negative number or `Inf`.
+#'   `short` and `long` should be named lists of arguments
+#'   to [graphics::points()]. Within a time series
+#'   `data.frame(time, x)`, `x[-1]` is highlighted
 #'   according to `short` if `diff(time) < (1-tol)*m` and
 #'   according to `long`  if `diff(time) > (1+tol)*m`,
-#'   where `m = median(diff(time))`.
-#'   In both cases, the value of `diff(time)` is printed above the point
-#'   according to `text`. Use `tol = 0` to highlight all deviations from
-#'   `m`. Use `tol = Inf` to disable highlighting.
+#'   where `m` is the mode of `diff(time)`.
+#'   Use `tol = 0` to highlight all deviations from `m`.
+#'   Use `tol = Inf` to disable highlighting.
 #' }
 #' }
 #' For `type = "rt1"`:
@@ -208,7 +207,7 @@
 #' }
 #'
 #' @export
-#' @importFrom stats median fitted predict complete.cases
+#' @importFrom stats fitted predict complete.cases
 plot.egf <- function(x,
                      type = c("interval", "cumulative", "rt1", "rt2"),
                      subset = NULL,
@@ -356,14 +355,14 @@ plot.egf <- function(x,
     )
   }
 
-  ## If possible, augment with fitted values of "log_r" and
+  ## If possible, augment with fitted values of `log(r)` and
   ## standard errors. Since `x` already stores both of these,
   ## no computation is required and it makes sense to include
   ## everything regardless of `show_tdoubling` and `subset`.
   cn <- names(cache)
   if (x$curve %in% c("exponential", "logistic", "richards") &&
-      !"log_r" %in% levels(cache$var)) {
-    ft <- fitted(x, par = "log_r", link = TRUE, se = TRUE)
+      !"log(r)" %in% levels(cache$var)) {
+    ft <- fitted(x, par = "log(r)", link = TRUE, se = TRUE)
     names(ft)[match("par", names(ft), 0L)] <- "var"
     ft$time <- NA_real_
     cache <- rbind(cache, ft[cn])
@@ -375,17 +374,17 @@ plot.egf <- function(x,
   ## what is necessary.
   if (show_fits || show_bands) {
     what <- switch(type, interval = "log_int_inc", cumulative = "log_cum_inc", "log_rt")
-    window <- x$frame_ts$window
     ok <- cache$var == what & !(show_bands & is.na(cache$se))
-    need <- setdiff(levels(window)[subset], cache$window[ok])
+    need <- setdiff(levels(x$frame_ts$window)[subset], cache$window[ok])
     if (length(need) > 0L) {
+      k <- match(need, levels(x$frame_ts$window), 0L)
       if (type == "interval") {
-        time <- x$frame_ts$time
-        dt <- tapply(time, factor(window, levels = need), function(x) median(diff(x)))
+        dt <- c(tapply(x$frame_ts$time, factor(x$frame_ts$ts, levels = unique(x$endpoints$ts[k])),
+                       function(x) as.numeric(names(which.max(table(diff(x)))))))
+        dt <- dt[as.character(x$endpoints$ts[k])] # FIXME: why errors without `as.character`?
       } else {
         dt <- 1
       }
-      k <- match(need, levels(window), 0L)
       time_split <- Map(seq.int,
         from = x$endpoints$start[k],
         to = x$endpoints$end[k],
@@ -428,7 +427,7 @@ plot.egf <- function(x,
     ## low level plot function
     cache1[cn[1:3]] <- Map(factor,
       x = cache1[cn[1:3]],
-      levels = list(c(if (type != "rt2") "log_r", what), tsl_subset, wl_subset)
+      levels = list(c(if (type != "rt2") "log(r)", what), tsl_subset, wl_subset)
     )
     keep <- complete.cases(cache1[cn[1:3]])
     cache1 <- cache1[keep, , drop = FALSE]
@@ -437,7 +436,7 @@ plot.egf <- function(x,
 
     ## Compute confidence intervals as needed
     if (type != "rt2"  && (show_tdoubling || show_bands)) {
-      l <- (show_tdoubling & cache1$var == "log_r") | (show_bands & cache1$var == what)
+      l <- (show_tdoubling & cache1$var == "log(r)") | (show_bands & cache1$var == what)
       cache1[l, c("lower", "upper")] <- do_wald(
         estimate = cache1$estimate[l],
         se = cache1$se[l],
@@ -507,7 +506,6 @@ plot.egf <- function(x,
 }
 
 #' @import graphics
-#' @importFrom stats median
 do_curve_plot <- function(frame_ts, cache,
                           origin, curve, type, time_as, log,
                           show_fits, show_bands, show_tdoubling, show_legend,
@@ -570,7 +568,7 @@ do_curve_plot <- function(frame_ts, cache,
     wl <- levels(frame_ts$window)
 
     cache <- droplevels(cache_split[[k]])
-    cache_log_r <- cache[cache$var == "log_r", , drop = FALSE]
+    cache_log_r <- cache[cache$var == "log(r)", , drop = FALSE]
     cache_what <- cache[cache$var == what, , drop = FALSE]
     cache_what$time <- cache_what$time - shift
     cache_what_split <- split(cache_what, cache_what$window)
@@ -579,8 +577,9 @@ do_curve_plot <- function(frame_ts, cache,
       time = frame_ts$time - shift,
       dt = c(NA, diff(frame_ts$time))
     )
+    m <- as.numeric(names(which.max(table(data$dt))))
     data[[type]] <- switch(type,
-      interval = c(NA, frame_ts$x[-1L]),
+      interval = c(NA, frame_ts$x[-1L]) * m / data$dt,
       cumulative = cumsum(c(0, frame_ts$x[-1L])),
       rt1 = c(NA, diff(base::log(frame_ts$x))) / data$dt
     )
@@ -627,9 +626,8 @@ do_curve_plot <- function(frame_ts, cache,
     }
 
     ## Point highlighting according to observation interval
-    ## (relative to median)
-    m <- median(data$dt[-1L])
-    pty <- c("median", "short", "long")
+    ## (relative to mode)
+    pty <- c("mode", "short", "long")
     if (type == "interval" && !is.null(control$special)) {
       tol <- control$special$tol
       dt_min <- (1 - tol) * m
@@ -637,9 +635,9 @@ do_curve_plot <- function(frame_ts, cache,
       dt_enum <- 1L + 1L * (data$dt < dt_min) + 2L * (data$dt > dt_max)
       data$pty <- factor(pty)[dt_enum]
     } else {
-      data$pty <- factor("median")
+      data$pty <- factor("mode")
     }
-    control$special$points$median <- control$points # hack
+    control$special$points$mode <- control$points # hack
 
     ### Plot ==============================================
 
@@ -674,17 +672,6 @@ do_curve_plot <- function(frame_ts, cache,
         )
         do.call(points, c(l, control$special$points[[s]]))
       }
-    }
-
-    ## Annotation above exceptional points
-    if (type == "interval" && !is.null(control$special$text)) {
-      l <- list(
-        formula = formula,
-        data = data,
-        labels = data$dt,
-        subset = (data$pty != pty[1L])
-      )
-      do.call(text, c(l, control$special$text))
     }
 
     ## Confidence bands

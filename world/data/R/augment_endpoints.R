@@ -28,7 +28,8 @@ country <- countrycode(
   sourcevar = country_iso_alpha3,
   origin = "iso3c",
   destination = "country.name",
-  custom_match = c(MMR = "Myanmar",
+  custom_match = c(BIH = "Bosnia and Herzegovina",
+                   MMR = "Myanmar",
                    PSE = "Palestine",
                    TTO = "Trinidad and Tobago")
 )

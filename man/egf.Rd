@@ -46,7 +46,7 @@ element of
 Alternatively, \code{formula_par} may be a formula of the form
 \code{~terms}. In this case, the formula is recycled for all
 nonlinear model parameters. Note that "individuals" in each
-model are fitting windows, and model frames constructed
+model are fitting windows, hence model frames constructed
 from \code{formula_par} and \code{data_par} are expected to correspond
 rowwise to \code{endpoints} (see Details).}
 
@@ -106,12 +106,13 @@ matrix is constructed in sparse format.}
 
 \item{init}{A full parameter vector for the first likelihood evaluation.
 Set to \code{NULL} to accept the internally generated default.
-Use \code{debug = TRUE} to retrieve this default, which is useful
-as a template.}
+Use \code{debug = TRUE} to retrieve this default, which may be
+useful as a template.}
 
 \item{append}{An expression indicating variables in \code{data_par} to be preserved
 in the returned \code{"egf"} object for use by methods.
 It is evaluated similarly to the \code{select} argument of \code{\link[=subset]{subset()}}.
+The default (\code{NULL}) is to preserve all variables.
 Currently, usage is supported only if \code{data_par} is a data frame.}
 
 \item{...}{Optional arguments to the optimizer specified by \code{method}.}
@@ -210,7 +211,7 @@ in a given time series is the number of cases observed from the
 end of date \code{time[i-1]} to the end of date \code{time[i]}.
 
 To avoid unexpected mismatch between \code{endpoints} and mixed effects
-model frames constructed from \code{formula_par} and \code{data_par}, it is
-helpful to keep all \code{endpoints} and \code{formula_par} variables in a
-common data frame \code{d} and set \code{endpoints = d} and \code{data_par = d}.
+model frames constructed from \code{formula_par} and \code{data_par},
+keep all necessary \code{endpoints} variables in \code{data_par}, and
+set \code{endpoints = data_par}.
 }
