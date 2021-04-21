@@ -5,6 +5,9 @@ all: tidy world endpoints
 tidy:
 	$(R) -f tidy.R
 
+weather:
+	$(R) -f populate_weather.R
+
 world:
 	$(R) -f make_world.R
 

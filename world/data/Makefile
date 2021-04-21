@@ -1,12 +1,15 @@
 MAKE = make
 CSV = csv
 
-all: download tidy world endpoints
+all: download tidy weather world endpoints
 
 download: setup covid coords population mobility npi devel equity
 
 tidy:
 	$(MAKE) -C R tidy
+
+weather:
+	$(MAKE) -C R weather
 
 world:
 	$(MAKE) -C R world

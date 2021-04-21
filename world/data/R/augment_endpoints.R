@@ -66,18 +66,20 @@ endpoints[c("latitude", "longitude")] <- ll[r, , drop = FALSE]
 rm(coords)
 
 ## Latitude and longitude bands
-latitude_band <- cut(ll[, 1L],
+latitude_band_20deg <- cut(ll[, 1L],
   breaks = seq.int(-90, 90, by = 20),
+  right = FALSE,
   include.lowest = TRUE,
   ordered_result = TRUE
 )
-longitude_band <- cut(ll[, 2L],
-  breaks = seq.int(-180, 180, by = 40),
-  include.lowest = TRUE,
+longitude_band_20deg <- cut(ll[, 2L],
+  breaks = seq.int(0, 360, by = 20),
+  right = FALSE,
+  include.lowest = FALSE,
   ordered_result = TRUE
 )
-endpoints$latitude_band <- latitude_band[r]
-endpoints$longitude_band <- longitude_band[r]
+endpoints$latitude_band_20deg <- latitude_band_20deg[r]
+endpoints$longitude_band_20deg <- longitude_band_20deg[r]
 
 ## Population size
 load("../population.RData")
@@ -150,7 +152,9 @@ lodevel <- aggregate(devel["value"], by = devel[c("country_iso_alpha3", "indic")
 endpoints[levels(lodevel$indic)] <- tapply(lodevel$value, lodevel$indic, `[`, r, simplify = FALSE)
 rm(devel)
 
-## Number of days since 50 cases, since 1 in 500,000 persons infected
+## Number of days since:
+## * 50 persons reported infected
+## * 1 in 500,000 persons reported infected
 load("../covid.RData")
 covid$country_iso_alpha3 <- factor(covid$country_iso_alpha3, levels = country_iso_alpha3)
 f <- function(d, min = 1L, population = NULL) {
