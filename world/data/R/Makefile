@@ -1,12 +1,13 @@
 R = R
 
-all: tidy world endpoints
+all: tidy weather world endpoints
 
 tidy:
 	$(R) -f tidy.R
 
 weather:
 	$(R) -f populate_weather.R
+	$(R) -f merge_weather.R
 
 world:
 	$(R) -f make_world.R

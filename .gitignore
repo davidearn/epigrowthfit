@@ -15,4 +15,4 @@ ontario/*.RData
 world/*.RData
 world/data/*.RData
 world/data/csv/
-world/data/nc/
+world/data/weather/

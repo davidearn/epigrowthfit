@@ -134,6 +134,29 @@ endpoints[s] <- M[, s]
 endpoints[s_ordered] <- lapply(endpoints[s_ordered], ordered)
 rm(npi)
 
+## Weather
+load("../weather.RData")
+s <- grep("^weather_", names(weather), value = TRUE)
+weather$country_iso_alpha3 <- factor(weather$country_iso_alpha3, levels = country_iso_alpha3)
+M <- get_summary(
+  d = weather[s],
+  d_Date = weather$Date,
+  d_index = weather$country_iso_alpha3,
+  start = endpoints$start,
+  start_index = endpoints$country_iso_alpha3,
+  func = mean,
+  na.rm = TRUE,
+  lag = 14L,
+  k = 14L,
+  method = "linear",
+  x0 = NULL,
+  x1 = NULL,
+  period = 1L,
+  geom = FALSE
+)
+endpoints[s] <- M[, s]
+rm(weather)
+
 ## Economic indicators
 load("../devel.RData")
 v <- c(

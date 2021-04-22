@@ -7,8 +7,6 @@ RNGkind("L'Ecuyer-CMRG")
 ## of major cities
 load("../coords.RData")
 coords <- coords[order(coords$country_iso_alpha3), , drop = FALSE] # just in case
-cia3 <- levels(coords$country_iso_alpha3)
-N <- length(cia3)
 
 ## Parent directory for Met Office downloads
 parent <- "https://metdatasa.blob.core.windows.net/covid19-response/metoffice_global_daily"
@@ -52,6 +50,7 @@ if (file.exists(path_to_grid)) {
   nc_close(nc)
   file.remove(path)
   rm(url, path, nc)
+  save(X, Y, dX, dY, file = path_to_grid)
 }
 
 #' Monte Carlo integrator in (longitude, latitude) domain
@@ -87,41 +86,67 @@ mc <- function(n, x0, x1, y0, y1, z = NULL, X, Y, Z, f = mean, ...) {
 
 ### Do stuff ###
 
-set.seed(960850250L)
-n <- 1000L
-threads <- 2L
 scale <- 1.5
+n <- 1000L
+num_simul_dl <- 7L # libcurl (with default settings) struggled with 21 simultaneous downloads
+num_threads <- 2L
+
+set.seed(960850250L)
+options(timeout = 60 * num_simul_dl, warn = 1L)
+
+outfile <- file("../weather/weather.Rout", open = "wt")
+sink(outfile, type = "output")
+sink(outfile, type = "message")
 
 for (i in seq_along(varnames)) {
   v_metoffice <- names(varnames)[i]
   v_ncdf4 <- varnames[[i]]
 
-  urls <- sprintf("%s/%s_mean/global_daily_%s_mean_%s.nc", parent, v_metoffice, v_metoffice, Dates_Ymd)
-  paths_to_nc <- sprintf("../weather/%s_mean/%s", v_metoffice, basename(urls))
-  paths_to_RData <- sub("nc$", "RData", paths_to_nc)
+  ## Paths to output files
+  paths_to_RData <- sprintf("../weather/%s_mean/global_daily_%s_mean_%s.RData", v_metoffice, v_metoffice, Dates_Ymd)
 
-  ## Subset netCDF files that haven't already been processed
-  l <- !file.exists(paths_to_RData)
-
-  ## Subset netCDF files that actually exist at the URL ...
-  ## to save time, only test files from the past 7 days
-  ## (on April 20, 2021, files up to April 18, 2021 were available)
-  check <- l & Dates > yesterday - 7
-  l[check] <- vapply(urls[check], function(x) isTRUE(HEAD(x)$status_code == 200L), FALSE)
-  if (!any(l)) {
+  ## Subset output files that have not already been generated
+  e <- file.exists(paths_to_RData)
+  if (all(e)) {
     next
   }
-  urls <- urls[l]
-  paths_to_nc <- paths_to_nc[l]
-  paths_to_RData <- paths_to_RData[l]
+  paths_to_RData <- paths_to_RData[!e]
 
-  ## Download
-  download.file(urls, paths_to_nc, method = "libcurl")
+  ## Web addresses for netCDF input files
+  urls <- sprintf("%s/%s_mean/%s", parent, v_metoffice, sub("RData$", "nc", basename(paths_to_RData)))
 
-  n <- length(paths_to_nc)
-  for (j in seq_len(n)) {
-    cat("Processing", sQuote(v_metoffice), "netCDF file", sprintf("%*d", nchar(n), j), "of", n, "...\n")
-    nc <- nc_open(paths_to_nc[j])
+  ## Test for availability of resource
+  e <- vapply(urls, function(x) isTRUE(HEAD(x)$status_code == 200L), FALSE, USE.NAMES = FALSE)
+  urls <- urls[e]
+  paths_to_RData <- paths_to_RData[e]
+
+  ## Paths to netCDF input files
+  paths_to_nc <- sub("RData$", "nc", paths_to_RData)
+
+  ## Subset netCDF input files that are not already in file system
+  e <- file.exists(paths_to_nc)
+
+  ## Download in segments
+  d <- sum(!e)
+  if (d > 0L) {
+    urls_for_dl <- urls[!e]
+    paths_to_nc_for_dl <- paths_to_nc[!e]
+    for (j in split(seq_len(d), ceiling(seq_len(d) / num_simul_dl))) {
+      download.file(urls_for_dl[j], paths_to_nc_for_dl[j], method = "libcurl")
+    }
+  }
+
+  ## Process sequentially, deleting input once output is generated
+  p <- length(paths_to_nc)
+  f <- function(d) weighted.mean(d$v, d$population)
+  for (j in seq_len(p)) {
+    cat("Processing", sQuote(v_metoffice), "netCDF file",
+        sprintf("%*d", nchar(p), j), "of", p, "...\n")
+    nc <- try(nc_open(paths_to_nc[j]))
+    if (inherits(nc, "try-error")) { # in case of corrupt initial download
+      download.file(urls[j], paths_to_nc[j])
+      nc <- nc_open(paths_to_nc[j])
+    }
     Z <- ncvar_get(nc, v_ncdf4)
     nc_close(nc)
     coords$v <- mcmapply(mc,
@@ -134,11 +159,13 @@ for (i in seq_along(varnames)) {
       Y  = list(Y),
       Z  = list(Z),
       mc.preschedule = TRUE,
-      mc.cores = threads
+      mc.cores = num_threads
     )
-    f <- function(d) weighted.mean(d$v, d$population)
     x <- c(by(coords, coords$country_iso_alpha3, f))
     save(x, file = paths_to_RData[j])
     file.remove(paths_to_nc[j])
   }
 }
+
+sink(type = "output")
+sink(type = "message")
