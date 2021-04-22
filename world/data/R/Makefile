@@ -5,7 +5,7 @@ all: tidy weather world endpoints
 tidy:
 	$(R) -f tidy.R
 
-weather:
+metoffice:
 	$(R) -f populate_weather.R
 	$(R) -f merge_weather.R
 

@@ -8,8 +8,8 @@ download: setup covid coords population mobility npi devel equity
 tidy:
 	$(MAKE) -C R tidy
 
-weather:
-	$(MAKE) -C R weather
+metoffice:
+	$(MAKE) -C R metoffice
 
 world:
 	$(MAKE) -C R world
