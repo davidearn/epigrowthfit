@@ -29,6 +29,7 @@ country <- countrycode(
   origin = "iso3c",
   destination = "country.name",
   custom_match = c(BIH = "Bosnia and Herzegovina",
+                   CIV = "Côte d'Ivoire",
                    MMR = "Myanmar",
                    PSE = "Palestine",
                    TTO = "Trinidad and Tobago")
@@ -116,10 +117,11 @@ rm(mobility)
 load("../npi.RData")
 s <- grep("^npi_", names(npi), value = TRUE)
 s_ordered <- grep("^npi_(flag|indic_(?!(E3|E4|H4|H5))).*$", names(npi), value = TRUE, perl = TRUE)
+s_numeric <- setdiff(s, s_ordered)
 npi$country_iso_alpha3 <- factor(npi$country_iso_alpha3, levels = country_iso_alpha3)
 npi[s_ordered] <- lapply(npi[s_ordered], function(x) as.integer(as.character(x)))
-M <- get_summary(
-  d = npi[s],
+M_ordered <- get_summary(
+  d = npi[s_ordered],
   d_Date = npi$Date,
   d_index = npi$country_iso_alpha3,
   start = endpoints$start,
@@ -130,8 +132,24 @@ M <- get_summary(
   method = "locf",
   x0 = 0L
 )
-endpoints[s] <- M[, s]
-endpoints[s_ordered] <- lapply(endpoints[s_ordered], ordered)
+endpoints[s_ordered] <- lapply(as.data.frame(M_ordered[, s_ordered]), ordered)
+M <- get_summary(
+  d = npi[s_numeric],
+  d_Date = npi$Date,
+  d_index = npi$country_iso_alpha3,
+  start = endpoints$start,
+  start_index = endpoints$country_iso_alpha3,
+  func = mean,
+  na.rm = TRUE,
+  lag = 14L,
+  k = 14L,
+  method = "linear",
+  x0 = NULL,
+  x1 = NULL,
+  period = 1L,
+  geom = FALSE
+)
+endpoints[s_numeric] <- M[, s_numeric]
 rm(npi)
 
 ## Weather

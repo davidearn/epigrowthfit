@@ -618,7 +618,7 @@ make_frames <- function(formula_ts, formula_par,
   row.names(frame_append) <- NULL
 
   attr(frame_ts, "terms") <- terms(formula_ts)
-  frame_par <- Map(`attr<-`, frame_par, "terms", lapply(frame_par, terms))
+  frame_par <- Map(`attr<-`, frame_par, "terms", lapply(formula_par, terms))
 
   attr(endpoints, "origin") <- origin
   attr(frame_ts, "origin") <- origin

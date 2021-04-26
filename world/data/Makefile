@@ -1,7 +1,7 @@
 MAKE = make
 CSV = csv
 
-all: download tidy weather world endpoints
+all: download tidy metoffice world endpoints
 
 download: setup covid coords population mobility npi devel equity
 
