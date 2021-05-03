@@ -1,4 +1,3 @@
-SHELL = bash
 MAKE = make
 R = R
 PACKAGE = epigrowthfit
