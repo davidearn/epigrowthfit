@@ -1,13 +1,10 @@
 ^data-raw$
-^old$
 ^ontario$
 ^ref$
 ^sandbox$
 ^scrap$
 ^utils$
+^vignettes$
 ^world$
-^ucc$
 ^Makefile$
 ^TODO\.md$
-^data/old_plague_latent_period\.RData$
-^data/old_plague_infectious_period\.RData$

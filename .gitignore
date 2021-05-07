@@ -1,18 +1,14 @@
 *.aux
+*.csv
+*.gz
 *.log
 *.out
 *.pdf
 *.o
 *.so
 *~
-.Rhistory
-*/.Rhistory
+*.Rhistory
 
-ontario/2021-*/
-ontario/*.tgz
-ontario/*.RData
-
-world/*.RData
-world/data/*.RData
-world/data/csv/
-world/data/weather/
+*.RData
+!data/*.RData
+!data-raw/*.RData
