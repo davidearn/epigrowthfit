@@ -13,19 +13,21 @@ documentation:
 \describe{
 \item{\code{\link{canadacovid}}}{
 Daily confirmations of COVID-19 in Canadian provinces
-and territories, from the date of the first confirmation
-to March 15, 2021.
+and territories, from first confirmation to May 8, 2021.
+}
+\item{\code{\link{covid_generation_interval}}}{
+Gamma distribution of the COVID-19 generation interval
+fit to data from a cluster of 45 cases in Tianjin, China.
 }
 \item{\code{\link{husting}}}{
-Weekly counts of wills probated in the Court of Husting
+Counts of wills probated in the Court of Husting
 during four plague epidemics in 14th century London.
 }
 \item{\code{\link{canterbury}}}{
-Weekly counts of wills probated in the Prerogative Court of
-Canterbury during 24 plague epidemics in 16th and 17th century
-London.
+Counts of wills probated in the Prerogative Court of Canterbury
+during 24 plague epidemics in 16th and 17th century London.
 }
-\item{\code{\link{londonparish}}}{
+\item{\code{\link{londonparishes}}}{
 Weekly counts of burials listed in extant parish registers
 during 24 plague epidemics in 16th and 17th century London.
 }
@@ -40,10 +42,6 @@ Empirical distribution of the latent period of pneumonic plague.
 \item{\code{\link{plague_infectious_period}}}{
 Empirical distribution of the infectious period of pneumonic
 plague.
-}
-\item{\code{\link{covid_generation_interval}}}{
-Gamma distribution of the COVID-19 generation interval
-fitted to data from a cluster of 45 cases in Tianjin, China.
 }
 }
 }

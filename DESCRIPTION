@@ -26,8 +26,7 @@ Imports:
     mathjaxr (>= 1.0-1),
     emdbook (>= 1.3.12)
 Suggests:
-    knitr,
-    shape
+    knitr
 LinkingTo:
     TMB,
     RcppEigen

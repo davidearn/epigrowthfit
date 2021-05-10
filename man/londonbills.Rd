@@ -5,39 +5,33 @@
 \alias{londonbills}
 \title{Plague deaths in the London Bills of Mortality}
 \format{
-A data frame with 1329 rows and 7 variables:
+A data frame with 2041 rows and 6 variables:
 \describe{
-\item{\code{date}}{
-Date, weekly within each level of \code{outbreak} with longer gaps
-between outbreaks.
+\item{\code{Date}}{
+A Date vector. Weekly within each level of \code{outbreak},
+except for 78 instances of spacing not equal to 7 days.
 }
-\item{\code{time}}{
-Decimal date, equal to year plus fraction of year. The fraction
-is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
+\item{\code{deaths_all_causes}}{
+An integer vector. \code{deaths_all_causes[i]} is the number of deaths
+due to all causes from the end of \code{Date[i-1]} to the end of \code{Date[i]}.
 }
-\item{\code{all_causes_deaths}}{
-Count of deaths due to all causes. Within a given level of
-\code{outbreak}, \code{all_cause_deaths[i]} is the number of all causes
-deaths from the end of \code{date[i-1]} to the end of \code{date[i]}.
-There are 30 missing values, all during \code{outbreak = 1563}.
+\item{\code{deaths_plague}}{
+An integer vector. \code{deaths_plague[i]} is the number of deaths
+due to plague from the end of \code{Date[i-1]} to the end of \code{Date[i]}.
 }
-\item{\code{plague_deaths}}{
-Count of deaths due to plague. Within a given level of
-\code{outbreak}, \code{plague_deaths[i]} is the number of plague deaths
-from the end of \code{date[i-1]} to the end of \code{date[i]}.
+\item{\code{population}}{
+An integer vector. Estimated London population size.
 }
 \item{\code{outbreak}}{
-Outbreak label, partitioning the time series into distinct
-plague outbreaks. Levels are named roughly according to the
-years in which the outbreaks took place:
+An ordered factor, splitting the time series by plague outbreak.
+Levels indicate the years in which outbreaks took place:
 1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 }
 \item{\code{severity}}{
-Severity label, classifying outbreaks as \code{"minor"} or \code{"major"}.
+An ordered factor, classifying outbreaks as \code{"minor"} or \code{"major"}.
 An outbreak is classified as major if and only if plague deaths
 per week per 1000 individuals exceeded 5 at least once.
 }
-\item{\code{population}}{Estimated London population size.}
 }
 }
 \usage{

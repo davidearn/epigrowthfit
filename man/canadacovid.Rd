@@ -5,33 +5,29 @@
 \alias{canadacovid}
 \title{COVID-19 in Canadian provinces and territories}
 \format{
-A data frame with 4749 rows and 5 variables:
+A data frame with 5451 rows and 4 variables:
 \describe{
-\item{\code{date}}{
-Date, daily (with exceptions).
-}
-\item{\code{time}}{
-Decimal date, equal to year plus fraction of year. The fraction
-is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
-}
 \item{\code{province}}{
-Canadian province or territory (postal abbreviation).
+A factor. Canadian province or territory (postal abbreviation).
 }
-\item{\code{tot_confirmed}}{
-Cumulative incidence. \code{tot_confirmed[i]} gives the number
-of cases confirmed up to the end of \code{date[i]}.
+\item{\code{Date}}{
+A Date vector. Daily within each level of \code{province},
+except prior to invasion, when less frequent reports were common.
 }
-\item{\code{new_confirmed}}{
-Interval incidence. Within each level of \code{province},
-\code{new_confirmed[i]} is the number of cases confirmed
-from the end of \code{date[i-1]} to the end of \code{date[i]}.
+\item{\code{cases_tot}}{
+An integer vector. \code{cases_tot[i]} is the number of cases confirmed
+up to the end of \code{Date[i]} in \code{province[i]}.
+}
+\item{\code{cases_new}}{
+An integer vector. \code{cases_new[i]} is the number of cases confirmed
+from the end of \code{Date[i-1]} to the end of \code{Date[i]} in \code{province[i]}.
 }
 }
 }
 \source{
 Raw data were downloaded from Michael Li's public
 \href{https://github.com/wzmli}{Github repository}.
-Up-to-date data can be found
+Up-to-date data can be downloaded
 \href{https://wzmli.github.io/COVID19-Canada/COVID19_Canada.csv}{here}.
 }
 \usage{
@@ -39,8 +35,7 @@ data(canadacovid)
 }
 \description{
 Daily confirmations of COVID-19 in Canadian provinces
-and territories, from the date of the first confirmation
-to March 15, 2021.
+and territories, from first confirmation to May 8, 2021.
 }
 \examples{
 data(canadacovid)

@@ -9,19 +9,21 @@
 #' \describe{
 #' \item{[`canadacovid`][canadacovid]}{
 #'   Daily confirmations of COVID-19 in Canadian provinces
-#'   and territories, from the date of the first confirmation
-#'   to March 15, 2021.
+#'   and territories, from first confirmation to May 8, 2021.
+#' }
+#' \item{[`covid_generation_interval`][covid_generation_interval]}{
+#'   Gamma distribution of the COVID-19 generation interval
+#'   fit to data from a cluster of 45 cases in Tianjin, China.
 #' }
 #' \item{[`husting`][husting]}{
-#'   Weekly counts of wills probated in the Court of Husting
+#'   Counts of wills probated in the Court of Husting
 #'   during four plague epidemics in 14th century London.
 #' }
 #' \item{[`canterbury`][canterbury]}{
-#'   Weekly counts of wills probated in the Prerogative Court of
-#'   Canterbury during 24 plague epidemics in 16th and 17th century
-#'   London.
+#'   Counts of wills probated in the Prerogative Court of Canterbury
+#'   during 24 plague epidemics in 16th and 17th century London.
 #' }
-#' \item{[`londonparish`][londonparish]}{
+#' \item{[`londonparishes`][londonparishes]}{
 #'   Weekly counts of burials listed in extant parish registers
 #'   during 24 plague epidemics in 16th and 17th century London.
 #' }
@@ -37,10 +39,6 @@
 #'   Empirical distribution of the infectious period of pneumonic
 #'   plague.
 #' }
-#' \item{[`covid_generation_interval`][covid_generation_interval]}{
-#'   Gamma distribution of the COVID-19 generation interval
-#'   fitted to data from a cluster of 45 cases in Tianjin, China.
-#' }
 #' }
 #'
 #' @name epigrowthfit-data
@@ -50,37 +48,32 @@ NULL
 #' COVID-19 in Canadian provinces and territories
 #'
 #' Daily confirmations of COVID-19 in Canadian provinces
-#' and territories, from the date of the first confirmation
-#' to March 15, 2021.
+#' and territories, from first confirmation to May 8, 2021.
 #'
 #' @format
-#' A data frame with 4749 rows and 5 variables:
+#' A data frame with 5451 rows and 4 variables:
 #' \describe{
-#' \item{`date`}{
-#'   Date, daily (with exceptions).
-#' }
-#' \item{`time`}{
-#'   Decimal date, equal to year plus fraction of year. The fraction
-#'   is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
-#' }
 #' \item{`province`}{
-#'   Canadian province or territory (postal abbreviation).
+#'   A factor. Canadian province or territory (postal abbreviation).
 #' }
-#' \item{`tot_confirmed`}{
-#'   Cumulative incidence. `tot_confirmed[i]` gives the number
-#'   of cases confirmed up to the end of `date[i]`.
+#' \item{`Date`}{
+#'   A Date vector. Daily within each level of `province`,
+#'   except prior to invasion, when less frequent reports were common.
 #' }
-#' \item{`new_confirmed`}{
-#'   Interval incidence. Within each level of `province`,
-#'   `new_confirmed[i]` is the number of cases confirmed
-#'   from the end of `date[i-1]` to the end of `date[i]`.
+#' \item{`cases_tot`}{
+#'   An integer vector. `cases_tot[i]` is the number of cases confirmed
+#'   up to the end of `Date[i]` in `province[i]`.
+#' }
+#' \item{`cases_new`}{
+#'   An integer vector. `cases_new[i]` is the number of cases confirmed
+#'   from the end of `Date[i-1]` to the end of `Date[i]` in `province[i]`.
 #' }
 #' }
 #'
 #' @source
 #' Raw data were downloaded from Michael Li's public
 #' [Github repository](https://github.com/wzmli).
-#' Up-to-date data can be found
+#' Up-to-date data can be downloaded
 #' [here](https://wzmli.github.io/COVID19-Canada/COVID19_Canada.csv).
 #'
 #' @usage data(canadacovid)
@@ -93,37 +86,31 @@ NULL
 
 #' Husting wills
 #'
-#' Weekly counts of wills probated in the Court of Husting
-#' during 24 plague epidemics in 16th and 17th century London.
+#' Counts of wills probated in the Court of Husting
+#' during four plague epidemics in 14th century London.
 #'
 #' @format
-#' A data frame with 246 rows and 5 variables:
+#' A data frame with 723 rows and 4 variables:
 #' \describe{
-#' \item{`date`}{
-#'   Date, weekly within each level of `outbreak` with longer gaps
-#'   between outbreaks.
-#' }
-#' \item{`time`}{
-#'   Decimal date, equal to year plus fraction of year. The fraction
-#'   is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
+#' \item{`Date`}{
+#'   A Date vector. Spacing varies, as only nonzero counts of wills
+#'   are included.
 #' }
 #' \item{`wills`}{
-#'   Count of wills written. Within a given level of `outbreak`,
-#'   `wills[i]` is the number of wills written from the end of
-#'   `date[i-1]` to the end of `date[i]`.
+#'   An integer vector. `wills[i]` is the number of wills written
+#'   on `Date[i]`.
 #' }
 #' \item{`outbreak`}{
-#'   Outbreak label, partitioning the time series into distinct
-#'   plague outbreaks. Levels are named roughly according to the
-#'   years in which the outbreaks took place:
+#'   An ordered factor, splitting the time series by plague outbreak.
+#'   Levels indicate the years in which outbreaks took place:
 #'   1348, 1361, 1368, and 1375.
 #' }
 #' \item{`severity`}{
-#'   Severity label, classifying outbreaks as `"minor"` or `"major"`.
-#'   All 14th century outbreaks are classified as major, only because
-#'   the data are too sparse to distinguish between minor and major
-#'   outbreaks (in contrast with wills probated in the
-#'   [Prerogative Court of Canterbury][canterbury]).
+#'   An ordered factor, classifying outbreaks as `"minor"` or `"major"`.
+#'   All 14th century outbreaks are classified as major, as the data
+#'   are too sparse to distinguish between minor and major outbreaks,
+#'   in contrast with wills probated in the
+#'   [Prerogative Court of Canterbury][canterbury].
 #' }
 #' }
 #'
@@ -143,34 +130,27 @@ NULL
 
 #' Canterbury wills
 #'
-#' Weekly counts of wills probated in the Prerogative Court of
-#' Canterbury during 24 plague epidemics in 16th and 17th century
-#' London.
+#' Counts of wills probated in the Prerogative Court of Canterbury
+#' during 24 plague epidemics in 16th and 17th century London.
 #'
 #' @format
-#' A data frame with 1343 rows and 5 variables:
+#' A data frame with 32681 rows and 4 variables:
 #' \describe{
-#' \item{`date`}{
-#'   Date, weekly within each level of `outbreak` with longer gaps
-#'   between outbreaks.
-#' }
-#' \item{`time`}{
-#'   Decimal date, equal to year plus fraction of year. The fraction
-#'   is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
+#' \item{`Date`}{
+#'   A Date vector. Spacing varies, as only nonzero counts of wills
+#'   are included.
 #' }
 #' \item{`wills`}{
-#'   Count of wills written. Within a given level of `outbreak`,
-#'   `wills[i]` is the number of wills written from the end of
-#'   `date[i-1]` to the end of `date[i]`.
+#'   An integer vector. `wills[i]` is the number of wills written
+#'   on `Date[i]`.
 #' }
 #' \item{`outbreak`}{
-#'   Outbreak label, partitioning the time series into distinct
-#'   plague outbreaks. Levels are named roughly according to the
-#'   years in which the outbreaks took place:
+#'   An ordered factor, splitting the time series by plague outbreak.
+#'   Levels indicate the years in which outbreaks took place:
 #'   1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 #' }
 #' \item{`severity`}{
-#'   Severity label, classifying outbreaks as `"minor"` or `"major"`.
+#'   An ordered factor, classifying outbreaks as `"minor"` or `"major"`.
 #'   An outbreak is classified as major if and only if plague deaths
 #'   per week per 1000 individuals exceeded 5 at least once.
 #' }
@@ -194,29 +174,23 @@ NULL
 #' during 24 plague epidemics in 16th and 17th century London.
 #'
 #' @format
-#' A data frame with 1320 rows and 5 variables:
+#' A data frame with 14198 rows and 4 variables:
 #' \describe{
-#' \item{`date`}{
-#'   Date, weekly within each level of `outbreak` with longer gaps
-#'   between outbreaks.
-#' }
-#' \item{`time`}{
-#'   Decimal date, equal to year plus fraction of year. The fraction
-#'   is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
+#' \item{`Date`}{
+#'   A Date vector. Weekly, except for 340 instances of eight day
+#'   spacing.
 #' }
 #' \item{`burials`}{
-#'   Count of burials. Within a given level of `outbreak`,
-#'   `burials[i]` is the number of burials registered from
-#'   the end of `date[i-1]` to the end of `date[i]`.
+#'   An integer vector. `burials[i]` is the number of burials
+#'   registered from the end of `Date[i-1]` to the end of `Date[i]`.
 #' }
 #' \item{`outbreak`}{
-#'   Outbreak label, partitioning the time series into distinct
-#'   plague outbreaks. Levels are named roughly according to the
-#'   years in which the outbreaks took place:
+#'   An ordered factor, splitting the time series by plague outbreak.
+#'   Levels indicate the years in which outbreaks took place:
 #'   1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 #' }
 #' \item{`severity`}{
-#'   Severity label, classifying outbreaks as `"minor"` or `"major"`.
+#'   An ordered factor, classifying outbreaks as `"minor"` or `"major"`.
 #'   An outbreak is classified as major if and only if plague deaths
 #'   per week per 1000 individuals exceeded 5 at least once.
 #' }
@@ -233,12 +207,12 @@ NULL
 #' @references
 #' \insertRef{Cumm+16}{epigrowthfit}
 #'
-#' @usage data(londonparish)
+#' @usage data(londonparishes)
 #' @examples
-#' data(londonparish)
-#' subset(londonparish, outbreak == 1665, -outbreak) # Great Plague of London
-#' @name londonparish
-"londonparish"
+#' data(londonparishes)
+#' subset(londonparishes, outbreak == 1665, -outbreak) # Great Plague of London
+#' @name londonparishes
+"londonparishes"
 
 #' Plague deaths in the London Bills of Mortality
 #'
@@ -246,39 +220,33 @@ NULL
 #' Mortality during 24 plague epidemics in 16th and 17th century London.
 #'
 #' @format
-#' A data frame with 1329 rows and 7 variables:
+#' A data frame with 2041 rows and 6 variables:
 #' \describe{
-#' \item{`date`}{
-#'   Date, weekly within each level of `outbreak` with longer gaps
-#'   between outbreaks.
+#' \item{`Date`}{
+#'   A Date vector. Weekly within each level of `outbreak`,
+#'   except for 78 instances of spacing not equal to 7 days.
 #' }
-#' \item{`time`}{
-#'   Decimal date, equal to year plus fraction of year. The fraction
-#'   is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
+#' \item{`deaths_all_causes`}{
+#'   An integer vector. `deaths_all_causes[i]` is the number of deaths
+#'   due to all causes from the end of `Date[i-1]` to the end of `Date[i]`.
 #' }
-#' \item{`all_causes_deaths`}{
-#'   Count of deaths due to all causes. Within a given level of
-#'   `outbreak`, `all_cause_deaths[i]` is the number of all causes
-#'   deaths from the end of `date[i-1]` to the end of `date[i]`.
-#'   There are 30 missing values, all during `outbreak = 1563`.
+#' \item{`deaths_plague`}{
+#'   An integer vector. `deaths_plague[i]` is the number of deaths
+#'   due to plague from the end of `Date[i-1]` to the end of `Date[i]`.
 #' }
-#' \item{`plague_deaths`}{
-#'   Count of deaths due to plague. Within a given level of
-#'   `outbreak`, `plague_deaths[i]` is the number of plague deaths
-#'   from the end of `date[i-1]` to the end of `date[i]`.
+#' \item{`population`}{
+#'   An integer vector. Estimated London population size.
 #' }
 #' \item{`outbreak`}{
-#'   Outbreak label, partitioning the time series into distinct
-#'   plague outbreaks. Levels are named roughly according to the
-#'   years in which the outbreaks took place:
+#'   An ordered factor, splitting the time series by plague outbreak.
+#'   Levels indicate the years in which outbreaks took place:
 #'   1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 #' }
 #' \item{`severity`}{
-#'   Severity label, classifying outbreaks as `"minor"` or `"major"`.
+#'   An ordered factor, classifying outbreaks as `"minor"` or `"major"`.
 #'   An outbreak is classified as major if and only if plague deaths
 #'   per week per 1000 individuals exceeded 5 at least once.
 #' }
-#' \item{`population`}{Estimated London population size.}
 #' }
 #'
 #' @usage data(londonbills)
@@ -321,7 +289,6 @@ NULL
 #'
 #' @format
 #' A data frame with 12 rows and 2 variables:
-#'
 #' \describe{
 #' \item{`days`}{Infectious period in days, from 1 to 12.}
 #' \item{`relfreq`}{Observed relative frequency out of 225 cases.}
@@ -349,7 +316,6 @@ NULL
 #'
 #' @format
 #' A list with 4 elements:
-#'
 #' \describe{
 #' \item{`shape`}{
 #'   Estimated shape parameter. See [stats::dgamma()].
@@ -380,11 +346,11 @@ NULL
 #' @usage data(plague_infectious_period)
 #' @examples
 #' data(covid_generation_interval)
-#' x <- 10^seq(-2, log10(20), length.out = 150)
+#' x <- 10^seq(-2, log10(20), length.out = 150L)
 #' fx <- with(covid_generation_interval,
 #'   dgamma(x, shape = shape, scale = scale)
 #' )
-#' plot(x, fx, type = "l", ylim = c(0, max(fx[-1])))
+#' plot(x, fx, type = "l", ylim = c(0, max(fx[-1L])))
 #'
 #' @name covid_generation_interval
 "covid_generation_interval"

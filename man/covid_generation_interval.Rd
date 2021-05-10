@@ -6,7 +6,6 @@
 \title{Generation interval distribution (COVID-19)}
 \format{
 A list with 4 elements:
-
 \describe{
 \item{\code{shape}}{
 Estimated shape parameter. See \code{\link[stats:GammaDist]{stats::dgamma()}}.
@@ -40,11 +39,11 @@ to data from a cluster of 45 cases in Tianjin, China.
 }
 \examples{
 data(covid_generation_interval)
-x <- 10^seq(-2, log10(20), length.out = 150)
+x <- 10^seq(-2, log10(20), length.out = 150L)
 fx <- with(covid_generation_interval,
   dgamma(x, shape = shape, scale = scale)
 )
-plot(x, fx, type = "l", ylim = c(0, max(fx[-1])))
+plot(x, fx, type = "l", ylim = c(0, max(fx[-1L])))
 
 }
 \references{

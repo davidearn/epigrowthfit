@@ -5,29 +5,23 @@
 \alias{canterbury}
 \title{Canterbury wills}
 \format{
-A data frame with 1343 rows and 5 variables:
+A data frame with 32681 rows and 4 variables:
 \describe{
-\item{\code{date}}{
-Date, weekly within each level of \code{outbreak} with longer gaps
-between outbreaks.
-}
-\item{\code{time}}{
-Decimal date, equal to year plus fraction of year. The fraction
-is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
+\item{\code{Date}}{
+A Date vector. Spacing varies, as only nonzero counts of wills
+are included.
 }
 \item{\code{wills}}{
-Count of wills written. Within a given level of \code{outbreak},
-\code{wills[i]} is the number of wills written from the end of
-\code{date[i-1]} to the end of \code{date[i]}.
+An integer vector. \code{wills[i]} is the number of wills written
+on \code{Date[i]}.
 }
 \item{\code{outbreak}}{
-Outbreak label, partitioning the time series into distinct
-plague outbreaks. Levels are named roughly according to the
-years in which the outbreaks took place:
+An ordered factor, splitting the time series by plague outbreak.
+Levels indicate the years in which outbreaks took place:
 1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 }
 \item{\code{severity}}{
-Severity label, classifying outbreaks as \code{"minor"} or \code{"major"}.
+An ordered factor, classifying outbreaks as \code{"minor"} or \code{"major"}.
 An outbreak is classified as major if and only if plague deaths
 per week per 1000 individuals exceeded 5 at least once.
 }
@@ -42,9 +36,8 @@ using this
 data(canterbury)
 }
 \description{
-Weekly counts of wills probated in the Prerogative Court of
-Canterbury during 24 plague epidemics in 16th and 17th century
-London.
+Counts of wills probated in the Prerogative Court of Canterbury
+during 24 plague epidemics in 16th and 17th century London.
 }
 \examples{
 data(canterbury)

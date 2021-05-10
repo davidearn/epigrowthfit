@@ -1,10 +1,10 @@
 ^data-raw$
+^old$
 ^ontario$
 ^ref$
 ^sandbox$
 ^scrap$
 ^utils$
-^vignettes$
 ^world$
 ^Makefile$
 ^TODO\.md$

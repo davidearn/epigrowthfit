@@ -6,7 +6,6 @@
 \title{Infectious period distribution (pneumonic plague)}
 \format{
 A data frame with 12 rows and 2 variables:
-
 \describe{
 \item{\code{days}}{Infectious period in days, from 1 to 12.}
 \item{\code{relfreq}}{Observed relative frequency out of 225 cases.}

@@ -5,33 +5,27 @@
 \alias{husting}
 \title{Husting wills}
 \format{
-A data frame with 246 rows and 5 variables:
+A data frame with 723 rows and 4 variables:
 \describe{
-\item{\code{date}}{
-Date, weekly within each level of \code{outbreak} with longer gaps
-between outbreaks.
-}
-\item{\code{time}}{
-Decimal date, equal to year plus fraction of year. The fraction
-is 0 on January 1, 1/365 or 1/366 on January 2, and so on.
+\item{\code{Date}}{
+A Date vector. Spacing varies, as only nonzero counts of wills
+are included.
 }
 \item{\code{wills}}{
-Count of wills written. Within a given level of \code{outbreak},
-\code{wills[i]} is the number of wills written from the end of
-\code{date[i-1]} to the end of \code{date[i]}.
+An integer vector. \code{wills[i]} is the number of wills written
+on \code{Date[i]}.
 }
 \item{\code{outbreak}}{
-Outbreak label, partitioning the time series into distinct
-plague outbreaks. Levels are named roughly according to the
-years in which the outbreaks took place:
+An ordered factor, splitting the time series by plague outbreak.
+Levels indicate the years in which outbreaks took place:
 1348, 1361, 1368, and 1375.
 }
 \item{\code{severity}}{
-Severity label, classifying outbreaks as \code{"minor"} or \code{"major"}.
-All 14th century outbreaks are classified as major, only because
-the data are too sparse to distinguish between minor and major
-outbreaks (in contrast with wills probated in the
-\link[=canterbury]{Prerogative Court of Canterbury}).
+An ordered factor, classifying outbreaks as \code{"minor"} or \code{"major"}.
+All 14th century outbreaks are classified as major, as the data
+are too sparse to distinguish between minor and major outbreaks,
+in contrast with wills probated in the
+\link[=canterbury]{Prerogative Court of Canterbury}.
 }
 }
 }
@@ -43,8 +37,8 @@ These data were transcribed from
 data(husting)
 }
 \description{
-Weekly counts of wills probated in the Court of Husting
-during 24 plague epidemics in 16th and 17th century London.
+Counts of wills probated in the Court of Husting
+during four plague epidemics in 14th century London.
 }
 \examples{
 data(husting)
