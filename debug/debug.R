@@ -33,7 +33,7 @@ f <- function(x) { # dummy to contr.sum
 ## from fixed effects model
 Y_init <- matrix(numeric(0L), ncol = 4L)
 for (d in split(endpoints, endpoints$country_iso_alpha3)) {
-  object <- egf(
+  object_1ts <- egf(
     formula_ts  = cases_new ~ Date | country_iso_alpha3,
     data_ts     = world,
     formula_par = if (nrow(d) > 1L) ~window else ~1,
@@ -44,9 +44,9 @@ for (d in split(endpoints, endpoints$country_iso_alpha3)) {
     na_action   = c("exclude", "fail"),
     debug       = TRUE
   )
-  init <- unlist(lapply(object$Y_init, f), use.names = FALSE)
-  object <- update(object, debug = FALSE, init = init)
-  Y_init <- rbind(Y_init, matrix(fitted(object)$estimate, ncol = 4L))
+  init <- unlist(lapply(object_1ts$Y_init, f), use.names = FALSE)
+  object_1ts <- update(object_1ts, debug = FALSE, init = init)
+  Y_init <- rbind(Y_init, matrix(fitted(object_1ts)$estimate, ncol = 4L))
 }
 
 ## Initial parameter vector for mixed effects model
@@ -57,12 +57,19 @@ log_sd_b <- log(apply(matrix(b, ncol = 3L), 2L, sd))
 #b <- rep_len(0, 3L * nrow(Y_init))
 #log_sd_b <- rep_len(1, 3L)
 ## Mixed effects model fit
-object2 <- update(object1,
+object <- egf(
+  formula_ts  = cases_new ~ Date | country_iso_alpha3,
+  data_ts     = world,
   formula_par = list(
     log(r)      ~ I(country_iso_alpha3:window),
     log(tinfl)  ~ 1 | country_iso_alpha3:window,
     log(K)      ~ 1 | country_iso_alpha3:window,
     log(nbdisp) ~ 1 | country_iso_alpha3:window
   ),
-  init = c(beta, b, log_sd_b)
+  data_par    = endpoints,
+  endpoints   = endpoints,
+  curve       = "logistic",
+  distr       = "nbinom",
+  na_action   = c("exclude", "fail"),
+  init        = c(beta, b, log_sd_b)
 )
