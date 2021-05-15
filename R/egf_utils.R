@@ -247,11 +247,11 @@ make_frames <- function(formula_ts, formula_par,
       length(formula_par) > 0L,
       vapply(formula_par, inherits, FALSE, "formula"),
       lengths(formula_par) == 3L,
-      (nfp <- vapply(formula_par, deparse, "")) %in% pn,
+      (nfp <- vapply(formula_par, function(x) deparse1(x[[2L]]), "")) %in% pn,
       m = paste0(
         "`formula_par` must be a formula of the form `~terms`\n",
         "or a list of formulae of the form `par ~ terms`, with\n",
-        "`deparse(par)` an element of\n",
+        "`deparse1(par)` an element of\n",
         "`get_par_names(curve, excess, distr, weekday, link = TRUE)`."
       )
     )
@@ -298,7 +298,7 @@ make_frames <- function(formula_ts, formula_par,
   }
 
   ## Validate incidence variable
-  cn <- deparse(formula_ts[[2L]])
+  cn <- deparse1(formula_ts[[2L]])
   cases <- try_eval1(formula_ts[[2L]])
   stop_if_not(
     is.numeric(cases),
@@ -320,7 +320,7 @@ make_frames <- function(formula_ts, formula_par,
   ## If formula uses a `|` operator, then validate grouping variable
   ## on right hand side
   if (is_bar(formula_ts[[3L]])) {
-    gn <- deparse(formula_ts[[3L]][[3L]])
+    gn <- deparse1(formula_ts[[3L]][[3L]])
     ts <- try_eval1(formula_ts[[3L]][[3L]])
     stop_if_not(
       is.factor(ts),
@@ -344,7 +344,7 @@ make_frames <- function(formula_ts, formula_par,
   M <- length(lts) # tentative number of time series
 
   ## Validate time variable
-  tn <- deparse(formula_ts[[3L]][[2L]])
+  tn <- deparse1(formula_ts[[3L]][[2L]])
   time <- try_eval1(formula_ts[[3L]][[2L]])
   if (inherits(time, "Date")) {
     time <- julian(time, origin = origin)
@@ -461,7 +461,7 @@ make_frames <- function(formula_ts, formula_par,
 
   ## Validate variable classes
   get_var_names <- function(x) {
-    vapply(attr(terms(as.formula(call("~", x))), "variables")[-1L], deparse, "")
+    vapply(attr(terms(as.formula(call("~", x))), "variables")[-1L], deparse1, "")
   }
   is_bar_ok <- function(bar, data) {
     v <- lapply(bar[-1L], get_var_names)
@@ -699,23 +699,26 @@ make_X <- function(x, frame, sparse) {
 #' @importFrom methods as
 #' @importFrom stats model.matrix as.formula
 #' @importFrom Matrix KhatriRao
+#' @importMethodsFrom Matrix t
 make_Z <- function(x, frame) {
-  X <- make_X(as.formula(call("~", x[[2L]])), frame = frame, sparse = FALSE)
-  gn <- vapply(split_interaction(x[[3L]]), deparse, "")
-  g <- interaction(frame[gn], drop = TRUE, sep = ":", lex.order = TRUE)
+  X <- epigrowthfit:::make_X(as.formula(call("~", x[[2L]])), frame = frame, sparse = FALSE)
+  gn <- vapply(epigrowthfit:::split_interaction(x[[3L]]), deparse1, "")
+  g <- interaction(frame[gn], drop = TRUE, sep = ":", lex.order = FALSE)
   J <- t(as(g, Class = "sparseMatrix"))
   Z <- t(KhatriRao(t(J), t(X)))
   ## For consistency, we want `model.matrix()`-style names
   ## for the group levels
   G <- model.matrix(as.formula(call("~", call("+", 0, x[[3L]]))), data = frame)
+  j <- colSums(abs(G)) > 0
+  G <- G[, j, drop = FALSE]
   colnames(Z) <- sprintf("(%s | %s)",
-    rep(colnames(X), times = nlevels(g)),
+    rep(colnames(X), times = ncol(G)),
     rep(colnames(G), each = ncol(X))
   )
   structure(Z,
     contrasts = attr(X, "contrasts"),
-    assign = rep(attr(X, "assign"), times = nlevels(g)),
-    group = gl(nlevels(g), ncol(X), labels = levels(g))
+    assign = rep(attr(X, "assign"), times = ncol(G)),
+    group = gl(ncol(G), ncol(X), labels = levels(g))
   )
 }
 
@@ -772,7 +775,7 @@ make_XZ_info <- function(xl, ml) {
     bar_lhs <- lapply(xl, `[[`, 2L)
     bar_rhs <- lapply(xl, `[[`, 3L)
     xl <- lapply(bar_lhs, function(x) as.formula(call("~", x)))
-    group <- rep(vapply(bar_rhs, deparse, ""), ml_ncol)
+    group <- rep(vapply(bar_rhs, deparse1, ""), ml_ncol)
     level <- unlist(lapply(ml, attr, "group"))
   }
   get_term_labels <- function(formula) {
@@ -877,7 +880,7 @@ make_XZ_info <- function(xl, ml) {
 #' is used for parameters not belonging to the model being fit.
 #'
 #' @keywords internal
-#' @importFrom stats terms model.matrix model.offset
+#' @importFrom stats formula terms model.matrix model.offset
 #' @importFrom methods as
 #' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
 make_tmb_data <- function(frame_ts, frame_par,
@@ -925,7 +928,7 @@ make_tmb_data <- function(frame_ts, frame_par,
 
   ## Fixed effects formula and list of random effects terms
   ## extracted from each mixed effects formula
-  formula_par <- lapply(frame_par, terms)
+  formula_par <- lapply(frame_par, function(x) formula(terms(x)))
   effects <- lapply(formula_par, split_effects)
   fixed <- lapply(effects, `[[`, "fixed")
   random <- lapply(effects, `[[`, "random")

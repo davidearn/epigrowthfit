@@ -292,12 +292,14 @@ egf <- function(formula_ts,
   nll_func <- function(x = par) as.numeric(tmb_out$fn(x[nonrandom]))
   nll_grad <- function(x = par) as.numeric(tmb_out$gr(x[nonrandom]))
 
-  sdr <- sdreport(tmb_out)
-  report <- c(
-    tmb_out$report(best),
-    list(cov = sdr$cov.fixed),
-    split_sdreport(sdr)
-  )
+  sdr <- try(sdreport(tmb_out))
+  report <- if (!inherits(sdr, "try-error")) {
+    c(
+      tmb_out$report(best),
+      list(cov = sdr$cov.fixed),
+      split_sdreport(sdr)
+    )
+  }
 
   out <- list(
     endpoints = frames$endpoints,

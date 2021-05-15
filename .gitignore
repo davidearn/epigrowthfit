@@ -8,7 +8,10 @@
 *.so
 *~
 *.Rhistory
+*.Rout
 
 *.RData
 !data/*.RData
 !data-raw/*.RData
+
+world/data/weather/

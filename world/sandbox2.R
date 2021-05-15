@@ -12,14 +12,13 @@ make_endpoints <- function(l, ...) {
   data.frame(d, window = gl(nrow(d), 1L))
 }
 
-cia3 <- "OMN"
+cia3 <- "SEN"
 ep <- make_endpoints(
-  list( # Oman
-    c("2020-03-29", "2020-04-18"),
-    c("2020-05-03", "2020-05-24"),
-    c("2020-05-27", "2020-07-23"),
-    c("2020-09-05", "2020-09-23"),
-    c("2021-03-06", "2021-04-15")
+  list( # Senegal
+    c("2020-03-05", "2020-03-25"),
+    c("2020-04-11", "2020-04-30"),
+    c("2020-11-21", "2020-12-11"),
+    c("2020-12-13", "2021-01-14")
   )
 )
 {
@@ -27,8 +26,7 @@ d <- world[world$country_iso_alpha3 == cia3, , drop = FALSE]
 object <- egf(
   formula_ts  = cases_new ~ Date,
   data_ts     = d,
-  #formula_par = ~1,
-  formula_par = ~window,
+  formula_par = if (nrow(ep) > 1L) ~window else ~1,
   data_par    = ep,
   endpoints   = ep,
   curve       = "logistic",
@@ -51,11 +49,12 @@ plot(object,
   show_tdoubling = TRUE,
   log = TRUE,
   sub = cia3,
-  #xlim = c("2020-02-01", "2020-10-01"),
-  xlim = c("2020-08-01", "2021-05-15"),
+  #xlim = c("2020-02-01", "2020-08-01"),
+  #xlim = c("2020-10-01", "2021-05-15"),
   #xlim = c("2021-01-01", "2021-06-01"),
-  ylim = c(40,3000)
+  #ylim = c(50,2000)
 )
 print(object$optim_out$convergence)
 }
+fitted(object,se=TRUE)
 

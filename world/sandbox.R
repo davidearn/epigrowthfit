@@ -65,11 +65,11 @@ if (file.exists("object.RData")) {
   dev.off()
 }
 
-if (!file.exists("object_m.RData")) {
+if (file.exists("object_m.RData")) {
   load("object_m.RData")
 } else {
   Y_init <- matrix(fitted(object)$estimate, ncol = 4L)
-  init <- c(f(Y_init[, 1L]), 0, 0, 0, 0, 0, 0, colMeans(Y_init[, -1L]), 1, 1, 1)
+  init <- c(f(Y_init[, 1L]), rep_len(0, 6L), colMeans(Y_init[, -1L]), rep_len(0, 1340L - 344L), rep_len(1, 3L))
   object_m <- egf(
     formula_ts  = cases_new ~ Date | country_iso_alpha3,
     data_ts     = world,
@@ -96,9 +96,9 @@ if (!file.exists("object_m.RData")) {
   save(object_m, file = "object_m.RData")
 
   pdf("world_incidence_m.pdf", width = 8, height = 4, onefile = TRUE)
-  plot(object,
+  plot(object_m,
     type = "interval",
-    show_tdoubling = TRUE,
+    show_tdoubling = FALSE,
     xlim = c(as.Date("2020-01-01"), Sys.Date()),
     log = TRUE,
     sub = country

@@ -50,6 +50,7 @@ ranef.egf <- function(object, ...) {
     has_random(object),
     m = "`object` must fit a random effects model."
   )
+  Z_info <- object$tmb_args$data$Z_info
   b <- object$best[grep("^b\\[", names(object$best))]
   d <- data.frame(
     name = names(b),
@@ -62,7 +63,6 @@ ranef.egf <- function(object, ...) {
   class(d) <- c("egf_ranef", "data.frame")
 
   cov <- Map(cor2cov, cor = object$report$cor_list, sd = object$report$sd_list)
-  Z_info <- object$tmb_args$data$Z_info
   names(cov) <- levels(Z_info$cor)
   cov <- Map(`rownames<-`, cov, tapply(Z_info$par,   Z_info$cor, unique, simplify = FALSE))
   cov <- Map(`colnames<-`, cov, tapply(Z_info$level, Z_info$cor, unique, simplify = FALSE))
