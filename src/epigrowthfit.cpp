@@ -5,6 +5,12 @@
 #include "curve.h"
 
 template<class Type>
+bool notFinite(Type x) {
+  return (!R_FINITE(asDouble(x)));
+}
+
+
+template<class Type>
 Type objective_function<Type>::operator() ()
 {
     // Set up ==================================================================
@@ -217,6 +223,10 @@ Type objective_function<Type>::operator() ()
     Type nll = Type(0);
     Type log_var_minus_mu;
 
+    Type cur_nll;
+
+    printf("before main loop: nll=%1.3f\n", asDouble(nll));
+    
     for (int s = 0, i = 0; s < N; s++) // loop over segments
     {
         for (int k = 0; k < t_seg_len(s) - 1; k++) // loop over within-segment index
@@ -226,29 +236,50 @@ Type objective_function<Type>::operator() ()
 	        switch (distr_flag)
 		{
 		case pois:
-		    nll -= dpois_robust(x(i+k), log_cases(i+k), true);
+		    cur_nll = dpois_robust(x(i+k), log_cases(i+k), true);
 		    // usage: dpois_robust(x, log_lambda, give_log)
 		    break;
 		case nbinom:
 		    log_var_minus_mu = Type(2) * log_cases(i+k) - Y(s, j_log_nbdisp);
-		    nll -= dnbinom_robust(x(i+k), log_cases(i+k), log_var_minus_mu, true);
+		    cur_nll = dnbinom_robust(x(i+k), log_cases(i+k), log_var_minus_mu, true);
 		    // usage: dnbinom_robust(x, log_mu, log_var_minus_mu, give_log)
 		    break;
 		}
+		// printf("%1.3f %1.3f %d:%d:%d\n",asDouble(cur_nll), asDouble(nll), i,k,s);
+		if (notFinite(cur_nll)) {
+			printf("non-finite in main NLL calculation at %d:%d:%d\n",i,k,s);
+		}
+		if (fabs(asDouble(cur_nll)) > 1.0e12) {
+			printf("ridiculous value in main NLL calculation at %d:%d:%d\n",i,k,s);
+		}
+
+		nll -= cur_nll;
 	    }
 	}
 	i += t_seg_len(s) - 1; // increment reference index
     }
-    if (anyRE)
-    {
+
+    // std::cout << nll << "\n" << std::endl;
+    printf("** start RE loop: %1.3f\n",asDouble(nll));
+    
+    if (anyRE) {
+        Type cur_RE_nll;
     	for (int m = 0; m < M; m++) // loop over blocks
     	{
 	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
     	    {
-    	        nll += density::MVNORM(cor_list(m))(block_list(m).col(j));
-    	    }
-    	}
+    	        cur_RE_nll = density::MVNORM(cor_list(m))(block_list(m).col(j));
+		// printf("* %1.3f %d:%d\n",asDouble(cur_RE_nll),m,j);
+		if (notFinite(nll)) {
+			printf("non-finite in RE calculation at %d:%d\n",m,j);
+		}
+		nll += cur_RE_nll;
+		
+    	    } // j (block columns)
+    	} // m (blocks)
     }
+
+    printf("** end RE loop: %1.3f\n",asDouble(nll));
 
 
     // Simulate incidence ======================================================

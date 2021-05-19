@@ -1,4 +1,6 @@
 library("epigrowthfit")
+devtools::load_all("..")
+
 load("debug.RData")
 options(contrasts = c("contr.sum", "contr.poly"), warn = 1)
 f <- function(x) { # dummy to contr.sum
@@ -52,11 +54,22 @@ for (d in split(endpoints, endpoints$country_iso_alpha3)) {
 ## Initial parameter vector for mixed effects model
 m <- colMeans(Y_init)
 beta <- c(f(Y_init[, 1L]), m[2:4])
+
+## BMB: one value of beta == 10 ??
+## apply general shrinkage rule/prior N(0,3) ??
+
 b <- Y_init[, 2:4] - rep(m[2:4], each = nrow(Y_init))
 log_sd_b <- log(apply(matrix(b, ncol = 3L), 2L, sd))
 #b <- rep_len(0, 3L * nrow(Y_init))
 #log_sd_b <- rep_len(1, 3L)
 ## Mixed effects model fit
+
+## note Warning in sqrt(diag(cov)): NaNs produced
+
+library(peakRAM)
+
+debug(epigrowthfit:::optim_tmb_out)
+
 object <- egf(
   formula_ts  = cases_new ~ Date | country_iso_alpha3,
   data_ts     = world,
@@ -73,3 +86,16 @@ object <- egf(
   na_action   = c("exclude", "fail"),
   init        = c(beta, b, log_sd_b)
 )
+
+##
+hist(tmb_out$par)
+
+tmb_out$fn(tmb_out$par)
+## NaN
+g <- tmb_out$gr(tmb_out$par)
+
+
+## clamp all parameters
+par2 <- sign(tmb_out$par)*pmin(abs(tmb_out$par),2)
+hist(par2)
+tmb_out$fn(par2)
