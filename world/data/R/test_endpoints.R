@@ -1,6 +1,6 @@
 library("epigrowthfit")
-load("data/world.RData")
-load("data/endpoints.RData")
+load("../world.RData")
+load("../endpoints.RData")
 options(contrasts = c("contr.sum", "contr.poly"))
 f <- function(x) { # dummy to zero-sum
   m <- mean(x)

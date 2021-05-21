@@ -73,13 +73,14 @@ causes mortality rather than disease mortality or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
-effects are estimated as offsets relative to the indicated day
+\item{weekday}{An integer scalar. If \code{weekday > 0}, then weekday effects are
+estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
 Currently, weekday effect estimation requires \code{time} in
 \code{formula_ts = x ~ time | ts} to evaluate to an integer
 (in the sense of \code{all.equal(time, round(time))}) or Date vector
-with 1-day spacing in all fitting windows.}
+with 1-day spacing in all fitting windows.
+Logical \code{weekday} is equivalent to \code{as.integer(weekday)}.}
 
 \item{na_action}{A character vector to be recycled to length 2.
 \code{na_action[1L]} affects the handling of \code{NA}

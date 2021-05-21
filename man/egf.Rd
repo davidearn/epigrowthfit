@@ -19,6 +19,7 @@ egf(
   na_action = c("fail", "fail"),
   sparse_X = FALSE,
   debug = FALSE,
+  trace = FALSE,
   init = NULL,
   append = NULL,
   ...
@@ -73,13 +74,14 @@ causes mortality rather than disease mortality or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
-effects are estimated as offsets relative to the indicated day
+\item{weekday}{An integer scalar. If \code{weekday > 0}, then weekday effects are
+estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
 Currently, weekday effect estimation requires \code{time} in
 \code{formula_ts = x ~ time | ts} to evaluate to an integer
 (in the sense of \code{all.equal(time, round(time))}) or Date vector
-with 1-day spacing in all fitting windows.}
+with 1-day spacing in all fitting windows.
+Logical \code{weekday} is equivalent to \code{as.integer(weekday)}.}
 
 \item{method}{A character string specifying an optimizer available through
 \code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}.}
@@ -103,6 +105,12 @@ matrix is constructed in sparse format.}
 
 \item{debug}{A logical scalar used for debugging. If \code{TRUE}, then
 \code{egf()} returns early with a list of optimization inputs.}
+
+\item{trace}{An integer scalar used for debugging. If 0, then no
+tracing is done. If 1, then negative log likelihood terms
+are printed when they are non-finite or exceed \code{10^12}.
+If 2 or greater, then all negative log likelihood terms
+are printed. Logical \code{trace} is equivalent to \code{as.integer(trace)}.}
 
 \item{init}{A full parameter vector for the first likelihood evaluation.
 Set to \code{NULL} to accept the internally generated default.

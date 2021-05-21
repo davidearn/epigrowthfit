@@ -4,7 +4,16 @@
 \alias{make_tmb_data}
 \title{Construct data objects for C++ template}
 \usage{
-make_tmb_data(frame_ts, frame_par, curve, excess, distr, weekday, sparse_X)
+make_tmb_data(
+  frame_ts,
+  frame_par,
+  curve,
+  excess,
+  distr,
+  weekday,
+  sparse_X,
+  trace
+)
 }
 \arguments{
 \item{frame_ts}{Elements of the list output of \code{\link[=make_frames]{make_frames()}}.}
@@ -19,16 +28,23 @@ causes mortality rather than disease mortality or disease incidence.}
 
 \item{distr}{A character string specifying an observation model.}
 
-\item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
-effects are estimated as offsets relative to the indicated day
+\item{weekday}{An integer scalar. If \code{weekday > 0}, then weekday effects are
+estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
 Currently, weekday effect estimation requires \code{time} in
 \code{formula_ts = x ~ time | ts} to evaluate to an integer
 (in the sense of \code{all.equal(time, round(time))}) or Date vector
-with 1-day spacing in all fitting windows.}
+with 1-day spacing in all fitting windows.
+Logical \code{weekday} is equivalent to \code{as.integer(weekday)}.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
 matrix is constructed in sparse format.}
+
+\item{trace}{An integer scalar used for debugging. If 0, then no
+tracing is done. If 1, then negative log likelihood terms
+are printed when they are non-finite or exceed \code{10^12}.
+If 2 or greater, then all negative log likelihood terms
+are printed. Logical \code{trace} is equivalent to \code{as.integer(trace)}.}
 }
 \value{
 [Below,
@@ -97,9 +113,9 @@ by relation to a common nonlinear model parameter.
 Integer vectors together giving the dimensions of each block of
 the random effects matrix.
 }
-\item{\code{curve_flag}, \code{excess_flag}, \code{distr_flag}, \code{weekday_flag}, \code{sparse_X_flag}}{
-Integer flags referencing \code{curve}, \code{excess}, \code{distr},
-\code{weekday > 0}, and \code{sparse_X}.
+\item{\code{curve_flag}, \code{excess_flag}, \code{distr_flag}, \code{weekday_flag}, \code{sparse_X_flag}, \code{trace_flag}}{
+Integer flags referencing \code{curve}, \code{excess}, \code{distr}, \code{weekday > 0},
+\code{sparse_X}, and \code{trace}.
 }
 \item{\code{predict_flag}}{
 An integer flag set equal to 0 so that prediction code is not run.

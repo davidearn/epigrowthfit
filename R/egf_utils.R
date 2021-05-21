@@ -701,8 +701,8 @@ make_X <- function(x, frame, sparse) {
 #' @importFrom Matrix KhatriRao
 #' @importMethodsFrom Matrix t
 make_Z <- function(x, frame) {
-  X <- epigrowthfit:::make_X(as.formula(call("~", x[[2L]])), frame = frame, sparse = FALSE)
-  gn <- vapply(epigrowthfit:::split_interaction(x[[3L]]), deparse1, "")
+  X <- make_X(as.formula(call("~", x[[2L]])), frame = frame, sparse = FALSE)
+  gn <- vapply(split_interaction(x[[3L]]), deparse1, "")
   g <- interaction(frame[gn], drop = TRUE, sep = ":", lex.order = FALSE)
   J <- t(as(g, Class = "sparseMatrix"))
   Z <- t(KhatriRao(t(J), t(X)))
@@ -867,9 +867,9 @@ make_XZ_info <- function(xl, ml) {
 #'   Integer vectors together giving the dimensions of each block of
 #'   the random effects matrix.
 #' }
-#' \item{`curve_flag`, `excess_flag`, `distr_flag`, `weekday_flag`, `sparse_X_flag`}{
-#'   Integer flags referencing `curve`, `excess`, `distr`,
-#'   `weekday > 0`, and `sparse_X`.
+#' \item{`curve_flag`, `excess_flag`, `distr_flag`, `weekday_flag`, `sparse_X_flag`, `trace_flag`}{
+#'   Integer flags referencing `curve`, `excess`, `distr`, `weekday > 0`,
+#'   `sparse_X`, and `trace`.
 #' }
 #' \item{`predict_flag`}{
 #'   An integer flag set equal to 0 so that prediction code is not run.
@@ -884,7 +884,8 @@ make_XZ_info <- function(xl, ml) {
 #' @importFrom methods as
 #' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
 make_tmb_data <- function(frame_ts, frame_par,
-                          curve, excess, distr, weekday, sparse_X) {
+                          curve, excess, distr, weekday,
+                          sparse_X, trace) {
   ## Nonlinear model parameter names
   pn <- names(frame_par)
   p <- length(frame_par)
@@ -1013,6 +1014,7 @@ make_tmb_data <- function(frame_ts, frame_par,
     distr_flag = get_flag("distr", distr),
     weekday_flag = as.integer(weekday > 0L),
     sparse_X_flag = as.integer(sparse_X),
+    trace_flag = trace,
     predict_flag = 0L
   )
   pn0 <- get_par_names(curve = NULL, link = TRUE)
@@ -1209,7 +1211,7 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
 #' @keywords internal
 make_tmb_args <- function(frame_ts, frame_par,
                           curve, distr, excess, weekday,
-                          sparse_X, init, debug) {
+                          sparse_X, init, debug, trace) {
   tmb_data <- make_tmb_data(
     frame_ts = frame_ts,
     frame_par = frame_par,
@@ -1217,7 +1219,8 @@ make_tmb_args <- function(frame_ts, frame_par,
     distr = distr,
     excess = excess,
     weekday = weekday,
-    sparse_X = sparse_X
+    sparse_X = sparse_X,
+    trace = trace
   )
   tmb_parameters <- make_tmb_parameters(
     tmb_data = tmb_data,

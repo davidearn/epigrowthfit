@@ -13,7 +13,8 @@ make_tmb_args(
   weekday,
   sparse_X,
   init,
-  debug
+  debug,
+  trace
 )
 }
 \arguments{
@@ -27,13 +28,14 @@ make_tmb_args(
 rate is estimated. Set to \code{TRUE} if what is observed is multiple
 causes mortality rather than disease mortality or disease incidence.}
 
-\item{weekday}{An integer or logical scalar. If \code{weekday > 0}, then weekday
-effects are estimated as offsets relative to the indicated day
+\item{weekday}{An integer scalar. If \code{weekday > 0}, then weekday effects are
+estimated as offsets relative to the indicated day
 (Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
 Currently, weekday effect estimation requires \code{time} in
 \code{formula_ts = x ~ time | ts} to evaluate to an integer
 (in the sense of \code{all.equal(time, round(time))}) or Date vector
-with 1-day spacing in all fitting windows.}
+with 1-day spacing in all fitting windows.
+Logical \code{weekday} is equivalent to \code{as.integer(weekday)}.}
 
 \item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
 matrix is constructed in sparse format.}
@@ -45,6 +47,12 @@ useful as a template.}
 
 \item{debug}{A logical scalar used for debugging. If \code{TRUE}, then
 \code{egf()} returns early with a list of optimization inputs.}
+
+\item{trace}{An integer scalar used for debugging. If 0, then no
+tracing is done. If 1, then negative log likelihood terms
+are printed when they are non-finite or exceed \code{10^12}.
+If 2 or greater, then all negative log likelihood terms
+are printed. Logical \code{trace} is equivalent to \code{as.integer(trace)}.}
 }
 \value{
 A list with elements \code{data}, \code{parameters}, \code{map}, \code{random},

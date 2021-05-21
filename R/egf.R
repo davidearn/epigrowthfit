@@ -53,13 +53,14 @@
 #' @param distr
 #'   A character string specifying an observation model.
 #' @param weekday
-#'   An integer or logical scalar. If `weekday > 0`, then weekday
-#'   effects are estimated as offsets relative to the indicated day
+#'   An integer scalar. If `weekday > 0`, then weekday effects are
+#'   estimated as offsets relative to the indicated day
 #'   (Sunday if `weekday = 1`, Monday if `weekday = 2`, and so on).
 #'   Currently, weekday effect estimation requires `time` in
 #'   `formula_ts = x ~ time | ts` to evaluate to an integer
 #'   (in the sense of `all.equal(time, round(time))`) or Date vector
 #'   with 1-day spacing in all fitting windows.
+#'   Logical `weekday` is equivalent to `as.integer(weekday)`.
 #' @param method
 #'   A character string specifying an optimizer available through
 #'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
@@ -83,6 +84,12 @@
 #' @param debug
 #'   A logical scalar used for debugging. If `TRUE`, then
 #'   `egf()` returns early with a list of optimization inputs.
+#' @param trace
+#'   An integer scalar used for debugging. If 0, then no
+#'   tracing is done. If 1, then negative log likelihood terms
+#'   are printed when they are non-finite or exceed `10^12`.
+#'   If 2 or greater, then all negative log likelihood terms
+#'   are printed. Logical `trace` is equivalent to `as.integer(trace)`.
 #' @param init
 #'   A full parameter vector for the first likelihood evaluation.
 #'   Set to `NULL` to accept the internally generated default.
@@ -208,6 +215,7 @@ egf <- function(formula_ts,
                 na_action = c("fail", "fail"),
                 sparse_X = FALSE,
                 debug = FALSE,
+                trace = FALSE,
                 init = NULL,
                 append = NULL,
                 ...) {
@@ -218,20 +226,28 @@ egf <- function(formula_ts,
     m = "`origin` must be a Date vector of length 1."
   )
   curve <- match.arg(curve)
-  distr <- match.arg(distr)
   stop_if_not_true_false(excess)
-  if (is.logical(weekday) && length(weekday) == 1L && !is.na(weekday)) {
-    weekday <- as.integer(weekday)
-  } else {
-    stop_if_not_integer(weekday)
-    ## Coercion to element of 0:7
-    weekday <- (weekday > 0) * as.integer(1 + (weekday - 1) %% 7)
-  }
+  distr <- match.arg(distr)
+  stop_if_not(
+    is.numeric(weekday) || is.logical(weekday),
+    length(weekday) == 1L,
+    !is.na(weekday),
+    m = "`weekday` must be a numeric or logical vector of length 1."
+  )
+  weekday <- as.integer(weekday)
+  weekday <- (weekday > 0L) * (1L + (weekday - 1L) %% 7L)
   method <- match.arg(method)
   na_action <- match.arg(na_action, c("fail", "exclude", "pass"), several.ok = TRUE)
   na_action <- rep_len(na_action, 2L)
   stop_if_not_true_false(sparse_X)
   stop_if_not_true_false(debug)
+  stop_if_not(
+    is.numeric(trace) || is.logical(trace),
+    length(trace) == 1L,
+    !is.na(trace),
+    m = "`trace` must be a numeric or logical vector of length 1."
+  )
+  trace <- min(2L, max(0L, as.integer(trace)))
 
   frames <- make_frames(
     formula_ts = formula_ts,
@@ -257,7 +273,8 @@ egf <- function(formula_ts,
     weekday = weekday,
     sparse_X = sparse_X,
     init = init,
-    debug = debug
+    debug = debug,
+    trace = trace
   )
 
   if (debug) {

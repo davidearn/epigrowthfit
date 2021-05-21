@@ -5,26 +5,22 @@
 #include "curve.h"
 
 template<class Type>
-bool notFinite(Type x) {
-  return (!R_FINITE(asDouble(x)));
-}
-
-
-template<class Type>
 Type objective_function<Type>::operator() ()
 {
     // Set up ==================================================================
 
     // Flags
     DATA_INTEGER(curve_flag);    // prediction model     (enum curve)
-    DATA_INTEGER(excess_flag);   // excess mortality     (1=yes,  0=no)
+    DATA_INTEGER(excess_flag);   // excess mortality     (1=yes, 0=no)
     DATA_INTEGER(distr_flag);    // observation model    (enum distr)
-    DATA_INTEGER(weekday_flag);  // day-of-week effects  (1=yes,  0=no)
-    DATA_INTEGER(sparse_X_flag); // sparse X matrix      (1=yes,  0=no)
-    DATA_INTEGER(predict_flag);  // predict              (1=yes,  0=no)
+    DATA_INTEGER(weekday_flag);  // day-of-week effects  (1=yes, 0=no)
+    DATA_INTEGER(sparse_X_flag); // sparse X matrix      (1=yes, 0=no)
+    DATA_INTEGER(trace_flag);    // tracing              (0=none, 1=some, 2=more)
+    DATA_INTEGER(predict_flag);  // predict              (1=yes, 0=no)
     bool excess   = (excess_flag   == 1);
     bool weekday  = (weekday_flag  == 1);
     bool sparse_X = (sparse_X_flag == 1);
+    bool trace    = (trace_flag    >  0);
     bool predict  = (predict_flag  == 1);
     
     // Data
@@ -150,7 +146,7 @@ Type objective_function<Type>::operator() ()
 	{
 	    // Form random effects block 
 	    matrix<Type> block(block_rows(m), block_cols(m));
-	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
+	    for (int j = 0; j < block_cols(m) - 1; j++) // loop over block columns
 	    {
 		block.col(j) = b.segment(i1, block_rows(m));
 		i1 += block_rows(m); // increment `b` index
@@ -182,7 +178,7 @@ Type objective_function<Type>::operator() ()
 	for (int m = 0, i = 0; m < M; m++) // loop over blocks
 	{
 	    vector<Type> v(block_rows(m));
-	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
+	    for (int j = 0; j < block_cols(m) - 1; j++) // loop over block columns
 	    {
 	        v = block_list(m).col(j);
 	        b_scaled.segment(i, block_rows(m)) = sd_list(m) * v;
@@ -221,14 +217,24 @@ Type objective_function<Type>::operator() ()
 
     // Negative log likelihood
     Type nll = Type(0);
+    Type nll_term;
     Type log_var_minus_mu;
+    int width_s;
+    int width_k;
 
-    Type cur_nll;
+    if (trace)
+    {
+        width_s = nchar(N);
+	Rprintf("nll initialized to 0\ncommencing loop over observations\n");
+    }
 
-    printf("before main loop: nll=%1.3f\n", asDouble(nll));
-    
     for (int s = 0, i = 0; s < N; s++) // loop over segments
     {
+        if (trace)
+	{
+	    width_k = nchar(t_seg_len(s) - 1);
+	}
+	
         for (int k = 0; k < t_seg_len(s) - 1; k++) // loop over within-segment index
 	{
 	    if (!is_NA_real_(x(i+k)))
@@ -236,50 +242,101 @@ Type objective_function<Type>::operator() ()
 	        switch (distr_flag)
 		{
 		case pois:
-		    cur_nll = dpois_robust(x(i+k), log_cases(i+k), true);
+		    nll_term = -dpois_robust(x(i+k), log_cases(i+k), true);
 		    // usage: dpois_robust(x, log_lambda, give_log)
 		    break;
 		case nbinom:
 		    log_var_minus_mu = Type(2) * log_cases(i+k) - Y(s, j_log_nbdisp);
-		    cur_nll = dnbinom_robust(x(i+k), log_cases(i+k), log_var_minus_mu, true);
+		    nll_term = -dnbinom_robust(x(i+k), log_cases(i+k), log_var_minus_mu, true);
 		    // usage: dnbinom_robust(x, log_mu, log_var_minus_mu, give_log)
 		    break;
 		}
-		// printf("%1.3f %1.3f %d:%d:%d\n",asDouble(cur_nll), asDouble(nll), i,k,s);
-		if (notFinite(cur_nll)) {
-			printf("non-finite in main NLL calculation at %d:%d:%d\n",i,k,s);
-		}
-		if (fabs(asDouble(cur_nll)) > 1.0e12) {
-			printf("ridiculous value in main NLL calculation at %d:%d:%d\n",i,k,s);
+
+		if (trace)
+		{
+		    if (trace_flag == 1)
+		    {
+		        if (!is_finite(nll_term))
+			{
+			    Rprintf("at index %*d of segment %*d: nll term is non-finite\n",
+				   width_k, k, width_s, s);
+			}
+			else if (asDouble(nll_term) > 1.0e12)
+			{
+			    Rprintf("at index %*d of segment %*d: nll term exceeds 10^12\n",
+				   width_k, k, width_s, s);
+			}
+		    }
+		    else // trace_flag == 2
+		    {
+		        Rprintf("at index %*d of segment %*d: nll term is %5.3e\n",
+			       width_k, k, width_s, s, asDouble(nll_term));
+		    }
 		}
 
-		nll -= cur_nll;
+		nll += nll_term;
 	    }
 	}
 	i += t_seg_len(s) - 1; // increment reference index
     }
 
-    // std::cout << nll << "\n" << std::endl;
-    printf("** start RE loop: %1.3f\n",asDouble(nll));
-    
-    if (anyRE) {
-        Type cur_RE_nll;
-    	for (int m = 0; m < M; m++) // loop over blocks
-    	{
-	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
-    	    {
-    	        cur_RE_nll = density::MVNORM(cor_list(m))(block_list(m).col(j));
-		// printf("* %1.3f %d:%d\n",asDouble(cur_RE_nll),m,j);
-		if (notFinite(nll)) {
-			printf("non-finite in RE calculation at %d:%d\n",m,j);
-		}
-		nll += cur_RE_nll;
-		
-    	    } // j (block columns)
-    	} // m (blocks)
+    if (trace)
+    {
+        Rprintf("loop over observations complete\nnll is %5.3e\n", asDouble(nll));
     }
 
-    printf("** end RE loop: %1.3f\n",asDouble(nll));
+    if (anyRE) {
+        int width_m;
+	int width_j;
+	
+	if (trace)
+	{
+	    width_m = nchar(M);
+	    Rprintf("commencing loop over random effects\n");
+	}
+      
+        for (int m = 0; m < M; m++) // loop over blocks
+    	{
+	    if (trace)
+	    {
+	        width_j = nchar(block_cols(m) - 1);
+	    }
+
+	    for (int j = 0; j < block_cols(m) - 1; j++) // loop over block columns
+    	    {
+    	        nll_term = density::MVNORM(cor_list(m))(block_list(m).col(j));
+
+		if (trace)
+		{
+		    if (trace_flag == 1)
+		    {
+			if (!is_finite(nll_term))
+			{
+			    Rprintf("at column %*d of block %*d: nll term is non-finite\n",
+				   width_j, j, width_m, m);
+			}
+			else if (asDouble(nll_term) > 1.0e12)
+			{
+			    Rprintf("at column %*d of block %*d: nll term exceeds 10^12\n",
+				   width_j, j, width_m, m);
+			}
+		    }
+		    else // trace_flag == 2
+		    {
+			Rprintf("at column %*d of block %*d: nll term is %5.3e\n",
+			       width_j, j, width_m, m, asDouble(nll_term));
+		    }
+		}
+		
+		nll += nll_term;
+    	    }
+    	}
+
+	if (trace)
+	{
+	    Rprintf("loop over random effects complete\nnll is %5.3e\n", asDouble(nll));
+	}
+    }
 
 
     // Simulate incidence ======================================================

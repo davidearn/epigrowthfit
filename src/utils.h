@@ -21,6 +21,28 @@ bool is_NA_real_(Type x)
 }
 
 template<class Type>
+bool is_finite(Type x)
+{
+    return R_finite(asDouble(x));
+}
+
+int nchar(int i)
+{
+    if (i > 0)
+    {
+        return 1 + (int) log10((double) i);
+    }
+    else if (i < 0)
+    {
+        return 1 + nchar(-i);
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+template<class Type>
 vector<Type> logspace_diff_1(vector<Type> log_x)
 {
     vector<Type> log_diff_x(log_x.size() - 1);
