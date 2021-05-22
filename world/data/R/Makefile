@@ -3,16 +3,16 @@ R = R
 all: tidy weather world endpoints
 
 tidy:
-	$(R) -f tidy.R
+	$(R) --quiet -f tidy.R
 
 metoffice:
-	$(R) -f populate_weather.R
-	$(R) -f merge_weather.R
+	$(R) --quiet -f populate_weather.R
+	$(R) --quiet -f merge_weather.R
 
 world:
-	$(R) -f make_world.R
+	$(R) --quiet -f make_world.R
 
 endpoints:
-	$(R) -f make_endpoints.R
-	$(R) -f augment_endpoints.R
+	$(R) --quiet -f make_endpoints.R
+	$(R) --quiet -f augment_endpoints.R
 

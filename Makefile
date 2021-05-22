@@ -12,19 +12,19 @@ install: deps build
 	$(R) CMD INSTALL ../$(TARBALL)
 
 deps:
-	$(R) -e 'devtools::install_deps(".", dependencies = TRUE)'
+	$(R) --quiet -e 'devtools::install_deps(".", dependencies = TRUE)'
 
 build: $(TARBALL)
 
-$(TARBALL): flags rd src/$(PACKAGE).so DESCRIPTION
+$(TARBALL): enum rd src/$(PACKAGE).so DESCRIPTION
 	$(R) CMD build .
 	mv $@ ..
 
-flags: utils/update_flags.R
-	$(R) -e 'setwd("utils"); source("update_flags.R")'
+enum: utils/update_enum.R
+	$(MAKE) -C utils enum
 
 rd: R/*.R inst/REFERENCES.bib
-	$(R) -e 'devtools::document(".")'
+	$(R) --quiet -e 'devtools::document(".")'
 	sed -i.bak 's/USCORE/_/ g' man/*.Rd 
 	sed -i.bak 's/\\text{/\\textrm{/ g' man/*.Rd
 	rm man/*.Rd.bak
@@ -39,15 +39,14 @@ $(MANUAL): man/*.Rd
 	mv $@ ..
 
 check:
-	$(R) -e 'devtools::check(".")'
+	$(R) --quiet -e 'devtools::check(".")'
 
 test:
-	$(R) -e 'devtools::test(".")'
+	$(R) --quiet -e 'devtools::test(".")'
 
 clean:
 	rm -f ../$(TARBALL) ../$(PACKAGE)-manual.pdf
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
-	#$(MAKE) -C vignettes clean
 	$(MAKE) -C src clean
 	$(MAKE) -C scrap clean

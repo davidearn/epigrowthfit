@@ -10,7 +10,7 @@
 #'
 #' @details
 #' `get_flag()` is kept synchronized with the C++ template
-#' using script `utils/update_flags.R`.
+#' using the R script `utils/update_enum.R`.
 #'
 #' @return
 #' An integer.
