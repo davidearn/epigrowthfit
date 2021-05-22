@@ -69,7 +69,7 @@ se <- matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, c("start"
 se <- as.data.frame(se, stringsAsFactors = FALSE)
 se[] <- lapply(se, as.Date)
 region <- rep.int(gl(length(l), 1L, labels = names(l)), lengths(l))
-f <- function(x) x[do.call(order, x), , drop = FALSE]
+f <- function(x) x[do.call(order, unname(x)), , drop = FALSE]
 se <- unsplit(by(se, region, f, simplify = FALSE), region)
 window <- factor(unsplit(lapply(l, seq_along), region))
 source("census.R")

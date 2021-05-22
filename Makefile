@@ -12,7 +12,7 @@ install: deps build
 	$(R) CMD INSTALL ../$(TARBALL)
 
 deps:
-	$(R) --no-echo -e 'devtools::install_deps(".", dependencies = TRUE)'
+	$(R) -e 'devtools::install_deps(".", dependencies = TRUE)'
 
 build: $(TARBALL)
 
@@ -21,10 +21,10 @@ $(TARBALL): flags rd src/$(PACKAGE).so DESCRIPTION
 	mv $@ ..
 
 flags: utils/update_flags.R
-	$(R) --no-echo -e 'setwd("utils"); source("update_flags.R")'
+	$(R) -e 'setwd("utils"); source("update_flags.R")'
 
 rd: R/*.R inst/REFERENCES.bib
-	$(R) --no-echo -e 'devtools::document(".")'
+	$(R) -e 'devtools::document(".")'
 	sed -i.bak 's/USCORE/_/ g' man/*.Rd 
 	sed -i.bak 's/\\text{/\\textrm{/ g' man/*.Rd
 	rm man/*.Rd.bak
@@ -39,10 +39,10 @@ $(MANUAL): man/*.Rd
 	mv $@ ..
 
 check:
-	$(R) --no-echo -e 'devtools::check(".")'
+	$(R) -e 'devtools::check(".")'
 
 test:
-	$(R) --no-echo -e 'devtools::test(".")'
+	$(R) -e 'devtools::test(".")'
 
 clean:
 	rm -f ../$(TARBALL) ../$(PACKAGE)-manual.pdf

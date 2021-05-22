@@ -11,7 +11,7 @@ d <- d[complete.cases(d), , drop = FALSE]
 ## Aggregate
 ontario <- aggregate(seq_len(nrow(d)), d, length)
 names(ontario) <- c(names(d), "cases_new")
-o <- do.call(order, ontario[names(d)])
+o <- do.call(order, unname(ontario[names(d)]))
 ontario <- ontario[o, , drop = FALSE]
 row.names(ontario) <- NULL
 

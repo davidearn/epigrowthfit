@@ -146,7 +146,7 @@ Type objective_function<Type>::operator() ()
 	{
 	    // Form random effects block 
 	    matrix<Type> block(block_rows(m), block_cols(m));
-	    for (int j = 0; j < block_cols(m) - 1; j++) // loop over block columns
+	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
 	    {
 		block.col(j) = b.segment(i1, block_rows(m));
 		i1 += block_rows(m); // increment `b` index
@@ -178,7 +178,7 @@ Type objective_function<Type>::operator() ()
 	for (int m = 0, i = 0; m < M; m++) // loop over blocks
 	{
 	    vector<Type> v(block_rows(m));
-	    for (int j = 0; j < block_cols(m) - 1; j++) // loop over block columns
+	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
 	    {
 	        v = block_list(m).col(j);
 	        b_scaled.segment(i, block_rows(m)) = sd_list(m) * v;
@@ -221,19 +221,18 @@ Type objective_function<Type>::operator() ()
     Type log_var_minus_mu;
     int width_s;
     int width_k;
+    bool print_Y_row;
 
     if (trace)
     {
-        width_s = nchar(N);
 	Rprintf("nll initialized to 0\ncommencing loop over observations\n");
+        width_s = nchar(N - 1);
+	width_k = nchar(t_seg_len.maxCoeff() - 1);
     }
 
     for (int s = 0, i = 0; s < N; s++) // loop over segments
     {
-        if (trace)
-	{
-	    width_k = nchar(t_seg_len(s) - 1);
-	}
+        print_Y_row = (trace_flag == 2);
 	
         for (int k = 0; k < t_seg_len(s) - 1; k++) // loop over within-segment index
 	{
@@ -258,13 +257,13 @@ Type objective_function<Type>::operator() ()
 		    {
 		        if (!is_finite(nll_term))
 			{
-			    Rprintf("at index %*d of segment %*d: nll term is non-finite\n",
-				   width_k, k, width_s, s);
+			    Rprintf("at index %d of segment %d: nll term is non-finite\n", k, s);
+			    print_Y_row = true;
 			}
 			else if (asDouble(nll_term) > 1.0e12)
 			{
-			    Rprintf("at index %*d of segment %*d: nll term exceeds 10^12\n",
-				   width_k, k, width_s, s);
+			    Rprintf("at index %d of segment %d: nll term exceeds 1.0e12\n", k, s);
+			    print_Y_row = true;
 			}
 		    }
 		    else // trace_flag == 2
@@ -277,6 +276,12 @@ Type objective_function<Type>::operator() ()
 		nll += nll_term;
 	    }
 	}
+
+	if (print_Y_row)
+	{
+	    Rcout << "Y.row(" << s << ") = " << Y.row(s) << "\n";
+	}
+	
 	i += t_seg_len(s) - 1; // increment reference index
     }
 
@@ -291,18 +296,14 @@ Type objective_function<Type>::operator() ()
 	
 	if (trace)
 	{
-	    width_m = nchar(M);
 	    Rprintf("commencing loop over random effects\n");
+	    width_m = nchar(M - 1);
+	    width_j = nchar(block_cols.maxCoeff() - 1);
 	}
       
         for (int m = 0; m < M; m++) // loop over blocks
     	{
-	    if (trace)
-	    {
-	        width_j = nchar(block_cols(m) - 1);
-	    }
-
-	    for (int j = 0; j < block_cols(m) - 1; j++) // loop over block columns
+	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
     	    {
     	        nll_term = density::MVNORM(cor_list(m))(block_list(m).col(j));
 

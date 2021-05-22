@@ -36,7 +36,7 @@ f <- function(dirname, Dates_full = seq(r[1L], r[2L], by = 1)) {
     )
     d <- rbind(d, d_fill)
   }
-  o <- do.call(order, d[1:2])
+  o <- do.call(order, unname(d[1:2]))
   d <- d[o, , drop = FALSE]
   row.names(d) <- NULL
   d

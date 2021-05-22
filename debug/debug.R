@@ -1,6 +1,6 @@
 library("epigrowthfit")
-
-load("debug.RData")
+load("../world/data/world.RData")
+load("../world/data/endpoints.RData")
 options(contrasts = c("contr.sum", "contr.poly"), warn = 1)
 f <- function(x) { # dummy to contr.sum
   m <- mean(x)
@@ -21,7 +21,7 @@ f <- function(x) { # dummy to contr.sum
 ##
 ## log(r)      ~ 1 + I(country:window)
 ## log(tinfl)  ~ 1 + I(country:window)
-## log(K)      ~ 1 + I(country:window)
+## log(K)      ~ 1 c+ I(country:window)
 ## log(nbdisp) ~ 1 + I(country:window)
 ##
 ## However, the fixed effects model has convergence issues
@@ -33,13 +33,15 @@ f <- function(x) { # dummy to contr.sum
 ## Matrix of fitted values of log(r), log(tinfl), log(K), log(nbdisp)
 ## from fixed effects model
 Y_init <- matrix(numeric(0L), ncol = 4L)
-for (d in split(endpoints, endpoints$country_iso_alpha3)) {
+endpoints_split <- split(endpoints, endpoints$country_iso_alpha3)
+for (i in seq_along(endpoints_split)) {
+  print(names(endpoints_split)[i])
   object_1ts <- egf(
     formula_ts  = cases_new ~ Date | country_iso_alpha3,
     data_ts     = world,
-    formula_par = if (nrow(d) > 1L) ~window else ~1,
-    data_par    = d,
-    endpoints   = d,
+    formula_par = if (nrow(endpoints_split[[i]]) > 1L) ~window else ~1,
+    data_par    = endpoints_split[[i]],
+    endpoints   = endpoints_split[[i]],
     curve       = "logistic",
     distr       = "nbinom",
     na_action   = c("exclude", "fail"),
@@ -49,18 +51,17 @@ for (d in split(endpoints, endpoints$country_iso_alpha3)) {
   object_1ts <- update(object_1ts, debug = FALSE, init = init)
   Y_init <- rbind(Y_init, matrix(fitted(object_1ts)$estimate, ncol = 4L))
 }
+m <- colMeans(Y_init)
+debug(epigrowthfit:::optim_tmb_out)
 
 ## Initial parameter vector for mixed effects model
-m <- colMeans(Y_init)
 beta <- c(f(Y_init[, 1L]), m[2:4])
-
 b <- Y_init[, 2:4] - rep(m[2:4], each = nrow(Y_init))
 log_sd_b <- log(apply(matrix(b, ncol = 3L), 2L, sd))
 #b <- rep_len(0, 3L * nrow(Y_init))
 #log_sd_b <- rep_len(1, 3L)
 
 ## Mixed effects model fit
-## NB: Warning in sqrt(diag(cov)): NaNs produced
 object <- egf(
   formula_ts  = cases_new ~ Date | country_iso_alpha3,
   data_ts     = world,
@@ -78,14 +79,5 @@ object <- egf(
   trace       = 1L,
   init        = c(beta, b, log_sd_b)
 )
-
-# hist(tmb_out$par)
-
-## NaN
-# tmb_out$fn(tmb_out$par)
-# tmb_out$gr(tmb_out$par)
-
-## clamp all parameters
-# par2 <- sign(tmb_out$par)*pmin(abs(tmb_out$par),2)
-# hist(par2)
-# tmb_out$fn(par2)
+capture.output(tmb_out$fn(tmb_out$par), file = "debug.Rout")
+Q

@@ -149,10 +149,10 @@ l <- list(
   ),
   CHN = list( # China
     c("2020-01-15", "2020-02-05"),
-    c("2020-03-11", "2020-03-24"),
-    c("2020-07-06", "2020-08-02"),
-    c("2020-11-16", "2020-11-24"),
-    c("2021-01-04", "2021-01-20")
+    c("2020-03-12", "2020-03-24"),
+    c("2020-07-06", "2020-08-01"),
+    c("2020-11-16", "2020-11-25"),
+    c("2021-01-06", "2021-01-20")
   ),
   CIV = list( # Côte d'Ivoire
     c("2020-03-05", "2020-04-13"),
@@ -459,8 +459,8 @@ l <- list(
   KOR = list( # South Korea
     c("2020-02-07", "2020-02-29"),
     c("2020-05-01", "2020-06-06"),
-    c("2020-08-08", "2020-08-16"),
-    c("2020-11-02", "2020-12-21"),
+    c("2020-08-08", "2020-08-18"),
+    c("2020-11-09", "2020-12-21"),
     c("2021-03-22", "2021-04-17")
   ),
   KWT = list( # Kuwait
@@ -907,7 +907,7 @@ se <- as.data.frame(se, stringsAsFactors = FALSE)
 se[] <- lapply(se, as.Date)
 country_iso_alpha3 <- rep.int(gl(length(l), 1L, labels = names(l)), lengths(l))
 window <- factor(unsplit(lapply(lengths(l), seq_len), country_iso_alpha3))
-f <- function(x) x[do.call(order, x), , drop = FALSE]
+f <- function(x) x[do.call(order, unname(x)), , drop = FALSE]
 se <- unsplit(by(se, country_iso_alpha3, f, simplify = FALSE), country_iso_alpha3)
 
 endpoints <- data.frame(country_iso_alpha3, window, se, row.names = NULL)

@@ -27,7 +27,7 @@ covid <- data.frame(
   cases_total = unlist(covid[s], recursive = FALSE, use.names = FALSE),
   cases_new = NA_integer_
 )
-o <- do.call(order, covid[c("country_iso_alpha3", "Date")])
+o <- do.call(order, unname(covid[c("country_iso_alpha3", "Date")]))
 covid <- covid[o, , drop = FALSE]
 split(covid$cases_new, covid$country_iso_alpha3) <-
   tapply(covid$cases_total, covid$country_iso_alpha3, function(x) c(NA, diff(x)), simplify = FALSE)
@@ -51,7 +51,7 @@ m <- match("Jerusalem", coords$city, 0L)
 coords <- rbind(coords, coords[m, , drop = FALSE])
 coords$country_iso_alpha3[nrow(coords)] <- "PSE"
 coords$country_iso_alpha3 <- factor(coords$country_iso_alpha3)
-o <- do.call(order, coords[c("country_iso_alpha3", "city", "population")])
+o <- do.call(order, unname(coords[c("country_iso_alpha3", "city", "population")]))
 coords <- coords[o, , drop = FALSE]
 row.names(coords) <- NULL
 save(coords, file = "../coords.RData")
@@ -68,7 +68,7 @@ population <- population[i, s, drop = FALSE]
 names(population) <- names(s)
 population$year <- ordered(population$year)
 population$population <- 1000 * population$population
-o <- do.call(order, population[c("country_iso_numeric", "year")])
+o <- do.call(order, unname(population[c("country_iso_numeric", "year")]))
 population <- population[o, , drop = FALSE]
 row.names(population) <- NULL
 save(population, file = "../population.RData")
@@ -92,7 +92,7 @@ mobility[varnames] <- 1 + mobility[varnames] / 100
 names(mobility) <- names(s)
 mobility$country_iso_alpha2 <- factor(mobility$country_iso_alpha2)
 mobility$Date <- as.Date(mobility$Date)
-o <- do.call(order, mobility[c("country_iso_alpha2", "Date")])
+o <- do.call(order, unname(mobility[c("country_iso_alpha2", "Date")]))
 mobility <- mobility[o, , drop = FALSE]
 row.names(mobility) <- NULL
 save(mobility, file = "../mobility.RData")
@@ -119,7 +119,7 @@ names(npi) <- names(s)
 npi$country_iso_alpha3 <- factor(npi$country_iso_alpha3)
 npi$Date <- as.Date(as.character(npi$Date), format = "%Y%m%d")
 npi[s_ordered] <- lapply(npi[s_ordered], ordered)
-o <- do.call(order, npi[c("country_iso_alpha3", "Date")])
+o <- do.call(order, unname(npi[c("country_iso_alpha3", "Date")]))
 npi <- npi[o, , drop = FALSE]
 row.names(npi) <- NULL
 save(npi, file = "../npi.RData")
@@ -136,7 +136,7 @@ devel <- data.frame(
 )
 m <- match(levels(devel$indic), devel$indic)
 devel$indic_code <- factor(devel$indic_code, levels = devel$indic_code[m])
-o <- do.call(order, devel[c("country_iso_alpha3", "indic", "year")])
+o <- do.call(order, unname(devel[c("country_iso_alpha3", "indic", "year")]))
 devel <- devel[o, , drop = FALSE]
 row.names(devel) <- NULL
 save(devel, file = "../devel.RData")
@@ -153,7 +153,7 @@ equity <- data.frame(
 )
 m <- match(levels(equity$indic), equity$indic)
 equity$indic_code <- factor(equity$indic_code, levels = equity$indic_code[m])
-o <- do.call(order, equity[c("country_iso_alpha3", "indic", "year")])
+o <- do.call(order, unname(equity[c("country_iso_alpha3", "indic", "year")]))
 equity <- equity[o, , drop = FALSE]
 row.names(equity) <- NULL
 save(equity, file = "../equity.RData")

@@ -517,7 +517,7 @@ make_frames <- function(formula_ts, formula_par,
 
   ## Order remaining fitting windows by time series
   ## and chronologically within time series
-  o <- do.call(order, endpoints)
+  o <- do.call(order, unname(endpoints))
   endpoints <- endpoints[o, , drop = FALSE]
   frame_par <- lapply(frame_par, `[`, o, , drop = FALSE)
 
@@ -965,7 +965,7 @@ make_tmb_data <- function(frame_ts, frame_par,
   ## Permutation of random effects coefficients producing
   ## correct arrangement in random effects blocks, given
   ## column-major order
-  o <- do.call(order, Z_info[c("cor", "vec", "par")])
+  o <- do.call(order, unname(Z_info[c("cor", "vec", "par")]))
   Z <- Z[, o, drop = FALSE]
   Z_info <- Z_info[o, , drop = FALSE]
 
