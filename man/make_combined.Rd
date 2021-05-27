@@ -18,10 +18,10 @@ Joins in a single data frame all mixed effects model frames
 and further variables specified via \code{\link[=egf]{egf()}} argument \code{append}.
 }
 \details{
-If, for example, a variable name occurs in multiple mixed effects
-model frames, then only one instance is retained. Except in
-unusual cases, all instances of a variable name are identical,
-and no information is lost.
+If a variable name occurs in multiple mixed effects model frames,
+then only one instance is retained. Except in unusual cases,
+all instances of a variable name are identical, and no information
+is lost.
 
 Since the data frames being combined each correspond rowwise to
 \code{object$endpoints}, so does the result.

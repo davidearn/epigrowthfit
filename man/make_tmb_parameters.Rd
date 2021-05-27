@@ -33,13 +33,23 @@ listing initial values for the fixed effects coefficients.
 If there are random effects, then a numeric vector of
 length \code{sum(tmb_data$b_seg_len)} listing initial values
 for the (unit variance scale) random effects coefficients.
-Otherwise, \code{NA_real_}.
+If there are no random effects, then \code{b = NA_real_}.
 }
-\item{\code{log_sd_b}}{
-If there are random effects, then a numeric vector of
-length \code{sum(tmb_data$block_rows)} listing initial values
-for the log standard deviations of the random effects
-coefficients. Otherwise, \code{NA_real_}.
+\item{\code{theta}}{
+If there are random effects, then a numeric vector of length
+\code{sum(f(tmb_data$block_rows))}, where \code{f(n) = n*(n+1)/2},
+specifying initial covariance matrices for all random vectors.
+Let \code{u} be a segment of \code{theta} of length \code{f(n)},
+corresponding to a random vector \code{x} of length \code{n}.
+Then \code{u[1:n]} lists log standard deviations of the elements
+of \code{x}, and \code{u[-(1:n)]} lists (in row-major order) the
+subdiagonal elements of the unit lower triangular matrix \code{L}
+in the Cholesky factorization
+\code{S = A \%*\% t(A)},
+\code{A = D^-0.5 \%*\% L},
+\code{D = diag(diag(L \%*\% t(L)))}
+of the correlation matrix \code{S} of \code{x}.
+If there are no random effects, then \code{theta = NA_real_}.
 }
 }
 \description{
@@ -48,8 +58,8 @@ via TMB's \code{PARAMETER_} macros during the first likelihood evaluation.
 See \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}.
 }
 \details{
-When \code{init = NULL}, naive estimates of nonlinear model parameters are
-obtained for each fitting window as follows:
+When \code{init = NULL}, naive estimates of nonlinear model parameters
+are obtained for each fitting window as follows:
 \describe{
 \item{\code{r}}{
 The slope of a linear model fit to \verb{log1p(cumsum(x)))}.
@@ -57,10 +67,10 @@ The slope of a linear model fit to \verb{log1p(cumsum(x)))}.
 \item{\code{alpha}}{
 \code{r*c0^(1-p)} if \code{curve = "subexponential"},
 \code{r/log(K/c0)} if \code{curve = "gompertz"}.
-These are the values obtained by setting the instantaneous
-exponential growth rate at time 0 in the subexponential and
-Gompertz models equal to \code{r}, substituting the naive estimates
-of \code{r}, \code{c0}, \code{K}, and \code{p}, and solving for \code{alpha}.
+These are the values obtained by setting the per capita growth
+rate at time 0 in the subexponential and Gompertz models equal
+to \code{r}, substituting the naive estimates of \code{r}, \code{c0}, \code{K}, and
+\code{p}, and solving for \code{alpha}.
 }
 \item{\code{c0}}{
 \code{exp(log_c0)}, where \code{log_c0} is the intercept of a linear model
@@ -81,8 +91,11 @@ roughly symmetric about the peak.
 The naive estimates are log- or logit-transformed (all but \code{p}
 use a log link), and, for each nonlinear model parameter, the
 initial value of the \code{"(Intercept)"} coefficient in its fixed
-effects model (if any) is taken to be the mean of the link scale
-estimates across fitting windows. All other mixed effects model
-parameters take initial value 0.
+effects model (if one exists) is taken to be the mean of the
+link scale estimates across fitting windows.
+The remaining elements of \code{beta} take initial value 0.
+All elements of \code{b} and \code{theta} take initial value 0,
+so that, initially, all random vectors follow a standard
+normal distribution.
 }
 \keyword{internal}

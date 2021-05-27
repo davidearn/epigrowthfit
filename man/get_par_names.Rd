@@ -27,8 +27,7 @@ get_par_names(curve, ...)
 an incidence model; see \code{\link[=egf]{egf()}}. Set to \code{NULL} or \code{NA}
 to retrieve or suppress, respectively, all names associated
 with an argument. For other methods, \code{curve} is an object
-returned by \code{\link[=egf]{egf()}} or \code{\link[=make_tmb_data]{make_tmb_data()}}, and the remaining
-arguments are ignored.}
+returned by \code{\link[=egf]{egf()}} or \code{\link[=make_tmb_data]{make_tmb_data()}}.}
 
 \item{...}{Arguments passed to methods by the generic function.}
 

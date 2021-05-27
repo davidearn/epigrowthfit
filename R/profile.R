@@ -121,7 +121,7 @@ profile.egf <- function(fitted,
   check_parallel(parallel, cores, outfile, cl)
   n <- length(fitted$nonrandom)
 
-  ## If profiling user-specified elements of `c(beta, log_sd_b)`
+  ## If profiling user-specified elements of `c(beta, theta)`
   if (!is.null(which)) {
     method <- "which"
     stop_if_not(
@@ -136,7 +136,7 @@ profile.egf <- function(fitted,
     A[cbind(seq_len(m), which)] <- 1L
 
   ## If profiling user-specified linear combinations
-  ## of elements of `c(beta, log_sd_b)`
+  ## of elements of `c(beta, theta)`
   } else if (!is.null(A)) {
     method <- "A"
     if (is.numeric(A) && is.null(dim(A))) {
@@ -188,12 +188,12 @@ profile.egf <- function(fitted,
 
   if (method == "which") {
     rl <- which
-    ## Covariance matrix of `c(beta, log_sd_b)`
+    ## Covariance matrix of `c(beta, theta)`
     vc <- vcov(fitted, full = TRUE)
     hl <- sqrt(diag(vc)[which]) / 4
   } else {
     rl <- lapply(seq_len(nrow(A)), function(i) A[i, ])
-    ## Covariance matrix of `A %*% c(beta, log_sd_b)`
+    ## Covariance matrix of `A %*% c(beta, theta)`
     vc <- A %*% vcov(fitted, full = TRUE) %*% t(A)
     hl <- sqrt(diag(vc)) / 4
   }

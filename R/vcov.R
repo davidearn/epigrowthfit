@@ -7,8 +7,8 @@
 #' @param object
 #'   An `"egf"` object returned by [egf()].
 #' @param full
-#'   A logical scalar. If `TRUE`, then covariances involving log
-#'   standard deviations of random effects coefficients are retained.
+#'   A logical scalar. If `TRUE`, then covariances of random effects
+#'   covariance parameters are retained.
 #' @param cor
 #'   A logical scalar. If `TRUE`, then a correlation matrix is returned.
 #' @param ...
@@ -25,7 +25,7 @@
 #' A covariance or correlation matrix inheriting from class
 #' `"egf_vcov"`. The number of rows is equal to
 #' the length of the `"beta"` component of `object$best` plus
-#' (if `full = TRUE`) the length the `"log_sd_b"` component.
+#' (if `full = TRUE`) the length of the `"theta"` component.
 #'
 #' @export
 #' @importFrom stats cov2cor
@@ -39,11 +39,11 @@ vcov.egf <- function(object, full = FALSE, cor = FALSE, ...) {
   } else {
     k <- grep("^beta\\[", nb)
   }
-  m <- object$report$cov[k, k]
+  V <- object$report$cov[k, k]
   if (cor) {
-    m <- cov2cor(m)
+    V <- cov2cor(V)
   }
-  dimnames(m) <- rep_len(list(nb[k]), 2L)
-  class(m) <- c("egf_vcov", "matrix", "array")
-  m
+  dimnames(V) <- rep_len(list(nb[k]), 2L)
+  class(V) <- c("egf_vcov", "matrix", "array")
+  V
 }
