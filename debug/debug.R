@@ -39,7 +39,7 @@ theta <- c(log_sd_b, rep_len(0, 3L))
 init <- c(beta, b, theta)
 
 ## Mixed effects model fit
-outfile <- file("debug.Rout", open = "wt")
+outfile <- file("egf.Rout", open = "wt")
 sink(outfile, type = "output")
 sink(outfile, type = "message")
 object <- egf(
@@ -59,6 +59,13 @@ object <- egf(
   trace       = 3L,
   init        = init
 )
-sdreport(object$tmb_out)
 sink(type = "message")
 sink(type = "output")
+
+sdreport(object$tmb_out)
+
+with(object$tmb_out,
+  nlminb(env$last.par.best, fn, gr, control = list(trace = 1L))
+)
+
+save(object, file = "object.RData")
