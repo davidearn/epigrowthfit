@@ -7,8 +7,7 @@
 #'   an incidence model; see [egf()]. Set to `NULL` or `NA`
 #'   to retrieve or suppress, respectively, all names associated
 #'   with an argument. For other methods, `curve` is an object
-#'   returned by [egf()] or [make_tmb_data()], and the remaining
-#'   arguments are ignored.
+#'   returned by [egf()] or [make_tmb_data()].
 #' @param link
 #'   A logical scalar. If `TRUE`, then `"name"` is replaced
 #'   with `"log(name)"` or `"logit(name)"` depending on the
@@ -250,8 +249,8 @@ make_frames <- function(formula_ts, formula_par,
       (nfp <- vapply(formula_par, function(x) deparse1(x[[2L]]), "")) %in% pn,
       m = paste0(
         "`formula_par` must be a formula of the form `~terms`\n",
-        "or a list of formulae of the form `par ~ terms`, with\n",
-        "`deparse1(par)` an element of\n",
+        "or a list of formulae of the form `par ~ terms`,\n",
+        "with `deparse1(par)` an element of\n",
         "`get_par_names(curve, excess, distr, weekday, link = TRUE)`."
       )
     )
@@ -272,9 +271,9 @@ make_frames <- function(formula_ts, formula_par,
       vapply(formula_par, is_intercept_ok, FALSE),
       m = paste0(
         "Default initial values for fixed effects coefficients\n",
-        "are unreliable when fixed effects model does not have\n",
-        "an intercept. Consider setting `init` explicitly or\n",
-        "including an intercept."
+        "are unreliable when the fixed effects model does not\n",
+        "have an intercept. Consider setting `init` explicitly\n",
+        "or including an intercept."
       )
     )
   }
@@ -1034,8 +1033,8 @@ make_tmb_data <- function(frame_ts, frame_par,
 #' @inheritParams make_tmb_args
 #'
 #' @details
-#' When `init = NULL`, naive estimates of nonlinear model parameters are
-#' obtained for each fitting window as follows:
+#' When `init = NULL`, naive estimates of nonlinear model parameters
+#' are obtained for each fitting window as follows:
 #' \describe{
 #' \item{`r`}{
 #'   The slope of a linear model fit to `log1p(cumsum(x)))`.
@@ -1043,10 +1042,10 @@ make_tmb_data <- function(frame_ts, frame_par,
 #' \item{`alpha`}{
 #'   `r*c0^(1-p)` if `curve = "subexponential"`,
 #'   `r/log(K/c0)` if `curve = "gompertz"`.
-#'   These are the values obtained by setting the instantaneous
-#'   exponential growth rate at time 0 in the subexponential and
-#'   Gompertz models equal to `r`, substituting the naive estimates
-#'   of `r`, `c0`, `K`, and `p`, and solving for `alpha`.
+#'   These are the values obtained by setting the per capita growth
+#'   rate at time 0 in the subexponential and Gompertz models equal
+#'   to `r`, substituting the naive estimates of `r`, `c0`, `K`, and
+#'   `p`, and solving for `alpha`.
 #' }
 #' \item{`c0`}{
 #'   `exp(log_c0)`, where `log_c0` is the intercept of a linear model
@@ -1067,9 +1066,12 @@ make_tmb_data <- function(frame_ts, frame_par,
 #' The naive estimates are log- or logit-transformed (all but `p`
 #' use a log link), and, for each nonlinear model parameter, the
 #' initial value of the `"(Intercept)"` coefficient in its fixed
-#' effects model (if any) is taken to be the mean of the link scale
-#' estimates across fitting windows. All other mixed effects model
-#' parameters take initial value 0.
+#' effects model (if one exists) is taken to be the mean of the
+#' link scale estimates across fitting windows.
+#' The remaining elements of `beta` take initial value 0.
+#' All elements of `b` and `theta` take initial value 0,
+#' so that, initially, all random vectors follow a standard
+#' normal distribution.
 #'
 #' @return
 #' A list with elements:
@@ -1081,13 +1083,23 @@ make_tmb_data <- function(frame_ts, frame_par,
 #'   If there are random effects, then a numeric vector of
 #'   length `sum(tmb_data$b_seg_len)` listing initial values
 #'   for the (unit variance scale) random effects coefficients.
-#'   Otherwise, `NA_real_`.
+#'   If there are no random effects, then `b = NA_real_`.
 #' }
-#' \item{`log_sd_b`}{
-#'   If there are random effects, then a numeric vector of
-#'   length `sum(tmb_data$block_rows)` listing initial values
-#'   for the log standard deviations of the random effects
-#'   coefficients. Otherwise, `NA_real_`.
+#' \item{`theta`}{
+#'   If there are random effects, then a numeric vector of length
+#'   `sum(f(tmb_data$block_rows))`, where `f(n) = n*(n+1)/2`,
+#'   specifying initial covariance matrices for all random vectors.
+#'   Let `u` be a segment of `theta` of length `f(n)`,
+#'   corresponding to a random vector `x` of length `n`.
+#'   Then `u[1:n]` lists log standard deviations of the elements
+#'   of `x`, and `u[-(1:n)]` lists (in row-major order) the
+#'   subdiagonal elements of the unit lower triangular matrix `L`
+#'   in the Cholesky factorization
+#'   `S = A %*% t(A)`,
+#'   `A = D^-0.5 %*% L`,
+#'   `D = diag(diag(L %*% t(L)))`
+#'   of the correlation matrix `S` of `x`.
+#'   If there are no random effects, then `theta = NA_real_`.
 #' }
 #'
 #' @keywords internal
@@ -1095,16 +1107,17 @@ make_tmb_data <- function(frame_ts, frame_par,
 make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
                                 curve, init, debug) {
   ## Lengths of parameter objects
-  lens <- c(
-    beta = sum(tmb_data$beta_seg_len),
-    b = sum(tmb_data$b_seg_len),
-    log_sd_b = sum(tmb_data$block_rows)
+  f <- function(n) n * (n + 1L) / 2L
+  len <- c(
+    beta  = sum(tmb_data$beta_seg_len),
+    b     = sum(tmb_data$b_seg_len),
+    theta = sum(f(tmb_data$block_rows))
   )
 
   ## If user does not specify a full parameter vector
   if (is.null(init)) {
     ## Initialize each parameter object to a vector of zeros
-    init_split <- Map(rep_len, length.out = lens, x = 0)
+    init_split <- lapply(len, numeric)
 
     ## Get names of nonlinear model parameters whose mixed
     ## effects formula has an intercept
@@ -1172,20 +1185,20 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
   ## If user specifies a full parameter vector
   } else {
     ## Validate and split full parameter vector,
-    ## producing list(beta, b, log_sd_b)
+    ## producing `list(beta, b, theta)`
     stop_if_not(
       is.numeric(init),
-      length(init) == sum(lens),
+      length(init) == sum(len),
       is.finite(init),
-      m = sprintf("`init` must be a finite numeric vector of length %d.", sum(lens))
+      m = sprintf("`init` must be a finite numeric vector of length %d.", sum(len))
     )
     names(init) <- NULL
-    init_split <- split(init, rep.int(gl(3L, 1L, labels = names(lens)), lens))
+    init_split <- split(init, rep.int(gl(3L, 1L, labels = names(len)), len))
   }
 
   ## Replace unused parameter objects with NA_real_
   if (!has_random(tmb_data)) {
-    init_split[c("b", "log_sd_b")] <- list(NA_real_)
+    init_split[c("b", "theta")] <- list(NA_real_)
   }
 
   ## Retain all naive estimates when debugging
@@ -1236,9 +1249,9 @@ make_tmb_args <- function(frame_ts, frame_par,
     ## Declare that `b` contains random effects
     tmb_random <- "b"
   } else {
-    ## Fix `b` and `log_sd_b` (in this case to NA_real_),
+    ## Fix `b` and `theta` (in this case to NA_real_),
     ## since only `beta` is used
-    tmb_map <- list(log_sd_b = factor(NA), b = factor(NA))
+    tmb_map <- list(b = factor(NA), theta = factor(NA))
     ## Declare that there are no random effects
     tmb_random <- NULL
   }
@@ -1347,10 +1360,10 @@ has_random.egf <- function(object) {
 #' @param object An `"egf"` object returned by [egf()].
 #'
 #' @details
-#' If, for example, a variable name occurs in multiple mixed effects
-#' model frames, then only one instance is retained. Except in
-#' unusual cases, all instances of a variable name are identical,
-#' and no information is lost.
+#' If a variable name occurs in multiple mixed effects model frames,
+#' then only one instance is retained. Except in unusual cases,
+#' all instances of a variable name are identical, and no information
+#' is lost.
 #'
 #' Since the data frames being combined each correspond rowwise to
 #' `object$endpoints`, so does the result.

@@ -9,8 +9,8 @@
 \arguments{
 \item{object}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
 
-\item{full}{A logical scalar. If \code{TRUE}, then covariances involving log
-standard deviations of random effects coefficients are retained.}
+\item{full}{A logical scalar. If \code{TRUE}, then covariances of random effects
+covariance parameters are retained.}
 
 \item{cor}{A logical scalar. If \code{TRUE}, then a correlation matrix is returned.}
 
@@ -20,7 +20,7 @@ standard deviations of random effects coefficients are retained.}
 A covariance or correlation matrix inheriting from class
 \code{"egf_vcov"}. The number of rows is equal to
 the length of the \code{"beta"} component of \code{object$best} plus
-(if \code{full = TRUE}) the length the \code{"log_sd_b"} component.
+(if \code{full = TRUE}) the length of the \code{"theta"} component.
 }
 \description{
 Retrieves the covariance or correlation matrix of fixed effects

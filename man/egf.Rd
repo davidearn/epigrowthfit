@@ -106,11 +106,13 @@ matrix is constructed in sparse format.}
 \item{debug}{A logical scalar used for debugging. If \code{TRUE}, then
 \code{egf()} returns early with a list of optimization inputs.}
 
-\item{trace}{An integer scalar used for debugging. If 0, then no
-tracing is done. If 1, then negative log likelihood terms
-are printed when they are non-finite or exceed \code{10^12}.
-If 2 or greater, then all negative log likelihood terms
-are printed. Logical \code{trace} is equivalent to \code{as.integer(trace)}.}
+\item{trace}{An integer scalar used for debugging.
+If 0, then no tracing is done.
+If 1, then negative log likelihood terms are printed
+when they are non-finite or exceed \code{1e12}.
+If 3, then all negative log likelihood terms are printed.
+Values 2 and 4 are equivalent to 1 and 3,
+but with additional printing of the full response matrix.}
 
 \item{init}{A full parameter vector for the first likelihood evaluation.
 Set to \code{NULL} to accept the internally generated default.
