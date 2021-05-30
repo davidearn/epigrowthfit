@@ -345,7 +345,7 @@ plot.egf_confint <- function(x,
                              label = NULL,
                              ...) {
   type <- match.arg(type)
-  stop_if_not_positive_integer(per_plot)
+  stop_if_not_integer(per_plot, kind = "positive")
 
   subset <- subset_to_index(substitute(subset), x, parent.frame())
   order <- order_to_index(substitute(order), x, parent.frame())

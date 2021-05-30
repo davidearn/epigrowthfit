@@ -11,10 +11,11 @@ make_tmb_args(
   distr,
   excess,
   weekday,
-  sparse_X,
+  do_fit,
+  trace_cpp,
+  trace_tmb,
   init,
-  debug,
-  trace
+  sparse_X
 )
 }
 \arguments{
@@ -37,24 +38,31 @@ Currently, weekday effect estimation requires \code{time} in
 with 1-day spacing in all fitting windows.
 Logical \code{weekday} is equivalent to \code{as.integer(weekday)}.}
 
-\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
-matrix is constructed in sparse format.}
-
-\item{init}{A full parameter vector for the first likelihood evaluation.
-Set to \code{NULL} to accept the internally generated default.
-Use \code{debug = TRUE} to retrieve this default, which may be
-useful as a template.}
-
-\item{debug}{A logical scalar used for debugging. If \code{TRUE}, then
+\item{do_fit}{A logical scalar used for debugging. If \code{TRUE}, then
 \code{egf()} returns early with a list of optimization inputs.}
 
-\item{trace}{An integer scalar used for debugging.
-If 0, then no tracing is done.
+\item{trace_cpp}{An integer scalar used for debugging.
+If 0, then likelihood evaluations are always silent.
 If 1, then negative log likelihood terms are printed
-when they are non-finite or exceed \code{1e12}.
+when they are non-finite or exceed \code{1e+09}.
 If 3, then all negative log likelihood terms are printed.
 Values 2 and 4 are equivalent to 1 and 3,
 but with additional printing of the full response matrix.}
+
+\item{trace_tmb}{A logical scalar used for debugging. If \code{TRUE}, then
+tracing is enabled in TMB and TMB-generated functions.
+Note that \code{trace_tmb = FALSE} will override any nonzero
+setting of \code{control_inner$trace}.}
+
+\item{init}{A full parameter vector for the first likelihood evaluation.
+The default (\code{NULL}) is to accept the internally generated
+default. Use \code{do_fit = FALSE} to retrieve this default and
+other optimization inputs (in particular \code{Y_init}; see Value),
+which can often be used to construct a more informative
+starting point.}
+
+\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
+matrix is constructed in sparse format.}
 }
 \value{
 A list with elements \code{data}, \code{parameters}, \code{map}, \code{random},

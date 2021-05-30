@@ -303,7 +303,7 @@ plot.egf <- function(x,
       stop_if_not_true_false(log)
     }
     if (type == "rt2") {
-      stop_if_not_positive_integer(per_plot)
+      stop_if_not_integer(per_plot, kind = "positive")
     }
 
     frame_ts <- x$frame_ts

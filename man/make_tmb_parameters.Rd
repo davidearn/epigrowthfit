@@ -4,7 +4,7 @@
 \alias{make_tmb_parameters}
 \title{Construct parameter objects for C++ template}
 \usage{
-make_tmb_parameters(tmb_data, frame_ts, frame_par, curve, init, debug)
+make_tmb_parameters(tmb_data, frame_ts, frame_par, curve, do_fit, init)
 }
 \arguments{
 \item{tmb_data}{A \code{"tmb_data"} object returned by \code{\link[=make_tmb_data]{make_tmb_data()}}.}
@@ -15,13 +15,15 @@ make_tmb_parameters(tmb_data, frame_ts, frame_par, curve, init, debug)
 
 \item{curve}{A character string specifying a cumulative incidence model.}
 
-\item{init}{A full parameter vector for the first likelihood evaluation.
-Set to \code{NULL} to accept the internally generated default.
-Use \code{debug = TRUE} to retrieve this default, which may be
-useful as a template.}
-
-\item{debug}{A logical scalar used for debugging. If \code{TRUE}, then
+\item{do_fit}{A logical scalar used for debugging. If \code{TRUE}, then
 \code{egf()} returns early with a list of optimization inputs.}
+
+\item{init}{A full parameter vector for the first likelihood evaluation.
+The default (\code{NULL}) is to accept the internally generated
+default. Use \code{do_fit = FALSE} to retrieve this default and
+other optimization inputs (in particular \code{Y_init}; see Value),
+which can often be used to construct a more informative
+starting point.}
 }
 \value{
 A list with elements:

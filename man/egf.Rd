@@ -15,13 +15,18 @@ egf(
   excess = FALSE,
   distr = c("nbinom", "pois"),
   weekday = FALSE,
-  method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
-  na_action = c("fail", "fail"),
-  sparse_X = FALSE,
-  debug = FALSE,
-  trace = FALSE,
+  na_action_ts = c("fail", "pass"),
+  na_action_par = c("fail", "pass"),
+  method_outer = c("nlminb", "nlm", "BFGS", "Nelder-Mead"),
+  method_inner = c("newton", "BFGS", "Nelder-Mead"),
+  control_outer = list(maxit = 1000L),
+  control_inner = list(maxit = 1000L),
+  do_fit = TRUE,
+  trace_cpp = FALSE,
+  trace_tmb = FALSE,
   init = NULL,
   append = NULL,
+  sparse_X = FALSE,
   ...
 )
 }
@@ -83,41 +88,59 @@ Currently, weekday effect estimation requires \code{time} in
 with 1-day spacing in all fitting windows.
 Logical \code{weekday} is equivalent to \code{as.integer(weekday)}.}
 
-\item{method}{A character string specifying an optimizer available through
-\code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}.}
-
-\item{na_action}{A character vector to be recycled to length 2.
-\code{na_action[1L]} affects the handling of \code{NA}
+\item{na_action_ts}{A character string affecting the handling of \code{NA}
 in \code{x} if \code{formula_ts = x ~ time | ts}.
 \code{"fail"} is to throw an error.
-\code{"exclude"} is to ignore \code{NA} when fitting and retain \code{NA}
-in predictions.
-\code{"pass"} is to ignore \code{NA} when fitting and predict \code{NA}.
-\code{NA} in \code{time} and \code{ts} are an error regardless of \code{na_action}.
-\code{na_action[2L]} affects the handling of \code{NA}
+\code{"pass"} is to ignore \code{NA} when fitting and replace \code{NA}
+when predicting.
+(Not yet implemented:
+\code{"exclude"} is to ignore \code{NA} when fitting and preserve \code{NA}
+when predicting.)
+Note that \code{NA} in \code{time} and \code{ts} are an error regardless
+of \code{na_action_ts}.}
+
+\item{na_action_par}{A character string affecting the handling of \code{NA}
 in \code{formula_par} variables.
 \code{"fail"} is to throw an error.
-\code{"exclude"} and \code{"pass"} are to discard fitting windows
-with incomplete data.}
+\code{"pass"} is to discard fitting windows with incomplete data.}
 
-\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
-matrix is constructed in sparse format.}
+\item{method_outer, method_inner}{Character strings specifying optimizers to be used
+for the outer and inner optimizations, respectively.
+The outer optimization permits \code{\link[stats:nlminb]{stats::nlminb()}},
+\code{\link[stats:nlm]{stats::nlm()}}, and certain optimizers available
+through \code{\link[stats:optim]{stats::optim()}}. The inner optimization
+permits \code{\link[TMB:newton]{TMB::newton()}} and the same \code{\link[stats:optim]{stats::optim()}}
+methods. \code{method_inner} may have length greater than 1;
+in this case, the listed optimizers will be tried
+in turn until one succeeds.}
 
-\item{debug}{A logical scalar used for debugging. If \code{TRUE}, then
+\item{control_outer, control_inner}{Named lists of control parameters to be passed to optimizers.
+If \code{length(method_inner) > 1L} and \code{names(control_inner)}
+contains \code{method_inner[i]}, then \code{control_inner[[method_inner[i]]]}
+is passed to optimizer \code{i} instead of \code{control_inner}.}
+
+\item{do_fit}{A logical scalar used for debugging. If \code{TRUE}, then
 \code{egf()} returns early with a list of optimization inputs.}
 
-\item{trace}{An integer scalar used for debugging.
-If 0, then no tracing is done.
+\item{trace_cpp}{An integer scalar used for debugging.
+If 0, then likelihood evaluations are always silent.
 If 1, then negative log likelihood terms are printed
-when they are non-finite or exceed \code{1e12}.
+when they are non-finite or exceed \code{1e+09}.
 If 3, then all negative log likelihood terms are printed.
 Values 2 and 4 are equivalent to 1 and 3,
 but with additional printing of the full response matrix.}
 
+\item{trace_tmb}{A logical scalar used for debugging. If \code{TRUE}, then
+tracing is enabled in TMB and TMB-generated functions.
+Note that \code{trace_tmb = FALSE} will override any nonzero
+setting of \code{control_inner$trace}.}
+
 \item{init}{A full parameter vector for the first likelihood evaluation.
-Set to \code{NULL} to accept the internally generated default.
-Use \code{debug = TRUE} to retrieve this default, which may be
-useful as a template.}
+The default (\code{NULL}) is to accept the internally generated
+default. Use \code{do_fit = FALSE} to retrieve this default and
+other optimization inputs (in particular \code{Y_init}; see Value),
+which can often be used to construct a more informative
+starting point.}
 
 \item{append}{An expression indicating variables in \code{data_par} to be preserved
 in the returned \code{"egf"} object for use by methods.
@@ -125,19 +148,23 @@ It is evaluated similarly to the \code{select} argument of \code{\link[=subset]{
 The default (\code{NULL}) is to preserve all variables.
 Currently, usage is supported only if \code{data_par} is a data frame.}
 
-\item{...}{Optional arguments to the optimizer specified by \code{method}.}
+\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
+matrix is constructed in sparse format.}
+
+\item{...}{Unused optional arguments}
 }
 \value{
-If \code{debug = FALSE}, then a list inheriting from class \code{"egf"},
+If \code{do_fit = TRUE}, then a list inheriting from class \code{"egf"},
 with elements:
 \item{\code{endpoints}}{
 A data frame with variables \code{ts}, \code{window}, \code{start}, and
 \code{end} listing start and end times for all fitting windows.
-(Supplied intervals are contracted internally so that
-\code{start} and \code{end} are precisely the minimum and maximum
-of the set of time points contained in the window.)
 Rows are ordered by time series and chronologically
 within time series. \code{origin} is retained as an attribute.
+Note that \code{start} and \code{end} here are the minimum and maximum
+of the set of time points contained in the supplied intervals.
+Hence supplied and returned interval endpoints may not
+match exactly.
 }
 \item{\code{frame_ts}}{
 The time series model frame, constructed from \code{formula_ts}
@@ -166,8 +193,8 @@ model frame.
 A data frame preserving the variables from \code{data_par}
 indicated by \code{append}. Corresponds rowwise to \code{endpoints}.
 }
-\item{\code{curve}, \code{excess}, \code{distr}, \code{weekday}, \code{method}}{
-Copies of the so-named arguments (after matching).
+\item{\code{curve}, \code{excess}, \code{distr}, \code{weekday}, \code{method_outer}, \code{method_inner}, \code{control_outer}, \code{control_inner}}{
+Copies of the so-named arguments (after possible matching).
 }
 \item{\code{tmb_args}}{
 A list of arguments to \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}. See \code{\link[=make_tmb_args]{make_tmb_args()}}.
@@ -185,7 +212,7 @@ The full parameter vector of the first likelihood evaluation.
 The full parameter vector of the best likelihood evaluation.
 }
 \item{\code{nonrandom}}{
-An integer vector indexing the nonrandom segment of \code{best}.
+An integer vector indexing the non-random segment of \code{best}.
 }
 \item{\code{report}}{
 A list containing all variables \code{REPORT()}ed and \code{ADREPORT()}ed
@@ -206,8 +233,12 @@ the marginal likelihood function at \code{x[nonrandom]}.
 The call to \code{egf()}, allowing for updates to the \code{"egf"} object
 via \code{\link[stats:update]{stats::update()}}.
 }
-If \code{debug = TRUE}, then a list containing only
-\code{endpoints}, \code{frame_ts}, \code{frame_par}, \code{init}, \code{tmb_args}, and \code{call}.
+
+If \code{do_fit = FALSE}, then a list containing \code{endpoints},
+\code{frame_ts}, \code{frame_par}, \code{init}, \code{tmb_args}, and \code{call}
+(as described above), as well as a matrix \code{Y_init} specifying
+a naive estimate of each nonlinear model parameter for each
+fitting window. \code{Y_init} and \code{endpoints} correspond rowwise.
 }
 \description{
 Fits nonlinear mixed effects models of epidemic growth to one

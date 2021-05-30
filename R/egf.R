@@ -61,50 +61,71 @@
 #'   (in the sense of `all.equal(time, round(time))`) or Date vector
 #'   with 1-day spacing in all fitting windows.
 #'   Logical `weekday` is equivalent to `as.integer(weekday)`.
-#' @param method
-#'   A character string specifying an optimizer available through
-#'   [stats::nlminb()], [stats::nlm()], or [stats::optim()].
-#' @param na_action
-#'   A character vector to be recycled to length 2.
-#'   `na_action[1L]` affects the handling of `NA`
+#' @param na_action_ts
+#'   A character string affecting the handling of `NA`
 #'   in `x` if `formula_ts = x ~ time | ts`.
 #'   `"fail"` is to throw an error.
-#'   `"exclude"` is to ignore `NA` when fitting and retain `NA`
-#'   in predictions.
-#'   `"pass"` is to ignore `NA` when fitting and predict `NA`.
-#'   `NA` in `time` and `ts` are an error regardless of `na_action`.
-#'   `na_action[2L]` affects the handling of `NA`
+#'   `"pass"` is to ignore `NA` when fitting and replace `NA`
+#'   when predicting.
+#'   (Not yet implemented:
+#'   `"exclude"` is to ignore `NA` when fitting and preserve `NA`
+#'   when predicting.)
+#'   Note that `NA` in `time` and `ts` are an error regardless
+#'   of `na_action_ts`.
+#' @param na_action_par
+#'   A character string affecting the handling of `NA`
 #'   in `formula_par` variables.
 #'   `"fail"` is to throw an error.
-#'   `"exclude"` and `"pass"` are to discard fitting windows
-#'   with incomplete data.
-#' @param sparse_X
-#'   A logical scalar. If `TRUE`, then the fixed effects design
-#'   matrix is constructed in sparse format.
-#' @param debug
+#'   `"pass"` is to discard fitting windows with incomplete data.
+#' @param method_outer,method_inner
+#'   Character strings specifying optimizers to be used
+#'   for the outer and inner optimizations, respectively.
+#'   The outer optimization permits [stats::nlminb()],
+#'   [stats::nlm()], and certain optimizers available
+#'   through [stats::optim()]. The inner optimization
+#'   permits [TMB::newton()] and the same [stats::optim()]
+#'   methods. `method_inner` may have length greater than 1;
+#'   in this case, the listed optimizers will be tried
+#'   in turn until one succeeds.
+#' @param control_outer,control_inner
+#'   Named lists of control parameters to be passed to optimizers.
+#'   If `length(method_inner) > 1L` and `names(control_inner)`
+#'   contains `method_inner[i]`, then `control_inner[[method_inner[i]]]`
+#'   is passed to optimizer `i` instead of `control_inner`.
+#' @param do_fit
 #'   A logical scalar used for debugging. If `TRUE`, then
 #'   `egf()` returns early with a list of optimization inputs.
-#' @param trace
+#' @param trace_cpp
 #'   An integer scalar used for debugging.
-#'   If 0, then no tracing is done.
+#'   If 0, then likelihood evaluations are always silent.
 #'   If 1, then negative log likelihood terms are printed
-#'   when they are non-finite or exceed `1e12`.
+#'   when they are non-finite or exceed `1e+09`.
 #'   If 3, then all negative log likelihood terms are printed.
 #'   Values 2 and 4 are equivalent to 1 and 3,
 #'   but with additional printing of the full response matrix.
+#' @param trace_tmb
+#'   A logical scalar used for debugging. If `TRUE`, then
+#'   tracing is enabled in TMB and TMB-generated functions.
+#'   Note that `trace_tmb = FALSE` will override any nonzero
+#'   setting of `control_inner$trace`.
 #' @param init
 #'   A full parameter vector for the first likelihood evaluation.
-#'   Set to `NULL` to accept the internally generated default.
-#'   Use `debug = TRUE` to retrieve this default, which may be
-#'   useful as a template.
+#'   The default (`NULL`) is to accept the internally generated
+#'   default. Use `do_fit = FALSE` to retrieve this default and
+#'   other optimization inputs (in particular `Y_init`; see Value),
+#'   which can often be used to construct a more informative
+#'   starting point.
 #' @param append
 #'   An expression indicating variables in `data_par` to be preserved
 #'   in the returned `"egf"` object for use by methods.
 #'   It is evaluated similarly to the `select` argument of [subset()].
 #'   The default (`NULL`) is to preserve all variables.
 #'   Currently, usage is supported only if `data_par` is a data frame.
+#' @param sparse_X
+#'   A logical scalar. If `TRUE`, then the fixed effects design
+#'   matrix is constructed in sparse format.
 #' @param ...
-#'   Optional arguments to the optimizer specified by `method`.
+#'   Unused optional arguments
 #'
 #' @details
 #' If `formula_ts = x ~ time | ts`, then coercion of Date `time` to
@@ -119,16 +140,17 @@
 #' set `endpoints = data_par`.
 #'
 #' @return
-#' If `debug = FALSE`, then a list inheriting from class `"egf"`,
+#' If `do_fit = TRUE`, then a list inheriting from class `"egf"`,
 #' with elements:
 #' \item{`endpoints`}{
 #'   A data frame with variables `ts`, `window`, `start`, and
 #'   `end` listing start and end times for all fitting windows.
-#'   (Supplied intervals are contracted internally so that
-#'   `start` and `end` are precisely the minimum and maximum
-#'   of the set of time points contained in the window.)
 #'   Rows are ordered by time series and chronologically
 #'   within time series. `origin` is retained as an attribute.
+#'   Note that `start` and `end` here are the minimum and maximum
+#'   of the set of time points contained in the supplied intervals.
+#'   Hence supplied and returned interval endpoints may not
+#'   match exactly.
 #' }
 #' \item{`frame_ts`}{
 #'   The time series model frame, constructed from `formula_ts`
@@ -157,8 +179,8 @@
 #'   A data frame preserving the variables from `data_par`
 #'   indicated by `append`. Corresponds rowwise to `endpoints`.
 #' }
-#' \item{`curve`, `excess`, `distr`, `weekday`, `method`}{
-#'   Copies of the so-named arguments (after matching).
+#' \item{`curve`, `excess`, `distr`, `weekday`, `method_outer`, `method_inner`, `control_outer`, `control_inner`}{
+#'   Copies of the so-named arguments (after possible matching).
 #' }
 #' \item{`tmb_args`}{
 #'   A list of arguments to [TMB::MakeADFun()]. See [make_tmb_args()].
@@ -176,7 +198,7 @@
 #'   The full parameter vector of the best likelihood evaluation.
 #' }
 #' \item{`nonrandom`}{
-#'   An integer vector indexing the nonrandom segment of `best`.
+#'   An integer vector indexing the non-random segment of `best`.
 #' }
 #' \item{`report`}{
 #'   A list containing all variables `REPORT()`ed and `ADREPORT()`ed
@@ -197,8 +219,12 @@
 #'   The call to `egf()`, allowing for updates to the `"egf"` object
 #'   via [stats::update()].
 #' }
-#' If `debug = TRUE`, then a list containing only
-#' `endpoints`, `frame_ts`, `frame_par`, `init`, `tmb_args`, and `call`.
+#'
+#' If `do_fit = FALSE`, then a list containing `endpoints`,
+#' `frame_ts`, `frame_par`, `init`, `tmb_args`, and `call`
+#' (as described above), as well as a matrix `Y_init` specifying
+#' a naive estimate of each nonlinear model parameter for each
+#' fitting window. `Y_init` and `endpoints` correspond rowwise.
 #'
 #' @export
 #' @importFrom TMB MakeADFun sdreport
@@ -213,13 +239,18 @@ egf <- function(formula_ts,
                 excess = FALSE,
                 distr = c("nbinom", "pois"),
                 weekday = FALSE,
-                method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
-                na_action = c("fail", "fail"),
-                sparse_X = FALSE,
-                debug = FALSE,
-                trace = FALSE,
+                na_action_ts = c("fail", "pass"),
+                na_action_par = c("fail", "pass"),
+                method_outer = c("nlminb", "nlm", "BFGS", "Nelder-Mead"),
+                method_inner = c("newton", "BFGS", "Nelder-Mead"),
+                control_outer = list(maxit = 1000L),
+                control_inner = list(maxit = 1000L),
+                do_fit = TRUE,
+                trace_cpp = FALSE,
+                trace_tmb = FALSE,
                 init = NULL,
                 append = NULL,
+                sparse_X = FALSE,
                 ...) {
   stop_if_not(
     inherits(origin, "Date"),
@@ -230,26 +261,25 @@ egf <- function(formula_ts,
   curve <- match.arg(curve)
   stop_if_not_true_false(excess)
   distr <- match.arg(distr)
-  stop_if_not(
-    is.numeric(weekday) || is.logical(weekday),
-    length(weekday) == 1L,
-    !is.na(weekday),
-    m = "`weekday` must be a numeric or logical vector of length 1."
-  )
+  stop_if_not_true_false(weekday, allow_numeric = TRUE)
   weekday <- as.integer(weekday)
-  weekday <- (weekday > 0L) * (1L + (weekday - 1L) %% 7L)
-  method <- match.arg(method)
-  na_action <- match.arg(na_action, c("fail", "exclude", "pass"), several.ok = TRUE)
-  na_action <- rep_len(na_action, 2L)
-  stop_if_not_true_false(sparse_X)
-  stop_if_not_true_false(debug)
+  weekday <- (weekday > 0L) * (1L + (weekday - 1L) %% 7L) # coercing to `0:7`
+  na_action_ts <- match.arg(na_action_ts)
+  na_action_par <- match.arg(na_action_par)
+  method_outer <- match.arg(method_outer)
+  method_inner <- unique(match.arg(method_inner, several.ok = TRUE))
   stop_if_not(
-    is.numeric(trace) || is.logical(trace),
-    length(trace) == 1L,
-    !is.na(trace),
-    m = "`trace` must be a numeric or logical vector of length 1."
+    is.list(control_outer),
+    is.list(control_inner),
+    m = "`control_outer` and `control_inner` must be lists."
   )
-  trace <- min(2L, max(0L, as.integer(trace)))
+  stop_if_not_true_false(do_fit)
+  stop_if_not_true_false(trace_cpp, allow_numeric = TRUE)
+  trace_cpp <- min(4L, max(0L, as.integer(trace_cpp))) # coercing to `0:4`
+  stop_if_not_true_false(trace_tmb, allow_numeric = TRUE)
+  trace_tmb <- as.logical(trace_tmb)
+  append <- substitute(append)
+  stop_if_not_true_false(sparse_X)
 
   frames <- make_frames(
     formula_ts = formula_ts,
@@ -262,9 +292,10 @@ egf <- function(formula_ts,
     excess = excess,
     distr = distr,
     weekday = weekday,
-    na_action = na_action,
+    na_action_ts = na_action_ts,
+    na_action_par = na_action_par,
     init = init,
-    append = substitute(append)
+    append = append
   )
   tmb_args <- make_tmb_args(
     frame_ts = frames$frame_ts,
@@ -273,19 +304,20 @@ egf <- function(formula_ts,
     distr = distr,
     excess = excess,
     weekday = weekday,
-    sparse_X = sparse_X,
+    do_fit = do_fit,
+    trace_cpp = trace_cpp,
+    trace_tmb = trace_tmb,
     init = init,
-    debug = debug,
-    trace = trace
+    sparse_X = sparse_X
   )
 
-  if (debug) {
+  if (!do_fit) {
     init_split <- tmb_args$parameters
     Y_init <- attr(init_split, "Y_init")
     if (!has_random(tmb_args$data)) {
       init_split <- init_split["beta"]
     }
-    init <- unlist(init_split)
+    init <- unlist(init_split, use.names = FALSE)
     names(init) <- enum_dupl_string(rep.int(names(init_split), lengths(init_split)))
     out <- list(
       endpoints = frames$endpoints,
@@ -300,16 +332,26 @@ egf <- function(formula_ts,
   }
 
   tmb_out <- do.call(MakeADFun, tmb_args)
-  optim_out <- optim_tmb_out(tmb_out, method = method, ...)
+  tmb_out$fn <- patch_fn_gr(tmb_out$fn,
+    order = 0L,
+    method_inner = method_inner,
+    control_inner = control_inner
+  )
+  tmb_out$gr <- patch_fn_gr(tmb_out$gr,
+    order = 1L,
+    method_inner = method_inner,
+    control_inner = control_inner
+  )
+  optim_out <- optim_tmb_out(tmb_out, method_outer = method_outer)
 
   init <- enum_dupl_names(tmb_out$env$par)
   best <- enum_dupl_names(tmb_out$env$last.par.best)
   nonrandom <- grep("^b\\[", names(best), invert = TRUE)
 
-  s <- switch(method, nlminb = "objective", nlm = "minimum", "value")
+  s <- switch(method_outer, nlminb = "objective", nlm = "minimum", "value")
   nll <- as.numeric(optim_out[[s]])
-  nll_func <- function(x = par) as.numeric(tmb_out$fn(x[nonrandom]))
-  nll_grad <- function(x = par) as.numeric(tmb_out$gr(x[nonrandom]))
+  nll_func <- function(x = best) as.numeric(tmb_out$fn(x[nonrandom]))
+  nll_grad <- function(x = best) as.numeric(tmb_out$gr(x[nonrandom]))
 
   report <- tmb_out$report(best)
   #sdr <- try(sdreport(tmb_out))
@@ -330,7 +372,10 @@ egf <- function(formula_ts,
     excess = excess,
     distr = distr,
     weekday = weekday,
-    method = method,
+    method_outer = method_outer,
+    method_inner = method_inner,
+    control_outer = control_outer,
+    control_inner = control_inner,
     tmb_args = tmb_args,
     tmb_out = tmb_out,
     optim_out = optim_out,

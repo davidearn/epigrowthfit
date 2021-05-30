@@ -15,7 +15,8 @@ make_frames(
   excess,
   distr,
   weekday,
-  na_action,
+  na_action_ts,
+  na_action_par,
   init,
   append
 )
@@ -82,24 +83,28 @@ Currently, weekday effect estimation requires \code{time} in
 with 1-day spacing in all fitting windows.
 Logical \code{weekday} is equivalent to \code{as.integer(weekday)}.}
 
-\item{na_action}{A character vector to be recycled to length 2.
-\code{na_action[1L]} affects the handling of \code{NA}
+\item{na_action_ts}{A character string affecting the handling of \code{NA}
 in \code{x} if \code{formula_ts = x ~ time | ts}.
 \code{"fail"} is to throw an error.
-\code{"exclude"} is to ignore \code{NA} when fitting and retain \code{NA}
-in predictions.
-\code{"pass"} is to ignore \code{NA} when fitting and predict \code{NA}.
-\code{NA} in \code{time} and \code{ts} are an error regardless of \code{na_action}.
-\code{na_action[2L]} affects the handling of \code{NA}
+\code{"pass"} is to ignore \code{NA} when fitting and replace \code{NA}
+when predicting.
+(Not yet implemented:
+\code{"exclude"} is to ignore \code{NA} when fitting and preserve \code{NA}
+when predicting.)
+Note that \code{NA} in \code{time} and \code{ts} are an error regardless
+of \code{na_action_ts}.}
+
+\item{na_action_par}{A character string affecting the handling of \code{NA}
 in \code{formula_par} variables.
 \code{"fail"} is to throw an error.
-\code{"exclude"} and \code{"pass"} are to discard fitting windows
-with incomplete data.}
+\code{"pass"} is to discard fitting windows with incomplete data.}
 
 \item{init}{A full parameter vector for the first likelihood evaluation.
-Set to \code{NULL} to accept the internally generated default.
-Use \code{debug = TRUE} to retrieve this default, which may be
-useful as a template.}
+The default (\code{NULL}) is to accept the internally generated
+default. Use \code{do_fit = FALSE} to retrieve this default and
+other optimization inputs (in particular \code{Y_init}; see Value),
+which can often be used to construct a more informative
+starting point.}
 
 \item{append}{An expression indicating variables in \code{data_par} to be preserved
 in the returned \code{"egf"} object for use by methods.

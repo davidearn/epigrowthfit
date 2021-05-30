@@ -28,7 +28,7 @@
 #' @keywords internal
 check_parallel <- function(parallel, cores, outfile, cl) {
   if (parallel == "multicore" || (parallel == "snow" && is.null(cl))) {
-    stop_if_not_positive_integer(cores, n = 2L)
+    stop_if_not_integer(cores, kind = "positive", n = 2L)
     if (!is.null(outfile)) {
       stop_if_not_character_string(outfile, n = 2L)
     }

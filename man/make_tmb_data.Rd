@@ -11,8 +11,8 @@ make_tmb_data(
   excess,
   distr,
   weekday,
-  sparse_X,
-  trace
+  trace_cpp,
+  sparse_X
 )
 }
 \arguments{
@@ -37,16 +37,16 @@ Currently, weekday effect estimation requires \code{time} in
 with 1-day spacing in all fitting windows.
 Logical \code{weekday} is equivalent to \code{as.integer(weekday)}.}
 
-\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
-matrix is constructed in sparse format.}
-
-\item{trace}{An integer scalar used for debugging.
-If 0, then no tracing is done.
+\item{trace_cpp}{An integer scalar used for debugging.
+If 0, then likelihood evaluations are always silent.
 If 1, then negative log likelihood terms are printed
-when they are non-finite or exceed \code{1e12}.
+when they are non-finite or exceed \code{1e+09}.
 If 3, then all negative log likelihood terms are printed.
 Values 2 and 4 are equivalent to 1 and 3,
 but with additional printing of the full response matrix.}
+
+\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
+matrix is constructed in sparse format.}
 }
 \value{
 [Below,

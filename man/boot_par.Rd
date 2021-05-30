@@ -7,7 +7,10 @@
 boot_par(
   object,
   n = 6L,
-  method = c("nlminb", "nlm", "Nelder-Mead", "BFGS"),
+  method_outer = c("nlminb", "nlm", "BFGS", "Nelder-Mead"),
+  method_inner = c("newton", "BFGS", "Nelder-Mead"),
+  control_outer = list(maxit = 1000L),
+  control_inner = list(maxit = 1000L),
   trace = TRUE,
   parallel = c("serial", "multicore", "snow"),
   cores = getOption("egf.cores", 2L),
@@ -21,8 +24,35 @@ boot_par(
 
 \item{n}{A positive integer. The desired number of samples.}
 
-\item{method}{A character string specifying an optimizer available through
-\code{\link[stats:nlminb]{stats::nlminb()}}, \code{\link[stats:nlm]{stats::nlm()}}, or \code{\link[stats:optim]{stats::optim()}}.}
+\item{method_outer}{Character strings specifying optimizers to be used
+for the outer and inner optimizations, respectively.
+The outer optimization permits \code{\link[stats:nlminb]{stats::nlminb()}},
+\code{\link[stats:nlm]{stats::nlm()}}, and certain optimizers available
+through \code{\link[stats:optim]{stats::optim()}}. The inner optimization
+permits \code{\link[TMB:newton]{TMB::newton()}} and the same \code{\link[stats:optim]{stats::optim()}}
+methods. \code{method_inner} may have length greater than 1;
+in this case, the listed optimizers will be tried
+in turn until one succeeds.}
+
+\item{method_inner}{Character strings specifying optimizers to be used
+for the outer and inner optimizations, respectively.
+The outer optimization permits \code{\link[stats:nlminb]{stats::nlminb()}},
+\code{\link[stats:nlm]{stats::nlm()}}, and certain optimizers available
+through \code{\link[stats:optim]{stats::optim()}}. The inner optimization
+permits \code{\link[TMB:newton]{TMB::newton()}} and the same \code{\link[stats:optim]{stats::optim()}}
+methods. \code{method_inner} may have length greater than 1;
+in this case, the listed optimizers will be tried
+in turn until one succeeds.}
+
+\item{control_outer}{Named lists of control parameters to be passed to optimizers.
+If \code{length(method_inner) > 1L} and \code{names(control_inner)}
+contains \code{method_inner[i]}, then \code{control_inner[[method_inner[i]]]}
+is passed to optimizer \code{i} instead of \code{control_inner}.}
+
+\item{control_inner}{Named lists of control parameters to be passed to optimizers.
+If \code{length(method_inner) > 1L} and \code{names(control_inner)}
+contains \code{method_inner[i]}, then \code{control_inner[[method_inner[i]]]}
+is passed to optimizer \code{i} instead of \code{control_inner}.}
 
 \item{trace}{A logical scalar. If \code{TRUE}, then basic tracing messages
 are printed.}

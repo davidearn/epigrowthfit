@@ -39,7 +39,7 @@ Type objective_function<Type>::operator() ()
     // Segment initial days-of-week
     // * length=N if weekday=true, otherwise length=0
     // * val={0,...,6} where 0=reference
-    DATA_IVECTOR(dow);
+    DATA_IVECTOR(weekday_on_day0);
 
     // Number of segments
     int N = t_seg_len.size();
@@ -113,16 +113,16 @@ Type objective_function<Type>::operator() ()
 
     // Flags
     DATA_INTEGER(curve_flag);    // prediction model     (enum.h)
-    DATA_INTEGER(distr_flag);    // observation model    (enum.h)
     DATA_INTEGER(excess_flag);   // excess mortality     (1=yes, 0=no)
+    DATA_INTEGER(distr_flag);    // observation model    (enum.h)
     DATA_INTEGER(weekday_flag);  // day-of-week effects  (1=yes, 0=no)
-    DATA_INTEGER(sparse_X_flag); // sparse format X      (1=yes, 0=no)
     DATA_INTEGER(trace_flag);    // tracing              (0=nothing, 1=degenerate nll terms, 2=1+Y, 3=all nll terms, 4=3+Y)
+    DATA_INTEGER(sparse_X_flag); // sparse format X      (1=yes, 0=no)
     DATA_INTEGER(predict_flag);  // predict              (1=yes, 0=no)
     bool excess   = (excess_flag   == 1);
     bool weekday  = (weekday_flag  == 1);
-    bool sparse_X = (sparse_X_flag == 1);
     bool trace    = (trace_flag    >  0);
+    bool sparse_X = (sparse_X_flag == 1);
     bool predict  = (predict_flag  == 1);
     
 
@@ -248,13 +248,16 @@ Type objective_function<Type>::operator() ()
     // Compute predictions =====================================================
 
     // Log curve
-    vector<Type> log_curve = eval_log_curve(t, t_seg_len, curve_flag, excess, Y,
+    vector<Type> log_curve = eval_log_curve(t, t_seg_len, curve_flag, excess,
+					    Y,
 					    j_log_r, j_log_alpha, j_log_c0,
 					    j_log_tinfl, j_log_K,
 					    j_logit_p, j_log_a, j_log_b);
 
     // Log cases
-    vector<Type> log_cases = eval_log_cases(log_curve, t_seg_len, weekday, dow, Y,
+    vector<Type> log_cases = eval_log_cases(log_curve, t_seg_len,
+					    weekday, weekday_on_day0,
+					    Y,
 					    j_log_w1, j_log_w2, j_log_w3,
 					    j_log_w4, j_log_w5, j_log_w6);
 
@@ -414,12 +417,15 @@ Type objective_function<Type>::operator() ()
 	    Y_simulate += Z * b_simulate_scaled_as_matrix;
 	}
 
-        log_curve = eval_log_curve(t, t_seg_len, curve_flag, excess, Y_simulate,
+        log_curve = eval_log_curve(t, t_seg_len, curve_flag, excess,
+				   Y_simulate,
 				   j_log_r, j_log_alpha, j_log_c0,
 				   j_log_tinfl, j_log_K,
 				   j_logit_p, j_log_a, j_log_b);
 	
-        log_cases = eval_log_cases(log_curve, t_seg_len, weekday, dow, Y_simulate,
+        log_cases = eval_log_cases(log_curve, t_seg_len,
+				   weekday, weekday_on_day0,
+				   Y_simulate,
 				   j_log_w1, j_log_w2, j_log_w3,
 				   j_log_w4, j_log_w5, j_log_w6);
 
@@ -462,7 +468,7 @@ Type objective_function<Type>::operator() ()
 	// Segment initial days-of-week
 	// * length=N' if weekday=true, otherwise length=0
 	// * val={0,...,6} where 0=reference
-        DATA_IVECTOR(dow_predict);
+        DATA_IVECTOR(weekday_on_day0_predict);
 
 	// Number of segments
 	int N_predict = t_predict_seg_len.size();
@@ -505,14 +511,17 @@ Type objective_function<Type>::operator() ()
 
 	// Log curve
         vector<Type> log_curve_predict =
-	    eval_log_curve(t_predict, t_predict_seg_len, curve_flag, excess, Y_predict, 
+	    eval_log_curve(t_predict, t_predict_seg_len, curve_flag, excess,
+			   Y_predict, 
 			   j_log_r, j_log_alpha, j_log_c0,
 			   j_log_tinfl, j_log_K,
 			   j_logit_p, j_log_a, j_log_b);
 
         // Log cases
 	vector<Type> log_cases_predict =
-	    eval_log_cases(log_curve_predict, t_predict_seg_len, weekday, dow_predict, Y_predict,
+	    eval_log_cases(log_curve_predict, t_predict_seg_len,
+			   weekday, weekday_on_day0_predict,
+			   Y_predict,
 			   j_log_w1, j_log_w2, j_log_w3,
 			   j_log_w4, j_log_w5, j_log_w6);
 

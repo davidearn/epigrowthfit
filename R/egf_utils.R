@@ -205,7 +205,7 @@ make_frames <- function(formula_ts, formula_par,
                         data_ts, data_par,
                         endpoints, origin,
                         curve, excess, distr, weekday,
-                        na_action, init, append) {
+                        na_action_ts, na_action_par, init, append) {
   ### Check time series formula ###########################
 
   ## Test for formula of the form `x ~ time` or `x ~ time | ts`
@@ -499,8 +499,8 @@ make_frames <- function(formula_ts, formula_par,
   ## Discard fitting windows without observations
   ## on all mixed effects variables
   cc <- do.call(complete.cases, frame_par)
-  if (na_action[2L] == "fail" && !all(cc)) {
-    stop("na_action = \"fail\": `formula_par` variables\nmust not have missing values.")
+  if (na_action_par == "fail" && !all(cc)) {
+    stop("na_action_par = \"fail\": `formula_par` variables\nmust not have missing values.")
   }
   warn_if_not(
     all(cc),
@@ -556,10 +556,10 @@ make_frames <- function(formula_ts, formula_par,
   )
   window <- unsplit(window_split, ts)
 
-  if (na_action[1L] == "fail") {
+  if (na_action_ts == "fail") {
     stop_if_not(
       !tapply(cases, window, function(x) anyNA(x[-1L])),
-      m = sprintf("na_action = \"fail\": `%s` has missing values\nin at least one fitting window.", cn)
+      m = sprintf("na_action_ts = \"fail\": `%s` has missing values\nin at least one fitting window.", cn)
     )
   } else {
     stop_if_not(
@@ -884,7 +884,7 @@ make_XZ_info <- function(xl, ml) {
 #' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
 make_tmb_data <- function(frame_ts, frame_par,
                           curve, excess, distr, weekday,
-                          sparse_X, trace) {
+                          trace_cpp, sparse_X) {
   ## Nonlinear model parameter names
   pn <- names(frame_par)
   p <- length(frame_par)
@@ -907,23 +907,22 @@ make_tmb_data <- function(frame_ts, frame_par,
 
   if (weekday > 0L) {
     ## Weekday during 1-day interval starting at earliest time point
-    ## NB: When `weekday > 0`, time points are integer numbers
+    ## NB: When `weekday > 0L`, time points are integer numbers
     ##     of days since 23:59:59 on a reference date, so this
-    ##     1-day interval is guaranteed to occur on a single weekday
+    ##     1-day interval effectively occurs on a single weekday
 
     ## Date during that interval
     ## NB: Reason for adding 1 is that the earliest time points are
     ##     23:59:59 on dates `origin + time[firsts]`, so the 1-day
     ##     intervals that we seek occur on the following dates
-    date_day1 <- origin + frame_ts$time[firsts] + 1
+    Date_on_day0 <- origin + frame_ts$time[firsts] + 1
     ## Weekday during that interval, coded as an integer `i` in `0:6`
     ## NB: `i` maps to the weekday `i` days after the reference
     ##     weekday, which is the weekday `weekday` days after an
     ##     arbitrary Saturday, in this case `.Date(2)`
-    weekday_day1 <- julian(date_day1, origin = .Date(2 + weekday)) %% 7
-    dow <- as.integer(weekday_day1)
+    weekday_on_day0 <- as.integer(julian(Date_on_day0, origin = .Date(2 + weekday)) %% 7)
   } else {
-    dow <- rep_len(-1L, N)
+    weekday_on_day0 <- rep_len(-1L, N)
   }
 
   ## Fixed effects formula and list of random effects terms
@@ -994,7 +993,7 @@ make_tmb_data <- function(frame_ts, frame_par,
     t = t,
     t_seg_len = t_seg_len,
     x = x,
-    dow = dow,
+    weekday_on_day0 = weekday_on_day0,
     Yo = Yo,
     X = X,
     Z = if (is.null(Z)) empty_sparse_matrix else Z,
@@ -1012,14 +1011,16 @@ make_tmb_data <- function(frame_ts, frame_par,
     excess_flag = as.integer(excess),
     distr_flag = get_flag("distr", distr),
     weekday_flag = as.integer(weekday > 0L),
+    trace_flag = trace_cpp,
     sparse_X_flag = as.integer(sparse_X),
-    trace_flag = trace,
     predict_flag = 0L
   )
   pn0 <- get_par_names(curve = NULL, link = TRUE)
   l2 <- as.list(match(pn0, pn, 0L) - 1L)
   names(l2) <- sub("^(log|logit)\\((.*)\\)$", "j_\\1_\\2", pn0)
-  structure(c(l1, l2), class = c("tmb_data", "list"))
+  out <- c(l1, l2)
+  class(out) <- c("tmb_data", "list")
+  out
 }
 
 #' Construct parameter objects for C++ template
@@ -1105,7 +1106,7 @@ make_tmb_data <- function(frame_ts, frame_par,
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis terms
 make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
-                                curve, init, debug) {
+                                curve, do_fit, init) {
   ## Lengths of parameter objects
   f <- function(n) n * (n + 1L) / 2L
   len <- c(
@@ -1202,7 +1203,7 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
   }
 
   ## Retain all naive estimates when debugging
-  if (is.null(init) && debug) {
+  if (is.null(init) && !do_fit) {
     attr(init_split, "Y_init") <- Y_init[names(frame_par)]
   }
   init_split
@@ -1224,7 +1225,8 @@ make_tmb_parameters <- function(tmb_data, frame_ts, frame_par,
 #' @keywords internal
 make_tmb_args <- function(frame_ts, frame_par,
                           curve, distr, excess, weekday,
-                          sparse_X, init, debug, trace) {
+                          do_fit, trace_cpp, trace_tmb,
+                          init, sparse_X) {
   tmb_data <- make_tmb_data(
     frame_ts = frame_ts,
     frame_par = frame_par,
@@ -1232,16 +1234,16 @@ make_tmb_args <- function(frame_ts, frame_par,
     distr = distr,
     excess = excess,
     weekday = weekday,
-    sparse_X = sparse_X,
-    trace = trace
+    trace_cpp = trace_cpp,
+    sparse_X = sparse_X
   )
   tmb_parameters <- make_tmb_parameters(
     tmb_data = tmb_data,
     frame_ts = frame_ts,
     frame_par = frame_par,
     curve = curve,
-    init = init,
-    debug = debug
+    do_fit = do_fit,
+    init = init
   )
   if (has_random(tmb_data)) {
     ## Nothing to fix, since all parameter objects are used
@@ -1261,7 +1263,7 @@ make_tmb_args <- function(frame_ts, frame_par,
     map = tmb_map,
     random = tmb_random,
     DLL = "epigrowthfit",
-    silent = TRUE
+    silent = !trace_tmb
   )
 }
 
@@ -1275,19 +1277,19 @@ make_tmb_args <- function(frame_ts, frame_par,
 #'
 #' @return
 #' The list output of [stats::nlminb()], [stats::nlm()],
-#' or [stats::optim()], depending on `method`.
+#' or [stats::optim()], depending on `method_outer`.
 #'
 #' @keywords internal
 #' @importFrom stats nlminb nlm optim
-optim_tmb_out <- function(tmb_out, method, ...) {
-  if (method == "nlminb") {
+optim_tmb_out <- function(tmb_out, method_outer, ...) {
+  if (method_outer == "nlminb") {
     nlminb(
       start = tmb_out$par,
       objective = tmb_out$fn,
       gradient = tmb_out$gr,
       ...
     )
-  } else if (method == "nlm") {
+  } else if (method_outer == "nlm") {
     nlm(
       f = structure(tmb_out$fn, gradient = tmb_out$gr),
       p = tmb_out$par,
@@ -1298,7 +1300,7 @@ optim_tmb_out <- function(tmb_out, method, ...) {
       par = tmb_out$par,
       fn = tmb_out$fn,
       gr = tmb_out$gr,
-      method = method,
+      method = method_outer,
       ...
     )
   }
@@ -1381,6 +1383,48 @@ make_combined <- function(object) {
   frames <- c(unname(object$frame_par), list(object$frame_append))
   combined <- do.call(cbind, frames)
   combined[!duplicated(names(combined))]
+}
+
+patch_fn_gr <- function(f, order, method_inner = NULL, control_inner = NULL) {
+  ## FIXME: Could also just determine order from `body(f)`?
+  stop_if_not(
+    is.numeric(order),
+    length(order) == 1L,
+    order %in% 0:1,
+    m = "`order` must be 0 or 1."
+  )
+  if (is.null(method_inner) && is.null(control_inner)) {
+    return(f)
+  }
+  e <- environment(f)
+  if (is.null(method_inner)) {
+    method_inner <- e$inner.method
+  }
+  if (is.null(control_inner)) {
+    control_inner <- e$inner.control
+  }
+  f_name <- c("fn", "gr")[1L + order]
+  function(x = e$last.par[-e$random], ...) {
+    om <- e$inner.method
+    oc <- e$inner.control
+    on.exit({
+      e$inner.method <- om
+      e$inner.control <- oc
+    })
+    l <- method_inner %in% names(control_inner)
+    n <- length(x)^order
+    ok <- function(v) is.numeric(v) && length(v) == n && all(is.finite(v))
+    for (i in seq_along(method_inner)) {
+      e$inner.method <- s <- method_inner[i]
+      e$inner.control <- if (l[i]) control_inner[[s]] else control_inner
+      v <- f(x, ...)
+      if (ok(v)) {
+        return(v)
+      }
+    }
+    warning(sprintf("Unable to evaluate `%s(x)`,\nreturning `rep_len(NaN, %d)`.", f_name, n))
+    rep_len(NaN, n)
+  }
 }
 
 do_wald <- function(estimate, se, level) {

@@ -62,62 +62,59 @@ warn_if_not <- function(..., m, n = 1L) {
   invisible(NULL)
 }
 
-stop_if_not_true_false <- function(x, n = 1L) {
-  s <- deparse(substitute(x))
+stop_if_not_true_false <- function(x, allow_numeric = FALSE, n = 1L) {
+  s <- deparse1(substitute(x))
+  a <- if (allow_numeric) " or a number" else ""
   stop_if_not(
-    is.logical(x),
+    is.logical(x) || (allow_numeric && is.numeric(x)),
     length(x) == 1L,
     !is.na(x),
-    m = sprintf("`%s` must be TRUE or FALSE.", s),
+    m = sprintf("`%s` must be TRUE or FALSE%s.", s, a),
     n = 1L + n
   )
 }
 
-stop_if_not_integer <- function(x, n = 1L) {
-  s <- deparse(substitute(x))
-  stop_if_not(
-    is.numeric(x),
-    length(x) == 1L,
-    x %% 1 == 0,
-    m = sprintf("`%s` must be an integer.", s),
-    n = 1L + n
+stop_if_not_integer <- function(x, kind = c("any", "positive", "nonnegative", "negative", "nonpositive"), n = 1L) {
+  s <- deparse1(substitute(x))
+  kind <- match.arg(kind)
+  a <- switch(kind, any = "an", paste("a", kind))
+  f <- switch(kind,
+    positive    = `>`,
+    nonnegative = `>=`,
+    negative    = `<`,
+    nonpositive = `<=`,
+    function(x, y) TRUE
   )
-}
-
-stop_if_not_positive_integer <- function(x, n = 1L) {
-  s <- deparse(substitute(x))
   stop_if_not(
     is.numeric(x),
     length(x) == 1L,
-    x >= 1,
     x %% 1 == 0,
-    m = sprintf("`%s` must be a positive integer.", s),
+    f(x, 0),
+    m = sprintf("`%s` must be %s integer.", s, a),
     n = 1L + n
   )
 }
 
 stop_if_not_number_in_interval <- function(x, a, b, include = c("()", "(]", "[)", "[]"), n = 1L) {
+  s <- deparse1(substitute(x))
   include <- match.arg(include)
-  e1 <- substr(include, 1L, 1L)
-  e2 <- substr(include, 2L, 2L)
-  f1 <- switch(e1, `(` = `>`, `[` = `>=`)
-  f2 <- switch(e2, `)` = `<`, `]` = `<=`)
-
-  s_x <- deparse(substitute(x))
-  s_I <- paste0(e1, deparse(substitute(a)), ",",
-                deparse(substitute(b)), e2)
+  d1 <- substr(include, 1L, 1L)
+  d2 <- substr(include, 2L, 2L)
+  interval <- paste0(d1, deparse1(substitute(a)), ",", deparse1(substitute(b)), d2)
+  f1 <- switch(d1, `(` = `>`, `[` = `>=`)
+  f2 <- switch(d2, `)` = `<`, `]` = `<=`)
   stop_if_not(
     is.numeric(x),
     length(x) == 1L,
     f1(x, a),
     f2(x, b),
-    m = sprintf("`%s` must be a number in the interval %s.", s_x, s_I),
+    m = sprintf("`%s` must be a number in the interval %s.", s, interval),
     n = 1L + n
   )
 }
 
 stop_if_not_character_string <- function(x, n = 1L) {
-  s <- deparse(substitute(x))
+  s <- deparse1(substitute(x))
   stop_if_not(
     is.character(x),
     length(x) == 1L,

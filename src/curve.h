@@ -98,7 +98,7 @@ vector<Type> eval_log_cases(vector<Type> log_curve,
 			    vector<int> t_seg_len,
 			    bool weekday,
 			    // for weekday=true:
-			    vector<int> dow,
+			    vector<int> weekday_on_day0,
 			    matrix<Type> Y,
 			    int j_log_w1,
 			    int j_log_w2,
@@ -121,7 +121,7 @@ vector<Type> eval_log_cases(vector<Type> log_curve,
 		     Y(s, j_log_w1), Y(s, j_log_w2), Y(s, j_log_w3),
 		     Y(s, j_log_w4), Y(s, j_log_w5), Y(s, j_log_w6);
 
-	    for (int k = 0, d = dow(s); k < t_seg_len(s) - 1; k++, d++) // loop over within-segment index
+	    for (int k = 0, d = weekday_on_day0(s); k < t_seg_len(s) - 1; k++, d++) // loop over within-segment index
 	    {
 		log_cases(i+k) += log_w(d % 7);
 	    }
