@@ -133,13 +133,8 @@ Type objective_function<Type>::operator() ()
     int M = block_rows.size();
 
     // Flag for trace
-    // 0=nothing
-    // 1=degenerate nll terms
-    // 2=1+print Y
-    // 3=all nll terms
-    // 4=3+print Y
     DATA_INTEGER(trace_flag);
-    bool trace = (trace_flag > 0);
+    bool trace = (trace_flag == 1);
     
 
     // Prepare random effects infrastructure ===================================
@@ -279,16 +274,12 @@ Type objective_function<Type>::operator() ()
 
     if (trace)
     {
-        if (trace_flag % 2 == 0)
-	{
-	    Rcout << "Y = \n" << Y << "\n";
-	}
-	Rprintf("nll initialized to 0\ncommencing loop over observations\n");
+        Rprintf("nll initialized to 0\ncommencing loop over observations\n");
     }
 
     for (int s = 0, i = 0; s < N; s++) // loop over segments
     {
-        print_Y_row = (trace_flag >= 3);
+        print_Y_row = false;
 	
         for (int k = 0; k < t_seg_len(s) - 1; k++) // loop over within-segment index
 	{
@@ -300,23 +291,15 @@ Type objective_function<Type>::operator() ()
 
 		if (trace)
 		{
-		    if (trace_flag >= 3)
+		    if (!is_finite(nll_term))
 		    {
-		        Rprintf("at index %d of segment %d: nll term is %5.6e\n",
-			        k, s, asDouble(nll_term));
+			Rprintf("at index %d of segment %d: nll term is non-finite\n", k, s);
+			print_Y_row = true;
 		    }
-		    else
+		    else if (asDouble(nll_term) > 1.0e09)
 		    {
-		        if (!is_finite(nll_term))
-			{
-			    Rprintf("at index %d of segment %d: nll term is non-finite\n", k, s);
-			    print_Y_row = true;
-			}
-			else if (asDouble(nll_term) > 1.0e12)
-			{
-			    Rprintf("at index %d of segment %d: nll term exceeds 1.0e12\n", k, s);
-			    print_Y_row = true;
-			}
+			Rprintf("at index %d of segment %d: nll term exceeds 1.0e09\n", k, s);
+			print_Y_row = true;
 		    }
 		}
 
@@ -351,21 +334,13 @@ Type objective_function<Type>::operator() ()
 
 		if (trace)
 		{
-		    if (trace_flag >= 3)
+		    if (!is_finite(nll_term))
 		    {
-		        Rprintf("at column %d of block %d: nll term is %5.6e\n",
-			        j, m, asDouble(nll_term));
+			Rprintf("at column %d of block %d: nll term is non-finite\n", j, m);
 		    }
-		    else
+		    else if (asDouble(nll_term) > 1.0e12)
 		    {
-			if (!is_finite(nll_term))
-			{
-			    Rprintf("at column %d of block %d: nll term is non-finite\n", j, m);
-			}
-			else if (asDouble(nll_term) > 1.0e12)
-			{
-			    Rprintf("at column %d of block %d: nll term exceeds 10^12\n", j, m);
-			}
+			Rprintf("at column %d of block %d: nll term exceeds 10^12\n", j, m);
 		    }
 		}
 		
