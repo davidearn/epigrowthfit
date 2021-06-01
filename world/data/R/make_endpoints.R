@@ -911,4 +911,4 @@ f <- function(x) x[do.call(order, unname(x)), , drop = FALSE]
 se <- unsplit(by(se, country_iso_alpha3, f, simplify = FALSE), country_iso_alpha3)
 
 endpoints <- data.frame(country_iso_alpha3, window, se, row.names = NULL)
-save(endpoints, file = "../endpoints.RData")
+save(endpoints, file = "endpoints.RData")

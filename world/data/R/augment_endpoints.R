@@ -1,6 +1,6 @@
 library("countrycode")
-source("utils.R")
-load("../endpoints.RData")
+source("R/utils.R")
+load("endpoints.RData")
 
 ## ISO 3166-1 alpha-3 code
 country_iso_alpha3 <- levels(endpoints$country_iso_alpha3)
@@ -55,7 +55,7 @@ region <- countrycode(
 endpoints$region <- factor(region)[r]
 
 ## Population-weighted latitude and longitude
-load("../coords.RData")
+load("coords.RData")
 coords$country_iso_alpha3 <- factor(coords$country_iso_alpha3, levels = country_iso_alpha3)
 f <- function(d) {
   c(weighted.mean(d$latitude,  d$population),
@@ -83,14 +83,14 @@ endpoints$latitude_band_20deg <- latitude_band_20deg[r]
 endpoints$longitude_band_20deg <- longitude_band_20deg[r]
 
 ## Population size
-load("../population.RData")
+load("population.RData")
 population <- population[population$year == "2020", , drop = FALSE]
 m <- match(country_iso_numeric, population$country_iso_numeric, 0L)
 endpoints$population <- population$population[m][r]
 rm(population)
 
 ## Mobility
-load("../mobility.RData")
+load("mobility.RData")
 s <- grep("^mobility_", names(mobility), value = TRUE)
 mobility$country_iso_alpha2 <- factor(mobility$country_iso_alpha2, levels = country_iso_alpha2)
 M <- get_summary(
@@ -114,7 +114,7 @@ endpoints[s] <- M[, s]
 rm(mobility)
 
 ## NPI
-load("../npi.RData")
+load("npi.RData")
 s <- grep("^npi_", names(npi), value = TRUE)
 s_ordered <- grep("^npi_(flag|indic_(?!(E3|E4|H4|H5))).*$", names(npi), value = TRUE, perl = TRUE)
 s_numeric <- setdiff(s, s_ordered)
@@ -153,7 +153,7 @@ endpoints[s_numeric] <- M[, s_numeric]
 rm(npi)
 
 ## Weather
-load("../weather.RData")
+load("weather.RData")
 s <- grep("^weather_", names(weather), value = TRUE)
 weather$country_iso_alpha3 <- factor(weather$country_iso_alpha3, levels = country_iso_alpha3)
 M <- get_summary(
@@ -176,7 +176,7 @@ endpoints[s] <- M[, s]
 rm(weather)
 
 ## Economic indicators
-load("../devel.RData")
+load("devel.RData")
 v <- c(
   econ_gdp_pc = "GDP per capita (constant 2010 US$)",
   econ_gini   = "Gini index (World Bank estimate)"
@@ -196,7 +196,7 @@ rm(devel)
 ## Number of days since:
 ## * 50 persons reported infected
 ## * 1 in 500,000 persons reported infected
-load("../covid.RData")
+load("covid.RData")
 covid$country_iso_alpha3 <- factor(covid$country_iso_alpha3, levels = country_iso_alpha3)
 f <- function(d, min = 1L, population = NULL) {
   if (!is.null(population)) {
@@ -216,4 +216,4 @@ Date_2in1m <- .Date(mapply(f,
 endpoints$days_since_50 <- as.numeric(endpoints$start - Date_50[r])
 endpoints$days_since_2in1m <- as.numeric(endpoints$start - Date_2in1m[r])
 
-save(endpoints, file = "../endpoints.RData")
+save(endpoints, file = "endpoints.RData")

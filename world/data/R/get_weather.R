@@ -1,11 +1,11 @@
-library("parallel")
 library("ncdf4")
 library("httr")
+library("parallel")
 RNGkind("L'Ecuyer-CMRG")
 
 ## Data frame supplying latitude, longitude, population
 ## of major cities
-load("../coords.RData")
+load("coords.RData")
 coords <- coords[order(coords$country_iso_alpha3), , drop = FALSE] # just in case
 
 ## Parent directory for Met Office downloads
@@ -27,18 +27,18 @@ varnames <- c(
 )
 
 ## Directory structure
-dirnames <- sprintf("../weather/%s_mean", names(varnames))
+dirnames <- sprintf("weather/%s_mean", names(varnames))
 for (d in dirnames[!dir.exists(dirnames)]) {
   dir.create(d, recursive = TRUE)
 }
 
 ## Grid points common to all ncdf4 objects
-path_to_grid <- "../weather/grid.RData"
+path_to_grid <- "weather/grid.RData"
 if (file.exists(path_to_grid)) {
   load(path_to_grid) # X Y dX dY
 } else {
   url <- sprintf("%s/t1o5m_mean/global_daily_t1o5m_mean_20200101.nc", parent)
-  path <- "../weather/tmp.nc"
+  path <- "weather/tmp.nc"
   download.file(url, path)
   nc <- nc_open(path)
   X <- c(ncvar_get(nc, "longitude"))
@@ -88,22 +88,18 @@ mc <- function(n, x0, x1, y0, y1, z = NULL, X, Y, Z, f = mean, ...) {
 
 scale <- 1.5
 n <- 1000L
-num_simul_dl <- 7L # libcurl (with default settings) struggled with 21 simultaneous downloads
+num_simul_dl <- 7L
 num_threads <- 2L
 
 set.seed(960850250L)
 options(timeout = 60 * num_simul_dl, warn = 1L)
-
-outfile <- file("../weather/weather.Rout", open = "wt")
-sink(outfile, type = "output")
-sink(outfile, type = "message")
 
 for (i in seq_along(varnames)) {
   v_metoffice <- names(varnames)[i]
   v_ncdf4 <- varnames[[i]]
 
   ## Paths to output files
-  paths_to_RData <- sprintf("../weather/%s_mean/global_daily_%s_mean_%s.RData", v_metoffice, v_metoffice, Dates_Ymd)
+  paths_to_RData <- sprintf("weather/%s_mean/global_daily_%s_mean_%s.RData", v_metoffice, v_metoffice, Dates_Ymd)
 
   ## Subset output files that have not already been generated
   e <- file.exists(paths_to_RData)
@@ -166,6 +162,3 @@ for (i in seq_along(varnames)) {
     file.remove(paths_to_nc[j])
   }
 }
-
-sink(type = "output")
-sink(type = "message")
