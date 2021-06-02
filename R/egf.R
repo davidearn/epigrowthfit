@@ -4,7 +4,7 @@
 #' Fits nonlinear mixed effects models of epidemic growth to one
 #' or more disease incidence time series.
 #'
-#' @param formula_ts
+#' @param formula
 #'   A formula of the form `x ~ time` or `x ~ time | ts` specifying
 #'   one or more incidence time series in long format. `time` must
 #'   evaluate to a numeric or Date vector. Numeric `time` is assumed
@@ -20,94 +20,65 @@
 #'   A list of formulae of the form `par ~ terms` specifying
 #'   mixed effects models ([`lme4`][lme4::lmer()]-like syntax)
 #'   for nonlinear model parameters. `deparse(par)` must be an
-#'   element of
-#'   `get_par_names(curve, distr, excess, weekday, link = TRUE)`.
+#'   element of `get_par_names(model, link = TRUE)`.
 #'   `~1` is the default for parameters not assigned a formula.
 #'   Alternatively, `formula_par` may be a formula of the form
 #'   `~terms`. In this case, the formula is recycled for all
 #'   nonlinear model parameters. Note that "individuals" in each
-#'   model are fitting windows, hence model frames constructed
-#'   from `formula_par` and `data_par` are expected to correspond
-#'   rowwise to `endpoints` (see Details).
-#' @param data_ts,data_par
+#'   mixed effects model are fitting windows, and model frames
+#'   constructed from `formula_par` and `data_par` are expected
+#'   to correspond rowwise to `endpoints` (see Details).
+#' @param data,data_par
 #'   Data frames, lists, or environments. These are searched prior
-#'   to formula environments for variables used in `formula_ts` and
+#'   to formula environments for variables used in `formula` and
 #'   `formula_par`, respectively.
-#' @param endpoints
-#'   A data frame, list, or environment with variables `start`
-#'   and `end`, and any further variables necessary to evaluate
-#'   `ts` if `formula_ts = x ~ time | ts`. `start` and `end`
-#'   must be numeric or Date vectors listing start and end times
-#'   for all fitting windows. `ts` must evaluate to a factor
-#'   indicating the time series in which each window is found.
-#'   Within time series, intervals `[start[i], end[i]]` must be
-#'   disjoint and contain at least two time points from `time`.
-#' @param origin
-#'   A Date specifying a reference time.
-#' @param curve
-#'   A character string specifying a cumulative incidence model.
-#' @param excess
-#'   A logical scalar. If `TRUE`, then a constant baseline mortality
-#'   rate is estimated. Set to `TRUE` if what is observed is multiple
-#'   causes mortality rather than disease mortality or disease incidence.
-#' @param distr
-#'   A character string specifying an observation model.
-#' @param weekday
-#'   An integer scalar. If `weekday > 0`, then weekday effects are
-#'   estimated as offsets relative to the indicated day
-#'   (Sunday if `weekday = 1`, Monday if `weekday = 2`, and so on).
-#'   Currently, weekday effect estimation requires `time` in
-#'   `formula_ts = x ~ time | ts` to evaluate to an integer
-#'   (in the sense of `all.equal(time, round(time))`) or Date vector
-#'   with 1-day spacing in all fitting windows.
-#'   Logical `weekday` is equivalent to `as.integer(weekday)`.
-#' @param na_action_ts
-#'   A character string affecting the handling of `NA`
-#'   in `x` if `formula_ts = x ~ time | ts`.
+#' @param subset,subset_par
+#'   Expressions to be evaluated in `data` and `data_par`, respectively,
+#'   specifying observations to be used to fit the mixed effects model.
+#'   These must evaluate to logical vectors of suitable length.
+#'   Note that `subset` and `subset_par` perform subsetting at
+#'   different levels of granularity: each row of `data` corresponds
+#'   to a time point in a time series, whereas each row of `data_par`
+#'   corresponds to a fitting window (and thus multiple time points)
+#'   in a time series.
+#' @param na_action
+#'   A character string affecting the handling of `NA` in `x`
+#'   if `formula = x ~ time | ts`.
 #'   `"fail"` is to throw an error.
 #'   `"pass"` is to ignore `NA` when fitting and replace `NA`
 #'   when predicting.
-#'   (Not yet implemented:
+#'   (TODO:
 #'   `"exclude"` is to ignore `NA` when fitting and preserve `NA`
 #'   when predicting.)
 #'   Note that `NA` in `time` and `ts` are an error regardless
-#'   of `na_action_ts`.
+#'   of `na_action`.
 #' @param na_action_par
 #'   A character string affecting the handling of `NA`
 #'   in `formula_par` variables.
 #'   `"fail"` is to throw an error.
 #'   `"pass"` is to discard fitting windows with incomplete data.
-#' @param method_outer,method_inner
-#'   Character strings specifying optimizers to be used
-#'   for the outer and inner optimizations, respectively.
-#'   The outer optimization permits [stats::nlminb()],
-#'   [stats::nlm()], and certain optimizers available
-#'   through [stats::optim()]. The inner optimization
-#'   permits [TMB::newton()] and the same [stats::optim()]
-#'   methods. `method_inner` may have length greater than 1;
-#'   in this case, the listed optimizers will be tried
-#'   in turn until one succeeds.
-#' @param control_outer,control_inner
-#'   Named lists of control parameters to be passed to optimizers.
-#'   If `length(method_inner) > 1L` and `names(control_inner)`
-#'   contains `method_inner[i]`, then `control_inner[[method_inner[i]]]`
-#'   is passed to optimizer `i` instead of `control_inner`.
+#' @param endpoints
+#'   A data frame, list, or environment with variables `start`
+#'   and `end`, and any further variables necessary to evaluate
+#'   `ts` if `formula = x ~ time | ts`. `start` and `end` must
+#'   be numeric or Date vectors listing start and end times
+#'   for all fitting windows. `ts` must evaluate to a factor
+#'   indicating the time series in which each window is found.
+#'   Within time series, intervals `[start[i], end[i]]` must be
+#'   disjoint and contain at least two time points from `time`.
+#' @param model
+#'   An `"egf_model"` object constructed using [egf_model()],
+#'   specifying a nonlinear model to be estimated.
+#' @param control
+#'   An `"egf_control"` object constructed using [egf_control()],
+#'   specifying control parameters.
 #' @param do_fit
-#'   A logical scalar used for debugging. If `TRUE`, then
-#'   `egf()` returns early with a list of optimization inputs.
-#' @param trace_cpp
-#'   An integer scalar used for debugging.
-#'   If 0, then likelihood evaluations are always silent.
-#'   If 1, then negative log likelihood terms are printed
-#'   when they are non-finite or exceed `1e+09`.
-#'   If 3, then all negative log likelihood terms are printed.
-#'   Values 2 and 4 are equivalent to 1 and 3,
-#'   but with additional printing of the full response matrix.
-#' @param trace_tmb
-#'   A logical scalar used for debugging. If `TRUE`, then
-#'   tracing is enabled in TMB and TMB-generated functions.
-#'   Note that `trace_tmb = FALSE` will override any nonzero
-#'   setting of `control_inner$trace`.
+#'   A logical scalar. If `TRUE`, then `egf()` returns early
+#'   with a list of optimization inputs.
+#' @param se
+#'   A logical scalar. If `TRUE`, then standard errors on mixed
+#'   effects model coefficients are computed and stored for later
+#'   reuse by methods.
 #' @param init
 #'   A full parameter vector for the first likelihood evaluation.
 #'   The default (`NULL`) is to accept the internally generated
@@ -115,15 +86,14 @@
 #'   other optimization inputs (in particular `Y_init`; see Value),
 #'   which can often be used to construct a more informative
 #'   starting point.
+#' @param origin
+#'   A Date specifying a reference time.
 #' @param append
 #'   An expression indicating variables in `data_par` to be preserved
 #'   in the returned `"egf"` object for use by methods.
 #'   It is evaluated similarly to the `select` argument of [subset()].
 #'   The default (`NULL`) is to preserve all variables.
 #'   Currently, usage is supported only if `data_par` is a data frame.
-#' @param sparse_X
-#'   A logical scalar. If `TRUE`, then the fixed effects design
-#'   matrix is constructed in sparse format.
 #' @param ...
 #'   Unused optional arguments
 #'
@@ -139,6 +109,11 @@
 #' keep all necessary `endpoints` variables in `data_par`, and
 #' set `endpoints = data_par`.
 #'
+#' Day of week effect estimation (see [egf_model()]) requires `time`
+#' in `formula = x ~ time | ts` to evaluate to an integer
+#' (in the sense of `all.equal(time, round(time))`) or Date vector
+#' with 1-day spacing in all fitting windows.
+#'
 #' @return
 #' If `do_fit = TRUE`, then a list inheriting from class `"egf"`,
 #' with elements:
@@ -153,14 +128,14 @@
 #'   match exactly.
 #' }
 #' \item{`frame_ts`}{
-#'   The time series model frame, constructed from `formula_ts`
-#'   and `data_ts`, with variables `ts`, `window`, `time`, and
-#'   `x`. `ts` and `window` are factors that can be used to split
-#'   `frame_ts` by time series and by fitting window, respectively.
+#'   The time series model frame constructed from `formula`
+#'   and `data`, with variables `ts`, `window`, `time`, and `x`.
+#'   `ts` and `window` are factors that can be used to split
+#'   `frame` by time series and by fitting window, respectively.
 #'   Rows are ordered by time series and chronologically within
-#'   time series. `terms(formula_ts)` and `origin` are retained
-#'   as attributes. `unclass(window)` indexes rows of `endpoints`.
-#'   That is, time series data for the fitting window defined by
+#'   time series. `terms(formula)` and `origin` are retained
+#'   as attributes. `as.integer(window)` indexes rows of `endpoints`.
+#'   That is, time series data for the fitting window defined in
 #'   row `i` of `endpoints` can be found in the rows of `frame_ts`
 #'   for which `window = levels(window)[i]`.
 #' }
@@ -168,28 +143,27 @@
 #'   A list of mixed effects model frames, constructed from
 #'   `formula_par` and `data_par`. There is one model frame
 #'   for each nonlinear model parameter listed in
-#'   `get_par_names(curve, excess, distr, weekday, link = TRUE)`.
-#'   `frame_par[[name]]` retains `terms(formula_par[[name]])` as
-#'   an attribute. Model frames correspond rowwise to `endpoints`.
-#'   That is, mixed effects data on the fitting window defined
-#'   by row `i` of `endpoints` can be found in row `i` of each
-#'   model frame.
+#'   `get_par_names(model, link = TRUE)`. `frame_par[[name]]`
+#'   retains `terms(formula_par[[name]])` as an attribute.
+#'   Model frames correspond rowwise to `endpoints`. That is,
+#'   mixed effects data on the fitting window defined in row `i`
+#'   of `endpoints` can be found in row `i` of each model frame.
 #' }
 #' \item{`frame_append`}{
 #'   A data frame preserving the variables from `data_par`
 #'   indicated by `append`. Corresponds rowwise to `endpoints`.
 #' }
-#' \item{`curve`, `excess`, `distr`, `weekday`, `method_outer`, `method_inner`, `control_outer`, `control_inner`}{
-#'   Copies of the so-named arguments (after possible matching).
+#' \item{`model`, `control`}{
+#'   Copies of the so-named arguments.
 #' }
 #' \item{`tmb_args`}{
 #'   A list of arguments to [TMB::MakeADFun()]. See [make_tmb_args()].
 #' }
 #' \item{`tmb_out`}{
-#'   The list output of [TMB::MakeADFun()] (after optimization).
+#'   The list output of [TMB::MakeADFun()] after optimization.
 #' }
-#' \item{`optim_out`}{
-#'   The list output of the optimizer specified by `method`.
+#' \item{`optimizer_out`}{
+#'   The list output of the outer optimizer specified by `control$optimizer`.
 #' }
 #' \item{`init`}{
 #'   The full parameter vector of the first likelihood evaluation.
@@ -229,86 +203,49 @@
 #' @export
 #' @importFrom TMB MakeADFun sdreport
 #' @useDynLib epigrowthfit
-egf <- function(formula_ts,
+egf <- function(formula,
                 formula_par,
-                data_ts = parent.frame(),
+                data = parent.frame(),
                 data_par = parent.frame(),
-                endpoints,
-                origin = .Date(0),
-                curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
-                excess = FALSE,
-                distr = c("nbinom", "pois"),
-                weekday = FALSE,
-                na_action_ts = c("fail", "pass"),
+                subset = NULL,
+                subset_par = NULL,
+                na_action = c("fail", "pass"),
                 na_action_par = c("fail", "pass"),
-                method_outer = c("nlminb", "nlm", "BFGS", "Nelder-Mead"),
-                method_inner = c("newton", "BFGS", "Nelder-Mead"),
-                control_outer = list(maxit = 1000L),
-                control_inner = list(maxit = 1000L),
+                endpoints,
+                model = egf_model(),
+                control = egf_control(),
                 do_fit = TRUE,
-                trace_cpp = FALSE,
-                trace_tmb = FALSE,
+                se = FALSE,
                 init = NULL,
+                origin = .Date(0),
                 append = NULL,
-                sparse_X = FALSE,
                 ...) {
-  stop_if_not(
-    inherits(origin, "Date"),
-    length(origin) == 1L,
-    !is.na(origin),
-    m = "`origin` must be a Date vector of length 1."
-  )
-  curve <- match.arg(curve)
-  stop_if_not_true_false(excess)
-  distr <- match.arg(distr)
-  stop_if_not_true_false(weekday, allow_numeric = TRUE)
-  weekday <- as.integer(weekday)
-  weekday <- (weekday > 0L) * (1L + (weekday - 1L) %% 7L) # coercing to `0:7`
-  na_action_ts <- match.arg(na_action_ts)
-  na_action_par <- match.arg(na_action_par)
-  method_outer <- match.arg(method_outer)
-  method_inner <- unique(match.arg(method_inner, several.ok = TRUE))
-  stop_if_not(
-    is.list(control_outer),
-    is.list(control_inner),
-    m = "`control_outer` and `control_inner` must be lists."
-  )
   stop_if_not_true_false(do_fit)
-  stop_if_not_true_false(trace_cpp, allow_numeric = TRUE)
-  trace_cpp <- min(4L, max(0L, as.integer(trace_cpp))) # coercing to `0:4`
-  stop_if_not_true_false(trace_tmb, allow_numeric = TRUE)
-  trace_tmb <- as.logical(trace_tmb)
-  append <- substitute(append)
-  stop_if_not_true_false(sparse_X)
+  stop_if_not_true_false(se)
 
   frames <- make_frames(
-    formula_ts = formula_ts,
+    formula = formula,
     formula_par = formula_par,
-    data_ts = data_ts,
+    data = data,
     data_par = data_par,
+    subset = substitute(subset),
+    subset_par = substitute(subset_par),
+    na_action = match.arg(na_action),
+    na_action_par = match.arg(na_action_par),
     endpoints = endpoints,
-    origin = origin,
-    curve = curve,
-    excess = excess,
-    distr = distr,
-    weekday = weekday,
-    na_action_ts = na_action_ts,
-    na_action_par = na_action_par,
+    model = model,
     init = init,
+    origin = origin,
     append = append
   )
   tmb_args <- make_tmb_args(
     frame_ts = frames$frame_ts,
     frame_par = frames$frame_par,
-    curve = curve,
-    distr = distr,
-    excess = excess,
-    weekday = weekday,
+    model = model,
+    control = control,
     do_fit = do_fit,
-    trace_cpp = trace_cpp,
-    trace_tmb = trace_tmb,
-    init = init,
-    sparse_X = sparse_X
+    control = control,
+    init = init
   )
 
   if (!do_fit) {
@@ -334,51 +271,47 @@ egf <- function(formula_ts,
   tmb_out <- do.call(MakeADFun, tmb_args)
   tmb_out$fn <- patch_fn_gr(tmb_out$fn,
     order = 0L,
-    method_inner = method_inner,
-    control_inner = control_inner
+    inner_optimizer = control$inner_optimizer
   )
   tmb_out$gr <- patch_fn_gr(tmb_out$gr,
     order = 1L,
-    method_inner = method_inner,
-    control_inner = control_inner
+    inner_optimizer = control$inner_optimizer
   )
-  optim_out <- optim_tmb_out(tmb_out, method_outer = method_outer)
+
+  optimizer <- control$optimizer$optimizer
+  optimizer_args <- c(
+    tmb_out[c("par", "fn", "gr")],
+    control$optimizer["control"],
+    control$optimizer$args
+  )
+  optimizer_out <- do.call(optimizer, optimizer_args)
 
   init <- enum_dupl_names(tmb_out$env$par)
   best <- enum_dupl_names(tmb_out$env$last.par.best)
   nonrandom <- grep("^b\\[", names(best), invert = TRUE)
 
-  s <- switch(method_outer, nlminb = "objective", nlm = "minimum", "value")
-  nll <- as.numeric(optim_out[[s]])
+  nll <- as.numeric(optimizer_out$value)
   nll_func <- function(x = best) as.numeric(tmb_out$fn(x[nonrandom]))
   nll_grad <- function(x = best) as.numeric(tmb_out$gr(x[nonrandom]))
 
   report <- tmb_out$report(best)
-  #sdr <- try(sdreport(tmb_out))
-  #report <- if (!inherits(sdr, "try-error")) {
-  #  c(
-  #    tmb_out$report(best),
-  #    list(cov = sdr$cov.fixed),
-  #    split_sdreport(sdr)
-  #  )
-  #}
+  if (se) {
+    sdr <- try(sdreport(tmb_out))
+    if (!inherits(sdr, "try-error")) {
+      report <- c(report, list(cov = sdr$cov.fixed), split_sdreport(sdr))
+    }
+  }
 
   out <- list(
     endpoints = frames$endpoints,
     frame_ts = frames$frame_ts,
     frame_par = frames$frame_par,
     frame_append = frames$frame_append,
-    curve = curve,
-    excess = excess,
-    distr = distr,
-    weekday = weekday,
-    method_outer = method_outer,
-    method_inner = method_inner,
-    control_outer = control_outer,
-    control_inner = control_inner,
+    model = model,
+    control = control,
     tmb_args = tmb_args,
     tmb_out = tmb_out,
-    optim_out = optim_out,
+    optimizer_out = optimizer_out,
     init = init,
     best = best,
     nonrandom = nonrandom,
@@ -389,5 +322,297 @@ egf <- function(formula_ts,
     call = match.call()
   )
   class(out) <- c("egf", "list")
+  out
+}
+
+#' Define an epidemic model
+#'
+#' Sets flags defining the phenomenological model of epidemic growth
+#' to be estimated by [egf()].
+#'
+#' @param curve
+#'   A character string specifying a model for expected cumulative
+#'   incidence as a function of time.
+#' @param excess
+#'   A logical scalar. If `TRUE`, then a constant baseline mortality
+#'   rate is estimated. Set to `TRUE` if what is observed is multiple
+#'   causes mortality rather than disease mortality or disease incidence.
+#' @param family
+#'   A character string specifying a model for observed interval incidence
+#'   (i.e., an error distribution).
+#' @param day_of_week
+#'   An integer scalar. If `day_of_week > 0`, then day of week effects
+#'   are estimated as offsets relative to the indicated day of week
+#'   (Sunday if `day_of_week = 1`, Monday if `day_of_week = 2`, and so on).
+#'   Logical values of `day_of_week` are coerced to integer.
+#'
+#' @return
+#' A list inheriting from class `"egf_model"` containing the arguments
+#' (after possible matching and coercion).
+#'
+#' @export
+egf_model <- function(curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
+                      excess = FALSE,
+                      family = c("nbinom", "pois"),
+                      day_of_week = FALSE) {
+  curve <- match.arg(curve)
+  stop_if_not_true_false(excess)
+  family <- match.arg(family)
+  stop_if_not_true_false(day_of_week, allow_numeric = TRUE)
+  day_of_week <- as.integer(day_of_week)
+  day_of_week <- (day_of_week > 0L) * (1L + (day_of_week - 1L) %% 7L) # coercion to `0:7`
+
+  out <- list(
+    curve = curve,
+    excess = excess,
+    family = family,
+    day_of_week = day_of_week
+  )
+  class(out) <- c("egf_model", "list")
+  out
+}
+
+#' Set control parameters
+#'
+#' Set parameters controlling the behavior of [egf()].
+#'
+#' @param optimizer
+#'   An `"egf_optimizer"` object returned by [egf_optimizer()],
+#'   specifying an "outer" optimization method.
+#' @param inner_optimizer
+#'   An `"egf_inner_optimizer"` object returned by [egf_inner_optimizer()],
+#'   specifying an "inner" optimization method, or a list of such objects,
+#'   in which case the listed methods are tried in order until one succeeds,
+#'   and a warning is issued if none succeed.
+#' @param trace
+#'   An integer scalar.
+#'   If 0, then likelihood evaluations are always silent.
+#'   If 1, then negative log likelihood terms are printed
+#'   when they are non-finite or exceed `1e+09`.
+#'   If 3, then all negative log likelihood terms are printed.
+#'   Values 2 and 4 are equivalent to 1 and 3, respectively,
+#'   but with further printing of the response matrix `Y`.
+#'   `Y[i, j]` is the current value of nonlinear model
+#'   parameter `j` (link scale) in fitting window `i`.
+#'   Logical values of `trace` are coerced to integer.
+#' @param sparse_X
+#'   A logical scalar. If `TRUE`, then the fixed effects
+#'   design matrix is constructed in sparse format.
+#'
+#' @return
+#' A list inheriting from class `"egf_control"` containing the arguments
+#' (after possible coercion).
+#'
+#' @export
+egf_control <- function(optimizer = egf_optimizer(),
+                        inner_optimizer = egf_inner_optimizer(),
+                        trace = FALSE,
+                        sparse_X = FALSE) {
+  stop_if_not(
+    inherits(optimizer, "egf_optimizer"),
+    m = "`optimizer` must inherit from class \"egf_optimizer\". See `?egf_optimizer`."
+  )
+  if (inherits(inner_optimizer, "egf_inner_optimizer")) {
+    inner_optimizer <- list(inner_optimizer)
+  }
+  stop_if_not(
+    vapply(inner_optimizer, inherits, FALSE, "egf_inner_optimizer"),
+    m = paste0(
+      "`inner_optimizer` must inherit from class \"egf_inner_optimizer\"\n",
+      "or be a list of such objects. See `?egf_inner_optimizer`."
+    )
+  )
+  stop_if_not_true_false(trace, allow_numeric = TRUE)
+  trace <- min(4L, max(0L, as.integer(trace))) # coercion to `0:4`
+  stop_if_not_true_false(sparse_X)
+
+  out <- list(
+    optimizer = optimizer,
+    inner_optimizer = inner_optimizer,
+    trace = trace,
+    sparse_X = sparse_X
+  )
+  class(out) <- c("egf_control", "list")
+  out
+}
+
+
+#' Define an optimization method
+#'
+#' These two functions link an optimizer with function arguments and
+#' control parameters to define an optimization method for use by [egf()].
+#' "Outer" and "inner" optimization methods are defined separately
+#' by `egf_optimizer()` and `egf_inner_optimizer()` respectively.
+#' See [TMB::MakeADFun()] for some details on outer and inner optimizations.
+#'
+#' @param optimizer
+#'   A function performing optimization. The outer optimization permits
+#'   [stats::optim()], [stats::nlminb()], [stats::nlm()], and
+#'   and any `optim`-like function. An `optim`-like function
+#'   is a function `f` such that:
+#'   (i) the first three arguments of `f` specify an initial parameter
+#'   vector, an objective function, and a gradient function, respectively;
+#'   (ii) `f` accepts `control` as a fourth (or later) argument; and
+#'   (iii) `f` returns a list with elements `par`, `value`, `convergence`,
+#'   and `message`. The inner optimization permits [stats::optim()] and
+#'   [TMB::newton()] only.
+#' @param args
+#'   A list of arguments to `optimizer` other than `control`.
+#'   If `optimizer = optim` and `args` does not have `method`
+#'   as an element, then `method = "BFGS"` is appended.
+#' @param control
+#'   A list of control parameters to be assigned to `optimizer` argument
+#'   `control`.
+#'
+#' @details
+#'
+#'
+#'
+#' @return
+#' `egf_optimizer()` returns a list inheriting
+#' from class `"egf_optimizer"`, with elements:
+#' \item{`optimizer`}{
+#'   An `optim`-like function.
+#'   This may by the result of wrapping the supplied optimizer
+#'   to make it `optim`-like.
+#' }
+#' \item{`args`}{
+#'   The supplied list of arguments,
+#'   (after possible deletion of elements with reserved names).
+#' }
+#' \item{`control`}{
+#'   The supplied list of control parameters.
+#' }
+#'
+#' `egf_inner_optimizer()` returns a list inheriting
+#' from class `"egf_inner_optimizer"`, with elements:
+#' \item{`method`}{
+#'   A character string. This is `args$method` if `optimizer = optim`
+#'   and `"newton"` if `optimizer = newton`.
+#' }
+#' \item{`control`}{
+#'   A list. This is `control` if `optimizer = optim` and `args`
+#'   (after possible deletion of elements with reserved names)
+#'   if `optimizer = newton`.
+#' }
+#' See handling of `inner.method` and `inner.control`
+#' in the body of [TMB::MakeADFun()] for details.
+#'
+#' @name egf_optimizer
+NULL
+
+#' @rdname egf_optimizer
+#' @export
+#' @importFrom stats optim nlminb nlm
+#' @importFrom TMB newton
+egf_optimizer <- function(optimizer = nlminb, args = list(), control = list()) {
+  s <- substitute(optimizer)
+  o <- optimizer
+  stop_if_not(
+    is.list(args),
+    m = "`args` must be a list."
+  )
+  stop_if_not(
+    is.list(control),
+    m = "`control` must be a list."
+  )
+  if (identical(optimizer, optim)) {
+    if (is.null(args$method)) {
+      args$method <- "BFGS"
+      message(sprintf("`optim` method not specified, using \"%s\".", method))
+    } else {
+      args$method <- match.arg(args$method, eval(formals(optim)$method))
+    }
+  }
+  if (identical(optimizer, nlminb)) {
+    optimizer <- function(par, fn, gr, control, ...) {
+      l <- nlminb(start = par, objective = fn, gradient = gr, control = control, ...)
+      l["value"] <- l["objective"]
+      l
+    }
+  } else if (identical(optimizer, nlm)) {
+    optimizer <- function(par, fn, gr, control, ...) {
+      l <- nlm(f = structure(fn, gradient = gr), p = par, ...)
+      l[c("par", "value", "convergence")] <- l[c("estimate", "minimum", "code")]
+      l["message"] <- list(NULL)
+      l
+    }
+  } else {
+    stop_if_not(
+      is.function(optimizer),
+      m = sprintf("`%s` must be a function.", s)
+    )
+    nf <- names(formals(optimizer))
+    stop_if_not(
+      length(nf) >= 4L,
+      nf[1:3] != "...",
+      "control" %in% nf[-(1:3)],
+      m = sprintf("`formals(%s)` must have configuration outlined in `?egf_optimizer.`", s)
+    )
+    e <- quote(optimizer(c(1, 1), function(x) sum(x^2), function(x) 2 * x))
+    l <- try(eval(e))
+    if (inherits(l, "try-error")) {
+      stop(
+        sprintf("Unable to validate optimizer `%s` because test\n", s),
+        sprintf("`%s` produced an error.", sub("^optimizer", s, deparse(e)))
+      )
+    }
+    stop_if_not(
+      is.list(l),
+      (nl <- c("par", "value", "convergence", "message")) %in% names(l),
+      m = paste0(
+        sprintf("`%s` must return a list with elements\n", s),
+        paste(sprintf("`%s`", nl), collapse = ", "), ",\n",
+        sprintf("but _does not_ for test `%s`.", sub("^f", s, deparse(e)))
+      )
+    )
+    optimizer <- function(par, fn, gr, control, ...) {
+      o(par, fn, gr, control = control, ...)
+    }
+  }
+  if (!is.null(names(args))) {
+    reserved <- c("par", "fn", "gr", "control", "...", names(formals(o))[1:3])
+    args <- args[setdiff(names(args), reserved)]
+  }
+
+  out <- list(optimizer = optimizer, args = args, control = control)
+  class(out) <- c("egf_optimizer", "list")
+  out
+}
+
+#' @rdname egf_optimizer
+#' @export
+#' @importFrom stats optim
+#' @importFrom TMB newton
+egf_inner_optimizer <- function(optimizer = newton, args = list(), control = list()) {
+  stop_if_not(
+    is.list(args),
+    m = "`args` must be a list."
+  )
+  stop_if_not(
+    is.list(control),
+    m = "`control` must be a list."
+  )
+
+  if (identical(optimizer, optim)) {
+    if (is.null(args$method)) {
+      method <- "BFGS"
+      message(sprintf("`optim` method not specified, using \"%s\".", method))
+    } else {
+      method <- match.arg(args$method, eval(formals(optim)$method))
+    }
+  } else if (identical(optimizer, newton)) {
+    method <- "newton"
+    if (!is.null(names(args))) {
+      reserved <- c("par", "fn", "gr", "he", "env", "...")
+      args <- args[setdiff(names(args), reserved)]
+    }
+    control <- args
+  } else {
+    stop("`optimizer` is currently restricted to `TMB::newton` and `stats::optim`.")
+  }
+
+  out <- list(method = method, control = control)
+  class(out) <- c("egf_inner_optimizer", "list")
   out
 }

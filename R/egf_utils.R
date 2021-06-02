@@ -2,12 +2,9 @@
 #'
 #' Retrieves the names used internally for nonlinear model parameters.
 #'
-#' @param curve,excess,distr,weekday
-#'   For the default method, atomic scalar flags specifying
-#'   an incidence model; see [egf()]. Set to `NULL` or `NA`
-#'   to retrieve or suppress, respectively, all names associated
-#'   with an argument. For other methods, `curve` is an object
-#'   returned by [egf()] or [make_tmb_data()].
+#' @param object
+#'   An `"egf"`, `"egf_model"`, or `"tmb_data"` object,
+#'   specifying a nonlinear model.
 #' @param link
 #'   A logical scalar. If `TRUE`, then `"name"` is replaced
 #'   with `"log(name)"` or `"logit(name)"` depending on the
@@ -1386,7 +1383,6 @@ make_combined <- function(object) {
 }
 
 patch_fn_gr <- function(f, order, method_inner = NULL, control_inner = NULL) {
-  ## FIXME: Could also just determine order from `body(f)`?
   stop_if_not(
     is.numeric(order),
     length(order) == 1L,
@@ -1422,7 +1418,7 @@ patch_fn_gr <- function(f, order, method_inner = NULL, control_inner = NULL) {
         return(v)
       }
     }
-    warning(sprintf("Unable to evaluate `%s(x)`,\nreturning `rep_len(NaN, %d)`.", f_name, n))
+    warning(sprintf("Unable to evaluate `%s(x)`, returning `rep_len(NaN, %d)`.", f_name, n))
     rep_len(NaN, n)
   }
 }
