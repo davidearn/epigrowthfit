@@ -5,23 +5,23 @@
 \alias{covid_generation_interval}
 \title{Generation interval distribution (COVID-19)}
 \format{
-A list with 4 elements:
+A \link{list} with 4 elements:
 \describe{
 \item{\code{shape}}{
-Estimated shape parameter. See \code{\link[stats:GammaDist]{stats::dgamma()}}.
+  Estimated shape parameter. See \code{\link{dgamma}}.
 }
 \item{\code{scale}}{
-Estimated scale parameter. See \code{\link[stats:GammaDist]{stats::dgamma()}}.
+  Estimated scale parameter. See \code{\link{dgamma}}.
 }
 \item{\code{breaks}}{
-An integer vector listing numbers of days. Equal to \code{0:20}.
+  An \link{integer} vector listing numbers of days. Equal to `0:20`.
 }
 \item{\code{probs}}{
-A numeric vector of length \code{length(breaks-1)}. \code{probs[i]}
-is the probability that the generation interval is between
-\code{breaks[i]} and \code{breaks[i+1]} days, conditional on \code{shape}
-and \code{scale}.
-Equal to \code{diff(pgamma(breaks, shape = shape, scale = scale))}.
+  A \link[=double]{numeric} vector of length \code{length(breaks-1)}.
+  \code{probs[i]} is the probability that the generation interval
+  is between \code{breaks[i]} and \code{breaks[i+1]} days, conditional
+  on \code{shape} and \code{scale}. Equal to
+  \code{\link{diff}(\link{pgamma}(breaks, shape = shape, scale = scale))}.
 }
 }
 }

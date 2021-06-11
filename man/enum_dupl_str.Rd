@@ -11,17 +11,18 @@ enum_dupl_string(x)
 enum_dupl_names(x)
 }
 \arguments{
-\item{x}{For \code{enum_dupl_string()}, a character vector.
-For \code{enum_dupl_names()}, an \R object with a \code{names} attribute.}
+\item{x}{For \code{enum_dupl_string}, a \link{character} vector.
+For \code{enum_dupl_names}, an \R object with a \code{\link{names}}
+\link[=attributes]{attribute}.}
 }
 \value{
 \code{enum_dupl_string(x)} returns an enumerated copy of \code{x}.
-\code{enum_dupl_names(x)} returns a copy of \code{x} with \code{names(x)}
-replaced by \code{enum_dupl_string(names(x))}.
+\code{enum_dupl_names(x)} returns a copy of \code{x} with
+\code{names(x)} replaced by \code{enum_dupl_string(names(x))}.
 }
 \description{
-Replaces the \code{i}th instance of strings \code{s} in a character vector
-with \code{sprintf("\%s[\%d]", s, i)}.
+Replaces the \code{i}th instance of string \code{s}
+in a \link{character} vector with \code{\link{sprintf}("\%s[\%d]", s, i)}.
 }
 \examples{
 # x <- sample(letters[1:3], 10L, replace = TRUE)

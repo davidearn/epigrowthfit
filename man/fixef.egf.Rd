@@ -8,30 +8,30 @@
 \method{fixef}{egf}(object, ...)
 }
 \arguments{
-\item{object}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
+\item{object}{An \code{"\link{egf}"} object.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-A data frame inheriting from class \code{"egf_fixef"},
-with one row per coefficient and variables:
-\item{\code{name}}{
-Coefficient name in the full parameter vector \code{object$best}.
+A \link[=data.frame]{data frame} inheriting from \link{class}
+\code{"egf_fixef"}, with one row per coefficient and variables:
+\item{name}{
+  Coefficient name in the full parameter vector \code{object$best}.
 }
-\item{\code{par}}{
-Nonlinear model parameter, from
-\code{get_par_names(object, link = TRUE)}.
+\item{par}{
+  Nonlinear or dispersion model parameter,
+  from \code{\link{get_par_names}(object, link = TRUE)}.
 }
-\item{\code{term}}{
-Term from fixed effects component of mixed effects formula
-for nonlinear model parameter \code{par}.
+\item{term}{
+  Term from fixed effects component of mixed effects \link{formula}
+  for parameter \code{par}.
 }
-\item{\code{colname}}{
-Corresponding column name in the fixed effects design matrix
-\code{object$tmb_args$data$X}.
+\item{colname}{
+  Corresponding column name in the fixed effects design matrix
+  \code{object$tmb_args$data$X}.
 }
-\item{\code{estimate}}{
-Coefficient estimate.
+\item{estimate}{
+  Coefficient estimate.
 }
 }
 \description{

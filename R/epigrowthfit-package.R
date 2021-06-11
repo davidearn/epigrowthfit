@@ -1,4 +1,4 @@
-#' \pkg{epigrowthfit}: Nonlinear Mixed Effects Models of Epidemic Growth
+#' epigrowthfit: Nonlinear Mixed Effects Models of Epidemic Growth
 #'
 #' @description
 #' A description of the \pkg{epigrowthfit} package.

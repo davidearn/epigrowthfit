@@ -3,7 +3,7 @@
 \docType{package}
 \name{epigrowthfit-package}
 \alias{epigrowthfit-package}
-\title{\pkg{epigrowthfit}: Nonlinear Mixed Effects Models of Epidemic Growth}
+\title{epigrowthfit: Nonlinear Mixed Effects Models of Epidemic Growth}
 \description{
 A description of the \pkg{epigrowthfit} package.
 }

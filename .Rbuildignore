@@ -1,12 +1,10 @@
 ^data-raw$
 ^debug$
+^misc$
 ^mre$
-^old$
-^ontario$
+^R/old$
 ^ref$
 ^sandbox$
-^scrap$
 ^utils$
-^world$
 ^Makefile$
 ^TODO\.md$

@@ -5,32 +5,34 @@
 \alias{londonbills}
 \title{Plague deaths in the London Bills of Mortality}
 \format{
-A data frame with 2041 rows and 6 variables:
+A \link[=data.frame]{data frame} with 2041 rows and 6 variables:
 \describe{
 \item{\code{Date}}{
-A Date vector. Weekly within each level of \code{outbreak},
-except for 78 instances of spacing not equal to 7 days.
+  A \link{Date} vector. Weekly within each level of `outbreak`,
+  except for 78 instances of spacing not equal to 7 days.
 }
 \item{\code{deaths_all_causes}}{
-An integer vector. \code{deaths_all_causes[i]} is the number of deaths
-due to all causes from the end of \code{Date[i-1]} to the end of \code{Date[i]}.
+  An \link{integer} vector. \code{deaths_all_causes[i]} is the number
+  of deaths due to all causes from the end of \code{Date[i-1]}
+  to the end of \code{Date[i]}.
 }
 \item{\code{deaths_plague}}{
-An integer vector. \code{deaths_plague[i]} is the number of deaths
-due to plague from the end of \code{Date[i-1]} to the end of \code{Date[i]}.
+  An integer vector. \code{deaths_plague[i]} is the number
+  of deaths due to plague from the end of \code{Date[i-1]}
+  to the end of \code{Date[i]}.
 }
 \item{\code{population}}{
-An integer vector. Estimated London population size.
+  An \link{integer} vector. Estimated London population size.
 }
 \item{\code{outbreak}}{
-An ordered factor, splitting the time series by plague outbreak.
-Levels indicate the years in which outbreaks took place:
-1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
+  An ordered \link{factor}, \link{split}ting the time series by plague
+  outbreak. \link[=levels]{Levels} indicate the years in which outbreaks
+  took place: 1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 }
 \item{\code{severity}}{
-An ordered factor, classifying outbreaks as \code{"minor"} or \code{"major"}.
-An outbreak is classified as major if and only if plague deaths
-per week per 1000 individuals exceeded 5 at least once.
+  An ordered \link{factor}, classifying outbreaks as \code{"minor"}
+  or \code{"major"}. An outbreak is classified as major if and only if
+  plague deaths per week per 1000 individuals exceeded 5 at least once.
 }
 }
 }

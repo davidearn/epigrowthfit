@@ -1,6 +1,6 @@
-MAKE = make
-R = R
-PACKAGE = epigrowthfit
+MAKE := make
+R := R
+PACKAGE := epigrowthfit
 VERSION := $(shell sed -n '/^Version: /s/Version: // p' DESCRIPTION)
 TARBALL := $(PACKAGE)_$(VERSION).tar.gz
 MANUAL := $(PACKAGE)-manual.pdf
@@ -12,7 +12,7 @@ install: deps build
 	$(R) CMD INSTALL ../$(TARBALL)
 
 deps:
-	$(R) --quiet -e 'devtools::install_deps(".", dependencies = TRUE)'
+	$(R) --quiet -e 'devtools::install_deps(".")'
 
 build: $(TARBALL)
 
@@ -40,9 +40,6 @@ $(MANUAL): man/*.Rd
 
 check:
 	$(R) --quiet -e 'devtools::check(".")'
-
-test:
-	$(R) --quiet -e 'devtools::test(".")'
 
 clean:
 	rm -f ../$(TARBALL) ../$(PACKAGE)-manual.pdf

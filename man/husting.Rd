@@ -5,27 +5,27 @@
 \alias{husting}
 \title{Husting wills}
 \format{
-A data frame with 723 rows and 4 variables:
+A \link[=data.frame]{data frame} with 723 rows and 4 variables:
 \describe{
 \item{\code{Date}}{
-A Date vector. Spacing varies, as only nonzero counts of wills
-are included.
+  A \link{Date} vector. Spacing varies, as only nonzero counts of wills
+  are included.
 }
 \item{\code{wills}}{
-An integer vector. \code{wills[i]} is the number of wills written
-on \code{Date[i]}.
+  An \link{integer} vector. \code{wills[i]} is the number of wills
+  written on \code{Date[i]}.
 }
 \item{\code{outbreak}}{
-An ordered factor, splitting the time series by plague outbreak.
-Levels indicate the years in which outbreaks took place:
-1348, 1361, 1368, and 1375.
+  An ordered \link{factor}, \link{split}ting the time series by plague
+  outbreak. \link[=levels]{Levels} indicate the years in which outbreaks
+  took place: 1348, 1361, 1368, and 1375.
 }
 \item{\code{severity}}{
-An ordered factor, classifying outbreaks as \code{"minor"} or \code{"major"}.
-All 14th century outbreaks are classified as major, as the data
-are too sparse to distinguish between minor and major outbreaks,
-in contrast with wills probated in the
-\link[=canterbury]{Prerogative Court of Canterbury}.
+  An ordered \link{factor}, classifying outbreaks as \code{"minor"}
+  or \code{"major"}. All 14th century outbreaks are classified as major,
+  as the data are too sparse to distinguish between minor and major
+  outbreaks, in contrast with wills probated in the
+  \link[=canterbury]{Prerogative Court of Canterbury}.
 }
 }
 }

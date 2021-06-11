@@ -7,7 +7,7 @@ enum curve
     richards
 };
 
-enum distr
+enum family
 {
     pois,
     nbinom

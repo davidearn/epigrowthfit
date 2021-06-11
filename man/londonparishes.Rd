@@ -5,25 +5,24 @@
 \alias{londonparishes}
 \title{Burials in London parish registers}
 \format{
-A data frame with 14198 rows and 4 variables:
+A \link[=data.frame]{data frame} with 14198 rows and 4 variables:
 \describe{
 \item{\code{Date}}{
-A Date vector. Weekly, except for 340 instances of eight day
-spacing.
+  A \link{Date} vector. Weekly, except for 340 instances of 8-day spacing.
 }
 \item{\code{burials}}{
-An integer vector. \code{burials[i]} is the number of burials
-registered from the end of \code{Date[i-1]} to the end of \code{Date[i]}.
+  An \link{integer} vector. \code{burials[i]} is the number of burials
+  registered from the end of \code{Date[i-1]} to the end of \code{Date[i]}.
 }
 \item{\code{outbreak}}{
-An ordered factor, splitting the time series by plague outbreak.
-Levels indicate the years in which outbreaks took place:
-1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
+  An ordered \link{factor}, \link{split}ting the time series by plague
+  outbreak. \link[=levels]{Levels} indicate the years in which outbreaks
+  took place: 1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 }
 \item{\code{severity}}{
-An ordered factor, classifying outbreaks as \code{"minor"} or \code{"major"}.
-An outbreak is classified as major if and only if plague deaths
-per week per 1000 individuals exceeded 5 at least once.
+  An ordered \link{factor}, classifying outbreaks as \code{"minor"}
+  or \code{"major"}. An outbreak is classified as major if and only if
+  plague deaths per week per 1000 individuals exceeded 5 at least once.
 }
 }
 }

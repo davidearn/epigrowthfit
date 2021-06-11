@@ -2,257 +2,236 @@
 % Please edit documentation in R/egf.R
 \name{egf}
 \alias{egf}
-\title{Fit models of epidemic growth}
+\title{Fit phenomenological models of epidemic growth}
 \usage{
 egf(
-  formula_ts,
+  formula,
   formula_par,
-  data_ts = parent.frame(),
+  data = parent.frame(),
   data_par = parent.frame(),
-  endpoints,
-  origin = .Date(0),
-  curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
-  excess = FALSE,
-  distr = c("nbinom", "pois"),
-  weekday = FALSE,
-  na_action_ts = c("fail", "pass"),
+  subset = NULL,
+  subset_par = NULL,
+  na_action = c("fail", "pass"),
   na_action_par = c("fail", "pass"),
-  method_outer = c("nlminb", "nlm", "BFGS", "Nelder-Mead"),
-  method_inner = c("newton", "BFGS", "Nelder-Mead"),
-  control_outer = list(maxit = 1000L),
-  control_inner = list(maxit = 1000L),
+  endpoints,
+  model = egf_model(),
+  control = egf_control(),
   do_fit = TRUE,
-  trace_cpp = FALSE,
-  trace_tmb = FALSE,
+  se = FALSE,
   init = NULL,
+  origin = .Date(0),
   append = NULL,
-  sparse_X = FALSE,
   ...
 )
 }
 \arguments{
-\item{formula_ts}{A formula of the form \code{x ~ time} or \code{x ~ time | ts} specifying
-one or more incidence time series in long format. \code{time} must
-evaluate to a numeric or Date vector. Numeric \code{time} is assumed
-to measure time as a number of days since \emph{the end of} date
-\code{origin}. Date \code{time} is coerced to numeric \code{julian(time, origin)}
-(see Details). \code{x} must evaluate to a numeric vector. Within a
-time series, \code{x[i]} should specify the number of cases observed
-from \code{time[i-1]} to \code{time[i]}. Finally, \code{ts} must evaluate to
-a factor such that \code{split(data.frame(time, x), ts)} returns
-a list of time series. Note that \code{x ~ time} is equivalent to
-\code{x ~ time | ts} with \code{ts} set equal to \code{rep(factor(1), length(x))}.}
+\item{formula}{A \link{formula} of the form \code{x ~ time} or \code{x ~ time | ts}
+specifying one or more incidence time series in long format.
+\code{time} must evaluate to a \link{numeric} or \link{Date} vector.
+Numeric \code{time} is assumed to measure time as a number of days
+since \emph{the end of} Date \code{origin}. Date \code{time} is
+coerced to numeric \code{\link{julian}(time, origin)} (see Details).
+\code{x} must evaluate to a numeric vector. Within a time series,
+\code{x[i]} should specify the number of cases observed from
+\code{time[i-1]} to \code{time[i]}. Finally, \code{ts} must evaluate
+to a \link{factor} such that
+\code{\link{split}(\link{data.frame}(time, x), ts)}
+returns a \link{list} of time series. Note that \code{x ~ time}
+is equivalent to \code{x ~ time | ts} with \code{ts} set equal
+to \code{\link{rep}(\link{factor}(1), \link{length}(x))}.}
 
-\item{formula_par}{A list of formulae of the form \code{par ~ terms} specifying
-mixed effects models (\code{\link[lme4:lmer]{lme4}}-like syntax)
-for nonlinear model parameters. \code{deparse(par)} must be an
-element of
-\code{get_par_names(curve, distr, excess, weekday, link = TRUE)}.
+\item{formula_par}{A \link{list} of \link{formula}e of the form \code{par ~ terms},
+specifying mixed effects models for nonlinear and dispersion
+model parameters using \code{\link[lme4:lmer]{lme4}}-like syntax.
+\code{\link{deparse}(par)} must be an element of
+\code{\link{get_par_names}(model, link = TRUE)}.
 \code{~1} is the default for parameters not assigned a formula.
 Alternatively, \code{formula_par} may be a formula of the form
 \code{~terms}. In this case, the formula is recycled for all
-nonlinear model parameters. Note that "individuals" in each
-model are fitting windows, hence model frames constructed
-from \code{formula_par} and \code{data_par} are expected to correspond
-rowwise to \code{endpoints} (see Details).}
+nonlinear and dispersion model parameters. Note that
+"individuals" in each mixed effects model are fitting windows,
+and \link[=model.frame]{model frames} constructed from
+\code{formula_par} and \code{data_par} are expected to
+correspond rowwise to \code{endpoints} (see Details).}
 
-\item{data_ts, data_par}{Data frames, lists, or environments. These are searched prior
-to formula environments for variables used in \code{formula_ts} and
-\code{formula_par}, respectively.}
+\item{data, data_par}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s.
+These are searched prior to \link{formula} environments for variables
+used in \code{formula} and \code{formula_par}, respectively.}
 
-\item{endpoints}{A data frame, list, or environment with variables \code{start}
-and \code{end}, and any further variables necessary to evaluate
-\code{ts} if \code{formula_ts = x ~ time | ts}. \code{start} and \code{end}
-must be numeric or Date vectors listing start and end times
-for all fitting windows. \code{ts} must evaluate to a factor
-indicating the time series in which each window is found.
-Within time series, intervals \verb{[start[i], end[i]]} must be
-disjoint and contain at least two time points from \code{time}.}
+\item{subset, subset_par}{Expressions to be evaluated in \code{data} and \code{data_par},
+respectively, provided that the latter are data frames. These must
+evaluate to \link{logical} vectors of suitable \link{length}
+indexing rows to be used to fit the mixed effects model. The default
+(\code{\link{NULL}}) is to use all rows. Note that \code{subset}
+and \code{subset_par} perform subsetting at different levels of
+granularity:
+each row of \code{data} corresponds to one time point in a time series,
+whereas each row of \code{data_par} corresponds to a fitting window
+(and thus multiple time points) in a time series.}
 
-\item{origin}{A Date specifying a reference time.}
-
-\item{curve}{A character string specifying a cumulative incidence model.}
-
-\item{excess}{A logical scalar. If \code{TRUE}, then a constant baseline mortality
-rate is estimated. Set to \code{TRUE} if what is observed is multiple
-causes mortality rather than disease mortality or disease incidence.}
-
-\item{distr}{A character string specifying an observation model.}
-
-\item{weekday}{An integer scalar. If \code{weekday > 0}, then weekday effects are
-estimated as offsets relative to the indicated day
-(Sunday if \code{weekday = 1}, Monday if \code{weekday = 2}, and so on).
-Currently, weekday effect estimation requires \code{time} in
-\code{formula_ts = x ~ time | ts} to evaluate to an integer
-(in the sense of \code{all.equal(time, round(time))}) or Date vector
-with 1-day spacing in all fitting windows.
-Logical \code{weekday} is equivalent to \code{as.integer(weekday)}.}
-
-\item{na_action_ts}{A character string affecting the handling of \code{NA}
-in \code{x} if \code{formula_ts = x ~ time | ts}.
+\item{na_action}{A \link{character} string affecting the handling of \code{\link{NA}}
+in \code{x} if \code{formula = x ~ time | ts}.
 \code{"fail"} is to throw an error.
-\code{"pass"} is to ignore \code{NA} when fitting and replace \code{NA}
-when predicting.
-(Not yet implemented:
-\code{"exclude"} is to ignore \code{NA} when fitting and preserve \code{NA}
-when predicting.)
-Note that \code{NA} in \code{time} and \code{ts} are an error regardless
-of \code{na_action_ts}.}
+\code{"pass"} is to ignore \code{NA} when fitting
+and replace \code{NA} when predicting.
+(TODO: \code{"exclude"} is to ignore \code{NA} when fitting
+and preserve \code{NA} when predicting.)
+Note that \code{NA} in \code{time} and \code{ts} are an error
+regardless of \code{na_action}.}
 
-\item{na_action_par}{A character string affecting the handling of \code{NA}
+\item{na_action_par}{A \link{character} string affecting the handling of \code{\link{NA}}
 in \code{formula_par} variables.
 \code{"fail"} is to throw an error.
 \code{"pass"} is to discard fitting windows with incomplete data.}
 
-\item{method_outer, method_inner}{Character strings specifying optimizers to be used
-for the outer and inner optimizations, respectively.
-The outer optimization permits \code{\link[stats:nlminb]{stats::nlminb()}},
-\code{\link[stats:nlm]{stats::nlm()}}, and certain optimizers available
-through \code{\link[stats:optim]{stats::optim()}}. The inner optimization
-permits \code{\link[TMB:newton]{TMB::newton()}} and the same \code{\link[stats:optim]{stats::optim()}}
-methods. \code{method_inner} may have length greater than 1;
-in this case, the listed optimizers will be tried
-in turn until one succeeds.}
+\item{endpoints}{A \link[=data.frame]{data frame}, \link{list}, or \link{environment}
+with variables \code{start} and \code{end}, and any further variables
+necessary to evaluate \code{ts} if \code{formula = x ~ time | ts}.
+\code{start} and \code{end} must be \link{numeric} or \link{Date}
+vectors listing start and end times for all fitting windows. \code{ts}
+must evaluate to a \link{factor} indicating the time series in which each
+window is found. Within time series, intervals \code{start[i], end[i]]}
+must be disjoint and contain at least two time points from \code{time}.}
 
-\item{control_outer, control_inner}{Named lists of control parameters to be passed to optimizers.
-If \code{length(method_inner) > 1L} and \code{names(control_inner)}
-contains \code{method_inner[i]}, then \code{control_inner[[method_inner[i]]]}
-is passed to optimizer \code{i} instead of \code{control_inner}.}
+\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model and
+an observation model to be estimated.}
 
-\item{do_fit}{A logical scalar used for debugging. If \code{TRUE}, then
-\code{egf()} returns early with a list of optimization inputs.}
+\item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
 
-\item{trace_cpp}{An integer scalar used for debugging.
-If 0, then likelihood evaluations are always silent.
-If 1, then negative log likelihood terms are printed
-when they are non-finite or exceed \code{1e+09}.
-If 3, then all negative log likelihood terms are printed.
-Values 2 and 4 are equivalent to 1 and 3,
-but with additional printing of the full response matrix.}
+\item{do_fit}{A \link{logical} scalar. If \code{TRUE}, then \code{egf} returns early
+with a \link{list} of optimization inputs.}
 
-\item{trace_tmb}{A logical scalar used for debugging. If \code{TRUE}, then
-tracing is enabled in TMB and TMB-generated functions.
-Note that \code{trace_tmb = FALSE} will override any nonzero
-setting of \code{control_inner$trace}.}
+\item{se}{A \link{logical} scalar. If \code{TRUE}, then standard errors on mixed
+effects model coefficients are computed and stored for later reuse
+by methods.}
 
 \item{init}{A full parameter vector for the first likelihood evaluation.
-The default (\code{NULL}) is to accept the internally generated
-default. Use \code{do_fit = FALSE} to retrieve this default and
-other optimization inputs (in particular \code{Y_init}; see Value),
-which can often be used to construct a more informative
-starting point.}
+The default (\code{\link{NULL}}) is to accept the internally
+generated default. Use \code{do_fit = FALSE} to retrieve this default
+and other optimization inputs (in particular \code{Y_init}; see Value),
+which can often be used to construct a more informative starting point.}
+
+\item{origin}{A \link{Date} specifying a reference time.}
 
 \item{append}{An expression indicating variables in \code{data_par} to be preserved
-in the returned \code{"egf"} object for use by methods.
-It is evaluated similarly to the \code{select} argument of \code{\link[=subset]{subset()}}.
-The default (\code{NULL}) is to preserve all variables.
-Currently, usage is supported only if \code{data_par} is a data frame.}
+in the returned \code{"egf"} object for use by methods. It is evaluated
+similarly to the \code{select} argument of \code{\link{subset}}.
+The default (\code{\link{NULL}}) is to preserve all variables.
+Currently, usage is supported only if \code{data_par} is a
+\link[=data.frame]{data frame}.}
 
-\item{sparse_X}{A logical scalar. If \code{TRUE}, then the fixed effects design
-matrix is constructed in sparse format.}
-
-\item{...}{Unused optional arguments}
+\item{...}{Unused optional arguments.}
 }
 \value{
-If \code{do_fit = TRUE}, then a list inheriting from class \code{"egf"},
-with elements:
-\item{\code{endpoints}}{
-A data frame with variables \code{ts}, \code{window}, \code{start}, and
-\code{end} listing start and end times for all fitting windows.
-Rows are ordered by time series and chronologically
-within time series. \code{origin} is retained as an attribute.
-Note that \code{start} and \code{end} here are the minimum and maximum
-of the set of time points contained in the supplied intervals.
-Hence supplied and returned interval endpoints may not
-match exactly.
+If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
+\code{"egf"}, with elements:
+\item{endpoints}{
+  A \link[=data.frame]{data frame} with variables \code{ts}, \code{window},
+  \code{start}, and \code{end} listing start and end times for all fitting
+  windows. Rows are ordered by time series and chronologically within time
+  series. \code{origin} is retained as an \link[=attributes]{attribute}.
+  Note that \code{start} and \code{end} here are the minimum and maximum of
+  the set of time points contained in the supplied intervals. Hence supplied
+  and returned interval endpoints may not match exactly.
 }
-\item{\code{frame_ts}}{
-The time series model frame, constructed from \code{formula_ts}
-and \code{data_ts}, with variables \code{ts}, \code{window}, \code{time}, and
-\code{x}. \code{ts} and \code{window} are factors that can be used to split
-\code{frame_ts} by time series and by fitting window, respectively.
-Rows are ordered by time series and chronologically within
-time series. \code{terms(formula_ts)} and \code{origin} are retained
-as attributes. \code{unclass(window)} indexes rows of \code{endpoints}.
-That is, time series data for the fitting window defined by
-row \code{i} of \code{endpoints} can be found in the rows of \code{frame_ts}
-for which \code{window = levels(window)[i]}.
+\item{frame}{
+  The time series model frame, constructed from \code{formula} and
+  \code{data}, with variables \code{ts}, \code{window}, \code{start},
+  and \code{end}. (Construction does not use \code{\link{model.frame}},
+  as \code{formula} is handled specially.) \code{ts} and \code{window}
+  are \link{factor}s that can be used to \link{split} \code{frame} by
+  time series and by fitting window, respectively. Rows are ordered by
+  time series and chronologically within time series.
+  \code{\link{terms}(formula)} and \code{origin} are retained as
+  \link{attributes}. \code{\link{as.integer}(window)} indexes rows
+  of \code{endpoints}. That is, time series data for the fitting window
+  defined in row \code{i} of \code{endpoints} can be found in the rows
+  of \code{frame} for which \code{window = \link{levels}(window)[i]}.
 }
-\item{\code{frame_par}}{
-A list of mixed effects model frames, constructed from
-\code{formula_par} and \code{data_par}. There is one model frame
-for each nonlinear model parameter listed in
-\code{get_par_names(curve, excess, distr, weekday, link = TRUE)}.
-\code{frame_par[[name]]} retains \code{terms(formula_par[[name]])} as
-an attribute. Model frames correspond rowwise to \code{endpoints}.
-That is, mixed effects data on the fitting window defined
-by row \code{i} of \code{endpoints} can be found in row \code{i} of each
-model frame.
+\item{frame_par}{
+  A \link{list} of mixed effects model frames, constructed from
+  \code{formula_par} and \code{data_par} using \code{\link{model.frame}}.
+  There is one model frame for each nonlinear and dispersion model
+  parameter listed in
+  \code{\link{get_par_names}(model, link = TRUE)}.
+  \code{frame_par[[name]]} retains
+  \code{\link{terms}(formula_par[[name]])} as an
+  \code{\link[=attributes]{attribute}}.
+  Model frames correspond rowwise to \code{endpoints}. That is,
+  mixed effects data on the fitting window defined in row \code{i}
+  of \code{endpoints} can be found in row \code{i} of each model frame.
 }
-\item{\code{frame_append}}{
-A data frame preserving the variables from \code{data_par}
-indicated by \code{append}. Corresponds rowwise to \code{endpoints}.
+\item{frame_append}{
+  A \link[=data.frame]{data frame} preserving the variables from
+  \code{data_par} indicated by \code{append}. Corresponds rowwise
+  to \code{endpoints}.
 }
-\item{\code{curve}, \code{excess}, \code{distr}, \code{weekday}, \code{method_outer}, \code{method_inner}, \code{control_outer}, \code{control_inner}}{
-Copies of the so-named arguments (after possible matching).
+\item{model, control}{
+  Copies of the so-named arguments.
 }
-\item{\code{tmb_args}}{
-A list of arguments to \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}}. See \code{\link[=make_tmb_args]{make_tmb_args()}}.
+\item{tmb_args}{
+  A \link{list} of arguments to \code{\link[TMB]{MakeADFun}}.
+  See also \code{\link{make_tmb_args}}.
 }
-\item{\code{tmb_out}}{
-The list output of \code{\link[TMB:MakeADFun]{TMB::MakeADFun()}} (after optimization).
+\item{tmb_out}{
+  The \link{list} output of \code{\link[TMB]{MakeADFun}}
+  (after optimization).
 }
-\item{\code{optim_out}}{
-The list output of the optimizer specified by \code{method}.
+\item{optimizer_out}{
+  The \link{list} output of the outer optimizer specified
+  by \code{control$optimizer}.
 }
-\item{\code{init}}{
-The full parameter vector of the first likelihood evaluation.
+\item{init}{
+  The full parameter vector of the first likelihood evaluation.
 }
-\item{\code{best}}{
-The full parameter vector of the best likelihood evaluation.
+\item{best}{
+  The full parameter vector of the best likelihood evaluation.
 }
-\item{\code{nonrandom}}{
-An integer vector indexing the non-random segment of \code{best}.
+\item{nonrandom}{
+  An \link{integer} vector indexing the non-random segment of
+  \code{init} and \code{best}.
 }
-\item{\code{report}}{
-A list containing all variables \code{REPORT()}ed and \code{ADREPORT()}ed
-in the C++ template, with an additional element \code{cov} giving the
-covariance matrix corresponding to \code{par[nonrandom]}.
+\item{sdreport}{
+  If \code{se = TRUE}, then an \code{"sdreport"} object resulting
+  from \code{\link{sdreport}(tmb_out)}. Otherwise, \code{\link{NULL}}.
 }
-\item{\code{nll}}{
-A numeric scalar giving the value of the negative log
-Laplace approximation of the marginal likelihood function
-at \code{best[nonrandom]}.
+\item{nll}{
+  A \link[=double]{numeric} scalar giving the value of the negative
+  log Laplace approximation of the marginal likelihood function at
+  \code{best[nonrandom]}.
 }
-\item{\code{nll_func}, \code{nll_grad}}{
-Closures taking a numeric vector \code{x} as an argument and returning
-the value or gradient of the negative log Laplace approximation of
-the marginal likelihood function at \code{x[nonrandom]}.
-}
-\item{\code{call}}{
-The call to \code{egf()}, allowing for updates to the \code{"egf"} object
-via \code{\link[stats:update]{stats::update()}}.
+\item{call}{
+  The \code{\link{call}} to \code{egf}, allowing for updates
+  to the \code{"egf"} object via \code{\link{update}}.
 }
 
-If \code{do_fit = FALSE}, then a list containing \code{endpoints},
-\code{frame_ts}, \code{frame_par}, \code{init}, \code{tmb_args}, and \code{call}
-(as described above), as well as a matrix \code{Y_init} specifying
-a naive estimate of each nonlinear model parameter for each
-fitting window. \code{Y_init} and \code{endpoints} correspond rowwise.
+If \code{do_fit = FALSE}, then a \link{list} containing \code{frame},
+\code{frame_par}, \code{endpoints}, \code{tmb_args}, \code{tmb_out}
+(\emph{before} optimization), \code{init}, \code{nonrandom}, and
+\code{call}, as well as a \link{matrix} \code{Y_init} specifying
+a naive estimate of each nonlinear and dispersion model parameter
+for each fitting window. \code{Y_init} and \code{endpoints} correspond
+rowwise.
 }
 \description{
 Fits nonlinear mixed effects models of epidemic growth to one
 or more disease incidence time series.
 }
 \details{
-If \code{formula_ts = x ~ time | ts}, then coercion of Date \code{time} to
-numeric \code{julian(time, origin)} assumes that each element \code{time[i]}
-can be read as "end of date \code{time[i]}", so that observation \code{x[i]}
-in a given time series is the number of cases observed from the
-end of date \code{time[i-1]} to the end of date \code{time[i]}.
+If \code{formula_ts = x ~ time | ts}, then coercion of \link{Date}
+\code{time} to \link{numeric} \code{\link{julian}(time, origin)}
+assumes that each element \code{time[i]} can be read as "end of Date
+\code{time[i]}", so that observation \code{x[i]} in a given time series
+is the number of cases observed from the end of Date \code{time[i-1]}
+to the end of Date \code{time[i]}.
 
 To avoid unexpected mismatch between \code{endpoints} and mixed effects
-model frames constructed from \code{formula_par} and \code{data_par},
-keep all necessary \code{endpoints} variables in \code{data_par}, and
-set \code{endpoints = data_par}.
+\link[=model.frame]{model frame}s constructed from \code{formula_par}
+and \code{data_par}, keep all necessary \code{endpoints} variables in
+\code{data_par}, and set \code{endpoints = data_par}.
+
+Day of week effect estimation (see \code{\link{egf_model}}) requires
+\code{time} in \code{formula = x ~ time | ts} to evaluate to an
+\link{integer} or \link{Date} vector with 1-day spacing in all fitting
+windows.
 }

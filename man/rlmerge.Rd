@@ -7,33 +7,34 @@
 rlmerge(x, template)
 }
 \arguments{
-\item{x}{A list.}
+\item{x}{A \link{list}.}
 
-\item{template}{A list into which \code{x} is merged.}
+\item{template}{A \link{list} into which `x` is merged.}
 }
 \value{
-A list.
+A \link{list}.
 }
 \description{
-Recursively merge elements of a partially specified list
+Recursively merge elements of a partially specified \link{list}
 into a completely specified list of defaults.
 }
 \details{
-The recursion proceeds as follows:
+Recursion proceeds as follows:
 
-If \code{x} is \code{NULL}, then \code{template} is replaced with \code{NULL}.
+If \code{x} is \code{\link{NULL}}, then \code{template} is replaced
+with \code{\link{NULL}}.
 
-Otherwise, if \code{x} and \code{template} are both lists or are both
-atomic vectors and \code{template} is unnamed, then \code{x} is recycled
-to the length of \code{template}.
+Otherwise, if \code{x} and \code{template} are both \link{list}s
+or are both \link{atomic} vectors and \code{template} does not have
+\link{names}, then \code{x} is recycled to the length of \code{template}.
 
-Otherwise, if \code{x} and \code{template} are both lists and \code{template}
-is named, then elements of \code{x} are recursively merged into the
-so-named elements of \code{template}.
+Otherwise, if \code{x} and \code{template} are both \link{list}s and
+\code{template} does not have \link{names}, then elements of \code{x}
+are recursively merged into the so-named elements of \code{template}.
 
-Otherwise, if \code{x} and \code{template} are both atomic vectors and
-\code{template} is named, then elements of \code{x} replace the so-named
-elements of \code{template}.
+Otherwise, if \code{x} and \code{template} are both \link{atomic} vectors
+and \code{template} has \link{names}, then elements of \code{x} replace
+the so-named elements of \code{template}.
 
 Otherwise, \code{x} is discarded and \code{template} is preserved as is.
 }
@@ -67,11 +68,7 @@ template <- list(
     c3 = list(TRUE)
   )
 )
-
-## Not run
-\dontrun{
-rlmerge(x, template)
-}
+# rlmerge(x, template)
 
 }
 \keyword{internal}

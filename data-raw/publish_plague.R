@@ -1,7 +1,7 @@
 load("outbreak_definitions.RData")
 outbreak <- outbreak_definitions$outbreak
 severity <- outbreak_definitions$severity
-breaks <- .Date(unlist(outbreak_definitions[c("start", "end")], use.names = FALSE))
+breaks <- .Date(unlist(outbreak_definitions[c("start", "end")], FALSE, FALSE))
 labels <- rep_len(NA_character_, length(breaks) - 1L)
 labels[seq.int(1L, length(labels), by = 2L)] <- as.character(outbreak)
 f <- function(d) {

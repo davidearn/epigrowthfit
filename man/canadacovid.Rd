@@ -5,22 +5,23 @@
 \alias{canadacovid}
 \title{COVID-19 in Canadian provinces and territories}
 \format{
-A data frame with 5451 rows and 4 variables:
+A \link[=data.frame]{data frame} with 5451 rows and 4 variables:
 \describe{
 \item{\code{province}}{
-A factor. Canadian province or territory (postal abbreviation).
+  A \link{factor}. Canadian province or territory (postal abbreviation).
 }
 \item{\code{Date}}{
-A Date vector. Daily within each level of \code{province},
-except prior to invasion, when less frequent reports were common.
+  A \link{Date} vector. Daily within each level of \code{province},
+  except prior to invasion, when less frequent reports were common.
 }
 \item{\code{cases_tot}}{
-An integer vector. \code{cases_tot[i]} is the number of cases confirmed
-up to the end of \code{Date[i]} in \code{province[i]}.
+  An \link{integer} vector. \code{cases_tot[i]} is the number of cases
+  confirmed up to the end of \code{Date[i]} in \code{province[i]}.
 }
 \item{\code{cases_new}}{
-An integer vector. \code{cases_new[i]} is the number of cases confirmed
-from the end of \code{Date[i-1]} to the end of \code{Date[i]} in \code{province[i]}.
+  An \link{integer} vector. \code{cases_new[i]} is the number of cases
+  confirmed from the end of \code{Date[i-1]} to the end of \code{Date[i]}
+  in \code{province[i]}.
 }
 }
 }

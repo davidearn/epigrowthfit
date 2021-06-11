@@ -7,28 +7,26 @@
 rsplit(x, by = integer(0L), drop = FALSE)
 }
 \arguments{
-\item{x}{A data frame.}
+\item{x}{A \link[=data.frame]{data frame}.}
 
-\item{by}{A subset of \code{seq_along(x)} or \code{names(x)} indicating (in order)
-variables on which to split \code{x}.}
+\item{by}{A subset of \code{\link{seq_along}(x)} or \code{\link{names}(x)}
+indicating (in order) variables on which to split \code{x}.}
 
-\item{drop}{A logical scalar passed to \code{\link[=split]{split()}}.}
+\item{drop}{A \link{logical} scalar passed to \code{\link{split}}.}
 }
 \value{
-A recursive list of data frames with \code{n = length(by)} levels,
-unless \code{n} is zero, in which case \code{x} is returned as is.
+A recursive \link{list} of \link[=data.frame]{data frame}s
+with \code{length(by)} "layers", unless \code{length(by) = 0},
+in which case \code{x} is returned as is.
 }
 \description{
-Splits a supplied data frame on one or more variables in turn.
+\link[=split]{Split}s a supplied \link[=data.frame]{data frame}
+on one or more variables in turn.
 }
 \examples{
 f <- function() sample(letters[1:5], 20L, replace = TRUE)
 d <- as.data.frame(replicate(3L, f()))
-
-## Not run
-\dontrun{
-rsplit(d, 1:3)
-}
+# rsplit(d, 1:3)
 
 }
 \keyword{internal}

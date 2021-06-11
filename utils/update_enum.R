@@ -1,7 +1,7 @@
 filename_h <- "../src/enum.h"
 filename_r   <- "../R/enum.R"
 lines_h <- readLines(filename_h)
-lines_r   <- readLines(filename_r)
+lines_r <- readLines(filename_r)
 
 ## Function to extract enumerator names from lines
 ## of file declaring enumerated type
@@ -20,11 +20,11 @@ get_enum_names <- function(lines, type) {
 
 ## Character vectors listing enumerator names
 curve_names <- get_enum_names(lines_h, "curve")
-distr_names <- get_enum_names(lines_h, "distr")
+family_names <- get_enum_names(lines_h, "family")
 
 ## String giving quote-delimited, comma-separated list
 curve_str <- paste(sprintf("\"%s\"", curve_names), collapse = ", ")
-distr_str <- paste(sprintf("\"%s\"", distr_names), collapse = ", ")
+family_str <- paste(sprintf("\"%s\"", family_names), collapse = ", ")
 
 ## Replace argument of c() in matched line with string
 lines_r <- sub(
@@ -33,8 +33,8 @@ lines_r <- sub(
   x = lines_r
 )
 lines_r <- sub(
-  pattern = "^(  distr_names <- c\\().*(\\) # GREP_FLAG)$",
-  replacement = sprintf("\\1%s\\2", distr_str),
+  pattern = "^(  family_names <- c\\().*(\\) # GREP_FLAG)$",
+  replacement = sprintf("\\1%s\\2", family_str),
   x = lines_r
 )
 writeLines(lines_r, filename_r)

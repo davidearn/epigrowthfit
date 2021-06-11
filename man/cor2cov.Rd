@@ -7,17 +7,16 @@
 cor2cov(cor, sd)
 }
 \arguments{
-\item{cor}{A symmetric numeric matrix. Diagonal elements should be 1 and
-off-diagonal elements should be numbers in the interval \verb{[-1,1]}.}
+\item{cor}{A square \link{numeric} \link{matrix}.}
 
-\item{sd}{A numeric vector of length \code{nrow(cor)}.}
+\item{sd}{A \link{numeric} vector of length \code{\link{nrow}(cor)}.}
 }
 \value{
-The result of \verb{sweep(sweep(cor, 1L, sd, ```*```), 2L, sd, ```*```)},
-obtained slightly more efficiently, following \code{\link[stats:cor]{stats::cov2cor()}}.
+The result of \code{\link{sweep}(sweep(cor, 1L, sd, `*`), 2L, sd, `*`)},
+obtained slightly more efficiently, following \code{\link{cov2cor}}.
 }
 \description{
-Perform the inverse of \code{\link[stats:cor]{stats::cov2cor()}}.
+Perform the inverse of \code{\link{cov2cor}}.
 }
 \examples{
 # X <- replicate(6L, rnorm(10L))

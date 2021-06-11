@@ -8,44 +8,44 @@
 \method{ranef}{egf}(object, ...)
 }
 \arguments{
-\item{object}{An \code{"egf"} object returned by \code{\link[=egf]{egf()}}.}
+\item{object}{An \code{"\link{egf}"} object.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-A data frame inheriting from class \code{"egf_ranef"},
-with one row per coefficient and variables:
-\item{\code{name}}{
-Coefficient name in the full parameter vector \code{object$best}.
+A \link[=data.frame]{data frame} inheriting from \link{class}
+\code{"egf_ranef"}, with one row per coefficient and variables:
+\item{name}{
+  Coefficient name in the full parameter vector \code{object$best}.
 }
-\item{\code{par}}{
-Nonlinear model parameter, from
-\code{get_par_names(object, link = TRUE)}.
+\item{par}{
+  Nonlinear or model parameter,
+  from \code{\link{get_par_names}(object, link = TRUE)}.
 }
-\item{\code{term}, \code{group}}{
-Term from random effects component of mixed effects formula
-for nonlinear model parameter \code{par}. \code{term} and \code{group}
-give the left and right hand sides of the \code{|} operator,
-respectively.
+\item{term, group}{
+  Random effects term from mixed effects formula for parameter \code{par}.
+  \code{term} and \code{group} give the left and right hand sides of the
+  \code{`|`} operator, respectively.
 }
-\item{\code{level}}{
-Level of the interaction specified by \code{group}.
+\item{level}{
+  Level of interaction \code{group}.
 }
-\item{\code{colname}}{
-Corresponding column name in the random effects design matrix
-\code{object$tmb_args$data$Z}.
+\item{colname}{
+  Corresponding column name in the random effects design matrix
+  \code{object$tmb_args$data$Z}.
 }
-\item{\code{mode}}{
-Conditional mode (unit variance scale).
+\item{mode}{
+  Conditional mode (unit variance scale).
 }
-\item{\code{sd}}{
-Estimated standard deviation.
+\item{sd}{
+  Estimated standard deviation.
 }
 
-Attribute \code{cov} lists estimated random effect covariance matrices.
-There is one matrix per random effects term and, in a given matrix
-one row per nonlinear model parameter whose mixed effects formula
-includes the term.
+Attribute \code{cov} lists estimated unstructured random effects
+covariance matrices. There is one matrix per random effects term.
+The number of rows of a matrix is equal to the number of nonlinear
+and dispersion model parameters whose formulae
+contain the corresponding random effects term.
 }
 \description{
 Retrieve the modes of the coefficients (unit variance scale)

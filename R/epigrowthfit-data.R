@@ -7,37 +7,36 @@
 #' Below is a list of available data sets with links to their
 #' documentation:
 #' \describe{
-#' \item{[`canadacovid`][canadacovid]}{
+#' \item{\code{\link{canadacovid}}}{
 #'   Daily confirmations of COVID-19 in Canadian provinces
 #'   and territories, from first confirmation to May 8, 2021.
 #' }
-#' \item{[`covid_generation_interval`][covid_generation_interval]}{
+#' \item{\code{\link{covid_generation_interval}}}{
 #'   Gamma distribution of the COVID-19 generation interval
 #'   fit to data from a cluster of 45 cases in Tianjin, China.
 #' }
-#' \item{[`husting`][husting]}{
+#' \item{\code{\link{husting}}}{
 #'   Counts of wills probated in the Court of Husting
 #'   during four plague epidemics in 14th century London.
 #' }
-#' \item{[`canterbury`][canterbury]}{
+#' \item{\code{\link{canterbury}}}{
 #'   Counts of wills probated in the Prerogative Court of Canterbury
 #'   during 24 plague epidemics in 16th and 17th century London.
 #' }
-#' \item{[`londonparishes`][londonparishes]}{
+#' \item{\code{\link{londonparishes}}}{
 #'   Weekly counts of burials listed in extant parish registers
 #'   during 24 plague epidemics in 16th and 17th century London.
 #' }
-#' \item{[`londonbills`][londonbills]}{
+#' \item{\code{\link{londonbills}}}{
 #'   Weekly counts of plague deaths recorded in the London Bills of
 #'   Mortality during 24 plague epidemics in 16th and 17th century
 #'   London.
 #' }
-#' \item{[`plague_latent_period`][plague_latent_period]}{
+#' \item{\code{\link{plague_latent_period}}}{
 #'   Empirical distribution of the latent period of pneumonic plague.
 #' }
-#' \item{[`plague_infectious_period`][plague_infectious_period]}{
-#'   Empirical distribution of the infectious period of pneumonic
-#'   plague.
+#' \item{\code{\link{plague_infectious_period}}}{
+#'   Empirical distribution of the infectious period of pneumonic plague.
 #' }
 #' }
 #'
@@ -51,30 +50,31 @@ NULL
 #' and territories, from first confirmation to May 8, 2021.
 #'
 #' @format
-#' A data frame with 5451 rows and 4 variables:
+#' A \link[=data.frame]{data frame} with 5451 rows and 4 variables:
 #' \describe{
-#' \item{`province`}{
-#'   A factor. Canadian province or territory (postal abbreviation).
+#' \item{\code{province}}{
+#'   A \link{factor}. Canadian province or territory (postal abbreviation).
 #' }
-#' \item{`Date`}{
-#'   A Date vector. Daily within each level of `province`,
+#' \item{\code{Date}}{
+#'   A \link{Date} vector. Daily within each level of \code{province},
 #'   except prior to invasion, when less frequent reports were common.
 #' }
-#' \item{`cases_tot`}{
-#'   An integer vector. `cases_tot[i]` is the number of cases confirmed
-#'   up to the end of `Date[i]` in `province[i]`.
+#' \item{\code{cases_tot}}{
+#'   An \link{integer} vector. \code{cases_tot[i]} is the number of cases
+#'   confirmed up to the end of \code{Date[i]} in \code{province[i]}.
 #' }
-#' \item{`cases_new`}{
-#'   An integer vector. `cases_new[i]` is the number of cases confirmed
-#'   from the end of `Date[i-1]` to the end of `Date[i]` in `province[i]`.
+#' \item{\code{cases_new}}{
+#'   An \link{integer} vector. \code{cases_new[i]} is the number of cases
+#'   confirmed from the end of \code{Date[i-1]} to the end of \code{Date[i]}
+#'   in \code{province[i]}.
 #' }
 #' }
 #'
 #' @source
 #' Raw data were downloaded from Michael Li's public
-#' [Github repository](https://github.com/wzmli).
+#' \href{https://github.com/wzmli}{Github repository}.
 #' Up-to-date data can be downloaded
-#' [here](https://wzmli.github.io/COVID19-Canada/COVID19_Canada.csv).
+#' \href{https://wzmli.github.io/COVID19-Canada/COVID19_Canada.csv}{here}.
 #'
 #' @usage data(canadacovid)
 #' @examples
@@ -90,27 +90,27 @@ NULL
 #' during four plague epidemics in 14th century London.
 #'
 #' @format
-#' A data frame with 723 rows and 4 variables:
+#' A \link[=data.frame]{data frame} with 723 rows and 4 variables:
 #' \describe{
-#' \item{`Date`}{
-#'   A Date vector. Spacing varies, as only nonzero counts of wills
+#' \item{\code{Date}}{
+#'   A \link{Date} vector. Spacing varies, as only nonzero counts of wills
 #'   are included.
 #' }
-#' \item{`wills`}{
-#'   An integer vector. `wills[i]` is the number of wills written
-#'   on `Date[i]`.
+#' \item{\code{wills}}{
+#'   An \link{integer} vector. \code{wills[i]} is the number of wills
+#'   written on \code{Date[i]}.
 #' }
-#' \item{`outbreak`}{
-#'   An ordered factor, splitting the time series by plague outbreak.
-#'   Levels indicate the years in which outbreaks took place:
-#'   1348, 1361, 1368, and 1375.
+#' \item{\code{outbreak}}{
+#'   An ordered \link{factor}, \link{split}ting the time series by plague
+#'   outbreak. \link[=levels]{Levels} indicate the years in which outbreaks
+#'   took place: 1348, 1361, 1368, and 1375.
 #' }
-#' \item{`severity`}{
-#'   An ordered factor, classifying outbreaks as `"minor"` or `"major"`.
-#'   All 14th century outbreaks are classified as major, as the data
-#'   are too sparse to distinguish between minor and major outbreaks,
-#'   in contrast with wills probated in the
-#'   [Prerogative Court of Canterbury][canterbury].
+#' \item{\code{severity}}{
+#'   An ordered \link{factor}, classifying outbreaks as \code{"minor"}
+#'   or \code{"major"}. All 14th century outbreaks are classified as major,
+#'   as the data are too sparse to distinguish between minor and major
+#'   outbreaks, in contrast with wills probated in the
+#'   \link[=canterbury]{Prerogative Court of Canterbury}.
 #' }
 #' }
 #'
@@ -134,32 +134,32 @@ NULL
 #' during 24 plague epidemics in 16th and 17th century London.
 #'
 #' @format
-#' A data frame with 32681 rows and 4 variables:
+#' A \link[=data.frame]{data frame} with 32681 rows and 4 variables:
 #' \describe{
-#' \item{`Date`}{
-#'   A Date vector. Spacing varies, as only nonzero counts of wills
+#' \item{\code{Date}}{
+#'   A \link{Date} vector. Spacing varies, as only nonzero counts of wills
 #'   are included.
 #' }
-#' \item{`wills`}{
-#'   An integer vector. `wills[i]` is the number of wills written
-#'   on `Date[i]`.
+#' \item{\code{wills}}{
+#'   An \link{integer} vector. \code{wills[i]} is the number of wills written
+#'   on \code{Date[i]}.
 #' }
-#' \item{`outbreak`}{
-#'   An ordered factor, splitting the time series by plague outbreak.
-#'   Levels indicate the years in which outbreaks took place:
-#'   1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
+#' \item{\code{outbreak}}{
+#'   An ordered \link{factor}, \code{split}ting the time series by plague
+#'   outbreak. \link[=levels]{Levels} indicate the years in which outbreaks
+#'   took place: 1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 #' }
-#' \item{`severity`}{
-#'   An ordered factor, classifying outbreaks as `"minor"` or `"major"`.
-#'   An outbreak is classified as major if and only if plague deaths
-#'   per week per 1000 individuals exceeded 5 at least once.
+#' \item{\code{severity}}{
+#'   An ordered \link{factor}, classifying outbreaks as \code{"minor"}
+#'   or \code{"major"}. An outbreak is classified as major if and only if
+#'   plague deaths per week per 1000 individuals exceeded 5 at least once.
 #' }
 #' }
 #'
 #' @source
 #' These data were retrieved from the National Archives (UK) in 2018
 #' using this
-#' [research guide](https://www.nationalarchives.gov.uk/help-with-your-research/research-guides/wills-1384-1858/).
+#' \href{https://www.nationalarchives.gov.uk/help-with-your-research/research-guides/wills-1384-1858/}{research guide}.
 #'
 #' @usage data(canterbury)
 #' @examples
@@ -174,25 +174,24 @@ NULL
 #' during 24 plague epidemics in 16th and 17th century London.
 #'
 #' @format
-#' A data frame with 14198 rows and 4 variables:
+#' A \link[=data.frame]{data frame} with 14198 rows and 4 variables:
 #' \describe{
-#' \item{`Date`}{
-#'   A Date vector. Weekly, except for 340 instances of eight day
-#'   spacing.
+#' \item{\code{Date}}{
+#'   A \link{Date} vector. Weekly, except for 340 instances of 8-day spacing.
 #' }
-#' \item{`burials`}{
-#'   An integer vector. `burials[i]` is the number of burials
-#'   registered from the end of `Date[i-1]` to the end of `Date[i]`.
+#' \item{\code{burials}}{
+#'   An \link{integer} vector. \code{burials[i]} is the number of burials
+#'   registered from the end of \code{Date[i-1]} to the end of \code{Date[i]}.
 #' }
-#' \item{`outbreak`}{
-#'   An ordered factor, splitting the time series by plague outbreak.
-#'   Levels indicate the years in which outbreaks took place:
-#'   1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
+#' \item{\code{outbreak}}{
+#'   An ordered \link{factor}, \link{split}ting the time series by plague
+#'   outbreak. \link[=levels]{Levels} indicate the years in which outbreaks
+#'   took place: 1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 #' }
-#' \item{`severity`}{
-#'   An ordered factor, classifying outbreaks as `"minor"` or `"major"`.
-#'   An outbreak is classified as major if and only if plague deaths
-#'   per week per 1000 individuals exceeded 5 at least once.
+#' \item{\code{severity}}{
+#'   An ordered \link{factor}, classifying outbreaks as \code{"minor"}
+#'   or \code{"major"}. An outbreak is classified as major if and only if
+#'   plague deaths per week per 1000 individuals exceeded 5 at least once.
 #' }
 #' }
 #'
@@ -200,9 +199,9 @@ NULL
 #' These data were retrieved by
 #' \insertCite{Cumm+16;textual}{epigrowthfit}
 #' with permission from
-#' [Ancestry.com](https://www.ancestry.com/).
+#' \href{https://www.ancestry.com/}{Ancestry.com}.
 #' They have been made publicly available
-#' [here](http://www.neilcummins.com).
+#' \href{http://www.neilcummins.com}{here}.
 #'
 #' @references
 #' \insertRef{Cumm+16}{epigrowthfit}
@@ -220,32 +219,34 @@ NULL
 #' Mortality during 24 plague epidemics in 16th and 17th century London.
 #'
 #' @format
-#' A data frame with 2041 rows and 6 variables:
+#' A \link[=data.frame]{data frame} with 2041 rows and 6 variables:
 #' \describe{
-#' \item{`Date`}{
-#'   A Date vector. Weekly within each level of `outbreak`,
+#' \item{\code{Date}}{
+#'   A \link{Date} vector. Weekly within each level of `outbreak`,
 #'   except for 78 instances of spacing not equal to 7 days.
 #' }
-#' \item{`deaths_all_causes`}{
-#'   An integer vector. `deaths_all_causes[i]` is the number of deaths
-#'   due to all causes from the end of `Date[i-1]` to the end of `Date[i]`.
+#' \item{\code{deaths_all_causes}}{
+#'   An \link{integer} vector. \code{deaths_all_causes[i]} is the number
+#'   of deaths due to all causes from the end of \code{Date[i-1]}
+#'   to the end of \code{Date[i]}.
 #' }
-#' \item{`deaths_plague`}{
-#'   An integer vector. `deaths_plague[i]` is the number of deaths
-#'   due to plague from the end of `Date[i-1]` to the end of `Date[i]`.
+#' \item{\code{deaths_plague}}{
+#'   An integer vector. \code{deaths_plague[i]} is the number
+#'   of deaths due to plague from the end of \code{Date[i-1]}
+#'   to the end of \code{Date[i]}.
 #' }
-#' \item{`population`}{
-#'   An integer vector. Estimated London population size.
+#' \item{\code{population}}{
+#'   An \link{integer} vector. Estimated London population size.
 #' }
-#' \item{`outbreak`}{
-#'   An ordered factor, splitting the time series by plague outbreak.
-#'   Levels indicate the years in which outbreaks took place:
-#'   1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
+#' \item{\code{outbreak}}{
+#'   An ordered \link{factor}, \link{split}ting the time series by plague
+#'   outbreak. \link[=levels]{Levels} indicate the years in which outbreaks
+#'   took place: 1563, 1578, ..., 1647, and 1665 (the Great Plague of London).
 #' }
-#' \item{`severity`}{
-#'   An ordered factor, classifying outbreaks as `"minor"` or `"major"`.
-#'   An outbreak is classified as major if and only if plague deaths
-#'   per week per 1000 individuals exceeded 5 at least once.
+#' \item{\code{severity}}{
+#'   An ordered \link{factor}, classifying outbreaks as \code{"minor"}
+#'   or \code{"major"}. An outbreak is classified as major if and only if
+#'   plague deaths per week per 1000 individuals exceeded 5 at least once.
 #' }
 #' }
 #'
@@ -262,10 +263,10 @@ NULL
 #' Empirical distribution of the latent period of pneumonic plague.
 #'
 #' @format
-#' A data frame with 12 rows and 2 variables:
+#' A \link[=data.frame]{data frame} with 12 rows and 2 variables:
 #' \describe{
-#' \item{`days`}{Latent period in days, from 1 to 12.}
-#' \item{`relfreq`}{Observed relative frequency out of 224 cases.}
+#' \item{\code{days}}{Latent period in days, from 1 to 12.}
+#' \item{\code{relfreq}}{Observed relative frequency out of 224 cases.}
 #' }
 #'
 #' @source
@@ -288,10 +289,10 @@ NULL
 #' Empirical distribution of the infectious period of pneumonic plague.
 #'
 #' @format
-#' A data frame with 12 rows and 2 variables:
+#' A \link[=data.frame]{data frame} with 12 rows and 2 variables:
 #' \describe{
-#' \item{`days`}{Infectious period in days, from 1 to 12.}
-#' \item{`relfreq`}{Observed relative frequency out of 225 cases.}
+#' \item{\code{days}}{Infectious period in days, from 1 to 12.}
+#' \item{\code{relfreq}}{Observed relative frequency out of 225 cases.}
 #' }
 #'
 #' @source
@@ -315,28 +316,28 @@ NULL
 #' to data from a cluster of 45 cases in Tianjin, China.
 #'
 #' @format
-#' A list with 4 elements:
+#' A \link{list} with 4 elements:
 #' \describe{
-#' \item{`shape`}{
-#'   Estimated shape parameter. See [stats::dgamma()].
+#' \item{\code{shape}}{
+#'   Estimated shape parameter. See \code{\link{dgamma}}.
 #' }
-#' \item{`scale`}{
-#'   Estimated scale parameter. See [stats::dgamma()].
+#' \item{\code{scale}}{
+#'   Estimated scale parameter. See \code{\link{dgamma}}.
 #' }
-#' \item{`breaks`}{
-#'   An integer vector listing numbers of days. Equal to `0:20`.
+#' \item{\code{breaks}}{
+#'   An \link{integer} vector listing numbers of days. Equal to `0:20`.
 #' }
-#' \item{`probs`}{
-#'   A numeric vector of length `length(breaks-1)`. `probs[i]`
-#'   is the probability that the generation interval is between
-#'   `breaks[i]` and `breaks[i+1]` days, conditional on `shape`
-#'   and `scale`.
-#'   Equal to `diff(pgamma(breaks, shape = shape, scale = scale))`.
+#' \item{\code{probs}}{
+#'   A \link[=double]{numeric} vector of length \code{length(breaks-1)}.
+#'   \code{probs[i]} is the probability that the generation interval
+#'   is between \code{breaks[i]} and \code{breaks[i+1]} days, conditional
+#'   on \code{shape} and \code{scale}. Equal to
+#'   \code{\link{diff}(\link{pgamma}(breaks, shape = shape, scale = scale))}.
 #' }
 #' }
 #'
 #' @source
-#' `shape` and `scale` were computed from the mean and standard
+#' \code{shape} and \code{scale} were computed from the mean and standard
 #' deviation reported in \insertCite{Gany+20;textual}{epigrowthfit},
 #' Table 4, Scenario 2.
 #'

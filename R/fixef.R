@@ -3,28 +3,28 @@
 #' Retrieve the coefficients of the fixed effects component
 #' of a mixed effects model.
 #'
-#' @param object An `"egf"` object returned by [egf()].
+#' @param object An \code{"\link{egf}"} object.
 #' @param ... Unused optional arguments.
 #'
 #' @return
-#' A data frame inheriting from class `"egf_fixef"`,
-#' with one row per coefficient and variables:
-#' \item{`name`}{
-#'   Coefficient name in the full parameter vector `object$best`.
+#' A \link[=data.frame]{data frame} inheriting from \link{class}
+#' \code{"egf_fixef"}, with one row per coefficient and variables:
+#' \item{name}{
+#'   Coefficient name in the full parameter vector \code{object$best}.
 #' }
-#' \item{`par`}{
-#'   Nonlinear model parameter, from
-#'   `get_par_names(object, link = TRUE)`.
+#' \item{par}{
+#'   Nonlinear or dispersion model parameter,
+#'   from \code{\link{get_par_names}(object, link = TRUE)}.
 #' }
-#' \item{`term`}{
-#'   Term from fixed effects component of mixed effects formula
-#'   for nonlinear model parameter `par`.
+#' \item{term}{
+#'   Term from fixed effects component of mixed effects \link{formula}
+#'   for parameter \code{par}.
 #' }
-#' \item{`colname`}{
+#' \item{colname}{
 #'   Corresponding column name in the fixed effects design matrix
-#'   `object$tmb_args$data$X`.
+#'   \code{object$tmb_args$data$X}.
 #' }
-#' \item{`estimate`}{
+#' \item{estimate}{
 #'   Coefficient estimate.
 #' }
 #'

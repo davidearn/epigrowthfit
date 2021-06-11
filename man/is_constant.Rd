@@ -7,25 +7,26 @@
 is_constant(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps))
 }
 \arguments{
-\item{x}{An atomic vector or data frame. For data frames \code{x},
-\code{is_constant(x)} tests whether all listed vectors are
-(individually) constant.}
+\item{x}{An \link{atomic} vector or \link[=data.frame]{data frame}.}
 
-\item{na.rm}{A logical scalar. If \code{TRUE}, then \code{NA} in vectors \code{x} are ignored.}
+\item{na.rm}{A \link{logical} scalar. If \code{TRUE}, then \code{\link{NA}} are ignored.}
 
-\item{tol}{A positive number. Numeric vectors \code{x} are considered constant
-if and only if the distance from \code{min(x)} to \code{max(x)} is less
-than \code{tol}.}
+\item{tol}{A positive number. \link[=double]{Double} vectors \code{x} are considered
+constant if and only if the distance from \code{min(x)} to \code{max(x)}
+is less than \code{tol}.}
 }
 \value{
-\code{TRUE}, \code{FALSE}, or \code{NA}.
+\code{TRUE}, \code{FALSE}, or \code{\link{NA}}.
 }
 \description{
-Tests whether the elements of an atomic vector are equal
-(or nearly equal in the case of numeric vectors).
+Tests whether the elements of an \link{atomic} vector are equal
+(or nearly equal in the case of \link{double} vectors).
 }
 \details{
-\code{TRUE} is returned for zero-length \code{x}.
+\code{TRUE} is returned if \code{length(x) = 0}.
+
+For data frames \code{x}, \code{is_constant(x)} tests
+whether all listed vectors are constant.
 }
 \examples{
 # x <- c(0, 1e-03, NA)

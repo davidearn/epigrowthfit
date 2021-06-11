@@ -36,10 +36,10 @@ Type objective_function<Type>::operator() ()
     // * length=N
     DATA_IVECTOR(t_seg_len);
 
-    // Segment initial days-of-week
-    // * length=N if weekday=true, otherwise length=0
+    // Segment initial days of week
+    // * length=N if day_of_week=true, otherwise length=0
     // * val={0,...,6} where 0=reference
-    DATA_IVECTOR(weekday_on_day0);
+    DATA_IVECTOR(day_of_week_on_day0);
 
     // Number of segments
     int N = t_seg_len.size();
@@ -94,7 +94,7 @@ Type objective_function<Type>::operator() ()
     DATA_IVECTOR(b_seg_index);
 
     // Number of model matrix columns by nonlinear model parameter
-    // * in R: foo_seg_len = as.integer(table(foo_seg_index))
+    // * in R: seg_len = c(table(seg_index))
     // * length=p
     DATA_IVECTOR(beta_seg_len); 
     // * length=p
@@ -112,18 +112,31 @@ Type objective_function<Type>::operator() ()
     int M = block_rows.size();
 
     // Flags
-    DATA_INTEGER(curve_flag);    // prediction model     (enum.h)
-    DATA_INTEGER(excess_flag);   // excess mortality     (1=yes, 0=no)
-    DATA_INTEGER(distr_flag);    // observation model    (enum.h)
-    DATA_INTEGER(weekday_flag);  // day-of-week effects  (1=yes, 0=no)
-    DATA_INTEGER(trace_flag);    // tracing              (0=nothing, 1=degenerate nll terms, 2=1+Y, 3=all nll terms, 4=3+Y)
-    DATA_INTEGER(sparse_X_flag); // sparse format X      (1=yes, 0=no)
-    DATA_INTEGER(predict_flag);  // predict              (1=yes, 0=no)
-    bool excess   = (excess_flag   == 1);
-    bool weekday  = (weekday_flag  == 1);
-    bool trace    = (trace_flag    >  0);
-    bool sparse_X = (sparse_X_flag == 1);
-    bool predict  = (predict_flag  == 1);
+    // * prediction model (enum.h)
+    DATA_INTEGER(curve_flag);
+    // * excess mortality (1=yes, 0=no)
+    DATA_INTEGER(excess_flag);
+    // * observation model (enum.h)
+    DATA_INTEGER(family_flag);
+    // * day of week effects (1=yes, 0=no)
+    DATA_INTEGER(day_of_week_flag);
+    // * trace
+    // 0=nothing
+    // 1=degenerate nll terms
+    // 2=1+Y
+    // 3=all nll terms
+    // 4=3+Y
+    DATA_INTEGER(trace_flag);
+    // * X format (1=sparse, 0=dense)
+    DATA_INTEGER(sparse_X_flag);
+    // * predict (1=yes, 0=no)
+    DATA_INTEGER(predict_flag);
+  
+    bool excess      = (excess_flag      == 1);
+    bool day_of_week = (day_of_week_flag == 1);
+    bool trace       = (trace_flag       >  0);
+    bool sparse_X    = (sparse_X_flag    == 1);
+    bool predict     = (predict_flag     == 1);
     
 
     // Prepare random effects infrastructure ===================================
@@ -228,7 +241,8 @@ Type objective_function<Type>::operator() ()
     if (any_RE)
     {
         // Arrange elements of `b_scaled` in (sum(b_seg_len), p) matrix
-        // Eigen::SparseMatrix<Type> b_scaled_as_matrix(b.size(), p); // must be declared outside of conditional scope for prediction code
+        // Eigen::SparseMatrix<Type> b_scaled_as_matrix(b.size(), p);
+        // must be declared outside of conditional scope for prediction code
         b_scaled_as_matrix.reserve(b_seg_len); // declare nnz
 	for (int i = 0; i < b.size(); i++)
 	{
@@ -243,6 +257,7 @@ Type objective_function<Type>::operator() ()
     }
     vector<Type> Y_as_vector = Y.vec();
     REPORT(Y_as_vector);
+    ADREPORT(Y_as_vector);
 
 
     // Compute predictions =====================================================
@@ -256,7 +271,7 @@ Type objective_function<Type>::operator() ()
 
     // Log cases
     vector<Type> log_cases = eval_log_cases(log_curve, t_seg_len,
-					    weekday, weekday_on_day0,
+					    day_of_week, day_of_week_on_day0,
 					    Y,
 					    j_log_w1, j_log_w2, j_log_w3,
 					    j_log_w4, j_log_w5, j_log_w6);
@@ -265,7 +280,8 @@ Type objective_function<Type>::operator() ()
     // Compute likelihood ======================================================
 
     // Negative log likelihood
-    Type nll = Type(0);
+    // Type nll = Type(0);
+    parallel_accumulator<Type> nll(this);
     Type nll_term;
     Type log_var_minus_mu;
     int width_s;
@@ -291,7 +307,7 @@ Type objective_function<Type>::operator() ()
 	{
 	    if (!is_NA_real_(x(i+k)))
 	    {
-	        switch (distr_flag)
+	        switch (family_flag)
 		{
 		case pois:
 		    nll_term = -dpois_robust(x(i+k), log_cases(i+k), true);
@@ -318,9 +334,9 @@ Type objective_function<Type>::operator() ()
 			    Rprintf("at index %d of segment %d: nll term is non-finite\n", k, s);
 			    print_Y_row = true;
 			}
-			else if (asDouble(nll_term) > 1.0e12)
+			else if (asDouble(nll_term) > 1.0e+09)
 			{
-			    Rprintf("at index %d of segment %d: nll term exceeds 1.0e12\n", k, s);
+			    Rprintf("at index %d of segment %d: nll term exceeds 1.0e+09\n", k, s);
 			    print_Y_row = true;
 			}
 		    }
@@ -335,7 +351,7 @@ Type objective_function<Type>::operator() ()
 	    Rcout << "Y.row(" << s << ") = " << Y.row(s) << "\n";
 	}
 	
-	i += t_seg_len(s) - 1; // increment reference index
+	i += t_seg_len(s) - 1;
     }
 
     if (trace)
@@ -405,7 +421,7 @@ Type objective_function<Type>::operator() ()
 	        for (int j = 0; j < block_cols(m); j++) // loop over block columns
 		{
 		    b_simulate_scaled.segment(i, block_rows(m)) = sd_list(m) * density::MVNORM(cor_list(m)).simulate();
-		    i += block_rows(m); // increment reference index
+		    i += block_rows(m);
 		}
 	    }
 	    Eigen::SparseMatrix<Type> b_simulate_scaled_as_matrix(b.size(), p);
@@ -424,7 +440,7 @@ Type objective_function<Type>::operator() ()
 				   j_logit_p, j_log_a, j_log_b);
 	
         log_cases = eval_log_cases(log_curve, t_seg_len,
-				   weekday, weekday_on_day0,
+				   day_of_week, day_of_week_on_day0,
 				   Y_simulate,
 				   j_log_w1, j_log_w2, j_log_w3,
 				   j_log_w4, j_log_w5, j_log_w6);
@@ -433,7 +449,7 @@ Type objective_function<Type>::operator() ()
 	{
 	    for (int k = 0; k < t_seg_len(s) - 1; k++) // loop over within-segment index
 	    {
-	        switch(distr_flag)
+	        switch(family_flag)
 		{
 		case pois:
 		    x(i+k) = rpois(exp(log_cases(i+k)));
@@ -445,7 +461,7 @@ Type objective_function<Type>::operator() ()
 		    break;
 		}
 	    }
-	    i += t_seg_len(s) - 1; // increment reference index
+	    i += t_seg_len(s) - 1;
 	}
 	REPORT(x);
     }
@@ -465,10 +481,10 @@ Type objective_function<Type>::operator() ()
 	// * length=N'
 	DATA_IVECTOR(t_predict_seg_len); 
 	
-	// Segment initial days-of-week
-	// * length=N' if weekday=true, otherwise length=0
+	// Segment initial days of week
+	// * length=N' if day_of_week=true, otherwise length=0
 	// * val={0,...,6} where 0=reference
-        DATA_IVECTOR(weekday_on_day0_predict);
+        DATA_IVECTOR(day_of_week_on_day0_predict);
 
 	// Number of segments
 	int N_predict = t_predict_seg_len.size();
@@ -520,7 +536,7 @@ Type objective_function<Type>::operator() ()
         // Log cases
 	vector<Type> log_cases_predict =
 	    eval_log_cases(log_curve_predict, t_predict_seg_len,
-			   weekday, weekday_on_day0_predict,
+			   day_of_week, day_of_week_on_day0_predict,
 			   Y_predict,
 			   j_log_w1, j_log_w2, j_log_w3,
 			   j_log_w4, j_log_w5, j_log_w6);
@@ -566,10 +582,10 @@ Type objective_function<Type>::operator() ()
 	if (predict_lrt)
 	{
 	    // Log per capita growth rate
-	    // (approximated by local linear regression if weekday=true)
+	    // (approximated by local linear regression if day_of_week=true)
 	    vector<Type> log_rt =
 	        eval_log_rt(t_predict, log_curve_predict, log_cases_predict, t_predict_seg_len,
-			    curve_flag, excess, weekday, Y_predict,
+			    curve_flag, excess, day_of_week, Y_predict,
 			    j_log_r, j_log_alpha, j_log_K, j_logit_p, j_log_a, j_log_b);
 	    
 	    if (report_se)

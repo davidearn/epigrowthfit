@@ -88,7 +88,7 @@ vector<Type> eval_log_curve(vector<Type> t,
 	        log_curve(i+k) = logspace_add(Y(s, j_log_b) + log(t(i+k)), log_curve(i+k));
 	    }
 	}
-	i += t_seg_len(s); // increment reference index
+	i += t_seg_len(s);
     }
     return log_curve;
 }
@@ -96,9 +96,9 @@ vector<Type> eval_log_curve(vector<Type> t,
 template<class Type>
 vector<Type> eval_log_cases(vector<Type> log_curve,
 			    vector<int> t_seg_len,
-			    bool weekday,
-			    // for weekday=true:
-			    vector<int> weekday_on_day0,
+			    bool day_of_week,
+			    // for day_of_week=true:
+			    vector<int> day_of_week_on_day0,
 			    matrix<Type> Y,
 			    int j_log_w1,
 			    int j_log_w2,
@@ -109,10 +109,10 @@ vector<Type> eval_log_cases(vector<Type> log_curve,
 {
     vector<Type> log_cases = logspace_diff_n(log_curve, t_seg_len);
 
-    if (weekday)
+    if (day_of_week)
     {
-        // NB: Below assumes that observations are daily. We rely
-        //     on R back-end to enforce this when weekday=true.
+        // NB: Below assumes that observations are daily.
+        //     This must be enforce on R side when day_of_week=true.
 
 	vector<Type> log_w(7);
 	for (int s = 0, i = 0; s < t_seg_len.size(); s++) // loop over segments
@@ -121,11 +121,11 @@ vector<Type> eval_log_cases(vector<Type> log_curve,
 		     Y(s, j_log_w1), Y(s, j_log_w2), Y(s, j_log_w3),
 		     Y(s, j_log_w4), Y(s, j_log_w5), Y(s, j_log_w6);
 
-	    for (int k = 0, d = weekday_on_day0(s); k < t_seg_len(s) - 1; k++, d++) // loop over within-segment index
+	    for (int k = 0, d = day_of_week_on_day0(s); k < t_seg_len(s) - 1; k++, d++) // loop over within-segment index
 	    {
 		log_cases(i+k) += log_w(d % 7);
 	    }
-	    i += t_seg_len(s) - 1; // increment reference index
+	    i += t_seg_len(s) - 1;
 	}
     }
     return log_cases;
@@ -138,7 +138,7 @@ vector<Type> eval_log_rt(vector<Type> t,
 			 vector<int> t_seg_len,
 			 int curve_flag,
 			 bool excess,
-			 bool weekday,
+			 bool day_of_week,
 			 matrix<Type> Y,
 			 int j_log_r,
 			 int j_log_alpha,
@@ -147,7 +147,7 @@ vector<Type> eval_log_rt(vector<Type> t,
 			 int j_log_a,
 			 int j_log_b)
 {
-    if (weekday)
+    if (day_of_week)
     {
         // Local linear regression on log cases
         vector<Type> x(7);
@@ -158,8 +158,8 @@ vector<Type> eval_log_rt(vector<Type> t,
 	    x(i) = Type(i - 3);
 	}
 
-	// In each segment, we lose 1 element due to differencing
-	// and 6 elements due to insufficient data at edges
+	// In each segment, 1 element is lost due to differencing
+	// and 6 additional elements are lost due to edge effects
         vector<Type> log_rt(t.size() - 7 * t_seg_len.size());
 	for (int s = 0, i1 = 0, i2 = 0; s < t_seg_len.size(); s++) // loop over segments
 	{
