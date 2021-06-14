@@ -1,6 +1,6 @@
 library("epigrowthfit")
-load("../world/data/world.RData")
-load("../world/data/endpoints.RData")
+load("../data/world.RData")
+load("../data/endpoints.RData")
 options(contrasts = c("contr.sum", "contr.poly"), warn = 1)
 f <- function(x) { # dummy to contr.sum
   m <- mean(x)
@@ -42,10 +42,10 @@ b <- b / exp(log_sd_b)
 theta <- c(log_sd_b, rep_len(0, 6L))
 init <- c(beta, b, theta)
 
-outfile <- file("simple_BFGS.Rout", open = "wt")
+outfile <- file("simple.Rout", open = "wt")
 sink(outfile, type = "output")
 sink(outfile, type = "message")
-object_simple <- egf(
+object <- egf(
   formula = cases_new ~ Date | country_iso_alpha3,
   formula_par = ~(1 | country_iso_alpha3:window),
   data = world,
@@ -56,7 +56,6 @@ object_simple <- egf(
   se = TRUE,
   control = egf_control(
     trace = 2L,
-    profile = FALSE,
     omp_num_threads = 4L,
     optimizer = egf_optimizer(
       f = optim,
@@ -116,10 +115,10 @@ b <- b / exp(log_sd_b)
 theta <- c(log_sd_b, rep_len(0, 6L))
 init <- c(beta, b, theta)
 
-outfile <- file("covariates_BFGS.Rout", open = "wt")
+outfile <- file("covariates.Rout", open = "wt")
 sink(outfile, type = "output")
 sink(outfile, type = "message")
-object_covariates <- update(object_simple,
+object_covariates <- update(object,
   formula_par = list(
     as.formula(call("~", quote(log(r)),      sum_tt)),
     as.formula(call("~", quote(log(tinfl)),  tt[[2L]])),
@@ -131,18 +130,3 @@ object_covariates <- update(object_simple,
 )
 sink(type = "message")
 sink(type = "output")
-
-
-### Model with covariates, this time fit with `profile = TRUE`
-
-outfile <- file("profile_BFGS.Rout", open = "wt")
-sink(outfile, type = "output")
-sink(outfile, type = "message")
-object_profile <- update(object_covariates,
-  control = `[[<-`(object_covariates$control, "profile", TRUE)
-)
-sink(type = "message")
-sink(type = "output")
-
-save(object_simple, object_covariates, object_profile,
-     file = "objects_BFGS.RData")

@@ -13,7 +13,7 @@ egf(
   subset = NULL,
   subset_par = NULL,
   na_action = c("fail", "pass"),
-  na_action_par = c("fail", "pass"),
+  na_action_par = c("fail", "omit"),
   endpoints,
   control = egf_control(),
   do_fit = TRUE,
