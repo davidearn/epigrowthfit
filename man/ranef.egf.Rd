@@ -19,13 +19,13 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
   Coefficient name in the full parameter vector \code{object$best}.
 }
 \item{par}{
-  Nonlinear or model parameter,
+  Nonlinear or dispersion model parameter,
   from \code{\link{get_par_names}(object, link = TRUE)}.
 }
 \item{term, group}{
-  Random effects term from mixed effects formula for parameter \code{par}.
-  \code{term} and \code{group} give the left and right hand sides of the
-  \code{`|`} operator, respectively.
+  Random effects term from mixed effects model formula for parameter
+  \code{par}. \code{term} and \code{group} give the left and right
+  hand sides of the \code{`|`} operator, respectively.
 }
 \item{level}{
   Level of interaction \code{group}.
@@ -40,7 +40,6 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
 \item{sd}{
   Estimated standard deviation.
 }
-
 Attribute \code{cov} lists estimated unstructured random effects
 covariance matrices. There is one matrix per random effects term.
 The number of rows of a matrix is equal to the number of nonlinear

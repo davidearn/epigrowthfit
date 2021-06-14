@@ -25,7 +25,7 @@ returns \code{fs}, \code{string_remove_link(fs)} returns \code{s},
 and \code{string_extract_link(fs)} returns \code{f}.
 
 All functions are vectorized. \code{\link{NA_character_}}
-is returned for invalid vector elements (see Examples).
+is returned for invalid input (see Examples).
 }
 \description{
 Utilities for modifying strings \code{s} and
@@ -33,14 +33,14 @@ Utilities for modifying strings \code{s} and
 where \code{s} is the name used internally for
 a nonlinear or dispersion model parameter and
 \code{f} is the name (either \code{"log"} or \code{"logit"})
-of the link function used internally for that parameter.
+of the corresponding link function.
 }
 \examples{
 # string_get_link("r")
 # string_add_link("r")
 # string_remove_link("log(r)")
 # string_extract_link("log(r)")
-# string_extract_link("log(r)", "invalid", "input")
+# string_extract_link("invalid", "input", "log(r)", "r")
 
 }
 \keyword{internal}

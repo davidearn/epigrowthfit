@@ -7,10 +7,10 @@
 match_link(f, inverse = FALSE)
 }
 \arguments{
-\item{f}{A character string naming a link function,
+\item{f}{A \link{character} string naming a link function,
 either \code{"log"} or \code{"logit"}.}
 
-\item{inverse}{A logical scalar. If \code{TRUE}, then the inverse is returned.}
+\item{inverse}{A \link{logical} flag. If \code{TRUE}, then the inverse is returned.}
 }
 \value{
 A \link{function}.

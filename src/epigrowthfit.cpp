@@ -292,9 +292,9 @@ Type objective_function<Type>::operator() ()
     {
         if (trace_flag % 2 == 0)
 	{
-	    Rcout << "Y = \n" << Y << "\n";
+	    std::cout << "Y = \n" << Y << "\n";
 	}
-	Rprintf("nll initialized to 0\ncommencing loop over observations\n");
+	printf("nll initialized to 0\ncommencing loop over observations\n");
         width_s = nchar(N - 1);
 	width_k = nchar(t_seg_len.maxCoeff() - 1);
     }
@@ -324,19 +324,19 @@ Type objective_function<Type>::operator() ()
 		{
 		    if (trace_flag >= 3)
 		    {
-		        Rprintf("at index %*d of segment %*d: nll term is %5.6e\n",
-			        width_k, k, width_s, s, asDouble(nll_term));
+		        printf("at index %*d of segment %*d: nll term is %5.6e\n",
+			       width_k, k, width_s, s, asDouble(nll_term));
 		    }
 		    else
 		    {
 		        if (!is_finite(nll_term))
 			{
-			    Rprintf("at index %d of segment %d: nll term is non-finite\n", k, s);
+			    printf("at index %d of segment %d: nll term is non-finite\n", k, s);
 			    print_Y_row = true;
 			}
 			else if (asDouble(nll_term) > 1.0e+09)
 			{
-			    Rprintf("at index %d of segment %d: nll term exceeds 1.0e+09\n", k, s);
+			    printf("at index %d of segment %d: nll term exceeds 1.0e+09\n", k, s);
 			    print_Y_row = true;
 			}
 		    }
@@ -348,7 +348,7 @@ Type objective_function<Type>::operator() ()
 
 	if (print_Y_row)
 	{
-	    Rcout << "Y.row(" << s << ") = " << Y.row(s) << "\n";
+	    std::cout << "Y.row(" << s << ") = " << Y.row(s) << "\n";
 	}
 	
 	i += t_seg_len(s) - 1;
@@ -356,7 +356,7 @@ Type objective_function<Type>::operator() ()
 
     if (trace)
     {
-        Rprintf("loop over observations complete\nnll is %5.6e\n", asDouble(nll));
+        printf("loop over observations complete\nnll is %5.6e\n", asDouble(nll));
     }
 
     if (any_RE) {
@@ -365,7 +365,7 @@ Type objective_function<Type>::operator() ()
 	
 	if (trace)
 	{
-	    Rprintf("commencing loop over random effects\n");
+	    printf("commencing loop over random effects\n");
 	    width_m = nchar(M - 1);
 	    width_j = nchar(block_cols.maxCoeff() - 1);
 	}
@@ -380,19 +380,19 @@ Type objective_function<Type>::operator() ()
 		{
 		    if (trace_flag >= 3)
 		    {
-		        Rprintf("at column %*d of block %*d: nll term is %5.6e\n",
+		        printf("at column %*d of block %*d: nll term is %5.6e\n",
 			       width_j, j, width_m, m, asDouble(nll_term));
 		    }
 		    else
 		    {
 			if (!is_finite(nll_term))
 			{
-			    Rprintf("at column %*d of block %*d: nll term is non-finite\n",
+			    printf("at column %*d of block %*d: nll term is non-finite\n",
 				   width_j, j, width_m, m);
 			}
 			else if (asDouble(nll_term) > 1.0e12)
 			{
-			    Rprintf("at column %*d of block %*d: nll term exceeds 10^12\n",
+			    printf("at column %*d of block %*d: nll term exceeds 10^12\n",
 				   width_j, j, width_m, m);
 			}
 		    }
@@ -404,7 +404,7 @@ Type objective_function<Type>::operator() ()
 
 	if (trace)
 	{
-	    Rprintf("loop over random effects complete\nnll is %5.6e\n", asDouble(nll));
+	    printf("loop over random effects complete\nnll is %5.6e\n", asDouble(nll));
 	}
     }
 

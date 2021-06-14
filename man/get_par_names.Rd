@@ -25,15 +25,16 @@ specifying a model. Otherwise, \code{\link{NULL}}.}
 
 \item{...}{Unused optional arguments.}
 
-\item{link}{A \link{logical} scalar. If \code{TRUE}, then \code{"name"}
+\item{link}{A \link{logical} flag. If \code{TRUE}, then \code{"name"}
 is replaced with \code{"log(name)"} or \code{"logit(name)"}
-depending on the link function used internally for the parameter.}
+depending on the link function used internally for the
+parameter.}
 }
 \value{
 A \link{character} vector giving a subset of \code{"r"}, \code{"alpha"},
 \code{"c0"}, \code{"tinfl"}, \code{"K"}, \code{"p"}, \code{"a"},
-\code{"b"}, \code{"nbdisp"}, and \code{\link{paste0}("w", 1:6)},
-possibly modified according to \code{link}.
+\code{"b"}, \code{"nbdisp"}, and \code{\link{paste0}("w", 1:6)}
+(modified if \code{link = TRUE}).
 
 If \code{object = \link{NULL}}, then the complete set is returned.
 }

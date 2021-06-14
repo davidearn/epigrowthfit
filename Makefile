@@ -41,9 +41,11 @@ $(MANUAL): man/*.Rd
 check:
 	$(R) --quiet -e 'devtools::check(".")'
 
+test:
+	$(R) --quiet -e 'devtools::test(".")'
+
 clean:
 	rm -f ../$(TARBALL) ../$(PACKAGE)-manual.pdf
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
 	$(MAKE) -C src clean
-	$(MAKE) -C scrap clean

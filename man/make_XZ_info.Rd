@@ -7,27 +7,27 @@
 make_XZ_info(xl, ml)
 }
 \arguments{
-\item{xl}{A named \link{list} of \link{formula}e of the form \code{~tt},
+\item{xl}{A named \link{list} of \link{formula}e of the form \code{~tt}
 or a named list of \link{call}s to binary operator \code{`|`}
 of the form \code{(tt | g)}. \code{\link{names}(xl)} must specify
-nonlinear or dispersion model parameters.}
+nonlinear and dispersion model parameters.}
 
 \item{ml}{A \link{list} of \code{X} or \code{Z} matrices obtained by
 applying \code{\link{make_X}} or \code{\link{make_Z}} to the
 elements of \code{xl}.}
 }
 \value{
-A \link[=data.frame]{data frame} with rows corresponding to
-columns of the combined design matrix \code{do.call(cbind, ml)},
+A \link[=data.frame]{data frame} with rows corresponding to columns
+of the combined design matrix \code{\link{do.call}(\link{cbind}, ml)},
 and variables:
 \item{par}{
   Nonlinear or dispersion model parameter.
 }
 \item{term}{
-  Deparsed term from right hand side of \code{`~`} or left hand side
-  of \code{`|`}. Otherwise, \code{"(Intercept)"}.}
+  \link[=deparse]{Deparse}d term from right hand side of \code{`~`}
+  or left hand side of \code{`|`}. Otherwise, \code{"(Intercept)"}.}
 \item{group}{
-  Deparsed term from right hand side of \code{`|`}.
+  \link[=deparse]{Deparse}d term from right hand side of \code{`|`}.
   \code{\link{NA}} if not applicable.
 }
 \item{level}{
@@ -39,9 +39,8 @@ and variables:
 }
 }
 \description{
-A utility to link each column of combined design matrices
-(and similarly each element of combined parameter vectors)
-to the corresponding nonlinear and dispersion model parameter,
-mixed effects formula term, grouping variable, and group level.
+A utility linking each column of a combined design matrix
+to the corresponding nonlinear or dispersion model parameter,
+mixed effects formula term, grouping variable, and group.
 }
 \keyword{internal}

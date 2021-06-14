@@ -8,17 +8,18 @@
 #'   or \code{"\link[=make_tmb_data]{tmb_data}"} object
 #'   specifying a model. Otherwise, \code{\link{NULL}}.
 #' @param link
-#'   A \link{logical} scalar. If \code{TRUE}, then \code{"name"}
+#'   A \link{logical} flag. If \code{TRUE}, then \code{"name"}
 #'   is replaced with \code{"log(name)"} or \code{"logit(name)"}
-#'   depending on the link function used internally for the parameter.
+#'   depending on the link function used internally for the
+#'   parameter.
 #' @param ...
 #'   Unused optional arguments.
 #'
 #' @return
 #' A \link{character} vector giving a subset of \code{"r"}, \code{"alpha"},
 #' \code{"c0"}, \code{"tinfl"}, \code{"K"}, \code{"p"}, \code{"a"},
-#' \code{"b"}, \code{"nbdisp"}, and \code{\link{paste0}("w", 1:6)},
-#' possibly modified according to \code{link}.
+#' \code{"b"}, \code{"nbdisp"}, and \code{\link{paste0}("w", 1:6)}
+#' (modified if \code{link = TRUE}).
 #'
 #' If \code{object = \link{NULL}}, then the complete set is returned.
 #'
@@ -102,7 +103,7 @@ get_par_names.tmb_data <- function(object, link = TRUE, ...) {
 #' where \code{s} is the name used internally for
 #' a nonlinear or dispersion model parameter and
 #' \code{f} is the name (either \code{"log"} or \code{"logit"})
-#' of the link function used internally for that parameter.
+#' of the corresponding link function.
 #'
 #' @param s,fs \link[=character]{Character} vectors.
 #'
@@ -113,14 +114,14 @@ get_par_names.tmb_data <- function(object, link = TRUE, ...) {
 #' and \code{string_extract_link(fs)} returns \code{f}.
 #'
 #' All functions are vectorized. \code{\link{NA_character_}}
-#' is returned for invalid vector elements (see Examples).
+#' is returned for invalid input (see Examples).
 #'
 #' @examples
 #' # string_get_link("r")
 #' # string_add_link("r")
 #' # string_remove_link("log(r)")
 #' # string_extract_link("log(r)")
-#' # string_extract_link("log(r)", "invalid", "input")
+#' # string_extract_link("invalid", "input", "log(r)", "r")
 #'
 #' @name string_get_link
 #' @keywords internal
@@ -163,10 +164,10 @@ string_extract_link <- function(fs) {
 #' Retrieve the link function named by a string, or its inverse.
 #'
 #' @param f
-#'   A character string naming a link function,
+#'   A \link{character} string naming a link function,
 #'   either \code{"log"} or \code{"logit"}.
 #' @param inverse
-#'   A logical scalar. If \code{TRUE}, then the inverse is returned.
+#'   A \link{logical} flag. If \code{TRUE}, then the inverse is returned.
 #'
 #' @return
 #' A \link{function}.
@@ -199,7 +200,7 @@ match_link <- function(f, inverse = FALSE) {
 #' Construct model frames
 #'
 #' Constructs time series and mixed effects model frames to be used
-#' by \code{\link{egf}}, while completing a battery of checks on the
+#' by \code{\link{egf}}, while performing a battery of checks on the
 #' supplied formulae and data.
 #'
 #' @inheritParams egf
@@ -210,12 +211,13 @@ match_link <- function(f, inverse = FALSE) {
 #'
 #' @keywords internal
 #' @importFrom stats terms model.frame na.pass as.formula complete.cases
-make_frames <- function(formula, formula_par,
+make_frames <- function(model,
+                        formula, formula_par,
                         data, data_par,
                         subset, subset_par,
                         na_action, na_action_par,
                         endpoints, origin,
-                        model, init, append) {
+                        init, append) {
   stop_if_not(
     vapply(list(data, data_par, endpoints), inherits, FALSE, c("data.frame", "list", "environment")),
     m = "`data`, `data_par`, and `endpoints` must be data frames, lists, or environments."
@@ -286,7 +288,6 @@ make_frames <- function(formula, formula_par,
   } else {
     stop_if_not(
       is.list(formula_par),
-      length(formula_par) > 0L,
       vapply(formula_par, inherits, FALSE, "formula"),
       lengths(formula_par) == 3L,
       (nfp <- vapply(formula_par, function(x) deparse(x[[2L]]), "")) %in% pn,
@@ -323,26 +324,10 @@ make_frames <- function(formula, formula_par,
   ## to enable use of `model.frame()` machinery
   formula_par_no_bars <- lapply(formula_par, gsub_bar_plus)
   frame_par <- lapply(formula_par_no_bars, model.frame,
-                      data = data_par,
-                      na.action = na.pass,
-                      drop.unused.levels = TRUE
+    data = data_par,
+    na.action = na.pass,
+    drop.unused.levels = TRUE
   )
-
-  ## Test that all model frames have the same number of rows.
-  ## For formulae without variables (e.g., `~1`), `model.frame()`
-  ## returns data frames of zero length with zero rows.
-  ## These can be excluded from the test and modified separately.
-  nr <- vapply(frame_par, nrow, 0L)
-  N <- max(nr)
-  len <- lengths(frame_par)
-  stop_if_not(
-    nr[len > 0L] == N,
-    m = paste0(
-      "Mixed effects model frames constructed from `formula_par`\n",
-      "and `data_par` must have the same number of rows."
-    )
-  )
-  frame_par[len == 0L] <- list(data.frame(row.names = seq_len(N)))
 
 
   ### Table of fitting windows
@@ -353,19 +338,25 @@ make_frames <- function(formula, formula_par,
     l$ts <- formula[[3L]][[3L]]
   }
   endpoints <- eval(as.call(l), envir = endpoints, enclos = environment(formula))
+  N <- nrow(endpoints)
   if (!ib) {
     ## Assume that there is only one time series
-    endpoints$ts <- rep_len(factor(1), nrow(endpoints))
+    endpoints$ts <- rep_len(factor(1), N)
   }
 
-  ## Check for rowwise correspondence with mixed effects model frames
+  ## Check for rowwise correspondence with mixed effects model frames.
+  ## For formulae without variables (e.g., `~1`),
+  ## `model.frame()` returns data frames of zero length with zero rows.
+  ## These should not prevent the check from passing.
+  len <- lengths(frame_par)
+  frame_par[len == 0L] <- list(data.frame(row.names = seq_len(N)))
   stop_if_not(
-    nrow(endpoints) == N,
-    m = "`endpoints` and mixed effects model frames must have the same number of rows."
+    vapply(frame_par, nrow, 0L) == N,
+    m = "`endpoints` and mixed effects model frames must have a common number of rows."
   )
 
   ## Preserve deparsed `data.frame()` arguments for error messages
-  ne <- lapply(l[-1L], deparse1)
+  ne <- lapply(l[-1L], deparse)
 
 
   ### Appended stuff
@@ -687,8 +678,8 @@ make_frames <- function(formula, formula_par,
 #'   A \link[=model.frame]{model frame} listing the variables used
 #'   in \code{x}.
 #' @param sparse
-#'   A \link{logical} scalar. If \code{TRUE}, then the design matrix
-#'   is returned in sparse format.
+#'   A \link{logical} flag. If \code{TRUE}, then the design matrix
+#'   is returned in \link[Matrix:sparseMatrix]{sparse} format.
 #'
 #' @details
 #' \code{make_X(x, frame, sparse)} constructs an \code{X} matrix
@@ -698,7 +689,7 @@ make_frames <- function(formula, formula_par,
 #' columns containing only zeros.
 #'
 #' \code{make_Z(x, frame)} constructs a \code{Z} matrix
-#' following the steps outlined in \code{\link{vignette}("lmer", "lme4")}.
+#' following steps outlined in \code{\link{vignette}("lmer", "lme4")}.
 #' It uses \code{make_X} to construct the so-called raw model matrix
 #' from \code{x[[2L]]}. The result is always sparse.
 #'
@@ -706,14 +697,13 @@ make_frames <- function(formula, formula_par,
 #' A matrix with \link{attributes}:
 #' \item{contrasts}{
 #'   See \code{\link{model.matrix}}.
-#'   \code{contrasts} is absent if the expression \code{tt}
-#'   in \code{x = ~tt} or \code{x = (tt | g)} does not involve
-#'   \link{factor}s.
+#'   Absent if the expression \code{tt} in \code{x = ~tt}
+#'   or \code{x = (tt | g)} does not involve \link{factor}s.
 #' }
 #' \item{assign}{
 #'   See \code{\link{model.matrix}}.
-#'   \code{assign} indexes \code{\link{labels}(\link{terms}(~tt))}
-#'   for the expression `tt` in \code{x = ~tt} or \code{x = (tt | g)}.
+#'   Indexes \code{\link{labels}(\link{terms}(~tt))}
+#'   for the expression \code{tt} in \code{x = ~tt} or \code{x = (tt | g)}.
 #' }
 #' \item{group}{
 #'   (\code{make_Z} only.) For \code{x = (tt | g)}, a \link{factor} of
@@ -731,13 +721,10 @@ NULL
 make_X <- function(x, frame, sparse) {
   f <- if (sparse) sparse.model.matrix else model.matrix
   X <- f(x, data = frame)
-  if (ncol(X) == 0L) {
-    return(X)
-  }
   j <- colSums(abs(X)) > 0
   structure(X[, j, drop = FALSE],
-            contrasts = attr(X, "contrasts"),
-            assign = attr(X, "assign")[j]
+    contrasts = attr(X, "contrasts"),
+    assign = attr(X, "assign")[j]
   )
 }
 
@@ -758,45 +745,44 @@ make_Z <- function(x, frame) {
   j <- colSums(abs(G)) > 0
   G <- G[, j, drop = FALSE]
   colnames(Z) <- sprintf("(%s | %s)",
-                         rep(colnames(X), times = ncol(G)),
-                         rep(colnames(G), each = ncol(X))
+    rep(colnames(X), times = ncol(G)),
+    rep(colnames(G), each = ncol(X))
   )
   structure(Z,
-            contrasts = attr(X, "contrasts"),
-            assign = rep(attr(X, "assign"), times = ncol(G)),
-            group = gl(ncol(G), ncol(X), labels = levels(g))
+    contrasts = attr(X, "contrasts"),
+    assign = rep(attr(X, "assign"), times = ncol(G)),
+    group = gl(ncol(G), ncol(X), labels = levels(g))
   )
 }
 
 #' Describe design matrix columns
 #'
-#' A utility to link each column of combined design matrices
-#' (and similarly each element of combined parameter vectors)
-#' to the corresponding nonlinear and dispersion model parameter,
-#' mixed effects formula term, grouping variable, and group level.
+#' A utility linking each column of a combined design matrix
+#' to the corresponding nonlinear or dispersion model parameter,
+#' mixed effects formula term, grouping variable, and group.
 #'
 #' @param xl
-#'   A named \link{list} of \link{formula}e of the form \code{~tt},
+#'   A named \link{list} of \link{formula}e of the form \code{~tt}
 #'   or a named list of \link{call}s to binary operator \code{`|`}
 #'   of the form \code{(tt | g)}. \code{\link{names}(xl)} must specify
-#'   nonlinear or dispersion model parameters.
+#'   nonlinear and dispersion model parameters.
 #' @param ml
 #'   A \link{list} of \code{X} or \code{Z} matrices obtained by
 #'   applying \code{\link{make_X}} or \code{\link{make_Z}} to the
 #'   elements of \code{xl}.
 #'
 #' @return
-#' A \link[=data.frame]{data frame} with rows corresponding to
-#' columns of the combined design matrix \code{do.call(cbind, ml)},
+#' A \link[=data.frame]{data frame} with rows corresponding to columns
+#' of the combined design matrix \code{\link{do.call}(\link{cbind}, ml)},
 #' and variables:
 #' \item{par}{
 #'   Nonlinear or dispersion model parameter.
 #' }
 #' \item{term}{
-#'   Deparsed term from right hand side of \code{`~`} or left hand side
-#'   of \code{`|`}. Otherwise, \code{"(Intercept)"}.}
+#'   \link[=deparse]{Deparse}d term from right hand side of \code{`~`}
+#'   or left hand side of \code{`|`}. Otherwise, \code{"(Intercept)"}.}
 #' \item{group}{
-#'   Deparsed term from right hand side of \code{`|`}.
+#'   \link[=deparse]{Deparse}d term from right hand side of \code{`|`}.
 #'   \code{\link{NA}} if not applicable.
 #' }
 #' \item{level}{
@@ -897,17 +883,16 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init) {
 #'
 #' Gathers in a \link{list} data objects to be passed to
 #' the package's C++ template via \pkg{TMB}'s \code{DATA_*} macros.
-#' See also \code{\link[TMB]{MakeADFun}}.
 #'
 #' @inheritParams make_tmb_args
 #'
 #' @return
 #' [Below,
-#' \code{n = sum(!is.na(frame$window))}
+#' \code{n = \link{sum}(!\link{is.na}(frame$window))}
 #' is the total number of time points belonging a fitting window,
-#' \code{N = nlevels(frame$window)}
+#' \code{N = \link{nlevels}(frame$window)}
 #' is the number of fitting windows, and
-#' \code{p = length(frame_par)}
+#' \code{p = \link{length}(frame_par)}
 #' is the number of nonlinear and dispersion model parameters.]
 #'
 #' A \link{list} inheriting from \link{class} \code{"tmb_data"},
@@ -940,14 +925,13 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init) {
 #'   with \code{N} rows and \code{p} columns.
 #' }
 #' \item{X}{
-#'   The fixed effects \link[=model.matrix]{design} matrix
-#'   in \link[Matrix:sparseMatrix]{sparse} or dense format,
-#'   depending on \code{control$sparse_X}, with \code{N} rows.
+#'   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
+#'   or dense format, depending on \code{control$sparse_X}, with \code{N} rows.
 #' }
 #' \item{Z}{
-#'   The random effects design matrix in
-#'   \link[Matrix:sparseMatrix]{sparse} format, with \code{N} rows.
-#'   If there are no random effects, then \code{Z} is an empty sparse matrix.
+#'   The random effects design matrix in \link[Matrix:sparseMatrix]{sparse}
+#'   format, with \code{N} rows. If there are no random effects, then \code{Z}
+#'   is an empty sparse matrix.
 #' }
 #' \item{Xs, Xd}{
 #'   If \code{control$sparse_X = TRUE}, then \code{Xs = X} and \code{Xd}
@@ -955,17 +939,19 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init) {
 #'   an empty sparse matrix.
 #' }
 #' \item{X_info, Z_info}{
-#'   \link[=data.frame]{Data frame}s with \code{\link{ncol}(X)} and
-#'   \code{\link{ncol}(Z)} rows, respectively. Row \code{j} describes
-#'   the coefficient associated with column \code{j} of \code{X} or
-#'   \code{Z}. \code{Z_info} has additional \link{factor}s \code{cor}
-#'   and \code{vec} \link{split}ting coefficients by relation to a
-#'   common covariance matrix and random vector, respectively.
+#'   \link[=data.frame]{Data frame}s with \code{\link{ncol}(X)}
+#'   and \code{\link{ncol}(Z)} rows, respectively, constructed
+#'   by \code{\link{make_XZ_info}}. Row \code{j} describes the
+#'   coefficient associated with column \code{j} of \code{X}
+#'   or \code{Z}. \code{Z_info} has additional \link{factor}s
+#'   \code{cor} and \code{vec} \link{split}ting coefficients
+#'   by relation to a common covariance matrix and random vector,
+#'   respectively.
 #' }
 #' \item{beta_seg_len, b_seg_len}{
 #'   \link[=integer]{Integer} vectors of length \code{p} counting the
-#'   columns of \code{X} and \code{Z}, respectively, that relate to a
-#'   common nonlinear or dispersion model parameter.
+#'   columns of \code{X} and \code{Z}, respectively, that relate to
+#'   a common nonlinear or dispersion model parameter.
 #' }
 #' \item{beta_seg_index, b_seg_index}{
 #'   \link[=integer]{Integer} vectors of length \code{\link{ncol}(X)}
@@ -981,7 +967,7 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init) {
 #'   \link[=integer]{Integer} flags referencing so-named elements
 #'   of \code{model} and \code{control}.
 #' }
-#' \item{`predict_flag`}{
+#' \item{predict_flag}{
 #'   An \link{integer} flag set equal to 0 so that prediction code is not run.
 #' }
 #' Additional \link{integer} elements of the form \code{j_link_parameter}
@@ -990,6 +976,7 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init) {
 #' The value \code{-1} is used for parameters not belonging to the model
 #' being fit.
 #'
+#' @seealso \code{\link[TMB]{MakeADFun}}
 #' @keywords internal
 #' @importFrom stats formula terms model.matrix model.offset
 #' @importFrom methods as
@@ -1147,8 +1134,8 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
 #' @inheritParams make_tmb_args
 #'
 #' @details
-#' When \code{init = NULL}, naive estimates of nonlinear model parameters
-#' are obtained for each fitting window as follows:
+#' When \code{init = NULL}, naive estimates of nonlinear and dispersion
+#' model parameters are obtained for each fitting window as follows:
 #' \describe{
 #' \item{\code{r}}{
 #'   The slope of a linear model fit to \code{\link{log1p}(\link{cumsum}(x)))}.
@@ -1162,17 +1149,17 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
 #'   \code{c0}, \code{K}, and \code{p}, and solving for \code{alpha}.
 #' }
 #' \item{\code{c0}}{
-#'   \code{exp(log_c0)}, where \code{log_c0} is the intercept
+#'   \code{\link{exp}(log_c0)}, where \code{log_c0} is the intercept
 #'   of a linear model fit to \code{\link{log1p}(\link{cumsum}(x))}.
 #' }
 #' \item{\code{tinfl}}{
-#'   \code{max(t)}, assuming that the fitting window ends near
-#'   the time of a peak in interval incidence.
+#'   \code{\link{max}(t)}, assuming that the fitting window ends
+#'   near the time of a peak in interval incidence.
 #' }
 #' \item{\code{K}}{
-#'   \code{2*sum(x)}, assuming that the fitting window ends near
-#'   the time of a peak in interval incidence _and_ that interval
-#'   incidence is roughly symmetric about the peak.
+#'   \code{2*\link{sum}(x)}, assuming that the fitting window
+#'   ends near the time of a peak in interval incidence _and_
+#'   that interval incidence is roughly symmetric about the peak.
 #' }
 #' \item{\code{p}}{0.8}
 #' \item{\code{a, b, nbdisp, w[123456]}}{1}
@@ -1191,30 +1178,29 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
 #' A \link{list} with elements:
 #' \item{beta}{
 #'   A \link[=double]{numeric} vector of length
-#'   \code{sum(tmb_data$beta_seg_len)} listing
-#'   initial values for the fixed effects coefficients.
+#'   \code{\link{sum}(tmb_data$beta_seg_len)} listing
+#'   initial values for fixed effects coefficients.
 #' }
 #' \item{b}{
 #'   If there are random effects, then a \link[=double]{numeric}
-#'   vector of length \code{sum(tmb_data$b_seg_len)} listing
-#'   initial values for the (unit variance scale) random effects
-#'   coefficients. If there are no random effects,
-#'   then \code{b = \link{NA_real_}}.
+#'   vector of length \code{\link{sum}(tmb_data$b_seg_len)} listing
+#'   initial values for (unit variance scale) random effects coefficients.
+#'   If there are no random effects, then \code{b = \link{NA_real_}}.
 #' }
 #' \item{theta}{
 #'   If there are random effects, then a numeric vector of length
-#'   \code{sum(f(tmb_data$block_rows))}, where \code{f(n) = n*(n+1)/2},
+#'   \code{\link{sum}(f(tmb_data$block_rows))}, where \code{f(n) = n*(n+1)/2},
 #'   specifying initial covariance matrices for all random vectors.
-#'   Let \code{u} be a segment of \code{theta} of length \code{f(n)},
-#'   corresponding to a random vector \code{x} of length \code{n}.
-#'   Then \code{u[1:n]} lists log standard deviations of the elements
-#'   of \code{x}, and \code{u[-(1:n)]} lists (in row-major order)
+#'   Let \code{x} be a segment of \code{theta} of length \code{f(n)},
+#'   corresponding to a random vector \code{u} of length \code{n}.
+#'   Then \code{x[1:n]} lists log standard deviations of the elements
+#'   of \code{u}, and \code{x[-(1:n)]} lists (in row-major order)
 #'   the subdiagonal elements of the unit lower triangular matrix
-#'   \code{L} in the Cholesky factorization
-#'   \code{S = A \link[=matmult]{\%*\%} \link{t}(A)},
-#'   \code{A = D^-0.5 \link[=matmult]{\%*\%} L},
-#'   \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}
-#'   of the correlation matrix \code{S} of \code{x}.
+#'   \code{L} in the Cholesky factorization of the correlation matrix
+#'   \code{S} of \code{u}:\cr
+#'   \code{S = A \link[=matmult]{\%*\%} \link{t}(A)}\cr
+#'   \code{A = D^-0.5 \link[=matmult]{\%*\%} L}\cr
+#'   \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}\cr
 #'   If there are no random effects, then \code{theta = \link{NA_real_}}.
 #' }
 #'
@@ -1353,18 +1339,17 @@ has_random.egf <- function(object) {
 #'
 #' Defines a wrapper function on top of \code{\link[TMB]{MakeADFun}}-generated
 #' functions \code{fn} and \code{gr}, so that function and gradient evaluations
-#' can retry inner optimization using fallback methods in event of failure using
-#' the default method (usually \code{\link[TMB]{newton}}).
+#' can retry inner optimization using fallback methods in the event of failure
+#' using the default method (usually \code{\link[TMB]{newton}}).
 #'
 #' @param f
 #'   A \link{function} to be patched, either \code{fn} or \code{gr}
 #'   from a \code{\link[TMB]{MakeADFun}}-generated \link{list} object.
 #' @param order
-#'   An integer, either 0 or 1,
-#'   identifying \code{f} as \code{fn} (0) or \code{gr} (1).
+#'   An integer identifying \code{f}, either 0 (\code{fn}) or 1 (\code{gr}).
 #' @param inner_optimizer
-#'   An \code{"\link{egf_inner_optimizer}"} object listing
-#'   inner optimization methods to be tried in turn.
+#'   A \link{list} of \code{"\link{egf_inner_optimizer}"} objects
+#'   specifying inner optimization methods to be tried in turn.
 #'
 #' @return
 #' A patched version of \link{function} \code{f}.
@@ -1376,6 +1361,11 @@ patch_fn_gr <- function(f, order, inner_optimizer) {
     length(order) == 1L,
     order %in% 0:1,
     m = "`order` must be 0 or 1."
+  )
+  stop_if_not(
+    is.list(inner_optimizer),
+    vapply(inner_optimizer, inherits, FALSE, "egf_inner_optimizer"),
+    m = "`inner_optimizer` must be a list of \"egf_inner_optimizer\" objects."
   )
   f_name <- c("fn", "gr")[1L + order]
   e <- environment(f)

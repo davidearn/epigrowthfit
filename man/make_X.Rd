@@ -19,21 +19,20 @@ is an unevaluated factor, possibly an interaction.}
 \item{frame}{A \link[=model.frame]{model frame} listing the variables used
 in \code{x}.}
 
-\item{sparse}{A \link{logical} scalar. If \code{TRUE}, then the design matrix
-is returned in sparse format.}
+\item{sparse}{A \link{logical} flag. If \code{TRUE}, then the design matrix
+is returned in \link[Matrix:sparseMatrix]{sparse} format.}
 }
 \value{
 A matrix with \link{attributes}:
 \item{contrasts}{
   See \code{\link{model.matrix}}.
-  \code{contrasts} is absent if the expression \code{tt}
-  in \code{x = ~tt} or \code{x = (tt | g)} does not involve
-  \link{factor}s.
+  Absent if the expression \code{tt} in \code{x = ~tt}
+  or \code{x = (tt | g)} does not involve \link{factor}s.
 }
 \item{assign}{
   See \code{\link{model.matrix}}.
-  \code{assign} indexes \code{\link{labels}(\link{terms}(~tt))}
-  for the expression `tt` in \code{x = ~tt} or \code{x = (tt | g)}.
+  Indexes \code{\link{labels}(\link{terms}(~tt))}
+  for the expression \code{tt} in \code{x = ~tt} or \code{x = (tt | g)}.
 }
 \item{group}{
   (\code{make_Z} only.) For \code{x = (tt | g)}, a \link{factor} of
@@ -54,7 +53,7 @@ by evaluating \code{\link{model.matrix}(x, frame)} or
 columns containing only zeros.
 
 \code{make_Z(x, frame)} constructs a \code{Z} matrix
-following the steps outlined in \code{\link{vignette}("lmer", "lme4")}.
+following steps outlined in \code{\link{vignette}("lmer", "lme4")}.
 It uses \code{make_X} to construct the so-called raw model matrix
 from \code{x[[2L]]}. The result is always sparse.
 }

@@ -8,7 +8,7 @@
 #'   A non-negative integer specifying a call to be associated with
 #'   the error or warning message. \code{n} indicates a number of
 #'   generations backwards relative to the function call. The default
-#'   (\code{n = 1L}) corresponds to the call from the parent frame.
+#'   (\code{n = 1}) corresponds to the call from the parent frame.
 #' @param x
 #'   An object to be checked.
 #'

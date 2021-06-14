@@ -10,11 +10,10 @@ patch_fn_gr(f, order, inner_optimizer)
 \item{f}{A \link{function} to be patched, either \code{fn} or \code{gr}
 from a \code{\link[TMB]{MakeADFun}}-generated \link{list} object.}
 
-\item{order}{An integer, either 0 or 1,
-identifying \code{f} as \code{fn} (0) or \code{gr} (1).}
+\item{order}{An integer identifying \code{f}, either 0 (\code{fn}) or 1 (\code{gr}).}
 
-\item{inner_optimizer}{An \code{"\link{egf_inner_optimizer}"} object listing
-inner optimization methods to be tried in turn.}
+\item{inner_optimizer}{A \link{list} of \code{"\link{egf_inner_optimizer}"} objects
+specifying inner optimization methods to be tried in turn.}
 }
 \value{
 A patched version of \link{function} \code{f}.
@@ -22,7 +21,7 @@ A patched version of \link{function} \code{f}.
 \description{
 Defines a wrapper function on top of \code{\link[TMB]{MakeADFun}}-generated
 functions \code{fn} and \code{gr}, so that function and gradient evaluations
-can retry inner optimization using fallback methods in event of failure using
-the default method (usually \code{\link[TMB]{newton}}).
+can retry inner optimization using fallback methods in the event of failure
+using the default method (usually \code{\link[TMB]{newton}}).
 }
 \keyword{internal}

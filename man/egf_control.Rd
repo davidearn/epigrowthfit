@@ -19,19 +19,20 @@ optimization method.}
 
 \item{inner_optimizer}{An \code{"\link{egf_inner_optimizer}"} object, specifying an "inner"
 optimization method, or a \link{list} of such objects, in which case
-the listed methods are tried in order until one succeeds, and a warning
-is issued if none succeed.}
+the listed methods are tried in order until one succeeds. (If none
+succeed, then a warning is issued.)}
 
-\item{trace}{An integer determining the amount of tracing performed (see Details).
-\link[=logical]{Logical} values are coerced to integer.}
+\item{trace}{An integer flag determining the amount of tracing performed
+(see Details). \link[=logical]{Logical} values are coerced to integer.}
 
-\item{profile}{A \link{logical} scalar. If \code{TRUE}, then fixed effect parameters
+\item{profile}{A \link{logical} flag. If \code{TRUE}, then fixed effect parameters
 are profiled out of the likelihood, which may stabilize optimization
-for models with many fixed effects. This feature is very experimental,
-as it relies on assumptions about the optimization problem that most
-likely do not hold for the models fit by \code{\link{egf}}.}
+for models with many fixed effects. This feature is experimental,
+and in fact may \emph{de}stabilize optimization, as it relies on
+assumptions about the optimization problem that are not necessarily
+satisfied by the models fit by \code{\link{egf}}.}
 
-\item{sparse_X}{A \link{logical} scalar. If \code{TRUE}, then the fixed effects
+\item{sparse_X}{A \link{logical} flag. If \code{TRUE}, then the fixed effects
 \link[=model.matrix]{design} matrix is constructed in
 \link[Matrix:sparseMatrix]{sparse} format.}
 
@@ -43,7 +44,7 @@ A \link{list} inheriting from \link{class} \code{"egf_control"}
 containing the arguments (after possible coercion).
 }
 \description{
-Set parameters controlling the behavior of \code{\link{egf}}.
+Set parameters controlling the behaviour of \code{\link{egf}}.
 }
 \details{
 \code{trace} affects the amount of information printed during
@@ -61,9 +62,9 @@ likelihood evaluations:
 }
 \item{2, 4}{
   Equivalent to 1 and 3, but with further printing of the
-  current response matrix \code{Y}. \code{Y[i, j]} is the
-  current value of nonlinear or dispersion model parameter
-  \code{j} (link scale) in fitting window \code{i}.
+  response matrix \code{Y}. \code{Y[i, j]} is the current
+  value of nonlinear or dispersion model parameter \code{j}
+  (link scale) in fitting window \code{i}.
 }
 }
 
@@ -74,6 +75,6 @@ of \code{trace} have a number of additional side effects:
 \item error messages are printed during function and gradient evaluations;
 \item the maximum absolute gradient element is printed with each gradient
 evaluation; and
-\item trace flags set by [TMB::config()] are turned on.
+\item trace flags set by \code{\link[TMB]{config}} are turned on.
 }
 }

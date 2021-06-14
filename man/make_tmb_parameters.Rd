@@ -13,46 +13,46 @@ make_tmb_parameters(tmb_data, frame, frame_par, model, do_fit, init)
 
 \item{frame_par}{Elements of the \link{list} output of \code{\link{make_frames}}.}
 
-\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model and
-an observation model to be estimated.}
+\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
+and a dispersion model to be estimated.}
 
-\item{do_fit}{A \link{logical} scalar. If \code{TRUE}, then \code{egf} returns early
+\item{do_fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 with a \link{list} of optimization inputs.}
 
-\item{init}{A full parameter vector for the first likelihood evaluation.
-The default (\code{\link{NULL}}) is to accept the internally
-generated default. Use \code{do_fit = FALSE} to retrieve this default
-and other optimization inputs (in particular \code{Y_init}; see Value),
-which can often be used to construct a more informative starting point.}
+\item{init}{A \link{numeric} vector to be used as the full parameter vector for
+the first likelihood evaluation. The default (\code{\link{NULL}}) is
+to accept the internally generated default. Use \code{do_fit = FALSE}
+to retrieve this default and other optimization inputs (in particular
+\code{Y_init}; see Value), which can often be used to construct a more
+informative starting point.}
 }
 \value{
 A \link{list} with elements:
 \item{beta}{
   A \link[=double]{numeric} vector of length
-  \code{sum(tmb_data$beta_seg_len)} listing
-  initial values for the fixed effects coefficients.
+  \code{\link{sum}(tmb_data$beta_seg_len)} listing
+  initial values for fixed effects coefficients.
 }
 \item{b}{
   If there are random effects, then a \link[=double]{numeric}
-  vector of length \code{sum(tmb_data$b_seg_len)} listing
-  initial values for the (unit variance scale) random effects
-  coefficients. If there are no random effects,
-  then \code{b = \link{NA_real_}}.
+  vector of length \code{\link{sum}(tmb_data$b_seg_len)} listing
+  initial values for (unit variance scale) random effects coefficients.
+  If there are no random effects, then \code{b = \link{NA_real_}}.
 }
 \item{theta}{
   If there are random effects, then a numeric vector of length
-  \code{sum(f(tmb_data$block_rows))}, where \code{f(n) = n*(n+1)/2},
+  \code{\link{sum}(f(tmb_data$block_rows))}, where \code{f(n) = n*(n+1)/2},
   specifying initial covariance matrices for all random vectors.
-  Let \code{u} be a segment of \code{theta} of length \code{f(n)},
-  corresponding to a random vector \code{x} of length \code{n}.
-  Then \code{u[1:n]} lists log standard deviations of the elements
-  of \code{x}, and \code{u[-(1:n)]} lists (in row-major order)
+  Let \code{x} be a segment of \code{theta} of length \code{f(n)},
+  corresponding to a random vector \code{u} of length \code{n}.
+  Then \code{x[1:n]} lists log standard deviations of the elements
+  of \code{u}, and \code{x[-(1:n)]} lists (in row-major order)
   the subdiagonal elements of the unit lower triangular matrix
-  \code{L} in the Cholesky factorization
-  \code{S = A \link[=matmult]{\%*\%} \link{t}(A)},
-  \code{A = D^-0.5 \link[=matmult]{\%*\%} L},
-  \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}
-  of the correlation matrix \code{S} of \code{x}.
+  \code{L} in the Cholesky factorization of the correlation matrix
+  \code{S} of \code{u}:\cr
+  \code{S = A \link[=matmult]{\%*\%} \link{t}(A)}\cr
+  \code{A = D^-0.5 \link[=matmult]{\%*\%} L}\cr
+  \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}\cr
   If there are no random effects, then \code{theta = \link{NA_real_}}.
 }
 }
@@ -63,8 +63,8 @@ macros during the first likelihood evaluation.
 See also \code{\link[TMB]{MakeADFun}}.
 }
 \details{
-When \code{init = NULL}, naive estimates of nonlinear model parameters
-are obtained for each fitting window as follows:
+When \code{init = NULL}, naive estimates of nonlinear and dispersion
+model parameters are obtained for each fitting window as follows:
 \describe{
 \item{\code{r}}{
   The slope of a linear model fit to \code{\link{log1p}(\link{cumsum}(x)))}.
@@ -78,17 +78,17 @@ are obtained for each fitting window as follows:
   \code{c0}, \code{K}, and \code{p}, and solving for \code{alpha}.
 }
 \item{\code{c0}}{
-  \code{exp(log_c0)}, where \code{log_c0} is the intercept
+  \code{\link{exp}(log_c0)}, where \code{log_c0} is the intercept
   of a linear model fit to \code{\link{log1p}(\link{cumsum}(x))}.
 }
 \item{\code{tinfl}}{
-  \code{max(t)}, assuming that the fitting window ends near
-  the time of a peak in interval incidence.
+  \code{\link{max}(t)}, assuming that the fitting window ends
+  near the time of a peak in interval incidence.
 }
 \item{\code{K}}{
-  \code{2*sum(x)}, assuming that the fitting window ends near
-  the time of a peak in interval incidence _and_ that interval
-  incidence is roughly symmetric about the peak.
+  \code{2*\link{sum}(x)}, assuming that the fitting window
+  ends near the time of a peak in interval incidence _and_
+  that interval incidence is roughly symmetric about the peak.
 }
 \item{\code{p}}{0.8}
 \item{\code{a, b, nbdisp, w[123456]}}{1}

@@ -10,7 +10,7 @@
 \usage{
 subset_to_index(subset, data, enclos = parent.frame(), .subset = NULL)
 
-append_to_index(append, data, enclos = baseenv(), .append = NULL)
+append_to_index(append, data, enclos = parent.frame(), .append = NULL)
 
 order_to_index(order, data, enclos = parent.frame(), .order = NULL)
 
@@ -27,7 +27,7 @@ label_to_character(label, data, enclos = parent.frame(), .label = NULL)
 in place of the result of evaluating the undotted argument.}
 
 \item{append}{An expression to be evaluated in
-\code{`\link{names}<-`(\link{as.list}(\link{seq_along}(data)), names(data))}.}
+\code{`\link{names}<-`(\link{as.list}(\link{seq_along}(data)), \link{names}(data))}.}
 }
 \value{
 Let \code{r} be the result of evaluating the supplied expression or,
@@ -39,11 +39,11 @@ otherwise, the dotted argument.
 \code{order_to_index} returns \code{r} as is.
 
 \code{append_to_index} returns
-\code{\link{match}(\link{names}(data[r]), names(data), 0L)},
+\code{\link{match}(\link{names}(data[r]), \link{names}(data), 0L)},
 with zeros (if any) deleted.
 
 \code{label_to_character} returns
-\code{\link{rep_len}(\link{as.character}(r), \link{nrow}(data))}.
+\code{\link{rep}(\link{as.character}(r), \link{nrow}(data))}.
 }
 \description{
 Utilities for obtaining index vectors from unevaluated \code{subset},
@@ -53,13 +53,13 @@ unevaluated \code{label} expressions (\code{xlab}, \code{ylab}, etc.).
 \details{
 \code{subset} must evaluate to a logical vector of length
 \code{n = \link{nrow}(data)}.
-\code{\link{NULL}} is equivalent to \code{\link{rep_len}(TRUE, n)}.
+\code{\link{NULL}} is equivalent to \code{\link{rep}(TRUE, n)}.
 
 \code{order} must evaluate to a permutation of \code{\link{seq_len}(n)}.
 \code{\link{NULL}} is equivalent to \code{\link{seq_len}(n)}.
 
 \code{append} must evaluate to an \link{atomic} vector indexing \code{data}.
-\code{\link{NULL}} is equivalent to \code{\link{integer}(0L)}.
+\code{\link{NULL}} is equivalent to \code{\link{integer}(0)}.
 
 \code{label} must evaluate to an \link{atomic} vector of length 1
 or \code{n}.
@@ -67,8 +67,8 @@ or \code{n}.
 }
 \section{Note}{
 
-Note that \code{subset} and \code{append} are processed similarly to
-arguments \code{subset} and \code{select} of function \code{\link{subset}}.
+\code{subset} and \code{append} are processed similarly to arguments
+\code{subset} and \code{select} of function \code{\link{subset}}.
 See \code{\link{subset}} for additional usage examples.
 }
 

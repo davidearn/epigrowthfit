@@ -15,17 +15,16 @@ egf_model(
 \item{curve}{A \link{character} string specifying a model for expected cumulative
 incidence as a function of time.}
 
-\item{excess}{A \link{logical} scalar. If \code{TRUE}, then a constant baseline
+\item{excess}{A \link{logical} flag. If \code{TRUE}, then a constant baseline
 mortality rate is estimated. Set to \code{TRUE} if what is observed
 is multiple causes mortality rather than disease mortality or disease
 incidence.}
 
 \item{family}{A \link{character} string specifying a model for observed interval
-incidence (i.e., an error distribution). Note that a log link is used
-regardless of \code{family}.}
+incidence (i.e., an error distribution).}
 
-\item{day_of_week}{An integer. If positive, then day of week effects are estimated as
-offsets relative to the indicated day of week
+\item{day_of_week}{An integer flag. If positive, then day of week effects are estimated
+as offsets relative to the indicated day of week
 (Sunday if \code{day_of_week = 1}, Monday if \code{day_of_week = 2},
 and so on). \link[=logical]{Logical} values are coerced to integer.}
 }

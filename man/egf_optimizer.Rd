@@ -57,14 +57,14 @@ from \link{class} \code{"egf_inner_optimizer"}, with elements:
   \code{args} (after possible deletion of elements with reserved names)
   if \code{f = \link[TMB]{newton}}.
 }
-For details, see the handling of \code{inner.method} and
-\code{inner.control} in the body of \code{\link[TMB]{MakeADFun}}.
 }
 \description{
 These two functions link an optimizer with function arguments and
 control parameters to define an optimization method for use by
 \code{\link{egf}}. "Outer" and "inner" optimization methods are
 defined separately by \code{egf_optimizer} and \code{egf_inner_optimizer}.
-See \code{\link[TMB]{MakeADFun}} for (some) details about outer and inner
-optimizations.
+}
+\seealso{
+\code{\link[TMB]{MakeADFun}} for some details about outer and inner
+optimizations
 }

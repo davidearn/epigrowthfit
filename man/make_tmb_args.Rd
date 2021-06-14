@@ -9,19 +9,20 @@ make_tmb_args(frame, frame_par, model, control, do_fit, init)
 \arguments{
 \item{frame, frame_par}{Elements of the \link{list} output of \code{\link{make_frames}}.}
 
-\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model and
-an observation model to be estimated.}
+\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
+and a dispersion model to be estimated.}
 
 \item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
 
-\item{do_fit}{A \link{logical} scalar. If \code{TRUE}, then \code{egf} returns early
+\item{do_fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 with a \link{list} of optimization inputs.}
 
-\item{init}{A full parameter vector for the first likelihood evaluation.
-The default (\code{\link{NULL}}) is to accept the internally
-generated default. Use \code{do_fit = FALSE} to retrieve this default
-and other optimization inputs (in particular \code{Y_init}; see Value),
-which can often be used to construct a more informative starting point.}
+\item{init}{A \link{numeric} vector to be used as the full parameter vector for
+the first likelihood evaluation. The default (\code{\link{NULL}}) is
+to accept the internally generated default. Use \code{do_fit = FALSE}
+to retrieve this default and other optimization inputs (in particular
+\code{Y_init}; see Value), which can often be used to construct a more
+informative starting point.}
 }
 \value{
 A \link{list} with elements \code{data}, \code{parameters}, \code{map},

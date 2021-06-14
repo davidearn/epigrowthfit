@@ -11,27 +11,28 @@ make_tmb_data(frame, frame_par, model, control, do_fit, init)
 
 \item{frame_par}{Elements of the \link{list} output of \code{\link{make_frames}}.}
 
-\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model and
-an observation model to be estimated.}
+\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
+and a dispersion model to be estimated.}
 
 \item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
 
-\item{do_fit}{A \link{logical} scalar. If \code{TRUE}, then \code{egf} returns early
+\item{do_fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 with a \link{list} of optimization inputs.}
 
-\item{init}{A full parameter vector for the first likelihood evaluation.
-The default (\code{\link{NULL}}) is to accept the internally
-generated default. Use \code{do_fit = FALSE} to retrieve this default
-and other optimization inputs (in particular \code{Y_init}; see Value),
-which can often be used to construct a more informative starting point.}
+\item{init}{A \link{numeric} vector to be used as the full parameter vector for
+the first likelihood evaluation. The default (\code{\link{NULL}}) is
+to accept the internally generated default. Use \code{do_fit = FALSE}
+to retrieve this default and other optimization inputs (in particular
+\code{Y_init}; see Value), which can often be used to construct a more
+informative starting point.}
 }
 \value{
 [Below,
-\code{n = sum(!is.na(frame$window))}
+\code{n = \link{sum}(!\link{is.na}(frame$window))}
 is the total number of time points belonging a fitting window,
-\code{N = nlevels(frame$window)}
+\code{N = \link{nlevels}(frame$window)}
 is the number of fitting windows, and
-\code{p = length(frame_par)}
+\code{p = \link{length}(frame_par)}
 is the number of nonlinear and dispersion model parameters.]
 
 A \link{list} inheriting from \link{class} \code{"tmb_data"},
@@ -64,14 +65,13 @@ with elements:
   with \code{N} rows and \code{p} columns.
 }
 \item{X}{
-  The fixed effects \link[=model.matrix]{design} matrix
-  in \link[Matrix:sparseMatrix]{sparse} or dense format,
-  depending on \code{control$sparse_X}, with \code{N} rows.
+  The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
+  or dense format, depending on \code{control$sparse_X}, with \code{N} rows.
 }
 \item{Z}{
-  The random effects design matrix in
-  \link[Matrix:sparseMatrix]{sparse} format, with \code{N} rows.
-  If there are no random effects, then \code{Z} is an empty sparse matrix.
+  The random effects design matrix in \link[Matrix:sparseMatrix]{sparse}
+  format, with \code{N} rows. If there are no random effects, then \code{Z}
+  is an empty sparse matrix.
 }
 \item{Xs, Xd}{
   If \code{control$sparse_X = TRUE}, then \code{Xs = X} and \code{Xd}
@@ -79,17 +79,19 @@ with elements:
   an empty sparse matrix.
 }
 \item{X_info, Z_info}{
-  \link[=data.frame]{Data frame}s with \code{\link{ncol}(X)} and
-  \code{\link{ncol}(Z)} rows, respectively. Row \code{j} describes
-  the coefficient associated with column \code{j} of \code{X} or
-  \code{Z}. \code{Z_info} has additional \link{factor}s \code{cor}
-  and \code{vec} \link{split}ting coefficients by relation to a
-  common covariance matrix and random vector, respectively.
+  \link[=data.frame]{Data frame}s with \code{\link{ncol}(X)}
+  and \code{\link{ncol}(Z)} rows, respectively, constructed
+  by \code{\link{make_XZ_info}}. Row \code{j} describes the
+  coefficient associated with column \code{j} of \code{X}
+  or \code{Z}. \code{Z_info} has additional \link{factor}s
+  \code{cor} and \code{vec} \link{split}ting coefficients
+  by relation to a common covariance matrix and random vector,
+  respectively.
 }
 \item{beta_seg_len, b_seg_len}{
   \link[=integer]{Integer} vectors of length \code{p} counting the
-  columns of \code{X} and \code{Z}, respectively, that relate to a
-  common nonlinear or dispersion model parameter.
+  columns of \code{X} and \code{Z}, respectively, that relate to
+  a common nonlinear or dispersion model parameter.
 }
 \item{beta_seg_index, b_seg_index}{
   \link[=integer]{Integer} vectors of length \code{\link{ncol}(X)}
@@ -105,7 +107,7 @@ with elements:
   \link[=integer]{Integer} flags referencing so-named elements
   of \code{model} and \code{control}.
 }
-\item{`predict_flag`}{
+\item{predict_flag}{
   An \link{integer} flag set equal to 0 so that prediction code is not run.
 }
 Additional \link{integer} elements of the form \code{j_link_parameter}
@@ -117,6 +119,8 @@ being fit.
 \description{
 Gathers in a \link{list} data objects to be passed to
 the package's C++ template via \pkg{TMB}'s \code{DATA_*} macros.
-See also \code{\link[TMB]{MakeADFun}}.
+}
+\seealso{
+\code{\link[TMB]{MakeADFun}}
 }
 \keyword{internal}

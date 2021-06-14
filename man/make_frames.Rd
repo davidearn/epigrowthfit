@@ -5,6 +5,7 @@
 \title{Construct model frames}
 \usage{
 make_frames(
+  model,
   formula,
   formula_par,
   data,
@@ -15,40 +16,37 @@ make_frames(
   na_action_par,
   endpoints,
   origin,
-  model,
   init,
   append
 )
 }
 \arguments{
+\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
+and a dispersion model to be estimated.}
+
 \item{formula}{A \link{formula} of the form \code{x ~ time} or \code{x ~ time | ts}
 specifying one or more incidence time series in long format.
 \code{time} must evaluate to a \link{numeric} or \link{Date} vector.
-Numeric \code{time} is assumed to measure time as a number of days
+Numeric \code{time} is expected to measure time as a number of days
 since \emph{the end of} Date \code{origin}. Date \code{time} is
-coerced to numeric \code{\link{julian}(time, origin)} (see Details).
-\code{x} must evaluate to a numeric vector. Within a time series,
-\code{x[i]} should specify the number of cases observed from
-\code{time[i-1]} to \code{time[i]}. Finally, \code{ts} must evaluate
-to a \link{factor} such that
-\code{\link{split}(\link{data.frame}(time, x), ts)}
-returns a \link{list} of time series. Note that \code{x ~ time}
-is equivalent to \code{x ~ time | ts} with \code{ts} set equal
+coerced to numeric \code{\link{julian}(time, origin)}. \code{x}
+must evaluate to a numeric vector. Within time series, \code{x[i]}
+should specify the number of cases observed from \code{time[i-1]}
+to \code{time[i]}. Finally, \code{ts} must evaluate to a \link{factor}
+such that \code{\link{split}(\link{data.frame}(time, x), ts)}
+returns a \link{list} of time series. Formulae \code{x ~ time}
+are equivalent to \code{x ~ time | ts} with \code{ts} set equal
 to \code{\link{rep}(\link{factor}(1), \link{length}(x))}.}
 
 \item{formula_par}{A \link{list} of \link{formula}e of the form \code{par ~ terms},
-specifying mixed effects models for nonlinear and dispersion
-model parameters using \code{\link[lme4:lmer]{lme4}}-like syntax.
-\code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(model, link = TRUE)}.
-\code{~1} is the default for parameters not assigned a formula.
-Alternatively, \code{formula_par} may be a formula of the form
-\code{~terms}. In this case, the formula is recycled for all
-nonlinear and dispersion model parameters. Note that
-"individuals" in each mixed effects model are fitting windows,
-and \link[=model.frame]{model frames} constructed from
-\code{formula_par} and \code{data_par} are expected to
-correspond rowwise to \code{endpoints} (see Details).}
+specifying mixed effects models for nonlinear and dispersion model
+parameters using \code{\link[lme4:lmer]{lme4}}-like syntax.
+Alternatively, a formula of the form \code{~terms} to be recycled
+for all parameters. A list of the parameters for which formulae
+can be specified can be retrieved with \code{\link{get_par_names}}.
+Specifically, \code{\link{deparse}(par)} must be an element of
+\code{\link{get_par_names}(model, link = TRUE)}. The default for
+parameters not assigned a formula is \code{~1}.}
 
 \item{data}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s.
 These are searched prior to \link{formula} environments for variables
@@ -59,68 +57,53 @@ These are searched prior to \link{formula} environments for variables
 used in \code{formula} and \code{formula_par}, respectively.}
 
 \item{subset}{Expressions to be evaluated in \code{data} and \code{data_par},
-respectively, provided that the latter are data frames. These must
-evaluate to \link{logical} vectors of suitable \link{length}
-indexing rows to be used to fit the mixed effects model. The default
-(\code{\link{NULL}}) is to use all rows. Note that \code{subset}
-and \code{subset_par} perform subsetting at different levels of
-granularity:
-each row of \code{data} corresponds to one time point in a time series,
-whereas each row of \code{data_par} corresponds to a fitting window
-(and thus multiple time points) in a time series.}
+respectively, provided the latter are data frames. The values,
+which must be \link{logical} vectors of suitable length,
+index rows of data to be used when fitting (see Details).
+The default (\code{\link{NULL}}) is to use all rows.}
 
 \item{subset_par}{Expressions to be evaluated in \code{data} and \code{data_par},
-respectively, provided that the latter are data frames. These must
-evaluate to \link{logical} vectors of suitable \link{length}
-indexing rows to be used to fit the mixed effects model. The default
-(\code{\link{NULL}}) is to use all rows. Note that \code{subset}
-and \code{subset_par} perform subsetting at different levels of
-granularity:
-each row of \code{data} corresponds to one time point in a time series,
-whereas each row of \code{data_par} corresponds to a fitting window
-(and thus multiple time points) in a time series.}
+respectively, provided the latter are data frames. The values,
+which must be \link{logical} vectors of suitable length,
+index rows of data to be used when fitting (see Details).
+The default (\code{\link{NULL}}) is to use all rows.}
 
 \item{na_action}{A \link{character} string affecting the handling of \code{\link{NA}}
-in \code{x} if \code{formula = x ~ time | ts}.
+in \code{x} for \code{formula = x ~ time | ts}.
 \code{"fail"} is to throw an error.
-\code{"pass"} is to ignore \code{NA} when fitting
-and replace \code{NA} when predicting.
-(TODO: \code{"exclude"} is to ignore \code{NA} when fitting
-and preserve \code{NA} when predicting.)
-Note that \code{NA} in \code{time} and \code{ts} are an error
-regardless of \code{na_action}.}
+\code{"pass"} is to ignore \code{NA} when fitting and replace \code{NA}
+when predicting.
+Note that \code{NA} in \code{time} and \code{ts} are an error regardless
+of \code{na_action}.}
 
 \item{na_action_par}{A \link{character} string affecting the handling of \code{\link{NA}}
 in \code{formula_par} variables.
 \code{"fail"} is to throw an error.
-\code{"pass"} is to discard fitting windows with incomplete data.}
+\code{"omit"} is to discard fitting windows with incomplete data.}
 
 \item{endpoints}{A \link[=data.frame]{data frame}, \link{list}, or \link{environment}
 with variables \code{start} and \code{end}, and any further variables
-necessary to evaluate \code{ts} if \code{formula = x ~ time | ts}.
+necessary to evaluate \code{ts} when \code{formula = x ~ time | ts}.
 \code{start} and \code{end} must be \link{numeric} or \link{Date}
 vectors listing start and end times for all fitting windows. \code{ts}
 must evaluate to a \link{factor} indicating the time series in which each
-window is found. Within time series, intervals \code{start[i], end[i]]}
+window is found. Within time series, intervals \code{[start[i], end[i]]}
 must be disjoint and contain at least two time points from \code{time}.}
 
 \item{origin}{A \link{Date} specifying a reference time.}
 
-\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model and
-an observation model to be estimated.}
-
-\item{init}{A full parameter vector for the first likelihood evaluation.
-The default (\code{\link{NULL}}) is to accept the internally
-generated default. Use \code{do_fit = FALSE} to retrieve this default
-and other optimization inputs (in particular \code{Y_init}; see Value),
-which can often be used to construct a more informative starting point.}
+\item{init}{A \link{numeric} vector to be used as the full parameter vector for
+the first likelihood evaluation. The default (\code{\link{NULL}}) is
+to accept the internally generated default. Use \code{do_fit = FALSE}
+to retrieve this default and other optimization inputs (in particular
+\code{Y_init}; see Value), which can often be used to construct a more
+informative starting point.}
 
 \item{append}{An expression indicating variables in \code{data_par} to be preserved
-in the returned \code{"egf"} object for use by methods. It is evaluated
-similarly to the \code{select} argument of \code{\link{subset}}.
-The default (\code{\link{NULL}}) is to preserve all variables.
-Currently, usage is supported only if \code{data_par} is a
-\link[=data.frame]{data frame}.}
+in the returned object for use by methods. It is evaluated similarly
+to the \code{select} argument of \code{\link{subset}}. The default
+(\code{\link{NULL}}) is to preserve all variables. Currently, usage
+is supported only if \code{data_par} is a \link[=data.frame]{data frame}.}
 }
 \value{
 A list with elements \code{frame}, \code{frame_par}, \code{frame_append},
@@ -128,7 +111,7 @@ and \code{endpoints}. See descriptions under \code{\link{egf}}.
 }
 \description{
 Constructs time series and mixed effects model frames to be used
-by \code{\link{egf}}, while completing a battery of checks on the
+by \code{\link{egf}}, while performing a battery of checks on the
 supplied formulae and data.
 }
 \keyword{internal}

@@ -17,7 +17,7 @@ A \link{list} with 4 elements:
   An \link{integer} vector listing numbers of days. Equal to `0:20`.
 }
 \item{\code{probs}}{
-  A \link[=double]{numeric} vector of length \code{length(breaks-1)}.
+  A \link[=double]{numeric} vector of length \code{\link{length}(breaks-1)}.
   \code{probs[i]} is the probability that the generation interval
   is between \code{breaks[i]} and \code{breaks[i+1]} days, conditional
   on \code{shape} and \code{scale}. Equal to

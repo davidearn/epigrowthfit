@@ -12,7 +12,8 @@ cor2cov(cor, sd)
 \item{sd}{A \link{numeric} vector of length \code{\link{nrow}(cor)}.}
 }
 \value{
-The result of \code{\link{sweep}(sweep(cor, 1L, sd, `*`), 2L, sd, `*`)},
+The result of
+\code{\link{sweep}(\link{sweep}(cor, 1L, sd, `*`), 2L, sd, `*`)},
 obtained slightly more efficiently, following \code{\link{cov2cor}}.
 }
 \description{
