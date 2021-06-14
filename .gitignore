@@ -6,12 +6,12 @@
 *.pdf
 *.o
 *.so
-*~
+*.RData
 *.Rhistory
 *.Rout
+*~
 
-*.RData
 !data/*.RData
 !data-raw/*.RData
 
-world/data/weather/
+misc/world/data/weather/
