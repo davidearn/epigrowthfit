@@ -7,9 +7,9 @@
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-    // Set up ==================================================================
+    /* Set up =============================================================== */
 
-    // Parameters --------------------------------------------------------------
+    /* Parameters ----------------------------------------------------------- */
   
     // Concatenated fixed effects coefficient vectors
     // * length=sum(beta_seg_len)
@@ -24,7 +24,7 @@ Type objective_function<Type>::operator() ()
     // * length=sum(f(block_rows)), f(n)=n*(n+1)/2
     PARAMETER_VECTOR(theta);
 
-    // Data --------------------------------------------------------------------
+    /* Data ----------------------------------------------------------------- */
 
     // Concatenated time series segments
     // * length=n
@@ -139,7 +139,7 @@ Type objective_function<Type>::operator() ()
     bool predict     = (predict_flag     == 1);
     
 
-    // Prepare random effects infrastructure ===================================
+    /* Prepare random effects infrastructure ================================ */
 
     // A list of matrices in which to arrange elements of `b`:
     // * blocks, block rows, and block columns should correspond to
@@ -209,7 +209,7 @@ Type objective_function<Type>::operator() ()
     }
 
     
-    // Compute response matrix =================================================
+    /* Compute response matrix ============================================== */
 
     // 1. Initialize (N, p) response matrix
     matrix<Type> Y = Yo;
@@ -260,7 +260,7 @@ Type objective_function<Type>::operator() ()
     ADREPORT(Y_as_vector);
 
 
-    // Compute predictions =====================================================
+    /* Compute predictions ================================================== */
 
     // Log curve
     vector<Type> log_curve = eval_log_curve(t, t_seg_len, curve_flag, excess,
@@ -277,7 +277,7 @@ Type objective_function<Type>::operator() ()
 					    j_log_w4, j_log_w5, j_log_w6);
 
 
-    // Compute likelihood ======================================================
+    /* Compute likelihood =================================================== */
 
     // Negative log likelihood
     // Type nll = Type(0);
@@ -372,9 +372,10 @@ Type objective_function<Type>::operator() ()
       
         for (int m = 0; m < M; m++) // loop over blocks
     	{
+	    density::MVNORM_t<Type> N_0_Sigma(cor_list(m)); // function returning negative log density
 	    for (int j = 0; j < block_cols(m); j++) // loop over block columns
     	    {
-    	        nll_term = density::MVNORM(cor_list(m))(block_list(m).col(j));
+	        nll_term = N_0_Sigma(block_list(m).col(j));
 
 		if (trace)
 		{
@@ -409,7 +410,7 @@ Type objective_function<Type>::operator() ()
     }
 
 
-    // Simulate incidence ======================================================
+    /* Simulate incidence =================================================== */
 
     SIMULATE
     {
@@ -467,11 +468,11 @@ Type objective_function<Type>::operator() ()
     }
 
 
-    // Predict incidence =======================================================
+    /* Predict incidence ==================================================== */
     
     if (predict)
     {
-        // New data ------------------------------------------------------------
+        /* New data --------------------------------------------------------- */
 
         // Concatenated time series segments
         // * length=n'
@@ -514,7 +515,7 @@ Type objective_function<Type>::operator() ()
 	bool report_se   = (se_flag      == 1);
 
 
-	// Compute response matrix ---------------------------------------------
+	/* Compute response matrix ------------------------------------------ */
 	
 	matrix<Type> Y_predict = Yo_predict;
 	Y_predict += (sparse_X ? Xs_predict : Xd_predict) * beta_as_matrix;
@@ -523,7 +524,7 @@ Type objective_function<Type>::operator() ()
 	    Y_predict += Z_predict * b_scaled_as_matrix;
     	}
 
-	// Compute predictions -------------------------------------------------
+	/* Compute predictions ---------------------------------------------- */
 
 	// Log curve
         vector<Type> log_curve_predict =
@@ -566,7 +567,7 @@ Type objective_function<Type>::operator() ()
 	    {
 	        vector<Type> v = log_cases_predict.segment(i, t_predict_seg_len(s) - 1);
 		log_cum_inc.segment(i, t_predict_seg_len(s) - 1) = logspace_cumsum_1(v);
-		i += t_predict_seg_len(s) - 1; // increment reference index
+		i += t_predict_seg_len(s) - 1;
 	    }
 	    
 	    if (report_se)
