@@ -246,10 +246,10 @@ make_frames <- function(model,
     a$intercept == 1L,
     is.null(a$offset),
     length(a$term.labels) == 1L,
-    m = paste0(
-      "To be parsed correctly, `formula` must have a response,\n",
-      "an intercept, no offsets, and exactly one term.\n",
-      "In particular, after expansion of all formula operators,\n",
+    m = wrap(
+      "To be parsed correctly, `formula` must have a response, ",
+      "an intercept, no offsets, and exactly one term. ",
+      "In particular, after simplification of all formula operators, ",
       "`formula` should have the form `x ~ time` or `x ~ time | ts."
     )
   )
@@ -291,9 +291,9 @@ make_frames <- function(model,
       vapply(formula_par, inherits, FALSE, "formula"),
       lengths(formula_par) == 3L,
       (nfp <- vapply(formula_par, function(x) deparse(x[[2L]]), "")) %in% pn,
-      m = paste0(
-        "`formula_par` must be a formula of the form `~terms`\n",
-        "or a list of formulae of the form `par ~ terms`, with\n",
+      m = wrap(
+        "`formula_par` must be a formula of the form `~terms` ",
+        "or a list of formulae of the form `par ~ terms`, with ",
         "`deparse(par)` an element of `get_par_names(model, link = TRUE)`."
       )
     )
@@ -312,9 +312,9 @@ make_frames <- function(model,
     }
     warn_if_not(
       vapply(formula_par, is_intercept_ok, FALSE),
-      m = paste0(
-        "Default initial values for linear coefficients are not\n",
-        "reliable for fixed effects models with an intercept.\n",
+      m = wrap(
+        "Default initial values for linear coefficients are not ",
+        "reliable for fixed effects models with an intercept. ",
         "Consider setting `init` explicitly or including an intercept."
       )
     )
@@ -480,8 +480,8 @@ make_frames <- function(model,
   }
   stop_if_not(
     mapply(all_bars_ok, formula = formula_par, data = frame_par),
-    m = paste0(
-      "`formula_par` variables on left and right hand sides\n",
+    m = wrap(
+      "`formula_par` variables on left and right hand sides ",
       "of `|` must be numeric vectors and factors, respectively."
     )
   )
@@ -1337,58 +1337,86 @@ has_random.egf <- function(object) {
 
 #' Patch TMB-generated functions
 #'
-#' Defines a wrapper function on top of \code{\link[TMB]{MakeADFun}}-generated
+#' Define a wrapper function on top of \code{\link[TMB]{MakeADFun}}-generated
 #' functions \code{fn} and \code{gr}, so that function and gradient evaluations
-#' can retry inner optimization using fallback methods in the event of failure
-#' using the default method (usually \code{\link[TMB]{newton}}).
+#' can retry inner optimization using fallback methods in the event that the
+#' default method (usually \code{\link[TMB]{newton}}) fails.
 #'
-#' @param f
-#'   A \link{function} to be patched, either \code{fn} or \code{gr}
-#'   from a \code{\link[TMB]{MakeADFun}}-generated \link{list} object.
-#' @param order
-#'   An integer identifying \code{f}, either 0 (\code{fn}) or 1 (\code{gr}).
+#' @param fn,gr
+#'   \link[=function]{Function}s from a \code{\link[TMB]{MakeADFun}}-generated
+#'   \link{list} object to be patched.
 #' @param inner_optimizer
 #'   A \link{list} of \code{"\link{egf_inner_optimizer}"} objects
 #'   specifying inner optimization methods to be tried in turn.
 #'
 #' @return
-#' A patched version of \link{function} \code{f}.
+#' A patched version of \link{function} \code{fn} or \code{gr}.
 #'
+#' @name patch_fn
 #' @keywords internal
-patch_fn_gr <- function(f, order, inner_optimizer) {
-  stop_if_not(
-    is.numeric(order),
-    length(order) == 1L,
-    order %in% 0:1,
-    m = "`order` must be 0 or 1."
-  )
-  stop_if_not(
-    is.list(inner_optimizer),
-    vapply(inner_optimizer, inherits, FALSE, "egf_inner_optimizer"),
-    m = "`inner_optimizer` must be a list of \"egf_inner_optimizer\" objects."
-  )
-  f_name <- c("fn", "gr")[1L + order]
-  e <- environment(f)
-  function(x = e$last.par[-e$random], ...) {
-    oim <- e$inner.method
-    oic <- e$inner.control
+NULL
+
+#' @rdname patch_fn
+patch_fn <- function(fn, inner_optimizer) {
+  e <- environment(fn)
+  if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
+    e$.egf_env <- new.env(parent = emptyenv())
+  }
+  e$.egf_env$fn <- fn
+  e$.egf_env$inner_optimizer <- inner_optimizer
+
+  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for `check`
+  pfn <- function(x = last.par[-random], ...) {
+    oim <- inner.method
+    oic <- inner.control
     on.exit({
-      e$inner.method <- oim
-      e$inner.control <- oic
+      inner.method <<- oim
+      inner.control <<- oic
     })
-    n <- length(x)^order
-    ok <- function(v) is.numeric(v) && length(v) == n && all(is.finite(v))
-    for (io in inner_optimizer) {
-      e$inner.method <- io$method
-      e$inner.control <- io$control
-      v <- f(x, ...)
-      if (ok(v)) {
+    for (io in .egf_env$inner_optimizer) {
+      inner.method <<- io$method
+      inner.control <<- io$control
+      v <- .egf_env$fn(x, ...)
+      if (is.numeric(v) && length(v) == 1L && is.finite(v)) {
         return(v)
       }
     }
-    warning(sprintf("Unable to evaluate `%s(x)`, returning NaN.", f_name))
+    warning("Unable to evaluate `fn(x)`, returning NaN.")
     NaN
-    # warning(sprintf("Unable to evaluate `%s(x)`, returning `rep_len(NaN, %d)`.", f_name, n))
-    # rep_len(NaN, n)
   }
+  environment(pfn) <- e
+  pfn
+}
+
+#' @rdname patch_fn
+patch_gr <- function(gr, inner_optimizer) {
+  e <- environment(gr)
+  if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
+    e$.egf_env <- new.env(parent = emptyenv())
+  }
+  e$.egf_env$gr <- gr
+  e$.egf_env$inner_optimizer <- inner_optimizer
+
+  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for `check`
+  pgr <- function(x = last.par[-random], ...) {
+    oim <- inner.method
+    oic <- inner.control
+    on.exit({
+      inner.method <<- oim
+      inner.control <<- oic
+    })
+    n <- length(x)
+    for (io in .egf_env$inner_optimizer) {
+      inner.method <<- io$method
+      inner.control <<- io$control
+      v <- .egf_env$gr(x, ...)
+      if (is.numeric(v) && length(v) == n && all(is.finite(v))) {
+        return(v)
+      }
+    }
+    warning("Unable to evaluate `gr(x)`, returning NaN.")
+    NaN
+  }
+  environment(pgr) <- e
+  pgr
 }

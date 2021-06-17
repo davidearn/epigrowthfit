@@ -152,6 +152,29 @@ M <- get_summary(
 endpoints[s_numeric] <- M[, s_numeric]
 rm(npi)
 
+## Vaccination
+load("vaccination.RData")
+s <- grep("^vaccinated_", names(vaccination), value = TRUE)
+vaccination$country_iso_alpha3 <- factor(vaccination$country_iso_alpha3, levels = country_iso_alpha3)
+M <- get_summary(
+  d = vaccination[s],
+  d_Date = vaccination$Date,
+  d_index = vaccination$country_iso_alpha3,
+  start = endpoints$start,
+  start_index = endpoints$country_iso_alpha3,
+  func = mean,
+  na.rm = TRUE,
+  lag = 14L,
+  k = 14L,
+  method = "linear",
+  x0 = 0,
+  x1 = NULL,
+  period = 1L,
+  geom = FALSE
+)
+endpoints[sub("_per_100$", "", s)] <- M[, s] / 100
+rm(vaccination)
+
 ## Weather
 load("weather.RData")
 s <- grep("^weather_", names(weather), value = TRUE)
@@ -178,8 +201,8 @@ rm(weather)
 ## Economic indicators
 load("devel.RData")
 v <- c(
-  econ_gdp_pc = "GDP per capita (constant 2010 US$)",
-  econ_gini   = "Gini index (World Bank estimate)"
+  econ_gdp_per_capita = "GDP per capita (constant 2010 US$)",
+  econ_gini           = "Gini index (World Bank estimate)"
 )
 devel$country_iso_alpha3 <- factor(devel$country_iso_alpha3, levels = country_iso_alpha3)
 devel$indic <- factor(devel$indic, levels = v, labels = names(v))

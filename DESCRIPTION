@@ -22,11 +22,9 @@ Imports:
     grDevices,
     Matrix,
     nlme,
-    Rdpack (>= 0.7),
-    mathjaxr (>= 1.4.0)
+    Rdpack (>= 0.7)
 Suggests:
     knitr,
-    emdbook (>= 1.3.12),
     testthat (>= 3.0.0)
 LinkingTo:
     TMB,

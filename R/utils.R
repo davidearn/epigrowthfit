@@ -128,3 +128,55 @@ cor2cov <- function(cor, sd) {
   cor
 }
 
+#' Concatenate, wrap, collapse
+#'
+#' Concatenates \R objects, formats the resulting string in
+#' a paragraph using \code{\link{strwrap}}, and collapses
+#' paragraph lines with newlines. Under default settings,
+#' the result is a string that prints in the console as a
+#' nicely wrapped paragraph.
+#'
+#' @param ...
+#'   Zero or more \R objects, to be coerced to \link{character}
+#'   and concatenated with no separator.
+#' @param width
+#'   A positive integer passed to \code{\link{strwrap}},
+#'   indicating a target column width.
+#'
+#' @return
+#' A \link{character} vector of length 1.
+#'
+#' @keywords internal
+wrap <- function(..., width = 0.9 * getOption("width")) {
+  x <- paste0(..., collapse = " ")
+  paragraph_lines <- strwrap(x, width = width)
+  paste(paragraph_lines, collapse = "\n")
+}
+
+mftapply <- function(x, index, f_list) {
+  stop_if_not(
+    is.list(f_list),
+    length(f_list) > 0L,
+    vapply(f_list, is.function, FALSE),
+    m = "`f_list` must be a list of functions of positive length."
+  )
+  if (is.data.frame(x)) {
+    do_call <- function(f, x) { x[] <- lapply(x, f); x }
+  } else {
+    do_call <- function(f, x) { f(x) }
+  }
+  x_split <- split(x, index, drop = FALSE)
+  fx_split <- Map(do_call, x = x_split, f = f_list)
+  unsplit(fx_split, index, drop = FALSE)
+}
+
+#' @importFrom stats qchisq
+do_wald <- function(estimate, se, level) {
+  q <- qchisq(level, df = 1)
+  n <- length(estimate)
+  lu <- estimate + rep.int(sqrt(q) * c(-1, 1), c(n, n)) * se
+  dim(lu) <- c(n, 2L)
+  colnames(lu) <- c("lower", "upper")
+  lu
+}
+

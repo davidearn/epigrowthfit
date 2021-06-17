@@ -25,9 +25,9 @@ enum: utils/update_enum.R
 
 rd: R/*.R inst/REFERENCES.bib
 	$(R) --quiet -e 'devtools::document(".")'
-	sed -i.bak 's/USCORE/_/ g' man/*.Rd 
-	sed -i.bak 's/\\text{/\\textrm{/ g' man/*.Rd
-	rm man/*.Rd.bak
+	#sed -i.bak 's/USCORE/_/ g' man/*.Rd 
+	#sed -i.bak 's/\\text{/\\textrm{/ g' man/*.Rd
+	#rm man/*.Rd.bak
 
 src/$(PACKAGE).so: src/$(PACKAGE).cpp src/*.h
 	$(MAKE) -C src

@@ -245,14 +245,8 @@ egf <- function(model = egf_model(),
     init = init
   )
   tmb_out <- do.call(TMB::MakeADFun, tmb_args)
-  tmb_out$fn <- patch_fn_gr(tmb_out$fn,
-    order = 0L,
-    inner_optimizer = control$inner_optimizer
-  )
-  tmb_out$gr <- patch_fn_gr(tmb_out$gr,
-    order = 1L,
-    inner_optimizer = control$inner_optimizer
-  )
+  tmb_out$fn <- patch_fn(tmb_out$fn, inner_optimizer = control$inner_optimizer)
+  tmb_out$gr <- patch_gr(tmb_out$gr, inner_optimizer = control$inner_optimizer)
   init <- enum_dupl_names(tmb_out$env$par)
   nonrandom <- seq_along(init)
   if (!is.null(tmb_out$env$random)) {

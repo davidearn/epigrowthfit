@@ -126,6 +126,24 @@ row.names(npi) <- NULL
 save(npi, file = "npi.RData")
 rm(npi)
 
+vaccination <- read.csv("csv/vaccination.csv")
+s <- c(
+  country_iso_alpha3       = "iso_code",
+  Date                     = "date",
+  vaccinated_geq1d_per_100 = "people_vaccinated_per_hundred",
+  vaccinated_fully_per_100 = "people_fully_vaccinated_per_hundred"
+)
+i <- grep("^OWID_", vaccination$iso_code, invert = TRUE)
+vaccination <- vaccination[i, s, drop = FALSE]
+names(vaccination) <- names(s)
+vaccination$country_iso_alpha3 <- factor(vaccination$country_iso_alpha3)
+vaccination$Date <- as.Date(vaccination$Date)
+o <- do.call(order, unname(vaccination[c("country_iso_alpha3", "Date")]))
+vaccination <- vaccination[o, , drop = FALSE]
+row.names(vaccination) <- NULL
+save(vaccination, file = "vaccination.RData")
+rm(vaccination)
+
 devel <- read.csv("csv/devel.csv")
 s <- grep("^X[0-9]{4}$", names(devel), value = TRUE)
 devel <- data.frame(
@@ -149,7 +167,7 @@ equity <- data.frame(
   country_iso_alpha3 = rep(factor(equity$Country.Code), times = length(s)),
   indic = rep(factor(equity$Indicator.Name), times = length(s)),
   indic_code = rep(factor(equity$Indicator.Code), times = length(s)),
-  year = rep(factor(ordered(s, 2L, 5L)), each = nrow(equity)),
+  year = rep(ordered(substr(s, 2L, 5L)), each = nrow(equity)),
   value = unlist(equity[s], recursive = FALSE, use.names = FALSE)
 )
 m <- match(levels(equity$indic), equity$indic)

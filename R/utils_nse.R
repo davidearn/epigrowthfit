@@ -85,7 +85,7 @@ subset_to_index <- function(subset, data, enclos = parent.frame(), .subset = NUL
   n <- nrow(data)
   if (is.null(.subset)) {
     if (is.null(subset)) {
-      return(seq_len(n))
+      return(rep_len(TRUE, n))
     }
     r <- eval(subset, envir = data, enclos = enclos)
   } else {

@@ -6,9 +6,12 @@ dir_R = R
 dir_csv = csv
 dir_weather = weather
 
-datasets = covid coords population mobility npi devel equity
+datasets = covid coords population mobility npi vaccination devel equity
+scripts = make_endpoints augment_endpoints utils
+
 csv = $(addprefix $(dir_csv)/,$(addsuffix .csv,$(datasets)))
 rda = $(addsuffix .RData,$(datasets))
+rsc = $(addprefix $(dir_R)/,$(addsuffix .R,$(scripts)))
 
 all: world endpoints
 .PHONY: weather clean download
@@ -16,8 +19,7 @@ all: world endpoints
 world: $(dir_R)/make_world.R covid.RData
 	$(R) --quiet -f $<
 
-endpoints: $(addprefix $(dir_R)/,$(addsuffix .R,make_endpoints augment_endpoints utils)) \
-  $(rda) weather.RData
+endpoints: $(rsc) $(rda) weather.RData
 	$(R) --quiet -f $(word 1, $^)
 	$(R) --quiet -f $(word 2, $^)
 
@@ -51,6 +53,8 @@ download:
 	wget -O $(dir_csv)/mobility.csv https://www.gstatic.com/covid19/mobility/Global_Mobility_Report.csv
 	# https://covidtracker.bsg.ox.ac.uk/
 	wget -O $(dir_csv)/npi.csv https://github.com/OxCGRT/covid-policy-tracker/raw/master/data/OxCGRT_latest.csv
+	# https://github.com/owid/covid-19-data/raw/master/public/data/vaccinations/vaccinations.csv
+	wget -O $(dir_csv)/vaccination.csv https://github.com/owid/covid-19-data/raw/master/public/data/vaccinations/vaccinations.csv
 	# https://datacatalog.worldbank.org/dataset/world-development-indicators
 	wget -O $(dir_csv)/tmp.zip https://databank.worldbank.org/data/download/WDI_csv.zip
 	unzip -p $(dir_csv)/tmp.zip WDIData.csv > $(dir_csv)/devel.csv

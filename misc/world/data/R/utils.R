@@ -113,7 +113,7 @@ get_summary_ <- function(d, d_Date, start, func, ...,
     X <- matrix(NA_real_,
       nrow = length(start),
       ncol = 2L * length(d),
-      dimnames = list(NULL, c(names(d), paste0("na.", names(d))))
+      dimnames = list(NULL, c(names(d), paste0("n.", names(d))))
     )
     return(X)
   }
@@ -123,7 +123,9 @@ get_summary_ <- function(d, d_Date, start, func, ...,
   } else {
     kL <- kR <- (k - 1) / 2
   }
-  ab <- seq(min(start) - lag - kL, max(start) - lag + kR, by = 1)
+  first <- start - lag - kL
+  last  <- start - lag + kR
+  ab <- seq(min(first, d_Date), max(last, d_Date), by = 1)
   d <- d[match(ab, d_Date), , drop = FALSE]
   if (method != "none") {
     d[] <- switch(method,
@@ -131,8 +133,7 @@ get_summary_ <- function(d, d_Date, start, func, ...,
       linear = lapply(d, linear, x0 = x0, x1 = x1, period = period, geom = geom)
     )
   }
-  ab <- seq(min(start) - lag - kL, max(start) - lag + kR, by = 1)
-  l <- lapply(match(start - lag - kL, ab), seq.int, length.out = k)
+  l <- lapply(match(first, ab), seq.int, length.out = k)
   t(vapply(l, summarize, rep_len(0, 2L * length(d)), d = d, func = func, ...))
 }
 
