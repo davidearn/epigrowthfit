@@ -1,13 +1,13 @@
 library("epigrowthfit")
-load("../data/world.RData")
-load("../data/endpoints.RData")
+load("world.RData")
+load("endpoints.RData")
 options(contrasts = c("contr.sum", "contr.poly"), warn = 1)
 f <- function(x) { # dummy to contr.sum
   m <- mean(x)
   c(m, x[-length(x)] - m)
 }
 
-## Retrieve fitted values from within-country fixed effects models
+## Retrieving fitted values from within-country fixed effects models
 ## for initialization of across-countries mixed effects model
 Y_init <- matrix(numeric(0L), ncol = 4L)
 N <- c(table(endpoints$country_iso_alpha3))
@@ -30,7 +30,7 @@ for (i in seq_along(N)) {
 }
 
 
-## Model without covariates
+### Model without covariates
 
 m <- colMeans(Y_init)
 beta <- m
@@ -79,26 +79,30 @@ sink(type = "message")
 sink(type = "output")
 save(object, file = "simple.RData")
 
+object$sdreport
+with(object, tmb_out$gr(best[nonrandom]))
 
 
-library("tmbstan")
-init_func <- function(m) {
-  l <- split(m, sub("\\[[0-9]+\\]$", "", names(m)))
-  function() {
-    list(
-      beta = rnorm(length(l$beta), l$beta),
-      b = rnorm(l$b),
-      theta = c(rnorm(4L, l$theta[1:4]), rnorm(l$theta[-(1:4)]))
-    )
-  }
-}
-zz <- tmbstan(object$tmb_out,
-  init = object$best[object$nonrandom],
-  #init = init_func(object$best),
-  cores = 4L,
-  laplace = TRUE,
-  silent = FALSE
-)
+### tmbstan attempt
+
+# library("tmbstan")
+# init_func <- function(m) {
+#   l <- split(m, sub("\\[[0-9]+\\]$", "", names(m)))
+#   function() {
+#     list(
+#       beta = rnorm(length(l$beta), l$beta),
+#       b = rnorm(l$b),
+#       theta = c(rnorm(4L, l$theta[1:4]), rnorm(l$theta[-(1:4)]))
+#     )
+#   }
+# }
+# zz <- tmbstan(object$tmb_out,
+#   # init = "last.par.best",
+#   init = init_func(object$best),
+#   cores = 4L,
+#   laplace = TRUE,
+#   silent = FALSE
+# )
 
 
 ### Model with covariates
@@ -123,9 +127,7 @@ zz <- tmbstan(object$tmb_out,
 #   log(abs(latitude)),
 #   days_since_2in1m
 # ))
-# plus <- function(x, y) call("+", x, y)
-# sum_tt <- Reduce(plus, tt[-1L])
-#
+# sum_tt <- Reduce(function(x, y) call("+", x, y), tt[-1L])
 # cc <- complete.cases(endpoints[all.vars(tt)])
 #
 # m <- colMeans(Y_init[cc, , drop = FALSE])
