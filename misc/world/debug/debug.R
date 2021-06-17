@@ -80,8 +80,13 @@ sink(type = "output")
 save(object, file = "simple.RData")
 
 object$sdreport
-with(object, tmb_out$gr(best[nonrandom]))
-
+## All components of gradient are large
+gg <- with(object, tmb_out$gr(best[nonrandom]))
+range(abs(gg))
+## `vcov` method working again
+V <- vcov(object, full = TRUE)
+dV <- diag(V)
+dv < 0
 
 ### tmbstan attempt
 
@@ -107,50 +112,77 @@ with(object, tmb_out$gr(best[nonrandom]))
 
 ### Model with covariates
 
-# tt <- substitute(list(
-#   (1 | country_iso_alpha3:window),
-#   log(mobility_retail_and_recreation),
-#   log(mobility_grocery_and_pharmacy),
-#   log(mobility_parks),
-#   log(mobility_transit_stations),
-#   log(mobility_workplaces),
-#   log(mobility_residential),
-#   qlogis(0.001 + npi_index_containment_health),
-#   qlogis(0.001 + vaccinated_geq1d),
-#   qlogis(econ_gini),
-#   log(econ_gdp_per_capita),
-#   log(weather_temperature),
-#   log(weather_specific_humidity),
-#   log(weather_shortwave_radiation),
-#   log(weather_precipitation),
-#   log(weather_wind_speed),
-#   log(abs(latitude)),
-#   days_since_2in1m
-# ))
-# sum_tt <- Reduce(function(x, y) call("+", x, y), tt[-1L])
-# cc <- complete.cases(endpoints[all.vars(tt)])
-#
-# m <- colMeans(Y_init[cc, , drop = FALSE])
-# beta <- c(m[1L], rep_len(0, length(tt) - 2L), m[2:4])
-# o <- order(endpoints$window[cc], endpoints$country_iso_alpha3[cc])
-# b <- t(Y_init[which(cc)[o], , drop = FALSE]) - m
-# log_sd_b <- log(apply(matrix(b, nrow = 4L), 1L, sd))
-# b <- b / exp(log_sd_b)
-# theta <- c(log_sd_b, rep_len(0, 6L))
-# init <- c(beta, b, theta)
-#
-# outfile <- file("covariates.Rout", open = "wt")
-# sink(outfile, type = "output")
-# sink(outfile, type = "message")
-# object_covariates <- update(object,
-#   formula_par = list(
-#     as.formula(call("~", quote(log(r)),      sum_tt)),
-#     as.formula(call("~", quote(log(tinfl)),  tt[[2L]])),
-#     as.formula(call("~", quote(log(K)),      tt[[2L]])),
-#     as.formula(call("~", quote(log(nbdisp)), tt[[2L]]))
-#   ),
-#   subset_par = cc,
-#   init = init
-# )
-# sink(type = "message")
-# sink(type = "output")
+tt <- substitute(list(
+  (1 | country_iso_alpha3:window),
+  log(mobility_retail_and_recreation),
+  log(mobility_grocery_and_pharmacy),
+  log(mobility_parks),
+  log(mobility_transit_stations),
+  log(mobility_workplaces),
+  log(mobility_residential),
+  qlogis(0.001 + npi_index_containment_health),
+  qlogis(0.001 + vaccinated_geq1d),
+  qlogis(econ_gini),
+  log(econ_gdp_per_capita),
+  log(weather_temperature),
+  log(weather_specific_humidity),
+  log(weather_shortwave_radiation),
+  log(weather_precipitation),
+  log(weather_wind_speed),
+  log(abs(latitude)),
+  days_since_2in1m
+))
+sum_tt <- Reduce(function(x, y) call("+", x, y), tt[-1L])
+cc <- complete.cases(endpoints[all.vars(tt)])
+
+m <- colMeans(Y_init[cc, , drop = FALSE])
+beta <- c(m[1L], rep_len(0, length(tt) - 2L), m[2:4])
+o <- order(endpoints$window[cc], endpoints$country_iso_alpha3[cc])
+b <- t(Y_init[which(cc)[o], , drop = FALSE]) - m
+log_sd_b <- log(apply(matrix(b, nrow = 4L), 1L, sd))
+b <- b / exp(log_sd_b)
+theta <- c(log_sd_b, rep_len(0, 6L))
+init <- c(beta, b, theta)
+
+outfile <- file("covariates.Rout", open = "wt")
+sink(outfile, type = "output")
+sink(outfile, type = "message")
+object_covariates <- egf(
+  formula = cases_new ~ Date | country_iso_alpha3,
+  formula_par = list(
+    as.formula(call("~", quote(log(r)),      sum_tt)),
+    as.formula(call("~", quote(log(tinfl)),  tt[[2L]])),
+    as.formula(call("~", quote(log(K)),      tt[[2L]])),
+    as.formula(call("~", quote(log(nbdisp)), tt[[2L]]))
+  ),
+  data = world,
+  data_par = endpoints,
+  subset_par = cc,
+  na_action = "pass",
+  endpoints = endpoints,
+  init = init,
+  se = TRUE,
+  control = egf_control(
+    trace = 2L,
+    omp_num_threads = 4L,
+    optimizer = egf_optimizer(
+      f = optim,
+      args = list(
+        method = "BFGS"
+      ),
+      control = list(
+        trace = 1L,
+        maxit = 1000L
+      )
+    ),
+    inner_optimizer = egf_inner_optimizer(
+      f = newton,
+      args = list(
+        trace = 1L,
+        maxit = 1000L
+      )
+    )
+  )
+)
+sink(type = "message")
+sink(type = "output")
