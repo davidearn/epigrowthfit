@@ -30,8 +30,7 @@ LinkingTo:
     TMB,
     RcppEigen
 RdMacros:
-    Rdpack,
-    mathjaxr
+    Rdpack
 VignetteBuilder: knitr
 NeedsCompilation: yes
 License: GPL-3

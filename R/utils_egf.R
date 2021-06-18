@@ -47,18 +47,18 @@ get_par_names.default <- function(object, link = TRUE, ...) {
     is.null(object),
     m = "This method accepts `object = NULL` only."
   )
-  pn <- c("r", "alpha", "c0", "tinfl", "K",
-          "p", "a", "b", "nbdisp", paste0("w", 1:6))
+  par_names <- c("r", "alpha", "c0", "tinfl", "K",
+                 "p", "a", "b", "nbdisp", paste0("w", 1:6))
   if (link) {
-    return(string_add_link(pn))
+    return(string_add_link(par_names))
   }
-  pn
+  par_names
 }
 
 #' @rdname get_par_names
 #' @export
 get_par_names.egf_model <- function(object, link = TRUE, ...) {
-  pn <- switch(object$curve,
+  par_names <- switch(object$curve,
     exponential    = c("r", "c0"),
     logistic       = c("r", "tinfl", "K"),
     richards       = c("r", "tinfl", "K", "a"),
@@ -66,18 +66,18 @@ get_par_names.egf_model <- function(object, link = TRUE, ...) {
     gompertz       = c("alpha", "c0", "K")
   )
   if (object$excess) {
-    pn <- c(pn, "b")
+    par_names <- c(par_names, "b")
   }
   if (object$family == "nbinom") {
-    pn <- c(pn, "nbdisp")
+    par_names <- c(par_names, "nbdisp")
   }
   if (object$day_of_week > 0L) {
-    pn <- c(pn, paste0("w", 1:6))
+    par_names <- c(par_names, paste0("w", 1:6))
   }
   if (link) {
-    return(string_add_link(pn))
+    return(string_add_link(par_names))
   }
-  pn
+  par_names
 }
 
 #' @rdname get_par_names
@@ -89,11 +89,11 @@ get_par_names.egf <- function(object, link = TRUE, ...) {
 #' @rdname get_par_names
 #' @export
 get_par_names.tmb_data <- function(object, link = TRUE, ...) {
-  pn <- levels(object$X_info$par)
+  par_names <- levels(object$X_info$par)
   if (link) {
-    return(pn)
+    return(par_names)
   }
-  string_remove_link(pn)
+  string_remove_link(par_names)
 }
 
 #' Manipulate model parameter names
@@ -273,15 +273,15 @@ make_frames <- function(model,
   ### Mixed effects model frames
 
   ## Nonlinear and dispersion model parameter names
-  pn <- get_par_names(model, link = TRUE)
-  p <- length(pn)
+  par_names <- get_par_names(model, link = TRUE)
+  p <- length(par_names)
 
   ## If `formula_par` is a formula of the form `~terms`,
   ## then recycle to a list of length `p`
   if (inherits(formula_par, "formula") && length(formula_par) == 2L) {
     formula_par <- simplify_terms(formula_par)
     formula_par <- rep_len(list(formula_par), p)
-    names(formula_par) <- pn
+    names(formula_par) <- par_names
     ## Otherwise, test for a valid list of formulae
     ## of the form `par ~ terms`, and complete with
     ## the default `~1` to obtain a list of length `p`
@@ -290,7 +290,7 @@ make_frames <- function(model,
       is.list(formula_par),
       vapply(formula_par, inherits, FALSE, "formula"),
       lengths(formula_par) == 3L,
-      (nfp <- vapply(formula_par, function(x) deparse(x[[2L]]), "")) %in% pn,
+      (nfp <- vapply(formula_par, function(x) deparse(x[[2L]]), "")) %in% par_names,
       m = wrap(
         "`formula_par` must be a formula of the form `~terms` ",
         "or a list of formulae of the form `par ~ terms`, with ",
@@ -299,8 +299,8 @@ make_frames <- function(model,
     )
     formula_par <- lapply(formula_par, `[`, -2L)
     names(formula_par) <- nfp
-    formula_par[setdiff(pn, names(formula_par))] <- list(~1)
-    formula_par <- lapply(formula_par[pn], simplify_terms)
+    formula_par[setdiff(par_names, names(formula_par))] <- list(~1)
+    formula_par <- lapply(formula_par[par_names], simplify_terms)
   }
 
   ## Warn about fixed effects formulae without an intercept
@@ -983,7 +983,7 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init) {
 #' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
 make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
   ## Nonlinear and dispersion model parameter names
-  pn <- names(frame_par)
+  par_names <- names(frame_par)
   p <- length(frame_par)
 
   ## Time series model frame excluding rows not associated
@@ -1048,8 +1048,8 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
   ## FIXME: Preserve contrasts?
   X_info <- make_XZ_info(xl = fixed, ml = Xl)
   Z_info <- make_XZ_info(xl = do.call(c, unname(random)), ml = Zl)
-  X_info$par <- factor(X_info$par, levels = pn)
-  Z_info$par <- factor(Z_info$par, levels = pn)
+  X_info$par <- factor(X_info$par, levels = par_names)
+  Z_info$par <- factor(Z_info$par, levels = par_names)
 
   ## Random effects coefficients factored by relation
   ## to a correlation matrix and to a random vector
@@ -1114,9 +1114,9 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
     sparse_X_flag = as.integer(control$sparse_X),
     predict_flag = 0L
   )
-  pn0 <- get_par_names(NULL, link = TRUE)
-  l2 <- as.list(match(pn0, pn, 0L) - 1L)
-  names(l2) <- sub("^(log|logit)\\((.*)\\)$", "j_\\1_\\2", pn0)
+  par_names_all <- get_par_names(NULL, link = TRUE)
+  l2 <- as.list(match(par_names_all, par_names, 0L) - 1L)
+  names(l2) <- sub("^(log|logit)\\((.*)\\)$", "j_\\1_\\2", par_names_all)
   out <- c(l1, l2)
   class(out) <- c("tmb_data", "list")
   out
@@ -1220,18 +1220,18 @@ make_tmb_parameters <- function(tmb_data, frame, frame_par, model, do_fit, init)
     ## Initialize each parameter object to a vector of zeros
     init_split <- lapply(len, numeric)
 
-    ## Get names of nonlinear model parameters whose mixed
-    ## effects formula has an intercept
+    ## Get names of nonlinear and dispersion model parameters
+    ## whose mixed effects formulae have an intercept
     has_intercept <- function(frame) {
       attr(terms(frame), "intercept") == 1L
     }
-    pn1 <- names(frame_par)[vapply(frame_par, has_intercept, FALSE)]
+    nfp <- names(frame_par)[vapply(frame_par, has_intercept, FALSE)]
 
-    ## For each of these nonlinear model parameters, compute
-    ## the mean over all fitting windows of the naive estimate,
-    ## and assign the result to the the coefficient of `beta`
-    ## corresponding to "(Intercept)".
-    if (length(pn1) > 0L) {
+    ## For each of these nonlinear and dispersion model parameters,
+    ## compute the mean over all fitting windows of the naive estimate,
+    ## and assign the result to the the coefficient of `beta` corresponding
+    ## to "(Intercept)".
+    if (length(nfp) > 0L) {
       ## Time series split by fitting window
       window <- frame$window[!is.na(frame$window)]
       firsts <- which(!duplicated(window))
@@ -1277,13 +1277,11 @@ make_tmb_parameters <- function(tmb_data, frame, frame_par, model, do_fit, init)
       names(Y_init) <- string_add_link(names(Y_init))
 
       ## Index of elements of `beta` corresponding to "(Intercept)"
-      i1 <- match(pn1, tmb_data$X_info$par, 0L)
+      i1 <- match(nfp, tmb_data$X_info$par, 0L)
 
       ## Assign means over windows
-      init_split$beta[i1] <- colMeans(Y_init[pn1])
+      init_split$beta[i1] <- colMeans(Y_init[nfp])
     }
-
-    ## If user specifies a full parameter vector
   } else {
     ## Validate and split full parameter vector,
     ## producing `list(beta, b, theta)`

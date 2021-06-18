@@ -626,3 +626,85 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
   class(out) <- c("egf_inner_optimizer", "list")
   out
 }
+
+#' Define a parallelization method
+#'
+#' Defines instructions for parallelization by linking a method with options.
+#'
+#' @param method
+#'   A \link{character} string indicating a method of parallelization.
+#'   \code{"\link[=lapply]{serial}"} indicates no parallelization.
+#'   \code{"\link[parallel:mclapply]{multicore}"} indicates forking.
+#'   It is intended for use from a terminal rather than a GUI.
+#'   On Windows, it is equivalent to \code{"serial"}.
+#'   \code{"\link[parallel:parLapply]{snow}"} indicates socket clusters.
+#'   It supports parallelization on both Unix-alikes and Windows.
+#' @param outfile
+#'   A \link{character} string indicating a file path where
+#'   console output should be diverted. \code{\link{NULL}} is
+#'   equivalent to \code{\link{nullfile}()}. \code{""} means
+#'   no diversion. If \code{method = "snow"}, then diversion
+#'   may be necessary to view output.
+#' @param cores
+#'   A positive integer indicating a number of worker processes to spawn
+#'   when \code{parallel != "serial"}. The effective maximum is typically
+#'   \code{\link[parallel]{detectCores}(TRUE, FALSE)}.
+#' @param options
+#'   A \link{list} of optional arguments to
+#'   \code{\link[parallel]{mclapply}} (\code{method = "multicore"}) or
+#'   \code{\link[parallel]{makePSOCKcluster}} (\code{method = "snow"}).
+#' @param cl
+#'   An optional \link[parallel:makePSOCKcluster]{socket cluster}
+#'   to be used when \code{parallel = "snow"}. If non-\code{\link{NULL}},
+#'   then \code{outfile}, \code{cores}, and \code{options} are ignored.
+#'
+#' @return
+#' A \link{list} inheriting from \link{class} \code{"egf_parallel"}
+#' containing the arguments (after possible matching and substitution).
+#'
+#' @export
+egf_parallel <- function(method = c("serial", "multicore", "snow"),
+                         outfile = "",
+                         cores = getOption("egf.cores", 1L),
+                         options = list(),
+                         cl = NULL) {
+  method <- match.arg(method)
+  if (is.null(outfile)) {
+    outfile <- nullfile()
+  } else {
+    stop_if_not_string(outfile)
+  }
+  if (method == "serial") {
+    cores <- 1L
+    options <- list()
+    cl <- NULL
+  } else if (method == "multicore" || (method == "snow" && is.null(cl))) {
+    stop_if_not_integer(cores, kind = "positive")
+    stop_if_not(is.list(options),
+      m = "`options` must be a list."
+    )
+    if (method == "multicore") {
+      options$mc.cores <- cores
+    } else {
+      options$names <- cores
+      options$outfile <- outfile
+    }
+  } else {
+    stop_if_not(
+      inherits(cl, "SOCKcluster"),
+      m = "`cl` must inherit from class \"SOCKcluster\". See `?parallel::makePSOCKcluster`."
+    )
+    cores <- length(cl)
+    options <- list()
+  }
+
+  out <- list(
+    method = method,
+    outfile = outfile,
+    cores = cores,
+    options = options,
+    cl = cl
+  )
+  class(out) <- c("egf_parallel", "list")
+  out
+}

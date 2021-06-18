@@ -23,7 +23,6 @@
 #' @docType package
 #' @keywords internal
 #' @importFrom Rdpack reprompt
-#' @importFrom mathjaxr preview_rd
 NULL
 
 .epigrowthfit <- new.env(parent = emptyenv())
