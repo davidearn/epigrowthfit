@@ -85,8 +85,8 @@ gg <- with(object, tmb_out$gr(best[nonrandom]))
 range(abs(gg))
 ## `vcov` method working again
 V <- vcov(object, full = TRUE)
-dV <- diag(V)
-dv < 0
+diagV <- diag(V)
+diagV < 0
 
 ### tmbstan attempt
 
