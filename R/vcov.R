@@ -41,17 +41,20 @@ vcov.egf <- function(object, full = FALSE, cor = FALSE, ...) {
   stop_if_not_true_false(full)
   stop_if_not_true_false(cor)
   if (is.null(object$sdreport)) {
-    warning(wrap(
-      "Computing a Hessian matrix, which could take a while. ",
-      "To avoid needless recomputation, do ",
-      "`object$sdreport <- try(TMB::sdreport(object$tmb_out))` first."
-    ))
+    if (has_random(object)) {
+      warning(wrap(
+        "Computing a Hessian matrix for a model with random effects... ",
+        "This could take a while. To avoid needless recomputation, ",
+        "do `object$sdreport <- try(TMB::sdreport(object$tmb_out))` ",
+        "before trying `vcov`."
+      ))
+    }
     object$sdreport <- try(TMB::sdreport(object$tmb_out))
   }
   if (inherits(object$sdreport, "try-error")) {
     stop(wrap(
       "Unable to proceed because `TMB::sdreport(object$tmb_out)` ",
-      "throws an error. Retry after diagnosing and refitting."
+      "throws an error. Retry `vcov` after diagnosing and refitting."
     ))
   }
 

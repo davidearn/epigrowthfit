@@ -1,41 +1,50 @@
 Package: epigrowthfit
 Version: 0.8.5
-Date: 2021-01-05
+Date: 2021-06-01
+License: GPL-3
+Encoding: UTF-8
 URL: https://github.com/davidearn/epigrowthfit
+BugReports: https://github.com/davidearn/epigrowthfit/issues
 Authors@R: c(
-	     person("Mikael", "Jagan", email = "mjagan@uwaterloo.ca", role = c("aut", "cre")),
-	     person("Ben", "Bolker", email = "bbolker@mcmaster.ca", role = c("aut")),
-	     person("David", "Earn", role = "aut"),
-	     person("Jonathan", "Dushoff", role = "aut"),
+	     person("Mikael", "Jagan", role = c("aut", "cre"),
+	            email = "mjagan@uwaterloo.ca",
+		    comment = c(ORCID = "0000-0002-3542-2938")),
+	     person("Ben", "Bolker", role = c("aut"),
+	            email = "bbolker@mcmaster.ca",
+		    comment = c(ORCID = "0000-0002-2127-0443")),
+	     person("David", "Earn", role = "aut",
+	            email = "earn@math.mcmaster.ca",
+		    comment = c(ORCID = "0000-0003-3597-617X")),
+	     person("Jonathan", "Dushoff", role = "aut",
+	            email = "dushoff@mcmaster.ca",
+		    comment = c(ORCID = "0000-0003-0506-4794")),
 	     person("Junling", "Ma", role = "aut")
 	   )
 Title: Nonlinear Mixed Effects Models of Epidemic Growth
 Description:
-    Tools for estimating parameters associated with epidemic growth.
+    Maximum likelihood estimation of nonlinear mixed effects models
+    of epidemic growth using Template Model Builder ('TMB').
 Depends:
     R (>= 3.5),
     TMB
 Imports:
+    Matrix,
     stats,
     methods,
     graphics,
     grDevices,
-    Matrix,
-    nlme,
-    Rdpack (>= 0.7)
+    nlme
 Suggests:
     knitr,
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    MASS,
+    emdbook (>= 3.1.2)
 LinkingTo:
     TMB,
     RcppEigen
-RdMacros:
-    Rdpack
+SystemRequirements: GNU make
 VignetteBuilder: knitr
 NeedsCompilation: yes
-License: GPL-3
-Encoding: UTF-8
 LazyData: true
-Roxygen: list(markdown = FALSE)
 RoxygenNote: 7.1.1
 Config/testthat/edition: 3

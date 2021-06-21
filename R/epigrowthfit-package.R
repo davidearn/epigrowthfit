@@ -1,6 +1,7 @@
 #' epigrowthfit: Nonlinear Mixed Effects Models of Epidemic Growth
 #'
-#' A description of the \pkg{epigrowthfit} package.
+#' Maximum likelihood estimation of nonlinear mixed effects models
+#' of epidemic growth using Template Model Builder (\pkg{TMB}).
 #'
 #' @details
 #' At the top level, \pkg{epigrowthfit} fits phenomenological nonlinear
@@ -11,18 +12,17 @@
 #' growth rates, while enabling broader characterization of the effects
 #' of covariates of interest.
 #'
-#' Models are fit by maximum likelihood estimation using Template Model
-#' Builder (\pkg{TMB}).
-#'
 #' @references
-#' \insertRef{Ma+14}{epigrowthfit}
+#' Ma J, Dushoff J, Bolker BM, Earn DJD. Estimating initial epidemic
+#' growth rates. B Math Biol. 2014;76:246--60.
 #'
-#' \insertRef{Earn+20}{epigrowthfit}
+#' Earn DJD, Ma J, Poinar HN, Dushoff J, Bolker BM. Acceleration
+#' of plague outbreaks in the second pandemic. P Natl Acad Sci USA.
+#' 2020;117(44):27703--11.
 #'
 #' @name epigrowthfit-package
 #' @docType package
 #' @keywords internal
-#' @importFrom Rdpack reprompt
 NULL
 
 .epigrowthfit <- new.env(parent = emptyenv())

@@ -4,27 +4,18 @@
 \alias{boot_par}
 \title{Parametric bootstrap}
 \usage{
-boot_par(
-  object,
-  n = 6L,
-  control = object$control,
-  parallel = egf_parallel(),
-  trace = TRUE,
-  ...
-)
+boot_par(object, n = 6L, parallel = egf_parallel(), trace = FALSE, ...)
 }
 \arguments{
 \item{object}{An \code{"\link{egf}"} object.}
 
 \item{n}{A positive integer. The desired number of samples.}
 
-\item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
-
-\item{parallel}{An \code{"\link{egf_parallel}"} object defining a parallelization method.}
+\item{parallel}{An \code{"\link{egf_parallel}"} object defining parallelization options.}
 
 \item{trace}{A \link{logical} flag. If \code{TRUE}, then basic tracing messages
-indicating progress are printed. Depending on \code{control$trace},
-these messages may be mixed with optimization output.}
+indicating progress are printed. Depending on \code{object$control$trace},
+these may be mixed with optimization output.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -34,6 +25,6 @@ A \link{numeric} \link{matrix} inheriting from \link{class}
 and \code{n} columns.
 }
 \description{
-Sample from the conditional distribution of the
-full parameter vector given its fitted value.
+Sample from the conditional distribution of the full parameter vector
+given its fitted value.
 }

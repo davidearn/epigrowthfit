@@ -30,8 +30,7 @@ A \link[=data.frame]{data frame} with 723 rows and 4 variables:
 }
 }
 \source{
-These data were transcribed from
-\insertCite{Shar89;textual}{epigrowthfit}.
+These data were transcribed from Sharpe (1889).
 }
 \usage{
 data(husting)
@@ -45,6 +44,7 @@ data(husting)
 subset(husting, outbreak == 1375, -outbreak)
 }
 \references{
-\insertRef{Shar89}{epigrowthfit}
+Sharpe RR. Calendar of wills proved and enrolled in the Court of Husting,
+London, A.D. 1258--A.D. 1688. London: JC Francis; 1889.
 }
 \keyword{datasets}

@@ -115,11 +115,11 @@ NULL
 #' }
 #'
 #' @source
-#' These data were transcribed from
-#' \insertCite{Shar89;textual}{epigrowthfit}.
+#' These data were transcribed from Sharpe (1889).
 #'
 #' @references
-#' \insertRef{Shar89}{epigrowthfit}
+#' Sharpe RR. Calendar of wills proved and enrolled in the Court of Husting,
+#' London, A.D. 1258--A.D. 1688. London: JC Francis; 1889.
 #'
 #' @usage data(husting)
 #' @examples
@@ -196,15 +196,15 @@ NULL
 #' }
 #'
 #' @source
-#' These data were retrieved by
-#' \insertCite{Cumm+16;textual}{epigrowthfit}
-#' with permission from
+#' These data were retrieved by Cummins et al. with permission from
 #' \href{https://www.ancestry.com/}{Ancestry.com}.
 #' They have been made publicly available
 #' \href{http://www.neilcummins.com}{here}.
 #'
+#'
 #' @references
-#' \insertRef{Cumm+16}{epigrowthfit}
+#' Cummins N, Kelly M, \'{O} Gr\'{a}da C. Living standards and plague
+#' in London, 1560--1665. Econ Hist Rev. 2016;69(1):3--34.
 #'
 #' @usage data(londonparishes)
 #' @examples
@@ -270,11 +270,11 @@ NULL
 #' }
 #'
 #' @source
-#' Obtained from Figure 1A in
-#' \insertCite{GaniLeac04;textual}{epigrowthfit}.
+#' Obtained from Figure 1A in Gani and Leach (2004).
 #'
 #' @references
-#' \insertRef{GaniLeac04}{epigrowthfit}
+#' Gani R, Leach S. Epidemiological determinants for modeling
+#' pneumonic plague outbreaks. Emerg Infect Dis. 2004;10(4):608--14.
 #'
 #' @usage data(plague_latent_period)
 #' @examples
@@ -296,11 +296,11 @@ NULL
 #' }
 #'
 #' @source
-#' Obtained from Figure 1B in
-#' \insertCite{GaniLeac04;textual}{epigrowthfit}.
+#' Obtained from Figure 1B in Gani and Leach (2004).
 #'
 #' @references
-#' \insertRef{GaniLeac04}{epigrowthfit}
+#' Gani R, Leach S. Epidemiological determinants for modeling
+#' pneumonic plague outbreaks. Emerg Infect Dis. 2004;10(4):608--14.
 #'
 #' @usage data(plague_infectious_period)
 #' @examples
@@ -338,11 +338,13 @@ NULL
 #'
 #' @source
 #' \code{shape} and \code{scale} were computed from the mean and standard
-#' deviation reported in \insertCite{Gany+20;textual}{epigrowthfit},
-#' Table 4, Scenario 2.
+#' deviation reported in Ganyani et al. (2020), Table 4, Scenario 2.
 #'
 #' @references
-#' \insertRef{Gany+20}{epigrowthfit}
+#' Ganyani T, Kremer C, Chen D, Torneri A, Faes C, Wallinga J, et al.
+#' Estimating the generation interval for coronavirus disease (COVID-19)
+#' based on symptom onset data, March 2020. Eurosurveillance.
+#' 2020;25(17):2000257.
 #'
 #' @usage data(plague_infectious_period)
 #' @examples

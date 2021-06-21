@@ -6,14 +6,15 @@
 #' over the course of an epidemic.
 #'
 #' @param R0
-#'   A non-negative numeric vector listing basic reproduction numbers.
+#'   A non-negative \link{numeric} vector listing basic reproduction numbers.
 #' @param S0,I0
-#'   Numeric vectors listing values in the interval \[0,1\]
-#'   for the initial susceptible and infected proportions,
-#'   respectively. (Hence `S0 + I0` should not exceed 1.)
+#'   \link[=numeric]{Numeric} vectors listing values in the interval [0,1]
+#'   for the initial susceptible and infected proportions, respectively.
+#'   (Hence \code{S0 + I0} should not exceed 1.)
 #'
 #' @return
-#' A numeric vector of length `max(lengths(list(R0, S0, I0)))`
+#' A \link{numeric} vector of length
+#' \code{\link{max}(\link{lengths}(\link{list}(R0, S0, I0)))}
 #' listing epidemic final sizes (see Details).
 #'
 #' @details
@@ -80,7 +81,7 @@ compute_final_size <- function(R0, S0 = 1, I0 = 0) {
   is_bad_triple <- (is.na(R0) | is.na(S0) | is.na(I0) |
                       R0 < 0 | S0 < 0 | I0 < 0 | S0 + I0 > 1)
   if (any(is_bad_triple)) {
-    warning("NA returned for invalid or incomplete (R0,S0,I0) triples.")
+    warning("NA returned for invalid (R0,S0,I0) triples.")
   }
 
   ## Limiting cases
@@ -90,9 +91,9 @@ compute_final_size <- function(R0, S0 = 1, I0 = 0) {
   fs[l2] <- S0[l2]
 
   ## Usual cases
-  l <- !(is_bad_triple | l1 | l2)
-  if (any(l)) {
-    fs[l] <- S0[l] + (1 / R0[l]) * lambertW(-R0[l] * S0[l] * exp(-R0[l] * (S0[l] + I0[l])))
+  l3 <- !(is_bad_triple | l1 | l2)
+  if (any(l3)) {
+    fs[l3] <- S0[l3] + (1 / R0[l3]) * lambertW(-R0[l3] * S0[l3] * exp(-R0[l3] * (S0[l3] + I0[l3])))
   }
   fs
 }

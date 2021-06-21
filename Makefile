@@ -16,21 +16,20 @@ deps:
 
 build: $(TARBALL)
 
-$(TARBALL): enum rd src/$(PACKAGE).so DESCRIPTION
+$(TARBALL): enum src/$(PACKAGE).cpp src/*.h DESCRIPTION rd
 	$(R) CMD build .
 	mv $@ ..
 
-enum: utils/update_enum.R
-	$(MAKE) -C utils enum
+enum: utils/update_enum.R src/enum.h
+	cd utils
+	$(R) --quiet -f $(notdir $<)
+	cd ..
 
-rd: R/*.R inst/REFERENCES.bib
+rd: R/*.R
 	$(R) --quiet -e 'devtools::document(".")'
 	#sed -i.bak 's/USCORE/_/ g' man/*.Rd 
 	#sed -i.bak 's/\\text{/\\textrm{/ g' man/*.Rd
 	#rm man/*.Rd.bak
-
-src/$(PACKAGE).so: src/$(PACKAGE).cpp src/*.h
-	$(MAKE) -C src
 
 manual: $(MANUAL)
 
@@ -48,4 +47,4 @@ clean:
 	rm -f ../$(TARBALL) ../$(PACKAGE)-manual.pdf
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
-	$(MAKE) -C src clean
+	rm -f src/*.{o,so}

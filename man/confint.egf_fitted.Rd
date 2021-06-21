@@ -12,7 +12,7 @@ Must supply standard errors on fitted values.}
 
 \item{parm}{Unused argument included for generic consistency.}
 
-\item{level}{A number in the interval (0,1), giving the desired confidence level.}
+\item{level}{A number in the interval (0,1) indicating a confidence level.}
 
 \item{link}{A \link{logical} flag. If \code{FALSE}, then confidence intervals
 on inverse link-transformed fitted values are returned.}

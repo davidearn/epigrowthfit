@@ -2,10 +2,10 @@
 #'
 #' Computes fitted values of nonlinear and dispersion model parameters.
 #' The fitted value for a given fitting window is obtained by adding
-#' (i) the population fitted value computed from the
-#' relevant fixed effects coefficients and
-#' (ii) all applicable random effects, with random effects
-#' coefficients set equal to their conditional modes.
+#' (i) the population fitted value computed as a linear combination
+#' of fixed effects coefficients and
+#' (ii) all applicable random effects, with random effects coefficients
+#' set equal to their conditional modes.
 #'
 #' @param object
 #'   An \code{"\link{egf}"} object.
@@ -33,10 +33,10 @@
 #'   are reported. Note that standard errors are required for subsequent
 #'   use of \code{\link{confint.egf_fitted}}.
 #' @param .subset
-#'   A \link{logical} vector, to be used (if non-\code{\link{NULL}})
+#'   A \link{logical} vector to be used (if non-\code{\link{NULL}})
 #'   in place of the result of evaluating \code{subset}.
 #' @param .append
-#'   A \link{character} vector listing variable names, to be used
+#'   A \link{character} vector listing variable names to be used
 #'   (if non-\code{\link{NULL}}) in place of the result of evaluating
 #'   \code{append}.
 #' @param ...
@@ -81,8 +81,9 @@ fitted.egf <- function(object,
                        .append = NULL,
                        ...) {
   stop_if_not_true_false(link)
+  par_names <- get_par_names(object, link = TRUE)
+  par <- unique(match.arg(par, par_names, several.ok = TRUE))
   combined <- make_combined(object)
-  par <- unique(match.arg(par, several.ok = TRUE))
   subset <- subset_to_index(substitute(subset), data = combined, enclos = parent.frame(),
                             .subset = .subset)
   append <- append_to_index(substitute(append), data = combined, enclos = parent.frame(),
@@ -111,15 +112,13 @@ fitted.egf <- function(object,
 
   ## `Y[i, j]` is the fitted value of nonlinear or dispersion parameter `j`
   ## (link scale) in fitting window `i`
-  par_names <- get_par_names(object, link = TRUE)
   dim(Y) <- c(nrow(object$endpoints), length(par_names))
   colnames(Y) <- par_names
   Y <- Y[subset, par, drop = FALSE]
 
   d <- data.frame(
     par = rep(factor(par, levels = par_names), each = sum(subset)),
-    ts = object$endpoints$ts[subset],
-    window = object$endpoints$window[subset],
+    object$endpoints[subset, c("ts", "window"), drop = FALSE],
     estimate = as.numeric(Y)
   )
   if (link && se) {
@@ -130,7 +129,7 @@ fitted.egf <- function(object,
   }
   if (!link) {
     d$estimate <- mftapply(d$estimate, d$par,
-      f_list = lapply(string_extract_link(levels(d$par)), match_link, inverse = TRUE)
+      f = lapply(string_extract_link(levels(d$par)), match_link, inverse = TRUE)
     )
     levels(d$par) <- string_remove_link(levels(d$par))
   }
@@ -160,7 +159,7 @@ coef.egf <- fitted.egf
 #' @param parm
 #'   Unused argument included for generic consistency.
 #' @param level
-#'   A number in the interval (0,1), giving the desired confidence level.
+#'   A number in the interval (0,1) indicating a confidence level.
 #' @param link
 #'   A \link{logical} flag. If \code{FALSE}, then confidence intervals
 #'   on inverse link-transformed fitted values are returned.
@@ -211,7 +210,7 @@ confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
   }
   s_elu <- c("estimate", "lower", "upper")
   d[s_elu] <- mftapply(d[s_elu], d$par,
-    f_list = lapply(string_extract_link(levels(d$par)), match_link, inverse = TRUE)
+    f = lapply(string_extract_link(levels(d$par)), match_link, inverse = TRUE)
   )
   levels(d$par) <- string_remove_link(levels(d$par))
   d

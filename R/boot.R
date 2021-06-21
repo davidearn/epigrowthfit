@@ -1,20 +1,18 @@
 #' Parametric bootstrap
 #'
-#' Sample from the conditional distribution of the
-#' full parameter vector given its fitted value.
+#' Sample from the conditional distribution of the full parameter vector
+#' given its fitted value.
 #'
 #' @param object
 #'   An \code{"\link{egf}"} object.
 #' @param n
 #'   A positive integer. The desired number of samples.
-#' @param control
-#'   An \code{"\link{egf_control}"} object specifying control parameters.
 #' @param parallel
-#'   An \code{"\link{egf_parallel}"} object defining a parallelization method.
+#'   An \code{"\link{egf_parallel}"} object defining parallelization options.
 #' @param trace
 #'   A \link{logical} flag. If \code{TRUE}, then basic tracing messages
-#'   indicating progress are printed. Depending on \code{control$trace},
-#'   these messages may be mixed with optimization output.
+#'   indicating progress are printed. Depending on \code{object$control$trace},
+#'   these may be mixed with optimization output.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -24,22 +22,17 @@
 #' and \code{n} columns.
 #'
 #' @export
-#' @import parallel
 #' @importFrom TMB MakeADFun
+#' @import parallel
 boot_par <- function(object,
                      n = 6L,
-                     control = object$control,
                      parallel = egf_parallel(),
-                     trace = TRUE,
+                     trace = FALSE,
                      ...) {
   ## FIXME: Should this be a method for a `boot()` generic?
   stop_if_not(
     inherits(object, "egf"),
     m = "`object` must inherit from class \"egf\". See `?egf`."
-  )
-  stop_if_not(
-    inherits(control, "egf_control"),
-    m = "`control` must inherit from class \"egf_control\". See `?egf_control`."
   )
   stop_if_not(
     inherits(parallel, "egf_parallel"),
@@ -64,14 +57,14 @@ boot_par <- function(object,
     ## Define objective function and gradient conditional on simulated data
     tmb_out_sim <- do.call(MakeADFun, object$tmb_args)
     ## Patch
-    tmb_out_sim$fn <- patch_fn(tmb_out_sim$fn, inner_optimizer = control$inner_optimizer)
-    tmb_out_sim$gr <- patch_gr(tmb_out_sim$gr, inner_optimizer = control$inner_optimizer)
+    tmb_out_sim$fn <- patch_fn(tmb_out_sim$fn, inner_optimizer = object$control$inner_optimizer)
+    tmb_out_sim$gr <- patch_gr(tmb_out_sim$gr, inner_optimizer = object$control$inner_optimizer)
     ## Optimize
     optimizer <- object$control$optimizer$f
     optimizer_args <- c(
       tmb_out_sim[c("par", "fn", "gr")],
-      control$optimizer["control"],
-      control$optimizer[["args"]]
+      object$control$optimizer["control"],
+      object$control$optimizer[["args"]]
     )
     tryCatch(
       expr = {
@@ -86,9 +79,10 @@ boot_par <- function(object,
   }
 
   if (parallel$method == "snow") {
-    ## Doing this to avoid duplication of `clusterExport`.
-    ## Function environment would otherwise be serialized
-    ## unnecessarily.
+    ## Doing this to avoid duplication of `clusterExport`
+    ## (i.e., unnecessary serialization of function environment):
+    ## https://stackoverflow.com/questions/17402077/how-to-clusterexport-a-function-without-its-evaluation-environment
+    ## https://stackoverflow.com/questions/18035711/environment-and-scope-when-using-parallel-functions
     environment(do_sim) <- .GlobalEnv
 
     if (is.null(parallel$cl)) {
@@ -97,11 +91,11 @@ boot_par <- function(object,
     } else {
       cl <- parallel$cl
     }
-    clusterEvalQ(cl, library("epigrowthfit"))
+    clusterEvalQ(cl, library("TMB"))
     ## Need to make internal functions `patch_fn` and `patch_gr`
     ## available in global environment of worker processes
     clusterExport(cl,
-      varlist = c("object", "n", "control", "trace", "patch_fn", "patch_gr"),
+      varlist = c("object", "n", "trace", "patch_fn", "patch_gr"),
       envir = environment()
     )
     clusterSetRNGStream(cl)

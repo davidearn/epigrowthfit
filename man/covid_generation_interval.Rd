@@ -27,8 +27,7 @@ A \link{list} with 4 elements:
 }
 \source{
 \code{shape} and \code{scale} were computed from the mean and standard
-deviation reported in \insertCite{Gany+20;textual}{epigrowthfit},
-Table 4, Scenario 2.
+deviation reported in Ganyani et al. (2020), Table 4, Scenario 2.
 }
 \usage{
 data(plague_infectious_period)
@@ -47,6 +46,9 @@ plot(x, fx, type = "l", ylim = c(0, max(fx[-1L])))
 
 }
 \references{
-\insertRef{Gany+20}{epigrowthfit}
+Ganyani T, Kremer C, Chen D, Torneri A, Faes C, Wallinga J, et al.
+Estimating the generation interval for coronavirus disease (COVID-19)
+based on symptom onset data, March 2020. Eurosurveillance.
+2020;25(17):2000257.
 }
 \keyword{datasets}

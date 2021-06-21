@@ -12,8 +12,7 @@ A \link[=data.frame]{data frame} with 12 rows and 2 variables:
 }
 }
 \source{
-Obtained from Figure 1A in
-\insertCite{GaniLeac04;textual}{epigrowthfit}.
+Obtained from Figure 1A in Gani and Leach (2004).
 }
 \usage{
 data(plague_latent_period)
@@ -27,6 +26,7 @@ plot(relfreq ~ days, data = plague_latent_period)
 
 }
 \references{
-\insertRef{GaniLeac04}{epigrowthfit}
+Gani R, Leach S. Epidemiological determinants for modeling
+pneumonic plague outbreaks. Emerg Infect Dis. 2004;10(4):608--14.
 }
 \keyword{datasets}

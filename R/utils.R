@@ -153,21 +153,51 @@ wrap <- function(..., width = 0.9 * getOption("width")) {
   paste(paragraph_lines, collapse = "\n")
 }
 
-mftapply <- function(x, index, f_list) {
+rle_patch <- function(x) {
+  n <- length(x)
+  if (n == 0L) {
+    return(list(lengths = integer(0L), values = x))
+  }
+  l <- x[-n] != x[-1L]
+  if (any(argna <- is.na(x))) {
+    l[is.na(l)] <- FALSE
+    l <- l | (argna[-n] & !argna[-1L]) | (!argna[-n] & argna[-1L])
+  }
+  i <- c(which(l), n)
+  list(lengths = diff(c(0L, i)), values = x[i])
+}
+
+locf <- function(x, x0 = NULL) {
+  if (!anyNA(x)) {
+    return(x)
+  }
+  rle_x <- rle_patch(x)
+  y <- rle_x$values
+  if (is.na(y[1L]) && !is.null(x0)) {
+    y[1L] <- x0
+  }
+  if (anyNA(y[-1L])) {
+    argna_y <- which(c(FALSE, is.na(y[-1L])))
+    y[argna_y] <- y[argna_y - 1L]
+  }
+  rle_x$values <- y
+  inverse.rle(rle_x)
+}
+
+mftapply <- function(x, index, f) {
   stop_if_not(
-    is.list(f_list),
-    length(f_list) > 0L,
-    vapply(f_list, is.function, FALSE),
-    m = "`f_list` must be a list of functions of positive length."
+    is.list(f),
+    length(f) > 0L,
+    vapply(f, is.function, FALSE),
+    m = "`f` must be a list of functions of positive length."
   )
   if (is.data.frame(x)) {
-    do_call <- function(f, x) { x[] <- lapply(x, f); x }
+    do_call <- function(f0, x) { x[] <- lapply(x, f0); x }
   } else {
-    do_call <- function(f, x) { f(x) }
+    do_call <- function(f0, x) { f0(x) }
   }
-  x_split <- split(x, index, drop = FALSE)
-  fx_split <- Map(do_call, x = x_split, f = f_list)
-  unsplit(fx_split, index, drop = FALSE)
+  split(x, index, drop = FALSE) <- Map(do_call, x = split(x, index, drop = FALSE), f0 = f)
+  x
 }
 
 #' @importFrom stats qchisq

@@ -55,10 +55,10 @@ then approximate (delta method) standard errors on fitted values
 are reported. Note that standard errors are required for subsequent
 use of \code{\link{confint.egf_fitted}}.}
 
-\item{.subset}{A \link{logical} vector, to be used (if non-\code{\link{NULL}})
+\item{.subset}{A \link{logical} vector to be used (if non-\code{\link{NULL}})
 in place of the result of evaluating \code{subset}.}
 
-\item{.append}{A \link{character} vector listing variable names, to be used
+\item{.append}{A \link{character} vector listing variable names to be used
 (if non-\code{\link{NULL}}) in place of the result of evaluating
 \code{append}.}
 
@@ -88,10 +88,10 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
 \description{
 Computes fitted values of nonlinear and dispersion model parameters.
 The fitted value for a given fitting window is obtained by adding
-(i) the population fitted value computed from the
-relevant fixed effects coefficients and
-(ii) all applicable random effects, with random effects
-coefficients set equal to their conditional modes.
+(i) the population fitted value computed as a linear combination
+of fixed effects coefficients and
+(ii) all applicable random effects, with random effects coefficients
+set equal to their conditional modes.
 }
 \details{
 \code{coef.egf} is currently an alias for \code{fitted.egf}.

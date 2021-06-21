@@ -27,9 +27,7 @@ A \link[=data.frame]{data frame} with 14198 rows and 4 variables:
 }
 }
 \source{
-These data were retrieved by
-\insertCite{Cumm+16;textual}{epigrowthfit}
-with permission from
+These data were retrieved by Cummins et al. with permission from
 \href{https://www.ancestry.com/}{Ancestry.com}.
 They have been made publicly available
 \href{http://www.neilcummins.com}{here}.
@@ -46,6 +44,7 @@ data(londonparishes)
 subset(londonparishes, outbreak == 1665, -outbreak) # Great Plague of London
 }
 \references{
-\insertRef{Cumm+16}{epigrowthfit}
+Cummins N, Kelly M, \'{O} Gr\'{a}da C. Living standards and plague
+in London, 1560--1665. Econ Hist Rev. 2016;69(1):3--34.
 }
 \keyword{datasets}

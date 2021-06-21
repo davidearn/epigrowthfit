@@ -1241,11 +1241,11 @@ make_tmb_parameters <- function(tmb_data, frame, frame_par, model, do_fit, init)
       ## given a time series segment
       get_r_c0 <- function(d) {
         n <- max(2, trunc(nrow(d) / 2))
-        ab <- tryCatch(
-          coef(lm(log1p(cumsum(x)) ~ t, data = d, subset = seq_len(n), na.action = na.omit)),
-          error = function(e) c(0, 0.1)
-        )
-        c(ab[[2L]], exp(ab[[1L]]))
+        a_b <- try(coef(lm(log1p(cumsum(x)) ~ t, data = d, subset = seq_len(n), na.action = na.omit)))
+        if (inherits(a_b, "try-error") || any(!is.finite(a_b))) {
+          return(c(0.1, 1))
+        }
+        c(a_b[[2L]], exp(a_b[[1L]]))
       }
       get_tinfl <- function(d) {
         max(d$t)
