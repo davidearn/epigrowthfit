@@ -1,5 +1,6 @@
 ^data-raw$
 ^debug$
+^inst$
 ^misc$
 ^mre$
 ^R/old$
