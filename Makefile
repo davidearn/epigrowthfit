@@ -21,9 +21,7 @@ $(TARBALL): enum src/$(PACKAGE).cpp src/*.h DESCRIPTION rd
 	mv $@ ..
 
 enum: utils/update_enum.R src/enum.h
-	cd utils
-	$(R) --quiet -f $(notdir $<)
-	cd ..
+	cd $(dir $<) && $(R) --quiet -f $(notdir $<)
 
 rd: R/*.R
 	$(R) --quiet -e 'devtools::document(".")'
