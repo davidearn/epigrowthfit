@@ -18,7 +18,6 @@
 #'   If \code{\link{sum}(probs) != 1}, then \code{probs} is replaced
 #'   with \code{probs / \link{sum}(probs)}.
 #'
-#' @details
 #' @section Computation:
 #' For an initial exponential growth rate \code{r},
 #' the basic reproduction number \code{R0} is computed as

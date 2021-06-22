@@ -30,8 +30,8 @@
 #' @param se
 #'   A \link{logical} flag. If \code{link = TRUE} and \code{se = TRUE},
 #'   then approximate (delta method) standard errors on fitted values
-#'   are reported. Note that standard errors are required for subsequent
-#'   use of \code{\link{confint.egf_fitted}}.
+#'   are reported. Standard errors are required for subsequent use of
+#'   \code{\link{confint.egf_fitted}}.
 #' @param .subset
 #'   A \link{logical} vector to be used (if non-\code{\link{NULL}})
 #'   in place of the result of evaluating \code{subset}.
@@ -208,8 +208,8 @@ confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
   if (link) {
     return(d)
   }
-  s_elu <- c("estimate", "lower", "upper")
-  d[s_elu] <- mftapply(d[s_elu], d$par,
+  elu <- c("estimate", "lower", "upper")
+  d[elu] <- mftapply(d[elu], d$par,
     f = lapply(string_extract_link(levels(d$par)), match_link, inverse = TRUE)
   )
   levels(d$par) <- string_remove_link(levels(d$par))

@@ -412,6 +412,7 @@ make_frames <- function(model,
       all.equal(frame$time, z <- round(frame$time)),
       m = sprintf("model$day_of_week > 0: `%s` must be an integer or Date vector.", nf$time)
     )
+    ## FIXME: fails for weird Date vectors like `.Date(0.1)`
     frame$time <- z
   }
 

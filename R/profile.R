@@ -173,9 +173,9 @@ profile.egf <- function(fitted,
     par_names <- get_par_names(fitted, link = TRUE)
     par <- unique(match.arg(par, par_names, several.ok = TRUE))
     combined <- make_combined(fitted)
-    subset <- subset_to_index(substitute(subset), combined, parent.frame(),
+    subset <- subset_to_index(substitute(subset), data = combined, enclos = parent.frame(),
                               .subset = .subset)
-    append <- append_to_index(substitute(append), combined, parent.frame(),
+    append <- append_to_index(substitute(append), data = combined, enclos = parent.frame(),
                               .append = .append)
 
     p <- length(par)
@@ -241,8 +241,9 @@ profile.egf <- function(fitted,
       cl <- parallel$cl
     }
     clusterEvalQ(cl, library("TMB"))
-    clusterExport(cl, varlist = c("a", "m", "method"), envir = environment())
+    clusterExport(cl, varlist = c("tmbprofile_args", "m", "method"), envir = environment())
     dl <- clusterMap(cl, do_profile, r = r, h = h, i = seq_len(m))
+
   } else {
     if (parallel$outfile != "") {
       outfile <- file(parallel$outfile, open = "wt")
@@ -373,8 +374,8 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = TRUE, ...) {
 
   out <- do.call(rbind, by(object, object$linear_combination, do_solve, simplify = FALSE))
   if (attr(object, "method") == "par" && !link) {
-    s_elu <- c("estimate", "lower", "upper")
-    out[s_elu] <- mftapply(out[s_elu], out$par,
+    elu <- c("estimate", "lower", "upper")
+    out[elu] <- mftapply(out[elu], out$par,
       f = lapply(string_extract_link(levels(out$par)), match_link, inverse = TRUE)
     )
     levels(out$par) <- string_remove_link(levels(out$par))

@@ -52,8 +52,8 @@ are inverse link-transformed.}
 
 \item{se}{A \link{logical} flag. If \code{link = TRUE} and \code{se = TRUE},
 then approximate (delta method) standard errors on fitted values
-are reported. Note that standard errors are required for subsequent
-use of \code{\link{confint.egf_fitted}}.}
+are reported. Standard errors are required for subsequent use of
+\code{\link{confint.egf_fitted}}.}
 
 \item{.subset}{A \link{logical} vector to be used (if non-\code{\link{NULL}})
 in place of the result of evaluating \code{subset}.}

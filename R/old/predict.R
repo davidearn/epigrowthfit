@@ -1,85 +1,96 @@
 #' Compute predicted values
 #'
-#' Computes predicted values of interval incidence,
-#' cumulative incidence, and the per capita growth rate
-#' conditional on observed data and an estimated model.
+#' Computes predicted values of interval incidence, cumulative incidence,
+#' and the per capita growth rate conditional on observed data and an estimated
+#' model of epidemic growth.
 #'
 #' @param object
-#'   An `"egf"` object returned by [egf()].
+#'   An \code{"\link{egf}"} object.
 #' @param what
-#'   A character vector listing one or more variables for which
+#'   A \link{character} vector listing one or more variables for which
 #'   predicted values are sought.
 #' @param time
-#'   A numeric or Date vector supplying time points at which
-#'   predicted values are sought. Numeric `time` is assumed
-#'   to measure time as a number of days since _the end of_
-#'   date `origin = attr(object$frame_ts, "origin")`.
-#'   Date `time` is coerced to numeric `julian(time, origin)`.
-#'   When missing, `object$frame_ts$time` is used.
+#'   A \link{numeric} or \link{Date} vector supplying time points at which
+#'   predicted values are sought. Numeric \code{time} is assumed to measure
+#'   time as a number of days since \emph{the end of} Date
+#'   \code{origin} = \link{attr}(object$frame, "origin")}. Date \code{time}
+#'   is coerced to numeric \code{\link{julian}(time, origin)}. When missing,
+#'   \code{object$frame$time} is used.
 #' @param window
-#'   A factor of length `length(time)` such that
-#'   `split(time, window)` splits `time` by fitting window.
-#'   Levels not belonging to `levels(object$frame_ts$window)`
-#'   are ignored.
-#'   When `time` is missing, `object$frame_ts$window` is used.
+#'   A \link{factor} of length \code{\link{length}(time)} such that
+#'   \code{\link{split}(time, window)} splits \code{time} by fitting window.
+#'   Levels not belonging to \code{\link{levels}(object$frame$window)}
+#'   are ignored. When \code{time} is missing, \code{object$frame$window}
+#'   is used.
+#' @param append
+#'   An expression indicating variables in the combined model frame
+#'   (see \code{\link{make_combined}}) to be included with the result.
+#'   The default (\code{\link{NULL}}) is to append nothing.
 #' @param log
-#'   A logical scalar. If `FALSE`, then inverse log-transformed
-#'   predicted values are returned.
+#'   A \link{logical} flag. If \code{FALSE},
+#'   then inverse log-transformed predicted values are returned.
 #' @param se
-#'   A logical scalar. If `log = TRUE` and `se = TRUE`, then
-#'   approximate (delta method) standard errors on predicted values
-#'   are reported. Note that standard errors are required for
-#'   subsequent use of [confint.egf_predict()].
-#' @inheritParams fitted.egf
+#'   A \link{logical} flag. If \code{log = TRUE} and \code{se = TRUE},
+#'   then approximate (delta method) standard errors on predicted values
+#'   are reported. Standard errors are required for subsequent use of
+#'   \code{\link{confint.egf_predict}}.
+#' @param .append
+#'   A \link{character} vector listing variable names to be used
+#'   (if non-\code{\link{NULL}}) in place of the result of evaluating
+#'   \code{append}.
 #' @param ...
 #'   Unused optional arguments.
 #'
 #' @details
-#' In the returned data frame, assuming `log = FALSE`,
-#' `estimate[i]` can be interpreted as follows:
+#' In the result, \code{exp(estimate[i])} can be interpreted as follows,
+#' assuming \code{log = TRUE}:
 #' \describe{
-#' \item{`int_inc`}{
-#'   The number of cases predicted from `time[i-1]` to `time[i]`
-#'   in `window[i]` (interval incidence).
+#' \item{\code{log_int_inc}}{
+#'   The number of cases predicted from \code{time[i-1]} to \code{time[i]}
+#'   in \code{window[i]} (interval incidence).
 #' }
-#' \item{`cum_inc`}{
-#'   The number of cases predicted from the start of `window[i]`
-#'   to `time[i]` (cumulative incidence).
+#' \item{\code{log_cum_inc}}{
+#'   The number of cases predicted from the start of \code{window[i]}
+#'   to \code{time[i]} (cumulative incidence).
 #' }
-#' \item{`rt`}{
-#'   The per capita growth rate at `time[i]`. This is obtained
+#' \item{\code{log_rt}{
+#'   The per capita growth rate at \code{time[i]}. This is obtained
 #'   exactly from the differential equation model associated with
-#'   `object$curve`, unless `object$weekday > 0`, in which case
-#'   it is approximated by 7-point local linear regression of the
-#'   log interval incidence time series.
+#'   \code{object$model$curve}, unless \code{object$model$day_of_week > 0},
+#'   in which case it is approximated by 7-point local linear regression
+#'   of the log interval incidence time series.
 #' }
 #' }
 #'
-#' See topic [`nse`] for details on nonstandard evaluation of `append`.
+#' See topic \code{\link{nse}} for details on nonstandard evaluation
+#' of \code{append}.
 #'
 #' @return
-#' A data frame inheriting from class `"egf_predict"`, with variables:
-#' \item{`var`}{
-#'   Predicted variable, from `what`.
+#' A \link[=data.frame]{data frame} inheriting from \link{class}
+#' \code{"egf_predict"}, with variables:
+#' \item{var}{
+#'   Predicted variable, from \code{what}.
 #' }
-#' \item{`ts`}{
-#'   Time series, from `levels(object$endpoints$ts)`.
+#' \item{ts}{
+#'   Time series, from \code{\link{levels}(object$endpoints$ts)}.
 #' }
-#' \item{`window`}{
-#'   Fitting window, from `levels(object$endpoints$window)`.
+#' \item{window}{
+#'   Fitting window, from \code{\link{levels](object$endpoints$window)}.
 #' }
-#' \item{`time`}{
-#'   Time, after possible coercion from Date to numeric.
+#' \item{time}{
+#'   Time, after possible coercion from \link{Date} to \link{numeric}.
 #' }
-#' \item{`estimate`}{
-#'   Predicted value of `var` at `time` in `window` (see Details),
-#'   conditional on `object$frame_par` and `object$best`.
+#' \item{estimate}{
+#'   Predicted value of \code{var} at \code{time} in \code{window},
+#'   conditional on the mixed effects data found in \code{object$frame_par}
+#'   and the fitted model specified by \code{object$best}.
 #' }
-#' \item{`se`}{
-#'   (If `log = TRUE` and `se = TRUE`.)
-#'   Approximate (delta method) standard error on `estimate`.
+#' \item{se}{
+#'   (If \code{log = TRUE} and \code{se = TRUE}.)
+#'   Approximate (delta method) standard error on \code{estimate}.
 #' }
-#' `attr(object$endpoints, "origin")` is retained as an attribute.
+#' \code{\link{attr}(object$frame, "origin")} is retained
+#' as an \link[=attributes]{attribute}.
 #'
 #' @export
 #' @importFrom TMB MakeADFun sdreport
@@ -93,20 +104,20 @@ predict.egf <- function(object,
                         .append = NULL,
                         ...) {
   what <- unique(match.arg(what, several.ok = TRUE))
+  stop_if_not_true_false(log)
   stop_if_not_true_false(se)
 
   combined <- make_combined(object)
-  append <- append_to_index(substitute(append), combined, parent.frame(),
+  append <- append_to_index(substitute(append), data = combined, enclos = parent.frame(),
                             .append = .append)
-
   endpoints <- object$endpoints
   origin <- attr(endpoints, "origin")
-  weekday <- object$weekday
-  min_window_len <- max(2L, 8L * (weekday > 0L) * ("log_rt" %in% what))
+  day_of_week <- object$model$day_of_week
+  min_window_len <- max(2L, 8L * (day_of_week > 0L) * ("log_rt" %in% what))
 
   if (no_time <- missing(time)) {
-    time <- object$frame_ts$time
-    window <- object$frame_ts$window
+    time <- object$frame$time
+    window <- object$frame$window
     subset <- seq_along(levels(window))
   } else {
     if (inherits(time, "Date")) {
@@ -114,19 +125,13 @@ predict.egf <- function(object,
     }
     stop_if_not(
       is.numeric(time),
-      m = "`time` must be a numeric or Date vector."
+      is.finite(time),
+      m = "`time` must be a finite numeric or Date vector."
     )
-    stop_if_not(
-      !anyNA(time),
-      m = "`time` must not have missing values."
-    )
-    if (weekday > 0L) {
+    if (day_of_week > 0L) {
       stop_if_not(
         all.equal(time, z <- round(time)),
-        m = paste0(
-          "weekday > 0: `time` must be an integer vector\n",
-          "(in the sense of `all.equal(time, round(time))`)."
-        )
+        m = "object$model$day_of_week > 0: `time` must be an integer or Date vector."
       )
       time <- z
     }
@@ -136,7 +141,7 @@ predict.egf <- function(object,
       m = "`window` must be a factor of length `length(time)`."
     )
     wl <- levels(object$frame_ts$window)
-    subset <- match(levels(droplevels(window)), wl, 0L)
+    subset <- match(levels(factor(window)), wl, 0L)
     window <- factor(window, levels = wl[subset])
     stop_if_not(
       nlevels(window) > 0L,
@@ -145,7 +150,7 @@ predict.egf <- function(object,
   }
   stop_if_not(
     tabulate(window) > min_window_len,
-    m = sprintf("`time` must have length %d or greater\nin each level of `window`.", min_window_len)
+    m = sprintf("`time` must have length %d or greater in each level of `window`.", min_window_len)
   )
   time_split <- split(time, window)
   starts <- endpoints$start[subset]
@@ -154,12 +159,12 @@ predict.egf <- function(object,
     stop_if_not(
       vapply(time_split, min, 0) >= starts,
       vapply(time_split, max, 0) <= ends,
-      m = "`time[i]` must not occur before (after)\nthe start (end) of `window[i]`."
+      m = "`time[i]` must not occur before (after) the start (end) of `window[i]`."
     )
-    if (weekday > 0L) {
+    if (day_of_week > 0L) {
       stop_if_not(
         vapply(time_split, function(x) all(diff(x) == 1), FALSE),
-        n = "weekday > 0: `time` must have 1-day spacing\nin each level of `window`."
+        n = "day_of_week > 0: `time` must have 1-day spacing in each level of `window`."
       )
     } else {
       stop_if_not(
@@ -171,7 +176,7 @@ predict.egf <- function(object,
     ## the start of the window must be included as a time point
     if ("log_cum_inc" %in% what) {
       f <- function(x, x0) {
-        if (weekday > 0L) {
+        if (day_of_week > 0L) {
           return(seq.int(x0, x[length(x)]))
         }
         if (x[1L] > x0) {
@@ -181,30 +186,28 @@ predict.egf <- function(object,
       }
       time_split <- Map(f, x = time_split, x0 = starts)
     }
-    time <- unlist(time_split, use.names = FALSE)
+    time <- unlist(time_split, FALSE, FALSE)
   }
 
-  ## Additional data objects needed to run prediction code
-  ## in C++ template
+  ## Additional data objects needed to run prediction code in C++ template
   lens <- lengths(time_split, use.names = FALSE)
   l <- list(
     what_flag = as.integer(c("log_int_inc", "log_cum_inc", "log_rt") %in% what),
-    se_flag = as.integer(se),
     t_predict = time - rep.int(starts, lens),
     t_predict_seg_len = lens,
-    weekday_on_day0_predict = object$tmb_args$data$weekday_on_day0[subset],
-    Xd_predict = object$tmb_args$data$Xd[subset, , drop = FALSE],
+    day_of_week_on_day0_predict = object$tmb_args$data$weekday_on_day0[subset],
+    Yo_predict = object$tmb_args$data$Yo[subset, , drop = FALSE],
     Xs_predict = object$tmb_args$data$Xs[subset, , drop = FALSE],
-    Z_predict = object$tmb_args$data$Z[subset, , drop = FALSE],
-    Yo_predict = object$tmb_args$data$Yo[subset, , drop = FALSE]
+    Xd_predict = object$tmb_args$data$Xd[subset, , drop = FALSE],
+    Z_predict = object$tmb_args$data$Z[subset, , drop = FALSE]
   )
-  object$tmb_args$data$predict_flag <- 1L
   object$tmb_args$data <- c(object$tmb_args$data, l)
-  tmb_out <- do.call(MakeADFun, c(object$tmb_args))
+  object$tmb_args$data$predict_flag <- 1L
+  tmb_out <- do.call(MakeADFun, object$tmb_args)
 
   if (se) {
     tmb_out$fn(object$best[object$nonrandom])
-    r <- split_sdreport(sdreport(tmb_out))[what]
+    r <- as.list(sdreport(tmb_out))[what]
   } else {
     r <- tmb_out$report(object$best)[what]
     r <- lapply(r, function(x) list(estimate = x))

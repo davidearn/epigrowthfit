@@ -508,11 +508,9 @@ Type objective_function<Type>::operator() ()
 
 	// Flags
 	DATA_IVECTOR(what_flag); // predict  (1=yes, 0=no)
-	DATA_INTEGER(se_flag);   // report   (1=ADREPORT, 0=REPORT)
 	bool predict_lii = (what_flag(0) == 1);
 	bool predict_lci = (what_flag(1) == 1);
 	bool predict_lrt = (what_flag(2) == 1);
-	bool report_se   = (se_flag      == 1);
 
 
 	/* Compute response matrix ------------------------------------------ */
@@ -547,15 +545,8 @@ Type objective_function<Type>::operator() ()
 	{
 	    // Log interval incidence
 	    vector<Type> log_int_inc = log_cases_predict;
-
-	    if (report_se)
-	    {
-	        ADREPORT(log_int_inc);
-	    }
-	    else
-	    {
-	        REPORT(log_int_inc);
-	    }
+	    REPORT(log_int_inc);
+	    ADREPORT(log_int_inc);
 	}
 	
 	if (predict_lci)
@@ -569,15 +560,8 @@ Type objective_function<Type>::operator() ()
 		log_cum_inc.segment(i, t_predict_seg_len(s) - 1) = logspace_cumsum_1(v);
 		i += t_predict_seg_len(s) - 1;
 	    }
-	    
-	    if (report_se)
-	    {
-	        ADREPORT(log_cum_inc);
-	    }
-	    else
-	    {
-	        REPORT(log_cum_inc);
-	    }
+	    REPORT(log_cum_inc);
+	    ADREPORT(log_cum_inc);
 	}
 	
 	if (predict_lrt)
@@ -589,14 +573,8 @@ Type objective_function<Type>::operator() ()
 			    curve_flag, excess, day_of_week, Y_predict,
 			    j_log_r, j_log_alpha, j_log_K, j_logit_p, j_log_a, j_log_b);
 	    
-	    if (report_se)
-	    {
-	        ADREPORT(log_rt);
-	    }
-	    else
-	    {
-	        REPORT(log_rt);
-	    }
+	    REPORT(log_rt);
+	    ADREPORT(log_rt);
 	}
     }
     
