@@ -1,11 +1,15 @@
 #' Generation interval distribution
 #'
-#' Generation interval density, distribution, and quantile functions.
-#' These functions assume:
+#' Generation interval
+#' density function (\code{dgi}), distribution function (\code{pgi}),
+#' quantile function (\code{qgi}), and sampling (\code{rgi}).
+#' Results are conditional on supplied latent and infectious period
+#' distributions. It is assumed
 #' \itemize{
-#' \item that the latent and infectious periods are integer-valued,
-#' \item that the latent period and infectious waiting time are independent, and
-#' \item that infectiousness is constant over the infectious period.
+#' \item that the latent period and infectious waiting time are independent,
+#' \item that infectiousness is constant over the infectious period, and
+#' \item that the latent and infectious periods are positive and integer-valued
+#' (in arbitrary but like units of time).
 #' }
 #'
 #' @param x,q
@@ -16,62 +20,17 @@
 #'   A non-negative integer indicating a desired sample size.
 #' @param latent,infectious
 #'   \link[=numeric]{Numeric} vectors such that \code{latent[i]} and
-#'   \lcode{infectious[i]} are the probabilities that the latent and
-#'   infectious periods, respectively, are \code{i}. Like units of
-#'   time are assumed. It is sufficient to supply probability weights,
-#'   as both vectors are divided by their sums internally.
+#'   \code{infectious[i]} are the probabilities that the latent and
+#'   infectious periods, respectively, are \code{i} units of time.
+#'   It is sufficient to supply probability weights, as both vectors
+#'   are divided by their sums internally.
 #'
 #' @return
 #' A \link{numeric} vector with length equal to the that of the
 #' first argument, or length \code{n} in the case of \code{rgi}.
 #'
-#' \code{dgi} evaluates the density function \mjseqn{f_\text{gen}}.
-#' \code{pgi} evaluates the distribution function \mjseqn{F_\text{gen}}.
-#' \code{qgi} evaluates the quantile function, which is defined as
-#' the left-continuous generalized inverse of \mjseqn{F_\text{gen}}.
-#' \code{rgi} samples from the distribution.
-#'
-#' @details
-#' Let \mjseqn{\tau_\text{lat}} and \mjseqn{\tau_\text{inf}} be the
-#' latent and infectious periods. Let \mjseqn{f_\text{lat}} the density
-#' function of \mjseqn{\tau_\text{lat}}, and let \mjseqn{F_\text{inf}}
-#' be the distribution function of \mjseqn{\tau_\text{inf}}.
-#'
-#' Suppose that the distributions of \mjseqn{\tau_\text{lat}} and
-#' \mjseqn{\tau_\text{inf}} are supported on
-#' \mjseqn{\lbrace 1,\ldots,m \rbrace} and
-#' \mjseqn{\lbrace 1,\ldots,n \rbrace}, respectively, so that
-#'
-#' \mjtdeqn{\begin{array}{r@{}ll} f_\text{lat}(t) &= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr F_\text{inf}(t) & {}= \mathrm{1}USCORE{\lbrack 1,\infty)} \sum_{i=1}^{\min\lbrace n,\lfloor t \rfloor\rbrace} q_i\,, \end{array}}{\begin{align} f_\text{lat}(t) & {}= \sum_{i=1}^{m} p_i \delta(t - i)\,, \cr F_\text{inf}(t) &= \unicode{x1D7D9}USCORE{\lbrack 1,\infty)} \sum_{i=1}^{\min\lbrace n,\lfloor t \rfloor\rbrace} q_i\,, \end{align}}{LaTeX}
-#'
-#' where \mjseqn{p_i,q_i \in \lbrack 0,1 \rbrack},
-#' \mjseqn{\sum_{i=1}^{m} p_i = \sum_{i=1}^{n} q_i = 1}
-#' and \mjseqn{\delta} is the Dirac delta.
-#'
-#' Now let \mjseqn{\tau_\text{wait}} be the infectious waiting time
-#' and \mjseqn{f_\text{wait}} its density. The generation interval is
-#' \mjseqn{\tau_\text{gen} = \tau_\text{lat} + \tau_\text{wait}} and
-#' has density
-#'
-#' \mjsdeqn{f_\text{gen}(t) = (f_\text{lat} * f_\text{wait})(t) = \sum_{i=1}^{m} p_i f_\text{wait}(t - i)\,,}
-#'
-#' assuming independence of \mjseqn{\tau_\text{lat}} and
-#' \mjseqn{\tau_\text{wait}}.
-#'
-#' Equation 5.7 of \insertCite{Sven07;textual}{epigrowthfit}
-#' gives an expression for \mjseqn{f_\text{wait}} for the case
-#' in which infectiousness is constant over the infectious period:
-#'
-#' \mjtdeqn{f_\text{wait} = \mathrm{1}USCORE{(0,\infty)} \frac{1 - F_\text{inf}}{\mathrm{E}\lbrack \tau_\text{inf} \rbrack}\,.}{f_\text{wait} = \unicode{x1D7D9}USCORE{(0,\infty)} \frac{1 - F_\text{inf}}{\unicode{x1D53C}\lbrack \tau_\text{inf} \rbrack}\,.}{LaTeX}
-#'
-#' In this case, \mjseqn{f_\text{gen}} is supported on the interval
-#' \mjseqn{\lbrack 1,m+n)} and is constant on the unit intervals
-#' \mjseqn{\lbrack i,i+1)}. (Hence evaluation of \mjseqn{f_\text{gen}},
-#' as well as the corresponding distribution and quantile functions,
-#' is straightforward and fast.)
-#'
 #' @references
-#' Svensson, \AA. A note on generation times in epidemic models.
+#' Svensson, Å. A note on generation times in epidemic models.
 #' Math Biosci. 2007;208:300--11.
 #'
 #' @examples
@@ -147,7 +106,7 @@ dgi <- function(x, latent, infectious) {
     i <- .row(ij_dim)
     j <- .col(ij_dim)
 
-    d[l] <- colSums(lat * dwait(x_floor_unique[j] - i, infectious = infectious))[k]
+    d[l] <- colSums(latent * diwt(x_floor_unique[j] - i, infectious = infectious))[k]
   }
   d
 }
@@ -238,7 +197,7 @@ rgi <- function(n, latent, infectious) {
   ## with distribution supported on [0,length(infectious))
   ## and density constant on subintervals [i,i+1)
   rwait_floor <- sample(seq_along(infectious) - 1L, size = n, replace = TRUE,
-                        prob = dwait(seq_along(infectious) - 1L, infectious = infectious))
+                        prob = diwt(seq_along(infectious) - 1L, infectious = infectious))
   rwait <- runif(n, min = rwait_floor, max = rwait_floor + 1L)
 
   ## Sum of latent period and infectious waiting time
@@ -246,7 +205,8 @@ rgi <- function(n, latent, infectious) {
   rlat + rwait
 }
 
-pinf <- function(q, infectious) {
+## Infectious period distribution function
+pip <- function(q, infectious) {
   n <- length(infectious)
   p <- q
   p[] <- NA
@@ -259,13 +219,14 @@ pinf <- function(q, infectious) {
   p
 }
 
-dwait <- function(x, infectious) {
+## Infectious waiting time density function
+diwt <- function(x, infectious) {
   d <- x
   d[] <- NA
   d[x < 0] <- 0
   l <- !is.na(x) & x >= 0
   if (any(l)) {
-    d[l] <- (1 - pinf(x[l], infectious = infectious)) / sum(seq_along(infectious) * infectious)
+    d[l] <- (1 - pip(x[l], infectious = infectious)) / sum(seq_along(infectious) * infectious)
   }
   d
 }
