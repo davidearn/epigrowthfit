@@ -1,36 +1,35 @@
-#' \loadmathjax
 #' Generation interval distribution
 #'
 #' Generation interval density, distribution, and quantile functions.
 #' These functions assume:
-#' * that the latent and infectious periods are integer-valued,
-#' * that the latent period and infectious waiting time are independent, and
-#' * that infectiousness is constant over the infectious period.
+#' \itemize{
+#' \item that the latent and infectious periods are integer-valued,
+#' \item that the latent period and infectious waiting time are independent, and
+#' \item that infectiousness is constant over the infectious period.
+#' }
 #'
 #' @param x,q
-#'   A numeric vector listing generation intervals.
+#'   A \link{numeric} vector listing generation intervals.
 #' @param p
-#'   A numeric vector listing probabilities.
+#'   A \link{numeric} vector listing probabilities.
 #' @param n
-#'   A non-negative integer. The number of samples generated.
-#' @param lat
-#'   A numeric vector listing the probability \mjseqn{p_i} that the
-#'   latent period is \mjseqn{i} (or the corresponding probability
-#'   weight) for all \mjseqn{i \in \lbrace 1,\ldots,m \rbrace}.
-#' @param inf
-#'   A numeric vector listing the probability \mjseqn{q_i} that the
-#'   infectious period is \mjseqn{i} (or the corresponding probability
-#'   weight) for all \mjseqn{i \in \lbrace 1,\ldots,n \rbrace}.
+#'   A non-negative integer indicating a desired sample size.
+#' @param latent,infectious
+#'   \link[=numeric]{Numeric} vectors such that \code{latent[i]} and
+#'   \lcode{infectious[i]} are the probabilities that the latent and
+#'   infectious periods, respectively, are \code{i}. Like units of
+#'   time are assumed. It is sufficient to supply probability weights,
+#'   as both vectors are divided by their sums internally.
 #'
 #' @return
-#' A numeric vector with length equal to the that of the
-#' first argument, or with length `n` in the case of `rgi()`.
+#' A \link{numeric} vector with length equal to the that of the
+#' first argument, or length \code{n} in the case of \code{rgi}.
 #'
-#' `dgi()` evaluates the density function \mjseqn{f_\text{gen}}.
-#' `pgi()` evaluates the distribution function \mjseqn{F_\text{gen}}.
-#' `qgi()` evaluates the quantile function, which is defined as the
-#' left-continuous generalized inverse of `pgi()`.
-#' `rgi()` samples from the distribution.
+#' \code{dgi} evaluates the density function \mjseqn{f_\text{gen}}.
+#' \code{pgi} evaluates the distribution function \mjseqn{F_\text{gen}}.
+#' \code{qgi} evaluates the quantile function, which is defined as
+#' the left-continuous generalized inverse of \mjseqn{F_\text{gen}}.
+#' \code{rgi} samples from the distribution.
 #'
 #' @details
 #' Let \mjseqn{\tau_\text{lat}} and \mjseqn{\tau_\text{inf}} be the
@@ -72,19 +71,20 @@
 #' is straightforward and fast.)
 #'
 #' @references
-#' \insertRef{Sven07}{epigrowthfit}
+#' Svensson, \AA. A note on generation times in epidemic models.
+#' Math Biosci. 2007;208:300--11.
 #'
 #' @examples
 #' data(plague_latent_period)
-#' lat <- plague_latent_period$relfreq
-#' m <- length(lat)
+#' latent <- plague_latent_period$relfreq
+#' m <- length(latent)
 #'
 #' data(plague_infectious_period)
-#' inf <- plague_infectious_period$relfreq
-#' n <- length(inf)
+#' infectious <- plague_infectious_period$relfreq
+#' n <- length(infectious)
 #'
 #' ## Histogram of samples
-#' y <- rgi(1e06, lat, inf)
+#' y <- rgi(1e06, latent, infectious)
 #' hist(y, breaks = seq(0, m + n + 1), freq = FALSE, las = 1,
 #'   ylab = "relative frequency",
 #'   main = ""
@@ -92,8 +92,8 @@
 #'
 #' ## Density and distribution functions
 #' x <- seq(0, m + n + 1, by = 0.02)
-#' fx <- dgi(x, lat, inf)
-#' Fx <- pgi(x, lat, inf)
+#' fx <- dgi(x, latent, infectious)
+#' Fx <- pgi(x, latent, infectious)
 #' plot(x, fx, type = "l", las = 1, # consistent with histogram
 #'   xlab = "generation interval",
 #'   ylab = "density function"
@@ -105,7 +105,7 @@
 #'
 #' ## Quantile function
 #' p <- seq(0, 1, by = 0.001)
-#' qp <- qgi(p, lat, inf)
+#' qp <- qgi(p, latent, infectious)
 #' plot(p, qp, type = "l", las = 1,
 #'   xlab = "probability",
 #'   ylab = "quantile function"
@@ -116,7 +116,7 @@ NULL
 
 #' @rdname gi
 #' @export
-dgi <- function(x, lat, inf) {
+dgi <- function(x, latent, infectious) {
   stop_if_not(
     is.numeric(x),
     m = "`x` must be numeric."
@@ -124,11 +124,12 @@ dgi <- function(x, lat, inf) {
   if (length(x) == 0L) {
     return(x)
   }
-  check_gi(lat, inf)
-  lat <- lat / sum(lat)
-  inf <- inf / sum(inf)
-  m <- length(lat)
-  n <- length(inf)
+  check_probs(latent)
+  check_probs(infectious)
+  latent <- latent / sum(latent)
+  infectious <- infectious / sum(infectious)
+  m <- length(latent)
+  n <- length(infectious)
 
   d <- x
   d[] <- NA
@@ -146,7 +147,7 @@ dgi <- function(x, lat, inf) {
     i <- .row(ij_dim)
     j <- .col(ij_dim)
 
-    d[l] <- colSums(lat * dwait(x_floor_unique[j] - i, inf = inf))[k]
+    d[l] <- colSums(lat * dwait(x_floor_unique[j] - i, infectious = infectious))[k]
   }
   d
 }
@@ -154,7 +155,7 @@ dgi <- function(x, lat, inf) {
 #' @rdname gi
 #' @export
 #' @importFrom stats approx
-pgi <- function(q, lat, inf) {
+pgi <- function(q, latent, infectious) {
   stop_if_not(
     is.numeric(q),
     m = "`q` must be numeric."
@@ -162,8 +163,8 @@ pgi <- function(q, lat, inf) {
   if (length(q) == 0L) {
     return(q)
   }
-  m <- length(lat)
-  n <- length(inf)
+  m <- length(latent)
+  n <- length(infectious)
 
   p <- q
   p[] <- NA
@@ -173,7 +174,7 @@ pgi <- function(q, lat, inf) {
   if (any(l)) {
     p[l] <- approx(
       x = seq_len(m + n),
-      y = c(0, cumsum(dgi(seq_len(m + n - 1L), lat = lat, inf = inf))),
+      y = c(0, cumsum(dgi(seq_len(m + n - 1L), latent = latent, infectious = infectious))),
       xout = q[l]
     )$y
   }
@@ -183,7 +184,7 @@ pgi <- function(q, lat, inf) {
 #' @rdname gi
 #' @export
 #' @importFrom stats approx
-qgi <- function(p, lat, inf) {
+qgi <- function(p, latent, infectious) {
   stop_if_not(
     is.numeric(p),
     m = "`p` must be numeric."
@@ -191,8 +192,8 @@ qgi <- function(p, lat, inf) {
   if (length(p) == 0L) {
     return(p)
   }
-  m <- length(lat)
-  n <- length(inf)
+  m <- length(latent)
+  n <- length(infectious)
 
   q <- p
   q[] <- NA
@@ -202,7 +203,7 @@ qgi <- function(p, lat, inf) {
   l <- !is.na(p) & p > 0 & p < 1
   if (any(l)) {
     q[l] <- approx(
-      x = c(0, cumsum(dgi(seq_len(m + n - 1L), lat = lat, inf = inf))),
+      x = c(0, cumsum(dgi(seq_len(m + n - 1L), latent = latent, infectious = infectious))),
       y = seq_len(m + n),
       xout = p[l]
     )$y
@@ -213,32 +214,58 @@ qgi <- function(p, lat, inf) {
 #' @rdname gi
 #' @export
 #' @importFrom stats runif
-rgi <- function(n, lat, inf) {
+rgi <- function(n, latent, infectious) {
   stop_if_not(
     is.numeric(n),
     length(n) == 1L,
     n >= 0,
     m = "`n` must be a non-negative number."
   )
+  n <- floor(n)
   if (n == 0) {
     return(numeric(0L))
   }
-  check_gi(lat, inf)
-  lat <- lat / sum(lat)
-  inf <- inf / sum(inf)
+  check_probs(latent)
+  check_probs(infectious)
+  latent <- latent / sum(latent)
+  infectious <- infectious / sum(infectious)
 
   ## Latent period is integer-valued,
-  ## equal to `i` with probability `lat[i]`
-  rlat <- sample(seq_along(lat), size = n, replace = TRUE, prob = lat)
+  ## equal to `i` with probability `latent[i]`
+  rlat <- sample(seq_along(latent), size = n, replace = TRUE, prob = latent)
 
-  ## Infectious waiting time is real-valued, with
-  ## distribution supported on [0,length(inf)) and
-  ## with constant density on subintervals [i,i+1)
-  rwait_floor <- sample(seq_along(inf) - 1L, size = n, replace = TRUE,
-                        prob = dwait(seq_along(inf) - 1L, inf = inf))
+  ## Infectious waiting time is real-valued,
+  ## with distribution supported on [0,length(infectious))
+  ## and density constant on subintervals [i,i+1)
+  rwait_floor <- sample(seq_along(infectious) - 1L, size = n, replace = TRUE,
+                        prob = dwait(seq_along(infectious) - 1L, infectious = infectious))
   rwait <- runif(n, min = rwait_floor, max = rwait_floor + 1L)
 
   ## Sum of latent period and infectious waiting time
   ## yields generation interval
   rlat + rwait
+}
+
+pinf <- function(q, infectious) {
+  n <- length(infectious)
+  p <- q
+  p[] <- NA
+  p[q < 1] <- 0
+  p[q >= n] <- 1
+  l <- !is.na(q) & q >= 1 & q < n
+  if (any(l)) {
+    p[l] <- cumsum(infectious)[floor(q[l])]
+  }
+  p
+}
+
+dwait <- function(x, infectious) {
+  d <- x
+  d[] <- NA
+  d[x < 0] <- 0
+  l <- !is.na(x) & x >= 0
+  if (any(l)) {
+    d[l] <- (1 - pinf(x[l], infectious = infectious)) / sum(seq_along(infectious) * infectious)
+  }
+  d
 }

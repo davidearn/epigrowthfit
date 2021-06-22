@@ -27,6 +27,6 @@ plot(relfreq ~ days, data = plague_latent_period)
 }
 \references{
 Gani R, Leach S. Epidemiological determinants for modeling
-pneumonic plague outbreaks. Emerg Infect Dis. 2004;10(4):608--14.
+pneumonic plague outbreaks. Emerg Infect Dis. 2004;10:608--14.
 }
 \keyword{datasets}

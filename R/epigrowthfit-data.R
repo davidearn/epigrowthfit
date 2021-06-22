@@ -204,7 +204,7 @@ NULL
 #'
 #' @references
 #' Cummins N, Kelly M, \'{O} Gr\'{a}da C. Living standards and plague
-#' in London, 1560--1665. Econ Hist Rev. 2016;69(1):3--34.
+#' in London, 1560--1665. Econ Hist Rev. 2016;69:3--34.
 #'
 #' @usage data(londonparishes)
 #' @examples
@@ -274,7 +274,7 @@ NULL
 #'
 #' @references
 #' Gani R, Leach S. Epidemiological determinants for modeling
-#' pneumonic plague outbreaks. Emerg Infect Dis. 2004;10(4):608--14.
+#' pneumonic plague outbreaks. Emerg Infect Dis. 2004;10:608--14.
 #'
 #' @usage data(plague_latent_period)
 #' @examples
@@ -300,7 +300,7 @@ NULL
 #'
 #' @references
 #' Gani R, Leach S. Epidemiological determinants for modeling
-#' pneumonic plague outbreaks. Emerg Infect Dis. 2004;10(4):608--14.
+#' pneumonic plague outbreaks. Emerg Infect Dis. 2004;10:608--14.
 #'
 #' @usage data(plague_infectious_period)
 #' @examples
@@ -343,8 +343,7 @@ NULL
 #' @references
 #' Ganyani T, Kremer C, Chen D, Torneri A, Faes C, Wallinga J, et al.
 #' Estimating the generation interval for coronavirus disease (COVID-19)
-#' based on symptom onset data, March 2020. Eurosurveillance.
-#' 2020;25(17):2000257.
+#' based on symptom onset data, March 2020. Euro Surveill. 2020;25:2000257.
 #'
 #' @usage data(plague_infectious_period)
 #' @examples

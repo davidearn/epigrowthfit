@@ -45,6 +45,6 @@ subset(londonparishes, outbreak == 1665, -outbreak) # Great Plague of London
 }
 \references{
 Cummins N, Kelly M, \'{O} Gr\'{a}da C. Living standards and plague
-in London, 1560--1665. Econ Hist Rev. 2016;69(1):3--34.
+in London, 1560--1665. Econ Hist Rev. 2016;69:3--34.
 }
 \keyword{datasets}

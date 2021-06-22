@@ -4,45 +4,42 @@ PACKAGE := epigrowthfit
 VERSION := $(shell sed -n '/^Version: /s/Version: // p' DESCRIPTION)
 TARBALL := $(PACKAGE)_$(VERSION).tar.gz
 MANUAL := $(PACKAGE)-manual.pdf
+CHECKDIR := $(PACKAGE).Rcheck
 
 all: clean install
+.PHONY = deps 
 
-install: deps build
+install: install-deps build
 	export NOT_CRAN=true
-	$(R) CMD INSTALL ../$(TARBALL)
+	$(R) CMD INSTALL $(TARBALL)
 
-deps:
+install-deps:
 	$(R) --quiet -e 'devtools::install_deps(".")'
 
 build: $(TARBALL)
 
-$(TARBALL): enum src/$(PACKAGE).cpp src/*.h DESCRIPTION rd
-	$(R) CMD build .
-	mv $@ ..
+$(TARBALL): enum docs src/$(PACKAGE).cpp src/*.h DESCRIPTION NAMESPACE
+	$(R) CMD build --no-manual .
 
 enum: utils/update_enum.R src/enum.h
 	cd $(dir $<) && $(R) --quiet -f $(notdir $<)
 
-rd: R/*.R
+docs: R/*.R
 	$(R) --quiet -e 'devtools::document(".")'
-	#sed -i.bak 's/USCORE/_/ g' man/*.Rd 
-	#sed -i.bak 's/\\text{/\\textrm{/ g' man/*.Rd
-	#rm man/*.Rd.bak
 
 manual: $(MANUAL)
 
-$(MANUAL): man/*.Rd
-	$(R) CMD Rd2pdf --force --output=$@ --no-preview .
-	mv $@ ..
+$(MANUAL): enum docs
+	$(R) CMD Rd2pdf -o $@ --force --no-preview .
 
-check:
-	$(R) --quiet -e 'devtools::check(".")'
+check: build
+	$(R) CMD check --no-tests $(TARBALL)
 
 test:
 	$(R) --quiet -e 'devtools::test(".")'
 
 clean:
-	rm -f ../$(TARBALL) ../$(PACKAGE)-manual.pdf
+	rm -fr $(TARBALL) $(PACKAGE)-manual.pdf $(CHECKDIR)
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
 	rm -f src/*.{o,so}

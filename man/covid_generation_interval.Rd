@@ -48,7 +48,6 @@ plot(x, fx, type = "l", ylim = c(0, max(fx[-1L])))
 \references{
 Ganyani T, Kremer C, Chen D, Torneri A, Faes C, Wallinga J, et al.
 Estimating the generation interval for coronavirus disease (COVID-19)
-based on symptom onset data, March 2020. Eurosurveillance.
-2020;25(17):2000257.
+based on symptom onset data, March 2020. Euro Surveill. 2020;25:2000257.
 }
 \keyword{datasets}

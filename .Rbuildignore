@@ -1,11 +1,11 @@
 ^data-raw$
-^debug$
 ^inst$
 ^misc$
 ^mre$
 ^R/old$
-^ref$
-^sandbox$
 ^utils$
 ^Makefile$
 ^TODO\.md$
+^.*\.pdf$
+^.*\.tar\.gz$
+^.*\.Rcheck$

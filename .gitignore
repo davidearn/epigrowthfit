@@ -6,6 +6,7 @@
 *.pdf
 *.o
 *.so
+*.Rcheck/
 *.RData
 *.Rhistory
 *.Rout

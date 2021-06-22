@@ -14,11 +14,11 @@
 #'
 #' @references
 #' Ma J, Dushoff J, Bolker BM, Earn DJD. Estimating initial epidemic
-#' growth rates. B Math Biol. 2014;76:246--60.
+#' growth rates. Bull Math Biol. 2014;76:246--60.
 #'
 #' Earn DJD, Ma J, Poinar HN, Dushoff J, Bolker BM. Acceleration
-#' of plague outbreaks in the second pandemic. P Natl Acad Sci USA.
-#' 2020;117(44):27703--11.
+#' of plague outbreaks in the second pandemic. Proc Natl Acad Sci U S A.
+#' 2020;117:27703--11.
 #'
 #' @name epigrowthfit-package
 #' @docType package

@@ -27,9 +27,9 @@ equivalent to \code{\link{nullfile}()}. \code{""} means
 no diversion. If \code{method = "snow"}, then diversion
 may be necessary to view output.}
 
-\item{cores}{A positive integer indicating a number of worker processes to spawn
-when \code{parallel != "serial"}. The effective maximum is typically
-\code{\link[parallel]{detectCores}(TRUE, FALSE)}.}
+\item{cores}{A positive integer indicating a number of worker processes
+to spawn when \code{parallel != "serial"}. The maximum is
+typically \code{\link[parallel]{detectCores}(TRUE, FALSE)}.}
 
 \item{options}{A \link{list} of optional arguments to
 \code{\link[parallel]{mclapply}} (\code{method = "multicore"}) or

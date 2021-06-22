@@ -646,9 +646,9 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
 #'   no diversion. If \code{method = "snow"}, then diversion
 #'   may be necessary to view output.
 #' @param cores
-#'   A positive integer indicating a number of worker processes to spawn
-#'   when \code{parallel != "serial"}. The effective maximum is typically
-#'   \code{\link[parallel]{detectCores}(TRUE, FALSE)}.
+#'   A positive integer indicating a number of worker processes
+#'   to spawn when \code{parallel != "serial"}. The maximum is
+#'   typically \code{\link[parallel]{detectCores}(TRUE, FALSE)}.
 #' @param options
 #'   A \link{list} of optional arguments to
 #'   \code{\link[parallel]{mclapply}} (\code{method = "multicore"}) or
