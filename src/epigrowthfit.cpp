@@ -203,9 +203,12 @@ Type objective_function<Type>::operator() ()
 	    }
 	    block_list(m) = block_list_el;
 	}
-	REPORT(block_list);
-	REPORT(sd_list);
-	REPORT(cor_list);
+	if (!predict)
+	{
+	    REPORT(block_list);
+	    REPORT(sd_list);
+	    REPORT(cor_list);
+	}
     }
 
     
@@ -255,11 +258,13 @@ Type objective_function<Type>::operator() ()
 	// = (N, p)
 	Y += Z * b_scaled_as_matrix;
     }
-    vector<Type> Y_as_vector = Y.vec();
-    REPORT(Y_as_vector);
-    ADREPORT(Y_as_vector);
+    if (!predict)
+    {
+        REPORT(Y);
+        ADREPORT(Y);
+    }
 
-
+    
     /* Compute predictions ================================================== */
 
     // Log curve

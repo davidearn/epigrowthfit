@@ -1,8 +1,8 @@
 #' Compute predicted values
 #'
 #' Computes predicted values of interval incidence, cumulative incidence,
-#' and the per capita growth rate conditional on observed data and an estimated
-#' model of epidemic growth.
+#' and the per capita growth rate, conditional on observed data and an
+#' estimated model of epidemic growth.
 #'
 #' @param object
 #'   An \code{"\link{egf}"} object.
@@ -13,7 +13,7 @@
 #'   A \link{numeric} or \link{Date} vector supplying time points at which
 #'   predicted values are sought. Numeric \code{time} is assumed to measure
 #'   time as a number of days since \emph{the end of} Date
-#'   \code{origin} = \link{attr}(object$frame, "origin")}. Date \code{time}
+#'   \code{origin = \link{attr}(object$frame, "origin")}. Date \code{time}
 #'   is coerced to numeric \code{\link{julian}(time, origin)}. When missing,
 #'   \code{object$frame$time} is used.
 #' @param window
@@ -42,18 +42,18 @@
 #'   Unused optional arguments.
 #'
 #' @details
-#' In the result, \code{exp(estimate[i])} can be interpreted as follows,
-#' assuming \code{log = TRUE}:
+#' In the result, \code{estimate[i]} can be interpreted as follows
+#' assuming \code{log = FALSE}:
 #' \describe{
-#' \item{\code{log_int_inc}}{
+#' \item{\code{int_inc}}{
 #'   The number of cases predicted from \code{time[i-1]} to \code{time[i]}
 #'   in \code{window[i]} (interval incidence).
 #' }
-#' \item{\code{log_cum_inc}}{
+#' \item{\code{cum_inc}}{
 #'   The number of cases predicted from the start of \code{window[i]}
 #'   to \code{time[i]} (cumulative incidence).
 #' }
-#' \item{\code{log_rt}{
+#' \item{\code{rt}}{
 #'   The per capita growth rate at \code{time[i]}. This is obtained
 #'   exactly from the differential equation model associated with
 #'   \code{object$model$curve}, unless \code{object$model$day_of_week > 0},
@@ -75,7 +75,7 @@
 #'   Time series, from \code{\link{levels}(object$endpoints$ts)}.
 #' }
 #' \item{window}{
-#'   Fitting window, from \code{\link{levels](object$endpoints$window)}.
+#'   Fitting window, from \code{\link{levels}(object$endpoints$window)}.
 #' }
 #' \item{time}{
 #'   Time, after possible coercion from \link{Date} to \link{numeric}.
@@ -115,7 +115,7 @@ predict.egf <- function(object,
   day_of_week <- object$model$day_of_week
   min_window_len <- max(2L, 8L * (day_of_week > 0L) * ("log_rt" %in% what))
 
-  if (no_time <- missing(time)) {
+  if (missing_time <- missing(time)) {
     time <- object$frame$time
     window <- object$frame$window
     subset <- seq_along(levels(window))
@@ -155,7 +155,7 @@ predict.egf <- function(object,
   time_split <- split(time, window)
   starts <- endpoints$start[subset]
   ends <- endpoints$end[subset]
-  if (no_time) {
+  if (!missing_time) {
     stop_if_not(
       vapply(time_split, min, 0) >= starts,
       vapply(time_split, max, 0) <= ends,
@@ -190,11 +190,11 @@ predict.egf <- function(object,
   }
 
   ## Additional data objects needed to run prediction code in C++ template
-  lens <- lengths(time_split, use.names = FALSE)
+  len <- lengths(time_split, use.names = FALSE)
   l <- list(
     what_flag = as.integer(c("log_int_inc", "log_cum_inc", "log_rt") %in% what),
-    t_predict = time - rep.int(starts, lens),
-    t_predict_seg_len = lens,
+    t_predict = time - rep.int(starts, len),
+    t_predict_seg_len = len,
     day_of_week_on_day0_predict = object$tmb_args$data$weekday_on_day0[subset],
     Yo_predict = object$tmb_args$data$Yo[subset, , drop = FALSE],
     Xs_predict = object$tmb_args$data$Xs[subset, , drop = FALSE],
@@ -205,64 +205,50 @@ predict.egf <- function(object,
   object$tmb_args$data$predict_flag <- 1L
   tmb_out <- do.call(MakeADFun, object$tmb_args)
 
-  if (se) {
+  if (log && se) {
     tmb_out$fn(object$best[object$nonrandom])
-    r <- as.list(sdreport(tmb_out))[what]
+    ssdr <- summary(sdreport(tmb_out), select = "report")
+    index <- factor(rownames(ssdr), levels = what)
+    r <- split(unname(ssdr[, "Estimate"]), index)
+    r_se <- split(unname(ssdr[, "Std. Error"]), index)
   } else {
     r <- tmb_out$report(object$best)[what]
-    r <- lapply(r, function(x) list(estimate = x))
   }
 
-  out <- list()
-  x <- rep_len(NA_real_, length(time))
-  el <- data.frame(
-    var = rep_len(factor("foo"), length(time)),
-    ts = rep.int(endpoints$ts[subset], lens),
-    window = rep.int(endpoints$window[subset], lens),
-    time = time,
-    estimate = x,
-    se = x,
-    combined[rep.int(subset, lens), append, drop = FALSE]
-  )
-  lasts <- cumsum(lens)
+  lasts <- cumsum(len)
   firsts <- c(0L, lasts[-length(lasts)]) + 1L
-  edges <- unlist(Map(function(a, b) c(a + 0:3, b - 2:0), a = firsts, b = lasts))
+  edges <- unlist(Map(function(a, b) c(a + 0:3, b - 2:0), a = firsts, b = lasts), FALSE, FALSE)
+  n <- length(time)
+  x <- rep_len(NA_real_, n)
+  ix <- list(
+    log_int_inc = -firsts,
+    log_cum_inc = -firsts,
+    log_rt = if (day_of_week > 0L) -edges else seq_len(n)
+  )[what]
 
-  if ("log_int_inc" %in% what) {
-    levels(el$var) <- "log_int_inc"
-    el$estimate <- replace(x, -firsts, r$log_int_inc$estimate)
-    if (se) {
-      el$se <- replace(x, -firsts, r$log_int_inc$se)
-    }
-    out$log_int_inc <- el
+  out <- data.frame(
+    var = gl(length(what), n, labels = what),
+    ts = rep.int(endpoints$ts[subset], len),
+    window = rep.int(endpoints$window[subset], len),
+    time = time,
+    estimate = unlist(Map(replace, list = ix, values = r, x = list(x)), FALSE, FALSE)
+  )
+  if (log && se) {
+    out$se <- unlist(Map(replace, list = ix, values = r_se, x = list(x)), FALSE, FALSE)
   }
-  if ("log_cum_inc" %in% what) {
-    levels(el$var) <- "log_cum_inc"
-    el$estimate <- replace(x, -firsts, r$log_cum_inc$estimate)
-    if (se) {
-      el$se <- replace(c, -firsts, r$log_cum_inc$se)
-    }
-    out$log_cum_inc <- el
+  if (!log) {
+    out$estimate <- exp(out$estimate)
+    levels(out$var) <- sub("^log_", "", levels(out$var))
   }
-  if ("log_rt" %in% what) {
-    levels(el$var) <- "log_rt"
-    if (weekday > 0L) {
-      el$estimate <- replace(x, -edges, r$log_rt$estimate)
-      if (se) {
-        el$se <- replace(x, -edges, r$log_rt$se)
-      }
-    } else {
-      el$estimate <- r$log_rt$estimate
-      if (se) {
-        el$se <- r$log_rt$se
-      }
-    }
-    out$log_rt <- el
-  }
-  out <- do.call(rbind, out)
-  row.names(out) <- NULL
+  out <- data.frame(
+    out,
+    combined[rep.int(subset, len), append, drop = FALSE],
+    row.names = NULL,
+    check.names = FALSE,
+    stringsAsFactors = FALSE
+  )
   attr(out, "origin") <- origin
-  attr(out, "se") <- se
+  attr(out, "se") <- log && se
   class(out) <- c("egf_predict", "data.frame")
   out
 }
@@ -274,44 +260,53 @@ predict.egf <- function(object,
 #' log per capita growth rate.
 #'
 #' @param object
-#'   An `"egf_predict"` object returned by [predict.egf()].
+#'   An \code{"\link[=predict.egf]{egf_predict}"} object.
 #'   Must supply standard errors on predicted values.
+#' @param parm
+#'   Unused argument included for generic consistency.
+#' @param level
+#'   A number in the interval (0,1) indicating a confidence level.
 #' @param log
-#'   A logical scalar. If `FALSE`, then confidence intervals
+#'   A \link{logical} flag. If \code{FALSE}, then confidence intervals
 #'   on inverse log-transformed predicted values are returned.
-#' @inheritParams confint.egf
+#' @param ...
+#'   Unused optional arguments.
 #'
 #' @details
 #' Confidence limits on predicted values (log scale) are computed
-#' as `estimate + c(-1, 1) * sqrt(q) * se`, with `estimate` and
-#' `se` obtained from `object` and `q = qchisq(level, df = 1)`.
+#' as \code{estimate + c(-1, 1) * sqrt(q) * se},
+#' with \code{estimate} and \code{se} as in \code{object} and
+#' \code{q = \link{qchisq}(level, df = 1)}.
 #'
 #' @return
-#' If `log = TRUE`, then `object` but with variable `se` replaced
-#' with variables `lower` and `upper` supplying confidence limits
-#' on log predicted values.
+#' If \code{log = TRUE}, then \code{object} but with variable
+#' \code{se} replaced with variables \code{lower} and \code{upper}
+#' supplying confidence limits on log predicted values.
 #'
-#' Otherwise, the same object but with variables `estimate`, `lower`,
-#' and `upper` inverse log transformed and prefix `"log_"` stripped
-#' from `levels(var)`.
+#' Otherwise, the same object but with variables \code{estimate},
+#' \code{lower}, and \code{upper} inverse log-transformed and
+#' \code{\link{levels}(var)} modified accordingly.
 #'
-#' `level` is retained as an attribute.
+#' \code{level} is retained as an \link[=attributes]{attribute}.
 #'
 #' @export
 confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
   stop_if_not(
     attr(object, "se"),
-    m = paste0(
-      "`object` must supply standard errors on predicted values.\n",
-      "Repeat `predict()` with `log = TRUE` and `se = TRUE`."
+    m = wrap(
+      "`object` must supply standard errors on predicted values. ",
+      "Repeat `predict` call with `log = TRUE` and `se = TRUE`, ",
+      "then try again."
     )
   )
   stop_if_not_number_in_interval(level, 0, 1, "()")
   stop_if_not_true_false(log)
 
+  s <- c("var", "ts", "window", "estimate", "se")
   d <- data.frame(
-    object[c("var", "ts", "window", "estimate")],
+    object[s[1:4]],
     do_wald(estimate = object$estimate, se = object$se, level = level),
+    object[-match(s, names(object), 0L)],
     row.names = NULL,
     check.names = FALSE,
     stringsAsFactors = FALSE
@@ -320,8 +315,8 @@ confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
   if (log) {
     return(d)
   }
-  s_elu <- c("estimate", "lower", "upper")
-  d[s_elu] <- exp(d[s_elu])
-  levels(d$par) <- sub("^log_", "", (levels(d$par)))
+  elu <- c("estimate", "lower", "upper")
+  d[elu] <- exp(d[elu])
+  levels(d$var) <- sub("^log_", "", levels(d$var))
   d
 }

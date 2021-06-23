@@ -1,18 +1,17 @@
-#' Plot models of epidemic growth
+#' Plot nonlinear mixed effects models of epidemic growth
 #'
-#' @description
-#' Methods for plotting `"egf"` objects.
+#' Methods for plotting \code{"\link{egf}"} objects.
 #'
 #' @param x
-#'   An `"egf"` object returned by [egf()].
+#'   An \code{"\link{egf}"} object.
 #' @param type
-#'   A character string indicating a type of plot. The options are:
-#'   interval incidence (`"interval"`),
-#'   cumulative incidence (`"cumulative"`),
-#'   per capita growth rate as curve (`"rt1"`), and
-#'   per capita growth rate as heat map (`"rt2"`).
-#'   `type != "rt2"` displays one time series per plot.
-#'   `type = "rt2"` displays `per_plot` time series per plot.
+#'   A \link{character} string indicating a type of plot. The options are:
+#'   interval incidence (\code{"interval"}),
+#'   cumulative incidence (\code{"cumulative"}),
+#'   per capita growth rate as curve (\code{"rt1"}), and
+#'   per capita growth rate as heat map (\code{"rt2"}).
+#'   \code{type != "rt2"} displays one time series per plot.
+#'   \code{type = "rt2"} displays \code{per_plot} time series per plot.
 #' @param subset
 #'   An expression to be evaluated in the combined model frame
 #'   (see [make_combined()]). Must evaluate to a logical vector

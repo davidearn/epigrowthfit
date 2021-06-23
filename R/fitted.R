@@ -104,15 +104,17 @@ fitted.egf <- function(object,
         "throws an error. Retry after diagnosing and refitting."
       ))
     }
-    Y <- as.list(object$sdreport, what = "Estimate", report = TRUE)$Y_as_vector
-    Y_se <- as.list(object$sdreport, what = "Std. Error", report = TRUE)$Y_as_vector
+    ssdr <- summary(object$sdreport, select = "report")
+    index <- rownames(ssdr) == "Y"
+    Y <- ssdr[index, "Estimate"]
+    Y_se <- ssdr[index, "Std. Error"]
+    dim(Y) <- dim(Y_se) <- object$tmb_out$env$ADreportDims$Y
   } else {
-    Y <- object$tmb_out$report(object$best)$Y_as_vector
+    Y <- object$tmb_out$report(object$best)$Y
   }
 
   ## `Y[i, j]` is the fitted value of nonlinear or dispersion parameter `j`
   ## (link scale) in fitting window `i`
-  dim(Y) <- c(nrow(object$endpoints), length(par_names))
   colnames(Y) <- par_names
   Y <- Y[subset, par, drop = FALSE]
 
@@ -122,8 +124,7 @@ fitted.egf <- function(object,
     estimate = as.numeric(Y)
   )
   if (link && se) {
-    dim(Y_se) <- dim(Y)
-    colnames(Y_se) <- colnames(Y)
+    colnames(Y_se) <- par_names
     Y_se <- Y_se[subset, par, drop = FALSE]
     d$se <- as.numeric(Y_se)
   }
@@ -189,7 +190,8 @@ confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
     attr(object, "se"),
     m = wrap(
       "`object` must supply standard errors on fitted values. ",
-      "Repeat `fitted()` with `link = TRUE` and `se = TRUE`."
+      "Repeat `fitted` call with `link = TRUE` and `se = TRUE`, ",
+      "then try again."
     )
   )
   stop_if_not_number_in_interval(level, 0, 1, "()")
