@@ -1,20 +1,3 @@
-# apply_inverse_link <- function(x, g) {
-#   if (is.data.frame(x)) {
-#     f <- function(x, s) {
-#       x[] <- lapply(x, match_link(s, inverse = TRUE))
-#       x
-#     }
-#   } else {
-#     f <- function(x, s) {
-#       match_link(s, inverse = TRUE)(x)
-#     }
-#   }
-#   x_split <- split(x, g, drop = TRUE)
-#   fx_split <- Map(f, x = x_split, s = string_extract_link(names(x_split)))
-#   unsplit(fx_split, g, drop = TRUE)
-# }
-
-
 # #' Recursively merge lists
 # #'
 # #' Recursively merge elements of a partially specified \link{list}

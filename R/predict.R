@@ -140,7 +140,7 @@ predict.egf <- function(object,
       length(window) == length(time),
       m = "`window` must be a factor of length `length(time)`."
     )
-    wl <- levels(object$frame_ts$window)
+    wl <- levels(object$frame$window)
     subset <- match(levels(factor(window)), wl, 0L)
     window <- factor(window, levels = wl[subset])
     stop_if_not(
@@ -195,7 +195,7 @@ predict.egf <- function(object,
     what_flag = as.integer(c("log_int_inc", "log_cum_inc", "log_rt") %in% what),
     t_predict = time - rep.int(starts, len),
     t_predict_seg_len = len,
-    day_of_week_on_day0_predict = object$tmb_args$data$weekday_on_day0[subset],
+    day_of_week_on_day0_predict = object$tmb_args$data$day_of_week_on_day0[subset],
     Yo_predict = object$tmb_args$data$Yo[subset, , drop = FALSE],
     Xs_predict = object$tmb_args$data$Xs[subset, , drop = FALSE],
     Xd_predict = object$tmb_args$data$Xd[subset, , drop = FALSE],
