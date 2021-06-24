@@ -649,7 +649,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
       if (!is.null(ct$estimate)) {
         args <- list(
-          x = c(rep_len(t1 + t2 / 2, n),
+          x = c((t1 + t2) / 2,
                 if (show_caption) x_cap),
           y = c(rep_len(y_e, n),
                 if (show_caption) y_cap_e),
@@ -663,12 +663,12 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
       if (show_tdoubling == 2L && !is.null(ct$ci)) {
         args <- list(
-          x = c(rep_len(t1 + t2 / 2, n),
+          x = c((t1 + t2) / 2,
                 if (show_caption) x_cap),
           y = c(rep_len(y_ci, n),
                 if (show_caption) y_cap_ci),
           labels = c(sprintf("(%.1f, %.1f)", elu[[2L]], elu[[3L]]),
-                     if (show_caption) sprintf("%.3g%% CI", 100 * level)),
+                     if (show_caption) sprintf("(%.3g%% CI)", 100 * level)),
           adj = c(0.5, 0),
           xpd = TRUE
         )
