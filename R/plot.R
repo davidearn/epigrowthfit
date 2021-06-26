@@ -10,8 +10,8 @@
 #'   cumulative incidence (\code{"cumulative"}),
 #'   per capita growth rate as curve (\code{"rt1"}), and
 #'   per capita growth rate as heat map (\code{"rt2"}).
-#'   \code{type != "rt2"} displays one time series per plot.
-#'   \code{type = "rt2"} displays \code{per_plot} time series per plot.
+#'   \code{"rt2"} displays \code{num_panels_per_plot} time series per plot.
+#'   The rest display one time series per plot.
 #' @param subset
 #'   An expression to be evaluated in the combined model frame
 #'   (see \code{\link{make_combined}}). Must evaluate to
@@ -26,8 +26,8 @@
 #'   \code{\link{seq_len}(\link{nrow}(combined))}.
 #' @param cache
 #'   An \code{"egf_plot_cache"} object returned by a previous evaluation
-#'   of \code{plot.egf(x)}. Predicted values and standard errors stored
-#'   in \code{cache} will be reused (rather than recomputed) if possible.
+#'   of \code{plot.egf(x)}. Fitted and predicted values and standard errors
+#'   stored in \code{cache} are reused if possible to avoid recomputation.
 #' @param do_plot
 #'   A \link{logical} flag. If \code{FALSE}, then nothing is plotted.
 #'   Useful when only the returned \code{"egf_plot_cache"} object is desired.
@@ -66,13 +66,13 @@
 #'   A number in the interval (0,1). This is the confidence level used
 #'   when \code{show_predict = 2} or \code{show_tdoubling = 2}.
 #'   [\code{type != "rt2"} only.]
-#' @param per_plot
-#'   A positive integer. This is the number of panels (time series)
+#' @param num_panels_per_plot
+#'   A positive integer giving the number of panels (time series)
 #'   displayed in one plot.
 #'   [\code{type = "rt2"} only.]
-#' @param ips (\code{type = "rt2"} only.)
-#'   A non-negative number specifying the space between panels
-#'   ("interpanel space") in multipanel plots as a number of margin lines.
+#' @param inter_panel_space
+#'   A non-negative number giving the space between panels
+#'   in multipanel plots as a number of margin lines.
 #'   [\code{type = "rt2"} only.]
 #' @param control
 #'   An \code{"\link{egf_plot_control}"} object controlling the appearance
@@ -84,10 +84,11 @@
 #'   vector coercible to Date via \code{\link{as.Date}(xlim)}. \code{ylim}
 #'   is unused by \code{type = "rt2"}.
 #' @param main,sub,xlab,ylab,ylab_outer,plab
-#'   \link[=character]{Character} strings or expressions used to generate
-#'   plot (\code{main}, \code{sub}), axis (\code{xlab}, \code{ylab},
-#'   \code{ylab_outer}), and panel (\code{plab}) titles. \code{main},
-#'   \code{xlab}, and \code{ylab} are supported for all values of \code{type}.
+#'   \link[=character]{Character} strings or expressions used
+#'   to generate plot (\code{main}, \code{sub}), axis (\code{xlab},
+#'   \code{ylab}, \code{ylab_outer}), and panel (\code{plab}) titles.
+#'   \code{main}, \code{xlab}, and \code{ylab} are supported for all
+#'   values of \code{type}.
 #'   \code{sub} is unused by \code{type = "rt2"}.
 #'   \code{plab} is used by \code{type = "rt2"} only.
 #'   \code{ylab_outer} is used by \code{type = "rt[12]"} only.
@@ -98,11 +99,6 @@
 #'   in order to generate unique titles for each panel.
 #'   \code{\link{plotmath}} expressions are not supported
 #'   for \code{main}, \code{sub}, and \code{plab} in these cases.
-#' @param align_right_tdoubling_caption
-#'   A \link{logical} flag, used if \code{show_tdoubling > 0}
-#'   to determine whether the caption explaining doubling time
-#'   annotation should be aligned left or right in the top margin.
-#'   [\code{type != "rt2"} only.]
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -112,14 +108,19 @@
 #' in the function call, then this data frame is the result of
 #' augmenting \code{cache} with new computations.
 #'
-#' This object is returned \emph{in spite of} errors thrown
-#' during plotting, to avoid waste of computation time.
-#'
 #' @details
-#' Caching functionality must be used with care, as mismatch between \code{x}
-#' and \code{cache} will \emph{not} be detected. Constructions such as
-#' \code{plot(x2, cache = plot(x1))} should \emph{not} be expected to produce
-#' correct results.
+#' Computation of fitted and predicted values and standard errors
+#' is performed before any plots are created. To avoid waste of
+#' computation time, cached computations are returned \emph{even if}
+#' an error is thrown during plotting. The cache will be temporarily
+#' available via \code{\link{.Last.value}}. To ensure that the cache
+#' is permanently available, assign the result of the call to
+#' \code{\link{plot}} to a name: \code{cache <- plot(x, \dots)}.
+#'
+#' Caching functionality must be used with care, as mismatch
+#' between \code{x} and \code{cache} will \emph{not} be detected.
+#' Constructions such as \code{plot(y, cache = plot(x, \dots), \dots)}
+#' should \emph{not} be expected to produce correct results.
 #'
 #' See topic \code{\link{nse}} for details on nonstandard evaluation
 #' of \code{subset} and \code{order}.
@@ -139,8 +140,8 @@ plot.egf <- function(x,
                      show_tdoubling = TRUE,
                      show_legend = FALSE,
                      level = 0.95,
-                     per_plot = 6L,
-                     ips = 0.25,
+                     num_panels_per_plot = 6L,
+                     inter_panel_space = 0.25,
                      control = egf_plot_control(),
                      xlim = NULL,
                      ylim = NULL,
@@ -150,7 +151,6 @@ plot.egf <- function(x,
                      ylab = NULL,
                      ylab_outer = NULL,
                      plab = NULL,
-                     align_right_tdoubling_caption = TRUE,
                      ...) {
   ## FIXME: `order` _actually_ orders `levels(window)`,
   ## not `levels(ts)`, leading to some indexing gore ...
@@ -232,8 +232,8 @@ plot.egf <- function(x,
       stop_if_not_true_false(log)
     }
     if (type == "rt2") {
-      stop_if_not_integer(per_plot, kind = "positive")
-      stop_if_not_number_in_interval(ips, 0, Inf, "[)")
+      stop_if_not_integer(num_panels_per_plot, kind = "positive")
+      stop_if_not_number_in_interval(inter_panel_space, 0, Inf, "[)")
     }
 
     frame <- x$frame
@@ -267,10 +267,6 @@ plot.egf <- function(x,
       if (all(!keep)) {
         stop("Nothing left to do ...", call. = FALSE)
       }
-    }
-
-    if (show_tdoubling > 0L) {
-      stop_if_not_true_false(align_right_tdoubling_caption)
     }
   }
 
@@ -356,26 +352,26 @@ plot.egf <- function(x,
 
   ## If plotting, then create an instruction to return
   ## `cache` if the low level plot function throws an error
+  cache_bak <- cache
   on.exit({
     message("Augmented `cache` returned despite error ...")
-    return(invisible(cache))
+    return(invisible(cache_bak))
   })
-  cache0 <- cache
 
   ## Extract only those rows of `cache` needed by the low level plot function
-  cache0[nc[1:3]] <- Map(factor,
-    x = cache0[nc[1:3]],
+  cache[nc[1:3]] <- Map(factor,
+    x = cache[nc[1:3]],
     levels = list(c(what, if (show_tdoubling > 0L) "log(r)"), tsl_subset, wl_subset)
   )
-  i <- complete.cases(cache0[nc[1:3]])
-  cache0 <- cache0[i, , drop = FALSE]
+  i <- complete.cases(cache[nc[1:3]])
+  cache <- cache[i, , drop = FALSE]
 
   ## Compute confidence intervals
-  i <- (show_predict == 2L & cache0$var == what) | (show_tdoubling == 2L & cache0$var == "log(r)")
-  cache0[c("lower", "upper")] <- NA_real_
-  cache0[i, c("lower", "upper")] <- do_wald(
-    estimate = cache0$estimate[i],
-    se = cache0$se[i],
+  i <- (show_predict == 2L & cache$var == what) | (show_tdoubling == 2L & cache$var == "log(r)")
+  cache[c("lower", "upper")] <- NA_real_
+  cache[i, c("lower", "upper")] <- do_wald(
+    estimate = cache$estimate[i],
+    se = cache$se[i],
     level = level
   )
 
@@ -387,13 +383,13 @@ plot.egf <- function(x,
   if (type == "rt2") {
     stop("Oops")
     # do_heat_plot(
-    #   cache = cache0,
+    #   cache = cache,
     #   origin = origin,
     #   time_as = time_as,
     #   origin = attr(x$frame, "origin"),
     #   log = log,
-    #   per_plot = per_plot,
-    #   ips = ips,
+    #   num_panels_per_plot = num_panels_per_plot,
+    #   inter_panel_space = inter_panel_space,
     #   control = control,
     #   xlim = xlim,
     #   main = main,
@@ -405,7 +401,7 @@ plot.egf <- function(x,
   } else {
     do_curve_plot(
       frame = frame,
-      cache = cache0,
+      cache = cache,
       type = type,
       time_as = time_as,
       dt = dt,
@@ -423,8 +419,7 @@ plot.egf <- function(x,
       sub = sub[subset][m],
       xlab = xlab,
       ylab = ylab,
-      ylab_outer = ylab_outer,
-      align_right_tdoubling_caption
+      ylab_outer = ylab_outer
     )
   }
 
@@ -438,18 +433,20 @@ do_curve_plot <- function(frame, cache, type, time_as,
                           dt, origin, log, curve,
                           show_predict, show_tdoubling, show_legend,
                           level, control, xlim, ylim,
-                          main, sub, xlab, ylab, ylab_outer,
-                          align_right_tdoubling_caption) {
+                          main, sub, xlab, ylab, ylab_outer) {
   ### Set up ===================================================================
 
-  N <- nlevels(frame$ts)
   frame_split <- split(frame, frame$ts)
   cache_split <- split(cache, cache$ts)
-  inv_log10 <- if (log) function(x) 10^x else identity
+  N <- nlevels(frame$ts)
   formula <- as.formula(call("~", as.name(type), quote(time)))
-  what <- switch(type, interval = "log_int_inc", cumulative = "log_cum_inc", "log_rt")
+  var <- switch(type, interval = "log_int_inc", cumulative = "log_cum_inc", "log_rt")
 
-  ## Plot title
+  xlim_bak <- xlim
+  ylim_bak <- ylim
+  xlab_bak <- xlab
+
+  ## Plot titles
   if (is.null(main)) {
     if (curve %in% c("gompertz", "richards")) {
       substr(curve, 1L, 1L) <- toupper(substr(curve, 1L, 1L))
@@ -457,7 +454,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
     main <- rep_len(sprintf("Fitted %s model", curve), N)
   }
 
-  ## Plot subtitle
+  ## Plot subtitles
   if (is.null(sub)) {
     sub <- names(frame_split)
   }
@@ -476,11 +473,25 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
   ## Plot margins
   mar <- switch(type,
+    ## Add space for secondary axis in left margin if necessary
     rt1 = c(3.5, 4 + (is.null(ylim) || ylim[2L] > 0) * 4, 4, 1) + 0.1,
+    ## Add space for legend in right margin if necessary
     c(3.5, 5, 4, 1 + 5.5 * show_legend) + 0.1
   )
   op <- par(mar = mar)
   on.exit(par(op))
+
+  ## Utilities
+  win_to_lines <- function(win) {
+    diff(grconvertX(c(0, win), "inches", "lines"))
+  }
+  hin_to_lines <- function(hin) {
+    diff(grconvertY(c(0, hin), "inches", "lines"))
+  }
+  yu_to_y <- if (log) function(yu) 10^yu else identity
+
+  ## Hack for `points` loop
+  control$points_basic <- control$points
 
 
   ### Loop over plots ==========================================================
@@ -490,14 +501,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
     frame <- droplevels(frame_split[[k]])
     shift <- min(frame$time)
-    wl <- levels(frame$window)
-    n <- length(wl)
-
-    cache <- droplevels(cache_split[[k]])
-    cache_predict <- cache[cache$var == what, , drop = FALSE]
-    cache_predict$time <- cache_predict$time - shift
-    cache_predict_split <- split(cache_predict, cache_predict$window)
-    cache_log_r <- cache[cache$var == "log(r)", , drop = FALSE]
+    n <- nlevels(frame$window)
 
     data <- data.frame(
       time = frame$time - shift,
@@ -505,31 +509,36 @@ do_curve_plot <- function(frame, cache, type, time_as,
     )
     data[[type]] <- switch(type,
       interval = c(NA, frame$x[-1L]) * dt / data$dt,
-      cumulative = cumsum(c(0, frame$x[-1L])),
+      cumulative = c(0, cumsum(frame$x[-1L])),
       rt1 = c(NA, diff(base::log(frame$x))) / data$dt
     )
     data[[type]][!is.finite(data[[type]])] <- NA
 
-    t12 <- c(tapply(data$time, frame$window, range, simplify = FALSE))
-    t1 <- vapply(t12, `[`, 0, 1L)
-    t2 <- vapply(t12, `[`, 0, 2L)
+    t1 <- c(tapply(data$time, frame$window, min))
+    t2 <- c(tapply(data$time, frame$window, max))
+
+    cache <- droplevels(cache_split[[k]])
+    cache_log_r <- cache[cache$var == "log(r)", , drop = FALSE]
+    cache_predict <- cache[cache$var == var, , drop = FALSE]
+    cache_predict$time <- cache_predict$time - shift
+    cache_predict_split <- split(cache_predict, cache_predict$window)
 
     ## Axis limits (x)
-    if (is.null(xlim)) {
-      xlim0 <- c(0, max(data$time) * 1.04)
-    } else if (inherits(xlim, "Date")) {
-      xlim0 <- julian(xlim, origin = origin + shift)
+    if (is.null(xlim_bak)) {
+      xlim <- c(0, max(data$time) * 1.04)
+    } else if (inherits(xlim_bak, "Date")) {
+      xlim <- julian(xlim_bak, origin = origin + shift)
     } else {
-      xlim0 <- xlim
+      xlim <- xlim_bak
     }
 
     ## Axis limits (y)
-    if (is.null(ylim)) {
+    if (is.null(ylim_bak)) {
       if (type == "rt1") {
-        ylim0 <- range(data[[type]], na.rm = TRUE)
-        ylim0[1L] <- max(-base::log(2), ylim0[1L])
-        ylim0[2L] <- min( base::log(2), ylim0[2L])
-        ylim0 <- ylim0 + c(-1, 1) * 0.04 * (ylim0[2L] - ylim0[1L])
+        ylim <- range(data[[type]], na.rm = TRUE)
+        ylim[1L] <- max(-base::log(2), ylim[1L])
+        ylim[2L] <- min( base::log(2), ylim[2L])
+        ylim <- ylim + c(-1, 1) * 0.04 * (ylim[2L] - ylim[1L])
       } else {
         ymax <- max(data[[type]], na.rm = TRUE)
         if (log) {
@@ -538,45 +547,45 @@ do_curve_plot <- function(frame, cache, type, time_as,
         } else {
           zero <- 0
         }
-        ylim0 <- c(zero, if (log) ymax^1.04 else ymax * 1.04)
+        ylim <- c(zero, if (log) ymax^1.04 else ymax * 1.04)
       }
     } else {
-      ylim0 <- ylim
+      ylim <- ylim_bak
     }
 
     ## Axis title (x)
-    if (is.null(xlab)) {
-      xlab0 <- switch(time_as,
+    if (is.null(xlab_bak)) {
+      xlab <- switch(time_as,
         Date = "",
         sprintf("number of days since %s", origin + shift)
       )
     } else {
-      xlab0 <- xlab
+      xlab <- xlab_bak
     }
 
-    ## Point highlighting according to observation interval
-    data$pty <- "basic"
+    ## Point styles
     if (type == "interval") {
-      data$pty[data$dt < dt] <- "short"
-      data$pty[data$dt > dt] <- "long"
+      data$pty <- factor(sign(data$dt - dt), levels = c(0, -1, 1), labels = c("basic", "short", "long"))
+    } else {
+      data$pty <- factor("basic")
     }
-    data$pty <- factor(data$pty)
-    control$points_basic <- control$points # hack
 
 
     ### Plot -------------------------------------------------------------------
 
     plot.new()
-    plot.window(xlim = xlim0, ylim = ylim0, xaxs = "i", yaxs = "i", log = if (log) "y" else "")
-    gp <- par(c("cex", "csi", "cxy", "pin", "usr"))
+    plot.window(xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i", log = if (log) "y" else "")
+    usr <- par("usr")
+    pin <- par("pin")
+    cex <- par("cex")
 
     ## Fitting windows
     if (!is.null(ct <- control$rect)) {
       args <- list(
         xleft   = t1,
-        ybottom = inv_log10(gp$usr[3L]),
+        ybottom = yu_to_y(usr[3L]),
         xright  = t2,
-        ytop    = inv_log10(gp$usr[4L])
+        ytop    = yu_to_y(usr[4L])
       )
       do.call(rect, c(args, ct))
     }
@@ -628,62 +637,82 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
     ## Initial doubling times
     if (show_tdoubling > 0L) {
-      elu <- base::log(2) / exp(cache_log_r[c("estimate", "upper", "lower")])
-      ct <- control[sprintf("text_tdoubling_%s", c("estimate", "ci", "caption"))]
-      names(ct) <- sub("^text_tdoubling_", "", names(ct))
+      s <- c("estimate", "upper", "lower")
+      elu <- base::log(2) / exp(cache_log_r[s])
+      names(elu) <- s[c(1L, 3L, 2L)]
+
+      s <- c("caption", "estimate", "ci")
+      ct <- control[sprintf("mtext_tdoubling_%s", s)]
+      names(ct) <- s
+
       show_caption <- !is.null(ct$caption)
 
-      ## Much ado about choosing user coordinates when log scale is in effect
-      h_ci <- strheight("", units = "user", cex = ct$ci$cex,       font = ct$ci$font)
-      h_e  <- strheight("", units = "user", cex = ct$estimate$cex, font = ct$estimate$font)
-      y_ci <- add_lines_to_user(0.25, inv_log10(gp$usr[4L]), log)
-      y_e  <- add_lines_to_user(0.15, add_height_to_user(h_ci, y_ci, log), log)
-      y_cap_ci <- add_lines_to_user(0.5,  add_height_to_user(h_e, y_e, log), log)
-      y_cap_e  <- add_lines_to_user(0.15, add_height_to_user(h_ci, y_cap_ci, log), log)
-      w_e <- strwidth("estimate", units = "user", cex = ct$estimate$cex, font = ct$estimate$font)
-      if (align_right_tdoubling_caption) {
-        x_cap <- gp$usr[2L] - 0.5 * w_e
-      } else {
-        x_cap <- gp$usr[1L] + 0.5 * w_e
+      hin_ci <- strheight("", units = "inches", cex = ct$ci$cex, font = ct$ci$font)
+      hin_e <- strheight("", units = "inches", cex = ct$estimate$cex, font = ct$estimate$font)
+
+      line_ci     <- 0.25
+      line_e      <- line_ci    + hin_to_lines(hin_ci) + 0.15
+      line_lg_ci  <- line_e     + hin_to_lines(hin_e)  + 0.5
+      line_lg_e   <- line_lg_ci + hin_to_lines(hin_ci) + 0.15
+      line_lg_cap <- line_lg_e  + hin_to_lines(hin_e)  + 0.25
+
+      adj <- ct$caption$adj
+      if (is.null(adj)) {
+        adj <- 1
       }
 
+      wu_lg_cap <- strwidth("initial doubling time, days:",
+        units = "user",
+        cex = ct$caption$cex / cex,
+        font = ct$caption$font,
+        family = ct$caption$family
+      )
+      wu_lg_e <- strwidth("estimate",
+        units = "user",
+        cex = ct$estimate$cex / cex,
+        font = ct$estimate$font,
+        family = ct$caption$family
+      )
+
+      x_lg_cap <- usr[1L] + adj * (usr[2L] - usr[1L] - wu_lg_cap)
+      x_lg_e <- x_lg_cap + wu_lg_cap - 0.5 * wu_lg_e
+
+      ## Estimates
       if (!is.null(ct$estimate)) {
         args <- list(
-          x = c((t1 + t2) / 2,
-                if (show_caption) x_cap),
-          y = c(rep_len(y_e, n),
-                if (show_caption) y_cap_e),
-          labels = c(sprintf("%.1f", elu[[1L]]),
-                     if (show_caption) "estimate"),
-          adj = c(0.5, 0),
-          xpd = TRUE
+          text = c(sprintf("%.1f", elu[[1L]]), if (show_caption) "estimate"),
+          side = 3,
+          line = c(rep_len(line_e, n), if (show_caption) line_lg_e),
+          at = c((t1 + t2) / 2, if (show_caption) x_lg_e),
+          adj = 0.5,
+          padj = 0
         )
-        do.call(text, c(args, ct$estimate))
+        do.call(mtext, c(args, ct$estimate))
       }
 
+      ## Confidence intervals
       if (show_tdoubling == 2L && !is.null(ct$ci)) {
         args <- list(
-          x = c((t1 + t2) / 2,
-                if (show_caption) x_cap),
-          y = c(rep_len(y_ci, n),
-                if (show_caption) y_cap_ci),
-          labels = c(sprintf("(%.1f, %.1f)", elu[[2L]], elu[[3L]]),
-                     if (show_caption) sprintf("(%.3g%% CI)", 100 * level)),
-          adj = c(0.5, 0),
-          xpd = TRUE
+          text = c(sprintf("(%.1f, %.1f)", elu[[2L]], elu[[3L]]),
+                   if (show_caption) sprintf("(%.3g%% CI)", 100 * level)),
+          side = 3,
+          line = c(rep_len(line_ci, n), if (show_caption) line_lg_ci),
+          at = c((t1 + t2) / 2, if (show_caption) x_lg_e),
+          adj = 0.5,
+          padj = 0
         )
-        do.call(text, c(args, ct$ci))
+        do.call(mtext, c(args, ct$ci))
       }
 
+      ## Caption
       if (show_caption) {
         args <- list(
-          x = gp$usr[as.integer(align_right_tdoubling_caption) + 1L],
-          y = add_lines_to_user(0.25, add_height_to_user(h_e, y_cap_e, log), log),
-          labels = "initial doubling time, days:",
-          adj = c(as.numeric(align_right_tdoubling_caption), 0),
-          xpd = TRUE
+          text = "initial doubling time, days:",
+          side = 3,
+          line = line_lg_cap,
+          padj = 0
         )
-        do.call(text, c(args, ct$caption))
+        do.call(mtext, c(args, ct$caption))
       }
     }
 
@@ -694,22 +723,24 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
     if (time_as == "Date") {
       ## Axis (x)
-      daxis(
+      Daxis(
         origin = origin + shift + 1,
         minor = control$axis_x_Date_minor,
-        major = control$axis_x_Date_major
+        major = control$axis_x_Date_major,
+        show_minor = !is.null(control$axis_x_Date_minor),
+        show_major = !is.null(control$axis_x_Date_major)
       )
     } else {
       ## Axis (x)
-      if (!is.null(ct1 <- control$axis_x_numeric)) {
+      if (!is.null(ct <- control$axis_x_numeric)) {
         args <- list(side = 1)
         do.call(baxis, c(args, ct1))
+      }
 
-        ## Axis title (x)
-        if (!is.null(ct2 <- control$title_xlab)) {
-          args <- list(xlab = xlab0, line = 2.5)
-          do.call(title, c(args, ct2))
-        }
+      ## Axis title (x)
+      if (!is.null(ct <- control$title_xlab)) {
+        args <- list(xlab = xlab, line = 2.5)
+        do.call(title, c(args, ct))
       }
     }
 
@@ -722,62 +753,69 @@ do_curve_plot <- function(frame, cache, type, time_as,
       )
       if (type != "rt1" && max(args$at) >= 1e05) {
         args$labels <- get_yax_labels(args$at)
-        ct1$cex.axis <- min(ct1$cex.axis, get_yax_cex(args$labels, mex = 3.5 - ct1$mgp[2L]))
+        yac <- get_yax_cex(args$labels,
+          mex = 3.5 - ct1$mgp[2L],
+          font = ct1$font.axis,
+          family = ct1$family
+        )
+        ct1$cex.axis <- min(yac, ct1$cex.axis)
       }
       do.call(baxis, c(args, ct1))
-      if (type == "rt1" && gp$usr[4L] > 0) {
+
+      if (type == "rt1" && usr[4L] > 0) {
         tdoubling <- c(1:5, 10, 20, 50, 100)
         args <- list(
           side = 2,
           a = 0,
-          b = gp$usr[4L],
+          b = usr[4L],
           at = log(2) / tdoubling,
           labels = tdoubling,
           las = 1
         )
         ct1_outer <- ct1
-        ct1_outer$mgp <- ct1$mgp + 4
+        ct1_outer$mgp <- ct1_outer$mgp + 4
         do.call(baxis, c(args, ct1_outer))
       }
 
       ## Axis title (y)
       if (!is.null(ct2 <- control$title_ylab)) {
         if (type == "rt1") {
-          mlw <- max(strwidth(axTicks(side = 2),
+          win_tick_labels <- max(strwidth(axTicks(side = 2),
             units = "inches",
             cex = ct1$cex.axis,
-            font = ct1$font.axis
+            font = ct1$font.axis,
+            family = ct1$family
           ))
-          line0 <- 0.5 + mlw / gp$csi + ct1$mgp[2L]
+          line_ylab <- 0.5 + win_to_lines(win_tick_labels) + ct1$mgp[2L]
         } else {
-          line0 <- 4
+          line_ylab <- 4
         }
-        args <- list(ylab = ylab, line = line0)
+        args <- list(ylab = ylab, line = line_ylab)
         do.call(title, c(args, ct2))
-        if (type == "rt1" && gp$usr[4L] > 0) {
-          mlw <- max(strwidth(tdoubling,
+
+        if (type == "rt1" && usr[4L] > 0) {
+          win_tick_labels <- max(strwidth(tdoubling,
             units = "inches",
             cex = ct1$cex.axis,
-            font = ct1$font.axis
+            font = ct1$font.axis,
+            family = ct1$family
           ))
-          tw <- strwidth(ylab_outer,
+          win_axis_title <- strwidth(ylab_outer,
             units = "inches",
             cex = ct2$cex.lab,
-            font = ct2$font.lab
+            font = ct2$font.lab,
+            family = ct2$family
           )
-          ## `tw` relative to 0.8 times the distance from 0 to `usr[4]`
-          rtw <- (tw * (gp$usr[4L] - gp$usr[3L]) / gp$pin[2L]) /
-            (0.8 * (gp$usr[4L] - max(0, gp$usr[3L])))
-          text(
-            ## FIXME: Unexpected behavior
-            x = gp$usr[1L] - gp$cxy[1L] * (2.5 + mlw / gp$csi + ct1_outer$mgp[2L]),
-            y = mean(c(max(0, gp$usr[3L]), gp$usr[4L])),
-            labels = ylab_outer,
-            adj = c(0.5, 0),
-            srt = 90,
+          line_ylab_outer <- 2.5 + win_to_lines(win_tick_labels) + ct1_outer$mgp[2L]
+          rho <- (usr[4L] - max(0, usr[3L])) /
+            (win_axis_title * (usr[4L] - usr[3L]) / pin[2L])
+          mtext(ylab_outer,
+            side = 2,
+            line = line_ylab_outer,
+            at = (max(0, usr[3L]) + usr[4L]) / 2,
             xpd = NA,
             col = ct2$col.lab,
-            cex = ct2$cex.lab / max(1, rtw),
+            cex = ct2$cex.lab * min(1, 0.8 * rho),
             font = ct2$font.lab
           )
         }
@@ -786,19 +824,22 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
     ## Plot (sub)title
     if (!is.null(ct1 <- control$title_main)) {
+      line_main <- 0.5
       if (show_tdoubling > 0L) {
-        line0 <- user_to_lines(add_lines_to_user(0.5, add_height_to_user(h_e, y_e, log), log), log)
-      } else {
-        line0 <- 0.5
+        line_main <- line_e + hin_to_lines(hin_e) + line_main
       }
-      if (!is.null(sub) && !is.null(ct2 <- control$title_sub)) {
+      if (!is.null(ct2 <- control$title_sub)) {
         names(ct2) <- base::sub("\\.sub$", ".main", names(ct2))
-        th <- strheight(sub[k], units = "inches", cex = ct2$cex.main, font = ct2$font.main)
-        args <- list(main = sub[k], line = line0)
+        hin_sub <- strheight(sub[k],
+          units = "inches",
+          cex = ct2$cex.main,
+          font = ct2$font.main
+        )
+        args <- list(main = sub[k], line = line_main)
         do.call(title, c(args, ct2))
-        line0 <- line0 + th / gp$csi + 0.25
+        line_main <- line_main + hin_to_lines(hin_sub) + 0.25
       }
-      args <- list(main = main[k], line = line0)
+      args <- list(main = main[k], line = line_main)
       do.call(title, c(args, ct1))
     }
 
@@ -812,8 +853,8 @@ do_curve_plot <- function(frame, cache, type, time_as,
       get_el <- function(el) ulf(lapply(ct, `[[`, el))
 
       args <- list(
-        x = gp$usr[2L] + 0.02 * (gp$usr[2L] - gp$usr[1L]),
-        y = inv_log10(gp$usr[4L] - 0.02 * (gp$usr[4L] - gp$usr[3L]), log),
+        x = usr[2L] + 0.02 * (usr[2L] - usr[1L]),
+        y = yu_to_y(usr[4L] - 0.02 * (usr[4L] - usr[3L])),
         xpd = NA,
         bty = "n",
         cex = 0.7,
@@ -836,7 +877,8 @@ do_curve_plot <- function(frame, cache, type, time_as,
       )
 
       show_legend_item <- c(pty %in% levels(data$pty), TRUE)
-      do.call(legend, c(args, lapply(more_args, `[`, show_legend_item)))
+      more_args <- lapply(more_args, `[`, show_legend_item)
+      do.call(legend, c(args, more_args))
     }
   }
 
@@ -858,7 +900,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
 #   to_unit <- function(x, log) {
 #     if (log) (x - lrr[1L]) / dlrr else exp(x) / rr[2L]
 #   }
-#   inv_log10 <- if (log) function(x) 10^x else identity
+#   inverse_log10 <- if (log) function(x) 10^x else identity
 #
 #   cache_split <- split(cache, cache$ts)
 #   tsl <- levels(cache$ts)
@@ -1063,7 +1105,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
 #
 #       if (!is.null(ct <- control$title$y)) {
 #         names(ct) <- sub("\\.lab$", "", names(ct))
-#         y0 <- add_lines_to_user(0.5, inv_log10(gp$usr[4L]), log)
+#         y0 <- add_lines_to_user(0.5, inverse_log10(gp$usr[4L]), log)
 #
 #         ## Axis title (y, inner)
 #         l <- list(

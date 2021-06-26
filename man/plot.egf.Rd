@@ -18,8 +18,8 @@
   show_tdoubling = TRUE,
   show_legend = FALSE,
   level = 0.95,
-  per_plot = 6L,
-  ips = 0.25,
+  num_panels_per_plot = 6L,
+  inter_panel_space = 0.25,
   control = egf_plot_control(),
   xlim = NULL,
   ylim = NULL,
@@ -29,7 +29,6 @@
   ylab = NULL,
   ylab_outer = NULL,
   plab = NULL,
-  align_right_tdoubling_caption = TRUE,
   ...
 )
 }
@@ -41,8 +40,8 @@ interval incidence (\code{"interval"}),
 cumulative incidence (\code{"cumulative"}),
 per capita growth rate as curve (\code{"rt1"}), and
 per capita growth rate as heat map (\code{"rt2"}).
-\code{type != "rt2"} displays one time series per plot.
-\code{type = "rt2"} displays \code{per_plot} time series per plot.}
+\code{"rt2"} displays \code{num_panels_per_plot} time series per plot.
+The rest display one time series per plot.}
 
 \item{subset}{An expression to be evaluated in the combined model frame
 (see \code{\link{make_combined}}). Must evaluate to
@@ -57,8 +56,8 @@ are plotted. The default (\code{\link{NULL}}) is equivalent to
 \code{\link{seq_len}(\link{nrow}(combined))}.}
 
 \item{cache}{An \code{"egf_plot_cache"} object returned by a previous evaluation
-of \code{plot.egf(x)}. Predicted values and standard errors stored
-in \code{cache} will be reused (rather than recomputed) if possible.}
+of \code{plot.egf(x)}. Fitted and predicted values and standard errors
+stored in \code{cache} are reused if possible to avoid recomputation.}
 
 \item{do_plot}{A \link{logical} flag. If \code{FALSE}, then nothing is plotted.
 Useful when only the returned \code{"egf_plot_cache"} object is desired.}
@@ -98,13 +97,12 @@ in the right margin.
 when \code{show_predict = 2} or \code{show_tdoubling = 2}.
 [\code{type != "rt2"} only.]}
 
-\item{per_plot}{A positive integer. This is the number of panels (time series)
+\item{num_panels_per_plot}{A positive integer giving the number of panels (time series)
 displayed in one plot.
 [\code{type = "rt2"} only.]}
 
-\item{ips}{(\code{type = "rt2"} only.)
-A non-negative number specifying the space between panels
-("interpanel space") in multipanel plots as a number of margin lines.
+\item{inter_panel_space}{A non-negative number giving the space between panels
+in multipanel plots as a number of margin lines.
 [\code{type = "rt2"} only.]}
 
 \item{control}{An \code{"\link{egf_plot_control}"} object controlling the appearance
@@ -116,10 +114,11 @@ which are recycled for all plots. If \code{time_as = "Date"}, then
 vector coercible to Date via \code{\link{as.Date}(xlim)}. \code{ylim}
 is unused by \code{type = "rt2"}.}
 
-\item{main, sub, xlab, ylab, ylab_outer, plab}{\link[=character]{Character} strings or expressions used to generate
-plot (\code{main}, \code{sub}), axis (\code{xlab}, \code{ylab},
-\code{ylab_outer}), and panel (\code{plab}) titles. \code{main},
-\code{xlab}, and \code{ylab} are supported for all values of \code{type}.
+\item{main, sub, xlab, ylab, ylab_outer, plab}{\link[=character]{Character} strings or expressions used
+to generate plot (\code{main}, \code{sub}), axis (\code{xlab},
+\code{ylab}, \code{ylab_outer}), and panel (\code{plab}) titles.
+\code{main}, \code{xlab}, and \code{ylab} are supported for all
+values of \code{type}.
 \code{sub} is unused by \code{type = "rt2"}.
 \code{plab} is used by \code{type = "rt2"} only.
 \code{ylab_outer} is used by \code{type = "rt[12]"} only.
@@ -131,11 +130,6 @@ in order to generate unique titles for each panel.
 \code{\link{plotmath}} expressions are not supported
 for \code{main}, \code{sub}, and \code{plab} in these cases.}
 
-\item{align_right_tdoubling_caption}{A \link{logical} flag, used if \code{show_tdoubling > 0}
-to determine whether the caption explaining doubling time
-annotation should be aligned left or right in the top margin.
-[\code{type != "rt2"} only.]}
-
 \item{...}{Unused optional arguments.}
 }
 \value{
@@ -143,18 +137,23 @@ A \link[=data.frame]{data.frame} inheriting from \link{class}
 \code{"egf_plot_cache"}. If argument \code{cache} was supplied
 in the function call, then this data frame is the result of
 augmenting \code{cache} with new computations.
-
-This object is returned \emph{in spite of} errors thrown
-during plotting, to avoid waste of computation time.
 }
 \description{
 Methods for plotting \code{"\link{egf}"} objects.
 }
 \details{
-Caching functionality must be used with care, as mismatch between \code{x}
-and \code{cache} will \emph{not} be detected. Constructions such as
-\code{plot(x2, cache = plot(x1))} should \emph{not} be expected to produce
-correct results.
+Computation of fitted and predicted values and standard errors
+is performed before any plots are created. To avoid waste of
+computation time, cached computations are returned \emph{even if}
+an error is thrown during plotting. The cache will be temporarily
+available via \code{\link{.Last.value}}. To ensure that the cache
+is permanently available, assign the result of the call to
+\code{\link{plot}} to a name: \code{cache <- plot(x, \dots)}.
+
+Caching functionality must be used with care, as mismatch
+between \code{x} and \code{cache} will \emph{not} be detected.
+Constructions such as \code{plot(y, cache = plot(x, \dots), \dots)}
+should \emph{not} be expected to produce correct results.
 
 See topic \code{\link{nse}} for details on nonstandard evaluation
 of \code{subset} and \code{order}.

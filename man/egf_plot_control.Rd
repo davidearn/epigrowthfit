@@ -25,9 +25,9 @@ egf_plot_control(
   title_xlab,
   title_ylab,
   title_plab,
-  text_tdoubling_estimate,
-  text_tdoubling_ci,
-  text_tdoubling_caption,
+  mtext_tdoubling_caption,
+  mtext_tdoubling_estimate,
+  mtext_tdoubling_ci,
   colorRamp
 )
 }
@@ -61,8 +61,8 @@ affecting the appearance of the line drawn at \code{y = 0}.
 [\code{type = "rt1"} only.]}
 
 \item{segments}{A named \link{list} of arguments to \code{\link{segments}},
-affecting the appearance of the line segments drawn at \code{y = r}
-\code{x$model$curve} is \code{"exponential"}, \code{"logistic"},
+affecting the appearance of line segments drawn at \code{y = r}
+when \code{x$model$curve} is \code{"exponential"}, \code{"logistic"},
 or \code{"richards"}.
 [\code{type = "rt1"} only.]}
 
@@ -78,19 +78,22 @@ affecting the appearance of the box drawn around the plot region.
 \item{title_main, title_sub, title_xlab, title_ylab, title_plab}{Named \link{list}s of arguments to \code{\link{title}},
 affecting the appearance of plot, axis, and panel titles.}
 
-\item{text_tdoubling_estimate, text_tdoubling_ci, text_tdoubling_caption}{Named \link{list}s of arguments to \code{\link{text}},
+\item{mtext_tdoubling_caption, mtext_tdoubling_estimate, mtext_tdoubling_ci}{Named \link{list}s of arguments to \code{\link{mtext}},
 affecting the appearance of initial doubling times printed
 in the top margin.
 [\code{type != "rt2"} only.]}
 
 \item{colorRamp}{A named \link{list} of arguments to \code{\link{colorRamp}},
-defining heat map colour palette.}
+defining heat map colour palette.
+[\code{type = "rt2"} only.]}
 }
 \value{
 A named list.
 }
 \description{
 Sets parameters controlling the graphical output of \code{\link{plot.egf}}.
+Here, \code{x}, \code{type}, \code{time_as}, and \code{dt} refer to the
+so-named arguments of \code{\link{plot.egf}}.
 }
 \details{
 Unsupported and unmodifiable options are silently discarded.

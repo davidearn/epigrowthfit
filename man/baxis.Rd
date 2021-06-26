@@ -14,8 +14,8 @@ The default (\code{\link{NULL}}) is to take the limit from
 \code{\link{par}("usr")}.}
 }
 \value{
-A \link{numeric} vector.
-This is the value of \code{\link{axis}(side, at, labels, ...)}.
+A \link{numeric} vector identical to
+\code{\link{axis}(side, at, labels, \dots)}.
 }
 \description{
 A replacement for \code{\link{axis}} allowing the user to define
