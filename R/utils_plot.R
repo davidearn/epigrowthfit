@@ -434,7 +434,7 @@ Daxis <- function(origin = .Date(0), minor = NULL, major = NULL,
         major_at <- c(0, major_at)
       }
     }
-    major_at <- ymd(major_at_as_Date, "y")
+    major_labels <- ymd(major_at_as_Date, "y")
   } else {
     ## Years
     by <- ceiling(ceiling(w / 365) / 7)
