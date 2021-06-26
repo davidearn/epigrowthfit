@@ -91,11 +91,13 @@ fitted.egf <- function(object,
 
   if (link && se) {
     if (is.null(object$sdreport)) {
-      warning(wrap(
-        "Computing a Hessian matrix, which could take a while. ",
-        "To avoid needless recomputation, do ",
-        "`object$sdreport <- try(TMB::sdreport(object$tmb_out))` first."
-      ))
+      if (has_random(object)) {
+        warning(wrap(
+          "Computing a Hessian matrix, which could take a while. ",
+          "To avoid needless recomputation, do ",
+          "`object$sdreport <- try(TMB::sdreport(object$tmb_out))` first."
+        ))
+      }
       object$sdreport <- try(TMB::sdreport(object$tmb_out))
     }
     if (inherits(object$sdreport, "try-error")) {

@@ -675,7 +675,9 @@ do_curve_plot <- function(frame, cache, type, time_as,
       )
 
       x_lg_cap <- usr[1L] + adj * (usr[2L] - usr[1L] - wu_lg_cap)
-      x_lg_e <- x_lg_cap + wu_lg_cap - 0.5 * wu_lg_e
+      x_lg_e <- x_lg_cap + adj * (wu_lg_cap - wu_lg_e) + 0.5 * wu_lg_e
+
+      0.5 * wu_lg_e
 
       ## Estimates
       if (!is.null(ct$estimate)) {
