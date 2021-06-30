@@ -375,7 +375,7 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = TRUE, ...) {
   out <- do.call(rbind, by(object, object$linear_combination, do_solve, simplify = FALSE))
   if (attr(object, "method") == "par" && !link) {
     elu <- c("estimate", "lower", "upper")
-    out[elu] <- mftapply(out[elu], out$par,
+    out[elu] <- lpapply(out[elu], out$par,
       f = lapply(string_extract_link(levels(out$par)), match_link, inverse = TRUE)
     )
     levels(out$par) <- string_remove_link(levels(out$par))

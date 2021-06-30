@@ -10,7 +10,7 @@
 #'   cumulative incidence (\code{"cumulative"}),
 #'   per capita growth rate as curve (\code{"rt1"}), and
 #'   per capita growth rate as heat map (\code{"rt2"}).
-#'   \code{"rt2"} displays \code{num_panels_per_plot} time series per plot.
+#'   \code{"rt2"} displays \code{panels_per_plot} time series per plot.
 #'   The rest display one time series per plot.
 #' @param subset
 #'   An expression to be evaluated in the combined model frame
@@ -66,7 +66,7 @@
 #'   A number in the interval (0,1). This is the confidence level used
 #'   when \code{show_predict = 2} or \code{show_tdoubling = 2}.
 #'   [\code{type != "rt2"} only.]
-#' @param num_panels_per_plot
+#' @param panels_per_plot
 #'   A positive integer giving the number of panels (time series)
 #'   displayed in one plot.
 #'   [\code{type = "rt2"} only.]
@@ -140,7 +140,7 @@ plot.egf <- function(x,
                      show_tdoubling = TRUE,
                      show_legend = FALSE,
                      level = 0.95,
-                     num_panels_per_plot = 6L,
+                     panels_per_plot = 6L,
                      inter_panel_space = 0.25,
                      control = egf_plot_control(),
                      xlim = NULL,
@@ -187,10 +187,22 @@ plot.egf <- function(x,
   ## time in the event of errors. This really only matters
   ## for users who have not assigned `plot(x)`.
   if (do_plot) {
-    stop_if_not(
-      inherits(control, "egf_plot_control"),
-      m = "`control` must inherit from class \"egf_plot_control\". See `?egf_plot_control`."
-    )
+    time_as <- match.arg(time_as)
+
+    if (type == "interval") {
+      stop_if_not_true_false(show_legend)
+    } else {
+      show_legend <- FALSE
+    }
+    if (type == "rt1") {
+      log <- FALSE
+    } else {
+      stop_if_not_true_false(log)
+    }
+    if (type == "rt2") {
+      stop_if_not_integer(panels_per_plot, kind = "positive")
+      stop_if_not_number_in_interval(inter_panel_space, 0, Inf, "[)")
+    }
 
     if (!is.null(xlim)) {
       if (is.character(xlim)) {
@@ -203,6 +215,7 @@ plot.egf <- function(x,
         m = "Invalid `xlim`."
       )
     }
+
     if (!is.null(ylim)) {
       stop_if_not(
         is.numeric(ylim),
@@ -212,28 +225,17 @@ plot.egf <- function(x,
       )
     }
 
+    stop_if_not(
+      inherits(control, "egf_plot_control"),
+      m = "`control` must inherit from class \"egf_plot_control\". See `?egf_plot_control`."
+    )
+
     order <- order_to_index(substitute(order), data = combined, enclos = parent.frame())
     if (type == "rt2") {
       plab <- label_to_character(substitute(plab), data = combined, enclos = parent.frame())
     } else {
       main <- label_to_character(substitute(main), data = combined, enclos = parent.frame())
       sub <- label_to_character(substitute(sub), data = combined, enclos = parent.frame())
-    }
-
-    time_as <- match.arg(time_as)
-    if (type == "interval") {
-      stop_if_not_true_false(show_legend)
-    } else {
-      show_legend <- FALSE
-    }
-    if (type == "rt1") {
-      log <- FALSE
-    } else {
-      stop_if_not_true_false(log)
-    }
-    if (type == "rt2") {
-      stop_if_not_integer(num_panels_per_plot, kind = "positive")
-      stop_if_not_number_in_interval(inter_panel_space, 0, Inf, "[)")
     }
 
     frame <- x$frame
@@ -250,13 +252,11 @@ plot.egf <- function(x,
       keep <- !c(tapply(frame$x, frame$ts, function(x) anyNA(x[-1L])))
       if (any(!keep)) {
         warning(
-          ## FIXME: improve `wrap` to handle cases like this
           wrap(
             "Missing values preventing calculation of cumulative incidence. ",
             "These time series will not be displayed:"
           ),
-          "\n\n", paste0("  ", tsl_subset[!keep], collapse = "\n"),
-          .call = FALSE
+          "\n\n", paste0("  ", tsl_subset[!keep], collapse = "\n")
         )
         tsl_subset <- tsl_subset[keep]
         frame$ts <- factor(frame$ts, levels = tsl_subset)
@@ -265,7 +265,7 @@ plot.egf <- function(x,
         frame$window <- factor(frame$window, levels = wl_subset)
       }
       if (all(!keep)) {
-        stop("Nothing left to do ...", call. = FALSE)
+        stop("Nothing left to do ...")
       }
     }
   }
@@ -380,24 +380,26 @@ plot.egf <- function(x,
   subset <- order[order %in% subset]
   m <- match(tsl_subset, tsl[subset], 0L)
 
+  origin <- attr(x$frame, "origin")
+
   if (type == "rt2") {
-    stop("Oops")
-    # do_heat_plot(
-    #   cache = cache,
-    #   origin = origin,
-    #   time_as = time_as,
-    #   origin = attr(x$frame, "origin"),
-    #   log = log,
-    #   num_panels_per_plot = num_panels_per_plot,
-    #   inter_panel_space = inter_panel_space,
-    #   control = control,
-    #   xlim = xlim,
-    #   main = main,
-    #   xlab = xlab,
-    #   ylab = ylab,
-    #   ylab_outer = ylab_outer,
-    #   plab = plab[subset][m]
-    # )
+    do_heat_plot(
+      cache = cache,
+      time_as = time_as,
+      dt = dt,
+      origin = origin,
+      log = log,
+      panels_per_plot = panels_per_plot,
+      inter_panel_space = inter_panel_space,
+      control = control,
+      xlim = xlim,
+      main = main,
+      sub = sub,
+      xlab = xlab,
+      ylab = ylab,
+      ylab_outer = ylab_outer,
+      plab = plab[subset][m]
+    )
   } else {
     do_curve_plot(
       frame = frame,
@@ -405,7 +407,7 @@ plot.egf <- function(x,
       type = type,
       time_as = time_as,
       dt = dt,
-      origin = attr(x$frame, "origin"),
+      origin = origin,
       log = log,
       curve = x$model$curve,
       show_predict = show_predict,
@@ -471,16 +473,6 @@ do_curve_plot <- function(frame, cache, type, time_as,
     ylab_outer <- "doubling time, days"
   }
 
-  ## Plot margins
-  mar <- switch(type,
-    ## Add space for secondary axis in left margin if necessary
-    rt1 = c(3.5, 4 + (is.null(ylim) || ylim[2L] > 0) * 4, 4, 1) + 0.1,
-    ## Add space for legend in right margin if necessary
-    c(3.5, 5, 4, 1 + 5.5 * show_legend) + 0.1
-  )
-  op <- par(mar = mar)
-  on.exit(par(op))
-
   ## Utilities
   win_to_lines <- function(win) {
     diff(grconvertX(c(0, win), "inches", "lines"))
@@ -492,6 +484,17 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
   ## Hack for `points` loop
   control$points_basic <- control$points
+
+  ## Graphical parameters
+  if (type == "rt1") {
+    ## Add space for secondary axis in left margin if necessary
+    mar <- c(3.5, 4 + (is.null(ylim) || ylim[2L] > 0) * 4, 4, 1) + 0.1
+  } else {
+    ## Add space for legend in right margin if necessary
+    mar <- c(3.5, 5, 4, 1 + 5.5 * show_legend) + 0.1
+  }
+  op <- par(mar = mar, xaxs = "i", yaxs = "i")
+  on.exit(par(op))
 
 
   ### Loop over plots ==========================================================
@@ -525,7 +528,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
     ## Axis limits (x)
     if (is.null(xlim_bak)) {
-      xlim <- c(0, max(data$time) * 1.04)
+      xlim <- c(0, max(data$time) * 1.01)
     } else if (inherits(xlim_bak, "Date")) {
       xlim <- julian(xlim_bak, origin = origin + shift)
     } else {
@@ -574,7 +577,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
     ### Plot -------------------------------------------------------------------
 
     plot.new()
-    plot.window(xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i", log = if (log) "y" else "")
+    plot.window(xlim = xlim, ylim = ylim, log = if (log) "y" else "")
     usr <- par("usr")
     pin <- par("pin")
     cex <- par("cex")
@@ -601,9 +604,16 @@ do_curve_plot <- function(frame, cache, type, time_as,
     ## Confidence bands on predicted curves
     if (show_predict == 2L && !is.null(ct <- control$polygon)) {
       for (pd in cache_predict_split) {
+        pd$lower <- exp(pd$lower)
+        pd$upper <- exp(pd$upper)
+        if (type == "cumulative") {
+          c0 <- data[[type]][match(pd$time[1L], data$time, 0L)]
+          pd$lower <- c0 + pd$lower
+          pd$upper <- c0 + pd$upper
+        }
         args <- list(
           x = c(pd$time, rev(pd$time)),
-          y = c(exp(pd$lower), rev(exp(pd$upper)))
+          y = c(pd$lower, rev(pd$upper))
         )
         do.call(polygon, c(args, ct))
       }
@@ -635,6 +645,94 @@ do_curve_plot <- function(frame, cache, type, time_as,
       }
     }
 
+    ## Box
+    if (!is.null(ct <- control$box)) {
+      do.call(box, ct)
+    }
+
+    if (time_as == "Date") {
+      ## Axis (x)
+      Daxis(
+        origin = origin + shift + 1,
+        minor = control$axis_x_Date_minor,
+        major = control$axis_x_Date_major,
+        show_minor = !is.null(control$axis_x_Date_minor),
+        show_major = !is.null(control$axis_x_Date_major)
+      )
+    } else {
+      ## Axis (x)
+      if (!is.null(ct <- control$axis_x_numeric)) {
+        args <- list(side = 1)
+        do.call(baxis, c(args, ct1))
+      }
+
+      ## Axis title (x)
+      if (!is.null(ct <- control$title_xlab)) {
+        args <- list(xlab = xlab, line = 2.5)
+        do.call(title, c(args, ct))
+      }
+    }
+
+    if (!is.null(ct1 <- control$axis_y)) {
+      ## Axis (y)
+      args <- list(side = 2, at = axTicks(side = 2), las = 1)
+      if (type != "rt1" && max(args$at) >= 1e05) {
+        args$labels <- get_yax_labels(args$at)
+        yac <- get_yax_cex(args$labels,
+          mex = 3.5 - ct1$mgp[2L],
+          font = ct1$font.axis,
+          family = ct1$family
+        )
+        ct1$cex.axis <- min(yac, ct1$cex.axis)
+      }
+      do.call(baxis, c(args, ct1))
+
+      if (type == "rt1" && usr[4L] > 0) {
+        tdoubling <- c(1:5, 10, 20, 50, 100)
+        args <- list(
+          side = 2,
+          a = 0,
+          b = usr[4L],
+          at = log(2) / tdoubling,
+          labels = tdoubling,
+          las = 1
+        )
+        ct1_outer <- ct1
+        ct1_outer$mgp <- ct1_outer$mgp + 4
+        do.call(baxis, c(args, ct1_outer))
+      }
+
+      ## Axis title (y)
+      if (!is.null(ct2 <- control$title_ylab)) {
+        if (type == "rt1") {
+          win_tick_labels <- strwidth(axTicks(side = 2), units = "inches", cex = ct1$cex.axis, font = ct1$font.axis, family = ct1$family)
+          line <- 0.5 + win_to_lines(max(win_tick_labels)) + ct1$mgp[2L]
+        } else {
+          line <- 4
+        }
+        args <- list(ylab = ylab, line = line)
+        do.call(title, c(args, ct2))
+
+        if (type == "rt1" && usr[4L] > 0) {
+          win_tick_labels <- strwidth(tdoubling, units = "inches", cex = ct1$cex.axis, font = ct1$font.axis, family = ct1$family)
+          win_axis_title <- strwidth(ylab_outer, units = "inches", cex = ct2$cex.lab, font = ct2$font.lab, family = ct2$family)
+          line_ylab_outer <- 0.5 + win_to_lines(max(win_tick_labels)) + ct1_outer$mgp[2L]
+          rho <- (usr[4L] - max(0, usr[3L])) /
+            (win_axis_title * (usr[4L] - usr[3L]) / pin[2L])
+          mtext(ylab_outer,
+            side = 2,
+            line = line_ylab_outer,
+            at = (max(0, usr[3L]) + usr[4L]) / 2,
+            xpd = NA,
+            col = ct2$col.lab,
+            cex = ct2$cex.lab * min(1, 0.8 * rho),
+            font = ct2$font.lab,
+            family = ct2$family
+          )
+        }
+      }
+    }
+
     ## Initial doubling times
     if (show_tdoubling > 0L) {
       s <- c("estimate", "upper", "lower")
@@ -647,8 +745,8 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
       show_caption <- !is.null(ct$caption)
 
-      hin_ci <- strheight("", units = "inches", cex = ct$ci$cex, font = ct$ci$font)
-      hin_e <- strheight("", units = "inches", cex = ct$estimate$cex, font = ct$estimate$font)
+      hin_ci <- strheight("", units = "inches", cex = ct$ci$cex, font = ct$ci$font, family = ct$ci$family)
+      hin_e <- strheight("", units = "inches", cex = ct$estimate$cex, font = ct$estimate$font, family = ct$estimate$family)
 
       line_ci     <- 0.25
       line_e      <- line_ci    + hin_to_lines(hin_ci) + 0.15
@@ -661,23 +759,11 @@ do_curve_plot <- function(frame, cache, type, time_as,
         adj <- 1
       }
 
-      wu_lg_cap <- strwidth("initial doubling time, days:",
-        units = "user",
-        cex = ct$caption$cex / cex,
-        font = ct$caption$font,
-        family = ct$caption$family
-      )
-      wu_lg_e <- strwidth("estimate",
-        units = "user",
-        cex = ct$estimate$cex / cex,
-        font = ct$estimate$font,
-        family = ct$caption$family
-      )
+      wu_lg_cap <- strwidth("initial doubling time, days:", units = "user", cex = ct$caption$cex / cex, font = ct$caption$font, family = ct$caption$family)
+      wu_lg_e <- strwidth("estimate", units = "user", cex = ct$estimate$cex / cex, font = ct$estimate$font, family = ct$caption$family)
 
       x_lg_cap <- usr[1L] + adj * (usr[2L] - usr[1L] - wu_lg_cap)
       x_lg_e <- x_lg_cap + adj * (wu_lg_cap - wu_lg_e) + 0.5 * wu_lg_e
-
-      0.5 * wu_lg_e
 
       ## Estimates
       if (!is.null(ct$estimate)) {
@@ -718,130 +804,20 @@ do_curve_plot <- function(frame, cache, type, time_as,
       }
     }
 
-    ## Box
-    if (!is.null(ct <- control$box)) {
-      do.call(box, ct)
-    }
-
-    if (time_as == "Date") {
-      ## Axis (x)
-      Daxis(
-        origin = origin + shift + 1,
-        minor = control$axis_x_Date_minor,
-        major = control$axis_x_Date_major,
-        show_minor = !is.null(control$axis_x_Date_minor),
-        show_major = !is.null(control$axis_x_Date_major)
-      )
-    } else {
-      ## Axis (x)
-      if (!is.null(ct <- control$axis_x_numeric)) {
-        args <- list(side = 1)
-        do.call(baxis, c(args, ct1))
-      }
-
-      ## Axis title (x)
-      if (!is.null(ct <- control$title_xlab)) {
-        args <- list(xlab = xlab, line = 2.5)
-        do.call(title, c(args, ct))
-      }
-    }
-
-    ## Axis (y)
-    if (!is.null(ct1 <- control$axis_y)) {
-      args <- list(
-        side = 2,
-        at = axTicks(side = 2),
-        las = 1
-      )
-      if (type != "rt1" && max(args$at) >= 1e05) {
-        args$labels <- get_yax_labels(args$at)
-        yac <- get_yax_cex(args$labels,
-          mex = 3.5 - ct1$mgp[2L],
-          font = ct1$font.axis,
-          family = ct1$family
-        )
-        ct1$cex.axis <- min(yac, ct1$cex.axis)
-      }
-      do.call(baxis, c(args, ct1))
-
-      if (type == "rt1" && usr[4L] > 0) {
-        tdoubling <- c(1:5, 10, 20, 50, 100)
-        args <- list(
-          side = 2,
-          a = 0,
-          b = usr[4L],
-          at = log(2) / tdoubling,
-          labels = tdoubling,
-          las = 1
-        )
-        ct1_outer <- ct1
-        ct1_outer$mgp <- ct1_outer$mgp + 4
-        do.call(baxis, c(args, ct1_outer))
-      }
-
-      ## Axis title (y)
-      if (!is.null(ct2 <- control$title_ylab)) {
-        if (type == "rt1") {
-          win_tick_labels <- max(strwidth(axTicks(side = 2),
-            units = "inches",
-            cex = ct1$cex.axis,
-            font = ct1$font.axis,
-            family = ct1$family
-          ))
-          line_ylab <- 0.5 + win_to_lines(win_tick_labels) + ct1$mgp[2L]
-        } else {
-          line_ylab <- 4
-        }
-        args <- list(ylab = ylab, line = line_ylab)
-        do.call(title, c(args, ct2))
-
-        if (type == "rt1" && usr[4L] > 0) {
-          win_tick_labels <- max(strwidth(tdoubling,
-            units = "inches",
-            cex = ct1$cex.axis,
-            font = ct1$font.axis,
-            family = ct1$family
-          ))
-          win_axis_title <- strwidth(ylab_outer,
-            units = "inches",
-            cex = ct2$cex.lab,
-            font = ct2$font.lab,
-            family = ct2$family
-          )
-          line_ylab_outer <- 2.5 + win_to_lines(win_tick_labels) + ct1_outer$mgp[2L]
-          rho <- (usr[4L] - max(0, usr[3L])) /
-            (win_axis_title * (usr[4L] - usr[3L]) / pin[2L])
-          mtext(ylab_outer,
-            side = 2,
-            line = line_ylab_outer,
-            at = (max(0, usr[3L]) + usr[4L]) / 2,
-            xpd = NA,
-            col = ct2$col.lab,
-            cex = ct2$cex.lab * min(1, 0.8 * rho),
-            font = ct2$font.lab
-          )
-        }
-      }
-    }
-
     ## Plot (sub)title
     if (!is.null(ct1 <- control$title_main)) {
-      line_main <- 0.5
+      line <- 0.5
       if (show_tdoubling > 0L) {
-        line_main <- line_e + hin_to_lines(hin_e) + line_main
+        line <- line_e + hin_to_lines(hin_e) + line
       }
       if (!is.null(ct2 <- control$title_sub)) {
         names(ct2) <- base::sub("\\.sub$", ".main", names(ct2))
-        hin_sub <- strheight(sub[k],
-          units = "inches",
-          cex = ct2$cex.main,
-          font = ct2$font.main
-        )
-        args <- list(main = sub[k], line = line_main)
+        args <- list(main = sub[k], line = line)
         do.call(title, c(args, ct2))
-        line_main <- line_main + hin_to_lines(hin_sub) + 0.25
+        hin_sub <- strheight(sub[k], units = "inches", cex = ct2$cex.main, font = ct2$font.main, family = ct2$family)
+        line <- line + hin_to_lines(hin_sub) + 0.25
       }
-      args <- list(main = main[k], line = line_main)
+      args <- list(main = main[k], line = line)
       do.call(title, c(args, ct1))
     }
 
@@ -887,251 +863,555 @@ do_curve_plot <- function(frame, cache, type, time_as,
   invisible(NULL)
 }
 
-# #' @import graphics
-# #' @importFrom grDevices colorRamp rgb
-# do_heat_plot <- function(cache, origin, time_as, log, per_plot, control,
-#                          xlim, main, xlab, ylab, ylab_outer, plab) {
-#   tr <- range(cache$time) # t range
-#   shift <- tr[1L]
-#   cache$time <- cache$time - shift
-#
-#   lrr <- range(cache$estimate, na.rm = TRUE) # log(r(t)) range
-#   dlrr <- lrr[2L] - lrr[1L]
-#   rr <- exp(lrr) # r(t) range
-#
-#   to_unit <- function(x, log) {
-#     if (log) (x - lrr[1L]) / dlrr else exp(x) / rr[2L]
-#   }
-#   inverse_log10 <- if (log) function(x) 10^x else identity
-#
-#   cache_split <- split(cache, cache$ts)
-#   tsl <- levels(cache$ts)
-#   N <- length(tsl)
-#
-#   ## Heat map color palette
-#   pal <- do.call(colorRamp, control$colorRamp)
-#   ips <- control$ips
-#
-#   ## Axis limits
-#   if (is.null(xlim)) {
-#     xlim <- tr - shift
-#   } else {
-#     if (inherits(xlim, "Date")) {
-#       xlim <- julian(xlim, origin = origin + shift)
-#     }
-#   }
-#   ylim <- c(0, 1)
-#
-#   ## Titles
-#   if (is.null(main)) {
-#     main <- "Per capita growth rate, by time series"
-#   }
-#   if (is.null(xlab)) {
-#     xlab <- switch(time_as,
-#       Date = "",
-#       sprintf("number of days since %s", origin + shift)
-#     )
-#   }
-#   if (is.null(ylab)) {
-#     ylab <- "growth\nrate,\nper day"
-#   }
-#   if (is.null(ylab_outer)) {
-#     ylab_outer <- "doubling\ntime,\ndays"
-#   }
-#   if (is.null(plab)) {
-#     plab <- tsl
-#   }
-#
-#   op <- par(oma = c(3.5, 0, 3.5, 0))
-#   on.exit(par(op))
-#
-#   ### Loop over plots =====================================
-#
-#   K <- 0L
-#   while (K < N) {
-#     L <- c(seq_len(per_plot), rep_len(per_plot + 1L, per_plot))
-#     dim(L) <- c(per_plot, 2L)
-#     ## FIXME: Graphical parameter `din` isn't updated until
-#     ## `plot.new()` is called or R session is restarted...
-#     ## Use here could cause unexpected behavior in RStudio?
-#     layout(L, widths = c(par("din")[1L] - 1.3, 1.3))
-#     par(mar = c(0.5 * ips, 2, 0.5 * ips, 1))
-#
-#     ### Loop over panels ==================================
-#
-#     for (k in K + seq_len(min(per_plot, N - K))) {
-#       d <- cache_split[[k]]
-#       plot.new()
-#       plot.window(xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "i")
-#       gp <- par(c("cex", "csi", "cxy", "pin", "usr"))
-#
-#       ## Panel background
-#       if (!is.null(control$rect$bg)) {
-#         l <- list(
-#           xleft   = gp$usr[1L],
-#           xright  = gp$usr[2L],
-#           ybottom = gp$usr[3L],
-#           ytop    = gp$usr[4L]
-#         )
-#         do.call(rect, c(l, control$rect$bg))
-#       }
-#
-#       ## Panel pixels
-#       for (i in seq_len(nrow(d))) {
-#         rect(
-#           xleft   = d$time[i] - 0.5,
-#           xright  = d$time[i] + 0.5,
-#           ybottom = 0,
-#           ytop    = 1,
-#           border = NA,
-#           col = rgb(pal(to_unit(d$estimate[i], log)), maxColorValue = 255)
-#         )
-#       }
-#
-#       ## Panel title
-#       if (!is.null(ct <- control$title$plab)) {
-#         names(ct) <- sub("\\.lab$", "", names(ct))
-#         ct$cex <- gp$cex * ct$cex
-#
-#         ## Pad from top left corner
-#         px <- (gp$usr[2L] - gp$usr[1L]) * (0.075 * gp$pin[2L] / gp$pin[1L])
-#         py <- 0.075 * (gp$usr[4L] - gp$usr[3L])
-#
-#         ## Background
-#         if (!is.null(control$rect$plab)) {
-#           tw <- strwidth( plab[k], units = "user", cex = ct$cex, font = ct$font)
-#           th <- strheight(plab[k], units = "user", cex = ct$cex, font = ct$font)
-#           l <- list(
-#             xleft   = gp$usr[1L],
-#             xright  = gp$usr[1L] + tw + 2 * px,
-#             ybottom = gp$usr[4L] - th - 2 * py,
-#             ytop    = gp$usr[4L]
-#           )
-#           do.call(rect, c(l, control$rect$plab))
-#         }
-#
-#         ## Text
-#         l <- list(
-#           x = gp$usr[1L] + px,
-#           y = gp$usr[4L] - py,
-#           labels = plab[k],
-#           adj = c(0, 1)
-#         )
-#         do.call(text, c(l, ct))
-#       }
-#
-#       ## Plot title
-#       if (k == K + 1L && !is.null(ct <- control$title$main)) {
-#         ct$cex.main <- ct$cex.main / gp$cex
-#         l <- list(main = main, line = 0.5, xpd = NA)
-#         do.call(title, c(l, ct))
-#       }
-#     }
-#
-#     ## Axis (x)
-#     if (!is.null(ct <- control$axis$x)) {
-#       if (time_as == "Date") {
-#         ct$minor$cex.axis <- ct$minor$cex.axis / gp$cex
-#         ct$major$cex.axis <- ct$major$cex.axis / gp$cex
-#         daxis(
-#           origin = origin + shift + 1,
-#           minor = ct$minor,
-#           major = ct$major
-#         )
-#       } else {
-#         ct$cex.axis <- ct$cex.axis / gp$cex
-#         l <- list(side = 1)
-#         do.call(baxis, c(l, ct))
-#       }
-#     }
-#
-#     ## Axis title (x)
-#     if (!is.null(ct <- control$title$xlab)) {
-#       ct$cex.lab <- ct$cex.lab / gp$cex
-#       l <- list(xlab = xlab, line = 2.5, xpd = NA)
-#       do.call(title, c(l, ct))
-#     }
-#
-#     ## Skip empty panels to get to the last
-#     for (i in seq_len((per_plot - (k %% per_plot)) %% per_plot)) {
-#       plot.new()
-#     }
-#
-#     ## Color scale
-#     par(mar = c(0.5 * ips, 1, 0.5 * ips, 8))
-#     plot.new()
-#     plot.window(
-#       xlim = c(0, 1),
-#       ylim = c(0, 1),
-#       xaxs = "i",
-#       yaxs = "i"
-#     )
-#     dy <- 0.001
-#     for (y in seq.int(0, 1, by = 2 * dy)) {
-#       rect(
-#         xleft   = 0,
-#         xright  = 1,
-#         ybottom = y - dy,
-#         ytop    = y + dy,
-#         border = NA,
-#         col = rgb(pal(y), maxColorValue = 255)
-#       )
-#     }
-#
-#     if (!is.null(ct <- control$axis$y)) {
-#       par(new = TRUE)
-#       plot.window(
-#         xlim = c(0, 1),
-#         ylim = if (log) rr else c(0, rr[2L]),
-#         xaxs = "i",
-#         yaxs = "i",
-#         log = if (log) "y" else ""
-#       )
-#       gp <- par(c("cex", "csi", "cxy", "usr"))
-#       ct$cex.axis <- ct$cex.axis / gp$cex
-#
-#       ## Axis (y, inner)
-#       l <- list(side = 4, las = 1)
-#       do.call(baxis, c(l, ct))
-#
-#       ## Axis (y, outer)
-#       ct$mgp <- ct$mgp + c(4.5, 4, 4.5) # FIXME: Behaving unexpectedly...
-#       tdoubling <- c(1:5, 10, 20, 50, 100)
-#       l <- list(
-#         side = 4,
-#         at = base::log(2) / tdoubling,
-#         labels = tdoubling,
-#         las = 1
-#       )
-#       do.call(baxis, c(l, ct))
-#
-#       if (!is.null(ct <- control$title$y)) {
-#         names(ct) <- sub("\\.lab$", "", names(ct))
-#         y0 <- add_lines_to_user(0.5, inverse_log10(gp$usr[4L]), log)
-#
-#         ## Axis title (y, inner)
-#         l <- list(
-#           x = gp$usr[2L],
-#           y = y0,
-#           labels = ylab,
-#           adj = c(0, 0),
-#           xpd = NA
-#         )
-#         do.call(text, c(l, ct))
-#
-#         ## Axis title (y, outer)
-#         l <- list(
-#           x = gp$usr[2L] + 4 * gp$cxy[1L],
-#           y = y0,
-#           labels = ylab_outer,
-#           adj = c(0, 0),
-#           xpd = NA
-#         )
-#         do.call(text, c(l, ct))
-#       }
-#     }
-#     K <- K + per_plot
-#   }
-#
-#   invisible(NULL)
-# }
+#' @import graphics
+#' @importFrom grDevices colorRamp rgb
+do_heat_plot <- function(cache, time_as, dt, origin, log,
+                         panels_per_plot, inter_panel_space, control,
+                         xlim, main, sub, xlab, ylab, ylab_outer, plab) {
+  ### Set up ===================================================================
+
+  range_time <- range(cache$time)
+  shift <- range_time[1L]
+  cache$time <- cache$time - shift
+
+  range_log_r <- range(cache$estimate, na.rm = TRUE)
+  diff_range_log_r <- diff(range_log_r)
+  range_r <- exp(range_log_r)
+  range_tdoubling <- log(2) / range_r[2:1]
+
+  cache_split <- split(cache, cache$ts)
+  N <- length(cache_split) # number of time series
+
+  ## Axis limits (x)
+  if (is.null(xlim)) {
+    xlim <- range_time - shift
+  } else if (inherits(xlim, "Date")) {
+    xlim <- julian(xlim, origin = origin + shift)
+  }
+
+  ## Axis limits (y)
+  ylim <- c(0, 1)
+
+  ## Plot title
+  if (is.null(main)) {
+    main <- "Per capita growth rate, by time series"
+  }
+
+  ## Axis title (x)
+  if (is.null(xlab)) {
+    xlab <- switch(time_as,
+      Date = "",
+      sprintf("number of days since %s", origin + shift)
+    )
+  }
+
+  ## Axis title (y)
+  if (is.null(ylab)) {
+    ylab <- "growth\nrate,\nper day"
+  }
+  if (is.null(ylab_outer)) {
+    ylab_outer <- "doubling\ntime,\ndays"
+  }
+
+  ## Panel titles
+  if (is.null(plab)) {
+    plab <- names(cache_split)
+  }
+
+  ## Colour palette
+  pal <- do.call(colorRamp, control$colorRamp)
+
+  ## Utilities
+  if (log) {
+    to_unit <- function(x) (x - range_log_r[1L]) / diff_range_log_r
+  } else {
+    to_unit <- function(x) exp(x) / range_r[2L]
+  }
+  hin_to_lines <- function(hin) {
+    diff(grconvertY(c(0, hin), "inches", "lines"))
+  }
+
+
+  ### Loop over plots ==========================================================
+
+  ## Device layout
+  L <- c(seq_len(panels_per_plot), rep_len(panels_per_plot + 1L, panels_per_plot))
+  dim(L) <- c(panels_per_plot, 2L)
+  layout(L, widths = c(par("din")[1L] - 2, 2))
+  ## FIXME: `din` isn't updated until `plot.new` is called.
+  ## Reliance on `din` here could cause unexpected behaviour in RStudio,
+  ## e.g., if user resizes plot pane before `plot.new` call?
+
+  ## Graphical parameters
+  op <- par(oma = c(3.5, 0, 3.5, 0), xaxs = "i", yaxs = "i", cex = 1)
+  on.exit(par(op))
+
+  K <- 0L
+  while (K < N) {
+    ## Graphical parameters for heat map panels
+    par(mar = c(0.5 * inter_panel_space, 2, 0.5 * inter_panel_space, 1))
+
+
+    ### Loop over panels -------------------------------------------------------
+
+    for (k in K + seq_len(min(panels_per_plot, N - K))) {
+      d <- cache_split[[k]]
+
+      plot.new()
+      plot.window(xlim = xlim, ylim = ylim)
+      usr <- par("usr")
+      pin <- par("pin")
+
+      ## Plot (sub)title
+      if (k == K + 1L && !is.null(ct1 <- control$title_main)) {
+        line <- 0.5
+        if (!is.null(ct2 <- control$title_sub)) {
+          names(ct2) <- base::sub("\\.sub$", ".main", names(ct2))
+          args <- list(main = sub, line = line, xpd = NA)
+          do.call(title, c(args, ct2))
+          hin_sub <- strheight(sub, units = "inches", cex = ct2$cex.main, font = ct2$font.main, family = ct2$family)
+          line <- line + hin_to_lines(hin_sub) + 0.25
+        }
+        args <- list(main = main, line = line, xpd = NA)
+        do.call(title, c(args, ct1))
+      }
+
+      ## Background
+      if (!is.null(ct <- control$rect_bg_panel)) {
+        args <- list(
+          xleft   = usr[1L],
+          xright  = usr[2L],
+          ybottom = usr[3L],
+          ytop    = usr[4L]
+        )
+        do.call(rect, c(args, ct))
+      }
+
+      ## Pixels
+      for (i in seq_len(nrow(d))) {
+        rect(
+          xleft   = d$time[i] - 0.5,
+          xright  = d$time[i] + 0.5,
+          ybottom = 0,
+          ytop    = 1,
+          border  = NA,
+          col = rgb(pal(to_unit(d$estimate[i])), maxColorValue = 255)
+        )
+      }
+
+      ## Panel title
+      if (!is.null(ct1 <- control$title_plab)) {
+        names(ct1) <- base::sub("\\.lab$", "", names(ct1))
+
+        ## Pad from top left corner
+        px <- 0.075 * (pin[2L] / pin[1L]) * (usr[2L] - usr[1L])
+        py <- 0.075 * (usr[4L] - usr[3L])
+
+        ## Underlay
+        if (!is.null(ct2 <- control$rect_bg_plab)) {
+          wu_plab <- strwidth(plab[k], units = "user", cex = ct1$cex, font = ct1$font, family = ct1$family)
+          hu_plab <- strheight(plab[k], units = "user", cex = ct1$cex, font = ct1$font, family = ct1$family)
+          args <- list(
+            xleft   = usr[1L],
+            xright  = usr[1L] + wu_plab + 2 * px,
+            ybottom = usr[4L] - hu_plab - 2 * py,
+            ytop    = usr[4L]
+          )
+          do.call(rect, c(args, ct2))
+        }
+
+        ## Text
+        args <- list(
+          x = usr[1L] + px,
+          y = usr[4L] - py,
+          labels = plab[k],
+          adj = c(0, 1)
+        )
+        do.call(text, c(args, ct1))
+      }
+    }
+
+    if (time_as == "Date") {
+      ## Axis (x)
+      Daxis(
+        origin = origin + shift + 1,
+        minor = control$axis_x_Date_minor,
+        major = control$axis_x_Date_major,
+        show_minor = !is.null(control$axis_x_Date_minor),
+        show_major = !is.null(control$axis_x_Date_major)
+      )
+    } else {
+      ## Axis (x)
+      if (!is.null(ct <- control$axis_x_numeric)) {
+        args <- list(side = 1)
+        do.call(baxis, c(args, ct))
+      }
+
+      ## Axis title (x)
+      if (!is.null(ct <- control$title_xlab)) {
+        args <- list(xlab = xlab, line = 2.5)
+        do.call(title, c(args, ct))
+      }
+    }
+
+    ## Skip empty panels to get to the last
+    while (k %% panels_per_plot > 0L) {
+      plot.new()
+      k <- k + 1L
+    }
+
+    ## Color scale
+    par(mar = c(par("mar")[c(1L, 4L, 3L)], 8))
+    plot.new()
+    plot.window(xlim = c(0, 1), ylim = c(0, 1), xaxs = "i", yaxs = "i")
+    dy <- 0.001
+    for (y in seq.int(0, 1, by = 2 * dy)) {
+      rect(
+        xleft   = 0,
+        xright  = 1,
+        ybottom = y - dy,
+        ytop    = y + dy,
+        border = NA,
+        col = rgb(pal(y), maxColorValue = 255)
+      )
+    }
+
+    if (!is.null(ct1 <- control$axis_y)) {
+      par(new = TRUE, ylog = FALSE)
+      if (log) {
+        plot.window(xlim = c(0, 1), ylim = range_r, log = "y")
+      } else {
+        plot.window(xlim = c(0, 1), ylim = c(0, range_r[2L]), log = "")
+      }
+
+      ## Axis (y, inner)
+      args <- list(side = 4, las = 1)
+      do.call(baxis, c(args, ct1))
+
+      par(new = TRUE, ylog = FALSE)
+      plot.window(xlim = c(0, 1), ylim = range_tdoubling, log = "y")
+
+      ## Axis (y, outer)
+      args <- list(side = 4, las = 1)
+      ct1$mgp <- ct1$mgp + 4
+      do.call(baxis, c(args, ct1))
+
+      if (!is.null(ct2 <- control$title_ylab)) {
+        par(new = TRUE, ylog = FALSE)
+        plot.window(xlim = c(0, 1), ylim = c(0, 1), log = "")
+        names(ct2) <- sub("\\.lab$", "", names(ct2))
+        ct2$adj <- NULL
+
+        ## Axis title (y, inner)
+        args <- list(
+          x = 0,
+          y = 1 + diff(grconvertY(c(0, 0.5), "lines", "user")),
+          labels = ylab,
+          adj = c(0, 0),
+          xpd = NA
+        )
+        do.call(text, c(args, ct2))
+
+        ## Axis title (y, outer)
+        args$x <- diff(grconvertX(c(0, 5), "lines", "user"))
+        args$labels <- ylab_outer
+        do.call(text, c(args, ct2))
+      }
+    }
+
+    K <- K + panels_per_plot
+  }
+
+  invisible(NULL)
+}
+
+#' Define plot options
+#'
+#' Sets parameters controlling the graphical output of \code{\link{plot.egf}}.
+#' Here, \code{x}, \code{type}, \code{time_as}, and \code{dt} refer to the
+#' so-named arguments of \code{\link{plot.egf}}.
+#'
+#' @param points
+#'   A named \link{list} of arguments to \code{\link{points}},
+#'   affecting the appearance of observed data.
+#'   [\code{type != "rt2"} only.]
+#' @param points_short,points_long
+#'   Alternatives to \code{points} used for counts over intervals
+#'   shorter or longer than \code{dt} days.
+#'   [\code{type = "interval"} only.]
+#' @param lines
+#'   A named \link{list} of arguments to \code{\link{lines}},
+#'   affecting the appearance of predicted curves.
+#'   [\code{type != "rt2"} only.]
+#' @param polygon
+#'   A named \link{list} of arguments to \code{\link{polygon}},
+#'   affecting the appearance of confidence bands on predicted curves.
+#'   [\code{type != "rt2"} only.]
+#' @param rect
+#'   A named \link{list} of arguments to \code{\link{rect}},
+#'   affecting the appearance of fitting windows.
+#'   [\code{type != "rt2"} only.]
+#' @param rect_bg_panel,rect_bg_plab
+#'   A named \link{list} of arguments to \code{\link{rect}},
+#'   affecting the appearance of panel backgrounds and panel title underlays.
+#'   [\code{type = "rt2"} only.]
+#' @param abline
+#'   A named \link{list} of arguments to \code{\link{abline}},
+#'   affecting the appearance of the line drawn at \code{y = 0}.
+#'   [\code{type = "rt1"} only.]
+#' @param segments
+#'   A named \link{list} of arguments to \code{\link{segments}},
+#'   affecting the appearance of line segments drawn at \code{y = r}
+#'   when \code{x$model$curve} is \code{"exponential"}, \code{"logistic"},
+#'   or \code{"richards"}.
+#'   [\code{type = "rt1"} only.]
+#' @param axis_x_Date_minor,axis_x_Date_major,axis_x_numeric,axis_y
+#'   Named \link{list}s of arguments to \code{\link{axis}},
+#'   affecting the appearance of plot axes. \code{axis_x_Date_*}
+#'   are used for \code{time_as = "Date"}. \code{axis_x_numeric}
+#'   is used for \code{time_as = "numeric"}.
+#' @param box
+#'   A named \link{list} of arguments to \code{\link{box}},
+#'   affecting the appearance of the box drawn around the plot region.
+#'   [\code{type != "rt2"} only.]
+#' @param title_main,title_sub,title_xlab,title_ylab,title_plab
+#'   Named \link{list}s of arguments to \code{\link{title}},
+#'   affecting the appearance of plot, axis, and panel titles.
+#' @param mtext_tdoubling_caption,mtext_tdoubling_estimate,mtext_tdoubling_ci
+#'   Named \link{list}s of arguments to \code{\link{mtext}},
+#'   affecting the appearance of initial doubling times printed
+#'   in the top margin.
+#'   [\code{type != "rt2"} only.]
+#' @param colorRamp
+#'   A named \link{list} of arguments to \code{\link{colorRamp}},
+#'   defining heat map colour palette.
+#'   [\code{type = "rt2"} only.]
+#'
+#' @details
+#' Unsupported and unmodifiable options are silently discarded.
+#' Modifiable options that are unspecified are assigned a default
+#' value defined internally. \code{egf_plot_control()} returns
+#' a \link{list} of default values for all modifiable options.
+#'
+#' Setting an argument to \code{\link{NULL}} has the effect of
+#' suppressing the corresponding plot element. For example,
+#' to suppress observed data, set \code{points} to \code{NULL},
+#' and perhaps also \code{points_short} and \code{points_long}.
+#'
+#' @return
+#' A named list.
+#'
+#' @export
+egf_plot_control <- function(points, points_short, points_long,
+                             lines, polygon, rect,
+                             rect_bg_panel, rect_bg_plab,
+                             abline, segments,
+                             axis_x_Date_minor, axis_x_Date_major,
+                             axis_x_numeric, axis_y, box,
+                             title_main, title_sub,
+                             title_xlab, title_ylab, title_plab,
+                             mtext_tdoubling_caption,
+                             mtext_tdoubling_estimate, mtext_tdoubling_ci,
+                             colorRamp) {
+  nf <- names(formals(egf_plot_control))
+  values <- mget(nf, ifnotfound = NA, inherits = FALSE)
+  defaults <- list(
+    points = list(
+      pch = 21,
+      col = "#BBBBBB",
+      bg = "#DDDDDD",
+      cex = 1
+    ),
+    points_short = list(
+      pch = 1,
+      col = "#882255",
+      bg = NA,
+      cex = 1
+    ),
+    points_long = list(
+      pch = 16,
+      col = "#882255",
+      bg = NA,
+      cex = 1
+    ),
+    lines = list(
+      lty = 1,
+      lwd = 2.5,
+      col = "#44AA99"
+    ),
+    polygon = list(
+      col = "#44AA9960",
+      border = NA,
+      lty = 1,
+      lwd = 1
+    ),
+    rect = list(
+      col = "#DDCC7740",
+      border = NA,
+      lty = 1,
+      lwd = 1
+    ),
+    rect_bg_panel = list(
+      col = "black",
+      border = NA,
+      lty = 1,
+      lwd = 1
+    ),
+    rect_bg_panel = list(
+      col = "#00000080",
+      border = NA,
+      lty = 1,
+      lwd = 1
+    ),
+    abline <- list(
+      lty = 2,
+      lwd = 1,
+      col = "black"
+    ),
+    segments <- list(
+      lty = 3,
+      lwd = 2,
+      col = "black"
+    ),
+    axis_x_Date_minor = list(
+      mgp = c(3, 0.25, 0),
+      lwd = 1,
+      col = "black",
+      lwd.ticks = 1,
+      col.ticks = "black",
+      tcl = -0.2,
+      gap.axis = 0,
+      col.axis = "black",
+      cex.axis = 0.9,
+      font.axis = 1,
+      family = "sans",
+      xpd = FALSE
+    ),
+    axis_x_Date_major = list(
+      mgp = c(3, 1.25, 0),
+      lwd = 1,
+      col = "black",
+      lwd.ticks = 1,
+      col.ticks = "black",
+      tcl = 0,
+      gap.axis = 0,
+      col.axis = "black",
+      cex.axis = 1.2,
+      font.axis = 1,
+      family = "sans",
+      xpd = FALSE
+    ),
+    axis_x_numeric = list(
+      mgp = c(3, 0.7, 0),
+      lwd = 1,
+      col = "black",
+      lwd.ticks = 1,
+      col.ticks = "black",
+      tcl = -0.5,
+      gap.axis = 0,
+      col.axis = "black",
+      cex.axis = 0.9,
+      font.axis = 1,
+      family = "sans",
+      xpd = FALSE
+    ),
+    axis_y = list(
+      mgp = c(3, 0.7, 0),
+      lwd = 1,
+      col = "black",
+      lwd.ticks = 1,
+      col.ticks = "black",
+      tcl = -0.5,
+      gap.axis = NA,
+      col.axis = "black",
+      cex.axis = 0.9,
+      font.axis = 1,
+      family = "sans",
+      xpd = FALSE
+    ),
+    box = list(
+      bty = "l",
+      lty = 1,
+      lwd = 1,
+      col = "black"
+    ),
+    title_main = list(
+      adj = 0,
+      col.main = "black",
+      cex.main = 1,
+      font.main = 2,
+      family = "sans"
+    ),
+    title_sub = list(
+      adj = 0,
+      col.sub = "black",
+      cex.sub = 0.75,
+      font.sub = 2,
+      family = "sans"
+    ),
+    title_xlab = list(
+      adj = 0.5,
+      col.lab = "black",
+      cex.lab = 1,
+      font.lab = 1,
+      family = "sans"
+    ),
+    title_ylab = list(
+      adj = 0.5,
+      col.lab = "black",
+      cex.lab = 1,
+      font.lab = 1,
+      family = "sans"
+    ),
+    title_plab <- list(
+      col.lab = "white",
+      cex.lab = 1,
+      font.lab = 2,
+      family = "sans"
+    ),
+    mtext_tdoubling_caption = list(
+      col = "black",
+      cex = 0.7,
+      font = 1,
+      family = "sans",
+      adj = 1
+    ),
+    mtext_tdoubling_estimate = list(
+      col = "black",
+      cex = 0.7,
+      font = 2,
+      family = "sans"
+    ),
+    mtext_tdoubling_ci = list(
+      col = "black",
+      cex = 0.7,
+      font = 1,
+      family = "sans"
+    ),
+    colorRamp <- list(
+      colors = c(
+        "#364B9A", "#4A7BB7", "#6EA6CD", "#98CAE1",
+        "#C2E4EF", "#EAECCC", "#FEDA8B", "#FDB366",
+        "#F67E4B", "#DD3D2D", "#A50026"
+      ),
+      bias = 1,
+      space = "rgb",
+      interpolate = "linear"
+    )
+  )
+
+  lmerge <- function(value, default) {
+    if (is.null(value)) {
+      return(NULL)
+    }
+    if (!is.list(value) || length(value) == 0L) {
+      return(default)
+    }
+    m <- match(names(value), names(default), 0L)
+    default[m] <- value[m > 0L]
+    default
+  }
+  control <- Map(lmerge, value = values, default = defaults)
+  class(control) <- c("egf_plot_control", "list")
+  control
+}

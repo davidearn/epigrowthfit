@@ -250,7 +250,7 @@ confint.egf <- function(object,
     )
 
     if (!link) {
-      out[elu] <- mftapply(out[elu], out$par,
+      out[elu] <- lpapply(out[elu], out$par,
         f = lapply(string_extract_link(levels(out$par)), match_link, inverse = TRUE)
       )
       levels(out$par) <- string_remove_link(levels(out$par))

@@ -18,7 +18,7 @@
   show_tdoubling = TRUE,
   show_legend = FALSE,
   level = 0.95,
-  num_panels_per_plot = 6L,
+  panels_per_plot = 6L,
   inter_panel_space = 0.25,
   control = egf_plot_control(),
   xlim = NULL,
@@ -40,7 +40,7 @@ interval incidence (\code{"interval"}),
 cumulative incidence (\code{"cumulative"}),
 per capita growth rate as curve (\code{"rt1"}), and
 per capita growth rate as heat map (\code{"rt2"}).
-\code{"rt2"} displays \code{num_panels_per_plot} time series per plot.
+\code{"rt2"} displays \code{panels_per_plot} time series per plot.
 The rest display one time series per plot.}
 
 \item{subset}{An expression to be evaluated in the combined model frame
@@ -97,7 +97,7 @@ in the right margin.
 when \code{show_predict = 2} or \code{show_tdoubling = 2}.
 [\code{type != "rt2"} only.]}
 
-\item{num_panels_per_plot}{A positive integer giving the number of panels (time series)
+\item{panels_per_plot}{A positive integer giving the number of panels (time series)
 displayed in one plot.
 [\code{type = "rt2"} only.]}
 

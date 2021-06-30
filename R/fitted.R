@@ -131,7 +131,7 @@ fitted.egf <- function(object,
     d$se <- as.numeric(Y_se)
   }
   if (!link) {
-    d$estimate <- mftapply(d$estimate, d$par,
+    d$estimate <- lpapply(d$estimate, d$par,
       f = lapply(string_extract_link(levels(d$par)), match_link, inverse = TRUE)
     )
     levels(d$par) <- string_remove_link(levels(d$par))
@@ -171,7 +171,7 @@ coef.egf <- fitted.egf
 #'
 #' @details
 #' Confidence limits on fitted values (link scale) are computed
-#' as \code{estimate + c(-1, 1) * sqrt(q) * se},
+#' as \code{estimate[i] + c(-1, 1) * sqrt(q) * se[i]},
 #' with \code{estimate} and \code{se} as in \code{object} and
 #' \code{q = \link{qchisq}(level, df = 1)}.
 #'
@@ -213,7 +213,7 @@ confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
     return(d)
   }
   elu <- c("estimate", "lower", "upper")
-  d[elu] <- mftapply(d[elu], d$par,
+  d[elu] <- lpapply(d[elu], d$par,
     f = lapply(string_extract_link(levels(d$par)), match_link, inverse = TRUE)
   )
   levels(d$par) <- string_remove_link(levels(d$par))

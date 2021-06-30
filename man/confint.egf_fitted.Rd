@@ -36,7 +36,7 @@ model parameters.
 }
 \details{
 Confidence limits on fitted values (link scale) are computed
-as \code{estimate + c(-1, 1) * sqrt(q) * se},
+as \code{estimate[i] + c(-1, 1) * sqrt(q) * se[i]},
 with \code{estimate} and \code{se} as in \code{object} and
 \code{q = \link{qchisq}(level, df = 1)}.
 }
