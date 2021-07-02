@@ -34,13 +34,12 @@ A \link{list} with elements:
   initial values for fixed effects coefficients.
 }
 \item{b}{
-  If there are random effects, then a \link[=double]{numeric}
-  vector of length \code{\link{sum}(tmb_data$b_seg_len)} listing
-  initial values for (unit variance scale) random effects coefficients.
-  If there are no random effects, then \code{b = \link{NA_real_}}.
+  A \link[=double]{numeric} vector of length
+  \code{\link{sum}(tmb_data$b_seg_len)} listing initial values
+  for random effects coefficients (unit variance scale).
 }
 \item{theta}{
-  If there are random effects, then a numeric vector of length
+  A \link[=double]{numeric} vector of length
   \code{\link{sum}(f(tmb_data$block_rows))}, where \code{f(n) = n*(n+1)/2},
   specifying initial covariance matrices for all random vectors.
   Let \code{x} be a segment of \code{theta} of length \code{f(n)},
@@ -52,8 +51,7 @@ A \link{list} with elements:
   \code{S} of \code{u}:\cr
   \code{S = A \link[=matmult]{\%*\%} \link{t}(A)}\cr
   \code{A = D^-0.5 \link[=matmult]{\%*\%} L}\cr
-  \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}\cr
-  If there are no random effects, then \code{theta = \link{NA_real_}}.
+  \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}
 }
 }
 \description{

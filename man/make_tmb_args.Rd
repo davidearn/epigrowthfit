@@ -4,7 +4,7 @@
 \alias{make_tmb_args}
 \title{Create TMB infrastructure}
 \usage{
-make_tmb_args(frame, frame_par, model, control, do_fit, init)
+make_tmb_args(frame, frame_par, model, control, do_fit, init, map)
 }
 \arguments{
 \item{frame, frame_par}{Elements of the \link{list} output of \code{\link{make_frames}}.}
@@ -23,6 +23,15 @@ to accept the internally generated default. Use \code{do_fit = FALSE}
 to retrieve this default and other optimization inputs (in particular
 \code{Y_init}; see Value), which can often be used to construct a more
 informative starting point.}
+
+\item{map}{A \link{factor} of length \code{\link{length}(init)}. Elements
+of the full parameter vector corresponding to \code{\link{NA}}
+in \code{map} are fixed at their initial values, rather than
+estimated. Elements corresponding to a common factor level
+are constrained to have a common value during estimation.
+\link[=logical]{Logical} values of \code{map} are accepted
+and coerced to factor internally with
+\code{map <- \link{replace}(\link{gl}(\link{length}(map), 1L), map, NA)}.}
 }
 \value{
 A \link{list} with elements \code{data}, \code{parameters}, \code{map},

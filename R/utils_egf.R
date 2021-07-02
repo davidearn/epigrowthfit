@@ -842,7 +842,7 @@ make_XZ_info <- function(xl, ml) {
 #'
 #' @seealso \code{\link{make_tmb_data}}, \code{\link{make_tmb_parameters}}
 #' @keywords internal
-make_tmb_args <- function(frame, frame_par, model, control, do_fit, init) {
+make_tmb_args <- function(frame, frame_par, model, control, do_fit, init, map) {
   tmb_data <- make_tmb_data(
     frame = frame,
     frame_par = frame_par,
@@ -857,17 +857,30 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init) {
     do_fit = do_fit,
     init = init
   )
-  if (has_random(tmb_data)) {
-    ## Nothing to fix, since all parameter objects are used
+  if (is.null(map)) {
     tmb_map <- list()
+  } else {
+    len <- lengths(tmb_parameters)
+    if (is.logical(map)) {
+      map <- replace(gl(length(map), 1L), map, NA)
+    }
+    stop_if_not(
+      is.factor(map),
+      length(map) == sum(len),
+      m = sprintf("`map` must be a factor or logical vector of length %d.", sum(len))
+    )
+    tmb_map <- split(map, rep.int(gl(3L, 1L, labels = names(len)), len))
+    tmb_map <- lapply(tmb_map, factor, exclude = NA)
+  }
+  if (has_random(tmb_data)) {
     ## Declare that `b` contains random effects
     tmb_random <- "b"
   } else {
-    ## Fix `b` and `theta` (in this case to NA_real_),
-    ## since only `beta` is used
-    tmb_map <- list(b = factor(NA), theta = factor(NA))
     ## Declare that there are no random effects
     tmb_random <- NULL
+    ## Fix `b` and `theta` to NA_real_ since only `beta` is used
+    tmb_parameters$b <- tmb_parameters$theta <- NA_real_
+    tmb_map$b <- tmb_map$theta <- factor(NA)
   }
   list(
     data = tmb_data,
@@ -1183,13 +1196,12 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
 #'   initial values for fixed effects coefficients.
 #' }
 #' \item{b}{
-#'   If there are random effects, then a \link[=double]{numeric}
-#'   vector of length \code{\link{sum}(tmb_data$b_seg_len)} listing
-#'   initial values for (unit variance scale) random effects coefficients.
-#'   If there are no random effects, then \code{b = \link{NA_real_}}.
+#'   A \link[=double]{numeric} vector of length
+#'   \code{\link{sum}(tmb_data$b_seg_len)} listing initial values
+#'   for random effects coefficients (unit variance scale).
 #' }
 #' \item{theta}{
-#'   If there are random effects, then a numeric vector of length
+#'   A \link[=double]{numeric} vector of length
 #'   \code{\link{sum}(f(tmb_data$block_rows))}, where \code{f(n) = n*(n+1)/2},
 #'   specifying initial covariance matrices for all random vectors.
 #'   Let \code{x} be a segment of \code{theta} of length \code{f(n)},
@@ -1201,8 +1213,7 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
 #'   \code{S} of \code{u}:\cr
 #'   \code{S = A \link[=matmult]{\%*\%} \link{t}(A)}\cr
 #'   \code{A = D^-0.5 \link[=matmult]{\%*\%} L}\cr
-#'   \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}\cr
-#'   If there are no random effects, then \code{theta = \link{NA_real_}}.
+#'   \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}
 #' }
 #'
 #' @keywords internal
@@ -1263,9 +1274,9 @@ make_tmb_parameters <- function(tmb_data, frame, frame_par, model, do_fit, init)
       K <- vapply(tx_split, get_K, 0)
       p <- 0.8
       alpha <- switch(model$curve,
-                      subexponential = r * c0^(1 - p),
-                      gompertz = r / log(K / c0),
-                      NA_real_
+        subexponential = r * c0^(1 - p),
+        gompertz = r / log(K / c0),
+        NA_real_
       )
       Y_init <- data.frame(r, alpha, c0, tinfl, K, p)
       Y_init[c("a", "b", "nbdisp", paste0("w", 1:6))] <- 1
@@ -1294,11 +1305,6 @@ make_tmb_parameters <- function(tmb_data, frame, frame_par, model, do_fit, init)
     )
     names(init) <- NULL
     init_split <- split(init, rep.int(gl(3L, 1L, labels = names(len)), len))
-  }
-
-  ## Replace unused parameter objects with NA_real_
-  if (!has_random(tmb_data)) {
-    init_split[c("b", "theta")] <- list(NA_real_)
   }
 
   ## Retain all naive estimates when debugging

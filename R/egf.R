@@ -79,6 +79,15 @@
 #'   to retrieve this default and other optimization inputs (in particular
 #'   \code{Y_init}; see Value), which can often be used to construct a more
 #'   informative starting point.
+#' @param map
+#'   A \link{factor} of length \code{\link{length}(init)}. Elements
+#'   of the full parameter vector corresponding to \code{\link{NA}}
+#'   in \code{map} are fixed at their initial values, rather than
+#'   estimated. Elements corresponding to a common factor level
+#'   are constrained to have a common value during estimation.
+#'   \link[=logical]{Logical} values of \code{map} are accepted
+#'   and coerced to factor internally with
+#'   \code{map <- \link{replace}(\link{gl}(\link{length}(map), 1L), map, NA)}.
 #' @param origin
 #'   A \link{Date} specifying a reference time.
 #' @param append
@@ -199,6 +208,7 @@ egf <- function(model = egf_model(),
                 do_fit = TRUE,
                 se = FALSE,
                 init = NULL,
+                map = NULL,
                 origin = .Date(0L),
                 append = NULL,
                 ...) {
@@ -242,7 +252,8 @@ egf <- function(model = egf_model(),
     model = model,
     control = control,
     do_fit = do_fit,
-    init = init
+    init = init,
+    map = map
   )
   tmb_out <- do.call(TMB::MakeADFun, tmb_args)
   tmb_out$fn <- patch_fn(tmb_out$fn, inner_optimizer = control$inner_optimizer)

@@ -9,8 +9,8 @@ test_that("exponential", {
   nbdisp <- 10
 
   beta <- log(c(r, c0, nbdisp))
-  sd_b <- 0.1 * abs(beta)
-  n <- length(sd_b)
+  n <- length(beta)
+  sd_b <- rep_len(0.1, n)
   theta <- c(log(sd_b), rep_len(0, n * (n - 1) / 2))
   N <- 500L
   b <- rnorm(n * N)
@@ -61,7 +61,7 @@ test_that("exponential", {
   expect_equal(pp$theta[-(1:n)], theta[-(1:n)], tolerance = 5e-2)
 
   ## Predicted values
-  Y_hat <- matrix(mm$tmb_out$report(mm$best)$Y_as_vector, ncol = n)
+  Y_hat <- mm$tmb_out$report(mm$best)$Y
   mu_hat <- apply(Y_hat, 1L, fp, time = time, simplify = FALSE)
   expect_equal(unlist(mu_hat, FALSE, FALSE), unlist(mu, FALSE, FALSE), tolerance = 1e-1)
 })
@@ -76,8 +76,8 @@ test_that("logistic", {
   nbdisp <- 10
 
   beta <- log(c(r, tinfl, K, nbdisp))
-  sd_b <- 0.1 * abs(beta)
-  n <- length(sd_b)
+  n <- length(beta)
+  sd_b <- rep_len(0.1, n)
   theta <- c(log(sd_b), rep_len(0, n * (n - 1) / 2))
   N <- 500L
   b <- rnorm(n * N)
@@ -129,7 +129,7 @@ test_that("logistic", {
   expect_equal(pp$theta[-(1:n)], theta[-(1:n)], tolerance = 1e-1)
 
   ## Predicted values
-  Y_hat <- matrix(mm$tmb_out$report(mm$best)$Y_as_vector, ncol = n)
+  Y_hat <- mm$tmb_out$report(mm$best)$Y
   mu_hat <- Map(fp, time = time, par = as.data.frame(t(Y_hat)))
   expect_equal(unlist(mu_hat, FALSE, FALSE), unlist(mu, FALSE, FALSE), tolerance = 5e-1)
 })
@@ -145,8 +145,8 @@ test_that("richards", {
   nbdisp <- 10
 
   beta <- log(c(r, tinfl, K, a, nbdisp))
-  sd_b <- 0.1 * abs(beta)
-  n <- length(sd_b)
+  n <- length(beta)
+  sd_b <- rep_len(0.1, n)
   theta <- c(log(sd_b), rep_len(0, n * (n - 1) / 2))
   N <- 500L
   b <- rnorm(n * N)
@@ -199,7 +199,7 @@ test_that("richards", {
   # expect_equal(pp$theta[-(1:n)], theta[-(1:n)], tolerance = 5e-1)
 
   ## Predicted values
-  Y_hat <- matrix(mm$tmb_out$report(mm$best)$Y_as_vector, ncol = n)
+  Y_hat <- mm$tmb_out$report(mm$best)$Y
   mu_hat <- Map(fp, time = time, par = as.data.frame(t(Y_hat)))
   expect_equal(unlist(mu_hat, FALSE, FALSE), unlist(mu, FALSE, FALSE), tolerance = 5e-1)
 })
@@ -213,8 +213,8 @@ test_that("subexponential", {
   nbdisp <- 10
 
   beta <- c(log(alpha), log(c0), qlogis(p), log(nbdisp))
-  sd_b <- 0.1 * abs(beta)
-  n <- length(sd_b)
+  n <- length(beta)
+  sd_b <- rep_len(0.1, n)
   theta <- c(log(sd_b), rep_len(0, n * (n - 1) / 2))
   N <- 500L
   b <- rnorm(n * N)
@@ -265,7 +265,7 @@ test_that("subexponential", {
   # expect_equal(pp$theta[-(1:n)], theta[-(1:n)], tolerance = 5)
 
   ## Predicted values
-  Y_hat <- matrix(mm$tmb_out$report(mm$best)$Y_as_vector, ncol = n)
+  Y_hat <- mm$tmb_out$report(mm$best)$Y
   mu_hat <- apply(Y_hat, 1L, fp, time = time, simplify = FALSE)
   expect_equal(unlist(mu_hat, FALSE, FALSE), unlist(mu, FALSE, FALSE), tolerance = 1e-1)
 })
@@ -279,8 +279,8 @@ test_that("gompertz", {
   nbdisp <- 10
 
   beta <- log(c(alpha, c0, K, nbdisp))
-  sd_b <- 0.1 * abs(beta)
-  n <- length(sd_b)
+  n <- length(beta)
+  sd_b <- rep_len(0.1, n)
   theta <- c(log(sd_b), rep_len(0, n * (n - 1) / 2))
   N <- 500L
   b <- rnorm(n * N)
@@ -332,7 +332,7 @@ test_that("gompertz", {
   expect_equal(pp$theta[-(1:n)], theta[-(1:n)], tolerance = 2e-1)
 
   ## Predicted values
-  Y_hat <- matrix(mm$tmb_out$report(mm$best)$Y_as_vector, ncol = n)
+  Y_hat <- mm$tmb_out$report(mm$best)$Y
   mu_hat <- Map(fp, time = time, par = as.data.frame(t(Y_hat)))
   expect_equal(unlist(mu_hat, FALSE, FALSE), unlist(mu, FALSE, FALSE), tolerance = 1e-1)
 })
