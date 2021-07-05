@@ -4,7 +4,7 @@
 \alias{make_tmb_data}
 \title{Construct data objects for C++ template}
 \usage{
-make_tmb_data(frame, frame_par, model, control, do_fit, init)
+make_tmb_data(frame, frame_par, model, priors, control, do_fit, init)
 }
 \arguments{
 \item{frame}{Elements of the \link{list} output of \code{\link{make_frames}}.}
@@ -13,6 +13,16 @@ make_tmb_data(frame, frame_par, model, control, do_fit, init)
 
 \item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
 and a dispersion model to be estimated.}
+
+\item{priors}{An \link{list} of \link{formula}e of the form \code{par ~ f(...)},
+specifying priors on nonlinear and dispersion model parameters.
+\code{\link{deparse}(par)} must be an element of
+\code{\link{get_par_names}(model, link = TRUE)}.
+\code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
+with arguments specifying suitable hyperparameters.
+This call is evaluated in the corresponding formula environment.
+(Currently, the only implemented prior is Gaussian. As a result,
+formulae must have the form \code{par ~ \link{Normal}(mu, sigma)}.)}
 
 \item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
 
@@ -29,7 +39,7 @@ informative starting point.}
 \value{
 [Below,
 \code{n = \link{sum}(!\link{is.na}(frame$window))}
-is the total number of time points belonging a fitting window,
+is the total number of time points belonging to a fitting window,
 \code{N = \link{nlevels}(frame$window)}
 is the number of fitting windows, and
 \code{p = \link{length}(frame_par)}
@@ -52,7 +62,7 @@ with elements:
   is the number of cases observed from time \code{t[k+i-1]}
   to time \code{t[k+i]}.
 }
-\item{day_of_week_on_day0}{
+\item{day1}{
   If \code{model$day_of_week > 0}, then an \link{integer} vector
   of length \code{N} indicating the first day of week in each
   fitting window, with value \code{i} in \code{0:6} mapping to

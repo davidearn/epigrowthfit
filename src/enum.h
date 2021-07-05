@@ -12,3 +12,8 @@ enum family
     pois,
     nbinom
 };
+
+enum prior
+{
+    norm
+};

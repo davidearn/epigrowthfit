@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_egf.R
 \name{make_frames}
 \alias{make_frames}
-\title{Construct model frames}
+\title{Construct list of model frames}
 \usage{
 make_frames(
   model,
@@ -42,8 +42,8 @@ to \code{\link{rep}(\link{factor}(1), \link{length}(x))}.}
 specifying mixed effects models for nonlinear and dispersion model
 parameters using \code{\link[lme4:lmer]{lme4}}-like syntax.
 Alternatively, a formula of the form \code{~terms} to be recycled
-for all parameters. A list of the parameters for which formulae
-can be specified can be retrieved with \code{\link{get_par_names}}.
+for all parameters. A list of parameters for which formulae may
+be specified can be retrieved with \code{\link{get_par_names}}.
 Specifically, \code{\link{deparse}(par)} must be an element of
 \code{\link{get_par_names}(model, link = TRUE)}. The default for
 parameters not assigned a formula is \code{~1}.}
@@ -110,8 +110,8 @@ A list with elements \code{frame}, \code{frame_par}, \code{frame_append},
 and \code{endpoints}. See descriptions under \code{\link{egf}}.
 }
 \description{
-Constructs time series and mixed effects model frames to be used
-by \code{\link{egf}}, while performing a battery of checks on the
-supplied formulae and data.
+Constructs time series and mixed effects model frames for use
+by \code{\link{egf}}, while performing a battery of checks on
+the supplied formulae and data.
 }
 \keyword{internal}

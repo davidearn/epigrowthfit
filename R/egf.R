@@ -26,8 +26,8 @@
 #'   specifying mixed effects models for nonlinear and dispersion model
 #'   parameters using \code{\link[lme4:lmer]{lme4}}-like syntax.
 #'   Alternatively, a formula of the form \code{~terms} to be recycled
-#'   for all parameters. A list of the parameters for which formulae
-#'   can be specified can be retrieved with \code{\link{get_par_names}}.
+#'   for all parameters. A list of parameters for which formulae may
+#'   be specified can be retrieved with \code{\link{get_par_names}}.
 #'   Specifically, \code{\link{deparse}(par)} must be an element of
 #'   \code{\link{get_par_names}(model, link = TRUE)}. The default for
 #'   parameters not assigned a formula is \code{~1}.
@@ -63,6 +63,16 @@
 #'   must evaluate to a \link{factor} indicating the time series in which each
 #'   window is found. Within time series, intervals \code{[start[i], end[i]]}
 #'   must be disjoint and contain at least two time points from \code{time}.
+#' @param priors
+#'   An \link{list} of \link{formula}e of the form \code{par ~ f(...)},
+#'   specifying priors on nonlinear and dispersion model parameters.
+#'   \code{\link{deparse}(par)} must be an element of
+#'   \code{\link{get_par_names}(model, link = TRUE)}.
+#'   \code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
+#'   with arguments specifying suitable hyperparameters.
+#'   This call is evaluated in the corresponding formula environment.
+#'   (Currently, the only implemented prior is Gaussian. As a result,
+#'   formulae must have the form \code{par ~ \link{Normal}(mu, sigma)}.)
 #' @param control
 #'   An \code{"\link{egf_control}"} object specifying control parameters.
 #' @param do_fit
@@ -149,8 +159,16 @@
 #'   \code{data_par} indicated by \code{append}. Corresponds rowwise
 #'   to \code{endpoints}.
 #' }
-#' \item{model, control}{
-#'   Copies of the so-named arguments.
+#' \item{model}{
+#'   A copy of the so-named argument.
+#' }
+#' \item{priors}{
+#'   A \link{list} of \code{"\link{egf_prior}"} objects,
+#'   obtained by evaluating the right hand side of each
+#'   \link{formula} listed in the so-named argument.
+#' }
+#' \item{control}{
+#'   A copy of the so-named argument.
 #' }
 #' \item{tmb_args}{
 #'   A \link{list} of arguments to \code{\link[TMB]{MakeADFun}}
@@ -204,6 +222,7 @@ egf <- function(model = egf_model(),
                 na_action = c("fail", "pass"),
                 na_action_par = c("fail", "omit"),
                 endpoints,
+                priors = list(),
                 control = egf_control(),
                 do_fit = TRUE,
                 se = FALSE,
@@ -246,10 +265,12 @@ egf <- function(model = egf_model(),
     init = init,
     append = append
   )
+  priors <- make_priors(priors = priors, model = model)
   tmb_args <- make_tmb_args(
     frame = frames$frame,
     frame_par = frames$frame_par,
     model = model,
+    priors = priors,
     control = control,
     do_fit = do_fit,
     init = init,
@@ -290,6 +311,7 @@ egf <- function(model = egf_model(),
 
   out <- c(frames, list(
     model = model,
+    priors = priors,
     control = control,
     tmb_args = tmb_args,
     tmb_out = tmb_out,

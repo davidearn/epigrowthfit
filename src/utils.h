@@ -1,16 +1,38 @@
-// https://github.com/kaskr/adcomp/issues/59
+/* Similar to R function `is.na` */
 template<class Type>
 bool is_NA_real_(Type x)
 {
     return R_IsNA(asDouble(x));
 }
 
+/* Similar to R function `is.finite` */
 template<class Type>
 bool is_finite(Type x)
 {
     return R_finite(asDouble(x));
 }
 
+/* Increase all elements of an integer vector `x` by an integer `k` */
+vector<int> increment(vector<int> x, int k)
+{
+    for (int i = 0; i < x.size(); i++)
+    {
+        x(i) += k;
+    }
+    return x;
+}
+
+/* Decrease all elements of an integer vector `x` by an integer `k` */
+vector<int> decrement(vector<int> x, int k)
+{
+    for (int i = 0; i < x.size(); i++)
+    {
+        x(i) -= k;
+    }
+    return x;
+}
+
+/* Get the number of characters in an integer */
 int nchar(int i)
 {
     if (i > 0)
@@ -27,6 +49,27 @@ int nchar(int i)
     }
 }
 
+/* Check if an integer vector has at least one non-negative element */
+bool any_geq_zero(vector<int> x)
+{
+    int n = x.size();
+    if (n == 0)
+    {
+        return false;
+    }
+    bool yes = false;
+    for (int i = 0; i < n; i++)
+    {
+        if (x(i) >= 0)
+	{
+	    yes = true;
+	    break;
+	}
+    }
+    return yes;
+}
+
+/* Poisson density with robust parametrization */
 template<class Type>
 Type dpois_robust(Type x, Type log_lambda, int give_log = 0)
 {
@@ -34,6 +77,7 @@ Type dpois_robust(Type x, Type log_lambda, int give_log = 0)
     return ( give_log ? log_dpois : exp(log_dpois) );
 }
 
+/* Negative binomial sampling with robust parametrization */
 template<class Type>
 Type rnbinom_robust(Type log_mu, Type log_size)
 {
@@ -42,6 +86,7 @@ Type rnbinom_robust(Type log_mu, Type log_size)
     // usage: rnbinom(size, prob)
 }
 
+/* Compute `log(diff(x))` given `log(x)` */
 template<class Type>
 vector<Type> logspace_diff_1(vector<Type> log_x)
 {
@@ -53,6 +98,9 @@ vector<Type> logspace_diff_1(vector<Type> log_x)
     return log_diff_x;
 }
 
+/* Compute `c(log(diff(x1)), ..., log(diff(xn)))`
+   given `c(log(x1), ..., log(xn)) and `c(length(x1), ..., length(xn))`
+*/
 template<class Type>
 vector<Type> logspace_diff_n(vector<Type> log_x, vector<int> len)
 {
@@ -66,6 +114,7 @@ vector<Type> logspace_diff_n(vector<Type> log_x, vector<int> len)
     return log_diff_x;
 }
 
+/* Compute `log(cumsum(x))` given `log(x)` */
 template<class Type>
 vector<Type> logspace_cumsum_1(vector<Type> log_x)
 {
@@ -78,6 +127,9 @@ vector<Type> logspace_cumsum_1(vector<Type> log_x)
     return log_cumsum_x;
 }
 
+/* Compute `c(log(cumsum(x1)), ..., log(cumsum(xn)))`
+   given `c(log(x1), ..., log(xn)) and `c(length(x1), ..., length(xn))`
+*/
 template<class Type>
 vector<Type> logspace_cumsum_n(vector<Type> log_x, vector<int> len)
 {
@@ -91,6 +143,7 @@ vector<Type> logspace_cumsum_n(vector<Type> log_x, vector<int> len)
     return log_cumsum_x;
 }
 
+/* Compute `log(x - a)` given vector `log(x)` and scalar `log(a)` */
 template<class Type>
 vector<Type> logspace_sub_n_1(vector<Type> log_x, Type log_a)
 {
@@ -100,4 +153,39 @@ vector<Type> logspace_sub_n_1(vector<Type> log_x, Type log_a)
         log_x_minus_a = logspace_sub(log_x, log_a);
     }
     return log_x_minus_a;
+}
+
+/* Recycle a vector `x` to length `len` starting from index `from` */
+template<class Type>
+vector<Type> rep_len_from(vector<Type> x, int len, int from = 0)
+{
+    int n = x.size();
+    if (from > 0)
+    {
+	vector<Type> x1 = x.segment(0, from);
+	vector<Type> x2 = x.segment(from, n - from);
+	x << x2,x1;
+    }
+    if (len < n)
+    {
+        return x.segment(0, len);
+    }
+    if (len == n)
+    {
+        return x;
+    }
+    
+    int len0 = n * ((int) len / n);
+    int len_minus_len0 = len - len0;
+
+    vector<Type> x_rep(len);
+    for (int i = 0; i < len0; i += n)
+    {
+	x_rep.segment(i, n) = x;
+    }
+    if (len_minus_len0 > 0)
+    {
+        x_rep.segment(len0, len_minus_len0) = x.segment(0, len_minus_len0);
+    }
+    return x_rep;
 }

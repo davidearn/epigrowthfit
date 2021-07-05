@@ -18,14 +18,17 @@
 #' @examples
 #' # get_flag("curve", "exponential")
 #' # get_flag("family", "pois")
+#' # get_flag("prior", "norm")
 #'
 #' @noRd
 get_flag <- function(type, enum) {
-  curve_names <- c("exponential", "subexponential", "gompertz", "logistic", "richards") # GREP_FLAG
-  family_names <- c("pois", "nbinom") # GREP_FLAG
+  curve_names <- c("exponential", "subexponential", "gompertz", "logistic", "richards")
+  family_names <- c("pois", "nbinom")
+  prior_names <- c("norm")
   switch(type,
     curve = match(enum, curve_names) - 1L,
     family = match(enum, family_names) - 1L,
-    NA_integer_
+    prior = match(enum, prior_names) - 1L,
+    rep_len(NA_integer_, length(enum))
   )
 }

@@ -197,11 +197,11 @@ match_link <- function(f, inverse = FALSE) {
   }
 }
 
-#' Construct model frames
+#' Construct list of model frames
 #'
-#' Constructs time series and mixed effects model frames to be used
-#' by \code{\link{egf}}, while performing a battery of checks on the
-#' supplied formulae and data.
+#' Constructs time series and mixed effects model frames for use
+#' by \code{\link{egf}}, while performing a battery of checks on
+#' the supplied formulae and data.
 #'
 #' @inheritParams egf
 #'
@@ -254,7 +254,8 @@ make_frames <- function(model,
     )
   )
 
-  ## Construct and evaluate call to `data.frame()`
+  ## Build model frame by constructing and evaluating an appropriate
+  ## call to `data.frame`
   l <- list(quote(data.frame), time = formula[[3L]], x = formula[[2L]])
   is_bar <- function(x) is.call(x) && x[[1L]] == as.name("|")
   if (ib <- is_bar(formula[[3L]])) {
@@ -266,7 +267,7 @@ make_frames <- function(model,
     frame$ts <- rep_len(factor(1), nrow(frame))
   }
 
-  ## Preserve deparsed `data.frame()` arguments for error messages
+  ## Preserve deparsed `data.frame` arguments for error messages
   nf <- lapply(l[-1L], deparse)
 
 
@@ -321,8 +322,10 @@ make_frames <- function(model,
   }
 
   ## Replace `|` operators with `+` operators in formulae
-  ## to enable use of `model.frame()` machinery
+  ## to enable use of `model.frame` machinery
   formula_par_no_bars <- lapply(formula_par, gsub_bar_plus)
+
+  ## Build model frames using `model.frame`
   frame_par <- lapply(formula_par_no_bars, model.frame,
     data = data_par,
     na.action = na.pass,
@@ -332,7 +335,8 @@ make_frames <- function(model,
 
   ### Table of fitting windows
 
-  ## Construct and evaluate call to `data.frame()`
+  ## Build table by constructing and evaluating an appropriate
+  ## call to `data.frame`
   l <- list(quote(data.frame), start = quote(start), end = quote(end))
   if (ib) {
     l$ts <- formula[[3L]][[3L]]
@@ -355,7 +359,7 @@ make_frames <- function(model,
     m = "`endpoints` and mixed effects model frames must have a common number of rows."
   )
 
-  ## Preserve deparsed `data.frame()` arguments for error messages
+  ## Preserve deparsed `data.frame` arguments for error messages
   ne <- lapply(l[-1L], deparse)
 
 
@@ -663,6 +667,43 @@ make_frames <- function(model,
   )
 }
 
+#' Construct list of prior objects
+#'
+#' Validates and processes \code{\link{egf}} argument \code{priors}.
+#'
+#' @inheritParams egf
+#'
+#' @return
+#' A named \link{list} of \code{"\link{egf_prior}"} objects obtained
+#' by evaluating the right hand side of each formula listed in \code{priors}.
+#'
+#' @keywords internal
+make_priors <- function(priors, model) {
+  par_names <- get_par_names(model, link = TRUE)
+  stop_if_not(
+    is.list(priors),
+    vapply(priors, inherits, FALSE, "formula"),
+    lengths(priors) == 3L,
+    (np <- vapply(priors, function(x) deparse(x[[2L]]), "")) %in% par_names,
+    vapply(priors, function(x) is.call(x[[3L]]), FALSE),
+    m = wrap(
+      "`priors` must be a list of formulae of the form `par ~ f(...)`, ",
+      "with `deparse(par)` an element of `get_par_names(model, link = TRUE)`."
+    )
+  )
+  priors <- lapply(priors, function(x) eval(x[[3L]], envir = environment(x)))
+  stop_if_not(
+    vapply(priors, inherits, FALSE, "egf_prior"),
+    m = wrap(
+      "In `priors = list(par ~ f(...))`, `f(...)` must be a call ",
+      "evaluating to an \"egf_prior\" object. See `?egf_prior`."
+    )
+  )
+  names(priors) <- np
+  priors[setdiff(par_names, names(priors))] <- list(NULL)
+  priors[par_names]
+}
+
 #' Construct design matrices
 #'
 #' Utilities for constructing the design matrices \code{X} and \code{Z}
@@ -842,11 +883,13 @@ make_XZ_info <- function(xl, ml) {
 #'
 #' @seealso \code{\link{make_tmb_data}}, \code{\link{make_tmb_parameters}}
 #' @keywords internal
-make_tmb_args <- function(frame, frame_par, model, control, do_fit, init, map) {
+make_tmb_args <- function(frame, frame_par, model, priors, control,
+                          do_fit, init, map) {
   tmb_data <- make_tmb_data(
     frame = frame,
     frame_par = frame_par,
     model = model,
+    priors = priors,
     control = control
   )
   tmb_parameters <- make_tmb_parameters(
@@ -903,7 +946,7 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init, map) {
 #' @return
 #' [Below,
 #' \code{n = \link{sum}(!\link{is.na}(frame$window))}
-#' is the total number of time points belonging a fitting window,
+#' is the total number of time points belonging to a fitting window,
 #' \code{N = \link{nlevels}(frame$window)}
 #' is the number of fitting windows, and
 #' \code{p = \link{length}(frame_par)}
@@ -926,7 +969,7 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init, map) {
 #'   is the number of cases observed from time \code{t[k+i-1]}
 #'   to time \code{t[k+i]}.
 #' }
-#' \item{day_of_week_on_day0}{
+#' \item{day1}{
 #'   If \code{model$day_of_week > 0}, then an \link{integer} vector
 #'   of length \code{N} indicating the first day of week in each
 #'   fitting window, with value \code{i} in \code{0:6} mapping to
@@ -995,7 +1038,8 @@ make_tmb_args <- function(frame, frame_par, model, control, do_fit, init, map) {
 #' @importFrom stats formula terms model.matrix model.offset
 #' @importFrom methods as
 #' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
-make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
+make_tmb_data <- function(frame, frame_par, model, priors, control,
+                          do_fit, init) {
   ## Nonlinear and dispersion model parameter names
   par_names <- names(frame_par)
   p <- length(frame_par)
@@ -1025,14 +1069,14 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
     ## NB: Reason for adding 1 is that the earliest time points are
     ##     23:59:59 on Dates `origin + time[firsts]`, so the 1-day
     ##     intervals that we seek occur on the following dates
-    Date_on_day0 <- origin + frame$time[firsts] + 1
+    Date1 <- origin + frame$time[firsts] + 1
     ## Day of week during that interval, coded as an integer `i` in `0:6`
     ## NB: `i` maps to the day of week `i` days after the reference day,
     ##     which is the day `day_of_week` days after an arbitrary Saturday,
     ##     in this case `.Date(2)`
-    day_of_week_on_day0 <- as.integer(julian(Date_on_day0, origin = .Date(2 + model$day_of_week)) %% 7)
+    day1 <- as.integer(julian(Date1, origin = .Date(2 + model$day_of_week)) %% 7)
   } else {
-    day_of_week_on_day0 <- rep_len(-1L, N)
+    day1 <- rep_len(-1L, N)
   }
 
   ## Fixed effects formula and list of random effects terms
@@ -1102,11 +1146,20 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
     dims = c(N, 0L)
   )
 
+  ## Priors on nonlinear and dispersion model parameters
+  has_prior <- !vapply(priors, is.null, FALSE)
+  ## Distribution flag
+  regularize_flag <- rep_len(-1L, p)
+  regularize_flag[has_prior] <- get_flag("prior", vapply(priors[has_prior], `[[`, "", "distribution"))
+  ## Hyperparameters
+  regularize_hyperpar <- rep_len(list(numeric(0L)), p)
+  regularize_hyperpar <- lapply(priors[has_prior], `[[`, "parameters")
+
   l1 <- list(
     t = t,
     t_seg_len = t_seg_len,
     x = x,
-    day_of_week_on_day0 = day_of_week_on_day0,
+    day1 = day1,
     Yo = Yo,
     X = X,
     Z = if (is.null(Z)) empty_sparse_matrix else Z,
@@ -1120,10 +1173,12 @@ make_tmb_data <- function(frame, frame_par, model, control, do_fit, init) {
     b_seg_index = b_seg_index,
     block_rows = block_rows,
     block_cols = block_cols,
+    regularize_hyperpar = regularize_hyperpar,
     curve_flag = get_flag("curve", model$curve),
     excess_flag = as.integer(model$excess),
     family_flag = get_flag("family", model$family),
     day_of_week_flag = as.integer(model$day_of_week > 0L),
+    regularize_flag = regularize_flag,
     trace_flag = control$trace,
     sparse_X_flag = as.integer(control$sparse_X),
     predict_flag = 0L
@@ -1424,4 +1479,37 @@ patch_gr <- function(gr, inner_optimizer) {
   }
   environment(pgr) <- e
   pgr
+}
+
+#' Construct combined model frame
+#'
+#' Joins in a single \link[=data.frame]{data frame} all mixed effects
+#' \link[=model.frame]{model frames} and further variables specified
+#' via \code{\link{egf}} argument \code{append}.
+#'
+#' @param object An \code{"\link{egf}"} object.
+#'
+#' @details
+#' If a variable name occurs in multiple mixed effects model frames,
+#' then only one instance is retained. Except in unusual cases
+#' (possible only if model formulae have different formula environments),
+#' all instances of a variable name are identical, and no information is lost.
+#'
+#' Since the data frames being combined each correspond rowwise
+#' to \code{object$endpoints}, so does the result.
+#'
+#' @return
+#' A \link[=data.frame]{data frame} combining (in the sense
+#' of \code{\link{cbind}}) all data frames in the \link{list}
+#' \code{object$frame_par} and the data frame \code{object$frame_append}.
+#'
+#' @keywords internal
+make_combined <- function(object) {
+  stop_if_not(
+    inherits(object, "egf"),
+    m = "`object` must inherit from class \"egf\"."
+  )
+  l <- c(unname(object$frame_par), list(object$frame_append))
+  combined <- do.call(cbind, l)
+  combined[!duplicated(names(combined))]
 }
