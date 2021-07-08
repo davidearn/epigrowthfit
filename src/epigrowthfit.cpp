@@ -384,8 +384,10 @@ Type objective_function<Type>::operator() ()
 		{
 		    if (trace_flag >= 3)
 		    {
-		        printf("at index %*d of segment %*d: nll term is %5.6e\n",
-			       width_k, k, width_s, s, asDouble(nll_term));
+		        printf("at index %*d of segment %*d: nll %.6e x %d mu %.6e size %.6e\n",
+			       width_k, k, width_s, s,
+			       asDouble(nll_term), (int) asDouble(x(i+k)), asDouble(exp(log_cases(i+k))),
+			       (j_log_nbdisp >= 0) ? asDouble(exp(Y(s, j_log_nbdisp))) : NAN);
 		    }
 		    else
 		    {

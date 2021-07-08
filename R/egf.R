@@ -242,7 +242,7 @@ egf <- function(model = egf_model(),
   stop_if_not_true_false(do_fit)
   stop_if_not_true_false(se)
 
-  if (control$omp_num_threads > 1L) {
+  if (control$omp_num_threads > 0L) {
     on <- TMB::openmp(n = NULL)
     if (on > 0L) {
       on.exit(TMB::openmp(n = on))
