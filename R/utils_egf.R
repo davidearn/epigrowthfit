@@ -1068,8 +1068,8 @@ make_tmb_data <- function(frame, frame_par, model, priors, control,
     ## Date during that interval
     ## NB: Reason for adding 1 is that the earliest time points are
     ##     23:59:59 on Dates `origin + time[firsts]`, so the 1-day
-    ##     intervals that we seek occur on the following dates
-    Date1 <- origin + frame$time[firsts] + 1
+    ##     intervals that we seek occur on the following Dates
+    Date1 <- origin + 1 + frame$time[firsts]
     ## Day of week during that interval, coded as an integer `i` in `0:6`
     ## NB: `i` maps to the day of week `i` days after the reference day,
     ##     which is the day `day_of_week` days after an arbitrary Saturday,

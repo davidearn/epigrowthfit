@@ -96,7 +96,7 @@ is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
 #' Perform the inverse of \code{\link{cov2cor}}.
 #'
 #' @param cor
-#'   A square \link{numeric} \link{matrix}.
+#'   A symmetric \link{numeric} \link{matrix}.
 #' @param sd
 #'   A \link{numeric} vector of length \code{\link{nrow}(cor)}.
 #'

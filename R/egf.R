@@ -741,3 +741,168 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
   class(out) <- c("egf_parallel", "list")
   out
 }
+
+#' @export
+#' @importFrom MASS mvrnorm
+egf_simulate <- function(N, model = egf_model(), mu, Sigma, tol = 1e-06, tmax = 100, cstart = 10) {
+  stop_if_not(
+    requireNamespace("MASS", quietly = TRUE),
+    m = wrap(
+      "`MASS::mvrnorm` needed, but `MASS` is not installed. ",
+      "Install it by running `install.packages(\"MASS\")`, then try again."
+    )
+  )
+  stop_if_not_integer(N, kind = "positive")
+  stop_if_not(
+    inherits(model, "egf_model"),
+    m = "`model` must inherit from class \"egf_model\". See `?egf_model`."
+  )
+  par_names <- get_par_names(model, link = TRUE)
+  p <- length(par_names)
+  stop_if_not(
+    is.numeric(mu),
+    length(mu) == p,
+    is.finite(mu),
+    m = sprintf("`mu` must be a finite numeric vector of length %d.", p)
+  )
+  names(mu) <- par_names
+  stop_if_not(
+    is.matrix(Sigma),
+    is.numeric(Sigma),
+    dim(Sigma) == p,
+    is.finite(Sigma),
+    isSymmetric(Sigma),
+    m = "`Sigma` must be a symmetric finite numeric matrix with `length(mu)` rows."
+  )
+  dimnames(Sigma) <- rep_len(list(par_names), 2L)
+  stop_if_not_number_in_interval(tol, 0, Inf, "[]")
+
+  ## Nonlinear and dispersion model parameters for each of `N` time series
+  Y <- mvrnorm(N, mu = mu, Sigma = Sigma, tol = tol)
+
+  ## Numeric time is interpreted as a number of days since this Date
+  ## (meaningful only if day of week effects are modeled)
+  origin <- .Date(0L)
+
+  ## Function simulating observations given time points and model parameter
+  ## values
+  do_simulate <- function(time, par) {
+    ## Cumulative incidence
+    log_curve <- switch(model$curve,
+      exponential = {
+        r <- exp(par[["log(r)"]])
+        log_c0 <- par[["log(c0)"]]
+        log_c0 + r * time
+      },
+      subexponential = {
+        alpha <- exp(par[["log(alpha)"]])
+        c0 <- exp(par[["log(c0)"]])
+        one_minus_p <- 1 - plogis(logit_p)
+        log(c0^one_minus_p + one_minus_p * alpha * time) / one_minus_p
+      },
+      gompertz = {
+        alpha <- exp(par[["log(alpha)"]])
+        log_c0 <- par[["log(c0)"]]
+        log_K <- par[["log(K)"]]
+        log_K + exp(-alpha * time) * (log_c0 - log_K)
+      },
+      logistic = {
+        r <- exp(par[["log(r)"]])
+        tinfl <- exp(par[["log(tinfl)"]])
+        log_K <- par[["log(K)"]]
+        log_K - log1p(exp(-r * (time - tinfl)))
+      },
+      richards = function(time, log_r, log_tinfl, log_K, log_a, ...) {
+        r <- exp(par[["log(r)"]])
+        tinfl <- exp(par[["log(tinfl)"]])
+        log_K <- par[["log(K)"]]
+        a <- exp(par[["log(a)"]])
+        log_K - log1p(a * exp(-r * a * (time - tinfl))) / a
+      }
+    )
+    ## Interval incidence
+    cases <- diff(exp(log_curve))
+    if (model$excess) {
+      ## Incrementing with baseline incidence
+      b <- exp(par[["log(b)"]])
+      cases <- cases + b * diff(time)
+    }
+    if (model$day_of_week > 0L) {
+      ## Cyclic scaling to model day of week effects
+      Date1 <- origin + 1L + time[1L]
+      day1 <- julian(Date1, origin = .Date(2L + model$day_of_week)) %% 7L
+      w <- c(1, exp(par[sprintf("log(w%d)", 1:6)]))
+      cases <- cases * rep_len(w[1L + (day1 + 0:6) %% 7L], length(cases))
+    }
+    ## Simulated observations
+    x <- switch(model$family,
+      pois = rpois(length(cases), lambda = cases),
+      nbinom = rnbinom(length(cases), mu = cases, size = exp(par[["log(nbdisp)"]]))
+    )
+    c(NA, x)
+  }
+
+  ## Time points ending one day after the inflection time in the
+  ## cumulative incidence curve
+  ## (or, in the absence of an inflection point, at time `tmax`)
+  if (model$curve %in% c("exponential", "subexponential")) {
+    time <- list(seq.int(from = 0, to = tmax, by = 1))
+  } else {
+    if (model$curve == "gompertz") {
+      tinfl <- log(Y[, "log(K)"] - Y[, "log(c0)"]) / exp(Y[, "log(alpha)"])
+    } else {
+      tinfl <- exp(Y[, "log(infl)"])
+    }
+    time <- Map(seq.int, from = 0, to = ceiling(tinfl) + 1)
+  }
+
+  ## Simulated observations
+  x <- Map(do_simulate, time = time, par = lapply(seq_len(N), function(i) Y[i, ]))
+
+  ## Simulated time series in long format
+  data <- data.frame(
+    time = unlist(time, FALSE, FALSE),
+    x = unlist(x, FALSE, FALSE),
+    ts = rep.int(gl(N, 1L), lengths(time))
+  )
+
+  ## Sensible fitting windows, starting once `cstart` cases
+  ## have been observed and ending just after the inflection
+  ## time in the cumulative incidence curve (see above)
+  endpoints <- data.frame(
+    start = mapply(`[[`, time, vapply(x, function(y) 1L + which.max(cumsum(y[-1L]) > cstart), 0L)),
+    end = vapply(time, max, 0),
+    ts = gl(N, 1L)
+  )
+
+  ## Cholesky factorization of correlation matrix to get `theta`
+  ## (see below)
+  R <- chol(cov2cor(Sigma))
+  kR <- upper.tri(kR, diag = TRUE)
+  R[kR] <- R[kR] * rep.int(1 / diag(R), seq_len(p))
+
+  ## Generative mixed effects model parameter vectors,
+  ## for comparison with estimation output
+  parameters <- list(
+    beta = mu
+    b = as.numeric(t(Y) - mu)
+    theta = c(0.5 * log(diag(Sigma)), R[upper.tri(R, diag = FALSE)])
+  )
+  f <- function(s, n) enum_dupl_string(rep_len(s, n))
+  parameters <- Map(`names<-`, parameters, Map(f, names(parameters), lengths(parameters)))
+
+  list(
+    model = model,
+    formula = x ~ time | ts,
+    formula_par = ~(1 | ts),
+    data = data,
+    data_par = endpoints["ts"]
+    endpoints = endpoints,
+    origin = origin,
+    mu = mu,
+    Sigma = Sigma,
+    tol = tol,
+    Y = Y,
+    parameters = parameters
+  )
+}
