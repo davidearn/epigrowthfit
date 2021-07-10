@@ -53,7 +53,7 @@ compute_final_size <- function(R0, S0 = 1, I0 = 0) {
   stop_if_not(
     requireNamespace("emdbook", quietly = TRUE),
     m = wrap(
-      "`emdbook::lambertW` needed, but `emdbook` is not installed. ",
+      "`emdbook::lambertW` is needed, but `emdbook` is not installed. ",
       "Install it by running `install.packages(\"emdbook\")`, ",
       "then try again."
     )

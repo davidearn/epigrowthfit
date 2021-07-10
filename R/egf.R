@@ -200,8 +200,8 @@
 #'   \code{best[nonrandom]}.
 #' }
 #' \item{call}{
-#'   The \code{\link{call}} to \code{egf}, allowing for updates
-#'   to the \code{"egf"} object via \code{\link{update}}.
+#'   The \link{call} to \code{egf}, allowing for updates to the
+#'   \code{"egf"} object via \code{\link{update}}.
 #' }
 #' If \code{do_fit = FALSE}, then a \link{list} containing \code{frame},
 #' \code{frame_par}, \code{endpoints}, \code{tmb_args}, \code{tmb_out}
@@ -742,13 +742,116 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
   out
 }
 
+#' Simulate incidence time series for tests
+#'
+#' Simulates daily incidence time series according
+#' to an \code{"\link{egf_model}"} object.
+#' Variation in nonlinear and dispersion model parameters
+#' between time series follows a random intercept model \code{~(1 | ts)}.
+#'
+#' @param N
+#'   A positive integer indicating a number of time series.
+#' @param model
+#'   An \code{"\link{egf_model}"} object.
+#' @param mu
+#'   A \link{numeric} vector listing mean nonlinear and dispersion model
+#'   parameter values (link scale). It is assumed that elements are ordered
+#'   as in \code{\link{get_par_names}(model, link = TRUE)}.
+#' @param Sigma
+#'   A symmetric positive definite \link{numeric} \link{matrix}.
+#'   This is the covariance matrix corresponding to \code{mu}.
+#'   The default (\code{\link{NULL}}) is equivalent to a zero matrix.
+#' @param tol
+#'   A non-negative number indicating a tolerance for lack of positive
+#'   definiteness of \code{Sigma} (see \code{\link[MASS]{mvrnorm}}).
+#' @param tmax
+#'   A positive number. Time series generated from a model of cumulative
+#'   incidence without an inflection point
+#'   (\code{model$curve \link{\%in\%} c("exponential", "subexponential")})
+#'   run from 0 to \code{\link{floor}(tmax)} days.
+#' @param cstart
+#'   A non-negative number. Left endpoints of suggested fitting windows
+#'   are those times when simulated cumulative incidence first exceeds
+#'   \code{cstart}.
+#' @param origin
+#'   A \link{Date} specifying a reference time.
+#'
+#' @return
+#' A \link{list} inheriting from \link{class} \code{"egf_simulate"},
+#' with elements:
+#' \item{model, mu, Sigma, origin}{
+#'   Copies of the so-named arguments.
+#' }
+#' \item{Y}{
+#'   A \link[=double]{numeric} \link{matrix} with \code{N} rows and
+#'   \code{length(mu)} columns listing the nonlinear and dispersion
+#'   model parameter values underlying each time series.
+#'   If \code{Sigma} is \code{\link{NULL}}, then the rows of \code{Y}
+#'   are all \code{mu}.
+#'   If \code{Sigma} is non-\code{\link{NULL}}, then \code{Y} is the
+#'   result of \code{\link[MASS]{mvrnorm}(N, mu, Sigma, tol)}.
+#' }
+#' \item{data}{
+#'   A \link[=data.frame]{data frame} with variables \code{ts}, \code{time},
+#'   and \code{x} storing \code{N} simulated time series in long format.
+#'   \code{ts} is a \link{factor} with \code{N} \link{levels} grouping
+#'   the rows by time series. \code{time} is a \link[=double]{numeric}
+#'   vector listing time points as numbers of days since \emph{the end of}
+#'   Date \code{origin}. \code{x} is an \link{integer} vector such that,
+#'   within time series, \code{x[i]} is the number of cases observed between
+#'   \code{time[i-1]} and \code{time[i]}.
+#' }
+#' \item{endpoints}{
+#'   A \link[=data.frame]{data frame} with \code{N} rows and variables
+#'   \code{ts}, \code{start}, and \code{end} suggesting a fitting window
+#'   for each simulated time series.
+#' }
+#' \item{formula_par}{
+#'   A \link{formula} specifying the generative model, to be passed to
+#'   \code{\link{egf}} when estimating this model from \code{data}.
+#'   If \code{N = 1}, then \code{formula_par = ~1}.
+#'   If \code{N > 1}, then \code{formula_par = ~ts} or \code{~(1 | ts)}
+#'   (the former if \code{Sigma} is \code{\link{NULL}}, the latter otherwise).
+#' }
+#' \item{actual}{
+#'   A \link[=double]{numeric} vector giving the full parameter vector
+#'   corresponding to the generative model. When estimating this model
+#'   from \code{data}, \code{\link{egf}} output should be compared against
+#'   \code{actual}. More precisely, if \code{m} is the \code{"\link{egf}"}
+#'   object, then \code{m$best} estimates \code{actual}.
+#' }
+#' \item{call}{
+#'   The \link{call} to \code{egf_simulate}, allowing for updates
+#'   to the \code{"egf_simulate"} object via \code{\link{update}}.
+#' }
+#'
+#' @examples
+#' model <- egf_model(curve = "logistic", family = "nbinom")
+#'
+#' # get_par_names(model, link = TRUE)
+#' r <- log(2) / 20
+#' tinfl <- 160
+#' K <- 25000
+#' nbdisp <- 50
+#'
+#' mu <- log(c(r, tinfl, K, nbdisp))
+#' Sigma <- diag(rep_len(0.25, length(mu)))
+#'
+#' object <- egf_simulate(
+#'   N = 6L,
+#'   model = model,
+#'   mu = mu,
+#'   Sigma = Sigma
+#' )
+#'
 #' @export
-#' @importFrom MASS mvrnorm
-egf_simulate <- function(N, model = egf_model(), mu, Sigma, tol = 1e-06, tmax = 100, cstart = 10) {
+#' @importFrom stats rpois rnbinom
+egf_simulate <- function(N, model = egf_model(), mu, Sigma = NULL, tol = 1e-06,
+                         tmax = 100, cstart = 10, origin = .Date(0L)) {
   stop_if_not(
     requireNamespace("MASS", quietly = TRUE),
     m = wrap(
-      "`MASS::mvrnorm` needed, but `MASS` is not installed. ",
+      "`MASS::mvrnorm` is needed, but `MASS` is not installed. ",
       "Install it by running `install.packages(\"MASS\")`, then try again."
     )
   )
@@ -766,28 +869,29 @@ egf_simulate <- function(N, model = egf_model(), mu, Sigma, tol = 1e-06, tmax = 
     m = sprintf("`mu` must be a finite numeric vector of length %d.", p)
   )
   names(mu) <- par_names
-  stop_if_not(
-    is.matrix(Sigma),
-    is.numeric(Sigma),
-    dim(Sigma) == p,
-    is.finite(Sigma),
-    isSymmetric(Sigma),
-    m = "`Sigma` must be a symmetric finite numeric matrix with `length(mu)` rows."
-  )
-  dimnames(Sigma) <- rep_len(list(par_names), 2L)
+  if (!is.null(Sigma)) {
+    stop_if_not(
+      is.matrix(Sigma),
+      is.numeric(Sigma),
+      dim(Sigma) == p,
+      is.finite(Sigma),
+      isSymmetric(Sigma),
+      m = "`Sigma` must be a symmetric finite numeric matrix with `length(mu)` rows."
+    )
+    dimnames(Sigma) <- rep_len(list(par_names), 2L)
+  }
   stop_if_not_number_in_interval(tol, 0, Inf, "[]")
 
-  ## Nonlinear and dispersion model parameters for each of `N` time series
-  Y <- mvrnorm(N, mu = mu, Sigma = Sigma, tol = tol)
+  if (is.null(Sigma)) {
+    Y <- matrix(mu, nrow = N, ncol = p, byrow = TRUE)
+  } else {
+    Y <- MASS::mvrnorm(N, mu = mu, Sigma = Sigma, tol = tol)
+  }
 
-  ## Numeric time is interpreted as a number of days since this Date
-  ## (meaningful only if day of week effects are modeled)
-  origin <- .Date(0L)
-
-  ## Function simulating observations given time points and model parameter
-  ## values
+  ## Function simulating observations given time points and
+  ## nonlinear and dispersion model parameter values
   do_simulate <- function(time, par) {
-    ## Cumulative incidence
+    ## Log predicted cumulative incidence
     log_curve <- switch(model$curve,
       exponential = {
         r <- exp(par[["log(r)"]])
@@ -797,7 +901,7 @@ egf_simulate <- function(N, model = egf_model(), mu, Sigma, tol = 1e-06, tmax = 
       subexponential = {
         alpha <- exp(par[["log(alpha)"]])
         c0 <- exp(par[["log(c0)"]])
-        one_minus_p <- 1 - plogis(logit_p)
+        one_minus_p <- 1 - plogis(par[["logit(p)"]])
         log(c0^one_minus_p + one_minus_p * alpha * time) / one_minus_p
       },
       gompertz = {
@@ -820,7 +924,7 @@ egf_simulate <- function(N, model = egf_model(), mu, Sigma, tol = 1e-06, tmax = 
         log_K - log1p(a * exp(-r * a * (time - tinfl))) / a
       }
     )
-    ## Interval incidence
+    ## Predicted interval incidence
     cases <- diff(exp(log_curve))
     if (model$excess) {
       ## Incrementing with baseline incidence
@@ -834,7 +938,7 @@ egf_simulate <- function(N, model = egf_model(), mu, Sigma, tol = 1e-06, tmax = 
       w <- c(1, exp(par[sprintf("log(w%d)", 1:6)]))
       cases <- cases * rep_len(w[1L + (day1 + 0:6) %% 7L], length(cases))
     }
-    ## Simulated observations
+    ## Simulated interval incidence
     x <- switch(model$family,
       pois = rpois(length(cases), lambda = cases),
       nbinom = rnbinom(length(cases), mu = cases, size = exp(par[["log(nbdisp)"]]))
@@ -846,63 +950,65 @@ egf_simulate <- function(N, model = egf_model(), mu, Sigma, tol = 1e-06, tmax = 
   ## cumulative incidence curve
   ## (or, in the absence of an inflection point, at time `tmax`)
   if (model$curve %in% c("exponential", "subexponential")) {
-    time <- list(seq.int(from = 0, to = tmax, by = 1))
+    time <- rep_len(list(seq.int(from = 0, to = tmax, by = 1)), N)
   } else {
     if (model$curve == "gompertz") {
       tinfl <- log(Y[, "log(K)"] - Y[, "log(c0)"]) / exp(Y[, "log(alpha)"])
     } else {
-      tinfl <- exp(Y[, "log(infl)"])
+      tinfl <- exp(Y[, "log(tinfl)"])
     }
     time <- Map(seq.int, from = 0, to = ceiling(tinfl) + 1)
   }
-
   ## Simulated observations
   x <- Map(do_simulate, time = time, par = lapply(seq_len(N), function(i) Y[i, ]))
 
-  ## Simulated time series in long format
   data <- data.frame(
+    ts = rep.int(gl(N, 1L), lengths(time)),
     time = unlist(time, FALSE, FALSE),
-    x = unlist(x, FALSE, FALSE),
-    ts = rep.int(gl(N, 1L), lengths(time))
+    x = unlist(x, FALSE, FALSE)
   )
-
-  ## Sensible fitting windows, starting once `cstart` cases
-  ## have been observed and ending just after the inflection
-  ## time in the cumulative incidence curve (see above)
   endpoints <- data.frame(
+    ts = gl(N, 1L),
     start = mapply(`[[`, time, vapply(x, function(y) 1L + which.max(cumsum(y[-1L]) > cstart), 0L)),
-    end = vapply(time, max, 0),
-    ts = gl(N, 1L)
+    end = vapply(time, max, 0)
   )
 
-  ## Cholesky factorization of correlation matrix to get `theta`
-  ## (see below)
-  R <- chol(cov2cor(Sigma))
-  kR <- upper.tri(kR, diag = TRUE)
-  R[kR] <- R[kR] * rep.int(1 / diag(R), seq_len(p))
-
-  ## Generative mixed effects model parameter vectors,
-  ## for comparison with estimation output
-  parameters <- list(
-    beta = mu
-    b = as.numeric(t(Y) - mu)
-    theta = c(0.5 * log(diag(Sigma)), R[upper.tri(R, diag = FALSE)])
-  )
-  f <- function(s, n) enum_dupl_string(rep_len(s, n))
-  parameters <- Map(`names<-`, parameters, Map(f, names(parameters), lengths(parameters)))
+  if (N == 1L) {
+    formula_par <- ~1
+    actual <- mu
+    names(actual) <- enum_dupl_string(rep_len("beta", p))
+  } else {
+    if (is.null(Sigma)) {
+      formula_par <- ~ts
+      actual <- rep_len(0, p * N)
+      actual[seq.int(from = 1L, by = N, length.out = p)] <- mu
+      names(actual) <- enum_dupl_string(rep_len("beta", p))
+    } else {
+      formula_par <- ~(1 | ts)
+      R <- chol(cov2cor(Sigma))
+      iR <- upper.tri(R, diag = TRUE)
+      R[iR] <- R[iR] * rep.int(1 / diag(R), seq_len(p))
+      l <- list(
+        beta = mu,
+        b = t(Y) - mu,
+        theta = c(0.5 * log(diag(Sigma)), R[upper.tri(R, diag = FALSE)])
+      )
+      actual <- unlist(l, FALSE, FALSE)
+      names(actual) <- enum_dupl_string(rep.int(names(l), lengths(l)))
+    }
+  }
+  environment(formula_par) <- .GlobalEnv
 
   list(
     model = model,
-    formula = x ~ time | ts,
-    formula_par = ~(1 | ts),
-    data = data,
-    data_par = endpoints["ts"]
-    endpoints = endpoints,
-    origin = origin,
     mu = mu,
     Sigma = Sigma,
-    tol = tol,
+    origin = origin,
     Y = Y,
-    parameters = parameters
+    data = data,
+    endpoints = endpoints,
+    formula_par = formula_par,
+    actual = actual,
+    call = match.call()
   )
 }

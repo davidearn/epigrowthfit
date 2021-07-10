@@ -213,8 +213,8 @@ If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
   \code{best[nonrandom]}.
 }
 \item{call}{
-  The \code{\link{call}} to \code{egf}, allowing for updates
-  to the \code{"egf"} object via \code{\link{update}}.
+  The \link{call} to \code{egf}, allowing for updates to the
+  \code{"egf"} object via \code{\link{update}}.
 }
 If \code{do_fit = FALSE}, then a \link{list} containing \code{frame},
 \code{frame_par}, \code{endpoints}, \code{tmb_args}, \code{tmb_out}
