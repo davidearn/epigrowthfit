@@ -4,18 +4,15 @@
 \alias{make_tmb_args}
 \title{Create TMB infrastructure}
 \usage{
-make_tmb_args(frame, frame_par, model, priors, control, do_fit, init, map)
+make_tmb_args(model, frame, frame_par, priors, control, do_fit, init, map)
 }
 \arguments{
 \item{frame, frame_par}{Elements of the \link{list} output of \code{\link{make_frames}}.}
 
-\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
-and a dispersion model to be estimated.}
-
 \item{priors}{An \link{list} of \link{formula}e of the form \code{par ~ f(...)},
 specifying priors on nonlinear and dispersion model parameters.
 \code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(model, link = TRUE)}.
+\code{\link{get_par_names}(object, link = TRUE)}.
 \code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
 with arguments specifying suitable hyperparameters.
 This call is evaluated in the corresponding formula environment.

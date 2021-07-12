@@ -19,9 +19,9 @@
 #' from \code{which}.
 #'
 #' @examples
-#' # x <- .Date(sample.int(1e4L, 10L))
-#' # ymd(x)
-#' # ymd(x, which = "d", drop = TRUE)
+#' ## x <- .Date(sample.int(1e4L, 10L))
+#' ## ymd(x)
+#' ## ymd(x, which = "d", drop = TRUE)
 #'
 #' @keywords internal
 ymd <- function(x, which = "ymd", drop = TRUE) {
@@ -50,9 +50,9 @@ ymd <- function(x, which = "ymd", drop = TRUE) {
 #' or firsts-of-the-year (\code{"YYYY-01-01"}), depending on \code{to}.
 #'
 #' @examples
-#' # x <- .Date(sample.int(1e4L, 10L))
-#' # dceiling(x, to = "month")
-#' # dceiling(x, to = "year")
+#' ## x <- .Date(sample.int(1e4L, 10L))
+#' ## dceiling(x, to = "month")
+#' ## dceiling(x, to = "year")
 #'
 #' @keywords internal
 dceiling <- function(x, to = c("month", "year")) {

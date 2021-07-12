@@ -29,9 +29,9 @@ where \code{q = \link{qchisq}(level, df = 1)}.
 See the \href{https://en.wikipedia.org/wiki/Wald_test}{Wald test}.
 }
 \examples{
-# estimate <- rep_len(0, 6L)
-# se <- exp(rnorm(6L, sd = 0.1))
-# do_wald(estimate = estimate, se = se, level = 0.95)
+## estimate <- rep_len(0, 6L)
+## se <- exp(rnorm(6L, sd = 0.1))
+## do_wald(estimate = estimate, se = se, level = 0.95)
 
 }
 \keyword{internal}

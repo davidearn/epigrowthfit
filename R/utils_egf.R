@@ -206,8 +206,8 @@ match_link <- function(f, inverse = FALSE) {
 #' @inheritParams egf
 #'
 #' @return
-#' A list with elements \code{frame}, \code{frame_par}, \code{frame_append},
-#' and \code{endpoints}. See descriptions under \code{\link{egf}}.
+#' A list with elements \code{endpoints}, \code{frame}, \code{frame_par},
+#' and \code{frame_append}. See descriptions under \code{\link{egf}}.
 #'
 #' @keywords internal
 #' @importFrom stats terms model.frame na.pass as.formula complete.cases
@@ -216,17 +216,11 @@ make_frames <- function(model,
                         data, data_par,
                         subset, subset_par,
                         na_action, na_action_par,
-                        endpoints, origin,
-                        init, append) {
+                        endpoints,
+                        init, origin, append) {
   stop_if_not(
     vapply(list(data, data_par, endpoints), inherits, FALSE, c("data.frame", "list", "environment")),
     m = "`data`, `data_par`, and `endpoints` must be data frames, lists, or environments."
-  )
-  stop_if_not(
-    inherits(origin, "Date"),
-    length(origin) == 1L,
-    !is.na(origin),
-    m = "`origin` must be a Date vector of length 1."
   )
 
 
@@ -660,10 +654,10 @@ make_frames <- function(model,
   attr(endpoints, "origin") <- origin
 
   list(
+    endpoints = endpoints,
     frame = frame,
     frame_par = frame_par,
-    frame_append = frame_append,
-    endpoints = endpoints
+    frame_append = frame_append
   )
 }
 
@@ -883,20 +877,20 @@ make_XZ_info <- function(xl, ml) {
 #'
 #' @seealso \code{\link{make_tmb_data}}, \code{\link{make_tmb_parameters}}
 #' @keywords internal
-make_tmb_args <- function(frame, frame_par, model, priors, control,
+make_tmb_args <- function(model, frame, frame_par, priors, control,
                           do_fit, init, map) {
   tmb_data <- make_tmb_data(
+    model = model,
     frame = frame,
     frame_par = frame_par,
-    model = model,
     priors = priors,
     control = control
   )
   tmb_parameters <- make_tmb_parameters(
     tmb_data = tmb_data,
+    model = model,
     frame = frame,
     frame_par = frame_par,
-    model = model,
     do_fit = do_fit,
     init = init
   )
@@ -1038,7 +1032,7 @@ make_tmb_args <- function(frame, frame_par, model, priors, control,
 #' @importFrom stats formula terms model.matrix model.offset
 #' @importFrom methods as
 #' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
-make_tmb_data <- function(frame, frame_par, model, priors, control,
+make_tmb_data <- function(model, frame, frame_par, priors, control,
                           do_fit, init) {
   ## Nonlinear and dispersion model parameter names
   par_names <- names(frame_par)
@@ -1273,7 +1267,7 @@ make_tmb_data <- function(frame, frame_par, model, priors, control,
 #'
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis terms
-make_tmb_parameters <- function(tmb_data, frame, frame_par, model, do_fit, init) {
+make_tmb_parameters <- function(tmb_data, model, frame, frame_par, do_fit, init) {
   ## Lengths of parameter objects
   f <- function(n) n * (n + 1L) / 2L
   len <- c(

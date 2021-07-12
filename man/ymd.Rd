@@ -26,9 +26,9 @@ from \code{which}.
 Extracts year, month, and day from a \link{Date} vector.
 }
 \examples{
-# x <- .Date(sample.int(1e4L, 10L))
-# ymd(x)
-# ymd(x, which = "d", drop = TRUE)
+## x <- .Date(sample.int(1e4L, 10L))
+## ymd(x)
+## ymd(x, which = "d", drop = TRUE)
 
 }
 \keyword{internal}

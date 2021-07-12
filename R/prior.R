@@ -3,8 +3,10 @@
 #' Functions used by \code{\link{egf}} to specify prior distributions
 #' of nonlinear and dispersion model parameters.
 #'
-#' @param mu Mean.
-#' @param sigma Standard deviation.
+#' @param mu
+#'   Mean.
+#' @param sigma
+#'   Standard deviation. Must be positive.
 #'
 #' @return
 #' A \link{list} inheriting from \link{class} \code{"egf_prior"},

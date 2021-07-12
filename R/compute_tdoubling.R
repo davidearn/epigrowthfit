@@ -33,7 +33,7 @@ compute_tdoubling <- function(r, per = NULL) {
     m = "`r` must be numeric."
   )
   if (!is.null(per)) {
-    stop_if_not_integer(per, kind = "positive")
+    stop_if_not_integer(per, "positive")
   }
   if (any(r < 0, na.rm = TRUE)) {
     r[r < 0] <- NA

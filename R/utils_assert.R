@@ -23,14 +23,14 @@
 #' \code{\link{NULL}} (invisibly).
 #'
 #' @examples
-#' # x <- 1.1
-#' # stop_if_not(
-#' #   is.numeric(x),
-#' #   length(x) == 1L,
-#' #   x > 0,
-#' #   x < 1,
-#' #   m = "`x` must be a number in the interval (0,1)."
-#' # )
+#' ## x <- 1.1
+#' ## stop_if_not(
+#' ##   is.numeric(x),
+#' ##   length(x) == 1L,
+#' ##   x > 0,
+#' ##   x < 1,
+#' ##   m = "`x` must be a number in the interval (0,1)."
+#' ## )
 #'
 #' @name stop_if_not
 #' @keywords internal
@@ -79,11 +79,11 @@ stop_if_not_integer <- function(x, kind = c("any", "positive", "nonnegative", "n
   kind <- match.arg(kind)
   a <- switch(kind, any = "an", paste("a", kind))
   f <- switch(kind,
+    any         = function(x, y) TRUE,
     positive    = `>`,
     nonnegative = `>=`,
     negative    = `<`,
-    nonpositive = `<=`,
-    function(x, y) TRUE
+    nonpositive = `<=`
   )
   stop_if_not(
     is.numeric(x),
@@ -91,6 +91,26 @@ stop_if_not_integer <- function(x, kind = c("any", "positive", "nonnegative", "n
     x %% 1 == 0,
     f(x, 0),
     m = sprintf("`%s` must be %s integer.", s, a),
+    n = 1L + n
+  )
+}
+
+stop_if_not_number <- function(x, kind = c("any", "positive", "nonnegative", "negative", "nonpositive"), n = 1L) {
+  s <- deparse(substitute(x))
+  kind <- match.arg(kind)
+  a <- switch(kind, any = "a", paste("a", kind))
+  f <- switch(kind,
+    any         = function(x, y) TRUE,
+    positive    = `>`,
+    nonnegative = `>=`,
+    negative    = `<`,
+    nonpositive = `<=`
+  )
+  stop_if_not(
+    is.numeric(x),
+    length(x) == 1L,
+    f(x, 0),
+    m = sprintf("`%s` must be %s number.", s, a),
     n = 1L + n
   )
 }
@@ -120,6 +140,17 @@ stop_if_not_string <- function(x, n = 1L) {
     length(x) == 1L,
     !is.na(x),
     m = sprintf("`%s` must be a character string.", s),
+    n = 1L + n
+  )
+}
+
+stop_if_not_Date <- function(x, n = 1L) {
+  s <- deparse(substitute(x))
+  stop_if_not(
+    inherits(x, "Date"),
+    length(x) == 1L,
+    !is.na(x),
+    m = sprintf("`%s` must be a Date vector of length one.", s),
     n = 1L + n
   )
 }

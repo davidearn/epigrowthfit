@@ -40,11 +40,11 @@ For \link[=data.frame]{data frame}s \code{x}, function \code{f[[i]]}
 is applied to \code{x[[j]][k[[i]]]} for all \code{j}.
 }
 \examples{
-# x <- 1:10
-# lpapply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
-#
-# x <- as.data.frame(replicate(3L, c(exp(rnorm(10L)), qlogis(runif(10L)))))
-# lpapply(x, index = gl(2L, 10L), f = list(log, plogis))
+## x <- 1:10
+## lpapply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
+##
+## x <- as.data.frame(replicate(3L, c(exp(rnorm(10L)), qlogis(runif(10L)))))
+## lpapply(x, index = gl(2L, 10L), f = list(log, plogis))
 
 }
 \keyword{internal}

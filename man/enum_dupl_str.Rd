@@ -25,12 +25,12 @@ Replaces the \code{i}th instance of string \code{s} in a
 \link{character} vector with \code{\link{sprintf}("\%s[\%d]", s, i)}.
 }
 \examples{
-# x <- sample(letters[1:3], 10L, replace = TRUE)
-# enum_dupl_string(x)
-#
-# y <- seq_along(x)
-# names(y) <- x
-# enum_dupl_names(y)
+## x <- sample(letters[1:3], 10L, replace = TRUE)
+## enum_dupl_string(x)
+##
+## y <- seq_along(x)
+## names(y) <- x
+## enum_dupl_names(y)
 
 }
 \keyword{internal}

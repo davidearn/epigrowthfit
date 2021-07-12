@@ -29,9 +29,9 @@ is an identity function for lists \code{x} generated
 by \code{rle_literal}.
 }
 \examples{
-# x <- rep.int(c(0, NA, NaN, 1), 1:4)
-# rle_x <- rle_literal(x)
-# identical(x, inverse.rle(rle_x))
+## x <- rep.int(c(0, NA, NaN, 1), 1:4)
+## rle_x <- rle_literal(x)
+## identical(x, inverse.rle(rle_x))
 
 }
 \keyword{internal}

@@ -2,49 +2,58 @@
 % Please edit documentation in R/egf.R
 \name{egf_simulate}
 \alias{egf_simulate}
+\alias{egf.egf_simulate}
 \title{Simulate incidence time series for tests}
 \usage{
 egf_simulate(
-  N,
-  model = egf_model(),
+  N = 1L,
+  model,
   mu,
   Sigma = NULL,
   tol = 1e-06,
   tmax = 100,
-  cstart = 10,
+  cstart = 0,
   origin = .Date(0L)
 )
+
+\method{egf}{egf_simulate}(object, ...)
 }
 \arguments{
 \item{N}{A positive integer indicating a number of time series.}
 
-\item{model}{An \code{"\link{egf_model}"} object.}
+\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
+and a dispersion model to be simulated.}
 
 \item{mu}{A \link{numeric} vector listing mean nonlinear and dispersion model
 parameter values (link scale). It is assumed that elements are ordered
 as in \code{\link{get_par_names}(model, link = TRUE)}.}
 
-\item{Sigma}{A symmetric positive definite \link{numeric} \link{matrix}.
-This is the covariance matrix corresponding to \code{mu}.
+\item{Sigma}{A symmetric positive semidefinite \link{numeric} \link{matrix},
+to be used as the covariance matrix corresponding to \code{mu}.
 The default (\code{\link{NULL}}) is equivalent to a zero matrix.}
 
 \item{tol}{A non-negative number indicating a tolerance for lack of positive
-definiteness of \code{Sigma} (see \code{\link[MASS]{mvrnorm}}).}
+semidefiniteness of \code{Sigma} (see \code{\link[MASS]{mvrnorm}}).}
 
-\item{tmax}{A positive number. Time series generated from a model of cumulative
-incidence without an inflection point
-(\code{model$curve \link{\%in\%} c("exponential", "subexponential")})
-run from 0 to \code{\link{floor}(tmax)} days.}
+\item{tmax}{A positive number. Time series generated from a model of
+cumulative incidence without an inflection point span this many days.}
 
-\item{cstart}{A non-negative number. Left endpoints of suggested fitting windows
-are those times when simulated cumulative incidence first exceeds
-\code{cstart}.}
+\item{cstart}{A number indicating a threshold value of cumulative incidence.
+Left endpoints of suggested fitting windows are those times when
+cumulative incidence first exceeds this threshold. (If it is
+never exceeded, then the first time point is used, with a warning.)}
 
 \item{origin}{A \link{Date} specifying a reference time.}
+
+\item{object}{An \code{"egf_simulate"} object supplying simulated time series
+and specifying a generative model to be estimated.}
+
+\item{...}{Optional arguments passed to \code{\link{egf.egf_model}},
+such as \code{priors} and \code{control}.}
 }
 \value{
-A \link{list} inheriting from \link{class} \code{"egf_simulate"},
-with elements:
+\code{egf_simulate} returns a \link{list} inheriting from \link{class}
+\code{"egf_simulate"}, with elements:
 \item{model, mu, Sigma, origin}{
   Copies of the so-named arguments.
 }
@@ -57,6 +66,16 @@ with elements:
   If \code{Sigma} is non-\code{\link{NULL}}, then \code{Y} is the
   result of \code{\link[MASS]{mvrnorm}(N, mu, Sigma, tol)}.
 }
+\item{formula}{
+  A \link{formula} expressing how to locate the simulated time series
+  in \code{data}. The formula is always \code{x ~ time | ts}.
+}
+\item{formula_par}{
+  A \link{formula} specifying the generative model.
+  If \code{Sigma = \link{NULL}}, then the formula is \code{~1}
+  if \code{N = 1} and \code{~ts} if \code{N > 1}.
+  Otherwise, the formula is \code{~(1 | ts)}.
+}
 \item{data}{
   A \link[=data.frame]{data frame} with variables \code{ts}, \code{time},
   and \code{x} storing \code{N} simulated time series in long format.
@@ -67,17 +86,15 @@ with elements:
   within time series, \code{x[i]} is the number of cases observed between
   \code{time[i-1]} and \code{time[i]}.
 }
+\item{data_par}{
+  A \link[=data.frame]{data frame} with \code{N} rows defining variables
+  used in \code{formula_par}. (Hence it is either empty or has one variable
+  \code{ts}.)
+}
 \item{endpoints}{
   A \link[=data.frame]{data frame} with \code{N} rows and variables
   \code{ts}, \code{start}, and \code{end} suggesting a fitting window
   for each simulated time series.
-}
-\item{formula_par}{
-  A \link{formula} specifying the generative model, to be passed to
-  \code{\link{egf}} when estimating this model from \code{data}.
-  If \code{N = 1}, then \code{formula_par = ~1}.
-  If \code{N > 1}, then \code{formula_par = ~ts} or \code{~(1 | ts)}
-  (the former if \code{Sigma} is \code{\link{NULL}}, the latter otherwise).
 }
 \item{actual}{
   A \link[=double]{numeric} vector giving the full parameter vector
@@ -86,21 +103,40 @@ with elements:
   \code{actual}. More precisely, if \code{m} is the \code{"\link{egf}"}
   object, then \code{m$best} estimates \code{actual}.
 }
+\item{nonrandom}{
+  An \link{integer} vector indexing the elements of \code{actual}
+  that are not random effects.
+}
 \item{call}{
   The \link{call} to \code{egf_simulate}, allowing for updates
   to the \code{"egf_simulate"} object via \code{\link{update}}.
 }
 }
 \description{
-Simulates daily incidence time series according
-to an \code{"\link{egf_model}"} object.
-Variation in nonlinear and dispersion model parameters
-between time series follows a random intercept model \code{~(1 | ts)}.
+\code{egf_simulate} simulates daily incidence time series following
+specified nonlinear and dispersion models, with parameters (optionally)
+varying between time series according to a random intercept model
+\code{~(1 | ts)}. \code{egf.egf_simulate} estimates the generative
+model from the simulated time series.
+}
+\details{
+For models of cumulative incidence with an inflection point
+(\code{model$curve} equal to \code{"logistic"}, \code{"richards"},
+or \code{"gompertz"}), simulated time series run from 0 days
+to \code{ceiling(tinfl)+1} days, where \code{tinfl} is the
+inflection time.
+
+For models of cumulative incidence \emph{without} an inflection point
+(\code{model$curve} equal to \code{"exponential"}
+or \code{"subexponential"}), simulated time series run from 0 days
+to \code{tmax} days.
+
+Suggested fitting windows start at a time determined by \code{cstart}
+and end at the last time point.
 }
 \examples{
 model <- egf_model(curve = "logistic", family = "nbinom")
 
-# get_par_names(model, link = TRUE)
 r <- log(2) / 20
 tinfl <- 160
 K <- 25000
@@ -109,11 +145,11 @@ nbdisp <- 50
 mu <- log(c(r, tinfl, K, nbdisp))
 Sigma <- diag(rep_len(0.25, length(mu)))
 
-object <- egf_simulate(
-  N = 6L,
-  model = model,
-  mu = mu,
-  Sigma = Sigma
-)
+set.seed(202737L)
+sim <- egf_simulate(N = 20L, model = model, mu = mu, Sigma = Sigma)
+fit <- egf(sim)
+
+pp <- data.frame(actual = sim$actual, fitted = fit$best)
+pp[fit$nonrandom, ]
 
 }

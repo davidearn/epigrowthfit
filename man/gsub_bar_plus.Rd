@@ -19,7 +19,7 @@ with the \code{`+`} operator, enabling construction of model frames using
 \code{\link{model.frame}} machinery.
 }
 \examples{
-# gsub_bar_plus(~x + (1 | f))
+## gsub_bar_plus(~x + (1 | f))
 
 }
 \keyword{internal}

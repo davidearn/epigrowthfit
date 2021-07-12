@@ -18,10 +18,10 @@ the \code{`-`} operator with \code{x} as its only argument.
 Negates formula terms, taking some care to simplify double negatives.
 }
 \examples{
-# x <- quote(x)
-# minus_x <- call("-", x)
-# identical(negate(x), minus_x)
-# identical(negate(minus_x), x)
+## x <- quote(x)
+## minus_x <- call("-", x)
+## identical(negate(x), minus_x)
+## identical(negate(minus_x), x)
 
 }
 \keyword{internal}

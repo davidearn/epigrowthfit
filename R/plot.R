@@ -157,7 +157,7 @@ plot.egf <- function(x,
 
   type <- match.arg(type)
   stop_if_not_true_false(do_plot)
-  stop_if_not_number_in_interval(dt, 0, Inf, "()")
+  stop_if_not_number(dt, "positive")
   if (type == "rt2") {
     show_predict <- 1L
     show_tdoubling <- 0L
@@ -200,8 +200,8 @@ plot.egf <- function(x,
       stop_if_not_true_false(log)
     }
     if (type == "rt2") {
-      stop_if_not_integer(panels_per_plot, kind = "positive")
-      stop_if_not_number_in_interval(inter_panel_space, 0, Inf, "[)")
+      stop_if_not_integer(panels_per_plot, "positive")
+      stop_if_not_number(inter_panel_space, "nonnegative")
     }
 
     if (!is.null(xlim)) {

@@ -14,12 +14,12 @@
 #' \code{\link{names}(x)} replaced by \code{enum_dupl_string(\link{names}(x))}.
 #'
 #' @examples
-#' # x <- sample(letters[1:3], 10L, replace = TRUE)
-#' # enum_dupl_string(x)
-#' #
-#' # y <- seq_along(x)
-#' # names(y) <- x
-#' # enum_dupl_names(y)
+#' ## x <- sample(letters[1:3], 10L, replace = TRUE)
+#' ## enum_dupl_string(x)
+#' ##
+#' ## y <- seq_along(x)
+#' ## names(y) <- x
+#' ## enum_dupl_names(y)
 #'
 #' @name enum_dupl_str
 #' @keywords internal
@@ -64,11 +64,11 @@ enum_dupl_names <- function(x) {
 #' \code{TRUE}, \code{FALSE}, or \code{\link{NA}}.
 #'
 #' @examples
-#' # x <- c(0, 1e-03, NA)
-#' # is_constant(x, na.rm = TRUE, tol = 1e-02)
-#' # is_constant(x, na.rm = TRUE, tol = 1e-04)
-#' # is_constant(x, na.rm = FALSE, tol = 1e-02)
-#' # is_constant(x, na.rm = FALSE, tol = 1e-04)
+#' ## x <- c(0, 1e-03, NA)
+#' ## is_constant(x, na.rm = TRUE, tol = 1e-02)
+#' ## is_constant(x, na.rm = TRUE, tol = 1e-04)
+#' ## is_constant(x, na.rm = FALSE, tol = 1e-02)
+#' ## is_constant(x, na.rm = FALSE, tol = 1e-04)
 #'
 #' @keywords internal
 is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
@@ -106,9 +106,9 @@ is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
 #' obtained slightly more efficiently, following \code{\link{cov2cor}}.
 #'
 #' @examples
-#' # X <- replicate(6L, rnorm(10L))
-#' # V <- cov(X, X)
-#' # all.equal(V, cor2cov(cov2cor(V), sqrt(diag(V))))
+#' ## X <- replicate(6L, rnorm(10L))
+#' ## V <- cov(X, X)
+#' ## all.equal(V, cor2cov(cov2cor(V), sqrt(diag(V))))
 #'
 #' @keywords internal
 cor2cov <- function(cor, sd) {
@@ -180,9 +180,9 @@ wrap <- function(..., width = 0.9 * getOption("width")) {
 #' though not inheriting from \link{class} \code{"rle"}.
 #'
 #' @examples
-#' # x <- rep.int(c(0, NA, NaN, 1), 1:4)
-#' # rle_x <- rle_literal(x)
-#' # identical(x, inverse.rle(rle_x))
+#' ## x <- rep.int(c(0, NA, NaN, 1), 1:4)
+#' ## rle_x <- rle_literal(x)
+#' ## identical(x, inverse.rle(rle_x))
 #'
 #' @keywords internal
 rle_literal <- function(x) {
@@ -220,9 +220,9 @@ rle_literal <- function(x) {
 #' \code{x} with missing values replaced.
 #'
 #' @examples
-#' # x <- c(NA, NA, 1, NA, 2, 2, 3, NA)
-#' # locf(x)
-#' # locf(x, x0 = 0)
+#' ## x <- c(NA, NA, 1, NA, 2, 2, 3, NA)
+#' ## locf(x)
+#' ## locf(x, x0 = 0)
 #'
 #' @keywords internal
 locf <- function(x, x0 = NULL) {
@@ -277,11 +277,11 @@ locf <- function(x, x0 = NULL) {
 #' of the same length, with the same number of rows.
 #'
 #' @examples
-#' # x <- 1:10
-#' # lpapply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
-#' #
-#' # x <- as.data.frame(replicate(3L, c(exp(rnorm(10L)), qlogis(runif(10L)))))
-#' # lpapply(x, index = gl(2L, 10L), f = list(log, plogis))
+#' ## x <- 1:10
+#' ## lpapply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
+#' ##
+#' ## x <- as.data.frame(replicate(3L, c(exp(rnorm(10L)), qlogis(runif(10L)))))
+#' ## lpapply(x, index = gl(2L, 10L), f = list(log, plogis))
 #'
 #' @keywords internal
 lpapply <- function(x, index, f) {
@@ -321,9 +321,9 @@ lpapply <- function(x, index, f) {
 #' confidence limits.
 #'
 #' @examples
-#' # estimate <- rep_len(0, 6L)
-#' # se <- exp(rnorm(6L, sd = 0.1))
-#' # do_wald(estimate = estimate, se = se, level = 0.95)
+#' ## estimate <- rep_len(0, 6L)
+#' ## se <- exp(rnorm(6L, sd = 0.1))
+#' ## do_wald(estimate = estimate, se = se, level = 0.95)
 #'
 #' @keywords internal
 #' @importFrom stats qchisq

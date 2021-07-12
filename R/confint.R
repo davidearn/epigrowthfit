@@ -175,7 +175,7 @@ confint.egf <- function(object,
     out$linear_combination <- NULL
 
   } else { "uniroot"
-    stop_if_not_number_in_interval(max_width, 0, Inf, "()")
+    stop_if_not_number(max_width, "positive")
 
     p <- length(par)
     N <- sum(subset)

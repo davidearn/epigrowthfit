@@ -35,14 +35,14 @@ allowing the user to specify an error message and function call.
 issues a warning instead of an error.
 }
 \examples{
-# x <- 1.1
-# stop_if_not(
-#   is.numeric(x),
-#   length(x) == 1L,
-#   x > 0,
-#   x < 1,
-#   m = "`x` must be a number in the interval (0,1)."
-# )
+## x <- 1.1
+## stop_if_not(
+##   is.numeric(x),
+##   length(x) == 1L,
+##   x > 0,
+##   x < 1,
+##   m = "`x` must be a number in the interval (0,1)."
+## )
 
 }
 \keyword{internal}

@@ -2,10 +2,13 @@
 % Please edit documentation in R/egf.R
 \name{egf}
 \alias{egf}
+\alias{egf.egf_model}
 \title{Fit phenomenological models of epidemic growth}
 \usage{
-egf(
-  model = egf_model(),
+egf(object, ...)
+
+\method{egf}{egf_model}(
+  object,
   formula,
   formula_par = list(),
   data = parent.frame(),
@@ -27,8 +30,11 @@ egf(
 )
 }
 \arguments{
-\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
-and a dispersion model to be estimated.}
+\item{object}{An \R object for which an \code{egf} method exists,
+typically an \code{"\link{egf_model}"} object specifying
+a nonlinear model and a dispersion model to be estimated.}
+
+\item{...}{Arguments passed to methods by the generic function.}
 
 \item{formula}{A \link{formula} of the form \code{x ~ time} or \code{x ~ time | ts}
 specifying one or more incidence time series in long format.
@@ -51,7 +57,7 @@ Alternatively, a formula of the form \code{~terms} to be recycled
 for all parameters. A list of parameters for which formulae may
 be specified can be retrieved with \code{\link{get_par_names}}.
 Specifically, \code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(model, link = TRUE)}. The default for
+\code{\link{get_par_names}(object, link = TRUE)}. The default for
 parameters not assigned a formula is \code{~1}.}
 
 \item{data, data_par}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s.
@@ -89,7 +95,7 @@ must be disjoint and contain at least two time points from \code{time}.}
 \item{priors}{An \link{list} of \link{formula}e of the form \code{par ~ f(...)},
 specifying priors on nonlinear and dispersion model parameters.
 \code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(model, link = TRUE)}.
+\code{\link{get_par_names}(object, link = TRUE)}.
 \code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
 with arguments specifying suitable hyperparameters.
 This call is evaluated in the corresponding formula environment.
@@ -128,8 +134,6 @@ in the returned object for use by methods. It is evaluated similarly
 to the \code{select} argument of \code{\link{subset}}. The default
 (\code{\link{NULL}}) is to preserve all variables. Currently, usage
 is supported only if \code{data_par} is a \link[=data.frame]{data frame}.}
-
-\item{...}{Unused optional arguments.}
 }
 \value{
 If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
@@ -173,7 +177,7 @@ If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
   to \code{endpoints}.
 }
 \item{model}{
-  A copy of the so-named argument.
+  A copy of argument \code{object}.
 }
 \item{priors}{
   A \link{list} of \code{"\link{egf_prior}"} objects,
@@ -200,8 +204,8 @@ If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
   of the first and best likelihood evaluations.
 }
 \item{nonrandom}{
-  An \link{integer} vector indexing components \code{beta} and \code{theta}
-  of \code{init} and \code{best}.
+  An \link{integer} vector indexing the elements of \code{init}
+  and \code{best} that are not random effects.
 }
 \item{sdreport}{
   If \code{se = TRUE}, then an \code{"sdreport"} object resulting
@@ -216,10 +220,10 @@ If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
   The \link{call} to \code{egf}, allowing for updates to the
   \code{"egf"} object via \code{\link{update}}.
 }
-If \code{do_fit = FALSE}, then a \link{list} containing \code{frame},
-\code{frame_par}, \code{endpoints}, \code{tmb_args}, \code{tmb_out}
-(\emph{before} optimization), \code{init}, \code{nonrandom}, and
-\code{call}, as well as a \link{matrix} \code{Y_init} specifying
+If \code{do_fit = FALSE}, then a \link{list} containing \code{model},
+\code{endpoints}, \code{frame}, \code{frame_par}, \code{tmb_args},
+\code{tmb_out} (\emph{before} optimization), \code{init}, \code{nonrandom},
+and \code{call}, as well as a \link{matrix} \code{Y_init} specifying
 a naive estimate of each nonlinear and dispersion model parameter
 for each fitting window, corresponding rowwise to \code{endpoints}.
 }

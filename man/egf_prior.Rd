@@ -10,7 +10,7 @@ Normal(mu = 0, sigma = 1)
 \arguments{
 \item{mu}{Mean.}
 
-\item{sigma}{Standard deviation.}
+\item{sigma}{Standard deviation. Must be positive.}
 }
 \value{
 A \link{list} inheriting from \link{class} \code{"egf_prior"},

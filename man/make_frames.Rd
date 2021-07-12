@@ -15,15 +15,12 @@ make_frames(
   na_action,
   na_action_par,
   endpoints,
-  origin,
   init,
+  origin,
   append
 )
 }
 \arguments{
-\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
-and a dispersion model to be estimated.}
-
 \item{formula}{A \link{formula} of the form \code{x ~ time} or \code{x ~ time | ts}
 specifying one or more incidence time series in long format.
 \code{time} must evaluate to a \link{numeric} or \link{Date} vector.
@@ -45,7 +42,7 @@ Alternatively, a formula of the form \code{~terms} to be recycled
 for all parameters. A list of parameters for which formulae may
 be specified can be retrieved with \code{\link{get_par_names}}.
 Specifically, \code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(model, link = TRUE)}. The default for
+\code{\link{get_par_names}(object, link = TRUE)}. The default for
 parameters not assigned a formula is \code{~1}.}
 
 \item{data}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s.
@@ -90,14 +87,14 @@ must evaluate to a \link{factor} indicating the time series in which each
 window is found. Within time series, intervals \code{[start[i], end[i]]}
 must be disjoint and contain at least two time points from \code{time}.}
 
-\item{origin}{A \link{Date} specifying a reference time.}
-
 \item{init}{A \link{numeric} vector to be used as the full parameter vector for
 the first likelihood evaluation. The default (\code{\link{NULL}}) is
 to accept the internally generated default. Use \code{do_fit = FALSE}
 to retrieve this default and other optimization inputs (in particular
 \code{Y_init}; see Value), which can often be used to construct a more
 informative starting point.}
+
+\item{origin}{A \link{Date} specifying a reference time.}
 
 \item{append}{An expression indicating variables in \code{data_par} to be preserved
 in the returned object for use by methods. It is evaluated similarly
@@ -106,8 +103,8 @@ to the \code{select} argument of \code{\link{subset}}. The default
 is supported only if \code{data_par} is a \link[=data.frame]{data frame}.}
 }
 \value{
-A list with elements \code{frame}, \code{frame_par}, \code{frame_append},
-and \code{endpoints}. See descriptions under \code{\link{egf}}.
+A list with elements \code{endpoints}, \code{frame}, \code{frame_par},
+and \code{frame_append}. See descriptions under \code{\link{egf}}.
 }
 \description{
 Constructs time series and mixed effects model frames for use

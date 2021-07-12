@@ -21,9 +21,9 @@ Replaces missing values (\code{\link{NA}} and, in \link{double}
 vectors, \code{\link{NaN}}) with most recent earlier observations.
 }
 \examples{
-# x <- c(NA, NA, 1, NA, 2, 2, 3, NA)
-# locf(x)
-# locf(x, x0 = 0)
+## x <- c(NA, NA, 1, NA, 2, 2, 3, NA)
+## locf(x)
+## locf(x, x0 = 0)
 
 }
 \keyword{internal}

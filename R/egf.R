@@ -4,9 +4,10 @@
 #' Fits nonlinear mixed effects models of epidemic growth to one
 #' or more disease incidence time series.
 #'
-#' @param model
-#'   An \code{"\link{egf_model}"} object specifying a nonlinear model
-#'   and a dispersion model to be estimated.
+#' @param object
+#'   An \R object for which an \code{egf} method exists,
+#'   typically an \code{"\link{egf_model}"} object specifying
+#'   a nonlinear model and a dispersion model to be estimated.
 #' @param formula
 #'   A \link{formula} of the form \code{x ~ time} or \code{x ~ time | ts}
 #'   specifying one or more incidence time series in long format.
@@ -29,7 +30,7 @@
 #'   for all parameters. A list of parameters for which formulae may
 #'   be specified can be retrieved with \code{\link{get_par_names}}.
 #'   Specifically, \code{\link{deparse}(par)} must be an element of
-#'   \code{\link{get_par_names}(model, link = TRUE)}. The default for
+#'   \code{\link{get_par_names}(object, link = TRUE)}. The default for
 #'   parameters not assigned a formula is \code{~1}.
 #' @param data,data_par
 #'   \link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s.
@@ -67,7 +68,7 @@
 #'   An \link{list} of \link{formula}e of the form \code{par ~ f(...)},
 #'   specifying priors on nonlinear and dispersion model parameters.
 #'   \code{\link{deparse}(par)} must be an element of
-#'   \code{\link{get_par_names}(model, link = TRUE)}.
+#'   \code{\link{get_par_names}(object, link = TRUE)}.
 #'   \code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
 #'   with arguments specifying suitable hyperparameters.
 #'   This call is evaluated in the corresponding formula environment.
@@ -107,7 +108,7 @@
 #'   (\code{\link{NULL}}) is to preserve all variables. Currently, usage
 #'   is supported only if \code{data_par} is a \link[=data.frame]{data frame}.
 #' @param ...
-#'   Unused optional arguments.
+#'   Arguments passed to methods by the generic function.
 #'
 #' @details
 #' \code{endpoints} and \link[=model.frame]{model frame}s constructed from
@@ -160,7 +161,7 @@
 #'   to \code{endpoints}.
 #' }
 #' \item{model}{
-#'   A copy of the so-named argument.
+#'   A copy of argument \code{object}.
 #' }
 #' \item{priors}{
 #'   A \link{list} of \code{"\link{egf_prior}"} objects,
@@ -187,8 +188,8 @@
 #'   of the first and best likelihood evaluations.
 #' }
 #' \item{nonrandom}{
-#'   An \link{integer} vector indexing components \code{beta} and \code{theta}
-#'   of \code{init} and \code{best}.
+#'   An \link{integer} vector indexing the elements of \code{init}
+#'   and \code{best} that are not random effects.
 #' }
 #' \item{sdreport}{
 #'   If \code{se = TRUE}, then an \code{"sdreport"} object resulting
@@ -203,44 +204,47 @@
 #'   The \link{call} to \code{egf}, allowing for updates to the
 #'   \code{"egf"} object via \code{\link{update}}.
 #' }
-#' If \code{do_fit = FALSE}, then a \link{list} containing \code{frame},
-#' \code{frame_par}, \code{endpoints}, \code{tmb_args}, \code{tmb_out}
-#' (\emph{before} optimization), \code{init}, \code{nonrandom}, and
-#' \code{call}, as well as a \link{matrix} \code{Y_init} specifying
+#' If \code{do_fit = FALSE}, then a \link{list} containing \code{model},
+#' \code{endpoints}, \code{frame}, \code{frame_par}, \code{tmb_args},
+#' \code{tmb_out} (\emph{before} optimization), \code{init}, \code{nonrandom},
+#' and \code{call}, as well as a \link{matrix} \code{Y_init} specifying
 #' a naive estimate of each nonlinear and dispersion model parameter
 #' for each fitting window, corresponding rowwise to \code{endpoints}.
 #'
 #' @export
 #' @useDynLib epigrowthfit
-egf <- function(model = egf_model(),
-                formula,
-                formula_par = list(),
-                data = parent.frame(),
-                data_par = parent.frame(),
-                subset = NULL,
-                subset_par = NULL,
-                na_action = c("fail", "pass"),
-                na_action_par = c("fail", "omit"),
-                endpoints,
-                priors = list(),
-                control = egf_control(),
-                do_fit = TRUE,
-                se = FALSE,
-                init = NULL,
-                map = NULL,
-                origin = .Date(0L),
-                append = NULL,
-                ...) {
-  stop_if_not(
-    inherits(model, "egf_model"),
-    m = "`model` must inherit from class \"egf_model\". See `?egf_model`."
-  )
+egf <- function(object, ...) {
+  UseMethod("egf", object)
+}
+
+#' @rdname egf
+#' @export
+egf.egf_model <- function(object,
+                          formula,
+                          formula_par = list(),
+                          data = parent.frame(),
+                          data_par = parent.frame(),
+                          subset = NULL,
+                          subset_par = NULL,
+                          na_action = c("fail", "pass"),
+                          na_action_par = c("fail", "omit"),
+                          endpoints,
+                          priors = list(),
+                          control = egf_control(),
+                          do_fit = TRUE,
+                          se = FALSE,
+                          init = NULL,
+                          map = NULL,
+                          origin = .Date(0L),
+                          append = NULL,
+                          ...) {
   stop_if_not(
     inherits(control, "egf_control"),
     m = "`control` must inherit from class \"egf_control\". See `?egf_control`."
   )
   stop_if_not_true_false(do_fit)
   stop_if_not_true_false(se)
+  stop_if_not_Date(origin)
 
   if (control$omp_num_threads > 0L) {
     on <- TMB::openmp(n = NULL)
@@ -251,6 +255,7 @@ egf <- function(model = egf_model(),
   }
 
   frames <- make_frames(
+    model = object,
     formula = formula,
     formula_par = formula_par,
     data = data,
@@ -260,16 +265,15 @@ egf <- function(model = egf_model(),
     na_action = match.arg(na_action),
     na_action_par = match.arg(na_action_par),
     endpoints = endpoints,
-    origin = origin,
-    model = model,
     init = init,
+    origin = origin,
     append = append
   )
-  priors <- make_priors(priors = priors, model = model)
+  priors <- make_priors(priors = priors, model = object)
   tmb_args <- make_tmb_args(
+    model = object,
     frame = frames$frame,
     frame_par = frames$frame_par,
-    model = model,
     priors = priors,
     control = control,
     do_fit = do_fit,
@@ -286,8 +290,9 @@ egf <- function(model = egf_model(),
   }
 
   if (!do_fit) {
-    out <- frames[c("frame", "frame_par", "endpoints")]
+    out <- frames[c("endpoints", "frame", "frame_par")]
     out <- c(out, list(
+      model = object,
       tmb_args = tmb_args,
       tmb_out = tmb_out,
       init = init,
@@ -310,7 +315,7 @@ egf <- function(model = egf_model(),
   sdreport <- if (se) try(TMB::sdreport(tmb_out))
 
   out <- c(frames, list(
-    model = model,
+    model = object,
     priors = priors,
     control = control,
     tmb_args = tmb_args,
@@ -467,7 +472,7 @@ egf_control <- function(optimizer = egf_optimizer(),
   trace <- min(4L, max(0L, as.integer(trace))) # coercion to `0:4`
   stop_if_not_true_false(profile)
   stop_if_not_true_false(sparse_X)
-  stop_if_not_integer(omp_num_threads, kind = "positive")
+  stop_if_not_integer(omp_num_threads, "positive")
 
   out <- list(
     optimizer = optimizer,
@@ -480,7 +485,6 @@ egf_control <- function(optimizer = egf_optimizer(),
   class(out) <- c("egf_control", "list")
   out
 }
-
 
 #' Define an optimization method
 #'
@@ -712,7 +716,7 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
     options <- list()
     cl <- NULL
   } else if (method == "multicore" || (method == "snow" && is.null(cl))) {
-    stop_if_not_integer(cores, kind = "positive")
+    stop_if_not_integer(cores, "positive")
     stop_if_not(is.list(options),
       m = "`options` must be a list."
     )
@@ -744,41 +748,63 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 
 #' Simulate incidence time series for tests
 #'
-#' Simulates daily incidence time series according
-#' to an \code{"\link{egf_model}"} object.
-#' Variation in nonlinear and dispersion model parameters
-#' between time series follows a random intercept model \code{~(1 | ts)}.
+#' \code{egf_simulate} simulates daily incidence time series following
+#' specified nonlinear and dispersion models, with parameters (optionally)
+#' varying between time series according to a random intercept model
+#' \code{~(1 | ts)}. \code{egf.egf_simulate} estimates the generative
+#' model from the simulated time series.
 #'
 #' @param N
 #'   A positive integer indicating a number of time series.
 #' @param model
-#'   An \code{"\link{egf_model}"} object.
+#'   An \code{"\link{egf_model}"} object specifying a nonlinear model
+#'   and a dispersion model to be simulated.
 #' @param mu
 #'   A \link{numeric} vector listing mean nonlinear and dispersion model
 #'   parameter values (link scale). It is assumed that elements are ordered
 #'   as in \code{\link{get_par_names}(model, link = TRUE)}.
 #' @param Sigma
-#'   A symmetric positive definite \link{numeric} \link{matrix}.
-#'   This is the covariance matrix corresponding to \code{mu}.
+#'   A symmetric positive semidefinite \link{numeric} \link{matrix},
+#'   to be used as the covariance matrix corresponding to \code{mu}.
 #'   The default (\code{\link{NULL}}) is equivalent to a zero matrix.
 #' @param tol
 #'   A non-negative number indicating a tolerance for lack of positive
-#'   definiteness of \code{Sigma} (see \code{\link[MASS]{mvrnorm}}).
+#'   semidefiniteness of \code{Sigma} (see \code{\link[MASS]{mvrnorm}}).
 #' @param tmax
-#'   A positive number. Time series generated from a model of cumulative
-#'   incidence without an inflection point
-#'   (\code{model$curve \link{\%in\%} c("exponential", "subexponential")})
-#'   run from 0 to \code{\link{floor}(tmax)} days.
+#'   A positive number. Time series generated from a model of
+#'   cumulative incidence without an inflection point span this many days.
 #' @param cstart
-#'   A non-negative number. Left endpoints of suggested fitting windows
-#'   are those times when simulated cumulative incidence first exceeds
-#'   \code{cstart}.
+#'   A number indicating a threshold value of cumulative incidence.
+#'   Left endpoints of suggested fitting windows are those times when
+#'   cumulative incidence first exceeds this threshold. (If it is
+#'   never exceeded, then the first time point is used, with a warning.)
 #' @param origin
 #'   A \link{Date} specifying a reference time.
+#' @param object
+#'   An \code{"egf_simulate"} object supplying simulated time series
+#'   and specifying a generative model to be estimated.
+#' @param ...
+#'   Optional arguments passed to \code{\link{egf.egf_model}},
+#'   such as \code{priors} and \code{control}.
+#'
+#' @details
+#' For models of cumulative incidence with an inflection point
+#' (\code{model$curve} equal to \code{"logistic"}, \code{"richards"},
+#' or \code{"gompertz"}), simulated time series run from 0 days
+#' to \code{ceiling(tinfl)+1} days, where \code{tinfl} is the
+#' inflection time.
+#'
+#' For models of cumulative incidence \emph{without} an inflection point
+#' (\code{model$curve} equal to \code{"exponential"}
+#' or \code{"subexponential"}), simulated time series run from 0 days
+#' to \code{tmax} days.
+#'
+#' Suggested fitting windows start at a time determined by \code{cstart}
+#' and end at the last time point.
 #'
 #' @return
-#' A \link{list} inheriting from \link{class} \code{"egf_simulate"},
-#' with elements:
+#' \code{egf_simulate} returns a \link{list} inheriting from \link{class}
+#' \code{"egf_simulate"}, with elements:
 #' \item{model, mu, Sigma, origin}{
 #'   Copies of the so-named arguments.
 #' }
@@ -791,6 +817,16 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #'   If \code{Sigma} is non-\code{\link{NULL}}, then \code{Y} is the
 #'   result of \code{\link[MASS]{mvrnorm}(N, mu, Sigma, tol)}.
 #' }
+#' \item{formula}{
+#'   A \link{formula} expressing how to locate the simulated time series
+#'   in \code{data}. The formula is always \code{x ~ time | ts}.
+#' }
+#' \item{formula_par}{
+#'   A \link{formula} specifying the generative model.
+#'   If \code{Sigma = \link{NULL}}, then the formula is \code{~1}
+#'   if \code{N = 1} and \code{~ts} if \code{N > 1}.
+#'   Otherwise, the formula is \code{~(1 | ts)}.
+#' }
 #' \item{data}{
 #'   A \link[=data.frame]{data frame} with variables \code{ts}, \code{time},
 #'   and \code{x} storing \code{N} simulated time series in long format.
@@ -801,17 +837,15 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #'   within time series, \code{x[i]} is the number of cases observed between
 #'   \code{time[i-1]} and \code{time[i]}.
 #' }
+#' \item{data_par}{
+#'   A \link[=data.frame]{data frame} with \code{N} rows defining variables
+#'   used in \code{formula_par}. (Hence it is either empty or has one variable
+#'   \code{ts}.)
+#' }
 #' \item{endpoints}{
 #'   A \link[=data.frame]{data frame} with \code{N} rows and variables
 #'   \code{ts}, \code{start}, and \code{end} suggesting a fitting window
 #'   for each simulated time series.
-#' }
-#' \item{formula_par}{
-#'   A \link{formula} specifying the generative model, to be passed to
-#'   \code{\link{egf}} when estimating this model from \code{data}.
-#'   If \code{N = 1}, then \code{formula_par = ~1}.
-#'   If \code{N > 1}, then \code{formula_par = ~ts} or \code{~(1 | ts)}
-#'   (the former if \code{Sigma} is \code{\link{NULL}}, the latter otherwise).
 #' }
 #' \item{actual}{
 #'   A \link[=double]{numeric} vector giving the full parameter vector
@@ -819,6 +853,10 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #'   from \code{data}, \code{\link{egf}} output should be compared against
 #'   \code{actual}. More precisely, if \code{m} is the \code{"\link{egf}"}
 #'   object, then \code{m$best} estimates \code{actual}.
+#' }
+#' \item{nonrandom}{
+#'   An \link{integer} vector indexing the elements of \code{actual}
+#'   that are not random effects.
 #' }
 #' \item{call}{
 #'   The \link{call} to \code{egf_simulate}, allowing for updates
@@ -828,7 +866,6 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #' @examples
 #' model <- egf_model(curve = "logistic", family = "nbinom")
 #'
-#' # get_par_names(model, link = TRUE)
 #' r <- log(2) / 20
 #' tinfl <- 160
 #' K <- 25000
@@ -837,17 +874,21 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #' mu <- log(c(r, tinfl, K, nbdisp))
 #' Sigma <- diag(rep_len(0.25, length(mu)))
 #'
-#' object <- egf_simulate(
-#'   N = 6L,
-#'   model = model,
-#'   mu = mu,
-#'   Sigma = Sigma
-#' )
+#' set.seed(202737L)
+#' sim <- egf_simulate(N = 20L, model = model, mu = mu, Sigma = Sigma)
+#' fit <- egf(sim)
 #'
+#' pp <- data.frame(actual = sim$actual, fitted = fit$best)
+#' pp[fit$nonrandom, ]
+#'
+#' @name egf_simulate
+NULL
+
+#' @rdname egf_simulate
 #' @export
 #' @importFrom stats rpois rnbinom
-egf_simulate <- function(N, model = egf_model(), mu, Sigma = NULL, tol = 1e-06,
-                         tmax = 100, cstart = 10, origin = .Date(0L)) {
+egf_simulate <- function(N = 1L, model, mu, Sigma = NULL, tol = 1e-06,
+                         tmax = 100, cstart = 0, origin = .Date(0L)) {
   stop_if_not(
     requireNamespace("MASS", quietly = TRUE),
     m = wrap(
@@ -855,7 +896,7 @@ egf_simulate <- function(N, model = egf_model(), mu, Sigma = NULL, tol = 1e-06,
       "Install it by running `install.packages(\"MASS\")`, then try again."
     )
   )
-  stop_if_not_integer(N, kind = "positive")
+  stop_if_not_integer(N, "positive")
   stop_if_not(
     inherits(model, "egf_model"),
     m = "`model` must inherit from class \"egf_model\". See `?egf_model`."
@@ -880,10 +921,13 @@ egf_simulate <- function(N, model = egf_model(), mu, Sigma = NULL, tol = 1e-06,
     )
     dimnames(Sigma) <- rep_len(list(par_names), 2L)
   }
-  stop_if_not_number_in_interval(tol, 0, Inf, "[]")
+  stop_if_not_number(tol, "nonnegative")
+  stop_if_not_number(tmax, "positive")
+  stop_if_not_number(cstart)
+  stop_if_not_Date(origin)
 
   if (is.null(Sigma)) {
-    Y <- matrix(mu, nrow = N, ncol = p, byrow = TRUE)
+    Y <- matrix(mu, nrow = N, ncol = p, byrow = TRUE, dimnames = list(NULL, par_names))
   } else {
     Y <- MASS::mvrnorm(N, mu = mu, Sigma = Sigma, tol = tol)
   }
@@ -916,7 +960,7 @@ egf_simulate <- function(N, model = egf_model(), mu, Sigma = NULL, tol = 1e-06,
         log_K <- par[["log(K)"]]
         log_K - log1p(exp(-r * (time - tinfl)))
       },
-      richards = function(time, log_r, log_tinfl, log_K, log_a, ...) {
+      richards = {
         r <- exp(par[["log(r)"]])
         tinfl <- exp(par[["log(tinfl)"]])
         log_K <- par[["log(K)"]]
@@ -962,53 +1006,96 @@ egf_simulate <- function(N, model = egf_model(), mu, Sigma = NULL, tol = 1e-06,
   ## Simulated observations
   x <- Map(do_simulate, time = time, par = lapply(seq_len(N), function(i) Y[i, ]))
 
+  formula <- x ~ time | ts
   data <- data.frame(
     ts = rep.int(gl(N, 1L), lengths(time)),
     time = unlist(time, FALSE, FALSE),
     x = unlist(x, FALSE, FALSE)
   )
+
+  f <- function(x) {
+    l <- c(0L, cumsum(x[-1L])) > cstart
+    if (any(l)) which.max(l) else NA_integer_
+  }
   endpoints <- data.frame(
     ts = gl(N, 1L),
-    start = mapply(`[[`, time, vapply(x, function(y) 1L + which.max(cumsum(y[-1L]) > cstart), 0L)),
+    start = mapply(`[`, time, vapply(x, f, 0L)),
     end = vapply(time, max, 0)
   )
+  if (anyNA(endpoints$start)) {
+    argna <- which(is.na(endpoints$start))
+    warning(
+      wrap("Threshold `cstart` not exceeded in these time series:"), "\n\n",
+      paste(sprintf("  %*d", nchar(N), argna), collapse = "\n"), "\n\n",
+      wrap("Corresponding fitting windows contain all time points (for better or for worse).")
+    )
+    endpoints$start[argna] <- 0
+  }
 
-  if (N == 1L) {
-    formula_par <- ~1
-    actual <- mu
-    names(actual) <- enum_dupl_string(rep_len("beta", p))
-  } else {
-    if (is.null(Sigma)) {
+  if (is.null(Sigma)) {
+    if (N == 1L) {
+      formula_par <- ~1
+      data_par <- endpoints[integer(0L)]
+      actual <- mu
+      names(actual) <- enum_dupl_string(rep_len("beta", p))
+    } else {
       formula_par <- ~ts
+      data_par <- endpoints["ts"]
       actual <- rep_len(0, p * N)
       actual[seq.int(from = 1L, by = N, length.out = p)] <- mu
       names(actual) <- enum_dupl_string(rep_len("beta", p))
-    } else {
-      formula_par <- ~(1 | ts)
-      R <- chol(cov2cor(Sigma))
-      iR <- upper.tri(R, diag = TRUE)
-      R[iR] <- R[iR] * rep.int(1 / diag(R), seq_len(p))
-      l <- list(
-        beta = mu,
-        b = t(Y) - mu,
-        theta = c(0.5 * log(diag(Sigma)), R[upper.tri(R, diag = FALSE)])
-      )
-      actual <- unlist(l, FALSE, FALSE)
-      names(actual) <- enum_dupl_string(rep.int(names(l), lengths(l)))
     }
+  } else {
+    formula_par <- ~(1 | ts)
+    data_par <- endpoints["ts"]
+    R <- chol(cov2cor(Sigma))
+    iR <- upper.tri(R, diag = TRUE)
+    R[iR] <- R[iR] * rep.int(1 / diag(R), seq_len(p))
+    l <- list(
+      beta = mu,
+      b = t(Y) - mu,
+      theta = c(0.5 * log(diag(Sigma)), R[upper.tri(R, diag = FALSE)])
+    )
+    actual <- unlist(l, FALSE, FALSE)
+    names(actual) <- enum_dupl_string(rep.int(names(l), lengths(l)))
   }
-  environment(formula_par) <- .GlobalEnv
+  environment(formula) <- environment(formula_par) <- .GlobalEnv
 
-  list(
+  out <- list(
     model = model,
     mu = mu,
     Sigma = Sigma,
     origin = origin,
     Y = Y,
-    data = data,
-    endpoints = endpoints,
+    formula = formula,
     formula_par = formula_par,
+    data = data,
+    data_par = data_par,
+    endpoints = endpoints,
     actual = actual,
+    nonrandom = grep("^(beta|theta)\\[", names(actual)),
     call = match.call()
+  )
+  class(out) <- c("egf_simulate", "list")
+  out
+}
+
+#' @rdname egf_simulate
+#' @export
+egf.egf_simulate <- function(object, ...) {
+  egf(
+    object = object$model,
+    formula = object$formula,
+    formula_par = object$formula_par,
+    data = object$data,
+    data_par = object$data_par,
+    subset = NULL,
+    subset_par = NULL,
+    na_action = "fail",
+    na_action_par = "fail",
+    endpoints = object$endpoints,
+    origin = object$origin,
+    append = NULL,
+    ...
   )
 }

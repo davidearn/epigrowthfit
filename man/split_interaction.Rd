@@ -18,8 +18,8 @@ Recursively constructs a \link{list} of arguments to binary operator
 that are themselves calls to \code{`:`}.
 }
 \examples{
-# x <- quote(a:b:I(f:g):log(h))
-# split_interaction(x)
+## x <- quote(a:b:I(f:g):log(h))
+## split_interaction(x)
 
 }
 \keyword{internal}

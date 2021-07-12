@@ -20,9 +20,9 @@ Rounds each Date in a \link{Date} vector to the next first-of-the-month
 or first-of-the-year.
 }
 \examples{
-# x <- .Date(sample.int(1e4L, 10L))
-# dceiling(x, to = "month")
-# dceiling(x, to = "year")
+## x <- .Date(sample.int(1e4L, 10L))
+## dceiling(x, to = "month")
+## dceiling(x, to = "year")
 
 }
 \keyword{internal}

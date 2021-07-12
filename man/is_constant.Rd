@@ -31,11 +31,11 @@ For data frames \code{x}, \code{is_constant(x)} tests
 whether all listed vectors are constant.
 }
 \examples{
-# x <- c(0, 1e-03, NA)
-# is_constant(x, na.rm = TRUE, tol = 1e-02)
-# is_constant(x, na.rm = TRUE, tol = 1e-04)
-# is_constant(x, na.rm = FALSE, tol = 1e-02)
-# is_constant(x, na.rm = FALSE, tol = 1e-04)
+## x <- c(0, 1e-03, NA)
+## is_constant(x, na.rm = TRUE, tol = 1e-02)
+## is_constant(x, na.rm = TRUE, tol = 1e-04)
+## is_constant(x, na.rm = FALSE, tol = 1e-02)
+## is_constant(x, na.rm = FALSE, tol = 1e-04)
 
 }
 \keyword{internal}

@@ -35,11 +35,11 @@ In this case, \code{unsplit_terms(split_terms(x))} reproduces
 \code{x[[\link{length}(x)]]}, not \code{x}.
 }
 \examples{
-# x <- quote(1 + a * b - b + (c | d) + (0 + e | f))
-# l <- split_terms(x)
-# y <- unsplit_terms(l)
-# identical(x, y)
-# # [1] FALSE
+## x <- quote(1 + a * b - b + (c | d) + (0 + e | f))
+## l <- split_terms(x)
+## y <- unsplit_terms(l)
+## identical(x, y)
+## # [1] FALSE
 
 }
 \keyword{internal}

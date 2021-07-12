@@ -4,7 +4,7 @@
 \alias{make_tmb_parameters}
 \title{Construct parameter objects for C++ template}
 \usage{
-make_tmb_parameters(tmb_data, frame, frame_par, model, do_fit, init)
+make_tmb_parameters(tmb_data, model, frame, frame_par, do_fit, init)
 }
 \arguments{
 \item{tmb_data}{A \code{"\link[=make_tmb_data]{tmb_data}"} object.}
@@ -12,9 +12,6 @@ make_tmb_parameters(tmb_data, frame, frame_par, model, do_fit, init)
 \item{frame}{Elements of the \link{list} output of \code{\link{make_frames}}.}
 
 \item{frame_par}{Elements of the \link{list} output of \code{\link{make_frames}}.}
-
-\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
-and a dispersion model to be estimated.}
 
 \item{do_fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 with a \link{list} of optimization inputs.}

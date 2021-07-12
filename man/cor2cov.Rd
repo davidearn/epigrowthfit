@@ -20,9 +20,9 @@ obtained slightly more efficiently, following \code{\link{cov2cor}}.
 Perform the inverse of \code{\link{cov2cor}}.
 }
 \examples{
-# X <- replicate(6L, rnorm(10L))
-# V <- cov(X, X)
-# all.equal(V, cor2cov(cov2cor(V), sqrt(diag(V))))
+## X <- replicate(6L, rnorm(10L))
+## V <- cov(X, X)
+## all.equal(V, cor2cov(cov2cor(V), sqrt(diag(V))))
 
 }
 \keyword{internal}

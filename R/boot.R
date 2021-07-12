@@ -38,7 +38,7 @@ boot_par <- function(object,
     inherits(parallel, "egf_parallel"),
     m = "`parallel` must inherit from class \"egf_parallel\". See `?egf_parallel`."
   )
-  stop_if_not_integer(n, kind = "positive")
+  stop_if_not_integer(n, "positive")
   stop_if_not_true_false(trace)
 
   ## Make sure that bootstrap optimizations start from fitted model

@@ -52,9 +52,9 @@ If \code{x} is a \link{formula}, then the left and right hand
 expressions are expanded and simplified separately.
 }
 \examples{
-# simplify_terms(~0 + x * y - y)
-# simplify_terms(~0 + x * y - y + (1 | f/g))
-# simplify_terms(~0 + x * y - y + (1 | f/g) + (a | f) + (0 + b | f:g))
+## simplify_terms(~0 + x * y - y)
+## simplify_terms(~0 + x * y - y + (1 | f/g))
+## simplify_terms(~0 + x * y - y + (1 | f/g) + (a | f) + (0 + b | f:g))
 
 }
 \keyword{internal}

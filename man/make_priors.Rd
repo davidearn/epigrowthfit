@@ -10,15 +10,12 @@ make_priors(priors, model)
 \item{priors}{An \link{list} of \link{formula}e of the form \code{par ~ f(...)},
 specifying priors on nonlinear and dispersion model parameters.
 \code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(model, link = TRUE)}.
+\code{\link{get_par_names}(object, link = TRUE)}.
 \code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
 with arguments specifying suitable hyperparameters.
 This call is evaluated in the corresponding formula environment.
 (Currently, the only implemented prior is Gaussian. As a result,
 formulae must have the form \code{par ~ \link{Normal}(mu, sigma)}.)}
-
-\item{model}{An \code{"\link{egf_model}"} object specifying a nonlinear model
-and a dispersion model to be estimated.}
 }
 \value{
 A named \link{list} of \code{"\link{egf_prior}"} objects obtained

@@ -24,7 +24,7 @@ Retrieves from a mixed effects model \link{formula} the corresponding
 fixed effects model formula and a \link{list} of all random effects terms.
 }
 \examples{
-# split_effects(y ~ 0 + x + (1 | f) + (a | g))
+## split_effects(y ~ 0 + x + (1 | f) + (a | g))
 
 }
 \keyword{internal}

@@ -10,10 +10,10 @@
 #' the \code{`-`} operator with \code{x} as its only argument.
 #'
 #' @examples
-#' # x <- quote(x)
-#' # minus_x <- call("-", x)
-#' # identical(negate(x), minus_x)
-#' # identical(negate(minus_x), x)
+#' ## x <- quote(x)
+#' ## minus_x <- call("-", x)
+#' ## identical(negate(x), minus_x)
+#' ## identical(negate(minus_x), x)
 #'
 #' @keywords internal
 negate <- function(x) {
@@ -50,11 +50,11 @@ negate <- function(x) {
 #' A \link{list} of \link{call}s, \link{name}s, and \link{atomic} scalars.
 #'
 #' @examples
-#' # x <- quote(1 + a * b - b + (c | d) + (0 + e | f))
-#' # l <- split_terms(x)
-#' # y <- unsplit_terms(l)
-#' # identical(x, y)
-#' # # [1] FALSE
+#' ## x <- quote(1 + a * b - b + (c | d) + (0 + e | f))
+#' ## l <- split_terms(x)
+#' ## y <- unsplit_terms(l)
+#' ## identical(x, y)
+#' ## # [1] FALSE
 #'
 #' @name split_terms
 #' @keywords internal
@@ -133,7 +133,7 @@ unsplit_terms <- function(l) {
 #' }
 #'
 #' @examples
-#' # split_effects(y ~ 0 + x + (1 | f) + (a | g))
+#' ## split_effects(y ~ 0 + x + (1 | f) + (a | g))
 #'
 #' @keywords internal
 #' @importFrom stats as.formula
@@ -161,8 +161,8 @@ split_effects <- function(x) {
 #' A \link{list} of \link{call}s, \link{name}s, and \link{atomic} scalars.
 #'
 #' @examples
-#' # x <- quote(a:b:I(f:g):log(h))
-#' # split_interaction(x)
+#' ## x <- quote(a:b:I(f:g):log(h))
+#' ## split_interaction(x)
 #'
 #' @keywords internal
 split_interaction <- function(x) {
@@ -192,7 +192,7 @@ split_interaction <- function(x) {
 #' \code{(expression1 | expression2)} replaced with \code{`+`}.
 #'
 #' @examples
-#' # gsub_bar_plus(~x + (1 | f))
+#' ## gsub_bar_plus(~x + (1 | f))
 #'
 #' @keywords internal
 gsub_bar_plus <- function(x) {
@@ -257,9 +257,9 @@ gsub_bar_plus <- function(x) {
 #' expansion and simplification of the constituent terms of \code{x}.
 #'
 #' @examples
-#' # simplify_terms(~0 + x * y - y)
-#' # simplify_terms(~0 + x * y - y + (1 | f/g))
-#' # simplify_terms(~0 + x * y - y + (1 | f/g) + (a | f) + (0 + b | f:g))
+#' ## simplify_terms(~0 + x * y - y)
+#' ## simplify_terms(~0 + x * y - y + (1 | f/g))
+#' ## simplify_terms(~0 + x * y - y + (1 | f/g) + (a | f) + (0 + b | f:g))
 #'
 #' @keywords internal
 #' @importFrom stats terms as.formula
