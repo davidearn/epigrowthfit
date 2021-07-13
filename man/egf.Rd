@@ -220,12 +220,14 @@ If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
   The \link{call} to \code{egf}, allowing for updates to the
   \code{"egf"} object via \code{\link{update}}.
 }
-If \code{do_fit = FALSE}, then a \link{list} containing \code{model},
+If \code{do_fit = FALSE}, then a \link{list} inheriting from
+\link{class} \code{"egf_no_fit"} containing \code{model},
 \code{endpoints}, \code{frame}, \code{frame_par}, \code{tmb_args},
-\code{tmb_out} (\emph{before} optimization), \code{init}, \code{nonrandom},
-and \code{call}, as well as a \link{matrix} \code{Y_init} specifying
-a naive estimate of each nonlinear and dispersion model parameter
-for each fitting window, corresponding rowwise to \code{endpoints}.
+\code{tmb_out} (\emph{before} optimization), \code{init},
+\code{nonrandom}, and \code{call}, as well as a \link[=double]{numeric}
+\link{matrix} \code{Y_init} specifying a naive estimate
+of each nonlinear and dispersion model parameter for each
+fitting window, corresponding rowwise to \code{endpoints}.
 }
 \description{
 Fits nonlinear mixed effects models of epidemic growth to one

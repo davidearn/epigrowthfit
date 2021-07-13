@@ -204,12 +204,14 @@
 #'   The \link{call} to \code{egf}, allowing for updates to the
 #'   \code{"egf"} object via \code{\link{update}}.
 #' }
-#' If \code{do_fit = FALSE}, then a \link{list} containing \code{model},
+#' If \code{do_fit = FALSE}, then a \link{list} inheriting from
+#' \link{class} \code{"egf_no_fit"} containing \code{model},
 #' \code{endpoints}, \code{frame}, \code{frame_par}, \code{tmb_args},
-#' \code{tmb_out} (\emph{before} optimization), \code{init}, \code{nonrandom},
-#' and \code{call}, as well as a \link{matrix} \code{Y_init} specifying
-#' a naive estimate of each nonlinear and dispersion model parameter
-#' for each fitting window, corresponding rowwise to \code{endpoints}.
+#' \code{tmb_out} (\emph{before} optimization), \code{init},
+#' \code{nonrandom}, and \code{call}, as well as a \link[=double]{numeric}
+#' \link{matrix} \code{Y_init} specifying a naive estimate
+#' of each nonlinear and dispersion model parameter for each
+#' fitting window, corresponding rowwise to \code{endpoints}.
 #'
 #' @export
 #' @useDynLib epigrowthfit
@@ -300,6 +302,7 @@ egf.egf_model <- function(object,
       Y_init = attr(tmb_args$parameters, "Y_init"),
       call = match.call()
     ))
+    class(out) <- c("egf_no_fit", "list")
     return(out)
   }
 
@@ -1083,19 +1086,12 @@ egf_simulate <- function(N = 1L, model, mu, Sigma = NULL, tol = 1e-06,
 #' @rdname egf_simulate
 #' @export
 egf.egf_simulate <- function(object, ...) {
-  egf(
-    object = object$model,
-    formula = object$formula,
-    formula_par = object$formula_par,
-    data = object$data,
-    data_par = object$data_par,
-    subset = NULL,
-    subset_par = NULL,
-    na_action = "fail",
-    na_action_par = "fail",
-    endpoints = object$endpoints,
-    origin = object$origin,
-    append = NULL,
-    ...
-  )
+  object$object <- object$model
+  s <- c("object", "formula", "formula_par", "data", "data_par", "endpoints", "origin")
+  args <- object[s]
+  dots <- list(...)
+  if (length(dots) > 0L && !is.null(nd <- names(dots))) {
+    args <- c(args, dots[match(nd, s, 0L) == 0L])
+  }
+  do.call(egf, args)
 }
