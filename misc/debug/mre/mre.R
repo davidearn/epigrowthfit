@@ -6,7 +6,7 @@ compile(paste0(zz, ".cpp"))
 dyn.load(dynlib(zz))
 load(paste0(zz, ".RData")) # actual, tmb_data, tmb_parameters
 
-## openmp(4L)
+openmp(4L)
 obj <- MakeADFun(
   data = tmb_data,
   parameters = tmb_parameters,

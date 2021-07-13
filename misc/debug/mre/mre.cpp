@@ -1,18 +1,6 @@
 #include <TMB.hpp>
 
 template<class Type>
-bool is_NA_real_(Type x)
-{
-    return R_IsNA(asDouble(x));
-}
-
-template<class Type>
-bool is_finite(Type x)
-{
-    return R_finite(asDouble(x));
-}
-
-template<class Type>
 vector<Type> eval_log_logistic(vector<Type> t,
 			       Type log_r,
 			       Type log_tinfl,
@@ -92,7 +80,7 @@ Type objective_function<Type>::operator() ()
     /* Segment lengths */
     DATA_IVECTOR(t_seg_len); // length=N
     
-    /* Combined random effects model matrix */
+    /* Random effects model matrix */
     DATA_SPARSE_MATRIX(Z); // dim=(N, p*N)
 
     /* Indices */
@@ -112,15 +100,9 @@ Type objective_function<Type>::operator() ()
 
     /* Standard deviations */
     vector<Type> sd = exp(theta.segment(0, p));
-    REPORT(sd);
-
+    
     /* Other covariance parameters from Cholesky factor */
     vector<Type> chol = theta.segment(p, p * (p - 1) / 2);
-    REPORT(chol);
-
-    /* Correlation matrix */
-    matrix<Type> cor = density::UNSTRUCTURED_CORR(chol).cov();
-    REPORT(cor);
 
     /* Random effects block */
     matrix<Type> block(p, N);
@@ -128,7 +110,6 @@ Type objective_function<Type>::operator() ()
     {
         block.col(j) = (vector<Type>) b.segment(i, p);
     }
-    REPORT(block);
 
     /* Random effects coefficient matrix */
     Eigen::SparseMatrix<Type> b_scaled_matrix(p * N, p);
@@ -139,7 +120,6 @@ Type objective_function<Type>::operator() ()
     {
         b_scaled_matrix.insert(i, j) = sd(j) * b(i);
     }
-    REPORT(b_scaled_matrix);
     
     
     /* Compute (N, p) response matrix ======================================= */
@@ -149,23 +129,19 @@ Type objective_function<Type>::operator() ()
     {
         Y.col(j).fill(beta(j));
     }
-    Y += Z * b_scaled_matrix;
-    REPORT(Y);
-    
+    Y += Z * b_scaled_matrix;    
     
     /* Compute predictions ================================================== */
 
     /* Log cumulative incidence */
-    vector<Type> log_logistic = eval_log_logistic_n(t,
-						    t_seg_len,
-						    (vector<Type>) Y.col(j_log_r),
-						    (vector<Type>) Y.col(j_log_tinfl),
-						    (vector<Type>) Y.col(j_log_K));
-    REPORT(log_logistic);
+    vector<Type> log_logistic = eval_log_logistic(t,
+						  t_seg_len,
+						  (vector<Type>) Y.col(j_log_r),
+						  (vector<Type>) Y.col(j_log_tinfl),
+						  (vector<Type>) Y.col(j_log_K));
       
     /* Log interval incidence */
-    vector<Type> log_cases = logspace_diff_n(log_logistic, t_seg_len);
-    REPORT(log_cases);
+    vector<Type> log_cases = logspace_diff(log_logistic, t_seg_len);
 
 
     /* Compute negative log likelihood ====================================== */
@@ -174,61 +150,35 @@ Type objective_function<Type>::operator() ()
     Type nll_term;
     Type log_var_minus_mu;
 
-    // std::cout << "Y = \n" << Y << "\n";
     // printf("nll initialized to 0\ncommencing loop over observations\n");
 
-    for (int i = 0, s = 0; s < N; i += t_seg_len(s) - 1, s++) /* loop over segments */
+    for (int i = 0, s = 0; s < N; i += t_seg_len(s) - 1, s++)
     {
-        for (int k = 0; k < t_seg_len(s) - 1; k++) /* loop over within-segment index */
+        for (int k = 0; k < t_seg_len(s) - 1; k++)
 	{
-	    if (!is_NA_real_(x(i+k)))
-	    {
-	        log_var_minus_mu = Type(2) * log_cases(i+k) - Y(s, j_log_nbdisp);
-		nll_term = -dnbinom_robust(x(i+k), log_cases(i+k), log_var_minus_mu, true);
-		nll += nll_term;
-
-		// if (!is_finite(nll_term))
-		// {
-		//     printf("at index %d of segment %d: nll term is non-finite\n", k, s);
-		// }
-		// else if (asDouble(nll_term) > 1.0e+09)
-		// {
-		//     printf("at index %d of segment %d: nll term exceeds 1.0e+09\n", k, s);
-		// }
-		
-		// printf("at index %d of segment %d: nll %.6e x %d mu %.6e size %.6e\n", k, s,
-		//        asDouble(nll_term),
-		//        (int) asDouble(x(i+k)),
-		//        asDouble(exp(log_cases(i+k))),
-		//        asDouble(exp(Y(s, j_log_nbdisp))));
-	    }
+	    log_var_minus_mu = Type(2) * log_cases(i+k) - Y(s, j_log_nbdisp);
+	    nll_term = -dnbinom_robust(x(i+k), log_cases(i+k), log_var_minus_mu, true);
+	    nll += nll_term;
+	    // printf("at index %d of segment %d: nll %.6e x %d mu %.6e size %.6e\n", k, s,
+	    //        asDouble(nll_term),
+	    //        (int) asDouble(x(i+k)),
+	    //        asDouble(exp(log_cases(i+k))),
+	    //        asDouble(exp(Y(s, j_log_nbdisp))));
 	}
-
-	// std::cout << "Y.row(" << s << ") = " << Y.row(s) << "\n";
     }
 
-    printf("loop over observations complete\nnll is %5.6e\n", asDouble(nll));
-    printf("commencing loop over random effects\n");
+    // printf("loop over observations complete\nnll is %.6e\n", asDouble(nll));
+    // printf("commencing loop over random effects\n");
 
-    density::MVNORM_t<Type> N_0_Sigma(cor); /* function returning negative log density */
+    density::UNSTRUCTURED_CORR_t<Type> N_0_Sigma(chol); /* function returning negative log density */
     for (int j = 0; j < N; j++)
     {
 	nll_term = N_0_Sigma(block.col(j));
 	nll += nll_term;
-
-	// if (!is_finite(nll_term))
-	// {
-	//     printf("at column %d: nll term is non-finite\n", j);
-	// }
-	// else if (asDouble(nll_term) > 1.0e+09)
-	// {
-	//     printf("at column %d: nll term exceeds 1.0e+09\n", j);
-	// }
-
 	// printf("at column %d: nll %.6e\n", j, asDouble(nll_term));
     }
 
-    // printf("loop over random effects complete\nnll is %5.6e\n", asDouble(nll));
+    // printf("loop over random effects complete\nnll is %.6e\n", asDouble(nll));
 
     return nll;
 }
