@@ -94,15 +94,15 @@ with elements:
   by relation to a common covariance matrix and random vector,
   respectively.
 }
-\item{beta_seg_len, b_seg_len}{
-  \link[=integer]{Integer} vectors of length \code{p} counting the
-  columns of \code{X} and \code{Z}, respectively, that relate to
-  a common nonlinear or dispersion model parameter.
-}
-\item{beta_seg_index, b_seg_index}{
+\item{beta_index, b_index}{
   \link[=integer]{Integer} vectors of length \code{\link{ncol}(X)}
   and \code{\link{ncol}(Z)}, respectively, with values in \code{0:(p-1)}.
   These split the columns of \code{X} and \code{Z} by relation to
+  a common nonlinear or dispersion model parameter.
+}
+\item{beta_index_tab, b_index_tab}{
+  \link[=integer]{Integer} vectors of length \code{p} counting the
+  columns of \code{X} and \code{Z}, respectively, that relate to
   a common nonlinear or dispersion model parameter.
 }
 \item{block_rows, block_cols}{

@@ -998,15 +998,15 @@ make_tmb_args <- function(model, frame, frame_par, priors, control,
 #'   by relation to a common covariance matrix and random vector,
 #'   respectively.
 #' }
-#' \item{beta_seg_len, b_seg_len}{
-#'   \link[=integer]{Integer} vectors of length \code{p} counting the
-#'   columns of \code{X} and \code{Z}, respectively, that relate to
-#'   a common nonlinear or dispersion model parameter.
-#' }
-#' \item{beta_seg_index, b_seg_index}{
+#' \item{beta_index, b_index}{
 #'   \link[=integer]{Integer} vectors of length \code{\link{ncol}(X)}
 #'   and \code{\link{ncol}(Z)}, respectively, with values in \code{0:(p-1)}.
 #'   These split the columns of \code{X} and \code{Z} by relation to
+#'   a common nonlinear or dispersion model parameter.
+#' }
+#' \item{beta_index_tab, b_index_tab}{
+#'   \link[=integer]{Integer} vectors of length \code{p} counting the
+#'   columns of \code{X} and \code{Z}, respectively, that relate to
 #'   a common nonlinear or dispersion model parameter.
 #' }
 #' \item{block_rows, block_cols}{
@@ -1115,15 +1115,15 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
   Z <- Z[, o, drop = FALSE]
   Z_info <- Z_info[o, , drop = FALSE]
 
-  ## Number of coefficients related to each nonlinear and
-  ## dispersion model parameter
-  beta_seg_len <- c(table(X_info$par))
-  b_seg_len <- c(table(Z_info$par))
-
   ## Coefficients factored by relation to a nonlinear or
   ## dispersion model parameter
-  beta_seg_index <- as.integer(X_info$par) - 1L
-  b_seg_index <- as.integer(Z_info$par) - 1L
+  beta_index <- as.integer(X_info$par) - 1L
+  b_index <- as.integer(Z_info$par) - 1L
+
+  ## Number of coefficients related to each nonlinear and
+  ## dispersion model parameter
+  beta_index_tab <- c(table(X_info$par))
+  b_index_tab <- c(table(Z_info$par))
 
   ## Dimensions of random effects blocks whose column vectors
   ## are related by a common covariance matrix
@@ -1160,10 +1160,10 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
     Xd = if (control$sparse_X) empty_dense_matrix else X,
     X_info = X_info,
     Z_info = Z_info,
-    beta_seg_len = beta_seg_len,
-    b_seg_len = b_seg_len,
-    beta_seg_index = beta_seg_index,
-    b_seg_index = b_seg_index,
+    beta_index = beta_index,
+    b_index = b_index,
+    beta_index_tab = beta_index_tab,
+    b_index_tab = b_index_tab,
     block_rows = block_rows,
     block_cols = block_cols,
     regularize_hyperpar = regularize_hyperpar,
@@ -1240,12 +1240,12 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
 #' A \link{list} with elements:
 #' \item{beta}{
 #'   A \link[=double]{numeric} vector of length
-#'   \code{\link{sum}(tmb_data$beta_seg_len)} listing
+#'   \code{\link{length}(tmb_data$beta_index)} listing
 #'   initial values for fixed effects coefficients.
 #' }
 #' \item{b}{
 #'   A \link[=double]{numeric} vector of length
-#'   \code{\link{sum}(tmb_data$b_seg_len)} listing initial values
+#'   \code{\link{length}(tmb_data$b_index)} listing initial values
 #'   for random effects coefficients (unit variance scale).
 #' }
 #' \item{theta}{
@@ -1268,10 +1268,10 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
 #' @importFrom stats coef lm na.omit qlogis terms
 make_tmb_parameters <- function(tmb_data, model, frame, frame_par, do_fit, init) {
   ## Lengths of parameter objects
-  f <- function(n) n * (n + 1L) / 2L
+  f <- function(n) as.integer(n * (n + 1) / 2)
   len <- c(
-    beta  = sum(tmb_data$beta_seg_len),
-    b     = sum(tmb_data$b_seg_len),
+    beta  = length(tmb_data$beta_index),
+    b     = length(tmb_data$b_index),
     theta = sum(f(tmb_data$block_rows))
   )
 

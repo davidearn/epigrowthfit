@@ -9,7 +9,7 @@ struct list_of_vectors_t : vector< vector<Type> > {
     list_of_vectors_t(SEXP x)
     {
         (*this).resize(LENGTH(x));
-        for (int i = 0; i < LENGTH(x); i++)
+        for (int i = 0; i < LENGTH(x); ++i)
 	{
             SEXP v = VECTOR_ELT(x, i);
             (*this)(i) = asVector<Type>(v);
@@ -110,19 +110,19 @@ Type objective_function<Type>::operator() ()
        - length=length(beta)
        - val={0,...,p-1}
     */
-    DATA_IVECTOR(beta_seg_index);
+    DATA_IVECTOR(beta_index);
     /*
        - length=length(b)
        - val={0,...,p-1}
     */
-    DATA_IVECTOR(b_seg_index);
+    DATA_IVECTOR(b_index);
 
     /* Number of model matrix columns by nonlinear model parameter
-       - in R: *_seg_len = c(table(*_seg_index))
+       - in R: *_index_tab = c(table(*_index))
        - length=p
     */
-    DATA_IVECTOR(beta_seg_len);
-    DATA_IVECTOR(b_seg_len);
+    DATA_IVECTOR(beta_index_tab);
+    DATA_IVECTOR(b_index_tab);
     
     /* Dimensions of random effects blocks
        - length=M
@@ -152,11 +152,6 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(family_flag);
     /* Day of week effects (1=yes, 0=no) */
     DATA_INTEGER(day_of_week_flag);
-    /* Priors on nonlinear model parameters (enum.h)
-       - length=p
-       - val=-1 if no prior
-    */
-    DATA_IVECTOR(regularize_flag);
     /* Trace
        0=nothing
        1=degenerate nll terms
@@ -167,14 +162,23 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(sparse_X_flag);
     /* predict (1=yes, 0=no) */
     DATA_INTEGER(predict_flag);
+    /* Priors on nonlinear model parameters (enum.h)
+       - length=p
+       - val=-1 if no prior
+    */
+    DATA_IVECTOR(regularize_flag);
 
     bool do_excess        = (excess_flag      == 1);
     bool do_day_of_week   = (day_of_week_flag == 1);
-    bool do_regularize    = any_geq_zero(regularize_flag);
     bool do_trace         = (trace_flag       >= 1);
     bool do_verbose_trace = (trace_flag       >= 2);
     bool do_sparse_X      = (sparse_X_flag    == 1);
     bool do_predict       = (predict_flag     == 1);
+    bool do_regularize    = false;
+    for (int i = 0; !do_regularize && i < p; ++i)
+    {
+        do_regularize = regularize_flag(i) >= 0;
+    }
     
     
     /* Random effects infrastructure ======================================== */
@@ -196,9 +200,6 @@ Type objective_function<Type>::operator() ()
     /* List of corresponding negative log density functions */
     vector< density::MVNORM_t<Type> > nld_list(M);
 
-    /* `b` with elements scaled by standard deviations */
-    vector<Type> b_scaled(b.size());
-
     if (any_random_effects)
     {
         /* Random vectors of length 1 are handled specially */
@@ -209,15 +210,15 @@ Type objective_function<Type>::operator() ()
       
         int nr;
 	int nc;
-        for (int m = 0, i1 = 0, i2 = 0; m < M; m++)
+        for (int m = 0, i1 = 0, i2 = 0; m < M; ++m)
 	{ /* loop over list elements */
 	    nr = block_rows(m);
 	    nc = block_cols(m);
-	    
+
 	    /* Vector of standard deviations */
 	    vector<Type> sd = exp(theta.segment(i1, nr));
 	    sd_list(m) = sd;
-	    i1 += nr; /* increment `theta` index */
+	    i1 += nr;
 	    
 	    if (nr == 1)
 	    {
@@ -232,7 +233,7 @@ Type objective_function<Type>::operator() ()
 	        /* Vector of other covariance parameters */
 	        vector<Type> chol = theta.segment(i1, nr * (nr - 1) / 2);
 		chol_list(m) = chol;
-		i1 += chol.size(); /* increment `theta` index */
+		i1 += chol.size();
 
 		/* Negative log density function */
 		density::UNSTRUCTURED_CORR_t<Type> nld(chol);
@@ -240,15 +241,16 @@ Type objective_function<Type>::operator() ()
 	    }
 	    
 	    /* Random effects block */
-	    matrix<Type> block(nr, nc);
-	    vector<Type> u(nr);
-	    for (int j = 0; j < nc; j++)
-	    { /* loop over block columns */
-	        u = b.segment(i2, nr);
-	        block.col(j) = u;
-		b_scaled.segment(i2, nr) = sd * u;
-		i2 += nr; /* increment `b` index */
-	    } /* loop over block columns */
+	    matrix<Type> block = b.segment(i2, nr * nc).matrix();
+	    block.resize(nr, nc);
+	    block_list(m) = block;
+
+	    /* Scale `b` in place */
+	    for (int j = 0; j < nc; ++j)
+	    {
+	        b.segment(i2, nr) *= sd;
+	        i2 += nr;
+	    }
 	    block_list(m) = block;
 	} /* loop over list elements */
 
@@ -264,23 +266,12 @@ Type objective_function<Type>::operator() ()
     /* Coefficient matrices ================================================= */
 
     /* Arrange elements of `beta` in (length(beta), p) matrix */
-    Eigen::SparseMatrix<Type> beta_matrix(beta.size(), p);
-    beta_matrix.reserve(beta_seg_len); /* declaring nnz */
-    for (int i = 0; i < beta.size(); i++)
-    {
-        beta_matrix.insert(i, beta_seg_index(i)) = beta(i);
-    }
+    Eigen::SparseMatrix<Type> beta_matrix =
+        as_sparse_matrix(beta, beta_index, beta_index_tab);
 
-    /* Arrange elements of `b_scaled` in (length(b), p) matrix */
-    Eigen::SparseMatrix<Type> b_scaled_matrix(b.size(), p);
-    if (any_random_effects)
-    {
-        b_scaled_matrix.reserve(b_seg_len); /* declaring nnz */
-	for (int i = 0; i < b.size(); i++)
-	{
-	    b_scaled_matrix.insert(i, b_seg_index(i)) = b_scaled(i);
-	}
-    }
+    /* Arrange elements of `b` in (length(b), p) matrix */
+    Eigen::SparseMatrix<Type> b_matrix =
+        as_sparse_matrix(b, b_index, b_index_tab);
     
     
     /* Response matrix ====================================================== */
@@ -297,7 +288,7 @@ Type objective_function<Type>::operator() ()
     /* Add random effects component */
     if (any_random_effects)
     {
-        Y += Z * b_scaled_matrix;
+        Y += Z * b_matrix;
     }
     
     if (!do_predict)
@@ -356,11 +347,11 @@ Type objective_function<Type>::operator() ()
 	width_s = nchar(N - 1);
     }
 
-    for (int s = 0, i = 0; s < N; i += x_seg_len(s), s++)
+    for (int s = 0, i = 0; s < N; i += x_seg_len(s), ++s)
     { /* loop over segments */
         print_Y_row = do_verbose_trace;
 	
-        for (int k = 0; k < x_seg_len(s); k++)
+        for (int k = 0; k < x_seg_len(s); ++k)
 	{ /* loop over within-segment index */
 	    if (is_na(x(i+k)))
 	    {
@@ -430,9 +421,9 @@ Type objective_function<Type>::operator() ()
 	    width_m = nchar(M - 1);
 	}
       
-        for (int m = 0; m < M; m++)
+        for (int m = 0; m < M; ++m)
     	{ /* loop over blocks */
-	    for (int j = 0; j < block_cols(m); j++)
+	    for (int j = 0; j < block_cols(m); ++j)
     	    { /* loop over block columns */
 	        nll_term = nld_list(m)(block_list(m).col(j));
 		nll += nll_term;
@@ -470,7 +461,7 @@ Type objective_function<Type>::operator() ()
 	    width_j = nchar(p - 1);
 	}
 	
-        for (int j = 0; j < p; j++)
+        for (int j = 0; j < p; ++j)
 	{ /* loop over parameters */
 	    if (regularize_flag(j) < 0)
 	    {
@@ -478,7 +469,7 @@ Type objective_function<Type>::operator() ()
 	    }
 	    
 	    vector<Type> hp = regularize_hyperpar(j);
-	    for (int i = 0; i < N; i++)
+	    for (int i = 0; i < N; ++i)
 	    { /* loop over values */
 	        switch (regularize_flag(j))
 		{
@@ -499,7 +490,7 @@ Type objective_function<Type>::operator() ()
 		    case norm:
 		        mu = asDouble(hp(0));
 			sigma = asDouble(hp(1));
-			printf("\\__ -log(dnorm(x = %.6e, mean = %.6e, sd = %.6e))\n", x0, mu, sigma);
+			printf("  \\__ -log(dnorm(x = %.6e, mean = %.6e, sd = %.6e))\n", x0, mu, sigma);
 			break;
 		    }
 		}
@@ -530,9 +521,6 @@ Type objective_function<Type>::operator() ()
 	*/
 	DATA_IVECTOR(predict_time_seg_len);
 	vector<int> predict_x_seg_len = decrement(predict_time_seg_len);
-	
-	/* Number of segments */
-	int predict_N = predict_time_seg_len.size();
 
 	/* Segment initial days of week
 	   - length=N' if do_day_of_week=true, length=0 otherwise
@@ -577,7 +565,7 @@ Type objective_function<Type>::operator() ()
 	predict_Y += (do_sparse_X ? predict_Xs : predict_Xd) * beta_matrix;
 	if (any_random_effects)
     	{
-	    predict_Y += predict_Z * b_scaled_matrix;
+	    predict_Y += predict_Z * b_matrix;
     	}
 
 	
@@ -606,7 +594,7 @@ Type objective_function<Type>::operator() ()
 	}
 
 
-	/* Reported variables------------------------------------------------ */
+	/* Reported variables ----------------------------------------------- */
 
 	if (do_predict_lii)
 	{
@@ -619,15 +607,8 @@ Type objective_function<Type>::operator() ()
 	if (do_predict_lci)
 	{
 	    /* Log cumulative incidence (since time 0) */
-	    int n;
-	    vector<Type> log_cum_inc(predict_log_cases.size());
-	    for (int s = 0, i = 0; s < predict_N; s++)
-	    { /* loop over segments */
-	        n = predict_x_seg_len(s);
-		vector<Type> tmp = predict_log_cases.segment(i, n);
-	        log_cum_inc.segment(i, n) = logspace_cumsum(tmp);
-		i += n;
-	    } /* loop over segments */
+	    vector<Type> log_cum_inc =
+	        logspace_cumsum(predict_log_cases, predict_x_seg_len);
 	    REPORT(log_cum_inc);
 	    ADREPORT(log_cum_inc);
 	}
@@ -664,26 +645,39 @@ Type objective_function<Type>::operator() ()
 
     SIMULATE
     {
-        /* Increment incomplete response matrix `simulate_Y`
-	   with random effects component obtained by simulation
-	*/
+        /* Response matrix -------------------------------------------------- */
+
         if (any_random_effects)
-	{   
-	    for (int m = 0, i = 0; m < M; m++)
-	    { /* loop over blocks */
-	        for (int j = 0; j < block_cols(m); j++)
-		{ /* loop over block columns */
-		    b_scaled.segment(i, block_rows(m)) = sd_list(m) * nld_list(m).simulate();
-		    i += block_rows(m);
-		} /* loop over block columns */
-	    } /* loop over blocks */
-	    for (int i = 0; i < b.size(); i++)
+	{
+	    /* Update `b` in place with simulated random effects */
+	    int nr;
+	    int nc;
+	    for (int m = 0, i = 0; m < M; ++m)
 	    {
-		b_scaled_matrix.coeffRef(i, b_seg_index(i)) = b_scaled(i);
+	        nr = block_rows(m);
+	        nc = block_cols(m);
+	        for (int j = 0; j < nc; ++j)
+		{
+		    b.segment(i, nr) = sd_list(m) * nld_list(m).simulate();
+		    i += nr;
+		}
 	    }
-	    simulate_Y += Z * b_scaled_matrix;
+
+	    /* Update `b_matrix` in place */
+	    for (int i = 0; i < b.size(); ++i)
+	    {
+		b_matrix.coeffRef(i, b_index(i)) = b(i);
+	    }
+
+	    /* Increment incomplete response matrix `simulate_Y`
+	       with simulated random effects component
+	    */
+	    simulate_Y += Z * b_matrix;
 	}
 
+
+	/* Predicted incidence ---------------------------------------------- */
+	
 	/* Log cumulative incidence (since time -Inf) */
         log_curve = eval_log_curve(time, time_seg_len,
 				   curve_flag, do_excess,
@@ -704,11 +698,16 @@ Type objective_function<Type>::operator() ()
 	    log_cases += offsets;
 	}
 
-	/* Simulate time series */
-	for (int i = 0, s = 0; s < N; i += x_seg_len(s), s++)
-	{ /* loop over segments */
-	    for (int k = 0; k < x_seg_len(s); k++)
-	    { /* loop over within-segment index */
+
+	/* Simulated time series -------------------------------------------- */
+
+	/* Update `x` in place with simulated observations */
+	int n;
+	for (int s = 0, i = 0; s < N; ++s)
+	{
+	    n = x_seg_len(s);
+	    for (int k = 0; k < n; ++k)
+	    {
 	        switch(family_flag)
 		{
 		case pois:
@@ -720,9 +719,9 @@ Type objective_function<Type>::operator() ()
 		    /* usage: rnbinom_robust(log_mu, log_size) */
 		    break;
 		}
-	    } /* loop over within-segment index */
-	} /* loop over segments */
-	
+	    }
+	    i += n;
+	}
 	REPORT(x);
     }
 

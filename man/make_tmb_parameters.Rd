@@ -27,12 +27,12 @@ informative starting point.}
 A \link{list} with elements:
 \item{beta}{
   A \link[=double]{numeric} vector of length
-  \code{\link{sum}(tmb_data$beta_seg_len)} listing
+  \code{\link{length}(tmb_data$beta_index)} listing
   initial values for fixed effects coefficients.
 }
 \item{b}{
   A \link[=double]{numeric} vector of length
-  \code{\link{sum}(tmb_data$b_seg_len)} listing initial values
+  \code{\link{length}(tmb_data$b_index)} listing initial values
   for random effects coefficients (unit variance scale).
 }
 \item{theta}{

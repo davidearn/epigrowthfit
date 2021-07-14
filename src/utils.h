@@ -15,7 +15,8 @@ bool is_finite(Type x)
 /* Decrease all elements of an integer vector `x` by an integer `k` */
 vector<int> decrement(vector<int> x, int k = 1)
 {
-    for (int i = 0; i < x.size(); i++)
+    int n = x.size();
+    for (int i = 0; i < n; ++i)
     {
         x(i) -= k;
     }
@@ -29,34 +30,11 @@ int nchar(int i)
     {
         return 1 + (int) log10((double) i);
     }
-    else if (i < 0)
+    if (i < 0)
     {
         return 1 + nchar(-i);
     }
-    else
-    {
-        return 1;
-    }
-}
-
-/* Check if an integer vector has at least one non-negative element */
-bool any_geq_zero(vector<int> x)
-{
-    int n = x.size();
-    if (n == 0)
-    {
-        return false;
-    }
-    bool yes = false;
-    for (int i = 0; i < n; i++)
-    {
-        if (x(i) >= 0)
-	{
-	    yes = true;
-	    break;
-	}
-    }
-    return yes;
+    return 1;
 }
 
 /* Poisson density with robust parametrization */
@@ -81,12 +59,12 @@ template<class Type>
 vector<Type> logspace_diff(vector<Type> log_x)
 {
     int n = log_x.size() - 1;
-    vector<Type> log_diff_x(n);
-    for (int i = 0; i < n; i++)
+    for (int i = 0; i < n; ++i)
     {
-        log_diff_x(i) = logspace_sub(log_x(i+1), log_x(i));
+        log_x(i) = logspace_sub(log_x(i+1), log_x(i));
     }
-    return log_diff_x;
+    log_x.conservativeResize(n);
+    return log_x;
 }
 
 /* Compute `c(log(diff(x1)), ..., log(diff(xn)))`
@@ -97,15 +75,14 @@ vector<Type> logspace_diff(vector<Type> log_x, vector<int> len)
 {
     int N = len.size();
     int n;
-    vector<Type> log_diff_x(log_x.size() - N);
-    for (int s = 0, i = 0; s < N; s++)
+    for (int s = 0, i = 0; s < N; ++s)
     {
         n = len(s);
-        vector<Type> log_x_segment = log_x.segment(i + s, n);
-        log_diff_x.segment(i, n - 1) = logspace_diff(log_x_segment);
+        log_x.segment(i, n - 1) = logspace_diff((vector<Type>) log_x.segment(i + s, n));
 	i += n - 1;
     }
-    return log_diff_x;
+    log_x.conservativeResize(log_x.size() - N);
+    return log_x;
 }
 
 /* Compute `log(cumsum(x))` given `log(x)` */
@@ -113,13 +90,11 @@ template<class Type>
 vector<Type> logspace_cumsum(vector<Type> log_x)
 {
     int n = log_x.size();
-    vector<Type> log_cumsum_x(n);
-    log_cumsum_x(0) = log_x(0);
-    for (int i = 1; i < n; i++)
+    for (int i = 1; i < n; ++i)
     {
-        log_cumsum_x(i) = logspace_add(log_cumsum_x(i-1), log_x(i));
+        log_x(i) = logspace_add(log_x(i-1), log_x(i));
     }
-    return log_cumsum_x;
+    return log_x;
 }
 
 /* Compute `c(log(cumsum(x1)), ..., log(cumsum(xn)))`
@@ -130,67 +105,13 @@ vector<Type> logspace_cumsum(vector<Type> log_x, vector<int> len)
 {
     int N = len.size();
     int n;
-    vector<Type> log_cumsum_x(log_x.size());
-    for (int s = 0, i = 0; s < N; s++)
+    for (int s = 0, i = 0; s < N; ++s)
     {
         n = len(s);
-        vector<Type> log_x_segment = log_x.segment(i, n);
-        log_cumsum_x.segment(i, n) = logspace_cumsum(log_x_segment);
+        log_x.segment(i, n) = logspace_cumsum((vector<Type>) log_x.segment(i, n));
 	i += n;
     }
-    return log_cumsum_x;
-}
-
-/* Compute `log(x + a)` given vector `log(x)` and scalar `log(a)` */
-template<class Type>
-vector<Type> logspace_add(vector<Type> log_x, Type log_a)
-{
-    int n = log_x.size();
-    vector<Type> log_x_plus_a(n);
-    for (int i = 0; i < n; i++)
-    {
-        log_x_plus_a(i) = logspace_add(log_x(i), log_a);
-    }
-    return log_x_plus_a;
-}
-
-/* Compute `log(x + a)` given vectors `log(x)` and `log(a)` of equal length */
-template<class Type>
-vector<Type> logspace_add(vector<Type> log_x, vector<Type> log_a)
-{
-    int n = log_x.size();
-    vector<Type> log_x_plus_a(n);
-    for (int i = 0; i < n; i++)
-    {
-        log_x_plus_a(i) = logspace_add(log_x(i), log_a(i));
-    }
-    return log_x_plus_a;
-}
-
-/* Compute `log(x - a)` given vector `log(x)` and scalar `log(a)` */
-template<class Type>
-vector<Type> logspace_sub(vector<Type> log_x, Type log_a)
-{
-    int n = log_x.size();
-    vector<Type> log_x_minus_a(n);
-    for (int i = 0; i < n; i++)
-    {
-        log_x_minus_a(i) = logspace_sub(log_x(i), log_a);
-    }
-    return log_x_minus_a;
-}
-
-/* Compute `log(x - a)` given vectors `log(x)` and `log(a)` of equal length */
-template<class Type>
-vector<Type> logspace_sub(vector<Type> log_x, vector<Type> log_a)
-{
-    int n = log_x.size();
-    vector<Type> log_x_minus_a(n);
-    for (int i = 0; i < n; i++)
-    {
-        log_x_minus_a(i) = logspace_sub(log_x(i), log_a(i));
-    }
-    return log_x_minus_a;
+    return log_x;
 }
 
 /* Recycle a vector `x` to length `len` starting from index `from` */
@@ -200,36 +121,46 @@ vector<Type> rep_len_from(vector<Type> x, int len, int from = 0)
     int n = x.size();
     if (from > 0)
     {
-	vector<Type> x1 = x.segment(0, from);
-	vector<Type> x2 = x.segment(from, n - from);
+	vector<Type> x1 = x.head(from);
+	vector<Type> x2 = x.tail(n - from);
 	x << x2,x1;
-    }
-    if (len < n)
-    {
-        return x.segment(0, len);
     }
     if (len == n)
     {
         return x;
     }
-    
-    int len0 = n * ((int) len / n);
-    int len_minus_len0 = len - len0;
-
-    vector<Type> x_rep(len);
+    if (len < n)
+    {
+        return x.head(len);
+    }
+    int len0 = n * (len / n);
+    vector<Type> res(len);
     for (int i = 0; i < len0; i += n)
     {
-	x_rep.segment(i, n) = x;
+        res.segment(i, n) = x;
     }
-    if (len_minus_len0 > 0)
+    if (len0 < len)
     {
-        x_rep.segment(len0, len_minus_len0) = x.segment(0, len_minus_len0);
+        res.tail(len - len0) = x.head(len - len0);
     }
-    return x_rep;
+    return res;
 }
 
 template<class Type>
 bool is_nll_term_ok(Type nll_term, double tol = 1.0e+09)
 {
     return is_finite(nll_term) && asDouble(nll_term) < tol;
+}
+
+template<class Type>
+Eigen::SparseMatrix<Type> as_sparse_matrix(vector<Type> x, vector<int> index, vector<int> nnz)
+{
+    int n = x.size();
+    Eigen::SparseMatrix<Type> res(x.size(), nnz.size());
+    res.reserve(nnz);
+    for (int i = 0; i < n; ++i)
+    {
+        res.insert(i, index(i)) = x(i);
+    }
+    return res;
 }
