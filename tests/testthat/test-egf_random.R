@@ -64,7 +64,6 @@ test_that("gompertz", {
   expect_equal(mm$best[index$theta[-(1:4)]], zz$actual[index$theta[-(1:4)]], tolerance = 2e-1)
 })
 
-
 test_that("logistic", {
   r <- log(2) / 20
   tinfl <- 100

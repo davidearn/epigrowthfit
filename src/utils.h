@@ -1,6 +1,6 @@
 /* Similar to R function `is.na` */
 template<class Type>
-bool is_NA_real_(Type x)
+bool is_na(Type x)
 {
     return R_IsNA(asDouble(x));
 }
@@ -12,18 +12,8 @@ bool is_finite(Type x)
     return R_finite(asDouble(x));
 }
 
-/* Increase all elements of an integer vector `x` by an integer `k` */
-vector<int> increment(vector<int> x, int k)
-{
-    for (int i = 0; i < x.size(); i++)
-    {
-        x(i) += k;
-    }
-    return x;
-}
-
 /* Decrease all elements of an integer vector `x` by an integer `k` */
-vector<int> decrement(vector<int> x, int k)
+vector<int> decrement(vector<int> x, int k = 1)
 {
     for (int i = 0; i < x.size(); i++)
     {
@@ -83,15 +73,16 @@ Type rnbinom_robust(Type log_mu, Type log_size)
 {
     Type log_prob = log_size - logspace_add(log_mu, log_size);
     return rnbinom(exp(log_size), exp(log_prob));
-    // usage: rnbinom(size, prob)
+    /* usage: rnbinom(size, prob) */
 }
 
 /* Compute `log(diff(x))` given `log(x)` */
 template<class Type>
-vector<Type> logspace_diff_1(vector<Type> log_x)
+vector<Type> logspace_diff(vector<Type> log_x)
 {
-    vector<Type> log_diff_x(log_x.size() - 1);
-    for (int i = 0; i < log_x.size() - 1; i++)
+    int n = log_x.size() - 1;
+    vector<Type> log_diff_x(n);
+    for (int i = 0; i < n; i++)
     {
         log_diff_x(i) = logspace_sub(log_x(i+1), log_x(i));
     }
@@ -102,25 +93,29 @@ vector<Type> logspace_diff_1(vector<Type> log_x)
    given `c(log(x1), ..., log(xn)) and `c(length(x1), ..., length(xn))`
 */
 template<class Type>
-vector<Type> logspace_diff_n(vector<Type> log_x, vector<int> len)
+vector<Type> logspace_diff(vector<Type> log_x, vector<int> len)
 {
-    vector<Type> log_diff_x(log_x.size() - len.size());
-    for (int s = 0, i = 0; s < len.size(); s++) // loop over segments
+    int N = len.size();
+    int n;
+    vector<Type> log_diff_x(log_x.size() - N);
+    for (int s = 0, i = 0; s < N; s++)
     {
-        vector<Type> log_x_segment = log_x.segment(i + s, len(s));
-        log_diff_x.segment(i, len(s) - 1) = logspace_diff_1(log_x_segment); 
-        i += len(s) - 1;
+        n = len(s);
+        vector<Type> log_x_segment = log_x.segment(i + s, n);
+        log_diff_x.segment(i, n - 1) = logspace_diff(log_x_segment);
+	i += n - 1;
     }
     return log_diff_x;
 }
 
 /* Compute `log(cumsum(x))` given `log(x)` */
 template<class Type>
-vector<Type> logspace_cumsum_1(vector<Type> log_x)
+vector<Type> logspace_cumsum(vector<Type> log_x)
 {
-    vector<Type> log_cumsum_x(log_x.size());
+    int n = log_x.size();
+    vector<Type> log_cumsum_x(n);
     log_cumsum_x(0) = log_x(0);
-    for (int i = 1; i < log_x.size(); i++)
+    for (int i = 1; i < n; i++)
     {
         log_cumsum_x(i) = logspace_add(log_cumsum_x(i-1), log_x(i));
     }
@@ -131,26 +126,69 @@ vector<Type> logspace_cumsum_1(vector<Type> log_x)
    given `c(log(x1), ..., log(xn)) and `c(length(x1), ..., length(xn))`
 */
 template<class Type>
-vector<Type> logspace_cumsum_n(vector<Type> log_x, vector<int> len)
+vector<Type> logspace_cumsum(vector<Type> log_x, vector<int> len)
 {
+    int N = len.size();
+    int n;
     vector<Type> log_cumsum_x(log_x.size());
-    for (int s = 0, i = 0; s < len.size(); s++) // loop over segments
+    for (int s = 0, i = 0; s < N; s++)
     {
-        vector<Type> log_x_segment = log_x.segment(i, len(s));
-        log_cumsum_x.segment(i, len(s)) = logspace_cumsum_1(log_x_segment); 
-        i += len(s);
+        n = len(s);
+        vector<Type> log_x_segment = log_x.segment(i, n);
+        log_cumsum_x.segment(i, n) = logspace_cumsum(log_x_segment);
+	i += n;
     }
     return log_cumsum_x;
 }
 
+/* Compute `log(x + a)` given vector `log(x)` and scalar `log(a)` */
+template<class Type>
+vector<Type> logspace_add(vector<Type> log_x, Type log_a)
+{
+    int n = log_x.size();
+    vector<Type> log_x_plus_a(n);
+    for (int i = 0; i < n; i++)
+    {
+        log_x_plus_a(i) = logspace_add(log_x(i), log_a);
+    }
+    return log_x_plus_a;
+}
+
+/* Compute `log(x + a)` given vectors `log(x)` and `log(a)` of equal length */
+template<class Type>
+vector<Type> logspace_add(vector<Type> log_x, vector<Type> log_a)
+{
+    int n = log_x.size();
+    vector<Type> log_x_plus_a(n);
+    for (int i = 0; i < n; i++)
+    {
+        log_x_plus_a(i) = logspace_add(log_x(i), log_a(i));
+    }
+    return log_x_plus_a;
+}
+
 /* Compute `log(x - a)` given vector `log(x)` and scalar `log(a)` */
 template<class Type>
-vector<Type> logspace_sub_n_1(vector<Type> log_x, Type log_a)
+vector<Type> logspace_sub(vector<Type> log_x, Type log_a)
 {
-    vector<Type> log_x_minus_a(log_x.size());
-    for (int i = 0; i < log_x.size(); i++)
+    int n = log_x.size();
+    vector<Type> log_x_minus_a(n);
+    for (int i = 0; i < n; i++)
     {
-        log_x_minus_a = logspace_sub(log_x, log_a);
+        log_x_minus_a(i) = logspace_sub(log_x(i), log_a);
+    }
+    return log_x_minus_a;
+}
+
+/* Compute `log(x - a)` given vectors `log(x)` and `log(a)` of equal length */
+template<class Type>
+vector<Type> logspace_sub(vector<Type> log_x, vector<Type> log_a)
+{
+    int n = log_x.size();
+    vector<Type> log_x_minus_a(n);
+    for (int i = 0; i < n; i++)
+    {
+        log_x_minus_a(i) = logspace_sub(log_x(i), log_a(i));
     }
     return log_x_minus_a;
 }
@@ -188,4 +226,10 @@ vector<Type> rep_len_from(vector<Type> x, int len, int from = 0)
         x_rep.segment(len0, len_minus_len0) = x.segment(0, len_minus_len0);
     }
     return x_rep;
+}
+
+template<class Type>
+bool is_nll_term_ok(Type nll_term, double tol = 1.0e+09)
+{
+    return is_finite(nll_term) && asDouble(nll_term) < tol;
 }

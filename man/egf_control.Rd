@@ -57,14 +57,8 @@ likelihood evaluations:
   A message is printed whenever a negative log likelihood term
   is non-finite or exceeds \code{1e+09}.
 }
-\item{3}{
+\item{2}{
   All negative log likelihood terms are printed.
-}
-\item{2, 4}{
-  Equivalent to 1 and 3, but with further printing of the
-  response matrix \code{Y}. \code{Y[i, j]} is the current
-  value of nonlinear or dispersion model parameter \code{j}
-  (link scale) in fitting window \code{i}.
 }
 }
 

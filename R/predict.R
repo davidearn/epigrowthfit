@@ -193,13 +193,13 @@ predict.egf <- function(object,
   len <- lengths(time_split, use.names = FALSE)
   l <- list(
     what_flag = as.integer(c("log_int_inc", "log_cum_inc", "log_rt") %in% what),
-    t_predict = time - rep.int(starts, len),
-    t_predict_seg_len = len,
-    day1_predict = object$tmb_args$data$day1[subset],
-    Yo_predict = object$tmb_args$data$Yo[subset, , drop = FALSE],
-    Xs_predict = object$tmb_args$data$Xs[subset, , drop = FALSE],
-    Xd_predict = object$tmb_args$data$Xd[subset, , drop = FALSE],
-    Z_predict = object$tmb_args$data$Z[subset, , drop = FALSE]
+    predict_time = time - rep.int(starts, len),
+    predict_time_seg_len = len,
+    predict_day1 = object$tmb_args$data$day1[subset],
+    predict_Yo = object$tmb_args$data$Yo[subset, , drop = FALSE],
+    predict_Xs = object$tmb_args$data$Xs[subset, , drop = FALSE],
+    predict_Xd = object$tmb_args$data$Xd[subset, , drop = FALSE],
+    predict_Z = object$tmb_args$data$Z[subset, , drop = FALSE]
   )
   object$tmb_args$data <- c(object$tmb_args$data, l)
   object$tmb_args$data$predict_flag <- 1L

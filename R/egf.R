@@ -424,14 +424,8 @@ egf_model <- function(curve = c("logistic", "richards", "exponential", "subexpon
 #'   A message is printed whenever a negative log likelihood term
 #'   is non-finite or exceeds \code{1e+09}.
 #' }
-#' \item{3}{
+#' \item{2}{
 #'   All negative log likelihood terms are printed.
-#' }
-#' \item{2, 4}{
-#'   Equivalent to 1 and 3, but with further printing of the
-#'   response matrix \code{Y}. \code{Y[i, j]} is the current
-#'   value of nonlinear or dispersion model parameter \code{j}
-#'   (link scale) in fitting window \code{i}.
 #' }
 #' }
 #'
@@ -472,7 +466,7 @@ egf_control <- function(optimizer = egf_optimizer(),
     )
   )
   stop_if_not_true_false(trace, allow_numeric = TRUE)
-  trace <- min(4L, max(0L, as.integer(trace))) # coercion to `0:4`
+  trace <- min(2L, max(0L, as.integer(trace))) # coercion to `0:2`
   stop_if_not_true_false(profile)
   stop_if_not_true_false(sparse_X)
   stop_if_not_integer(omp_num_threads, "positive")

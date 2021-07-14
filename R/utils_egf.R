@@ -948,20 +948,19 @@ make_tmb_args <- function(model, frame, frame_par, priors, control,
 #'
 #' A \link{list} inheriting from \link{class} \code{"tmb_data"},
 #' with elements:
-#' \item{t}{
+#' \item{time}{
 #'   A \link[=double]{numeric} vector of length \code{n} giving time
 #'   as a number of days since the earliest time point in the current
 #'   fitting window.
 #' }
-#' \item{t_seg_len}{
+#' \item{time_seg_len}{
 #'   An \link{integer} vector of length \code{N} specifying the
 #'   length of each fitting window as a number of time points.
 #' }
 #' \item{x}{
-#'   A \link[=double]{numeric} vector of length \code{n-N} giving
-#'   incidence in each fitting window. \code{x[i]} in window \code{k}
-#'   is the number of cases observed from time \code{t[k+i-1]}
-#'   to time \code{t[k+i]}.
+#'   A \link[=double]{numeric} vector of length \code{n-N} giving incidence
+#'   in each fitting window. \code{x[i]} in window \code{k} is the number
+#'   of cases observed from \code{time[k+i-1]} to \code{time[k+i]}.
 #' }
 #' \item{day1}{
 #'   If \code{model$day_of_week > 0}, then an \link{integer} vector
@@ -1044,12 +1043,12 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
   frame <- frame[!is.na(frame$window), , drop = FALSE]
 
   ## Fitting window lengths as numbers of time points
-  t_seg_len <- tabulate(frame$window)
-  N <- length(t_seg_len)
+  time_seg_len <- tabulate(frame$window)
+  N <- length(time_seg_len)
 
   ## Time as number of days since earliest time point
   firsts <- which(!duplicated(frame$window))
-  t <- frame$time - rep.int(frame$time[firsts], t_seg_len)
+  time <- frame$time - rep.int(frame$time[firsts], time_seg_len)
 
   ## Incidence without unused first elements
   x <- frame$x[-firsts]
@@ -1150,8 +1149,8 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
   regularize_hyperpar <- lapply(priors[has_prior], `[[`, "parameters")
 
   l1 <- list(
-    t = t,
-    t_seg_len = t_seg_len,
+    time = time,
+    time_seg_len = time_seg_len,
     x = x,
     day1 = day1,
     Yo = Yo,
@@ -1296,13 +1295,13 @@ make_tmb_parameters <- function(tmb_data, model, frame, frame_par, do_fit, init)
       ## Time series split by fitting window
       window <- frame$window[!is.na(frame$window)]
       firsts <- which(!duplicated(window))
-      tx_split <- split(data.frame(t = tmb_data$t[-firsts], x = tmb_data$x), window[-firsts])
+      tx_split <- split(data.frame(time = tmb_data$time[-firsts], x = tmb_data$x), window[-firsts])
 
       ## Functions for computing naive estimates
       ## given a time series segment
       get_r_c0 <- function(d) {
         n <- max(2, trunc(nrow(d) / 2))
-        a_b <- try(coef(lm(log1p(cumsum(x)) ~ t, data = d, subset = seq_len(n), na.action = na.omit)))
+        a_b <- try(coef(lm(log1p(cumsum(x)) ~ time, data = d, subset = seq_len(n), na.action = na.omit)))
         if (inherits(a_b, "try-error") || any(!is.finite(a_b))) {
           return(c(0.1, 1))
         }
@@ -1501,7 +1500,7 @@ patch_gr <- function(gr, inner_optimizer) {
 make_combined <- function(object) {
   stop_if_not(
     inherits(object, "egf"),
-    m = "`object` must inherit from class \"egf\"."
+    m = "`object` must inherit from class \"egf\". See `?egf`."
   )
   l <- c(unname(object$frame_par), list(object$frame_append))
   combined <- do.call(cbind, l)

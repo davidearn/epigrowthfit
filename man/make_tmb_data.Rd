@@ -44,20 +44,19 @@ is the number of nonlinear and dispersion model parameters.]
 
 A \link{list} inheriting from \link{class} \code{"tmb_data"},
 with elements:
-\item{t}{
+\item{time}{
   A \link[=double]{numeric} vector of length \code{n} giving time
   as a number of days since the earliest time point in the current
   fitting window.
 }
-\item{t_seg_len}{
+\item{time_seg_len}{
   An \link{integer} vector of length \code{N} specifying the
   length of each fitting window as a number of time points.
 }
 \item{x}{
-  A \link[=double]{numeric} vector of length \code{n-N} giving
-  incidence in each fitting window. \code{x[i]} in window \code{k}
-  is the number of cases observed from time \code{t[k+i-1]}
-  to time \code{t[k+i]}.
+  A \link[=double]{numeric} vector of length \code{n-N} giving incidence
+  in each fitting window. \code{x[i]} in window \code{k} is the number
+  of cases observed from \code{time[k+i-1]} to \code{time[k+i]}.
 }
 \item{day1}{
   If \code{model$day_of_week > 0}, then an \link{integer} vector
