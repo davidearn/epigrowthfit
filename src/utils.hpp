@@ -1,4 +1,5 @@
-namespace egf{
+namespace egf
+{
 
 /* Similar to R function `is.na` */
 template<class Type>
@@ -13,23 +14,6 @@ bool is_finite(Type x)
 {
     return R_finite(asDouble(x));
 }
-
-/* Structure with constructor function defining a vector of vectors 
-   given an R list of numeric vectors
-*/
-template<class Type>
-struct list_of_vectors_t : vector< vector<Type> >
-{
-    list_of_vectors_t(SEXP x)
-    {
-        (*this).resize(LENGTH(x));
-        for (int i = 0; i < LENGTH(x); ++i)
-	{
-            SEXP v = VECTOR_ELT(x, i);
-            (*this)(i) = asVector<Type>(v);
-        }
-    }
-};
 
 /* Poisson density with robust parametrization */
 template<class Type>

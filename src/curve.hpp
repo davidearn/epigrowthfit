@@ -8,8 +8,8 @@ namespace egf
 */
 template<class Type>
 void eval_log_curve_exponential(vector<Type> &time,
-				Type log_r,0
-				Type log_c0)1
+				Type log_r,
+				Type log_c0)
 {
     Type r = exp(log_r);
     int n = time.size();
@@ -114,49 +114,42 @@ void eval_log_curve_richards(vector<Type> &time,
 template<class Type>
 void eval_log_curve(vector<Type> &time,
 		    const vector<Type> &Y_row,
-		    int flag_curve,
-		    int index_log_r,
-		    int index_log_alpha,
-		    int index_log_c0,
-		    int index_log_tinfl,
-		    int index_log_K,
-		    int index_logit_p,
-		    int index_log_a)
+		    const indices_t<Type> &indices,
+		    int flag_curve)
 {
     switch (flag_curve)
     {
     case exponential:
 	eval_log_curve_exponential(time,
-				   Y_row(index_log_r),
-				   Y_row(index_log_c0));
+				   Y_row(indices.index_log_r),
+				   Y_row(indices.index_log_c0));
 	break;
     case subexponential:
 	eval_log_curve_subexponential(time,
-				      Y_row(index_log_alpha),
-				      Y_row(index_log_c0),
-				      Y_row(index_logit_p));
+				      Y_row(indices.index_log_alpha),
+				      Y_row(indices.index_log_c0),
+				      Y_row(indices.index_logit_p));
 	break;
     case gompertz:
 	eval_log_curve_gompertz(time,
-				Y_row(index_log_alpha),
-				Y_row(index_log_c0),
-				Y_row(index_log_K));
+				Y_row(indices.index_log_alpha),
+				Y_row(indices.index_log_c0),
+				Y_row(indices.index_log_K));
 	break;
     case logistic:
 	eval_log_curve_logistic(time,
-				Y_row(index_log_r),
-				Y_row(index_log_tinfl),
-				Y_row(index_log_K));
+				Y_row(indices.index_log_r),
+				Y_row(indices.index_log_tinfl),
+				Y_row(indices.index_log_K));
 	break;
     case richards:
 	eval_log_curve_richards(time,
-				Y_row(index_log_r),
-				Y_row(index_log_tinfl),
-				Y_row(index_log_K),
-				Y_row(index_log_a));
+				Y_row(indices.index_log_r),
+				Y_row(indices.index_log_tinfl),
+				Y_row(indices.index_log_K),
+				Y_row(indices.index_log_a));
 	break;
     }
-    return time;
 }
 
 /* Add baseline that is linear in time
@@ -189,7 +182,7 @@ void add_offsets(vector<Type> &log_diff_curve,
 		 Type log_w4,
 		 Type log_w5,
 		 Type log_w6,
-		 int from)
+		 int from = 0)
 {
     vector<Type> log_w(7);
     log_w << Type(0.0), log_w1, log_w2, log_w3, log_w4, log_w5, log_w6;
@@ -200,11 +193,13 @@ void add_offsets(vector<Type> &log_diff_curve,
         log_diff_curve(i) += log_w(k);
     }
 } 
-  
+
+/* Subexponential model
+   log(c'(t) / c(t)) = log(alpha) - (1 - p) * log(c(t))
+*/
 template<class Type>
-vector<Type> eval_log_rt_subexponential(vector<Type> log_curve, Type log_alpha, Type logit_p)
+void eval_log_rt_subexponential(vector<Type> &log_curve, Type log_alpha, Type logit_p)
 {
-    /*  log(c'(t) / c(t)) = log(alpha) - (1 - p) * log(c(t))  */
 
     Type one_minus_p = exp(-logspace_add(Type(0.0), logit_p));
     int n = log_curve.size();
@@ -212,104 +207,86 @@ vector<Type> eval_log_rt_subexponential(vector<Type> log_curve, Type log_alpha, 
     {
 	log_curve(i) = log_alpha - one_minus_p * log_curve(i);
     }
-    return log_curve;
 }
 
+/* Gompertz model
+   log(c'(t) / c(t)) = log(alpha) + log(log(K) - log(c(t)))
+*/
 template<class Type>
-vector<Type> eval_log_rt_gompertz(vector<Type> log_curve, Type log_alpha, Type log_K)
+void eval_log_rt_gompertz(vector<Type> &log_curve, Type log_alpha, Type log_K)
 {
-    /*  log(c'(t) / c(t)) = log(alpha) + log(log(K) - log(c(t)))  */
-
     int n = log_curve.size();
     for (int i = 0; i < n; ++i)
     {
 	log_curve(i) = log_alpha + log(log_K - log_curve(i));
     }
-    return log_curve;
 }
 
+/* Logistic model
+   log(c'(t) / c(t)) = log(r) + log(1 - c(t) / K)
+*/
 template<class Type>
-vector<Type> eval_log_rt_logistic(vector<Type> log_curve, Type log_r, Type log_K)
+void eval_log_rt_logistic(vector<Type> &log_curve, Type log_r, Type log_K)
 {
-    /*  log(c'(t) / c(t)) = log(r) + log(1 - c(t) / K)  */
-
     int n = log_curve.size();
     for (int i = 0; i < n; ++i)
     {
 	log_curve(i) = log_r + logspace_sub(Type(0.0), log_curve(i) - log_K);
     }
-    return log_curve;
 }
 
+/* Richards model
+   log(c'(t) / c(t)) = log(r) + log(1 - (c(t) / K)^a)
+*/
 template<class Type>
-vector<Type> eval_log_rt_richards(vector<Type> log_curve, Type log_r, Type log_K, Type log_a)
+void eval_log_rt_richards(vector<Type> &log_curve, Type log_r, Type log_K, Type log_a)
 {
-    /*  log(c'(t) / c(t)) = log(r) + log(1 - (c(t) / K)^a)  */
-
     Type a = exp(log_a);
     int n = log_curve.size();
     for (int i = 0; i < n; ++i)
     {
 	log_curve(i) = log_r + logspace_sub(Type(0.0), a * (log_curve(i) - log_K));
     }
-    return log_curve;
 }
 
 
 template<class Type>
-vector<Type> eval_log_rt_exact(vector<Type> time,
-			       vector<Type> log_curve,
-			       vector<int> len,
-			       int curve_flag,
-			       bool do_excess,
-			       matrix<Type> Y,
-			       int j_log_r,
-			       int j_log_alpha,
-			       int j_log_K,
-			       int j_logit_p,
-			       int j_log_a,
-			       int j_log_b)
+vector<Type> eval_log_rt_exact(vector<Type> log_curve,
+			       const vector<Type> &Y_row,
+			       const indices_t<Type> &indices,
+			       int flag_curve)
 {
-    int N = len.size();
-    int n;
-    for (int s = 0, i = 0; s < N; ++s)
+    switch (flag_curve)
     {
-	n = len(s);
-	if (curve_flag == exponential)
-	{
-	    log_curve.segment(i, n).fill(Y(s, j_log_r));
-	}
-	else
-	{
-	    vector<Type> log_curve_segment = log_curve.segment(i, n);
-	    if (do_excess)
-	    {
-		log_curve_segment = add_baseline(log_curve_segment, Y(s, j_log_b), (vector<Type>) -time.segment(i, n));
-	    }
-
-	    switch (curve_flag)
-	    {
-	    case subexponential:
-		log_curve.segment(i, n) = eval_log_rt_subexponential(log_curve_segment, Y(s, j_log_alpha), Y(s, j_logit_p));
-		break;
-	    case gompertz:
-		log_curve.segment(i, n) = eval_log_rt_gompertz(log_curve_segment, Y(s, j_log_alpha), Y(s, j_log_K));
-		break;
-	    case logistic:
-		log_curve.segment(i, n) = eval_log_rt_logistic(log_curve_segment, Y(s, j_log_r), Y(s, j_log_K));
-		break;
-	    case richards:
-		log_curve.segment(i, n) = eval_log_rt_richards(log_curve_segment, Y(s, j_log_r), Y(s, j_log_K), Y(s, j_log_a));
-		break;
-	    }
-	}
-	i += n;
+    case exponential:
+        log_curve.fill(Y_row(indices.index_log_r));
+    case subexponential:
+        eval_log_rt_subexponential(log_curve,
+				   Y_row(indices.index_log_alpha),
+				   Y_row(indices.index_logit_p));
+	break;
+    case gompertz:
+	eval_log_rt_gompertz(log_curve,
+			     Y(indices.index_log_alpha),
+			     Y(indices.index_log_K));
+	break;
+    case logistic:
+	eval_log_rt_logistic(log_curve,
+			     Y(indices.index_log_r),
+			     Y(indices.index_log_K));
+	break;
+    case richards:
+	eval_log_rt_richards(log_curve,
+			     Y(indices.index_log_r),
+			     Y(indices.index_log_K),
+			     Y(indices.index_log_a));
+	break;
     }
     return log_curve;
 }
 
 template<class Type>
-vector<Type> eval_log_rt_approx(vector<Type> log_cases,
+vector<Type> eval_log_rt_approx(vector<Type> log_diff_curve,
 				vector<int> len)
 {
     int N = len.size();
@@ -327,13 +304,13 @@ vector<Type> eval_log_rt_approx(vector<Type> log_cases,
     Type ssd_time = log(28.0);
 
     /* In each segment, 6 elements are lost due to edge effects */
-    vector<Type> log_rt(log_cases.size() - 6 * N);
+    vector<Type> log_rt(log_diff_curve.size() - 6 * N);
     for (int s = 0, i1 = 0, i2 = 0; s < N; ++s)
     {
 	n = len(s);
 	for (int k = 0; k < n - 6; ++k)
 	{
-	    x = log_cases.segment(i2+k, 7);
+	    x = log_diff_curve.segment(i2+k, 7);
 	    xbar.fill(x.sum() / Type(7));
 	    log_rt(i1+k) = log((time * (x - xbar)).sum()) - ssd_time;
 	}
@@ -343,4 +320,4 @@ vector<Type> eval_log_rt_approx(vector<Type> log_cases,
     return log_rt;
 }
 
-}
+} // namespace egf

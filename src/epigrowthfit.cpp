@@ -59,24 +59,11 @@ Type objective_function<Type>::operator() ()
     /* Number of nonlinear model parameters */
     int p = Yo.cols();
     
-    /* Column indices of nonlinear model parameters in response matrix
+    /* Structure storing integer column indices of nonlinear model parameters 
+       in response matrix
        - val={0,...p-1} if parameter is used, val=-1 otherwise
     */
-    DATA_INTEGER(index_log_r);
-    DATA_INTEGER(index_log_alpha);
-    DATA_INTEGER(index_log_c0);
-    DATA_INTEGER(index_log_tinfl);
-    DATA_INTEGER(index_log_K);
-    DATA_INTEGER(index_logit_p);
-    DATA_INTEGER(index_log_a);
-    DATA_INTEGER(index_log_b);
-    DATA_INTEGER(index_log_nbdisp);
-    DATA_INTEGER(index_log_w1);
-    DATA_INTEGER(index_log_w2);
-    DATA_INTEGER(index_log_w3);
-    DATA_INTEGER(index_log_w4);
-    DATA_INTEGER(index_log_w5);
-    DATA_INTEGER(index_log_w6);
+    DATA_STRUCT(indices, egf::indices_t);
 
     /* Combined fixed effects model matrix
        - dim=(N, length(beta)) if do_sparse_X=false, dim=(N, 0) otherwise
@@ -91,9 +78,6 @@ Type objective_function<Type>::operator() ()
        - dim=(N, length(b))
     */
     DATA_SPARSE_MATRIX(Z);
-
-    /* Indicator for random effects model */
-    bool any_random_effects = (Z.cols() > 0);
 
     /* "Factors" splitting model matrix columns by relation 
        to a nonlinear model parameter
@@ -129,49 +113,16 @@ Type objective_function<Type>::operator() ()
     int M = block_rows.size();
 
     /* List of vectors of hyperparameters for regularization */
-    DATA_STRUCT(regularize_hyperpar, egf::list_of_vectors_t);
-    
+    DATA_STRUCT(hyperparameters, egf::list_of_vectors_t);
 
-    /* Flags ================================================================ */
-    
-    /* Model of cumulative incidence (enum.h) */
-    DATA_INTEGER(flag_curve);
-    /* Baseline term in model of cumulative incidence (1=yes, 0=no) */
-    DATA_INTEGER(flag_excess);
-    /* Model of observation error (enum.h) */
-    DATA_INTEGER(flag_family);
-    /* Day of week effects (1=yes, 0=no) */
-    DATA_INTEGER(flag_day_of_week);
-    /* Priors on nonlinear model parameters (enum.h)
-       - length=p
-       - val=-1 if no prior
+    /* Structure storing integer and Boolean flags specifying model
+       and template behaviour
     */
-    DATA_IVECTOR(flag_regularize);
-    /* Trace
-       0=nothing
-       1=degenerate nll terms
-       2=all nll terms
-    */
-    DATA_INTEGER(flag_trace);
-    /* X format (1=sparse, 0=dense) */
-    DATA_INTEGER(flag_sparse_X);
-    /* predict (1=yes, 0=no) */
-    DATA_INTEGER(flag_predict);
-
-    bool do_excess        = (flag_excess      == 1);
-    bool do_day_of_week   = (flag_day_of_week == 1);
-    bool do_trace         = (flag_trace       >= 1);
-    bool do_trace_verbose = (flag_trace       >= 2);
-    bool do_sparse_X      = (flag_sparse_X    == 1);
-    bool do_predict       = (flag_predict     == 1);
-    bool do_simulate      = this->do_simulate;
-    bool do_regularize    = false;
-    for (int i = 0; !do_regularize && i < p; ++i)
-    {
-        do_regularize = flag_regularize(i) >= 0;
-    }
+    DATA_STRUCT(flags, egf::flags_t);
+    flags.do_simulate = this->do_simulate;
+    flags.do_random_effects = (Z.cols() > 0);
     
-
+    
     /* Coefficient matrices ================================================= */
 
     /* Fixed effects, to be multiplied on the left by `X` */
@@ -205,7 +156,7 @@ Type objective_function<Type>::operator() ()
     /* List of corresponding negative log density functions */
     vector< density::MVNORM_t<Type> > list_of_nld(M);
 
-    if (any_random_effects)
+    if (flags.do_random_effects)
     {
         b_matrix.resize(b.size(), p);
         b_matrix.reserve(b_index_tab);
@@ -247,7 +198,7 @@ Type objective_function<Type>::operator() ()
 	    for (int j = 0; j < nc; ++j)
 	    { /* loop over group levels */
 	        /* Random effects block column */
-	        u = (do_simulate) ? list_of_nld(m).simulate() : b.segment(i2, nr);
+	        u = (flags.do_simulate) ? list_of_nld(m).simulate() : b.segment(i2, nr);
 		list_of_blocks(m).col(j) = u;
 
 		/* Insertion of scaled elements in coefficient matrix */
@@ -268,16 +219,16 @@ Type objective_function<Type>::operator() ()
     /* Response matrix ====================================================== */
 
     /* Add fixed effects component */
-    Y += (do_sparse_X ? Xs : Xd) * beta_matrix;
+    Y += (flags.do_sparse_X ? Xs : Xd) * beta_matrix;
 
     /* Add random effects component */
-    if (any_random_effects)
+    if (flags.do_random_effects)
     {
         Y += Z * b_matrix;
     }
     
     REPORT(Y);
-    if (!do_predict)
+    if (!flags.do_predict)
     {
         ADREPORT(Y);
     }
@@ -285,70 +236,55 @@ Type objective_function<Type>::operator() ()
 
     /* Negative log likelihood ============================================== */
 
-    Type nll = 0.0;    
-    if (do_trace)
-    {
-        std::cout << "Y = \n" << Y << "\n";
-	printf("nll initialized to %.6e\n", asDouble(nll));
-    }
+    Type nll = Type(0.0);
     
     /* Observation likelihood ----------------------------------------------- */
 
-    nll += egf::get_nll_observations(time,
-				     x,
-				     len,
-				     Y,
-				     flag_curve,
-				     index_log_r,
-				     index_log_alpha,
-				     index_log_c0,
-				     index_log_tinfl,
-				     index_log_K,
-				     index_logit_p,
-				     index_log_a,
-				     do_excess,
-				     index_log_b,
-				     do_day_of_week,
-				     index_log_w1,
-				     index_log_w2,
-				     index_log_w3,
-				     index_log_w4,
-				     index_log_w5,
-				     index_log_w6,
-				     day1,
-				     flag_family,
-				     index_log_nbdisp,
-				     do_trace,
-				     do_trace_verbose);
-    if (do_trace)
+    if (flags.do_trace && !flags.do_simulate)
     {
+        std::cout << "Y = \n" << Y << "\n";
+	printf("nll initialized to %.6e\n", asDouble(nll));
+	std::cout << "commencing loop over observations\n";
+    }
+    add_nll_ob(nll, this, time, time_seg_len, x, Y, indices, flags, day1);
+    if (flags.do_simulate)
+    {
+        REPORT(x);
+	return nll;
+    }
+    if (flags.do_trace)
+    {
+        std::cout << "loop over observations complete\n";
         printf("nll is %.6e\n", asDouble(nll));
     }
-
+    
     /* Random effect likelihood --------------------------------------------- */
 
-    if (any_random_effects) {
-
-        nll += egf::get_nll_random_effects(list_of_blocks,
-					   list_of_nld,
-					   do_trace,
-					   do_trace_verbose);
-	if (do_trace)
+    if (flags.do_random_effects) {
+        if (flags.do_trace)
 	{
+	    std::cout << "commencing loop over random effects\n";
+	}
+	add_nll_re(nll, this, list_of_blocks, list_of_nld, flags);
+	if (flags.do_trace)
+	{
+	    std::cout << "loop over random effects complete\n";
 	    printf("nll is %.6e\n", asDouble(nll));
 	}
     }
 
-    /* Nonlinear model parameter likelihood --------------------------------- */
+    /* Parameter value likelihood ------------------------------------------- */
 
-    if (do_regularize)
+    if (flags.do_regularize)
     {
-        nll += egf::get_nll_parameter_values(Y,
-					     regularize_hyperpar,
-					     do_trace,
-					     do_trace_verbose);
-        if (do_trace)
+        if (flags.do_trace)
 	{
+	    std::cout << "commencing loop over regularized parameters\n";
+	}
+        add_nll_pv(nll, this, Y, hyperparameters, flags);
+        if (flags.do_trace)
+	{
+	    std::cout << "loop over regularized parameters complete\n";
 	    printf("nll is %.6e\n", asDouble(nll));
 	}
     }
@@ -356,7 +292,7 @@ Type objective_function<Type>::operator() ()
 
     /* Prediction =========================================================== */
     
-    if (do_predict)
+    if (flags.do_predict)
     {
         /* New data --------------------------------------------------------- */
 
@@ -396,20 +332,17 @@ Type objective_function<Type>::operator() ()
 	*/
 	DATA_MATRIX(predict_Y);
 
-	
-	/* New flags -------------------------------------------------------- */
-
-	/* predict (1=yes, 0=no) */
-	DATA_IVECTOR(what_flag);
-	bool do_predict_lii = (what_flag(0) == 1);
-	bool do_predict_lci = (what_flag(1) == 1);
-	bool do_predict_lrt = (what_flag(2) == 1);
+	/* Flags */
+	DATA_IVECTOR(flag_what);
+	flags.do_predict_lii = (flag_what(0) == 1);
+	flags.do_predict_lci = (flag_what(1) == 1);
+	flags.do_predict_lrt = (flag_what(2) == 1);
 
 	
 	/* Response matrix -------------------------------------------------- */
 	
-	predict_Y += (do_sparse_X ? predict_Xs : predict_Xd) * beta_matrix;
-	if (any_random_effects)
+	predict_Y += (flags.do_sparse_X ? predict_Xs : predict_Xd) * beta_matrix;
+	if (flags.do_random_effects)
     	{
 	    predict_Y += predict_Z * b_matrix;
     	}
@@ -522,43 +455,6 @@ Type objective_function<Type>::operator() ()
     }
 
 
-    /* Simulation =========================================================== */
-
-    SIMULATE
-    {
-        
-
-
-	/* Predicted incidence ---------------------------------------------- */
-	
-	
-
-
-	/* Simulated time series -------------------------------------------- */
-
-	/* Update `x` in place with simulated observations */
-	int n;
-	for (int s = 0, i = 0; s < N; ++s)
-	{
-	    n = x_seg_len(s);
-	    for (int k = 0; k < n; ++k)
-	    {
-	        switch(family_flag)
-		{
-		case pois:
-		    x(i+k) = rpois(exp(log_cases(i+k)));
-		    /* usage: rpois(lambda) */
-		    break;
-		case nbinom:
-		    x(i+k) = rnbinom_robust(log_cases(i+k), simulate_Y(s, index_log_nbdisp));
-		    /* usage: rnbinom_robust(log_mu, log_size) */
-		    break;
-		}
-	    }
-	    i += n;
-	}
-	REPORT(x);
-    }
 
     return nll;
 }
