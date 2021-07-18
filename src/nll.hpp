@@ -17,7 +17,7 @@ void add_nll_ob(Type &nll,
 {
     int N = time_seg_len.size();
     int n;
-    vector<Type> Y_row(Y.cols());
+    vector<Type> Y_row;
     vector<Type> log_diff_curve;
     
     for (int s = 0, i = 0; s < N; ++s)
@@ -44,7 +44,7 @@ void add_nll_ob(Type &nll,
 	}
 
 	/* Log interval incidence */
-	egf::logspace_diff(&log_diff_curve);
+	egf::logspace_diff(log_diff_curve);
 	if (flags.do_day_of_week)
 	{
 	    egf::add_offsets(log_diff_curve,

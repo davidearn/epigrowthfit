@@ -31,10 +31,10 @@ Type rnbinom_robust(Type log_mu, Type log_size)
     return rnbinom(exp(log_size), exp(log_prob));
     /* usage: rnbinom(size, prob) */
 }
-
+  
 /* Compute `log(diff(x))` given `log(x)` */
 template<class Type>
-vector<Type> logspace_diff(vector<Type> log_x)
+void logspace_diff(vector<Type> &log_x)
 {
     int n = log_x.size() - 1;
     for (int i = 0; i < n; ++i)
@@ -42,31 +42,17 @@ vector<Type> logspace_diff(vector<Type> log_x)
         log_x(i) = logspace_sub(log_x(i+1), log_x(i));
     }
     log_x.conservativeResize(n);
-    return log_x;
-}
-
-template<class Type>
-void logspace_diff(vector<Type> *log_x)
-{
-    *log_x = logspace_diff(*log_x);
 }
 
 /* Compute `log(cumsum(x))` given `log(x)` */
 template<class Type>
-vector<Type> logspace_cumsum(vector<Type> log_x)
+void logspace_cumsum(vector<Type> &log_x)
 {
     int n = log_x.size();
     for (int i = 1; i < n; ++i)
     {
         log_x(i) = logspace_add(log_x(i-1), log_x(i));
     }
-    return log_x;
 }
-
-template<class Type>
-void logspace_cumsum(vector<Type> *log_x)
-{
-    *log_x = logspace_diff(*log_x);
-}
-
+  
 } // namespace egf

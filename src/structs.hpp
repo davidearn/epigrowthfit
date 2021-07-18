@@ -61,6 +61,8 @@ struct flags_t
     int flag_trace;
     /* X format (1=sparse, 0=dense) */
     int flag_sparse_X;
+    /* Random effects (1=yes, 0=no) */
+    int flag_random_effects;
     /* predict (1=yes, 0=no) */
     int flag_predict;
 
@@ -70,31 +72,30 @@ struct flags_t
     bool do_trace;
     bool do_trace_verbose;
     bool do_sparse_X;
-    bool do_predict;
-    bool do_predict_lci;
-    bool do_predict_lii;
-    bool do_predict_lrt;
-    bool do_simulate;
     bool do_random_effects;
+    bool do_predict;
+    bool do_simulate;
   
     flags_t(SEXP x)
     {
-        flag_curve       = getListInteger(x, "flag_curve",       -1);
-	flag_excess      = getListInteger(x, "flag_excess",      -1);
-	flag_family      = getListInteger(x, "flag_family",      -1);
-	flag_day_of_week = getListInteger(x, "flag_day_of_week", -1);
-	flag_regularize  = asVector<int>(getListElement(x, "flag_regularize", &Rf_isNumeric));
-	flag_trace       = getListInteger(x, "flag_trace",       -1);
-	flag_sparse_X    = getListInteger(x, "flag_sparse_X",    -1);
-	flag_predict     = getListInteger(x, "flag_predict",     -1);
+        flag_curve          = getListInteger(x, "flag_curve",          -1);
+	flag_excess         = getListInteger(x, "flag_excess",         -1);
+	flag_family         = getListInteger(x, "flag_family",         -1);
+	flag_day_of_week    = getListInteger(x, "flag_day_of_week",    -1);
+	flag_regularize     = asVector<int>(getListElement(x, "flag_regularize", &Rf_isNumeric));
+	flag_trace          = getListInteger(x, "flag_trace",          -1);
+	flag_sparse_X       = getListInteger(x, "flag_sparse_X",       -1);
+	flag_random_effects = getListInteger(x, "flag_random_effects", -1);
+	flag_predict        = getListInteger(x, "flag_predict",        -1);
 
-	do_excess        = (excess      == 1);
-	do_day_of_week   = (day_of_week == 1);
-	do_regularize    = false;
-	do_trace         = (trace       >= 1);
-	do_trace_verbose = (trace       >= 2);
-	do_sparse_X      = (sparse_X    == 1);
-	do_predict       = (predict     == 1);
+	do_excess         = (flag_excess         == 1);
+	do_day_of_week    = (flag_day_of_week    == 1);
+	do_regularize     = false;
+	do_trace          = (flag_trace          >= 1);
+	do_trace_verbose  = (flag_trace          >= 2);
+	do_sparse_X       = (flag_sparse_X       == 1);
+	do_random_effects = (flag_random_effects == 1);
+	do_predict        = (flag_predict        == 1);
 	for (int i = 0; !do_regularize && i < flag_regularize.size(); ++i)
 	{
 	    do_regularize = flag_regularize(i) >= 0;

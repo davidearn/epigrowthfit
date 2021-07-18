@@ -192,7 +192,7 @@ void add_offsets(vector<Type> &log_diff_curve,
     {
         log_diff_curve(i) += log_w(k);
     }
-} 
+}
 
 /* Subexponential model
    log(c'(t) / c(t)) = log(alpha) - (1 - p) * log(c(t))
@@ -251,10 +251,10 @@ void eval_log_rt_richards(vector<Type> &log_curve, Type log_r, Type log_K, Type 
 
 
 template<class Type>
-vector<Type> eval_log_rt_exact(vector<Type> log_curve,
-			       const vector<Type> &Y_row,
-			       const indices_t<Type> &indices,
-			       int flag_curve)
+void eval_log_rt_exact(vector<Type> &log_curve,
+		       const vector<Type> &Y_row,
+		       const indices_t<Type> &indices,
+		       int flag_curve)
 {
     switch (flag_curve)
     {
@@ -282,16 +282,27 @@ vector<Type> eval_log_rt_exact(vector<Type> log_curve,
 			     Y(indices.index_log_a));
 	break;
     }
-    return log_curve;
 }
 
 template<class Type>
-vector<Type> eval_log_rt_approx(vector<Type> log_diff_curve,
-				vector<int> len)
+void eval_log_rt_approx(vector<Type> &log_diff_curve)
 {
-    int N = len.size();
-    int n;
+    /* Local linear regression, n = 7
+       t
+       = -3:3
+       tbar
+       = mean(t)
+       = 0
+       beta_hat
+       = sum((t - tbar) * (x - xbar)) / sum((t - tbar)^2)
+       = sum(t * (x - xbar)) / sum(t^2)
+       = sum((-3:3) * (x - xbar)) / 28
+       log(beta_hat)
+       = log(sum((-3:3) * (x - xbar))) - log(28)
 
+       NB: 6 elements lost due to edge effects
+    */
+  
     vector<Type> time(7);
     for (int i = 0; i < 7; ++i)
     {
@@ -299,25 +310,16 @@ vector<Type> eval_log_rt_approx(vector<Type> log_diff_curve,
     }
     vector<Type> x(7);
     vector<Type> xbar(7);
+    Type log_28 = log(28.0);
 
-    /* ssd(time) = sum(time^2) = 28 */
-    Type ssd_time = log(28.0);
-
-    /* In each segment, 6 elements are lost due to edge effects */
-    vector<Type> log_rt(log_diff_curve.size() - 6 * N);
-    for (int s = 0, i1 = 0, i2 = 0; s < N; ++s)
+    int n = log_diff_curve.size();
+    for (int k = 0; k < n - 6; ++k)
     {
-	n = len(s);
-	for (int k = 0; k < n - 6; ++k)
-	{
-	    x = log_diff_curve.segment(i2+k, 7);
-	    xbar.fill(x.sum() / Type(7));
-	    log_rt(i1+k) = log((time * (x - xbar)).sum()) - ssd_time;
-	}
-	i1 += n - 6;
-	i2 += n;
+	x = log_diff_curve.segment(k, 7);
+	xbar.fill(x.sum() / Type(7));
+	log_diff_curve(k) = log((time * (x - xbar)).sum()) - log_28;
     }
-    return log_rt;
+    log_diff_curve.conservativeResize(n - 6);
 }
 
 } // namespace egf

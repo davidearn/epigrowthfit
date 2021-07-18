@@ -1,10 +1,9 @@
 #define TMB_LIB_INIT R_init_epigrowthfit
 #include <TMB.hpp>
-#include "utils.h"
-#include "enum.h"
-#include "curve.h"
+#include "enum.hpp"
+#include "utils.hpp"
+#include "curve.hpp"
 #include "nll.h"
-
 
 template<class Type>
 Type objective_function<Type>::operator() ()
@@ -25,45 +24,16 @@ Type objective_function<Type>::operator() ()
     PARAMETER_VECTOR(theta);
     
 
-    /* Data ================================================================= */
+    /* Flags ================================================================ */
 
-    /* Concatenated vectors of time points 
-       - length=n
+    /* Structure storing integer and Boolean flags specifying model
+       being estimated and template behaviour
     */
-    DATA_VECTOR(time);
+    DATA_STRUCT(flags, egf::flags_t);
+    flags.do_simulate = this->do_simulate;
     
-    /* Concatenated vectors of observed counts 
-       - length=n-N 
-    */
-    DATA_VECTOR(x);
-
-    /* Segment lengths
-       - length=N
-    */
-    DATA_IVECTOR(time_seg_len);
-
-    /* Number of segments */
-    int N = time_seg_len.size();
     
-    /* Segment initial days of week
-       - length=N if do_day_of_week=true, length=0 otherwise
-       - val={0,...,6} where 0=reference
-    */
-    DATA_IVECTOR(day1);
-
-    /* Offset component of response matrix
-       - dim=(N, p)
-    */
-    DATA_MATRIX(Y);
-
-    /* Number of nonlinear model parameters */
-    int p = Yo.cols();
-    
-    /* Structure storing integer column indices of nonlinear model parameters 
-       in response matrix
-       - val={0,...p-1} if parameter is used, val=-1 otherwise
-    */
-    DATA_STRUCT(indices, egf::indices_t);
+    /* Fixed effects infrastructure ========================================= */
 
     /* Combined fixed effects model matrix
        - dim=(N, length(beta)) if do_sparse_X=false, dim=(N, 0) otherwise
@@ -74,58 +44,24 @@ Type objective_function<Type>::operator() ()
     */
     DATA_SPARSE_MATRIX(Xs);
 
-    /* Combined random effects model matrix
-       - dim=(N, length(b))
-    */
-    DATA_SPARSE_MATRIX(Z);
-
-    /* "Factors" splitting model matrix columns by relation 
+    /* "Factor" splitting fixed effects model matrix columns by relation 
        to a nonlinear model parameter
        - length=length(beta)
        - val={0,...,p-1}
     */
     DATA_IVECTOR(beta_index);
-    /*
-       - length=length(b)
-       - val={0,...,p-1}
-    */
-    DATA_IVECTOR(b_index);
 
-    /* Number of model matrix columns by nonlinear model parameter
-       - in R: *_index_tab = c(table(*_index))
+    /* Number of fixed effects model matrix columns by nonlinear model
+       parameter
+       - in R: beta_index_tab = c(table(beta_index))
        - length=p
     */
     DATA_IVECTOR(beta_index_tab);
-    DATA_IVECTOR(b_index_tab);
-    
-    /* Dimensions of random effects blocks
-       - length=M
-       - val={1,...,p}
-    */
-    DATA_IVECTOR(block_rows);
-    /* 
-       - length=M
-       - val={nlevels(g)}
-    */
-    DATA_IVECTOR(block_cols);
 
-    /* Number of random effects blocks */
-    int M = block_rows.size();
+    /* Number of nonlinear model parameters */
+    int p = beta_index_tab.size();
 
-    /* List of vectors of hyperparameters for regularization */
-    DATA_STRUCT(hyperparameters, egf::list_of_vectors_t);
-
-    /* Structure storing integer and Boolean flags specifying model
-       and template behaviour
-    */
-    DATA_STRUCT(flags, egf::flags_t);
-    flags.do_simulate = this->do_simulate;
-    flags.do_random_effects = (Z.cols() > 0);
-    
-    
-    /* Coefficient matrices ================================================= */
-
-    /* Fixed effects, to be multiplied on the left by `X` */
+    /* Fixed effects coefficient matrix, to be multiplied on the left by `X` */
     Eigen::SparseMatrix<Type> beta_matrix(beta.size(), p);
     beta_matrix.reserve(beta_index_tab);
     for (int i = 0; i < beta.size(); ++i)
@@ -133,33 +69,80 @@ Type objective_function<Type>::operator() ()
         beta_matrix.insert(i, beta_index(i)) = beta(i);
     }
 
-    /* Random effects, to be multiplied on the left by `Z` */
-    Eigen::SparseMatrix<Type> b_matrix;
-    
     
     /* Random effects infrastructure ======================================== */
 
-    /* List of matrices in which to arrange elements of `b`:
-       - blocks, block rows, and block columns correspond to random effect
+    /* Random effects coefficient matrix, to be multiplied on the left by `Z` */
+    Eigen::SparseMatrix<Type> b_matrix;
+
+    /* Number of random effects blocks */
+    int M;
+    
+    /* List of random effects blocks
+       - each block is a matrix whose columns vectors are contiguous segments
+         of parameter vector `b`
+       - blocks, row vectors, and column vectors correspond to random effect
          terms, nonlinear model parameters, and group levels, respectively
-       - block columns represent realizations of a multivariate normal random 
+       - column vectors represent realizations of a multivariate normal random 
          variable with zero mean, unit variance, and unstructured covariance
     */
-    vector< matrix<Type> > list_of_blocks(M);
+    vector< matrix<Type> > list_of_blocks;
 
     /* List of corresponding vectors of standard deviations */
-    vector< vector<Type> > list_of_sd(M);
+    vector< vector<Type> > list_of_sd;
 
     /* List of corresponding vectors of other covariance parameters */
-    vector< vector<Type> > list_of_chol(M);
+    vector< vector<Type> > list_of_chol;
 
     /* List of corresponding negative log density functions */
-    vector< density::MVNORM_t<Type> > list_of_nld(M);
-
+    vector< density::MVNORM_t<Type> > list_of_nld;
+    
     if (flags.do_random_effects)
     {
-        b_matrix.resize(b.size(), p);
+        /* Data ------------------------------------------------------------- */
+
+        /* Combined random effects model matrix
+	   - dim=(N, length(b))
+	*/
+        DATA_SPARSE_MATRIX(Z);
+        
+        /* "Factor" splitting random effects model matrix
+	   columns by relation to a nonlinear model parameter
+	   - length=length(b)
+	   - val={0,...,p-1}
+	*/
+	DATA_IVECTOR(b_index);
+
+	/* Number of random effects model matrix columns 
+	   by nonlinear model parameter
+	   - in R: b_index_tab = c(table(b_index))
+	   - length=p
+	*/
+	DATA_IVECTOR(b_index_tab);
+    
+	/* Dimensions of random effects blocks
+	   - length=M
+	   - val={1,...,p}
+	*/
+	DATA_IVECTOR(block_rows);
+	/* 
+	   - length=M
+	   - val={nlevels(g)}
+	*/
+	DATA_IVECTOR(block_cols);
+
+	/* Number of random effects blocks */
+	M = block_cols.size();
+
+	
+	/* Initialization --------------------------------------------------- */
+
+	b_matrix.resize(b.size(), p);
         b_matrix.reserve(b_index_tab);
+	list_of_blocks.resize(M);
+	list_of_sd.resize(M);
+	list_of_chol.resize(M);
+	list_of_nld.resize(M);
 	
         matrix<Type> cor1(1, 1);
 	cor1(0, 0) = Type(1.0);
@@ -218,6 +201,17 @@ Type objective_function<Type>::operator() ()
 
     /* Response matrix ====================================================== */
 
+    /* Offset component of response matrix
+       - dim=(N, p)
+    */
+    DATA_MATRIX(Y);
+
+    /* Structure storing integer column indices of nonlinear model parameters 
+       in response matrix
+       - val={0,...p-1} if parameter is used, val=-1 otherwise
+    */
+    DATA_STRUCT(indices, egf::indices_t);
+    
     /* Add fixed effects component */
     Y += (flags.do_sparse_X ? Xs : Xd) * beta_matrix;
 
@@ -228,18 +222,170 @@ Type objective_function<Type>::operator() ()
     }
     
     REPORT(Y);
-    if (!flags.do_predict)
+    if (!(flags.do_simulate || flags.do_predict))
     {
         ADREPORT(Y);
+    }
+
+
+    /* Time series infrastructure =========================================== */
+
+    /* Concatenated vectors of time points 
+       - length=n
+    */
+    DATA_VECTOR(time);
+
+    /* Segment lengths
+       - length=N
+    */
+    DATA_IVECTOR(time_seg_len);
+
+    /* Number of segments */
+    int N = time_seg_len.size();
+    
+    /* Segment initial days of week
+       - length=N if do_day_of_week=true, length=0 otherwise
+       - val={0,...,6} where 0=reference
+    */
+    DATA_IVECTOR(day1);
+    
+
+    /* Prediction =========================================================== */
+
+    if (flags.do_predict)
+    {
+        /* Flags: What should be predicted? */
+	DATA_IVECTOR(flag_what);
+	bool do_predict_lii = (flag_what(0) == 1);
+        bool do_predict_lci = (flag_what(1) == 1);
+	bool do_predict_lrt = (flag_what(2) == 1);	
+	
+	int n;
+	vector< vector<Type> > list_of_predict(N);
+	for (int s = 0, i = 0; s < N; ++s)
+	{
+	    n = time_seg_len(s);
+	    list_of_predict(s) = time.segment(i, n);
+	    egf::eval_log_curve(list_of_predict(s),
+				(vector<Type>) Y.row(s),
+				indices,
+				flags.flag_curve);
+	    i += n;
+	}
+
+	if (do_predict_lrt)
+	{
+	    vector<Type> log_rt(time.size());
+	    vector<Type> tmp;
+	    if (flags.do_day_of_week)
+	    {
+	        log_rt.resize(log_rt.size() - 7 * N);
+		for (int s = 0, i = 0; s < N; ++s)
+		{
+		    n = time_seg_len(s) - 7;
+		    tmp = list_of_predict(s);
+		    egf::logspace_diff(tmp);
+		    egf::add_offsets(tmp,
+				     Y(s, indices.index_log_w1),
+				     Y(s, indices.index_log_w2),
+				     Y(s, indices.index_log_w3),
+				     Y(s, indices.index_log_w4),
+				     Y(s, indices.index_log_w5),
+				     Y(s, indices.index_log_w6),
+				     day1(s));
+		    egf::eval_log_rt_approx(tmp);
+		    log_rt.segment(i, n) = tmp;
+		    i += n;
+		}
+	    }
+	    else
+	    {
+	        for (int s = 0, i = 0; s < N; ++s)
+		{
+		    n = time_seg_len(s);
+		    tmp = list_of_predict(s);
+		    egf::eval_log_rt_exact(tmp,
+					   (vector<Type>) Y.row(s),
+					   indices,
+					   flags.flag_curve);
+		    log_rt.segment(i, n) = tmp;
+		    i += n;
+		}
+	    }
+	    REPORT(log_rt);
+	    ADREPORT(log_rt);
+	}
+	if (do_predict_lii || do_predict_lci)
+	{
+	    vector<Type> log_int_inc;
+	    vector<Type> log_cum_inc;
+	    if (do_predict_lii)
+	    {
+	        log_int_inc.resize(time.size() - N);
+	    }
+	    if (do_predict_lii)
+	    {
+	        log_cum_inc.resize(time.size() - N);
+	    }
+	    for (int s = 0, i = 0; s < N; ++s)
+	    {
+	        n = time_seg_len(s);
+		if (flags.do_excess)
+		{
+		    egf::add_baseline(list_of_predict(s),
+				      (vector<Type>) time.segment(i, n),
+				      Y(s, indices.index_log_b));
+		}
+		egf::logspace_diff(list_of_predict(s));
+		if (flags.do_day_of_week)
+		{
+		    egf::add_offsets(list_of_predict(s),
+				     Y(s, indices.index_log_w1),
+				     Y(s, indices.index_log_w2),
+				     Y(s, indices.index_log_w3),
+				     Y(s, indices.index_log_w4),
+				     Y(s, indices.index_log_w5),
+				     Y(s, indices.index_log_w6),
+				     day1(s));
+		}
+		if (do_predict_lii)
+		{
+		    log_int_inc.segment(i - s, n - 1) = list_of_predict(s);
+		}
+		if (do_predict_lci)
+		{
+		    egf::logspace_cumsum(list_of_predict(s));
+		    log_cum_inc.segment(i - s, n - 1) = list_of_predict(s);
+		}
+	    }
+	    if (do_predict_lii)
+	    {
+	        REPORT(log_int_inc);
+		ADREPORT(log_int_inc);
+	    }
+	    if (do_predict_lci)
+	    {
+	        REPORT(log_cum_inc);
+		ADREPORT(log_cum_inc);
+	    }
+	}
+
+	return Type(0.0);
     }
 
 
     /* Negative log likelihood ============================================== */
 
     Type nll = Type(0.0);
+
     
     /* Observation likelihood ----------------------------------------------- */
 
+    /* Concatenated vectors of observed counts 
+       - length=n-N 
+    */
+    DATA_VECTOR(x);
+    
     if (flags.do_trace && !flags.do_simulate)
     {
         std::cout << "Y = \n" << Y << "\n";
@@ -257,6 +403,7 @@ Type objective_function<Type>::operator() ()
         std::cout << "loop over observations complete\n";
         printf("nll is %.6e\n", asDouble(nll));
     }
+
     
     /* Random effect likelihood --------------------------------------------- */
 
@@ -273,11 +420,17 @@ Type objective_function<Type>::operator() ()
 	}
     }
 
+    
     /* Parameter value likelihood ------------------------------------------- */
 
     if (flags.do_regularize)
     {
-        if (flags.do_trace)
+        /* List of vectors of hyperparameters for regularization
+	   - length=p
+	*/
+        DATA_STRUCT(hyperparameters, egf::list_of_vectors_t);
+
+	if (flags.do_trace)
 	{
 	    std::cout << "commencing loop over regularized parameters\n";
 	}
@@ -288,173 +441,6 @@ Type objective_function<Type>::operator() ()
 	    printf("nll is %.6e\n", asDouble(nll));
 	}
     }
-
-
-    /* Prediction =========================================================== */
-    
-    if (flags.do_predict)
-    {
-        /* New data --------------------------------------------------------- */
-
-        /* Concatenated vectors of time points
-           - length=n'
-	*/
-        DATA_VECTOR(predict_time);
-
-	/* Segment lengths
-	   - length=N'
-	*/
-	DATA_IVECTOR(predict_time_seg_len);
-	int predict_N = predict_time_seg_len.size();
-
-	/* Segment initial days of week
-	   - length=N' if do_day_of_week=true, length=0 otherwise
-	   - val={0,...,6} where 0=reference
-	*/
-        DATA_IVECTOR(predict_day1);
-
-	/* Combined fixed effects model matrix
-	   - dim=(N', length(beta)) if do_sparse_X=false, dim=(N', 0) otherwise
-	*/
-	DATA_MATRIX(predict_Xd);
-	/* 
-	   - dim=(N', length(beta)) if do_sparse_X=true,  dim=(N', 0) otherwise
-	*/
-	DATA_SPARSE_MATRIX(predict_Xs);
-
-	/* Combined random effects model matrix
-	   - dim=(N', length(b))
-	*/
-	DATA_SPARSE_MATRIX(predict_Z);
-
-	/* Offset component of response matrix
-	   - dim=(N', p)
-	*/
-	DATA_MATRIX(predict_Y);
-
-	/* Flags */
-	DATA_IVECTOR(flag_what);
-	flags.do_predict_lii = (flag_what(0) == 1);
-	flags.do_predict_lci = (flag_what(1) == 1);
-	flags.do_predict_lrt = (flag_what(2) == 1);
-
-	
-	/* Response matrix -------------------------------------------------- */
-	
-	predict_Y += (flags.do_sparse_X ? predict_Xs : predict_Xd) * beta_matrix;
-	if (flags.do_random_effects)
-    	{
-	    predict_Y += predict_Z * b_matrix;
-    	}
-
-	
-	/* Predicted incidence ---------------------------------------------- */
-
-	/* Log cumulative incidence since time -Inf */
-	vector<Type> foo(predict_time.size());
-	vector<Type> bar;
-	int n;
-	for (int s = 0, i = 0; s < predict_N; ++s)
-	{
-	    n = predict_time_seg_len(s);
-	    bar = predict_time.segment(i, n);
-
-	    egf::eval_log_curve(bar,
-				Y_row,
-				flag_curve,
-				index_log_r,
-				index_log_alpha,
-				index_log_c0,
-				index_log_tinfl,
-				index_log_K,
-				index_logit_p,
-				index_log_a);
-	    
-	}
-	
-
-	
-	vector<Type> predict_log_diff_curve(predict_time.size() - predict_N);
-	vector<Type> predict_log_diff_curve(
-	int n;
-	for (int s = 0, i = 0; s < N_predict; ++s)
-	{
-	    n = predict_time_seg_len(s);
-	    
-	}
-
-	
-	
-	
-        vector<Type> predict_log_curve =
-	    eval_log_curve(predict_time, predict_time_seg_len,
-			   curve_flag, do_excess,
-			   predict_Y, 
-			   index_log_r, index_log_alpha, index_log_c0,
-			   index_log_tinfl, index_log_K,
-			   index_logit_p, index_log_a, index_log_b);
-
-        /* Log interval incidence */
-	vector<Type> predict_log_cases =
-	    logspace_diff(predict_log_curve, predict_time_seg_len);
-	if (do_day_of_week)
-	{
-	    vector<Type> offsets =
-	        get_day_of_week_offsets(predict_x_seg_len, predict_day1,
-				        predict_Y,
-					index_log_w1, index_log_w2, index_log_w3,
-					index_log_w4, index_log_w5, index_log_w6);
-	    predict_log_cases += offsets;
-	}
-
-
-	/* Reported variables ----------------------------------------------- */
-
-	if (do_predict_lii)
-	{
-	    /* Log interval incidence */
-	    vector<Type> log_int_inc = predict_log_cases;
-	    REPORT(log_int_inc);
-	    ADREPORT(log_int_inc);
-	}
-	
-	if (do_predict_lci)
-	{
-	    /* Log cumulative incidence (since time 0) */
-	    vector<Type> log_cum_inc =
-	        logspace_cumsum(predict_log_cases, predict_x_seg_len);
-	    REPORT(log_cum_inc);
-	    ADREPORT(log_cum_inc);
-	}
-	
-	if (do_predict_lrt)
-	{
-	    /* Log per capita growth rate */
-	    if (do_day_of_week)
-	    {
-	        /* Approximate rate from local linear regression */ 
-	        vector<Type> log_rt =
-		    eval_log_rt_approx(predict_log_cases, predict_x_seg_len);
-		REPORT(log_rt);
-		ADREPORT(log_rt);
-	    }
-	    else
-	    {
-	        /* Exact rate from differential equation */ 
-	        vector<Type> log_rt =
-		    eval_log_rt_exact(predict_time, predict_log_curve,
-				      predict_time_seg_len,
-				      curve_flag, do_excess,
-				      predict_Y,
-				      index_log_r, index_log_alpha, index_log_K,
-				      index_logit_p, index_log_a, index_log_b);
-		REPORT(log_rt);
-		ADREPORT(log_rt);
-	    }
-	}
-    }
-
-
 
     return nll;
 }
