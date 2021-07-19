@@ -188,21 +188,14 @@ predict.egf <- function(object,
     }
     time <- unlist(time_split, FALSE, FALSE)
   }
-
-  ## Additional data objects needed to run prediction code in C++ template
   len <- lengths(time_split, use.names = FALSE)
-  l <- list(
-    what_flag = as.integer(c("log_int_inc", "log_cum_inc", "log_rt") %in% what),
-    predict_time = time - rep.int(starts, len),
-    predict_time_seg_len = len,
-    predict_day1 = object$tmb_args$data$day1[subset],
-    predict_Yo = object$tmb_args$data$Yo[subset, , drop = FALSE],
-    predict_Xs = object$tmb_args$data$Xs[subset, , drop = FALSE],
-    predict_Xd = object$tmb_args$data$Xd[subset, , drop = FALSE],
-    predict_Z = object$tmb_args$data$Z[subset, , drop = FALSE]
-  )
-  object$tmb_args$data <- c(object$tmb_args$data, l)
-  object$tmb_args$data$predict_flag <- 1L
+
+  object$tmb_args$data$flags$flag_predict <- 1L
+  object$tmb_args$data$time <- time - rep.int(starts, len)
+  object$tmb_args$data$time_seg_len <- len
+  object$tmb_args$data$day1 <- object$tmb_args$data$day1[subset]
+  object$tmb_args$data[c("Y", "Xs", "Xd", "Z")] <-
+    lapply(object$tmb_args$data[c("Y", "Xs", "Xd", "Z")], `[`, subset, , drop = FALSE)
   tmb_out <- do.call(MakeADFun, object$tmb_args)
 
   if (log && se) {

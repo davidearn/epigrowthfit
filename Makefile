@@ -18,10 +18,10 @@ install-deps:
 
 build: $(TARBALL)
 
-$(TARBALL): enum docs src/$(PACKAGE).cpp src/*.h DESCRIPTION NAMESPACE
+$(TARBALL): enums docs src/$(PACKAGE).cpp src/*.h DESCRIPTION NAMESPACE
 	$(R) CMD build --no-manual .
 
-enum: utils/update_enum.R src/enum.h
+enums: utils/update_enums.R src/enums.h
 	cd $(dir $<) && $(R) --quiet -f $(notdir $<)
 
 docs: R/*.R

@@ -10,7 +10,7 @@
 #'
 #' @details
 #' The source file defining \code{get_flag} is kept synchronized with
-#' the package's C++ template using R script \file{utils/update_enum.R}.
+#' the package's C++ template using R script \file{utils/update_enums.R}.
 #'
 #' @return
 #' An \link{integer}.

@@ -66,23 +66,40 @@ with elements:
   by \code{model$day_of_week}. Otherwise, an integer vector of
   the same length filled with \code{-1}.
 }
-\item{Yo}{
-  The \link[=model.offset]{offset} matrix in dense format,
-  with \code{N} rows and \code{p} columns.
+\item{flags}{
+  A \link{list} with \link{integer} elements, used as flags to
+  specify the model being estimated and to indicate what blocks
+  of template code should be run.
+}
+\item{Y}{
+  The \link[=model.offset]{offset} component of the response matrix
+  in dense format, with \code{N} rows and \code{p} columns.
+}
+\item{indices}{
+  A \link{list} with \link{integer} elements and \link{names} of the
+  form \code{"index_link_parameter"} (e.g., \code{"index_log_r"}),
+  giving the column 0-index of nonlinear and dispersion model parameters
+  (e.g., \code{log(r)}) in the response matrix. Value \code{-1}
+  is used for parameters not belonging to the model being estimated.
+}
+\item{hyperparameters}{
+  A \link{list} of \code{p} \link{numeric} vectors, each listing
+  parameters (if any) of the prior distribution of a nonlinear
+  or dispersion model parameter.
 }
 \item{X}{
   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
   or dense format, depending on \code{control$sparse_X}, with \code{N} rows.
 }
-\item{Z}{
-  The random effects design matrix in \link[Matrix:sparseMatrix]{sparse}
-  format, with \code{N} rows. If there are no random effects, then \code{Z}
-  is an empty sparse matrix.
-}
 \item{Xs, Xd}{
   If \code{control$sparse_X = TRUE}, then \code{Xs = X} and \code{Xd}
   is an empty dense matrix. Otherwise, \code{Xd = X} and \code{Xs} is
   an empty sparse matrix.
+}
+\item{Z}{
+  The random effects design matrix in \link[Matrix:sparseMatrix]{sparse}
+  format, with \code{N} rows. If there are no random effects, then \code{Z}
+  is an empty sparse matrix.
 }
 \item{X_info, Z_info}{
   \link[=data.frame]{Data frame}s with \code{\link{ncol}(X)}
@@ -109,18 +126,6 @@ with elements:
   \link[=integer]{Integer} vectors together giving the dimensions
   of each block of the random effects matrix.
 }
-\item{curve_flag, excess_flag, family_flag, day_of_week_flag, trace_flag, sparse_X_flag}{
-  \link[=integer]{Integer} flags referencing so-named elements
-  of \code{model} and \code{control}.
-}
-\item{predict_flag}{
-  An \link{integer} flag set equal to 0 so that prediction code is not run.
-}
-Additional \link{integer} elements of the form \code{j_link_parameter}
-(e.g., \code{j_log_r}) give the 0-index of nonlinear and dispersion
-model parameter names (e.g., \code{"log(r)"}) in \code{names(frame_par)}.
-The value \code{-1} is used for parameters not belonging to the model
-being fit.
 }
 \description{
 Gathers in a \link{list} data objects to be passed to

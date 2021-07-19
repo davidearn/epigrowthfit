@@ -18,46 +18,38 @@ void add_nll_ob(Type &nll,
     int N = time_seg_len.size();
     int n;
     vector<Type> Y_row;
-    vector<Type> log_diff_curve;
+    vector<Type> predict;
     
     for (int s = 0, i = 0; s < N; ++s)
     { /* loop over segments */
 	n = time_seg_len(s);
 	Y_row = Y.row(s);
-
-	/* Time */
-	log_diff_curve = time.segment(i, n);
-
-	/* NB:
-	   Next several expressions modify `log_diff_curve` in place. 
-	   Name `log_diff_curve` reflects value after later evaluation 
-	   of `logspace_diff` ...
-	*/
-
-	/* Log cumulative incidence since time -Inf */
-	egf::eval_log_curve(log_diff_curve, Y_row, indices, flags.flag_curve);
+	/* t */
+	predict = time.segment(i, n);
+	/* t <- log(c(t)) */
+	egf::eval_log_curve(predict, Y_row, indices, flags.flag_curve);
 	if (flags.do_excess)
 	{
-	    egf::add_baseline(log_diff_curve,
-			      (vector<Type>) time.segment(i, n),
-			      Y_row(indices.index_log_b));
+	    /* log(c(t)) <- log(b * t + c(t)) */ 
+	    egf::logspace_add_baseline(predict,
+				       (vector<Type>) time.segment(i, n),
+				       Y_row(indices.index_log_b));
 	}
-
-	/* Log interval incidence */
-	egf::logspace_diff(log_diff_curve);
+	/* log(c(t)) <- log(diff(c(t))) */
+	egf::logspace_diff(predict);
 	if (flags.do_day_of_week)
 	{
-	    egf::add_offsets(log_diff_curve,
-			     Y_row(indices.index_log_w1),
-			     Y_row(indices.index_log_w2),
-			     Y_row(indices.index_log_w3),
-			     Y_row(indices.index_log_w4),
-			     Y_row(indices.index_log_w5),
-			     Y_row(indices.index_log_w6),
-			     day1(s));
+	    /* log(diff(c(t))) <- log(diff(c(t)) * w(t[-n], t[-1])) */
+	    egf::logspace_add_offsets(predict,
+				      Y_row(indices.index_log_w1),
+				      Y_row(indices.index_log_w2),
+				      Y_row(indices.index_log_w3),
+				      Y_row(indices.index_log_w4),
+				      Y_row(indices.index_log_w5),
+				      Y_row(indices.index_log_w6),
+				      day1(s));
 	}
-
-	add_nll_ob(nll, obj, x, log_diff_curve, Y_row, indices, flags,
+	add_nll_ob(nll, obj, x, predict, Y_row, indices, flags,
 		   i - s, s);
 	i += n;
     } /* loop over segments */
@@ -151,7 +143,7 @@ void add_nll_ob(Type &nll,
     
     if (print_Y_row)
     {
-	std::cout << "Y.row(" << s << ") = " << Y_row << "\n";
+	std::cout << "Y.row(" << sx << ") =\n" << Y_row << "\n";
     }
 }
 
@@ -160,7 +152,7 @@ template<class Type>
 void add_nll_re(Type &nll,
 		objective_function<Type> *obj,
 		const vector< matrix<Type> > &list_of_blocks,
-		const vector< density::MVNORM_t<Type> > &list_of_nld,
+		vector< density::MVNORM_t<Type> > list_of_nld,
 		const egf::flags_t<Type> &flags)
 {
     Type nll_term;
@@ -179,7 +171,7 @@ void add_nll_re(Type &nll,
 
 		if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 		{
-		    printf("at column %*d of block %*d: nll term is %.6e\n",
+		    printf("at column %d of block %d: nll term is %.6e\n",
 			   j, m, asDouble(nll_term));
 		}
 	    }
@@ -218,7 +210,7 @@ void add_nll_pv(Type &nll,
 	    { /* loop over values */
 	        if (obj->parallel_region())
 		{
-		    switch (flag.flag_regularize(j))
+		    switch (flags.flag_regularize(j))
 		    {
 		    case norm:
 			nll_term = -dnorm(Y(i, j), mu, sigma, true);

@@ -869,7 +869,7 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #' nbdisp <- 50
 #'
 #' mu <- log(c(r, tinfl, K, nbdisp))
-#' Sigma <- diag(rep_len(0.25, length(mu)))
+#' Sigma <- diag(rep_len(0.5^2, length(mu)))
 #'
 #' set.seed(202737L)
 #' sim <- egf_simulate(N = 20L, model = model, mu = mu, Sigma = Sigma)

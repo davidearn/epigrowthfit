@@ -156,9 +156,9 @@ void eval_log_curve(vector<Type> &time,
    log(c(t)) <- log(c(t) + b * t)
 */
 template<class Type>
-void add_baseline(vector<Type> &log_curve,
-       		  const vector<Type> &time,
-		  Type log_b)
+void logspace_add_baseline(vector<Type> &log_curve,
+			   const vector<Type> &time,
+			   Type log_b)
 {
     int n = log_curve.size();
     for (int i = 0; i < n; ++i)
@@ -175,20 +175,20 @@ void add_baseline(vector<Type> &log_curve,
 }
 
 template<class Type>
-void add_offsets(vector<Type> &log_diff_curve,
-		 Type log_w1,
-		 Type log_w2,
-		 Type log_w3,
-		 Type log_w4,
-		 Type log_w5,
-		 Type log_w6,
-		 int from = 0)
+void logspace_add_offsets(vector<Type> &log_diff_curve,
+			  Type log_w1,
+			  Type log_w2,
+			  Type log_w3,
+			  Type log_w4,
+			  Type log_w5,
+			  Type log_w6,
+			  int from = 0)
 {
     vector<Type> log_w(7);
     log_w << Type(0.0), log_w1, log_w2, log_w3, log_w4, log_w5, log_w6;
 
     int n = log_diff_curve.size();
-    for (int i = 0, k = from; i < n; ++i, ++k, k = k % 7);
+    for (int i = 0, k = from; i < n; ++i, ++k, k = k % 7)
     {
         log_diff_curve(i) += log_w(k);
     }
@@ -267,19 +267,19 @@ void eval_log_rt_exact(vector<Type> &log_curve,
 	break;
     case gompertz:
 	eval_log_rt_gompertz(log_curve,
-			     Y(indices.index_log_alpha),
-			     Y(indices.index_log_K));
+			     Y_row(indices.index_log_alpha),
+			     Y_row(indices.index_log_K));
 	break;
     case logistic:
 	eval_log_rt_logistic(log_curve,
-			     Y(indices.index_log_r),
-			     Y(indices.index_log_K));
+			     Y_row(indices.index_log_r),
+			     Y_row(indices.index_log_K));
 	break;
     case richards:
 	eval_log_rt_richards(log_curve,
-			     Y(indices.index_log_r),
-			     Y(indices.index_log_K),
-			     Y(indices.index_log_a));
+			     Y_row(indices.index_log_r),
+			     Y_row(indices.index_log_K),
+			     Y_row(indices.index_log_a));
 	break;
     }
 }
@@ -313,11 +313,11 @@ void eval_log_rt_approx(vector<Type> &log_diff_curve)
     Type log_28 = log(28.0);
 
     int n = log_diff_curve.size();
-    for (int k = 0; k < n - 6; ++k)
+    for (int i = 0; i < n - 6; ++i)
     {
-	x = log_diff_curve.segment(k, 7);
+	x = log_diff_curve.segment(i, 7);
 	xbar.fill(x.sum() / Type(7));
-	log_diff_curve(k) = log((time * (x - xbar)).sum()) - log_28;
+	log_diff_curve(i) = log((time * (x - xbar)).sum()) - log_28;
     }
     log_diff_curve.conservativeResize(n - 6);
 }

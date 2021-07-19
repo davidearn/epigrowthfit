@@ -1,5 +1,5 @@
-h <- "../src/enum.h"
-r <- "../R/enum.R"
+h <- "../src/enums.h"
+r <- "../R/enums.R"
 
 x <- paste(readLines(h), collapse = "\n")
 x <- strsplit(gsub("[ \t\n]", "", x), "enum")[[1L]][-1L]

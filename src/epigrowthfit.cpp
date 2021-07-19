@@ -1,8 +1,9 @@
 #define TMB_LIB_INIT R_init_epigrowthfit
 #include <TMB.hpp>
-#include "enum.hpp"
-#include "utils.hpp"
-#include "curve.hpp"
+#include "enums.h"
+#include "structs.h"
+#include "utils.h"
+#include "curve.h"
 #include "nll.h"
 
 template<class Type>
@@ -72,6 +73,12 @@ Type objective_function<Type>::operator() ()
     
     /* Random effects infrastructure ======================================== */
 
+    /* Combined random effects model matrix
+       - dim=(N, length(b))
+    */
+    DATA_SPARSE_MATRIX(Z);
+    flags.do_random_effects = (Z.cols() > 0);    
+
     /* Random effects coefficient matrix, to be multiplied on the left by `Z` */
     Eigen::SparseMatrix<Type> b_matrix;
 
@@ -101,11 +108,6 @@ Type objective_function<Type>::operator() ()
     {
         /* Data ------------------------------------------------------------- */
 
-        /* Combined random effects model matrix
-	   - dim=(N, length(b))
-	*/
-        DATA_SPARSE_MATRIX(Z);
-        
         /* "Factor" splitting random effects model matrix
 	   columns by relation to a nonlinear model parameter
 	   - length=length(b)
@@ -227,13 +229,18 @@ Type objective_function<Type>::operator() ()
         ADREPORT(Y);
     }
 
-
+    
     /* Time series infrastructure =========================================== */
 
     /* Concatenated vectors of time points 
        - length=n
     */
     DATA_VECTOR(time);
+
+    /* Concatenated vectors of observed counts 
+       - length=n-N 
+    */
+    DATA_VECTOR(x);
 
     /* Segment lengths
        - length=N
@@ -244,135 +251,11 @@ Type objective_function<Type>::operator() ()
     int N = time_seg_len.size();
     
     /* Segment initial days of week
-       - length=N if do_day_of_week=true, length=0 otherwise
-       - val={0,...,6} where 0=reference
+       - length=N
+       - val={0,...,6} if do_day_of_week=true, val=-1 otherwise
     */
     DATA_IVECTOR(day1);
     
-
-    /* Prediction =========================================================== */
-
-    if (flags.do_predict)
-    {
-        /* Flags: What should be predicted? */
-	DATA_IVECTOR(flag_what);
-	bool do_predict_lii = (flag_what(0) == 1);
-        bool do_predict_lci = (flag_what(1) == 1);
-	bool do_predict_lrt = (flag_what(2) == 1);	
-	
-	int n;
-	vector< vector<Type> > list_of_predict(N);
-	for (int s = 0, i = 0; s < N; ++s)
-	{
-	    n = time_seg_len(s);
-	    list_of_predict(s) = time.segment(i, n);
-	    egf::eval_log_curve(list_of_predict(s),
-				(vector<Type>) Y.row(s),
-				indices,
-				flags.flag_curve);
-	    i += n;
-	}
-
-	if (do_predict_lrt)
-	{
-	    vector<Type> log_rt(time.size());
-	    vector<Type> tmp;
-	    if (flags.do_day_of_week)
-	    {
-	        log_rt.resize(log_rt.size() - 7 * N);
-		for (int s = 0, i = 0; s < N; ++s)
-		{
-		    n = time_seg_len(s) - 7;
-		    tmp = list_of_predict(s);
-		    egf::logspace_diff(tmp);
-		    egf::add_offsets(tmp,
-				     Y(s, indices.index_log_w1),
-				     Y(s, indices.index_log_w2),
-				     Y(s, indices.index_log_w3),
-				     Y(s, indices.index_log_w4),
-				     Y(s, indices.index_log_w5),
-				     Y(s, indices.index_log_w6),
-				     day1(s));
-		    egf::eval_log_rt_approx(tmp);
-		    log_rt.segment(i, n) = tmp;
-		    i += n;
-		}
-	    }
-	    else
-	    {
-	        for (int s = 0, i = 0; s < N; ++s)
-		{
-		    n = time_seg_len(s);
-		    tmp = list_of_predict(s);
-		    egf::eval_log_rt_exact(tmp,
-					   (vector<Type>) Y.row(s),
-					   indices,
-					   flags.flag_curve);
-		    log_rt.segment(i, n) = tmp;
-		    i += n;
-		}
-	    }
-	    REPORT(log_rt);
-	    ADREPORT(log_rt);
-	}
-	if (do_predict_lii || do_predict_lci)
-	{
-	    vector<Type> log_int_inc;
-	    vector<Type> log_cum_inc;
-	    if (do_predict_lii)
-	    {
-	        log_int_inc.resize(time.size() - N);
-	    }
-	    if (do_predict_lii)
-	    {
-	        log_cum_inc.resize(time.size() - N);
-	    }
-	    for (int s = 0, i = 0; s < N; ++s)
-	    {
-	        n = time_seg_len(s);
-		if (flags.do_excess)
-		{
-		    egf::add_baseline(list_of_predict(s),
-				      (vector<Type>) time.segment(i, n),
-				      Y(s, indices.index_log_b));
-		}
-		egf::logspace_diff(list_of_predict(s));
-		if (flags.do_day_of_week)
-		{
-		    egf::add_offsets(list_of_predict(s),
-				     Y(s, indices.index_log_w1),
-				     Y(s, indices.index_log_w2),
-				     Y(s, indices.index_log_w3),
-				     Y(s, indices.index_log_w4),
-				     Y(s, indices.index_log_w5),
-				     Y(s, indices.index_log_w6),
-				     day1(s));
-		}
-		if (do_predict_lii)
-		{
-		    log_int_inc.segment(i - s, n - 1) = list_of_predict(s);
-		}
-		if (do_predict_lci)
-		{
-		    egf::logspace_cumsum(list_of_predict(s));
-		    log_cum_inc.segment(i - s, n - 1) = list_of_predict(s);
-		}
-	    }
-	    if (do_predict_lii)
-	    {
-	        REPORT(log_int_inc);
-		ADREPORT(log_int_inc);
-	    }
-	    if (do_predict_lci)
-	    {
-	        REPORT(log_cum_inc);
-		ADREPORT(log_cum_inc);
-	    }
-	}
-
-	return Type(0.0);
-    }
-
 
     /* Negative log likelihood ============================================== */
 
@@ -381,11 +264,6 @@ Type objective_function<Type>::operator() ()
     
     /* Observation likelihood ----------------------------------------------- */
 
-    /* Concatenated vectors of observed counts 
-       - length=n-N 
-    */
-    DATA_VECTOR(x);
-    
     if (flags.do_trace && !flags.do_simulate)
     {
         std::cout << "Y = \n" << Y << "\n";
@@ -439,6 +317,185 @@ Type objective_function<Type>::operator() ()
 	{
 	    std::cout << "loop over regularized parameters complete\n";
 	    printf("nll is %.6e\n", asDouble(nll));
+	}
+    }
+
+    
+    /* Prediction =========================================================== */
+
+    if (flags.do_predict)
+    {
+        /* Flags ------------------------------------------------------------ */
+        
+        /* What should be predicted? */
+	DATA_IVECTOR(flag_what);
+
+	/* Let c(t) be cumulative incidence since time -Inf. Then:
+	   0. Log interval incidence
+	      
+	      = log(diff(c(t)))
+	*/
+	bool do_predict_lii = (flag_what(0) == 1);
+	/* 1. Log cumulative incidence since time 0
+	      
+	      = log(c(t[-1L]) - c(t[1L]))
+	      = log(cumsum(diff(c(t))))
+	*/
+        bool do_predict_lci = (flag_what(1) == 1);
+	/* 2. Log per capita growth rate
+	      
+	      = log(c'(t) / c(t))
+	*/
+	bool do_predict_lrt = (flag_what(2) == 1);
+	bool do_predict_lrt_in_place = !(do_predict_lii || do_predict_lci);  
+
+      
+        /* Data ------------------------------------------------------------- */
+      
+        /* Time series segments for which predictions should be computed 
+	   - length=N'
+	   - val={0,...,N-1}
+	*/
+        DATA_IVECTOR(subset);
+
+	/* Concatenated vectors of time points 
+	   - length=n'
+	*/
+	DATA_VECTOR(new_time);
+
+	/* Segment lengths
+	   - length=N'
+	*/
+	DATA_IVECTOR(new_time_seg_len);
+
+	/* Number of segments */
+	N = new_time_seg_len.size();
+
+	/* Segment initial days of week
+	   - length=N'
+	   - val={0,...,6} if do_day_of_week=true, val=-1 otherwise
+	*/
+	DATA_IVECTOR(new_day1);
+
+
+	/* Log cumulative incidence since time -Inf ------------------------- */
+
+	int n;
+	vector<Type> Y_row;
+	vector< vector<Type> > list_of_predict(N);
+	for (int s = 0, i = 0; s < N; ++s)
+	{
+	    n = new_time_seg_len(s);
+	    /* t */
+	    list_of_predict(s) = new_time.segment(i, n);
+	    /* t <- log(c(t)) */
+	    egf::eval_log_curve(list_of_predict(s),
+				(vector<Type>) Y.row(subset(s)),
+				indices,
+				flags.flag_curve);
+	    i += n;
+	}
+
+
+	/* Prediction variables --------------------------------------------- */
+
+	if (do_predict_lrt)
+	{
+	    vector<Type> log_rt(new_time.size());
+	    vector<Type> tmp;
+	    for (int s = 0, i = 0; s < N; ++s)
+	    {
+		n = new_time_seg_len(s);
+		Y_row = Y.row(subset(s));
+		/* log(c(t)) <- log(c'(t) / c(t)) */
+		if (do_predict_lrt_in_place)
+		{
+		    /* Modify log(c(t)) in place,
+		       because we no longer need log(c(t)) 
+		    */
+		    egf::eval_log_rt_exact(list_of_predict(s),
+					   Y_row,
+					   indices,
+					   flags.flag_curve);
+		    log_rt.segment(i, n) = list_of_predict(s);
+		}
+		else
+		{
+		    /* Modify a copy of log(c(t)) in place, 
+		       because we still need log(c(t)) 
+		    */ 
+		    tmp = list_of_predict(s);
+		    egf::eval_log_rt_exact(tmp,
+					   Y_row,
+					   indices,
+					   flags.flag_curve);
+		    log_rt.segment(i, n) = tmp;
+		}
+		i += n;
+	    }
+	    REPORT(log_rt);
+	    ADREPORT(log_rt);
+	}
+
+	if (!do_predict_lrt_in_place)
+	{
+	    vector<Type> log_int_inc;
+	    vector<Type> log_cum_inc;
+	    if (do_predict_lii)
+	    {
+	        log_int_inc.resize(new_time.size() - N);
+	    }
+	    if (do_predict_lii)
+	    {
+	        log_cum_inc.resize(new_time.size() - N);
+	    }
+	    for (int s = 0, i = 0; s < N; ++s)
+	    {
+	        n = new_time_seg_len(s);
+		Y_row = Y.row(subset(s));
+		if (flags.do_excess)
+		{
+		    /* log(c(t)) <- log(b * t + c(t)) */
+		    egf::logspace_add_baseline(list_of_predict(s),
+					       (vector<Type>) new_time.segment(i, n),
+					       Y_row(indices.index_log_b));
+		}
+		/* log(c(t)) <- log(diff(c(t))) */
+		egf::logspace_diff(list_of_predict(s));
+		if (flags.do_day_of_week)
+		{
+		    /* log(diff(c(t))) <- log(diff(c(t)) * w(t[-n], t[-1])) */
+		    egf::logspace_add_offsets(list_of_predict(s),
+					      Y_row(indices.index_log_w1),
+					      Y_row(indices.index_log_w2),
+					      Y_row(indices.index_log_w3),
+					      Y_row(indices.index_log_w4),
+					      Y_row(indices.index_log_w5),
+					      Y_row(indices.index_log_w6),
+					      new_day1(s));
+		}
+		if (do_predict_lii)
+		{
+		    log_int_inc.segment(i - s, n - 1) = list_of_predict(s);
+		}
+		if (do_predict_lci)
+		{
+		    /* log(diff(c(t))) <- log(cumsum(diff(c(t)))) */
+		    egf::logspace_cumsum(list_of_predict(s));
+		    log_cum_inc.segment(i - s, n - 1) = list_of_predict(s);
+		}
+		i += n;
+	    }
+	    if (do_predict_lii)
+	    {
+	        REPORT(log_int_inc);
+		ADREPORT(log_int_inc);
+	    }
+	    if (do_predict_lci)
+	    {
+	        REPORT(log_cum_inc);
+		ADREPORT(log_cum_inc);
+	    }
 	}
     }
 

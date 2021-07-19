@@ -970,23 +970,40 @@ make_tmb_args <- function(model, frame, frame_par, priors, control,
 #'   by \code{model$day_of_week}. Otherwise, an integer vector of
 #'   the same length filled with \code{-1}.
 #' }
-#' \item{Yo}{
-#'   The \link[=model.offset]{offset} matrix in dense format,
-#'   with \code{N} rows and \code{p} columns.
+#' \item{flags}{
+#'   A \link{list} with \link{integer} elements, used as flags to
+#'   specify the model being estimated and to indicate what blocks
+#'   of template code should be run.
+#' }
+#' \item{Y}{
+#'   The \link[=model.offset]{offset} component of the response matrix
+#'   in dense format, with \code{N} rows and \code{p} columns.
+#' }
+#' \item{indices}{
+#'   A \link{list} with \link{integer} elements and \link{names} of the
+#'   form \code{"index_link_parameter"} (e.g., \code{"index_log_r"}),
+#'   giving the column 0-index of nonlinear and dispersion model parameters
+#'   (e.g., \code{log(r)}) in the response matrix. Value \code{-1}
+#'   is used for parameters not belonging to the model being estimated.
+#' }
+#' \item{hyperparameters}{
+#'   A \link{list} of \code{p} \link{numeric} vectors, each listing
+#'   parameters (if any) of the prior distribution of a nonlinear
+#'   or dispersion model parameter.
 #' }
 #' \item{X}{
 #'   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
 #'   or dense format, depending on \code{control$sparse_X}, with \code{N} rows.
 #' }
-#' \item{Z}{
-#'   The random effects design matrix in \link[Matrix:sparseMatrix]{sparse}
-#'   format, with \code{N} rows. If there are no random effects, then \code{Z}
-#'   is an empty sparse matrix.
-#' }
 #' \item{Xs, Xd}{
 #'   If \code{control$sparse_X = TRUE}, then \code{Xs = X} and \code{Xd}
 #'   is an empty dense matrix. Otherwise, \code{Xd = X} and \code{Xs} is
 #'   an empty sparse matrix.
+#' }
+#' \item{Z}{
+#'   The random effects design matrix in \link[Matrix:sparseMatrix]{sparse}
+#'   format, with \code{N} rows. If there are no random effects, then \code{Z}
+#'   is an empty sparse matrix.
 #' }
 #' \item{X_info, Z_info}{
 #'   \link[=data.frame]{Data frame}s with \code{\link{ncol}(X)}
@@ -1013,18 +1030,6 @@ make_tmb_args <- function(model, frame, frame_par, priors, control,
 #'   \link[=integer]{Integer} vectors together giving the dimensions
 #'   of each block of the random effects matrix.
 #' }
-#' \item{curve_flag, excess_flag, family_flag, day_of_week_flag, trace_flag, sparse_X_flag}{
-#'   \link[=integer]{Integer} flags referencing so-named elements
-#'   of \code{model} and \code{control}.
-#' }
-#' \item{predict_flag}{
-#'   An \link{integer} flag set equal to 0 so that prediction code is not run.
-#' }
-#' Additional \link{integer} elements of the form \code{j_link_parameter}
-#' (e.g., \code{j_log_r}) give the 0-index of nonlinear and dispersion
-#' model parameter names (e.g., \code{"log(r)"}) in \code{names(frame_par)}.
-#' The value \code{-1} is used for parameters not belonging to the model
-#' being fit.
 #'
 #' @seealso \code{\link[TMB]{MakeADFun}}
 #' @keywords internal
@@ -1080,10 +1085,10 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
   random <- lapply(effects, `[[`, "random")
   random <- Map(`names<-`, random, Map(rep_len, names(random), lengths(random)))
 
-  ## Offsets matrix
+  ## Response matrix, offset component only
   offsets <- lapply(frame_par, model.offset)
   offsets[vapply(offsets, is.null, FALSE)] <- list(rep_len(0, N))
-  Yo <- do.call(cbind, offsets)
+  Y <- do.call(cbind, offsets)
 
   ## Fixed effects design matrices
   Xl <- Map(make_X, x = fixed, frame = frame_par, sparse = control$sparse_X)
@@ -1139,47 +1144,53 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
     dims = c(N, 0L)
   )
 
-  ## Priors on nonlinear and dispersion model parameters
+  ## Parameters of priors on nonlinear and dispersion model parameters
   has_prior <- !vapply(priors, is.null, FALSE)
-  ## Distribution flag
-  regularize_flag <- rep_len(-1L, p)
-  regularize_flag[has_prior] <- get_flag("prior", vapply(priors[has_prior], `[[`, "", "distribution"))
-  ## Hyperparameters
-  regularize_hyperpar <- rep_len(list(numeric(0L)), p)
-  regularize_hyperpar <- lapply(priors[has_prior], `[[`, "parameters")
+  hyperparameters <- rep_len(list(numeric(0L)), p)
+  hyperparameters[has_prior] <- lapply(priors[has_prior], `[[`, "parameters")
 
-  l1 <- list(
+  ## Flags
+  flag_regularize <- rep_len(-1L, p)
+  flag_regularize[has_prior] <- get_flag("prior", vapply(priors[has_prior], `[[`, "", "distribution"))
+  flags <- list(
+    flag_curve = get_flag("curve", model$curve),
+    flag_excess = as.integer(model$excess),
+    flag_family = get_flag("family", model$family),
+    flag_day_of_week = as.integer(model$day_of_week > 0L),
+    flag_regularize = flag_regularize,
+    flag_trace = control$trace,
+    flag_sparse_X = as.integer(control$sparse_X),
+    flag_predict = 0L
+  )
+
+  ## Column indices of nonlinear and dispersion model parameters
+  ## in response matrix
+  par_names_all <- get_par_names(NULL, link = TRUE)
+  indices <- as.list(match(par_names_all, par_names, 0L) - 1L)
+  names(indices) <- sub("^(log|logit)\\((.*)\\)$", "index_\\1_\\2", par_names_all)
+
+  out <- list(
     time = time,
     time_seg_len = time_seg_len,
     x = x,
     day1 = day1,
-    Yo = Yo,
+    flags = flags,
+    Y = Y,
+    indices = indices,
+    hyperparameters = hyperparameters,
     X = X,
-    Z = if (is.null(Z)) empty_sparse_matrix else Z,
-    Xs = if (control$sparse_X) X else empty_sparse_matrix,
     Xd = if (control$sparse_X) empty_dense_matrix else X,
+    Xs = if (control$sparse_X) X else empty_sparse_matrix,
     X_info = X_info,
-    Z_info = Z_info,
     beta_index = beta_index,
-    b_index = b_index,
     beta_index_tab = beta_index_tab,
+    Z = if (is.null(Z)) empty_sparse_matrix else Z,
+    Z_info = Z_info,
+    b_index = b_index,
     b_index_tab = b_index_tab,
     block_rows = block_rows,
-    block_cols = block_cols,
-    regularize_hyperpar = regularize_hyperpar,
-    curve_flag = get_flag("curve", model$curve),
-    excess_flag = as.integer(model$excess),
-    family_flag = get_flag("family", model$family),
-    day_of_week_flag = as.integer(model$day_of_week > 0L),
-    regularize_flag = regularize_flag,
-    trace_flag = control$trace,
-    sparse_X_flag = as.integer(control$sparse_X),
-    predict_flag = 0L
+    block_cols = block_cols
   )
-  par_names_all <- get_par_names(NULL, link = TRUE)
-  l2 <- as.list(match(par_names_all, par_names, 0L) - 1L)
-  names(l2) <- sub("^(log|logit)\\((.*)\\)$", "j_\\1_\\2", par_names_all)
-  out <- c(l1, l2)
   class(out) <- c("tmb_data", "list")
   out
 }
