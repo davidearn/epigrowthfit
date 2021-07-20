@@ -2,7 +2,6 @@
 ^inst$
 ^misc$
 ^mre$
-^R/old$
 ^utils$
 ^Makefile$
 ^TODO\.md$

@@ -37,7 +37,6 @@ Imports:
 Suggests:
     knitr,
     testthat (>= 3.0.0),
-    MASS,
     emdbook (>= 1.3.12)
 LinkingTo:
     TMB,

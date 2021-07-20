@@ -52,20 +52,26 @@ ranef.egf <- function(object, ...) {
   Z_info <- object$tmb_args$data$Z_info
   b <- object$best[grep("^b\\[", names(object$best))]
   r <- object$tmb_out$report(object$best)
-  d <- data.frame(
+  out <- data.frame(
     name = names(b),
     Z_info[c("par", "term", "group", "level", "colname")],
     mode = b,
-    sd = unlist(Map(rep.int, x = r$sd_list, times = vapply(r$block_list, ncol, 0L)), FALSE, FALSE),
+    sd = unlist(Map(rep.int, x = r$list_of_sd, times = vapply(r$list_of_blocks, ncol, 0L)), FALSE, FALSE),
     row.names = NULL,
     stringsAsFactors = FALSE
   )
-  class(d) <- c("egf_ranef", "data.frame")
+  class(out) <- c("egf_ranef", "data.frame")
 
-  cov <- Map(cor2cov, cor = r$cor_list, sd = r$sd_list)
+  chol2cov <- function(chol, sd) {
+    R <- diag(rep_len(1, length(sd)))
+    R[upper.tri(R, diag = FALSE)] <- chol
+    RTR <- t(R) %*% R
+    cor2cov(RTR, sd * sqrt(diag(RTR)))
+  }
+  cov <- Map(chol2cov, chol = r$list_of_chol, sd = r$list_of_sd)
   names(cov) <- levels(Z_info$cor)
-  cov <- Map(`rownames<-`, cov, tapply(Z_info$par,   Z_info$cor, unique, simplify = FALSE))
-  cov <- Map(`colnames<-`, cov, tapply(Z_info$level, Z_info$cor, unique, simplify = FALSE))
-  attr(d, "cov") <- cov
-  d
+  dn <- c(tapply(Z_info$par, Z_info$cor, function(x) rep_len(list(as.character(unique(x))), 2L), simplify = FALSE))
+  cov <- Map(`dimnames<-`, cov, dn)
+  attr(out, "cov") <- cov
+  out
 }

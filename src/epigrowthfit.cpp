@@ -274,7 +274,7 @@ Type objective_function<Type>::operator() ()
     if (flags.do_simulate)
     {
         REPORT(x);
-	return nll;
+	return Type(0.0);
     }
     if (flags.do_trace)
     {

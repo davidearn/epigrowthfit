@@ -30,9 +30,8 @@ egf(object, ...)
 )
 }
 \arguments{
-\item{object}{An \R object for which an \code{egf} method exists,
-typically an \code{"\link{egf_model}"} object specifying
-a nonlinear model and a dispersion model to be estimated.}
+\item{object}{An \code{"\link{egf_model}"} object specifying a nonlinear model
+and a dispersion model to be estimated.}
 
 \item{...}{Arguments passed to methods by the generic function.}
 
@@ -149,8 +148,8 @@ If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
 }
 \item{frame}{
   The time series model frame, constructed from \code{formula} and
-  \code{data}, with variables \code{ts}, \code{window}, \code{start},
-  and \code{end}. \code{ts} and \code{window} are \link{factor}s
+  \code{data}, with variables \code{ts}, \code{window}, \code{time},
+  and \code{x}. \code{ts} and \code{window} are \link{factor}s
   that can be used to \link{split} \code{frame} by time series and
   by fitting window, respectively. Rows are ordered by time series
   and chronologically within time series. \code{\link{terms}(formula)}
@@ -230,15 +229,15 @@ of each nonlinear and dispersion model parameter for each
 fitting window, corresponding rowwise to \code{endpoints}.
 }
 \description{
-Fits nonlinear mixed effects models of epidemic growth to one
-or more disease incidence time series.
+Fits nonlinear mixed effects models of epidemic growth
+to one or more disease incidence time series.
 }
 \details{
 \code{endpoints} and \link[=model.frame]{model frame}s constructed from
 \code{formula_par} and \code{data_par} are expected to correspond rowwise.
 
-Day of week effect estimation (see \code{\link{egf_model}}) requires
-\code{time} in \code{formula = x ~ time | ts} to evaluate to
-an \link{integer} or \link{Date} vector with 1-day spacing in
-all fitting windows.
+Day of week effect estimation (see \code{\link{egf_model}})
+requires \code{time} in \code{formula = x ~ time | ts} to evaluate
+to an \link{integer} or \link{Date} vector with 1-day spacing in all
+fitting windows.
 }

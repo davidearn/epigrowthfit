@@ -101,7 +101,7 @@ boot_par <- function(object,
     clusterSetRNGStream(cl)
     m <- parSapply(cl, seq_len(n), do_sim)
   } else {
-    if (parallel$outfile != "") {
+    if (nzchar(parallel$outfile)) {
       outfile <- file(parallel$outfile, open = "wt")
       sink(outfile, type = "output")
       sink(outfile, type = "message")
@@ -110,7 +110,7 @@ boot_par <- function(object,
       multicore = simplify2array(do.call(mclapply, c(list(X = seq_len(n), FUN = do_sim), parallel$options))),
       serial = vapply(seq_len(n), do_sim, unname(object$best))
     )
-    if (parallel$outfile != "") {
+    if (nzchar(parallel$outfile)) {
       sink(type = "output")
       sink(type = "message")
     }

@@ -113,7 +113,7 @@ predict.egf <- function(object,
   endpoints <- object$endpoints
   origin <- attr(endpoints, "origin")
   day_of_week <- object$model$day_of_week
-  min_window_len <- max(2L, 8L * (day_of_week > 0L) * ("log_rt" %in% what))
+  ## min_window_len <- max(2L, 8L * (day_of_week > 0L) * ("log_rt" %in% what))
 
   if (missing_time <- missing(time)) {
     time <- object$frame$time
@@ -142,16 +142,18 @@ predict.egf <- function(object,
     )
     wl <- levels(object$frame$window)
     subset <- match(levels(factor(window)), wl, 0L)
+    subset <- subset[subset > 0L]
     window <- factor(window, levels = wl[subset])
     stop_if_not(
       nlevels(window) > 0L,
       m = "`window` must have at least one valid level."
     )
+    stop_if_not(
+      tabulate(window) > 2L,
+      m = "`time` must have length 2 or greater in each level of `window`."
+    )
   }
-  stop_if_not(
-    tabulate(window) > min_window_len,
-    m = sprintf("`time` must have length %d or greater in each level of `window`.", min_window_len)
-  )
+
   time_split <- split(time, window)
   starts <- endpoints$start[subset]
   ends <- endpoints$end[subset]
@@ -191,11 +193,10 @@ predict.egf <- function(object,
   len <- lengths(time_split, use.names = FALSE)
 
   object$tmb_args$data$flags$flag_predict <- 1L
-  object$tmb_args$data$time <- time - rep.int(starts, len)
-  object$tmb_args$data$time_seg_len <- len
-  object$tmb_args$data$day1 <- object$tmb_args$data$day1[subset]
-  object$tmb_args$data[c("Y", "Xs", "Xd", "Z")] <-
-    lapply(object$tmb_args$data[c("Y", "Xs", "Xd", "Z")], `[`, subset, , drop = FALSE)
+  object$tmb_args$data$subset <- subset - 1L
+  object$tmb_args$data$new_time <- time - rep.int(starts, len)
+  object$tmb_args$data$new_time_seg_len <- len
+  object$tmb_args$data$new_day1 <- object$tmb_args$data$day1[subset]
   tmb_out <- do.call(MakeADFun, object$tmb_args)
 
   if (log && se) {
@@ -210,13 +211,14 @@ predict.egf <- function(object,
 
   lasts <- cumsum(len)
   firsts <- c(0L, lasts[-length(lasts)]) + 1L
-  edges <- unlist(Map(function(a, b) c(a + 0:3, b - 2:0), a = firsts, b = lasts), FALSE, FALSE)
+  ## edges <- unlist(Map(function(a, b) c(a + 0:3, b - 2:0), a = firsts, b = lasts), FALSE, FALSE)
   n <- length(time)
   x <- rep_len(NA_real_, n)
   ix <- list(
     log_int_inc = -firsts,
     log_cum_inc = -firsts,
-    log_rt = if (day_of_week > 0L) -edges else seq_len(n)
+    log_rt = seq_len(n)
+    ## log_rt = if (day_of_week > 0L) -edges else seq_len(n)
   )[what]
 
   out <- data.frame(

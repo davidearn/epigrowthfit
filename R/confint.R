@@ -222,7 +222,7 @@ confint.egf <- function(object,
       vl <- clusterMap(cl, do_uniroot, r = A_rows, i = seq_len(m))
 
     } else {
-      if (parallel$outfile != "") {
+      if (nzchar(parallel$outfile)) {
         outfile <- file(parallel$outfile, open = "wt")
         sink(outfile, type = "output")
         sink(outfile, type = "message")
@@ -231,7 +231,7 @@ confint.egf <- function(object,
         multicore = do.call(mcMap, c(list(f = do_uniroot, r = A_rows, i = seq_len(m)), parallel$options)),
         serial = Map(do_uniroot, r = A_rows, i = seq_len(m))
       )
-      if (parallel$outfile != "") {
+      if (nzchar(parallel$outfile)) {
         sink(type = "output")
         sink(type = "message")
       }

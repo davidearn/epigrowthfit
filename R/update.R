@@ -1,34 +1,43 @@
-#' Update a fitted model
+#' Update an object returned by an S3 method
 #'
-#' When \code{\link{match.call}} is called from a method for a generic function,
-#' a \link{call} to the method is returned, rather than a call to the
-#' generic function. Typically, the method is not exported, so the call
-#' cannot be evaluated by the default method for \code{\link{update}}.
-#' These methods for \code{\link{update}} circumvent this issue for objects
-#' returned by \code{\link{egf}}.
+#' When \code{\link{match.call}} is called from an S3 method for a generic
+#' function, a \link{call} to the method is returned, rather than a call
+#' to the generic function. Typically, the method is not exported, so the
+#' default method for \code{\link{update}} is unable to evaluate the call.
+#' These methods for \code{\link{getCall}} circumvent this issue for objects
+#' created by various S3 methods implemented in \pkg{epigrowthfit}.
 #'
-#' @param object
-#'   An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.
+#' @param x
+#'   A \link{list} with an element \code{call}, which should be a \link{call}.
 #' @param ...
-#'   Arguments for the updated \link{call} (see \code{\link{update}}).
-#' @param evaluate
-#'   A \link{logical} flag, indicating whether the updated \link{call}
-#'   should be evaluated.
+#'   Unused optional arguments.
 #'
 #' @return
-#' The updated \link{call} or the result of its evaluation,
-#' depending on \code{evaluate}.
+#' \code{x$call}, modified so that \code{x$call[[1L]]} is a generic function,
+#' not an S3 method.
 #'
-#' @name update.egf
+#' @name getCall.egf
 NULL
 
-#' @rdname update.egf
+#' @rdname getCall.egf
 #' @export
-update.egf <- function(object, ..., evaluate = TRUE) {
-  object$call[[1L]] <- quote(egf)
-  NextMethod("update")
+#' @importFrom stats getCall
+getCall.egf <- function(x, ...) {
+  call <- NextMethod("getCall")
+  call[[1L]] <- quote(egf)
+  call
 }
 
-#' @rdname update.egf
+#' @rdname getCall.egf
 #' @export
-update.egf_no_fit <- update.egf
+#' @importFrom stats getCall
+getCall.egf_no_fit <- getCall.egf
+
+#' @rdname getCall.egf
+#' @export
+#' @importFrom stats getCall
+getCall.egf_model_simulate <- function(x, ...) {
+  call <- NextMethod("getCall")
+  call[[1L]] <- quote(simulate)
+  call
+}

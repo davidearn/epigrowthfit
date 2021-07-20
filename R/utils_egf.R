@@ -1119,6 +1119,7 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
   o <- do.call(order, unname(Z_info[c("cor", "vec", "par")]))
   Z <- Z[, o, drop = FALSE]
   Z_info <- Z_info[o, , drop = FALSE]
+  row.names(Z_info) <- NULL
 
   ## Coefficients factored by relation to a nonlinear or
   ## dispersion model parameter

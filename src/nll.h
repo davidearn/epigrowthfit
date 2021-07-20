@@ -107,17 +107,14 @@ void add_nll_ob(Type &nll,
 		}
 		continue;
 	    }
-	    else
+	    switch(flags.flag_family)
 	    {
-	        switch(flags.flag_family)
-		{
-		case pois:
-		    nll_term = -egf::dpois_robust(x(i), log_lambda, true);
-		    break;
-		case nbinom:
-		    nll_term = -dnbinom_robust(x(i), log_mu, log_var_minus_mu, true);
-		    break;
-		}
+	    case pois:
+		nll_term = -egf::dpois_robust(x(i), log_lambda, true);
+		break;
+	    case nbinom:
+		nll_term = -dnbinom_robust(x(i), log_mu, log_var_minus_mu, true);
+		break;
 	    }
 	    nll += nll_term;
 
