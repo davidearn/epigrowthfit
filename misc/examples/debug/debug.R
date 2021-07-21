@@ -1,22 +1,21 @@
 library("epigrowthfit")
+options(warn = 1L, egf.cores = 4L)
 
 ## Simulate, estimate, return `c(error, gradient, convergence)`
-f <- function(N, model, mu, sigma) {
-  p <- length(mu)
-
-  zz <- egf_simulate(
-    N = N,
-    model = model,
+f <- function(model, N, mu, sigma) {
+  zz <- simulate(model,
+    nsim = N,
     mu = mu,
     Sigma = diag(rep_len(sigma^2, 4L)),
     cstart = 10
   )
   mm0 <- egf(zz, do_fit = FALSE)
 
+  p <- length(mu)
   beta_init <- colMeans(mm0$Y_init)
   b_init <- t(mm0$Y_init) - beta_init
-  theta_init <- c(log(apply(b_init, 1L, sd)), rep_len(0, 6L))
-  theta_init[p] <- 0
+  theta_init <- rep_len(0, p * (p + 1) / 2)
+  theta_init[seq_len(p - 1L)] <- log(apply(b_init[-p, ], 1L, sd))
   b_init <- b_init / exp(theta_init[seq_len(p)])
 
   mm <- try(update(mm0,
@@ -24,8 +23,7 @@ f <- function(N, model, mu, sigma) {
     control = egf_control(
       optimizer = egf_optimizer(f = optim, args = list(method = "BFGS"), control = list(maxit = 1000L, trace = FALSE)),
       inner_optimizer = egf_inner_optimizer(args = list(maxit = 1000L, trace = FALSE)),
-      trace = FALSE,
-      omp_num_threads = 4L
+      trace = FALSE
     ),
     init = c(beta_init, b_init, theta_init)
   ))
@@ -48,37 +46,46 @@ f <- function(N, model, mu, sigma) {
   unname(c(v1, v2, v3))
 }
 
-## Number of time series
-N <- 300L
-
 ## Model
 model <- egf_model(curve = "logistic", family = "nbinom")
 
+## Number of time series per simulation
+N <- 300L
+
+## Number of simulations
+n <- 30L
+
 ## Nonlinear and dispersion model parameters
 r <- log(2) / 20
-tinfl <- 100
+tinfl <- 160
 K <- 25000
 nbdisp <- 50
 
 ## Means
 mu <- log(c(r, tinfl, K, nbdisp))
 p <- length(mu)
-q <- p + p * (p + 1) / 2
 
 ## Standard deviations across time series
 sigma <- c(0.01, 0.05, 0.1, 0.5, 1)
 
-## Number of simulations
-n <- 30L
-
-res <- array(NA_real_, dim = c(2 * q + 1, n, length(sigma)))
+res <- array(NA_real_, dim = c(p * (p + 3L) + 1L, n, length(sigma)))
 set.seed(154051L)
 for (k in seq_along(sigma)) {
   for (j in seq_len(n)) {
     cat("commencing simulation", j, "of", n, "for sd value", k, "of", length(sigma), "\n")
-    res[, j, k] <- f(N = N, model = model, mu = mu, sigma = sigma[k])
+    res[, j, k] <- f(model = model, N = N, mu = mu, sigma = sigma[k])
   }
 }
+dn1 <- sprintf("%s_%s[%d]",
+  rep(c("error", "gradient"), each = p * (p + 3) / 2),
+  rep(c("beta", "theta"), times = c(p, p * (p + 1) / 2)),
+  c(seq_len(p), seq_len(p * (p + 1) / 2))
+)
+dimnames(res) <- list(
+  c(dn1, "convergence"),
+  NULL,
+  sprintf("sd=%.2f", sigma)
+)
 save.image("debug1.RData")
 
 
