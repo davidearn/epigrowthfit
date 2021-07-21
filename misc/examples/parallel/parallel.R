@@ -10,7 +10,7 @@ l <- readRDS(rds) # list(data, parameters)
 cpp <- list.files(pattern = "\\.cpp$")
 stopifnot(length(cpp) > 0L)
 for (s in cpp) {
-  compile(s)
+  compile(s, openmp = TRUE)
 }
 
 dll <- sub("\\.cpp$", "", cpp)
