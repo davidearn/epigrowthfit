@@ -1,35 +1,27 @@
 library("TMB")
 packageVersion("TMB") # 1.7.20
-stopifnot(openmp() > 0L)
-rds_out <- "res.rds"
+stopifnot(openmp(NULL) > 0L)
 
-rds <- setdiff(list.files(pattern = "\\.rds$"), rds_out)
-stopifnot(length(rds) == 1L)
-l <- readRDS(rds) # list(data, parameters)
-
-cpp <- list.files(pattern = "\\.cpp$")
-stopifnot(length(cpp) > 0L)
-for (s in cpp) {
-  compile(s, openmp = TRUE)
-}
-
-dll <- sub("\\.cpp$", "", cpp)
+dll <- paste0("parallel", 1:2)
 for (s in dll) {
+  compile(paste0(s, ".cpp"), openmp = TRUE)
   dyn.load(dynlib(s))
 }
 
-f <- function(dll, n, cores) {
-  obj <- MakeADFun(
-    data = l$data,
-    parameters = l$parameters,
-    random = "b",
-    DLL = dll,
-    inner.method = "newton",
-    inner.control = list(maxit = 1000L, trace = 1L),
-    silent = FALSE
-  )
-  benchmark(obj = obj, n = n, cores = cores)
-}
+a <- 0
+b <- 1
+log_sigma <- 0
 
-res <- sapply(dll, f, n = 1000L, cores = seq_len(min(8L, openmp())), simplify = FALSE)
-saveRDS(res, file = rds_out)
+set.seed(151354L)
+x <- seq.int(0, 10, length.out = 100001L)
+y <- a + b * x + rnorm(x, 0, exp(log_sigma))
+
+data <- list(y = y, x = x)
+parameters <- list(a = 0, b = 0, log_sigma = 0)
+
+f <- function(s) {
+  MakeADFun(data = data, parameters = parameters, DLL = s)
+}
+obj <- sapply(dll, f, simplify = FALSE)
+res <- lapply(obj, benchmark, n = 1000L, cores = seq_len(min(8L, openmp())))
+saveRDS(res, file = "res.rds")
