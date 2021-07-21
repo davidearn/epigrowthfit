@@ -23,5 +23,5 @@ f <- function(s) {
   MakeADFun(data = data, parameters = parameters, DLL = s)
 }
 obj <- sapply(dll, f, simplify = FALSE)
-res <- lapply(obj, benchmark, n = 1000L, cores = seq_len(min(8L, openmp())))
+res <- lapply(obj, benchmark, n = 1000L, cores = seq_len(min(8L, openmp(NULL))))
 saveRDS(res, file = "res.rds")
