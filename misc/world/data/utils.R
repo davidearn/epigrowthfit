@@ -12,6 +12,29 @@ rle_patch <- function(x) {
   list(lengths = diff(c(0L, i)), values = x[i])
 }
 
+locf <- function(x, x0 = NULL, period = 1L) {
+  if (period >= 2L) {
+    index <- gl(period, 1L, length(x))
+    split(x, index, drop = TRUE) <-
+      lapply(split(x, index, drop = TRUE), locf, x0 = x0)
+    return(x)
+  }
+  if (!anyNA(x)) {
+    return(x)
+  }
+  rle_x <- rle_patch(x)
+  y <- rle_x$values
+  if (is.na(y[1L]) && !is.null(x0)) {
+    y[1L] <- x0
+  }
+  if (anyNA(y[-1L])) {
+    argna_y <- which(c(FALSE, is.na(y[-1L])))
+    y[argna_y] <- y[argna_y - 1L]
+  }
+  rle_x$values <- y
+  inverse.rle(rle_x)
+}
+
 geom_mean <- function(x, na.rm = FALSE, zero.rm = FALSE) {
   if (any(x < 0, na.rm = TRUE)) {
     return(NaN)
@@ -43,29 +66,6 @@ stat_mode <- function(x, na.rm = FALSE) {
     return(NA)
   }
   u[argmax_f]
-}
-
-locf <- function(x, x0 = NULL, period = 1L) {
-  if (period >= 2L) {
-    index <- gl(period, 1L, length(x))
-    split(x, index, drop = TRUE) <-
-      lapply(split(x, index, drop = TRUE), locf, x0 = x0)
-    return(x)
-  }
-  if (!anyNA(x)) {
-    return(x)
-  }
-  rle_x <- rle_patch(x)
-  y <- rle_x$values
-  if (is.na(y[1L]) && !is.null(x0)) {
-    y[1L] <- x0
-  }
-  if (anyNA(y[-1L])) {
-    argna_y <- which(c(FALSE, is.na(y[-1L])))
-    y[argna_y] <- y[argna_y - 1L]
-  }
-  rle_x$values <- y
-  inverse.rle(rle_x)
 }
 
 linear <- function(x, x0 = NULL, x1 = NULL, period = 1L, geom = FALSE) {

@@ -1,29 +1,26 @@
-load("covid.RData")
-world <- covid[c("country_iso_alpha3", "Date", "cases_new")]
+covid19 <- readRDS("rds/covid19.rds")
+world <- covid19[c("country_iso_alpha3", "Date", "cases_new")]
 
 ## Treat negative numbers as missing
 world$cases_new[world$cases_new < 0L] <- NA
 
 ## Discard time series with fewer than 1000 cases
-totals <- tapply(covid$cases_total, covid$country_iso_alpha3, max, na.rm = TRUE)
-totals <- totals[totals >= 1000]
-world$country_iso_alpha3 <- factor(world$country_iso_alpha3, levels = names(totals))
+totals <- c(tapply(covid19$cases_total, covid19$country_iso_alpha3, max, na.rm = TRUE))
+world$country_iso_alpha3 <- factor(world$country_iso_alpha3, levels = names(totals)[totals > 1000])
 world <- world[!is.na(world$country_iso_alpha3), , drop = FALSE]
 
 ## Aggregate weekly
-g <- function(d) {
+f <- function(d) {
   n <- nrow(d) - 1L
   n <- n - n %% 7L
   d7 <- d[seq.int(1L, 1L + n, by = 7L), , drop = FALSE]
-  d7$cases_new[-1L] <- tapply(d$cases_new[-1L][seq_len(n)], gl(n / 7L, 7L), sum, na.rm = FALSE)
+  d7$cases_new[-1L] <- c(tapply(d$cases_new[-1L][seq_len(n)], gl(n / 7L, 7L), sum, na.rm = FALSE))
   d7
 }
 world_split <- split(world, world$country_iso_alpha3)
-world7_split <- lapply(world_split, g)
+world7_split <- lapply(world_split, f)
 
 ## Delete spurious zeros
-p0 <- tapply(world$cases_new, world$country_iso_alpha3,
-             function(x) sum(x == 0, na.rm = TRUE) / sum(!is.na(x)))
 h_ <- function(x, b, tol) {
   zero <- !is.na(x) & x == 0
   if (any(zero)) {
@@ -47,8 +44,4 @@ world7 <- do.call(rbind, world7_split)
 row.names(world)  <- NULL
 row.names(world7) <- NULL
 
-## Save everything
-totals <- sort(totals)
-p0 <- sort(p0, decreasing = TRUE)
-save(world, world7, totals, p0, file = "world.RData")
-
+saveRDS(list(world = world, world7 = world7), file = "rds/world.rds")

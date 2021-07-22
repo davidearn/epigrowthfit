@@ -901,14 +901,11 @@ l <- list(
     c("2020-12-28", "2021-01-08")
   )
 )
-l <- l[sort(names(l))]
 se <- matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, c("start", "end")))
 se <- as.data.frame(se, stringsAsFactors = FALSE)
 se[] <- lapply(se, as.Date)
-country_iso_alpha3 <- rep.int(gl(length(l), 1L, labels = names(l)), lengths(l))
-window <- factor(unsplit(lapply(lengths(l), seq_len), country_iso_alpha3))
-f <- function(x) x[do.call(order, unname(x)), , drop = FALSE]
-se <- unsplit(by(se, country_iso_alpha3, f, simplify = FALSE), country_iso_alpha3)
-
-endpoints <- data.frame(country_iso_alpha3, window, se, row.names = NULL)
-save(endpoints, file = "endpoints.RData")
+country_iso_alpha3 <- factor(rep.int(names(l), lengths(l)))
+window <- factor(unlist(lapply(c(table(country_iso_alpha3)), seq_len), FALSE, FALSE))
+o <- order(country_iso_alpha3, se$start, se$end)
+endpoints <- data.frame(country_iso_alpha3[o], window, se[o, , drop = FALSE], row.names = NULL)
+saveRDS(endpoints, file = "rds/endpoints.rds")

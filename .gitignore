@@ -8,11 +8,10 @@
 *.so
 *.Rcheck/
 *.RData
+*.rds
 *.Rhistory
 *.Rout
 *~
 
 !data/*.RData
 !data-raw/*.RData
-
-misc/world/data/weather/

@@ -1,6 +1,6 @@
 library("countrycode")
-source("R/utils.R")
-load("endpoints.RData")
+source("utils.R")
+endpoints <- readRDS("rds/endpoints.rds")
 
 ## ISO 3166-1 alpha-3 code
 country_iso_alpha3 <- levels(endpoints$country_iso_alpha3)
@@ -55,7 +55,7 @@ region <- countrycode(
 endpoints$region <- factor(region)[r]
 
 ## Population-weighted latitude and longitude
-load("coords.RData")
+coords <- readRDS("rds/coords.rds")
 coords$country_iso_alpha3 <- factor(coords$country_iso_alpha3, levels = country_iso_alpha3)
 f <- function(d) {
   c(weighted.mean(d$latitude,  d$population),
@@ -83,14 +83,14 @@ endpoints$latitude_band_20deg <- latitude_band_20deg[r]
 endpoints$longitude_band_20deg <- longitude_band_20deg[r]
 
 ## Population size
-load("population.RData")
+population <- readRDS("rds/population.rds")
 population <- population[population$year == "2020", , drop = FALSE]
 m <- match(country_iso_numeric, population$country_iso_numeric, 0L)
 endpoints$population <- population$population[m][r]
 rm(population)
 
 ## Mobility
-load("mobility.RData")
+mobility <- readRDS("rds/mobility.rds")
 s <- grep("^mobility_", names(mobility), value = TRUE)
 mobility$country_iso_alpha2 <- factor(mobility$country_iso_alpha2, levels = country_iso_alpha2)
 M <- get_summary(
@@ -114,7 +114,7 @@ endpoints[s] <- M[, s]
 rm(mobility)
 
 ## NPI
-load("npi.RData")
+npi <- readRDS("rds/npi.rds")
 s <- grep("^npi_", names(npi), value = TRUE)
 s_ordered <- grep("^npi_(flag|indic_(?!(E3|E4|H4|H5))).*$", names(npi), value = TRUE, perl = TRUE)
 s_numeric <- setdiff(s, s_ordered)
@@ -153,13 +153,13 @@ endpoints[s_numeric] <- M[, s_numeric]
 rm(npi)
 
 ## Vaccination
-load("vaccination.RData")
-s <- grep("^vaccinated_", names(vaccination), value = TRUE)
-vaccination$country_iso_alpha3 <- factor(vaccination$country_iso_alpha3, levels = country_iso_alpha3)
+vaccine <- readRDS("rds/vaccine.rds")
+s <- grep("^vaccinated_", names(vaccine), value = TRUE)
+vaccine$country_iso_alpha3 <- factor(vaccine$country_iso_alpha3, levels = country_iso_alpha3)
 M <- get_summary(
-  d = vaccination[s],
-  d_Date = vaccination$Date,
-  d_index = vaccination$country_iso_alpha3,
+  d = vaccine[s],
+  d_Date = vaccine$Date,
+  d_index = vaccine$country_iso_alpha3,
   start = endpoints$start,
   start_index = endpoints$country_iso_alpha3,
   func = mean,
@@ -173,10 +173,10 @@ M <- get_summary(
   geom = FALSE
 )
 endpoints[sub("_per_100$", "", s)] <- M[, s] / 100
-rm(vaccination)
+rm(vaccine)
 
 ## Weather
-load("weather.RData")
+weather <- readRDS("rds/weather.rds")
 s <- grep("^weather_", names(weather), value = TRUE)
 weather$country_iso_alpha3 <- factor(weather$country_iso_alpha3, levels = country_iso_alpha3)
 M <- get_summary(
@@ -199,7 +199,7 @@ endpoints[s] <- M[, s]
 rm(weather)
 
 ## Economic indicators
-load("devel.RData")
+devel <- readRDS("rds/devel.rds")
 v <- c(
   econ_gdp_per_capita = "GDP per capita (constant 2010 US$)",
   econ_gini           = "Gini index (World Bank estimate)"
@@ -220,8 +220,8 @@ rm(devel)
 ## Number of days since:
 ## * 50 persons reported infected
 ## * 1 in 500,000 persons reported infected
-load("covid.RData")
-covid$country_iso_alpha3 <- factor(covid$country_iso_alpha3, levels = country_iso_alpha3)
+covid19 <- readRDS("rds/covid19.rds")
+covid19$country_iso_alpha3 <- factor(covid19$country_iso_alpha3, levels = country_iso_alpha3)
 f <- function(d, min = 1L, population = NULL) {
   if (!is.null(population)) {
     min <- min * population
@@ -231,13 +231,14 @@ f <- function(d, min = 1L, population = NULL) {
   }
   d$Date[which.max(geq)]
 }
-Date_50 <- .Date(c(by(covid, covid$country_iso_alpha3, f, min = 50L)))
+Date_50 <- .Date(c(by(covid19, covid19$country_iso_alpha3, f, min = 50L)))
 Date_2in1m <- .Date(mapply(f,
-  d = split(covid, covid$country_iso_alpha3),
+  d = split(covid19, covid19$country_iso_alpha3),
   min = 2e-06,
   population = endpoints$population[match(country_iso_alpha3, endpoints$country_iso_alpha3)]
 ))
 endpoints$days_since_50 <- as.numeric(endpoints$start - Date_50[r])
 endpoints$days_since_2in1m <- as.numeric(endpoints$start - Date_2in1m[r])
+rm(covid19)
 
-save(endpoints, file = "endpoints.RData")
+saveRDS(endpoints, file = "rds/endpoints.rds")

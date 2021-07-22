@@ -1,5 +1,5 @@
-paths <- list.files("weather", pattern = "[0-9]{8}\\.RData$", recursive = TRUE)
-r <- range(as.Date(sub("^.*([0-9]{8})\\.RData$", "\\1", paths), format = "%Y%m%d"))
+paths <- list.files("weather", pattern = "[0-9]{8}\\.rds$", recursive = TRUE)
+Dates_range <- range(as.Date(sub("^.*([0-9]{8})\\.rds$", "\\1", paths), format = "%Y%m%d"))
 
 varnames <- c(
   # me = "metoffice"
@@ -9,15 +9,16 @@ varnames <- c(
   precipitation       = "precip",
   wind_speed          = "windspeed"
 )
-dirnames <- vapply(varnames, sprintf, "", fmt = "weather/%s_mean")
+dirnames <- sprintf("weather/%s_mean", varnames)
+names(dirnames) <- names(varnames)
 
-f <- function(dirname, Dates_full = seq(r[1L], r[2L], by = 1)) {
-  paths <- list.files(dirname, pattern = "[0-9]{8}\\.RData", full.names = TRUE)
+f <- function(dirname, Dates_full = seq(Dates_range[1L], Dates_range[2L], by = 1)) {
+  paths <- list.files(dirname, pattern = "[0-9]{8}\\.rds", full.names = TRUE)
   if (length(paths) == 0L) {
     return(NULL)
   }
-  Dates <- as.Date(sub("^.*([0-9]{8})\\.RData$", "\\1", paths), format = "%Y%m%d")
-  lx <- lapply(paths, function(path) {load(path); x})
+  Dates <- as.Date(sub("^.*([0-9]{8})\\.rds$", "\\1", paths), format = "%Y%m%d")
+  lx <- lapply(paths, readRDS)
   x <- unlist(lx)
   d <- data.frame(
     country_iso_alpha3 = factor(names(x)),
@@ -49,4 +50,4 @@ weather <- data.frame(
   lapply(ld, `[[`, 3L)
 )
 names(weather)[-(1:2)] <- sprintf("weather_%s", names(weather)[-(1:2)])
-save(weather, file = "weather.RData")
+saveRDS(weather, file = "rds/weather.rds")
