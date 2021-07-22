@@ -1,51 +1,34 @@
 library("TMB")
 packageVersion("TMB") # 1.7.20
+dll <- "gradient"
 
-rds <- list.files(pattern = "\\.rds$")
-stopifnot(length(rds) == 1L)
-l <- readRDS(rds) # list(actual, data, parameters)
-
-cpp <- list.files(pattern = "\\.cpp$")
-stopifnot(length(cpp) == 1L)
-compile(cpp)
-
-dll <- sub("\\.cpp$", "", cpp)
+l <- readRDS(paste0(dll, ".rds")) # list(actual, data, parameters)
+compile(paste0(dll, ".cpp"), openmp = TRUE)
 dyn.load(dynlib(dll))
 
-## openmp(6L)
+openmp(4L)
 obj <- MakeADFun(
   data = l$data,
   parameters = l$parameters,
   random = "b",
   DLL = dll,
-  inner.method = "newton",
-  inner.control = list(maxit = 1000L, trace = 1L),
-  silent = FALSE
+  inner.control = list(maxit = 1000L)
 )
-opt <- with(obj, optim(par, fn, gr, method = "BFGS", control = list(maxit = 1000L, trace = 1L)))
-opt$convergence # O
 
-## Optimizer seems to have arrived somewhere reasonable
-d <- data.frame(
-  ## Generative model from which data were simulated
-  actual = l$actual,
-  ## Fitted model
-  fitted = obj$env$last.par.best
-)
-random <- obj$env$random
-d[-random, ]
+p0 <- obj$par
+n <- length(p0)
+res <- matrix(NA_real_, nrow = n + 1L + n, ncol = 6L)
 
-## Yet the objective function gradient is extremely large
-par <- d$fitted[-random]
-(f0 <- obj$fn(par))
-(g0 <- obj$gr(par))
-max(abs(g0)) # roughly 2e+12
-
-## Sampling a neighbourhood of `par` ...
-set.seed(230902L)
-res <- replicate(100L, {
-  p <- par + rnorm(par, 0, 0.001)
-  c(obj$fn(p), obj$gr(p))
-})
-all(res[1L, ] > f0) # TRUE
-max(abs(res[-1L, ])) # roughly 1e+05
+set.seed(235905L)
+for (i in seq_len(ncol(res))) {
+  p1 <- optim(p0, obj$fn, obj$gr, method = "BFGS", control = list(maxit = 1000L, trace = 1L))$par
+  f1 <- obj$fn(p1)
+  g1 <- obj$gr(p1)
+  if (length(g1) != n) {
+    g1 <- rep_len(NaN, n)
+  }
+  res[, i] <- c(p1, f1, g1)
+  dp <- max(abs(p1 - p0))
+  p0 <- p1 + rnorm(n, 0, max(1e-06, 0.25 * dp))
+}
+r <- sdreport(obj)
