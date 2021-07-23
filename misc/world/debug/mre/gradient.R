@@ -2,7 +2,7 @@ library("TMB")
 packageVersion("TMB") # 1.7.20
 dll <- "gradient"
 
-l <- readRDS(paste0(dll, ".rds")) # list(actual, data, parameters)
+l <- readRDS(paste0(dll, ".rds")) # list(data, parameters)
 compile(paste0(dll, ".cpp"), openmp = TRUE)
 dyn.load(dynlib(dll))
 
@@ -17,9 +17,9 @@ obj <- MakeADFun(
 
 p0 <- obj$par
 n <- length(p0)
-res <- matrix(NA_real_, nrow = n + 1L + n, ncol = 6L)
+res <- matrix(NA_real_, nrow = n + 1L + n, ncol = 3L)
 
-set.seed(235905L)
+set.seed(110108L)
 for (i in seq_len(ncol(res))) {
   p1 <- optim(p0, obj$fn, obj$gr, method = "BFGS", control = list(maxit = 1000L, trace = 1L))$par
   f1 <- obj$fn(p1)
