@@ -905,7 +905,10 @@ se <- matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, c("start"
 se <- as.data.frame(se, stringsAsFactors = FALSE)
 se[] <- lapply(se, as.Date)
 country_iso_alpha3 <- factor(rep.int(names(l), lengths(l)))
-window <- factor(unlist(lapply(c(table(country_iso_alpha3)), seq_len), FALSE, FALSE))
-o <- order(country_iso_alpha3, se$start, se$end)
-endpoints <- data.frame(country_iso_alpha3[o], window, se[o, , drop = FALSE], row.names = NULL)
+endpoints <- data.frame(country_iso_alpha3, se)
+o <- do.call(order, unname(endpoints))
+endpoints <- endpoints[o, , drop = FALSE]
+endpoints$window <- factor(unlist(lapply(c(table(country_iso_alpha3)), seq_len), FALSE, FALSE))
+endpoints <- endpoints[c("country_iso_alpha3", "window", "start", "end")]
+row.names(endpoints) <- NULL
 saveRDS(endpoints, file = "rds/endpoints.rds")

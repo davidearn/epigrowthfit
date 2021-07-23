@@ -388,122 +388,123 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = TRUE, ...) {
   out
 }
 
-# #' Plot likelihood profiles
-# #'
-# #' A method for inspecting computed likelihood profiles.
-# #'
-# #' @param x
-# #'   An `"egf_profile"` object returned by [profile.egf()].
-# #' @param subset
-# #'   An expression to be evaluated in `x`. Must evaluate to a
-# #'   logical vector indexing rows of `x`. Only indexed profiles
-# #'   are plotted. The default (`NULL`) is to plot all profiles.
-# #' @param sqrt
-# #'   A logical scalar. If `TRUE`, then square root-transformed
-# #'   deviance is plotted.
-# #' @param level
-# #'   A numeric vector with elements in (0,1), or otherwise `NULL`.
-# #'   If non-`NULL` and `sqrt = FALSE`, then line segments are
-# #'   drawn showing the intersection of the profile with lines
-# #'   `deviance = qchisq(level, df = 1)`.
-# #' @param ...
-# #'   Optional graphical parameters passed to [graphics::plot()],
-# #'   such as `type = "o"`. Note that `axes = FALSE` and `ann = FALSE`
-# #'   are hard-coded, so axes and axis titles cannot be modified.
-# #'
-# #' @details
-# #' See topic [`nse`] for details on nonstandard evaluation of `subset`.
-# #'
-# #' @return
-# #' `NULL` (invisibly).
-# #'
-# #' @export
-# #' @import graphics
-# #' @importFrom stats confint
-# plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
-#                              level = NULL, ...) {
-#   subset <- subset_to_index(substitute(subset), x, parent.frame())
-#   g <- factor(x$linear_combination,
-#     levels = levels(droplevels(x$linear_combination[subset]))
-#   )
-#   x_split <- split(x, g)
-#
-#   stop_if_not_true_false(sqrt)
-#   f <- if (sqrt) base::sqrt else identity
-#   ymax <- f(max(x$deviance, na.rm = TRUE))
-#   ylab <- if (sqrt) expression(sqrt("deviance")) else "deviance"
-#   ann_with_par <- length(x) > 3L
-#
-#   any_segments <- !sqrt && is.numeric(level) && length(level) > 0L
-#   if (any_segments) {
-#     stop_if_not(
-#       level > 0,
-#       level < 1,
-#       m = "Elements of `level` must be numbers\nin the interval (0,1)."
-#     )
-#
-#     ## Line segment `j` at height `h[j]` in all plots
-#     h <- f(qchisq(level, df = 1))
-#     ## Line segment `j` to start at `v_lower[[i]][j]`
-#     ## and end at `v_upper[[i]][j]` in plot `i`
-#     cil <- lapply(level, function(p) confint(x, level = p))
-#     m <- match(levels(g), levels(x$linear_combination))
-#     v_lower <- lapply(m, function(i) vapply(cil, `[`, 0, i, "lower"))
-#     v_upper <- lapply(m, function(i) vapply(cil, `[`, 0, i, "upper"))
-#   }
-#
-#   op <- par(
-#     mar = c(3.5, 4, 1, 1),
-#     tcl = -0.4,
-#     cex.axis = 0.8,
-#     cex.lab = 0.9
-#   )
-#   on.exit(par(op))
-#
-#   for (i in seq_along(x_split)) {
-#     plot(
-#       f(deviance) ~ value,
-#       data = x_split[[i]],
-#       ylim = c(0, ymax),
-#       ann = FALSE,
-#       axes = FALSE,
-#       ...
-#     )
-#     if (any_segments) {
-#       segments(
-#         x0 = v_lower[[i]],
-#         x1 = v_upper[[i]],
-#         y0 = h,
-#         y1 = h,
-#         lty = 3
-#       )
-#       segments(
-#         x0 = c(v_lower[[i]], v_upper[[i]]),
-#         x1 = c(v_lower[[i]], v_upper[[i]]),
-#         y0 = par("usr")[3L],
-#         y1 = rep.int(h, 2L),
-#         lty = 3
-#       )
-#       text(
-#         x = mean(par("usr")[1:2]),
-#         y = h,
-#         labels = sprintf("%.3g%%", 100 * level),
-#         pos = 3, offset = 0.1, cex = 0.8
-#       )
-#     }
-#     box()
-#     axis(side = 1, mgp = c(3, 0.5, 0))
-#     axis(side = 2, mgp = c(3, 0.7, 0), las = 1)
-#     if (ann_with_par) {
-#       xlab <- as.character(x_split[[i]]$par[1L])
-#       main <- sprintf("window = %s", x_split[[i]]$window[1L])
-#       title(main = main, line = 2)
-#     } else {
-#       xlab <- sprintf("linear combination %d", x_split[[i]]$linear_combination[1L])
-#     }
-#     title(xlab = xlab, line = 2)
-#     title(ylab = ylab, line = 2.25)
-#   }
-#
-#   invisible(NULL)
-# }
+#' Plot likelihood profiles
+#'
+#' A method for plotting likelihood profiles.
+#'
+#' @param x
+#'   An \code{"\link[=profile.egf]{egf_profile}"} object.
+#' @param subset
+#'   An expression to be evaluated in \code{x}. Must evaluate to a
+#'   \link{logical} vector indexing rows of \code{x}. Only indexed
+#'   profiles are plotted. The default (\code{\link{NULL}}) is to
+#'   plot all profiles.
+#' @param sqrt
+#'   A \link{logical} flag.
+#'   If \code{TRUE}, then square root-transformed deviance is plotted.
+#' @param level
+#'   A \link{numeric} vector with elements in (0,1). If \code{sqrt = FALSE},
+#'   then line segments are drawn to show the intersection of the profile
+#'   with lines at \code{deviance = \link{qchisq}(level, df = 1)}.
+#' @param ...
+#'   Optional graphical parameters passed to \code{\link{plot}},
+#'   such as \code{type = "o"}. Note that \code{axes = FALSE} and
+#'   \code{ann = FALSE} are hard-coded, so axes and axis titles
+#'   may not be modifiable.
+#'
+#' @details
+#' See topic \code{\link{nse}} for details on nonstandard evaluation
+#' of \code{subset}.
+#'
+#' @return
+#' \code{\link{NULL}} (invisibly).
+#'
+#' @export
+#' @import graphics
+#' @importFrom stats confint
+plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE, level = NULL, ...) {
+  subset <- subset_to_index(substitute(subset), data = x, enclos = parent.frame())
+  m <- match(levels(factor(x$linear_combination[subset])), levels(x$linear_combination))
+
+  stop_if_not_true_false(sqrt)
+  f <- if (sqrt) base::sqrt else identity
+  ymax <- f(max(x$deviance, na.rm = TRUE))
+  ylab <- if (sqrt) expression(sqrt("deviance")) else "deviance"
+  do_ann_with_par <- (attr(x, "method") == "par")
+
+  do_segments <- !sqrt &&
+    is.numeric(level) &&
+    length(level) > 0L &&
+    any(ok <- is.finite(level) & level > 0 & level < 1)
+  if (do_segments) {
+    level <- level[ok]
+    ## Line segments at heights `h` in all plots
+    h <- qchisq(level, df = 1)
+    ## Line segment `j` to start at `v_lower[[i]][j]`
+    ## and end at `v_upper[[i]][j]` in plot `i`
+    ci <- lapply(level, function(p) confint(x, level = p))
+    v_lower <- lapply(m, function(i) vapply(ci, `[`, 0, i, "lower"))
+    v_upper <- lapply(m, function(i) vapply(ci, `[`, 0, i, "upper"))
+  }
+
+  op <- par(
+    mar = c(3.5, 4, 1, 1),
+    tcl = -0.4,
+    cex.axis = 0.8,
+    cex.lab = 0.9
+  )
+  on.exit(par(op))
+
+  for (i in m) {
+    r <- which(as.integer(x$linear_combination) == i)
+    plot(
+      f(deviance) ~ value,
+      data = x,
+      subset = r,
+      ylim = c(0, ymax),
+      ann = FALSE,
+      axes = FALSE,
+      ...
+    )
+    if (do_segments) {
+      v_lower <- vapply(ci, `[`, 0, i, "lower")
+      v_upper <- vapply(ci, `[`, 0, i, "upper")
+      segments(
+        x0 = v_lower,
+        x1 = v_upper,
+        y0 = h,
+        y1 = h,
+        lty = 3
+      )
+      segments(
+        x0 = c(v_lower, v_upper),
+        x1 = c(v_lower, v_upper),
+        y0 = par("usr")[3L],
+        y1 = rep.int(h, 2L),
+        lty = 3
+      )
+      text(
+        x = mean(par("usr")[1:2]),
+        y = h,
+        labels = sprintf("%.3g%%", 100 * level),
+        pos = 3,
+        offset = 0.1,
+        cex = 0.8
+      )
+    }
+    box()
+    axis(side = 1, mgp = c(3, 0.5, 0))
+    axis(side = 2, mgp = c(3, 0.7, 0), las = 1)
+    if (do_ann_with_par) {
+      xlab <- as.character(x$par[r[1L]])
+      main <- sprintf("window = %s", x$window[r[1L]])
+      title(main = main, line = 2)
+    } else {
+      xlab <- sprintf("linear combination %d", i)
+    }
+    title(xlab = xlab, line = 2)
+    title(ylab = ylab, line = 2.25)
+  }
+
+  invisible(NULL)
+}

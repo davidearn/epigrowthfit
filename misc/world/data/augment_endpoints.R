@@ -213,7 +213,7 @@ lo <- function(x) {
   if (all(argna <- is.na(x))) NA else x[max(which(!argna))]
 }
 lodevel <- aggregate(devel["value"], by = devel[c("country_iso_alpha3", "indic")], lo, drop = FALSE)
-endpoints[levels(lodevel$indic)] <- tapply(lodevel$value, lodevel$indic, `[`, r, simplify = FALSE)
+endpoints[levels(lodevel$indic)] <- c(tapply(lodevel$value, lodevel$indic, `[`, r, simplify = FALSE))
 endpoints$econ_gini <- endpoints$econ_gini / 100
 rm(devel)
 
