@@ -21,8 +21,8 @@ void eval_log_curve_exponential(vector<Type> &time,
 
 /* Subexponential model
    log(c(t))
-   = log((c0^(1 - p) + (1 - p) * alpha * t)^(1 / (1 - p)))
-   = log(c0^(1 - p) + (1 - p) * alpha * t) / (1 - p)
+   = log(c0 * (1 + (1 - p) * alpha * t / c0^(1 - p))^(1 / (1 - p)))
+   = log(c0) + log(1 + (1 - p) * alpha * t / c0^(1 - p)) / (1 - p)
 */
 template<class Type>
 void eval_log_curve_subexponential(vector<Type> &time,
@@ -37,11 +37,11 @@ void eval_log_curve_subexponential(vector<Type> &time,
     {
 	if (asDouble(time(i)) > 0.0)
 	{
-	    time(i) = logspace_add(one_minus_p * log_c0, log_one_minus_p + log_alpha + log(time(i))) / one_minus_p;
+	    time(i) = log_c0 + logspace_add(Type(0.0), log_one_minus_p + log_alpha + log(time(i)) - one_minus_p * log_c0) / one_minus_p;
 	}
 	else if (asDouble(time(i)) < 0.0)
 	{
-	    time(i) = logspace_sub(one_minus_p * log_c0, log_one_minus_p + log_alpha + log(-time(i))) / one_minus_p; 
+	    time(i) = log_c0 + logspace_sub(Type(0.0), log_one_minus_p + log_alpha + log(-time(i)) - one_minus_p * log_c0) / one_minus_p; 
 	}
 	else
 	{
@@ -52,20 +52,21 @@ void eval_log_curve_subexponential(vector<Type> &time,
 
 /* Gompertz model
    log(c(t))
-   = log(K * (c0 / K)^(exp(-alpha * t)))
-   = log(K) + exp(-alpha * t) * (log(c0) - log(K))
+   = log(K * exp(-exp(-alpha * (t - tinfl))))
+   = log(K) - exp(-alpha * (t - tinfl))
 */
 template<class Type>
 void eval_log_curve_gompertz(vector<Type> &time,
 			     Type log_alpha,
-			     Type log_c0,
+			     Type log_tinfl,
 			     Type log_K)
 {
     Type alpha = exp(log_alpha);
+    Type tinfl = exp(log_tinfl);
     int n = time.size();
     for (int i = 0; i < n; ++i)
     {
-	time(i) = log_K + exp(-alpha * time(i)) * (log_c0 - log_K);
+        time(i) = log_K - exp(-alpha * (time(i) - tinfl));
     }
 }
 
@@ -91,8 +92,8 @@ void eval_log_curve_logistic(vector<Type> &time,
 
 /* Richards model
    log(c(t))
-   = log(K / (1 + a * exp(-r * a * (t - tinfl)))^(1 / a))
-   = log(K) - log(1 + a * exp(-r * a * (t - tinfl))) / a
+   = log(K / (1 + a * exp(-a * r * (t - tinfl)))^(1 / a))
+   = log(K) - log(1 + a * exp(-a * r * (t - tinfl))) / a
 */
 template<class Type>
 void eval_log_curve_richards(vector<Type> &time,
@@ -107,7 +108,7 @@ void eval_log_curve_richards(vector<Type> &time,
     int n = time.size();
     for (int i = 0; i < n; ++i)
     {
-	time(i) = log_K - logspace_add(Type(0.0), log_a - r * a * (time(i) - tinfl)) / a;
+	time(i) = log_K - logspace_add(Type(0.0), log_a - a * r * (time(i) - tinfl)) / a;
     }
 }
 
@@ -133,7 +134,7 @@ void eval_log_curve(vector<Type> &time,
     case gompertz:
 	eval_log_curve_gompertz(time,
 				Y_row(indices.index_log_alpha),
-				Y_row(indices.index_log_c0),
+				Y_row(indices.index_log_tinfl),
 				Y_row(indices.index_log_K));
 	break;
     case logistic:

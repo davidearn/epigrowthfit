@@ -60,10 +60,10 @@ get_par_names.default <- function(object, link = TRUE, ...) {
 get_par_names.egf_model <- function(object, link = TRUE, ...) {
   par_names <- switch(object$curve,
     exponential    = c("r", "c0"),
-    logistic       = c("r", "tinfl", "K"),
-    richards       = c("r", "tinfl", "K", "a"),
     subexponential = c("alpha", "c0", "p"),
-    gompertz       = c("alpha", "c0", "K")
+    gompertz       = c("alpha", "tinfl", "K"),
+    logistic       = c("r", "tinfl", "K"),
+    richards       = c("r", "tinfl", "K", "a")
   )
   if (object$excess) {
     par_names <- c(par_names, "b")
@@ -1335,7 +1335,7 @@ make_tmb_parameters <- function(tmb_data, model, frame, frame_par, do_fit, init)
       p <- 0.8
       alpha <- switch(model$curve,
         subexponential = r * c0^(1 - p),
-        gompertz = r / log(K / c0),
+        gompertz = r / (log(K) - log(c0)),
         NA_real_
       )
       Y_init <- data.frame(r, alpha, c0, tinfl, K, p)
@@ -1343,8 +1343,8 @@ make_tmb_parameters <- function(tmb_data, model, frame, frame_par, do_fit, init)
 
       ## Link transform
       Y_init[] <- Map(function(x, s) match_link(s)(x),
-                      x = Y_init,
-                      s = string_get_link(names(Y_init))
+        x = Y_init,
+        s = string_get_link(names(Y_init))
       )
       names(Y_init) <- string_add_link(names(Y_init))
 

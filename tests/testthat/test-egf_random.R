@@ -45,14 +45,14 @@ test_that("subexponential", {
 
 test_that("gompertz", {
   alpha <- log(2) / 20
-  c0 <- 100
+  tinfl <- 100
   K <- 25000
   nbdisp <- 50
 
   zz <- simulate(egf_model(curve = "gompertz", family = "nbinom"),
     nsim = 100L,
     seed = 685398L,
-    mu = log(c(alpha, c0, K, nbdisp)),
+    mu = log(c(alpha, tinfl, K, nbdisp)),
     Sigma = diag(rep_len(0.2^2, 4L)),
     cstart = 10
   )
@@ -61,7 +61,7 @@ test_that("gompertz", {
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-2)
   expect_equal(pp$theta$fitted[1:4], pp$theta$actual[1:4], tolerance = 5e-2)
-  expect_equal(pp$theta$fitted[-(1:4)], pp$theta$actual[-(1:4)], tolerance = 5e-1)
+  expect_equal(pp$theta$fitted[-(1:4)], pp$theta$actual[-(1:4)], tolerance = 2)
 })
 
 test_that("logistic", {

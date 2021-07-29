@@ -255,12 +255,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     ## Time: daily from 0 days to (inflection time)+1 days
     if (is.null(Sigma)) {
       ## Fixed intercept model: inflection time is known up front.
-      tinfl <- switch(object$curve,
-        gompertz = log(mu[["log(K)"]] - mu[["log(c0)"]]) / exp(mu[["log(alpha)"]]),
-        logistic =,
-        richards = exp(mu[["log(tinfl)"]])
-      )
-      tmax <- ceiling(tinfl) + 1
+      tmax <- ceiling(exp(mu[["log(tinfl)"]])) + 1
     } else {
       ## Random intercept model: inflection time is not known up front.
       ## Two passes are necessary. The first pass asks for time series
@@ -336,12 +331,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     set_RNGstate()
     Y <- zz$tmb_out$simulate(init)$Y
     colnames(Y) <- par_names
-    tinfl <- switch(object$curve,
-      gompertz = log(Y[, "log(K)"] - Y[, "log(c0)"]) / exp(Y[, "log(alpha)"]),
-      logistic =,
-      richards = exp(Y[, "log(tinfl)"])
-    )
-    tmax <- ceiling(tinfl) + 1
+    tmax <- ceiling(exp(Y[, "log(tinfl)"])) + 1
     time <- lapply(tmax, function(x) seq.int(0, x, by = 1))
     data <- data.frame(
       ts = rep.int(gl(nsim, 1L), lengths(time)),

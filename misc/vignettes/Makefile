@@ -1,25 +1,31 @@
 SHELL = bash
 R = R
-NAME = epigrowthfit-vignette
 
-build: $(NAME).pdf
+vignettes = \
+	model
+pdf = $(addsuffix .pdf,$(vignettes))
+tex = $(addsuffix .tex,$(vignettes))
+bib = epigrowthfit
+
+build: $(pdf)
 	#$(R) --no-echo -e 'tools::compactPDF("$<", gs_quality = "ebook")'
-	rm -rf cache figure
-	rm -f *.{bbl,blg,log,out,synctex.gz,tex,toc,aux}
+	rm -f $(addsuffix .tex,$(vignettes))
+	rm -f *.{aux,log,out,toc} *~
 
-$(NAME).pdf: $(NAME).tex $(NAME).bib logo.png
+%.pdf: %.tex logo.png
 	pdflatex -interaction=batchmode $<
-	bibtex $(NAME)
+	#bibtex $(bib)
 	pdflatex -interaction=batchmode $<
 	pdflatex $<
 
-$(NAME).tex: $(NAME).Rnw knit_theme.css
+%.tex: %.Rnw preamble.tex knit_config.R knit_theme.css
 	$(R) --no-echo -e 'knitr::knit("$<")'
 
-all: $(NAME).pdf
+all: $(pdf)
 
 new: clean
-	rm -rf cache figure $(NAME).{aux,pdf}
+	rm -f $(pdf)
 
 clean:
-	rm -f *.{bbl,blg,log,out,synctex.gz,tex,toc}
+	rm -f $(tex)
+	rm -f *.{aux,log,out,toc} *~

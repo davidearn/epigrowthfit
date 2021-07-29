@@ -35,18 +35,18 @@ test_that("subexponential", {
 
 test_that("gompertz", {
   alpha <- log(2) / 20
-  c0 <- 100
+  tinfl <- 100
   K <- 25000
   nbdisp <- 50
 
   zz <- simulate(egf_model(curve = "gompertz", family = "nbinom"),
     nsim = 1L,
     seed = 720748L,
-    mu = log(c(alpha, c0, K, nbdisp)),
+    mu = log(c(alpha, tinfl, K, nbdisp)),
     cstart = 10
   )
   mm <- egf(zz)
-  expect_equal(mm$best, zz$actual, tolerance = 1e-2)
+  expect_equal(mm$best, zz$actual, tolerance = 1e-1)
 })
 
 test_that("logistic", {

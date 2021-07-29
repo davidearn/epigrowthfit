@@ -1,0 +1,291 @@
+%\VignetteIndexEntry{Models of epidemic growth}
+%\VignetteEngine{knitr::knitr}
+
+\input{preamble.tex}
+
+\title{\Large Models of epidemic growth}
+\author{\normalsize Mikael Jagan}
+\date{\normalsize \today}
+
+
+%%%%%%%%%%%%%%%%
+%% START HERE %%
+%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+<<source-knit-config, echo=FALSE, include=FALSE, cache=FALSE>>=
+source("knit_config.R", local = knitr::knit_global())
+@
+
+\section{Introduction}
+\label{sec:intro}
+
+The most basic application of \pkg{epigrowthfit} is to fit a nonlinear
+function of time to a segment of a disease incidence time series in
+which observations (i.e., the number of cases observed over a fixed
+interval) are roughly increasing in time. Here, to ``fit'' means to
+find the model $\xi \in \mathbb{R}^{p}$ with the greatest likelihood
+given the data, where $\xi$ contains all of the parameters of the
+nonlinear function and any dispersion parameters of the family of
+statistical distributions assigned to observations.
+
+This is a special case of the more general application, which is to
+fit such a model \emph{jointly} to one or more segments of one or more
+time series. In this more general case, the ``top level'' model $\xi$
+varies between segments according to a ``bottom level'' generalized
+linear mixed effects model specified by the user.
+
+This vignette documents the different top level models implemented 
+in \pkg{epigrowthfit}, the general form of the bottom level model, 
+and some details about likelihood computation.
+
+
+\section{Top level model of epidemic growth}
+\label{sec:top}
+
+Let $F$ be a family of discrete probability distributions supported 
+on $\mathbb{N} \cup \{0\}$ and parametrized by a mean $\mu$ and zero
+or more dispersion parameters $\theta$. Let $X(s,t)$ denote the number 
+of cases observed between two times $s,t \in \mathbb{R}$, $s \leq t$, 
+and suppose
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:top1}
+X(s,t) \sim F(\mu(s,t),\theta)
+\end{equation}
+\end{linenomath}
+%
+for all $s \leq t$. Now let $c(t;\eta)$ denote the expected number 
+of cases observed \emph{up to} time $t \in \mathbb{R}$. Here, $c$ is a
+non-negative function of time $t$ with zero or more parameters $\eta$. 
+It follows that
+% 
+\begin{linenomath}
+\begin{equation}
+\label{eq:top2}
+\mu(s,t) = c(t;\eta) - c(s;\eta)\,.
+\end{equation}
+\end{linenomath}
+%
+Together, the function $c$, the family $F$, and the parameter
+$\xi = (\eta,\theta) \in \mathbb{R}^{p}$ specify a top level model 
+of observed disease spread.
+
+Currently, users of \pkg{epigrowthfit} can choose between five
+functions $c$ and two families $F$. This choice should depend on
+features of the disease incidence data being fit. The different
+options are summarized below.
+% 
+
+\footnote{%
+  We assume here that $X$ and $c$ count cases associated with one wave
+  of one epidemic. What constitutes an epidemic, what constitutes a
+  wave, and which cases are associated with a given wave are decisions
+  for the modeler. These issues are discussed in \vignette{windows}.
+}
+
+\subsection{Expected cumulative incidence functions \tops{$c(t;\eta)$}{c(t;eta)}}
+
+\subsubsection{Exponential model}
+
+If $c(t)$ follows
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:exponential-de}
+c'(t) = r c(t)\,,\qquad c(0) > 0\,,\qquad r > 0\,,
+\end{equation}
+\end{linenomath}
+%
+then $c(t)$ grows exponentially as
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:exponential}
+c(t) = c(0) \exp(r t)\,.
+\end{equation}
+\end{linenomath}
+%
+This model is appropriate only for segments of disease incidence 
+time series in which observations increase roughly linearly in time 
+on a logarithmic scale, since
+%
+\begin{linenomath}
+\begin{equation}
+\frac{\text{d}}{\text{d}t} \log(c(t) - c(t - 1)) = r\,.
+\end{equation}
+\end{linenomath}
+%
+Exponential growth tends to arise when a large proportion of the 
+population remains susceptible to the disease and few control measures 
+have been implemented to reduce potentially infectious contacts.
+
+
+\subsubsection{Subexponential model}
+
+If $c(t)$ follows
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:subexponential-de}
+c'(t) = \alpha c(t)^{p}\,,\qquad c(0) > 0\,,\qquad \alpha > 0\,,\qquad p \in (0,1)\,,
+\end{equation}
+\end{linenomath}
+%
+then $c(t)$ grows subexponentially as
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:subexponential}
+c(t) = 
+\begin{cases}
+0\,, & t < t^{*}\,, \\
+c(0) \big(1 + \frac{1 - p}{c(0)^{1 - p}} \alpha t\big)^{1/(1 - p)}\,, & t \geq t^{*}\,,
+\end{cases}
+\end{equation}
+\end{linenomath}
+%
+where $t^{*} = -c(0)^{1 - p} / \alpha (1 - p)$.%
+\footnote{%
+  For $t < t^{*}$, $c \equiv 0$ is not the necessarily the unique
+  solution of \cref{eq:subexponential-de}. However, in the context
+  of population growth, it is the only meaningful solution.
+}
+Note that the limits $p \to 0^{+}$ and $p \to 1^{-}$ correspond to
+linear and exponential growth, respectively, each with rate $\alpha$.
+This model is appropriate only for segments of disease incidence
+time series in which observations increase sublinearly on a
+logarithmic scale, since
+%
+\begin{linenomath}
+\begin{equation}
+\frac{\text{d}}{\text{d}t} \log(c(t) - c(t - 1)) > 0\,,\qquad \lim_{t \to \infty} \frac{\text{d}}{\text{d}t} \log(c(t) - c(t - 1)) = 0\,.
+\end{equation}
+\end{linenomath}
+%
+Subexponential growth tends to arise when disease spread is restricted
+to clusters of individuals within a population.
+
+
+\subsubsection{Gompertz model}
+
+If $c(t)$ follows
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:gompertz-de}
+c'(t) = \alpha c(t) \log\Big(\frac{K}{c(t)}\Big)\,,\qquad 0 < c(0) < K\,,\qquad \alpha > 0\,,
+\end{equation}
+\end{linenomath}
+%
+then $c(t)$ grows sigmoidally as
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:gompertz-no-sub}
+c(t) = K \Big(\frac{c(0)}{K}\Big)^{\exp(-\alpha t)}\,,
+\end{equation}
+\end{linenomath}
+%
+reaching an inflection point at 
+$t = \tinfl = \log(\log(K / c(0))) / \alpha$
+and approaching $K$ as $t \to \infty$. 
+Substituting $c(0) / K = \exp(-\exp(\alpha \tinfl))$
+in \cref{eq:gompertz-no-sub} yields
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:gompertz}
+c(t) = K \exp(-\exp(-\alpha (t - \tinfl)))\,.
+\end{equation}
+\end{linenomath}
+%
+This parametrization is convenient for estimation because $\tinfl$ is
+unconstrained (allowed to take any value in $\mathbb{R}$), whereas 
+$c(0)$ is constrained to the interval $(0,K)$.
+
+
+\subsubsection{Logistic model}
+
+If $c(t)$ follows
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:logistic-de}
+c'(t) = r c(t) \Big(1 - \frac{c(t)}{K}\Big)\,,\qquad 0 < c(0) < K\,,\qquad r > 0\,,
+\end{equation}
+\end{linenomath}
+%
+then $c(t)$ grows sigmoidally as
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:logistic-no-sub}
+c(t) = \frac{K}{1 + (\frac{K}{c(0)} - 1) \exp(-r t)}\,,
+\end{equation}
+\end{linenomath}
+%
+reaching an inflection point at 
+$t = \tinfl = \log(K / c(0) - 1) / r$
+and approaching $K$ as $t \to \infty$. 
+Substituting $K / c(0) - 1 = \exp(r \tinfl)$
+in \cref{eq:logistic-no-sub} yields the more convenient
+parametrization
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:logistic}
+c(t) = \frac{K}{1 + \exp(-r (t - \tinfl))}\,.
+\end{equation}
+\end{linenomath}
+
+
+\subsubsection{Richards model}
+
+If $c(t)$ follows
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:richards-de}
+c'(t) = r c(t) \Big(1 - \Big(\frac{c(t)}{K}\Big)^{a}\Big)\,,\qquad 0 < c(0) < K\,,\qquad r > 0\,,\qquad a > 0\,,
+\end{equation}
+\end{linenomath}
+%
+then $c(t)$ grows sigmoidally as
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:richards-no-sub}
+c(t) = \frac{K}{[1 + ((\frac{K}{c(0)})^{a} - 1) \exp(-a r t)]^{1 / a}}\,,
+\end{equation}
+\end{linenomath}
+%
+reaching an inflection point at 
+$t = \tinfl = \log(((K / c(0))^{a} - 1) / a) / a r$
+and approaching $K$ as $t \to \infty$. 
+Substituting $(K / c(0))^{a} - 1 = a \exp(a r \tinfl)$
+in \cref{eq:richards-no-sub} yields the more convenient
+parametrization
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:richards}
+c(t) = \frac{K}{[1 + a \exp(-a r (t - \tinfl))]^{1 / a}}\,.
+\end{equation}
+\end{linenomath}
+%
+Note that the Richards model admits the logistic model as a 
+special case ($a = 1$).
+
+
+\subsubsection{Notes on model selection}
+
+
+
+
+
+
+\end{document}
+

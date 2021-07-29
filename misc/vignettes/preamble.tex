@@ -1,0 +1,200 @@
+\documentclass[12pt,dvipsnames]{article}
+
+%% Page layout
+\usepackage[top=1in,bottom=1.5in,left=1in,right=1in]{geometry}
+\hfuzz=1in % tolerate \hbox fullness
+\vbadness=\maxdimen % tolerate \vbox badness
+
+%% Line numbering
+\usepackage{lineno}
+\renewcommand{\linenumberfont}{\normalfont\tiny\sffamily\color[gray]{0.5}}
+
+%% Text layout
+%% \usepackage{setspace} % \onehalfspacing, \doublespacing
+%% \usepackage{ragged2e} % \Centering, \RaggedLeft, \RaggedRight
+%% \RaggedRight
+
+%% Character encoding
+%% \usepackage[utf8]{inputenc} % default encoding is UTF-8 since 2018 LaTeX
+\usepackage[T1]{fontenc} % accented characters and other glyphs supported
+                         % by 8-bit T1 encoding but not by default 7-bit
+                         % OT1 encoding
+
+%% Math
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{bm} % bold math, \bm
+\usepackage{bbm} % blackboard math, \mathbbm
+\allowdisplaybreaks % page breaks in display style math mode
+
+%% Lists
+\usepackage{enumitem}
+\setlist[enumerate]{label=(\roman*)}
+\setlist[itemize]{label=\tiny$\blacksquare$}
+
+%% Tables
+\usepackage{booktabs} % \toprule, \midrule, \bottomrule, \addlinespace
+\usepackage{array}
+%% columns with variable width, top alignment
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}p{#1}}
+
+%% Graphics
+\usepackage{graphicx}
+
+%% Float captions
+\usepackage{caption}
+\captionsetup{%
+  aboveskip=8pt,
+  labelfont=bf,
+  labelsep=period,
+  justification=justified,
+  singlelinecheck=false
+}
+\renewcommand{\figurename}{Fig}
+
+%% Float placement
+\usepackage{float} % \begin{figure}[H]
+\usepackage[section]{placeins} % \FloatBarrier
+
+%% Code
+\usepackage{listings} % \lstinline
+\usepackage{lmodern}
+\usepackage{xcolor}
+%% match inline and knitr chunk syntax highlighting
+\definecolor{num}{HTML}{aa4499} % numeric, logical, NA
+\definecolor{str}{HTML}{999933} % character
+\definecolor{com}{HTML}{999999} % comment
+\definecolor{opt}{HTML}{555555} % !, ?
+\definecolor{std}{HTML}{555555} % variable name, operator, delimiter
+\definecolor{kwa}{HTML}{aa4499} % function, if, else, for, in, while, NULL
+\definecolor{kwb}{HTML}{555555} % <-
+\definecolor{kwc}{HTML}{555555} % function argument
+\definecolor{kwd}{HTML}{3a9183} % function name
+\lstset{%
+  basicstyle=\color{std}\ttfamily,
+  morestring=[b]",
+  morestring=[b]',
+  stringstyle=\color{str},
+  morecomment=[l]\#,
+  commentstyle=\color{com}\itshape,
+  morekeywords=[1]{function,if,else,for,in,while,NULL},
+  keywordstyle=[1]\color{kwa}\bfseries,
+  morekeywords=[2]{TRUE,FALSE,NA,NA_integer_,NA_real_,NA_character_},
+  keywordstyle=[2]\color{num},
+  otherkeywords={[3]!,[3]?},
+  keywordstyle=[3]\color{opt},
+  otherkeywords={[4]<-},
+  keywordstyle=[4]\color{kwb},
+  moredelim=[is][\color{kwc}]{<a>}{</a>},
+  moredelim=[is][\color{kwd}]{<f>}{</f>},
+  sensitive=true,
+  keepspaces=true,
+  breaklines=true,
+  extendedchars=true,
+  showstringspaces=false,
+  alsoletter={.},
+  alsoother={@\$},
+  literate=*%
+    {0}{{\color{num} 0}}{1}
+    {1}{{\color{num} 1}}{1}
+    {2}{{\color{num} 2}}{1}
+    {3}{{\color{num} 3}}{1}
+    {4}{{\color{num} 4}}{1}
+    {5}{{\color{num} 5}}{1}
+    {6}{{\color{num} 6}}{1}
+    {7}{{\color{num} 7}}{1}
+    {8}{{\color{num} 8}}{1}
+    {9}{{\color{num} 9}}{1}
+}
+
+%% Title page
+\usepackage{titling}
+\pretitle{\begin{center}\includegraphics[height=1.5cm]{logo.png}\thanks{Thanks to Julianne Guevara for the logo.}\\[1in]}
+  \posttitle{\end{center}}
+
+%% Deferred execution
+%% front matter
+\AtBeginDocument{
+  \setlength{\parskip}{0.5mm}
+  \setlength{\parindent}{7mm}
+  \pagenumbering{roman}
+  \maketitle
+  \tableofcontents
+  \thispagestyle{empty}
+  \clearpage
+  \pagenumbering{arabic}
+  \linenumbers
+}
+%% back matter
+%% \AtEndDocument{%
+%%   \bibliographystyle{vancouver}
+%%   \bibliography{epigrowthfit}
+%%   \addcontentsline{toc}{section}{References}
+%% }
+
+%% Citation
+\usepackage{cite}
+\makeatletter
+\renewcommand{\@biblabel}[1]{\quad #1.} % \@biblabel format
+\makeatother
+
+%% Reference hyperlinks
+\usepackage[colorlinks=true,linkcolor=magenta,citecolor=green,urlcolor=blue]{hyperref}
+\usepackage[nameinlink,capitalize]{cleveref}
+%% equation
+\crefformat{equation}{#2Eq~#1#3}
+\crefmultiformat{equation}{#2Eqs~#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{equation}{#3Eqs~#1#4--#5#2#6}
+\crefformat{blankequation}{#2#1#3}
+\crefmultiformat{blankequation}{#2#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{blankequation}{#3#1#4--#5#2#6}
+\crefalias{blankequation}{equation}
+\crefformat{pluralequation}{#2Eqs~#1#3}
+\crefalias{pluralequation}{equation}
+%% figure
+\crefformat{figure}{#2Fig~#1#3}
+\crefmultiformat{figure}{#2Figs~#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{figure}{#3Figs~#1#4--#5#2#6}
+%% section
+\crefformat{section}{#2\S#1#3}
+\crefmultiformat{section}{#2\S\S#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{section}{#3\S\S#1#4--#5#2#6}
+%% table
+\crefformat{Table}{#2Table~#1#3}
+\crefmultiformat{table}{#2Tables~#1#3}{ and~#2#1#3}{, #2#1#3}{, and~#2#1#3}
+\crefrangeformat{table}{#3Tables~#1#4--#5#2#6}
+
+%% More macros
+%% laziness
+\let\tops\texorpdfstring
+%% fonts
+\renewcommand{\vec}[1]{\bm{\mathrm{#1}}}
+%% diacritics
+\let\wh\widehat
+\let\wt\widetilde
+%% delimiters
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+\DeclarePairedDelimiter{\floor}{\lfloor}{\rfloor}
+\DeclarePairedDelimiter{\ceil}{\lceil}{\rceil}
+%% operators
+\DeclareMathOperator*{\argmin}{arg\,min}
+%% symbols
+\newcommand{\tinfl}{t_\text{\normalfont infl}}
+\newcommand{\R}{\mathcal{R}}
+%% abbreviations
+\newcommand{\cf}{\textit{cf}.~}
+\newcommand{\eg}{\textit{e}.\textit{g}.,~}
+\newcommand{\ie}{\textit{i}.\textit{e}.,~}
+\newcommand{\etc}{\textit{etc}.}
+\newcommand{\etal}{\textit{et al}.}
+%% code
+\newcommand{\code}[1]{\mbox{\lstinline|#1|}} % \let\code\texttt
+\let\pkg\textbf
+\newcommand{\cran}[1]{\href{https://CRAN.R-project.org/package=#1}{\textbf{#1}}}
+\newcommand{\vignette}[2][epigrowthfit]{\code{<f>vignette</f>("#2", "#1")}}
+%% comments
+\newcommand{\comment}[3]{\textcolor{#1}{\textbf{[#2: }\textit{#3}\textbf{]}}}
+\newcommand{\mj}[1]{\comment{blue}{MJ}{#1}}
