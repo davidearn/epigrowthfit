@@ -6,7 +6,7 @@ ui <- fluidPage(
   titlePanel(
     title = div(HTML("<b>epigrowthfit</b>: Top level nonlinear models")),
     windowTitle = "epigrowthfit: Top level nonlinear models"
-  )
+  ),
   sidebarLayout(
     sidebarPanel(
       selectInput(
