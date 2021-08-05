@@ -381,10 +381,10 @@ server <- function(input, output, session) {
             col_points = col_points, col_lines = col_lines[1L], lwd_lines = lwd_lines)
     title(main = "logarithmic", line = 1, xpd = NA)
 
-    do_plot(y_points = x(), y_lines = diff_curve(), y_log = FALSE,
+    do_plot(y_points = c(NA, x()[-1L]), y_lines = diff_curve(), y_log = FALSE,
             col_points = col_points, col_lines = col_lines[2L], lwd_lines = lwd_lines)
     title(ylab = expression(italic(c)(italic(t)) - italic(c)(italic(t) - 1)))
-    do_plot(y_points = x(), y_lines = diff_curve(), y_log = TRUE,
+    do_plot(y_points = c(NA, x()[-1L]), y_lines = diff_curve(), y_log = TRUE,
             col_points = col_points, col_lines = col_lines[2L], lwd_lines = lwd_lines)
 
     do_plot(y_points = zz(), y_lines = r(), y_log = FALSE,
