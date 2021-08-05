@@ -399,7 +399,7 @@ server <- function(input, output, session) {
     "t_{i} &= ", input$range_time[1L], " + i\\,, \\\\ ",
     "x_{i} &= [\\text{realization of } X(t_{i} - 1,t_{i})]\\,, \\\\ ",
     "y_{i} &= c(t_{0}) + \\sum_{j = 1}^{i} x_{j}\\,, \\\\ ",
-    "r_{i} &= (\\log(y_{i+1}) - \\log(y_{i-1})) / 2\\,. ",
+    "r_{i} &= \\frac{\\log(y_{i+1}) - \\log(y_{i-1})}{2}\\,. ",
     "\\end{aligned}\\]"
   ))))
 }
