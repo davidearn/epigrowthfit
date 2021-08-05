@@ -164,7 +164,7 @@ ui <- fluidPage(
             max = 5,
             step = 0.1
           ),
-          uiOutput("gompertz_a"),
+          uiOutput("richards_a"),
         )
       ),
       selectInput(
