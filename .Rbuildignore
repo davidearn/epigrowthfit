@@ -1,7 +1,7 @@
 ^data-raw$
 ^inst$
 ^misc$
-^mre$
+^shiny$
 ^utils$
 ^Makefile$
 ^TODO\.md$

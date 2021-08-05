@@ -1,7 +1,6 @@
 library("shiny")
 
 ui <- fluidPage(
-  shinyFeedback::useShinyFeedback(),
   withMathJax(),
   titlePanel(
     title = div(HTML("<b>epigrowthfit</b>: Top level nonlinear models")),
