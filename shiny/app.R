@@ -3,7 +3,10 @@ library("shiny")
 ui <- fluidPage(
   shinyFeedback::useShinyFeedback(),
   withMathJax(),
-  titlePanel(div(HTML("<b>epigrowthfit</b>: Top level nonlinear models"))),
+  titlePanel(
+    title = div(HTML("<b>epigrowthfit</b>: Top level nonlinear models")),
+    windowTitle = "epigrowthfit: Top level nonlinear models"
+  )
   sidebarLayout(
     sidebarPanel(
       selectInput(
