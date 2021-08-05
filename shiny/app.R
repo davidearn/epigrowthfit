@@ -384,22 +384,23 @@ server <- function(input, output, session) {
 
   output$caption <- renderUI(withMathJax(HTML(paste0(
     "<b>Row 1:</b> ",
-    "Lines \\(c(t)\\) show expected cumulative incidence. ",
+    "Line \\(c(t)\\) shows expected cumulative incidence. ",
     "Points \\((t_{i}, y_{i})\\) show observed cumulative incidence. ",
     "<br/><br/>",
     "<b>Row 2:</b> ",
-    "Lines \\(c(t) - c(t - 1)\\) show expected interval incidence. ",
+    "Line \\(c(t) - c(t - 1)\\) shows expected interval incidence. ",
     "Points \\((t_{i}, x_{i})\\) show observed interval incidence. ",
     "<br/><br/>",
     "<b>Row 3:</b> ",
-    "Lines \\(r(t) = c'(t) / c(t)\\) show the predicted per capita growth rate. ",
-    "Points \\((t_{i}, r_{i})\\) show central difference approximations of \\(r(t)\\).",
+    "Line \\(c'(t) / c(t)\\) shows the predicted per capita growth rate. ",
+    "Points \\((t_{i}, r_{i})\\) show a central difference approximation.",
     "<br/><br/>",
-    "<b>Notation:</b> ",
-    "\\(t_{i} = ", input$range_time[1L], " + i\\), ",
-    "\\(x_{i} = [\\text{realization of } X(t_{i} - 1,t_{i})]\\), ",
-    "\\(y_{i} = c(t_{0}) + \\sum_{j = 1}^{i} x_{j}\\), ",
-    "\\(r_{i} = (\\log(y_{i+1}) - \\log(y_{i-1})) / 2\\)."
+    "<b>Notation:</b> \\[\\begin{aligned} ",
+    "t_{i} &= ", input$range_time[1L], " + i\\,, \\\\ ",
+    "x_{i} &= [\\text{realization of } X(t_{i} - 1,t_{i})]\\,, \\\\ ",
+    "y_{i} &= c(t_{0}) + \\sum_{j = 1}^{i} x_{j}\\,, \\\\ ",
+    "r_{i} &= (\\log(y_{i+1}) - \\log(y_{i-1})) / 2\\,. ",
+    "\\end{aligned}\\]"
   ))))
 }
 
