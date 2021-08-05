@@ -18,7 +18,8 @@ ui <- fluidPage(
           Gompertz = "gompertz",
           logistic = "logistic",
           Richards = "richards"
-        )
+        ),
+        selected = "logistic"
       ),
       uiOutput("mathjax_curve"),
       tabsetPanel(
@@ -223,8 +224,8 @@ server <- function(input, output, session) {
     sprintf("\\[c(t) = %s\\]",
       switch(input$curve,
         exponential = "c(0) \\exp(r t)",
-        subexponential = "c(0) [1 + \\alpha (1 - p) c(0)^{-(1 - p)} t]^{1 / (1 - p)}",
-        gompertz = "K \\exp(-\\exp(-\\alpha (t - t_{\\text{infl}})))",
+        subexponential = "c(0) \\big(1 + \\tfrac{1 - p}{c(0)^{1 - p}} \\alpha t\\big)^{1 / (1 - p)}",
+        gompertz = "\\frac{K}{\\exp(\\exp(-\\alpha (t - t_{\\text{infl}})))}",
         logistic = "\\frac{K}{1 + \\exp(-r (t - t_{\\text{infl}}))}",
         richards = "\\frac{K}{[1 + a \\exp(-a r (t - t_{\\text{infl}}))]^{1 / a}}"
       )
@@ -329,8 +330,8 @@ server <- function(input, output, session) {
   output$plot <- renderPlot(res = 96, expr = {
     par(
       mfrow = c(3L, 2L),
-      mar = c(2, 4, 0.5, 0.5),
-      oma = c(2, 0, 2, 0),
+      mar = c(2.5, 4.2, 0.1, 0.1),
+      oma = c(1, 0, 2, 0),
       xaxs = "i",
       yaxs = "i",
       mgp = c(3, 0.7, 0),
@@ -344,10 +345,21 @@ server <- function(input, output, session) {
 
     do_plot <- function(y_points, y_lines, y_log, col_points, col_lines, lwd_lines) {
       if (y_log) {
+        if (all(y_points == 0, y_lines == 0, na.rm = TRUE)) {
+          plot.new()
+          return(invisible(NULL))
+        }
         log <- "y"
-        ymin <- max(exp(-12), min(y_points[y_points > 0],   y_lines[y_lines > 0],   na.rm = TRUE))
-        ymax <- min(exp(+12), max(y_points[y_points < Inf], y_lines[y_lines < Inf], na.rm = TRUE))
-        ylim <- c(ymin, ymax) * (ymax / ymin)^(c(-1, 1) * 0.04)
+        ymin <- min(y_points[y_points > 0], y_lines[y_lines > 0], na.rm = TRUE)
+        ymax <- max(y_points[y_points < Inf], y_lines[y_lines < Inf], na.rm = TRUE)
+        if (sum(y_lines > exp(-12), na.rm = TRUE) / sum(y_lines > 0, na.rm = TRUE) > 0.5) {
+          ymin <- max(exp(-12), ymin)
+        }
+        if (sum(y_lines < exp(12), na.rm = TRUE) / sum(y_lines < Inf, na.rm = TRUE) > 0.5) {
+          ymax <- min(exp(12), ymax)
+        }
+        ylim <- exp(log(c(ymin, ymax)) + c(-1, 1) * 0.08 * (log(ymax) - log(ymin)))
+        ylim[ylim == 0 | ylim == Inf] <- c(ymin, ymax)[ylim == 0 | ylim == Inf]
       } else {
         log <- ""
         ylim <- c(0, max(y_points[y_points < Inf], y_lines[y_lines < Inf], na.rm = TRUE) * 1.04)
@@ -365,10 +377,10 @@ server <- function(input, output, session) {
     do_plot(y_points = c0_plus_cumsum_x(), y_lines = curve()$long, y_log = FALSE,
             col_points = col_points, col_lines = col_lines[1L], lwd_lines = lwd_lines)
     title(ylab = expression(italic(c)(italic(t))))
-    title(main = "linear scale", line = 1, xpd = NA)
+    title(main = "linear", line = 1, xpd = NA)
     do_plot(y_points = c0_plus_cumsum_x(), y_lines = curve()$long, y_log = TRUE,
             col_points = col_points, col_lines = col_lines[1L], lwd_lines = lwd_lines)
-    title(main = "logarithmic scale", line = 1, xpd = NA)
+    title(main = "logarithmic", line = 1, xpd = NA)
 
     do_plot(y_points = x(), y_lines = diff_curve(), y_log = FALSE,
             col_points = col_points, col_lines = col_lines[2L], lwd_lines = lwd_lines)
@@ -399,7 +411,7 @@ server <- function(input, output, session) {
     "Points \\((t_{i}, r_{i})\\) show a central difference approximation.",
     "<br/><br/>",
     "<b>Notation:</b> \\[\\begin{aligned} ",
-    "t_{i} &= ", input$range_time[1L], " + i\\,, \\\\ ",
+    "t_{i} &=", if (input$range_time[1L] == 0L) "" else paste(input$range_time[1L], "+"), " i\\,, \\\\ ",
     "x_{i} &= [\\text{realization of } X(t_{i} - 1,t_{i})]\\,, \\\\ ",
     "y_{i} &= c(t_{0}) + \\sum_{j = 1}^{i} x_{j}\\,, \\\\ ",
     "r_{i} &= \\frac{\\log(y_{i+1}) - \\log(y_{i-1})}{2}\\,. ",
