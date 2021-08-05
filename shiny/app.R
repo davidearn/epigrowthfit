@@ -11,7 +11,7 @@ ui <- fluidPage(
     sidebarPanel(
       selectInput(
         inputId = "curve",
-        label = "Nonlinear model of expected cumulative incidence:",
+        label = "Nonlinear model of expected cumulative disease incidence:",
         choices = c(
           exponential = "exponential",
           subexponential = "subexponential",
@@ -219,6 +219,14 @@ server <- function(input, output, session) {
   observeEvent(input$family, {
     updateTabsetPanel(inputId = "par_family", selected = input$family)
   })
+  observeEvent(input$range_time, {
+    if (input$range_time[1L] == input$range_time[2L]) {
+      updateSliderInput(
+        inputId = "range_time",
+        value = c(min(290L, input$range_time[1L]), min(300L, input$range_time[1L] + 10L))
+      )
+    }
+  })
 
   output$mathjax_curve <- renderUI(withMathJax(HTML(
     sprintf("\\[c(t) = %s\\]",
@@ -288,16 +296,7 @@ server <- function(input, output, session) {
     )
   }
 
-  n <- reactive({
-    n <- diff(input$range_time)
-    shinyFeedback::feedbackWarning(
-      inputId = "range_time",
-      show = (n == 0L),
-      text = "Must have nonzero width."
-    )
-    req(n > 0L)
-    n
-  })
+  n <- reactive(diff(input$range_time) + 1L)
   time <- reactive({
     short <- seq.int(input$range_time[1L], input$range_time[2L])
     long <- seq.int(input$range_time[1L], input$range_time[2L], length.out = 151L)
@@ -314,23 +313,23 @@ server <- function(input, output, session) {
   r <- reactive(exp(eval_log_r(log_curve = log_curve()$long, input = input)))
 
   x <- reactive(switch(input$family,
-    pois = c(NA, rpois(n(), lambda = diff(curve()$short))),
-    nbinom = c(NA, rnbinom(n(), mu = diff(curve()$short), size = exp(input$nbinom_log_disp)))
+    pois = rpois(n(), lambda = c(curve()$short[1L], diff(curve()$short))),
+    nbinom = rnbinom(n(), mu = c(curve()$short[1L], diff(curve()$short)), size = exp(input$nbinom_log_disp))
   ))
-  c0_plus_cumsum_x <- reactive(c(NA, curve()$long[1L] + cumsum(as.numeric(x())[-1L])))
+  cumsum_x <- reactive(cumsum(as.numeric(x())))
   zz <- reactive({
-    if (n() >= 4L) {
-      tmp <- log(c0_plus_cumsum_x()[-1L])
-      c(NA, NA, (tmp[-(1:2)] - tmp[-(length(tmp) - 1:0)]) / 2, NA)
+    if (n() >= 3L) {
+      tmp <- log(cumsum_x())
+      c(NA, (tmp[-(1:2)] - tmp[-(n() - 1:0)]) / 2, NA)
     } else {
-      rep_len(NA_real_, n() + 1L)
+      rep_len(NA_real_, n())
     }
   })
 
   output$plot <- renderPlot(res = 96, expr = {
     par(
       mfrow = c(3L, 2L),
-      mar = c(2.5, 4.2, 0.1, 0.1),
+      mar = c(2.5, 4.2, 0.1, 0.7),
       oma = c(1, 0, 2, 0),
       xaxs = "i",
       yaxs = "i",
@@ -339,7 +338,7 @@ server <- function(input, output, session) {
       pch = 16,
       cex = 0.9
     )
-    col_points <- "#BBBBBBCC"
+    col_points <- "#BBBBBBA8"
     col_lines <- c("#BB5566CC", "#DDAA33CC", "#004488CC")
     lwd_lines <- 3
 
@@ -374,11 +373,11 @@ server <- function(input, output, session) {
       invisible(NULL)
     }
 
-    do_plot(y_points = c0_plus_cumsum_x(), y_lines = curve()$long, y_log = FALSE,
+    do_plot(y_points = cumsum_x(), y_lines = curve()$long, y_log = FALSE,
             col_points = col_points, col_lines = col_lines[1L], lwd_lines = lwd_lines)
     title(ylab = expression(italic(c)(italic(t))))
     title(main = "linear", line = 1, xpd = NA)
-    do_plot(y_points = c0_plus_cumsum_x(), y_lines = curve()$long, y_log = TRUE,
+    do_plot(y_points = cumsum_x(), y_lines = curve()$long, y_log = TRUE,
             col_points = col_points, col_lines = col_lines[1L], lwd_lines = lwd_lines)
     title(main = "logarithmic", line = 1, xpd = NA)
 
@@ -391,20 +390,20 @@ server <- function(input, output, session) {
     do_plot(y_points = zz(), y_lines = r(), y_log = FALSE,
             col_points = col_points, col_lines = col_lines[3L], lwd_lines = lwd_lines)
     title(ylab = expression(italic(c) * "'" * (italic(t)) * " " / " " * italic(c)(italic(t))))
-    title(sub = "time", line = 2, xpd = NA)
+    title(sub = expression("time, " * italic(t)), line = 2, xpd = NA)
     do_plot(y_points = zz(), y_lines = r(), y_log = TRUE,
             col_points = col_points, col_lines = col_lines[3L], lwd_lines = lwd_lines)
-    title(sub = "time", line = 2, xpd = NA)
+    title(sub = expression("time, " * italic(t)), line = 2, xpd = NA)
   })
 
   output$caption <- renderUI(withMathJax(HTML(paste0(
     "<b>Row 1:</b> ",
-    "Line \\(c(t)\\) shows expected cumulative incidence. ",
-    "Points \\((t_{i}, y_{i})\\) show observed cumulative incidence. ",
+    "Line \\(c(t)\\) shows expected cumulative disease incidence. ",
+    "Points \\((t_{i}, y_{i})\\) show simulated cumulative disease incidence. ",
     "<br/><br/>",
     "<b>Row 2:</b> ",
-    "Line \\(c(t) - c(t - 1)\\) shows expected interval incidence. ",
-    "Points \\((t_{i}, x_{i})\\) show observed interval incidence. ",
+    "Line \\(c(t) - c(t - 1)\\) shows expected disease incidence. ",
+    "Points \\((t_{i}, x_{i})\\) show simulated disease incidence. ",
     "<br/><br/>",
     "<b>Row 3:</b> ",
     "Line \\(c'(t) / c(t)\\) shows the predicted per capita growth rate. ",
@@ -412,8 +411,11 @@ server <- function(input, output, session) {
     "<br/><br/>",
     "<b>Notation:</b> \\[\\begin{aligned} ",
     "t_{i} &=", if (input$range_time[1L] == 0L) "" else paste(input$range_time[1L], "+"), " i\\,, \\\\ ",
-    "x_{i} &= [\\text{realization of } X(t_{i} - 1,t_{i})]\\,, \\\\ ",
-    "y_{i} &= c(t_{0}) + \\sum_{j = 1}^{i} x_{j}\\,, \\\\ ",
+    "x_{i} &= \\text{realization of} \\begin{cases} ",
+    "X(-\\infty,t_{0})\\,, & i = 0\\,, \\\\ ",
+    "X(t_{i} - 1,t_{i})\\,, & i = 1,2,\\ldots, ",
+    "\\end{cases} \\\\ ",
+    "y_{i} &= \\sum_{j = 0}^{i} x_{j}\\,, \\\\ ",
     "r_{i} &= \\frac{\\log(y_{i+1}) - \\log(y_{i-1})}{2}\\,. ",
     "\\end{aligned}\\]"
   ))))
