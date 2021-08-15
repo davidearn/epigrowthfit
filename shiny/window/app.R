@@ -39,6 +39,7 @@ ui <- fluidPage(
       uiOutput("ui_tabset_spar")
     ),
     mainPanel(
+      uiOutput("ui_tabset_main"),
       fluidRow(
         uiOutput("ui_tabset_plot")
       ),
@@ -199,14 +200,28 @@ server <- function(input, output, session) {
   n <- reactive(c(tapply(!is.na(frame()$x), frame()$ts, sum)))
 
   formula_windows <- reactive({
-    req(input$formula_windows, input$data_windows)
-    make_formula(input, "formula_windows")
+    if (isTruthy(input$formula_windows) && isTruthy(input$data_windows)) {
+      make_formula(input, "formula_windows")
+    } else {
+      NULL
+    }
   })
   data_windows <- reactive({
-    req(input$formula_windows, input$data_windows)
-    make_data(input, "data_windows")
+    if (isTruthy(input$formula_windows) && isTruthy(input$data_windows)) {
+      make_data(input, "data_windows")
+    } else {
+      NULL
+    }
   })
   frame_windows <- reactive({
+    if (is.null(formula_windows()) || is.null(data_windows())) {
+      ff <- data.frame(
+        ts = factor(levels = levels(frame()$ts)),
+        start = numeric(),
+        end = numeric()
+      )
+      return(ff)
+    }
     ff <- make_frame(formula_windows(), data_windows())
     nf <- as.list(attr(ff, "names_original"))
     names(ff) <- names(nf) <- c("ts", "start", "end")
@@ -289,31 +304,73 @@ server <- function(input, output, session) {
       selected = if (n()[as.integer(input$ts)] >= 4L) sprintf("tabset_spar_%s", input$ts) else "tabset_spar_null"
     )
   })
-  output$ui_tabset_plot <- renderUI({
+  output$ui_tabset_main <- renderUI({
+    args <- list(
+      id = "tabset_main",
+      type = "hidden",
+      tabPanelBody("tabset_main_null")
+    )
     f <- function(i) {
-      tabPanelBody(sprintf("tabset_plot_%d", i),
-        uiOutput(sprintf("plot_%d_caption", i)),
-        plotOutput(sprintf("plot_%d", i))
+      tabPanelBody(sprintf("tabset_main_%d", i),
+        fluidRow(
+          plotOutput(sprintf("plot_%d", i))
+        ),
+        fluidRow(
+          column(6,
+            dateRangeInput(
+              inputId = sprintf("plot_%d_xlim", i),
+              label = "Horizontal axis limits:"
+            )
+          ),
+          column(6,
+            sliderInput(
+              inputId = sprintf("plot_%d_log10ylim", i),
+              label = HTML("Vertical axis limits (log<sub>10</sub> scale):"),
+              value = c(-1, 1),
+              min = -1,
+              max = 1,
+              step = 0.1
+            )
+          )
+        ),
+        fluidRow(
+          column(6,
+            uiOutput(sprintf("points_%d_caption", i)),
+            dataTableOutput(sprintf("points_%d", i))
+          ),
+          column(6,
+            uiOutput(sprintf("windows_%d_caption", i)),
+            dataTableOutput(sprintf("windows_%d", i))
+          )
+        )
       )
     }
-    args <- list(
-      id = "tabset_plot",
-      type = "hidden",
-      tabPanelBody("tabset_plot_null")
-    )
     do.call(tabsetPanel, c(args, lapply(seq_len(K()), f)))
   })
   observeEvent(input$ts, {
     updateTabsetPanel(
-      inputId = "tabset_plot",
-      selected = sprintf("tabset_plot_%s", input$ts)
+      inputId = "tabset_main",
+      selected = sprintf("tabset_main_%s", input$ts)
     )
   })
   observeEvent(frame(), {
+    frame_split <- split(frame()[c("time", "x")], frame()$ts)
+    accumulator_split <- split(frame_windows()[c("start", "end")], frame_windows()$ts)
     f <- function(i) {
-      tx <- frame()[unclass(frame()$ts) == i, c("time", "x"), drop = FALSE]
-      tx$y <- 1 + tx$x / c(NA, diff(tx$time))
-      output[[sprintf("plot_%d_caption", i)]] <- renderUI(HTML("<b>Caption!</b>"))
+      xrange <- .Date(range(frame_split[[i]]$time))
+      yrange <- tryCatch(1 + range(frame_split[[i]]$x, na.rm = TRUE), warning = function(cond) c(0.1, 1))
+      updateDateRangeInput(
+        inputId = sprintf("plot_%d_xlim", i),
+        start = xrange[1L],
+        end = xrange[2L],
+        min = xrange[1L] - 0.1 * diff(xrange),
+        max = xrange[2L] + 0.1 * diff(xrange)
+      )
+      updateSliderInput(
+        inputId = sprintf("plot_%d_log10ylim", i),
+        value = log10(yrange),
+        max = log10(yrange[2L]) + 1
+      )
       output[[sprintf("plot_%d", i)]] <- renderPlot({
         par(
           mar = c(3, 5, 0.5, 1),
@@ -323,14 +380,36 @@ server <- function(input, output, session) {
           pch = 16,
           cex.lab = 1.2
         )
+        xlim <- julian(input[[sprintf("plot_%d_xlim", i)]])
+        if (is.na(xlim[1L])) {
+          if (is.na(xlim[2L])) {
+            xlim <- rep_len(0, 2L)
+          } else {
+            xlim <- rep_len(xlim[2L], 2L)
+          }
+        }
+        if (is.na(xlim[2L])) {
+          xlim[2L] <- xlim[1L]
+        }
+        ylim <- 10^(input[[sprintf("plot_%d_log10ylim", i)]])
         plot.new()
-        plot.window(xlim = range(tx$time), ylim = range(tx$y, na.rm = TRUE), log = "y")
-        points(y ~ time, data = tx, col = "#BBBBBBA8")
+        plot.window(xlim = xlim, ylim = ylim, log = "y")
+        usr <- par("usr")
+        points(1 + x ~ time, data = frame_split[[i]], col = "#BBBBBBA8")
         spar <- input[[sprintf("spar_%d", i)]]
         if (n()[i] >= 4L && spar > 0) {
-          ss <- smooth.spline(tx$time[!is.na(tx$y)], tx$y[!is.na(tx$y)], spar = spar)
-          pp <- predict(ss, seq.int(tx$time[1L], tx$time[nrow(tx)], length.out = 151L))
-          lines(y ~ x, data = pp, col = "#004488CC", lwd = 3)
+          kk <- !is.na(frame_split[[i]]$x)
+          ss <- smooth.spline(
+            x = frame_split[[i]]$time[kk],
+            y = 1 + frame_split[[i]]$x[kk],
+            spar = spar
+          )
+          tt <- seq.int(
+            from = max(usr[1L], julian(xrange[1L])),
+            to = min(usr[2L], julian(xrange[2L])),
+            length.out = 151L
+          )
+          lines(y ~ x, data = predict(ss, tt), col = "#004488CC", lwd = 3)
         }
         box()
         epigrowthfit:::Daxis(
@@ -338,78 +417,14 @@ server <- function(input, output, session) {
           major = list(mgp = c(3, 1.5, 0), tcl = 0, lwd.ticks = 0, gap.axis = 0, cex.axis = 1.2)
         )
         axis(side = 2, mgp = c(3, 0.7, 0))
-        title(ylab = "number of cases per day", line = 4)
+        title(ylab = "1 + x", line = 4)
       })
-      invisible(NULL)
-    }
-    lapply(seq_len(K()), f)
-  })
-  output$ui_tabset_points <- renderUI({
-    f <- function(i) {
-      tabPanelBody(sprintf("tabset_points_%d", i),
-        uiOutput(sprintf("points_%d_caption", i)),
-        dataTableOutput(sprintf("points_%d", i))
-      )
-    }
-    args <- list(
-      id = "tabset_points",
-      type = "hidden",
-      tabPanelBody("tabset_points_null")
-    )
-    do.call(tabsetPanel, c(args, lapply(seq_len(K()), f)))
-  })
-  observeEvent(input$ts, {
-    updateTabsetPanel(
-      inputId = "tabset_points",
-      selected = sprintf("tabset_points_%s", input$ts)
-    )
-  })
-  observeEvent(frame(), {
-    tx_split <- split(frame()[c("time", "x")], frame()$ts)
-    f <- function(i) {
       output[[sprintf("points_%d_caption", i)]] <- renderUI(HTML("<b>Observations:</b>"))
-      output[[sprintf("points_%d", i)]] <- renderDataTable(tx_split[[i]],
-        options = list(
-          dom = "t",
-          paging = FALSE,
-          scrollY = "300px"
-        )
-      )
-      invisible(NULL)
-    }
-    lapply(seq_len(K()), f)
-  })
-  output$ui_tabset_windows <- renderUI({
-    f <- function(i) {
-      tabPanelBody(sprintf("tabset_windows_%d", i),
-        uiOutput(sprintf("windows_%d_caption", i)),
-        dataTableOutput(sprintf("windows_%d", i))
-      )
-    }
-    args <- list(
-      id = "tabset_windows",
-      type = "hidden",
-      tabPanelBody("tabset_windows_null")
-    )
-    do.call(tabsetPanel, c(args, lapply(seq_len(K()), f)))
-  })
-  observeEvent(input$ts, {
-    updateTabsetPanel(
-      inputId = "tabset_windows",
-      selected = sprintf("tabset_windows_%s", input$ts)
-    )
-  })
-  observeEvent(accumulator(), {
-    se_split <- split(accumulator()[c("start", "end")], accumulator()$ts)
-    f <- function(i) {
+      data_table_options <- list(dom = "t", paging = FALSE, scrollY = "300px")
+      output[[sprintf("points_%d", i)]] <- renderDataTable(frame_split[[i]], options = data_table_options)
       output[[sprintf("windows_%d_caption", i)]] <- renderUI(HTML("<b>Fitting windows:</b>"))
-      output[[sprintf("windows_%d", i)]] <- renderDataTable(se_split[[i]],
-        options = list(
-          dom = "t",
-          paging = FALSE,
-          scrollY = "300px"
-        )
-      )
+      output[[sprintf("windows_%d", i)]] <- renderDataTable(accumulator_split[[i]], options = data_table_options)
+      invisible(NULL)
     }
     lapply(seq_len(K()), f)
   })
