@@ -176,7 +176,8 @@ ui <- fluidPage(
         choices = c(
           Poisson = "pois",
           `negative binomial` = "nbinom"
-        )
+        ),
+        selected = "nbinom"
       ),
       uiOutput("mathjax_family"),
       tabsetPanel(
@@ -420,4 +421,4 @@ server <- function(input, output, session) {
   ))))
 }
 
-shinyApp(ui, server)
+shinyApp(ui = ui, server = server)
