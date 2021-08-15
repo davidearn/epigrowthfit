@@ -36,7 +36,16 @@ ui <- fluidPage(
         tabPanelBody("tabset_ts_null"),
         tabPanelBody("tabset_ts_select", uiOutput("ui_tabset_ts_select"))
       ),
-      uiOutput(outputId = "ui_tabset_spar")
+      uiOutput(outputId = "ui_tabset_spar"),
+      tabsetPanel(
+        id = "tabset_download",
+        type = "hidden",
+        tabPanelBody("tabset_download_null"),
+        tabPanelBody("tabset_download_button",
+          outputId = "download",
+          label = HTML("Download <tt>.rds</tt>")
+        )
+      )
     ),
     mainPanel(
       uiOutput(outputId = "ui_tabset_main"),
@@ -277,7 +286,7 @@ server <- function(input, output, session) {
       choices = `names<-`(seq_len(K()), levels_ts())
     )
   )
-  observeEvent(K(), {
+  observeEvent(frame(), {
     updateTabsetPanel(
       inputId = "tabset_ts",
       selected = if (K() > 1L) "tabset_ts_select" else "tabset_ts_null"
@@ -309,6 +318,27 @@ server <- function(input, output, session) {
       selected = if (n()[[as.integer(input$ts)]] >= 4L) sprintf("tabset_spar_%s", input$ts) else "tabset_spar_null"
     )
   })
+  observeEvent(frame(), {
+    updateTabsetPanel(
+      inputId = "tabset_download",
+      selected = "tabset_ts_select"
+    )
+  })
+  output$download <- downloadHandler(
+    filename = function() {
+      old <- tools::file_path_sans_ext(input$data$name)
+      sprintf("%s_shinyout.rds")
+    },
+    content = function(file) {
+      res <- list(
+        formula = formula(),
+        data = frame(),
+        formula_windows = formula_windows(),
+        data_windows = frame_windows()
+      )
+      saveRDS(res, file = file)
+    }
+  )
   output$ui_tabset_main <- renderUI({
     args <- list(
       id = "tabset_main",
@@ -320,22 +350,22 @@ server <- function(input, output, session) {
         fluidRow(
           plotOutput(
             outputId = sprintf("plot_%d", i),
-            click = clickOpts(
-              id = sprintf("click_%d", i),
-              clip = TRUE
-            ),
+            # click = clickOpts(
+            #   id = sprintf("click_%d", i),
+            #   clip = TRUE
+            # ),
             dblclick = dblclickOpts(
               id = sprintf("dblclick_%d", i),
               clip = TRUE,
               delay = 400
             ),
-            hover = hoverOpts(
-              id = sprintf("hover_%d", i),
-              clip = TRUE,
-              delay = 300,
-              delayType = "debounce",
-              nullOutside = TRUE
-            ),
+            # hover = hoverOpts(
+            #   id = sprintf("hover_%d", i),
+            #   clip = TRUE,
+            #   delay = 300,
+            #   delayType = "debounce",
+            #   nullOutside = TRUE
+            # ),
             brush = brushOpts(
               id = sprintf("brush_%d", i),
               fill = "auto",
@@ -437,7 +467,6 @@ server <- function(input, output, session) {
         plot.window(xlim = xlim, ylim = ylim, log = "y")
         usr <- par("usr")
         if (N()[[i]] > 0L) {
-          browser()
           rect(
             xleft = dp2$start,
             xright = dp2$end,
@@ -489,7 +518,7 @@ server <- function(input, output, session) {
       end = usr$xmax
     )
     res <- rbind(accumulator(), newrow)
-    res <- res[do.call(order, unname(res))]
+    res <- res[do.call(order, unname(res)), , drop = FALSE]
     if (N()[[i]] > 0L) {
       k <- which(unclass(res$ts) == i)
       req(res$start[k[-1L]] >= res$end[k[-length(k)]])
@@ -497,18 +526,19 @@ server <- function(input, output, session) {
     accumulator(res)
   })
 
-  # observeEvent(lapply(sprintf("dblclick_%d", seq_len(K())), function(id) input[[id]]), {
-  #   id <- sprintf("dblclick_%s", input$ts)
-  #   usr <- input[[id]]
-  #   req(usr)
-  #   deselected <-
-  #     unclass(accumulator()$ts) == as.integer(input$ts) &
-  #     accumulator()$start < usr$x &
-  #     accumulator()$end >= usr$x
-  #   if (any(deselected)) {
-  #     accumulator(accumulator()[!deselected, , drop = FALSE])
-  #   }
-  # })
+  observeEvent(lapply(sprintf("dblclick_%d", seq_len(K())), function(id) input[[id]]), {
+    req(input$ts)
+    i <- as.integer(input$ts)
+    usr <- input[[sprintf("dblclick_%d", i)]]
+    req(usr)
+    deselected <-
+      unclass(accumulator()$ts) == i &
+      accumulator()$start < usr$x &
+      accumulator()$end >= usr$x
+    if (any(deselected)) {
+      accumulator(accumulator()[!deselected, , drop = FALSE])
+    }
+  })
 }
 
 shinyApp(ui = ui, server = server)
