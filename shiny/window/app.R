@@ -36,20 +36,20 @@ ui <- fluidPage(
         tabPanelBody("tabset_ts_null"),
         tabPanelBody("tabset_ts_select", uiOutput("ui_tabset_ts_select"))
       ),
-      uiOutput("ui_tabset_spar")
+      uiOutput(outputId = "ui_tabset_spar")
     ),
     mainPanel(
-      uiOutput("ui_tabset_main"),
+      uiOutput(outputId = "ui_tabset_main"),
       fluidRow(
-        uiOutput("ui_tabset_plot")
+        uiOutput(outputId = "ui_tabset_plot")
       ),
       fluidRow(
         column(6,
-          uiOutput("ui_tabset_points")
+          uiOutput(outputId = "ui_tabset_points")
         ),
         column(6,
-          uiOutput("caption_windows"),
-          uiOutput("ui_tabset_windows")
+          uiOutput(outputId = "caption_windows"),
+          uiOutput(outputId = "ui_tabset_windows")
         )
       )
     )
@@ -194,9 +194,11 @@ server <- function(input, output, session) {
 
     ff <- ff[order(ff$ts), , drop = FALSE]
     row.names(ff) <- NULL
+    attr(ff, "names_original") <- unlist(nf)
     ff
   })
-  K <- reactive(nlevels(frame()$ts))
+  levels_ts <- reactive(levels(frame()$ts))
+  K <- reactive(length(levels_ts()))
   n <- reactive(c(tapply(!is.na(frame()$x), frame()$ts, sum)))
 
   formula_windows <- reactive({
@@ -216,10 +218,11 @@ server <- function(input, output, session) {
   frame_windows <- reactive({
     if (is.null(formula_windows()) || is.null(data_windows())) {
       ff <- data.frame(
-        ts = factor(levels = levels(frame()$ts)),
+        ts = factor(levels = levels_ts()),
         start = numeric(),
         end = numeric()
       )
+      attr(ff, "names_original") <- `names<-`(names(ff), names(ff))
       return(ff)
     }
     ff <- make_frame(formula_windows(), data_windows())
@@ -237,7 +240,7 @@ server <- function(input, output, session) {
       ff[[s]] <- standardize_missing(ff[[s]])
     }
 
-    ff$ts <- factor(ff$ts, levels = levels(frame()$ts))
+    ff$ts <- factor(ff$ts, levels = levels_ts())
     ff <- ff[complete.cases(ff), , drop = FALSE]
     ff <- ff[do.call(order, unname(ff)), , drop = FALSE]
 
@@ -258,21 +261,23 @@ server <- function(input, output, session) {
 
     ff <- ff[order(ff$ts), , drop = FALSE]
     row.names(ff) <- NULL
+    attr(ff, "names_original") <- unlist(nf)
     ff
   })
   accumulator <- reactiveVal()
   observeEvent(frame_windows(), {
     accumulator(frame_windows())
   })
+  N <- reactive(c(table(accumulator()$ts)))
 
   output$ui_tabset_ts_select <- renderUI(
     selectInput(
       inputId = "ts",
       label = "Choose a time series.",
-      choices = `names<-`(seq_len(K()), levels(frame()$ts))
+      choices = `names<-`(seq_len(K()), levels_ts())
     )
   )
-  observeEvent(frame(), {
+  observeEvent(K(), {
     updateTabsetPanel(
       inputId = "tabset_ts",
       selected = if (K() > 1L) "tabset_ts_select" else "tabset_ts_null"
@@ -301,7 +306,7 @@ server <- function(input, output, session) {
   observeEvent(input$ts, {
     updateTabsetPanel(
       inputId = "tabset_spar",
-      selected = if (n()[as.integer(input$ts)] >= 4L) sprintf("tabset_spar_%s", input$ts) else "tabset_spar_null"
+      selected = if (n()[[as.integer(input$ts)]] >= 4L) sprintf("tabset_spar_%s", input$ts) else "tabset_spar_null"
     )
   })
   output$ui_tabset_main <- renderUI({
@@ -313,7 +318,36 @@ server <- function(input, output, session) {
     f <- function(i) {
       tabPanelBody(sprintf("tabset_main_%d", i),
         fluidRow(
-          plotOutput(sprintf("plot_%d", i))
+          plotOutput(
+            outputId = sprintf("plot_%d", i),
+            click = clickOpts(
+              id = sprintf("click_%d", i),
+              clip = TRUE
+            ),
+            dblclick = dblclickOpts(
+              id = sprintf("dblclick_%d", i),
+              clip = TRUE,
+              delay = 400
+            ),
+            hover = hoverOpts(
+              id = sprintf("hover_%d", i),
+              clip = TRUE,
+              delay = 300,
+              delayType = "debounce",
+              nullOutside = TRUE
+            ),
+            brush = brushOpts(
+              id = sprintf("brush_%d", i),
+              fill = "auto",
+              stroke = "auto",
+              opacity = 0.25,
+              delay = 2000,
+              delayType = "debounce",
+              clip = TRUE,
+              direction = "xy",
+              resetOnNew = TRUE
+            )
+          )
         ),
         fluidRow(
           column(6,
@@ -335,12 +369,12 @@ server <- function(input, output, session) {
         ),
         fluidRow(
           column(6,
-            uiOutput(sprintf("points_%d_caption", i)),
-            dataTableOutput(sprintf("points_%d", i))
+            uiOutput(outputId = sprintf("points_%d_caption", i)),
+            dataTableOutput(outputId = sprintf("points_%d", i))
           ),
           column(6,
-            uiOutput(sprintf("windows_%d_caption", i)),
-            dataTableOutput(sprintf("windows_%d", i))
+            uiOutput(outputId = sprintf("windows_%d_caption", i)),
+            dataTableOutput(outputId = sprintf("windows_%d", i))
           )
         )
       )
@@ -353,12 +387,18 @@ server <- function(input, output, session) {
       selected = sprintf("tabset_main_%s", input$ts)
     )
   })
-  observeEvent(frame(), {
-    frame_split <- split(frame()[c("time", "x")], frame()$ts)
-    accumulator_split <- split(frame_windows()[c("start", "end")], frame_windows()$ts)
+  observeEvent(list(frame(), accumulator()), {
+    index1 <- split(seq_len(nrow(frame())), frame()$ts)
+    index2 <- split(seq_len(nrow(accumulator())), accumulator()$ts)
     f <- function(i) {
-      xrange <- .Date(range(frame_split[[i]]$time))
-      yrange <- tryCatch(1 + range(frame_split[[i]]$x, na.rm = TRUE), warning = function(cond) c(0.1, 1))
+      dp1 <- dt1 <- frame()[index1[[i]], c("time", "x"), drop = FALSE]
+      dp1$y <- c(NA, 1 + dp1$x[-1L] / diff(dp1$time))
+      names(dt1) <- attr(frame(), "names_original")[c("time", "x")]
+      dp2 <- dt2 <- accumulator()[index2[[i]], c("start", "end"), drop = FALSE]
+      names(dt2) <- attr(frame_windows(), "names_original")[c("start", "end")]
+
+      xrange <- .Date(range(dp1$time))
+      yrange <- tryCatch(range(dp1$y, na.rm = TRUE), warning = function(cond) c(0.1, 1))
       updateDateRangeInput(
         inputId = sprintf("plot_%d_xlim", i),
         start = xrange[1L],
@@ -369,7 +409,8 @@ server <- function(input, output, session) {
       updateSliderInput(
         inputId = sprintf("plot_%d_log10ylim", i),
         value = log10(yrange),
-        max = log10(yrange[2L]) + 1
+        min = min(-1, floor(log10(yrange[1L]))),
+        max = ceiling(log10(yrange[2L]))
       )
       output[[sprintf("plot_%d", i)]] <- renderPlot({
         par(
@@ -395,21 +436,28 @@ server <- function(input, output, session) {
         plot.new()
         plot.window(xlim = xlim, ylim = ylim, log = "y")
         usr <- par("usr")
-        points(1 + x ~ time, data = frame_split[[i]], col = "#BBBBBBA8")
-        spar <- input[[sprintf("spar_%d", i)]]
-        if (n()[i] >= 4L && spar > 0) {
-          kk <- !is.na(frame_split[[i]]$x)
-          ss <- smooth.spline(
-            x = frame_split[[i]]$time[kk],
-            y = 1 + frame_split[[i]]$x[kk],
-            spar = spar
+        if (N()[[i]] > 0L) {
+          browser()
+          rect(
+            xleft = dp2$start,
+            xright = dp2$end,
+            ybottom = 10^usr[3L],
+            ytop = 10^usr[4L],
+            col = "#0044881A",
+            border = NA
           )
-          tt <- seq.int(
+        }
+        points(y ~ time, data = dp1, col = "#BBBBBBA8")
+        spar <- input[[sprintf("spar_%d", i)]]
+        if (n()[[i]] >= 4L && spar > 0) {
+          kk <- !is.na(dp1$y)
+          ss <- smooth.spline(dp1$time[kk], dp1$y[kk], spar = spar)
+          xx <- seq.int(
             from = max(usr[1L], julian(xrange[1L])),
             to = min(usr[2L], julian(xrange[2L])),
             length.out = 151L
           )
-          lines(y ~ x, data = predict(ss, tt), col = "#004488CC", lwd = 3)
+          lines(y ~ x, data = predict(ss, xx), col = "#004488CC", lwd = 3)
         }
         box()
         epigrowthfit:::Daxis(
@@ -417,17 +465,50 @@ server <- function(input, output, session) {
           major = list(mgp = c(3, 1.5, 0), tcl = 0, lwd.ticks = 0, gap.axis = 0, cex.axis = 1.2)
         )
         axis(side = 2, mgp = c(3, 0.7, 0))
-        title(ylab = "1 + x", line = 4)
+        title(ylab = "1 + (number of cases per day)", line = 4)
       })
+      data_table_options <- list(dom = "t", paging = FALSE, scrollY = "200px")
       output[[sprintf("points_%d_caption", i)]] <- renderUI(HTML("<b>Observations:</b>"))
-      data_table_options <- list(dom = "t", paging = FALSE, scrollY = "300px")
-      output[[sprintf("points_%d", i)]] <- renderDataTable(frame_split[[i]], options = data_table_options)
       output[[sprintf("windows_%d_caption", i)]] <- renderUI(HTML("<b>Fitting windows:</b>"))
-      output[[sprintf("windows_%d", i)]] <- renderDataTable(accumulator_split[[i]], options = data_table_options)
+      output[[sprintf("points_%d", i)]] <- renderDataTable(dt1, options = data_table_options)
+      output[[sprintf("windows_%d", i)]] <- renderDataTable(dt2, options = data_table_options)
       invisible(NULL)
     }
     lapply(seq_len(K()), f)
   })
+
+  observeEvent(lapply(sprintf("brush_%d", seq_len(K())), function(id) input[[id]]), {
+    req(input$ts)
+    i <- as.integer(input$ts)
+    usr <- input[[sprintf("brush_%d", i)]]
+    req(usr)
+    req(usr$xmin < usr$xmax)
+    newrow <- data.frame(
+      ts = factor(levels_ts()[i], levels = levels_ts()),
+      start = usr$xmin,
+      end = usr$xmax
+    )
+    res <- rbind(accumulator(), newrow)
+    res <- res[do.call(order, unname(res))]
+    if (N()[[i]] > 0L) {
+      k <- which(unclass(res$ts) == i)
+      req(res$start[k[-1L]] >= res$end[k[-length(k)]])
+    }
+    accumulator(res)
+  })
+
+  # observeEvent(lapply(sprintf("dblclick_%d", seq_len(K())), function(id) input[[id]]), {
+  #   id <- sprintf("dblclick_%s", input$ts)
+  #   usr <- input[[id]]
+  #   req(usr)
+  #   deselected <-
+  #     unclass(accumulator()$ts) == as.integer(input$ts) &
+  #     accumulator()$start < usr$x &
+  #     accumulator()$end >= usr$x
+  #   if (any(deselected)) {
+  #     accumulator(accumulator()[!deselected, , drop = FALSE])
+  #   }
+  # })
 }
 
 shinyApp(ui = ui, server = server)
