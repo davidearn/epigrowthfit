@@ -16,5 +16,5 @@
 !data/*.RData
 !data-raw/*.RData
 
-shiny/model/rsconnect/
-shiny/window/rsconnect/
+shiny/toplevel/rsconnect/
+shiny/windowselect/rsconnect/
