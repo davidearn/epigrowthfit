@@ -4,14 +4,17 @@
 \alias{make_tmb_parameters}
 \title{Construct parameter objects for C++ template}
 \usage{
-make_tmb_parameters(tmb_data, model, frame, frame_par, do_fit, init)
+make_tmb_parameters(tmb_data, model, frame, frame_parameters, do_fit, init)
 }
 \arguments{
 \item{tmb_data}{A \code{"\link[=make_tmb_data]{tmb_data}"} object.}
 
+\item{model}{An \code{"\link{egf_model}"} object specifying a top level nonlinear model
+to be estimated.}
+
 \item{frame}{Elements of the \link{list} output of \code{\link{make_frames}}.}
 
-\item{frame_par}{Elements of the \link{list} output of \code{\link{make_frames}}.}
+\item{frame_parameters}{Elements of the \link{list} output of \code{\link{make_frames}}.}
 
 \item{do_fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 with a \link{list} of optimization inputs.}
@@ -58,7 +61,7 @@ macros during the first likelihood evaluation.
 See also \code{\link[TMB]{MakeADFun}}.
 }
 \details{
-When \code{init = NULL}, naive estimates of nonlinear and dispersion
+When \code{init = NULL}, naive estimates of top level nonlinear
 model parameters are obtained for each fitting window as follows:
 \describe{
 \item{\code{r}}{
@@ -77,25 +80,24 @@ model parameters are obtained for each fitting window as follows:
   of a linear model fit to \code{\link{log1p}(\link{cumsum}(x))}.
 }
 \item{\code{tinfl}}{
-  \code{\link{max}(t)}, assuming that the fitting window ends
-  near the time of a peak in interval incidence.
+  \code{\link{max}(time)}. This assumes that the fitting window
+  ends near the time of a peak in incidence.
 }
 \item{\code{K}}{
-  \code{2*\link{sum}(x)}, assuming that the fitting window
-  ends near the time of a peak in interval incidence _and_
-  that interval incidence is roughly symmetric about the peak.
+  \code{2*\link{sum}(x)}. This assumes that the fitting window
+  ends near the time of a peak in incidence _and_ that incidence
+  is roughly symmetric about the peak.
 }
-\item{\code{p}}{0.8}
-\item{\code{a, b, nbdisp, w[123456]}}{1}
+\item{\code{p}}{0.95}
+\item{\code{a, b, disp, w[123456]}}{1}
 }
-The naive estimates are log- or logit-transformed (all but
-\code{p} use a log link), and, for each nonlinear or dispersion
-model parameter, the initial value of the \code{"(Intercept)"}
-coefficient in its fixed effects model (if one exists) is taken
-to be the mean of the link scale estimates across fitting windows.
-The remaining elements of \code{beta} take initial value 0.
-All elements of \code{b} and \code{theta} take initial value 0,
-so that, initially, all random vectors follow a standard normal
-distribution.
+The naive estimates are log- or logit-transformed (all but \code{p}
+use a log link), and the initial value of the \code{"(Intercept)"}
+coefficient in a top level parameter's fixed effects model
+(if that coefficient exists) is taken to be the mean of the link scale
+estimates across fitting windows. The remaining elements of \code{beta}
+take initial value 0. All elements of \code{b} and \code{theta}
+take initial value 0, so that, initially, all random vectors follow
+a standard normal distribution.
 }
 \keyword{internal}

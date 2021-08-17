@@ -3,9 +3,10 @@
 #' When \code{\link{match.call}} is called from an S3 method for a generic
 #' function, a \link{call} to the method is returned, rather than a call
 #' to the generic function. Typically, the method is not exported, so the
-#' default method for \code{\link{update}} is unable to evaluate the call.
-#' These methods for \code{\link{getCall}} circumvent this issue for objects
-#' created by various S3 methods implemented in \pkg{epigrowthfit}.
+#' default method for \code{\link{update}} is unable to evaluate the
+#' call in the global environment. These methods for \code{\link{getCall}}
+#' circumvent this issue for objects created by various methods implemented
+#' in \pkg{epigrowthfit}.
 #'
 #' @param x
 #'   A \link{list} with an element \code{call}, which should be a \link{call}.

@@ -16,8 +16,8 @@
 #'   of \code{fitted$best[fitted$nonrandom]} to be profiled.
 #'   Ignored if \code{which} is non-\code{\link{NULL}}.
 #' @param par
-#'   A subset of \code{\link{get_par_names}(fitted, link = TRUE)}
-#'   naming nonlinear and dispersion model parameters whose population
+#'   A subset of \code{\link{get_names_top}(fitted, link = TRUE)}
+#'   naming top level nonlinear model parameters whose population
 #'   fitted values (see \code{\link{fitted.egf}}) should be profiled.
 #'   Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.
 #' @param subset
@@ -65,8 +65,8 @@
 #'
 #' \code{par} and \code{subset} are mapped to a block \code{A} matrix.
 #' Block \code{k} (from the top) is composed of rows of the fixed effects
-#' design matrix for parameter \code{par[k]} (those rows indexed by
-#' \code{subset}). \code{A \link[=matmult]{\%*\%} fitted$par[fitted$nonrandom]}
+#' design matrix for parameter \code{par[k]} (those indexed by \code{subset}).
+#' \code{A \link[=matmult]{\%*\%} fitted$par[fitted$nonrandom]}
 #' is a vector listing the population fitted values for each parameter
 #' named in \code{par}, for each fitting window indexed by \code{subset}.
 #'
@@ -78,16 +78,16 @@
 #' \code{"egf_profile"}, with variables:
 #' \item{par}{
 #'   (\code{par}-based calls only.)
-#'   Nonlinear or dispersion model parameter,
-#'   from \code{\link{get_par_names}(fitted, link = link)}.
+#'   Top level nonlinear model parameter,
+#'   from \code{\link{get_names_top}(fitted, link = link)}.
 #' }
 #' \item{ts}{
 #'   (\code{par}-based calls only.)
-#'   Time series, from \code{\link{levels}(fitted$endpoints$ts)}.
+#'   Time series, from \code{\link{levels}(fitted$frame_windows$ts)}.
 #' }
 #' \item{window}{
 #'   (\code{par}-based calls only.)
-#'   Fitting window, from \code{\link{levels}(fitted$endpoints$window)}.
+#'   Fitting window, from \code{\link{levels}(fitted$frame_windows$window)}.
 #' }
 #' \item{linear_combination}{
 #'   Row index of linear combination,
@@ -109,12 +109,12 @@
 #' @importMethodsFrom Matrix diag
 #' @importFrom methods as is
 #' @importFrom stats vcov
-#' @importFrom TMB tmbprofile
+#' @importFrom TMB tmbprofile openmp
 #' @import parallel
 profile.egf <- function(fitted,
                         which = NULL,
                         A = NULL,
-                        par = get_par_names(fitted, link = TRUE),
+                        par = get_names_top(fitted, link = TRUE),
                         subset = NULL,
                         append = NULL,
                         max_level = 0.99,
@@ -124,10 +124,7 @@ profile.egf <- function(fitted,
                         .subset = NULL,
                         .append = NULL,
                         ...) {
-  stop_if_not(
-    inherits(parallel, "egf_parallel"),
-    m = "`parallel` must inherit from class \"egf_parallel\". See `?egf_parallel`."
-  )
+  stopifnot(inherits(parallel, "egf_parallel"))
   stop_if_not_number_in_interval(max_level, 0, 1, "()")
   stop_if_not_number_in_interval(grid_len, 1, Inf, "[)")
   stop_if_not_true_false(trace)
@@ -136,11 +133,11 @@ profile.egf <- function(fitted,
   ## If profiling user-specified elements of `c(beta, theta)`
   if (!is.null(which)) {
     method <- "which"
-    stop_if_not(
+    stopifnot(
       is.numeric(which),
-      (which <- unique(which)) %in% fitted$nonrandom,
-      m = "`which` must be a subset of `fitted$nonrandom`."
+      which %in% fitted$nonrandom
     )
+    which <- unique(which)
     m <- length(which)
     A <- sparseMatrix(i = seq_len(m), j = which, x = 1, dims = c(m, n))
 
@@ -148,21 +145,16 @@ profile.egf <- function(fitted,
   ## of elements of `c(beta, theta)`
   } else if (!is.null(A)) {
     method <- "A"
-    if (is.numeric(A) && is.null(dim(A))) {
+    stopifnot(is.numeric(A))
+    if (is.null(dim(A))) {
       dim(A) <- c(1L, length(A))
+    } else {
+      stopifnot(is.matrix(A) || is(A, "dMatrix"))
     }
-    stop_if_not(
-      (is.matrix(A) && is.numeric(A)) || is(A, "dMatrix"),
-      all(is.finite(A)),
-      m = "`A` must be a finite, numeric matrix or vector."
-    )
-    stop_if_not(
-      ncol(A) == n,
-      m = "`A` must have `length(fitted$nonrandom)` columns."
-    )
-    stop_if_not(
-      rowSums(abs(A)) > 0,
-      m = "`A` must have at least one nonzero element in each row."
+    stopifnot(
+      ncol(A) == length(fitted$nonrandom),
+      is.finite(A),
+      rowSums(abs(A)) > 0
     )
     m <- nrow(A)
 
@@ -170,13 +162,11 @@ profile.egf <- function(fitted,
   ## of nonlinear and dispersions model parameters
   } else if (!is.null(par)) {
     method <- "par"
-    par_names <- get_par_names(fitted, link = TRUE)
-    par <- unique(match.arg(par, par_names, several.ok = TRUE))
+    names_top <- get_names_top(fitted, link = TRUE)
+    par <- unique(match.arg(par, names_top, several.ok = TRUE))
     combined <- make_combined(fitted)
-    subset <- subset_to_index(substitute(subset), data = combined, enclos = parent.frame(),
-                              .subset = .subset)
-    append <- append_to_index(substitute(append), data = combined, enclos = parent.frame(),
-                              .append = .append)
+    subset <- eval_subset(substitute(subset), combined, parent.frame(), .subset = .subset)
+    append <- eval_append(substitute(append), combined, baseenv(), .append = .append)
 
     p <- length(par)
     N <- sum(subset)
@@ -221,15 +211,20 @@ profile.egf <- function(fitted,
 
   do_profile <- function(r, h, i) {
     if (trace) {
-      cat(sprintf("Computing likelihood profile %*d of %d...\n", nchar(m), i, m))
+      cat(sprintf("Computing likelihood profile %d of %d...\n", i, m))
+    }
+    on <- openmp(n = NULL)
+    if (on > 0L) {
+      openmp(n = fitted$control$omp_num_threads)
+      on.exit(openmp(n = on))
     }
     tmbprofile_args[[switch(method, which = "name", "lincomb")]] <- r
     tmbprofile_args$h <- h
-    d <- do.call(tmbprofile, tmbprofile_args)
-    i_min <- which.min(d[[2L]])
-    d[[2L]] <- 2 * (d[[2L]] - d[i_min, 2L]) # deviance = 2 * diff(nll)
-    names(d) <- c("value", "deviance")
-    d[-i_min, , drop = FALSE] # `tmbprofile` duplicates this row
+    res <- do.call(tmbprofile, tmbprofile_args)
+    i_min <- which.min(res[[2L]])
+    res[[2L]] <- 2 * (res[[2L]] - res[i_min, 2L]) # deviance = 2 * diff(nll)
+    names(res) <- c("value", "deviance")
+    res[-i_min, , drop = FALSE] # `tmbprofile` duplicates this row
   }
 
   if (parallel$method == "snow") {
@@ -242,15 +237,14 @@ profile.egf <- function(fitted,
     }
     clusterEvalQ(cl, library("TMB"))
     clusterExport(cl, varlist = c("tmbprofile_args", "m", "method"), envir = environment())
-    dl <- clusterMap(cl, do_profile, r = r, h = h, i = seq_len(m))
-
+    res <- clusterMap(cl, do_profile, r = r, h = h, i = seq_len(m))
   } else {
     if (nzchar(parallel$outfile)) {
       outfile <- file(parallel$outfile, open = "wt")
       sink(outfile, type = "output")
       sink(outfile, type = "message")
     } else {
-      dl <- switch(parallel$method,
+      res <- switch(parallel$method,
         multicore = do.call(mcMap, c(list(f = do_profile, r = r, h = h, i = seq_len(m)), parallel$options)),
         serial = Map(do_profile, r = r, h = h, i = seq_len(m))
       )
@@ -261,19 +255,19 @@ profile.egf <- function(fitted,
     }
   }
 
-  dl_nrow <- vapply(dl, nrow, 0L)
-  out <- data.frame(
-    linear_combination = rep.int(gl(m, 1L), dl_nrow),
-    do.call(rbind, dl),
+  nrow_res <- vapply(res, nrow, 0L)
+  res <- data.frame(
+    linear_combination = rep.int(gl(m, 1L), nrow_res),
+    do.call(rbind, res),
     row.names = NULL
   )
   if (method == "par") {
-    w <- rep.int(rep.int(which(subset), p), dl_nrow)
-    out <- data.frame(
-      par = rep.int(rep.int(factor(par, levels = par_names), N), dl_nrow),
-      fitted$endpoints[w, c("ts", "window"), drop = FALSE],
-      out,
-      combined[w, append, drop = FALSE],
+    i <- rep.int(rep.int(which(subset), p), nrow_res)
+    res <- data.frame(
+      par = rep.int(rep.int(factor(par, levels = names_top), N), nrow_res),
+      fitted$frame_windows[i, c("ts", "window"), drop = FALSE],
+      res,
+      combined[i, append, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
@@ -302,9 +296,8 @@ profile.egf <- function(fitted,
 #' @param link
 #'   A \link{logical} flag. If \code{FALSE} and \code{object}
 #'   supplies likelihood profiles of population fitted values
-#'   of nonlinear or dispersion model parameters,
-#'   then confidence intervals on inverse link-transformed
-#'   fitted values are returned.
+#'   of top level nonlinear model parameters, then confidence
+#'   intervals on inverse link-transformed fitted values are returned.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -327,7 +320,7 @@ profile.egf <- function(fitted,
 #'   Estimate of linear combination and approximate lower
 #'   and upper confidence limits, inverse-link transformed
 #'   if \code{link = FALSE} and linear combinations represent
-#'   population fitted values of nonlinear or dispersion model
+#'   population fitted values of top level nonlinear model
 #'   parameters.
 #' }
 #' \link[=attributes]{Attributes} \code{A} and \code{x} of \code{object}
@@ -338,21 +331,18 @@ profile.egf <- function(fitted,
 confint.egf_profile <- function(object, parm, level = 0.95, link = TRUE, ...) {
   stop_if_not_true_false(link)
   stop_if_not_number_in_interval(level, 0, 1, "()")
-  stop_if_not(
-    attr(object, "max_level") > level,
-    m = "`attr(object, \"max_level\")` must exceed `level`."
-  )
+  stopifnot(attr(object, "max_level") > level)
+  q <- qchisq(level, df = 1)
+  method <- attr(object, "method")
 
   s <- c("par", "ts", "window", "linear_combination", "value", "deviance")
-  if (attr(object, "method") == "par") {
-    k1 <- 1:4
-    k2 <- -match(s, names(object), 0L)
+  if (method == "par") {
+    j1 <- 1:4
+    j2 <- -match(s, names(object), 0L)
   } else {
-    k1 <- 4L
-    k2 <- -match(s[4:6], names(object), 0L)
+    j1 <- 4L
+    j2 <- -match(s[4:6], names(object), 0L)
   }
-  q <- qchisq(level, df = 1)
-
   do_solve <- function(d) {
     i_min <- which.min(d$deviance)
     i_left <- seq_len(i_min)
@@ -361,31 +351,31 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = TRUE, ...) {
     lower <- approx(x = d$deviance[i_left],  y = d$value[i_left],  xout = q)$y
     upper <- approx(x = d$deviance[i_right], y = d$value[i_right], xout = q)$y
     data.frame(
-      d[1L, k1, drop = FALSE],
+      d[1L, j1, drop = FALSE],
       estimate,
       lower,
       upper,
-      d[1L, k2, drop = FALSE],
+      d[1L, j2, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
   }
 
-  out <- do.call(rbind, by(object, object$linear_combination, do_solve, simplify = FALSE))
-  if (attr(object, "method") == "par" && !link) {
+  res <- do.call(rbind, by(object, object$linear_combination, do_solve, simplify = FALSE))
+  if (method == "par" && !link) {
     elu <- c("estimate", "lower", "upper")
-    out[elu] <- lpapply(out[elu], out$par,
-      f = lapply(string_extract_link(levels(out$par)), match_link, inverse = TRUE)
+    res[elu] <- in_place_ragged_apply(res[elu], res$par,
+      f = lapply(string_extract_link(levels(res$par)), match_link, inverse = TRUE)
     )
-    levels(out$par) <- string_remove_link(levels(out$par))
+    levels(res$par) <- string_remove_link(levels(res$par))
   }
-  out$linear_combination <- as.integer(as.character(out$linear_combination))
-  row.names(out) <- NULL
-  attr(out, "A") <- attr(object, "A")
-  attr(out, "x") <- attr(object, "x")
-  attr(out, "level") <- level
-  out
+  res$linear_combination <- as.integer(as.character(res$linear_combination))
+  row.names(res) <- NULL
+  attr(res, "A") <- attr(object, "A")
+  attr(res, "x") <- attr(object, "x")
+  attr(res, "level") <- level
+  res
 }
 
 #' Plot likelihood profiles
@@ -423,19 +413,22 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = TRUE, ...) {
 #' @import graphics
 #' @importFrom stats confint
 plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE, level = NULL, ...) {
-  subset <- subset_to_index(substitute(subset), data = x, enclos = parent.frame())
+  subset <- eval_subset(substitute(subset), x, parent.frame())
   m <- match(levels(factor(x$linear_combination[subset])), levels(x$linear_combination))
 
   stop_if_not_true_false(sqrt)
   f <- if (sqrt) base::sqrt else identity
   ymax <- f(max(x$deviance, na.rm = TRUE))
   ylab <- if (sqrt) expression(sqrt("deviance")) else "deviance"
-  do_ann_with_par <- (attr(x, "method") == "par")
 
-  do_segments <- !sqrt &&
+  method <- attr(x, "method")
+  do_ann_with_par <- (method == "par")
+
+  do_segments <-
+    !sqrt &&
     is.numeric(level) &&
     length(level) > 0L &&
-    any(ok <- is.finite(level) & level > 0 & level < 1)
+    any(ok <- !is.na(level) & level > 0 & level < 1)
   if (do_segments) {
     level <- level[ok]
     ## Line segments at heights `h` in all plots
@@ -466,6 +459,7 @@ plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE, level = NULL, ...) 
       axes = FALSE,
       ...
     )
+    usr <- par("usr")
     if (do_segments) {
       v_lower <- vapply(ci, `[`, 0, i, "lower")
       v_upper <- vapply(ci, `[`, 0, i, "upper")
@@ -479,12 +473,12 @@ plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE, level = NULL, ...) 
       segments(
         x0 = c(v_lower, v_upper),
         x1 = c(v_lower, v_upper),
-        y0 = par("usr")[3L],
+        y0 = usr[3L],
         y1 = rep.int(h, 2L),
         lty = 3
       )
       text(
-        x = mean(par("usr")[1:2]),
+        x = mean(usr[1:2]),
         y = h,
         labels = sprintf("%.3g%%", 100 * level),
         pos = 3,

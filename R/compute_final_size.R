@@ -50,25 +50,21 @@
 #' @seealso \code{\link{compute_R0}}
 #' @export
 compute_final_size <- function(R0, S0 = 1, I0 = 0) {
-  stop_if_not(
-    requireNamespace("emdbook", quietly = TRUE),
-    m = wrap(
+  if (!requireNamespace("emdbook", quietly = TRUE)) {
+    stop(wrap(
       "`emdbook::lambertW` is needed, but `emdbook` is not installed. ",
-      "Install it by running `install.packages(\"emdbook\")`, ",
-      "then try again."
-    )
-  )
-  stop_if_not(
+      "Install it by running `install.packages(\"emdbook\")`, then try again."
+    ))
+  }
+  stopifnot(
     is.numeric(R0),
     is.numeric(S0),
-    is.numeric(I0),
-    m = "`R0`, `S0`, and `I0` must be numeric."
+    is.numeric(I0)
   )
   len <- lengths(list(R0, S0, I0))
   if (min(len) == 0L) {
     return(numeric(0L))
   }
-
   n <- max(len)
   R0 <- rep_len(R0, n)
   S0 <- rep_len(S0, n)
@@ -87,6 +83,7 @@ compute_final_size <- function(R0, S0 = 1, I0 = 0) {
   l2 <- !is_bad_triple & R0 == Inf
   fs[l1] <- 0
   fs[l2] <- S0[l2]
+
   ## Usual cases
   l3 <- !(is_bad_triple | l1 | l2)
   if (any(l3)) {

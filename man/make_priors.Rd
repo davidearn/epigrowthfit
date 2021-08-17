@@ -4,18 +4,19 @@
 \alias{make_priors}
 \title{Construct list of prior objects}
 \usage{
-make_priors(priors, model)
+make_priors(model, priors)
 }
 \arguments{
-\item{priors}{An \link{list} of \link{formula}e of the form \code{par ~ f(...)},
-specifying priors on nonlinear and dispersion model parameters.
-\code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(object, link = TRUE)}.
+\item{model}{An \code{"\link{egf_model}"} object specifying a top level nonlinear model
+to be estimated.}
+
+\item{priors}{A \link{list} of \link{formula}e of the form \code{parameter ~ f(...)}
+specifying priors on top level nonlinear model parameters.
+\code{\link{deparse}(parameter)} must be an element
+of \code{\link{get_names_top}(model, link = TRUE)}, and
 \code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
 with arguments specifying suitable hyperparameters.
-This call is evaluated in the corresponding formula environment.
-(Currently, the only implemented prior is Gaussian. As a result,
-formulae must have the form \code{par ~ \link{Normal}(mu, sigma)}.)}
+Calls are evaluated in the corresponding formula environments.}
 }
 \value{
 A named \link{list} of \code{"\link{egf_prior}"} objects obtained

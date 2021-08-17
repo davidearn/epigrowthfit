@@ -259,7 +259,7 @@ Type objective_function<Type>::operator() ()
 
     /* Negative log likelihood ============================================== */
 
-    Type nll = Type(0.0);
+    Type res = Type(0.0);
 
     
     /* Observation likelihood ----------------------------------------------- */
@@ -267,10 +267,10 @@ Type objective_function<Type>::operator() ()
     if (flags.do_trace && !flags.do_simulate)
     {
         std::cout << "Y = \n" << Y << "\n";
-	printf("nll initialized to %.6e\n", asDouble(nll));
+	printf("nll initialized to %.6e\n", asDouble(res));
 	std::cout << "commencing loop over observations\n";
     }
-    add_nll_ob(nll, this, time, time_seg_len, x, Y, indices, flags, day1);
+    res += nll_ob(this, time, time_seg_len, x, Y, indices, flags, day1);
     if (flags.do_simulate)
     {
         REPORT(x);
@@ -279,7 +279,7 @@ Type objective_function<Type>::operator() ()
     if (flags.do_trace)
     {
         std::cout << "loop over observations complete\n";
-        printf("nll is %.6e\n", asDouble(nll));
+        printf("nll is %.6e\n", asDouble(res));
     }
 
     
@@ -290,11 +290,11 @@ Type objective_function<Type>::operator() ()
 	{
 	    std::cout << "commencing loop over random effects\n";
 	}
-	add_nll_re(nll, this, list_of_blocks, list_of_nld, flags);
+	res += nll_re(this, list_of_blocks, list_of_nld, flags);
 	if (flags.do_trace)
 	{
 	    std::cout << "loop over random effects complete\n";
-	    printf("nll is %.6e\n", asDouble(nll));
+	    printf("nll is %.6e\n", asDouble(res));
 	}
     }
 
@@ -312,11 +312,11 @@ Type objective_function<Type>::operator() ()
 	{
 	    std::cout << "commencing loop over regularized parameters\n";
 	}
-        add_nll_pv(nll, this, Y, hyperparameters, flags);
+        res += nll_pv(this, Y, hyperparameters, flags);
         if (flags.do_trace)
 	{
 	    std::cout << "loop over regularized parameters complete\n";
-	    printf("nll is %.6e\n", asDouble(nll));
+	    printf("nll is %.6e\n", asDouble(res));
 	}
     }
 
@@ -335,19 +335,17 @@ Type objective_function<Type>::operator() ()
 	      
 	      = log(diff(c(t)))
 	*/
-	bool do_predict_lii = (flag_what(0) == 1);
-	/* 1. Log cumulative incidence since time 0
+	bool do_predict_log_interval = (flag_what(0) == 1);
+	/* 1. Log cumulative incidence since time -Inf
 	      
-	      = log(c(t[-1L]) - c(t[1L]))
-	      = log(cumsum(diff(c(t))))
+	      = log(c(t))
 	*/
-        bool do_predict_lci = (flag_what(1) == 1);
+        bool do_predict_log_cumulative = (flag_what(1) == 1);
 	/* 2. Log per capita growth rate
 	      
 	      = log(c'(t) / c(t))
 	*/
-	bool do_predict_lrt = (flag_what(2) == 1);
-	bool do_predict_lrt_in_place = !(do_predict_lii || do_predict_lci);  
+	bool do_predict_log_rt = (flag_what(2) == 1);
 
       
         /* Data ------------------------------------------------------------- */
@@ -378,7 +376,7 @@ Type objective_function<Type>::operator() ()
 	DATA_IVECTOR(new_day1);
 
 
-	/* Log cumulative incidence since time -Inf ------------------------- */
+	/* Log cumulative incidence since time -Inf, no day of week effects - */
 
 	int n;
 	vector<Type> Y_row;
@@ -399,7 +397,7 @@ Type objective_function<Type>::operator() ()
 
 	/* Prediction variables --------------------------------------------- */
 
-	if (do_predict_lrt)
+	if (do_predict_log_rt)
 	{
 	    vector<Type> log_rt(new_time.size());
 	    vector<Type> tmp;
@@ -408,18 +406,7 @@ Type objective_function<Type>::operator() ()
 		n = new_time_seg_len(s);
 		Y_row = Y.row(subset(s));
 		/* log(c(t)) <- log(c'(t) / c(t)) */
-		if (do_predict_lrt_in_place)
-		{
-		    /* Modify log(c(t)) in place,
-		       because we no longer need log(c(t)) 
-		    */
-		    egf::eval_log_rt_exact(list_of_predict(s),
-					   Y_row,
-					   indices,
-					   flags.flag_curve);
-		    log_rt.segment(i, n) = list_of_predict(s);
-		}
-		else
+		if (do_predict_log_interval || do_predict_log_cumulative)
 		{
 		    /* Modify a copy of log(c(t)) in place, 
 		       because we still need log(c(t)) 
@@ -431,23 +418,34 @@ Type objective_function<Type>::operator() ()
 					   flags.flag_curve);
 		    log_rt.segment(i, n) = tmp;
 		}
+		else
+		{
+		    /* Modify log(c(t)) in place,
+		       because we no longer need log(c(t)) 
+		    */
+		    egf::eval_log_rt_exact(list_of_predict(s),
+					   Y_row,
+					   indices,
+					   flags.flag_curve);
+		    log_rt.segment(i, n) = list_of_predict(s);
+		}
 		i += n;
 	    }
 	    REPORT(log_rt);
 	    ADREPORT(log_rt);
 	}
 
-	if (!do_predict_lrt_in_place)
+	if (do_predict_log_interval || do_predict_log_cumulative)
 	{
-	    vector<Type> log_int_inc;
-	    vector<Type> log_cum_inc;
-	    if (do_predict_lii)
+	    vector<Type> log_interval;
+	    vector<Type> log_cumulative;
+	    if (do_predict_log_interval)
 	    {
-	        log_int_inc.resize(new_time.size() - N);
+	        log_interval.resize(new_time.size() - N);
 	    }
-	    if (do_predict_lii)
+	    if (do_predict_log_cumulative)
 	    {
-	        log_cum_inc.resize(new_time.size() - N);
+	        log_cumulative.resize(new_time.size());
 	    }
 	    for (int s = 0, i = 0; s < N; ++s)
 	    {
@@ -460,44 +458,59 @@ Type objective_function<Type>::operator() ()
 					       (vector<Type>) new_time.segment(i, n),
 					       Y_row(indices.index_log_b));
 		}
-		/* log(c(t)) <- log(diff(c(t))) */
-		egf::logspace_diff(list_of_predict(s));
-		if (flags.do_day_of_week)
+		if (do_predict_log_cumulative)
 		{
-		    /* log(diff(c(t))) <- log(diff(c(t)) * w(t[-n], t[-1])) */
-		    egf::logspace_add_offsets(list_of_predict(s),
-					      Y_row(indices.index_log_w1),
-					      Y_row(indices.index_log_w2),
-					      Y_row(indices.index_log_w3),
-					      Y_row(indices.index_log_w4),
-					      Y_row(indices.index_log_w5),
-					      Y_row(indices.index_log_w6),
-					      new_day1(s));
+		    if (flags.do_day_of_week)
+		    {
+		        log_cumulative(i) = list_of_predict(s)(0);
+		    }
+		    else
+		    {
+			log_cumulative.segment(i, n) = list_of_predict(s);
+		    }
 		}
-		if (do_predict_lii)
-		{
-		    log_int_inc.segment(i - s, n - 1) = list_of_predict(s);
-		}
-		if (do_predict_lci)
-		{
-		    /* log(diff(c(t))) <- log(cumsum(diff(c(t)))) */
-		    egf::logspace_cumsum(list_of_predict(s));
-		    log_cum_inc.segment(i - s, n - 1) = list_of_predict(s);
+		if (n > 1 && (do_predict_log_interval || (do_predict_log_cumulative && flags.do_day_of_week)))
+		{  
+		    /* log(c(t)) <- log(diff(c(t))) */
+		    egf::logspace_diff(list_of_predict(s));
+		    if (flags.do_day_of_week)
+		    {
+			/* log(diff(c(t))) <- log(diff(c(t)) * w(t[-n], t[-1])) */
+			egf::logspace_add_offsets(list_of_predict(s),
+						  Y_row(indices.index_log_w1),
+						  Y_row(indices.index_log_w2),
+						  Y_row(indices.index_log_w3),
+						  Y_row(indices.index_log_w4),
+						  Y_row(indices.index_log_w5),
+						  Y_row(indices.index_log_w6),
+						  new_day1(s));
+		    }
+		    if (do_predict_log_interval)
+		    {
+			log_interval.segment(i - s, n - 1) = list_of_predict(s);
+		    }
+		    if (do_predict_log_cumulative)
+		    {
+			for (int k = 0; k < n - 1; ++k)
+			{
+			    log_cumulative(i + k + 1) = logspace_add(log_cumulative(i + k), list_of_predict(s)(k));
+			}
+		    }
 		}
 		i += n;
 	    }
-	    if (do_predict_lii)
+	    if (do_predict_log_interval)
 	    {
-	        REPORT(log_int_inc);
-		ADREPORT(log_int_inc);
+	        REPORT(log_interval);
+		ADREPORT(log_interval);
 	    }
-	    if (do_predict_lci)
+	    if (do_predict_log_cumulative)
 	    {
-	        REPORT(log_cum_inc);
-		ADREPORT(log_cum_inc);
+	        REPORT(log_cumulative);
+		ADREPORT(log_cumulative);
 	    }
 	}
     }
 
-    return nll;
+    return res;
 }

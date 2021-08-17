@@ -1,12 +1,13 @@
-#' Get model parameter names
+#' Get top level nonlinear model parameter names
 #'
-#' Retrieves the names used internally for nonlinear and dispersion
-#' model parameters.
+#' Retrieves the names used internally for top level nonlinear model
+#' parameter names.
 #'
 #' @param object
 #'   An \code{"\link{egf_model}"}, \code{"\link{egf}"},
 #'   or \code{"\link[=make_tmb_data]{tmb_data}"} object
-#'   specifying a model. Otherwise, \code{\link{NULL}}.
+#'   specifying a top level nonlinear model. Otherwise,
+#'   \code{\link{NULL}}.
 #' @param link
 #'   A \link{logical} flag. If \code{TRUE}, then \code{"name"}
 #'   is replaced with \code{"log(name)"} or \code{"logit(name)"}
@@ -16,49 +17,35 @@
 #'   Unused optional arguments.
 #'
 #' @return
-#' A \link{character} vector giving a subset of \code{"r"}, \code{"alpha"},
-#' \code{"c0"}, \code{"tinfl"}, \code{"K"}, \code{"p"}, \code{"a"},
-#' \code{"b"}, \code{"nbdisp"}, and \code{\link{paste0}("w", 1:6)}
-#' (modified if \code{link = TRUE}).
-#'
-#' If \code{object = \link{NULL}}, then the complete set is returned.
+#' A \link{character} vector giving the subset of names relevant to
+#' \code{object}, or the complete set if \code{object = \link{NULL}}.
 #'
 #' @examples
-#' get_par_names(NULL, link = FALSE)
-#' get_par_names(NULL, link = TRUE)
-#'
-#' model <- egf_model(
-#'   curve = "logistic",
-#'   excess = FALSE,
-#'   family = "nbinom",
-#'   day_of_week = 0L
-#' )
-#' get_par_names(model, link = FALSE)
+#' get_names_top(NULL, link = FALSE)
+#' get_names_top(NULL, link = TRUE)
+#' get_names_top(egf_model(), link = FALSE)
 #'
 #' @export
-get_par_names <- function(object, ...) {
-  UseMethod("get_par_names", object)
+get_names_top <- function(object, ...) {
+  UseMethod("get_names_top", object)
 }
 
-#' @rdname get_par_names
+#' @rdname get_names_top
 #' @export
-get_par_names.default <- function(object, link = TRUE, ...) {
-  stop_if_not(
-    is.null(object),
-    m = "This method accepts `object = NULL` only."
-  )
-  par_names <- c("r", "alpha", "c0", "tinfl", "K",
-                 "p", "a", "b", "nbdisp", paste0("w", 1:6))
+get_names_top.default <- function(object, link = TRUE, ...) {
+  stopifnot(is.null(object))
+  names_top <- c("r", "alpha", "c0", "tinfl", "K",
+                 "p", "a", "b", "disp", paste0("w", 1:6))
   if (link) {
-    return(string_add_link(par_names))
+    return(string_add_link(names_top))
   }
-  par_names
+  names_top
 }
 
-#' @rdname get_par_names
+#' @rdname get_names_top
 #' @export
-get_par_names.egf_model <- function(object, link = TRUE, ...) {
-  par_names <- switch(object$curve,
+get_names_top.egf_model <- function(object, link = TRUE, ...) {
+  names_top <- switch(object$curve,
     exponential    = c("r", "c0"),
     subexponential = c("alpha", "c0", "p"),
     gompertz       = c("alpha", "tinfl", "K"),
@@ -66,42 +53,42 @@ get_par_names.egf_model <- function(object, link = TRUE, ...) {
     richards       = c("r", "tinfl", "K", "a")
   )
   if (object$excess) {
-    par_names <- c(par_names, "b")
+    names_top <- c(names_top, "b")
   }
   if (object$family == "nbinom") {
-    par_names <- c(par_names, "nbdisp")
+    names_top <- c(names_top, "disp")
   }
   if (object$day_of_week > 0L) {
-    par_names <- c(par_names, paste0("w", 1:6))
+    names_top <- c(names_top, paste0("w", 1:6))
   }
   if (link) {
-    return(string_add_link(par_names))
+    return(string_add_link(names_top))
   }
-  par_names
+  names_top
 }
 
-#' @rdname get_par_names
+#' @rdname get_names_top
 #' @export
-get_par_names.egf <- function(object, link = TRUE, ...) {
-  get_par_names(object$model, link = link)
+get_names_top.egf <- function(object, link = TRUE, ...) {
+  get_names_top(object$model, link = link)
 }
 
-#' @rdname get_par_names
+#' @rdname get_names_top
 #' @export
-get_par_names.tmb_data <- function(object, link = TRUE, ...) {
-  par_names <- levels(object$X_info$par)
+get_names_top.tmb_data <- function(object, link = TRUE, ...) {
+  names_top <- levels(object$X_info$par)
   if (link) {
-    return(par_names)
+    return(names_top)
   }
-  string_remove_link(par_names)
+  string_remove_link(names_top)
 }
 
-#' Manipulate model parameter names
+#' Manipulate top level nonlinear model parameter names
 #'
 #' Utilities for modifying strings \code{s} and
 #' \code{fs = \link{sprintf}("\%s(\%s)", f, s)},
-#' where \code{s} is the name used internally for
-#' a nonlinear or dispersion model parameter and
+#' where \code{s} is the name used internally
+#' for a top level nonlinear model parameter and
 #' \code{f} is the name (either \code{"log"} or \code{"logit"})
 #' of the corresponding link function.
 #'
@@ -117,11 +104,11 @@ get_par_names.tmb_data <- function(object, link = TRUE, ...) {
 #' is returned for invalid input (see Examples).
 #'
 #' @examples
-#' # string_get_link("r")
-#' # string_add_link("r")
-#' # string_remove_link("log(r)")
-#' # string_extract_link("log(r)")
-#' # string_extract_link("invalid", "input", "log(r)", "r")
+#' ## string_get_link("r")
+#' ## string_add_link("r")
+#' ## string_remove_link("log(r)")
+#' ## string_extract_link("log(r)")
+#' ## string_extract_link("invalid", "input", "r" , "log(r)")
 #'
 #' @name string_get_link
 #' @keywords internal
@@ -129,33 +116,33 @@ NULL
 
 #' @rdname string_get_link
 string_get_link <- function(s) {
-  ok <- s %in% get_par_names(NULL, link = FALSE)
+  ok <- s %in% get_names_top(NULL, link = FALSE)
   s[ok] <- replace(rep_len("log", sum(ok)), s[ok] == "p", "logit")
-  s[!ok] <- NA_character_
+  s[!ok] <- NA
   s
 }
 
 #' @rdname string_get_link
 string_add_link <- function(s) {
-  ok <- s %in% get_par_names(NULL, link = FALSE)
+  ok <- s %in% get_names_top(NULL, link = FALSE)
   s[ok] <- sprintf("%s(%s)", string_get_link(s[ok]), s[ok])
-  s[!ok] <- NA_character_
+  s[!ok] <- NA
   s
 }
 
 #' @rdname string_get_link
 string_remove_link <- function(fs) {
-  ok <- fs %in% get_par_names(NULL, link = TRUE)
+  ok <- fs %in% get_names_top(NULL, link = TRUE)
   fs[ok] <- sub("^(log|logit)\\((.*)\\)$", "\\2", fs[ok])
-  fs[!ok] <- NA_character_
+  fs[!ok] <- NA
   fs
 }
 
 #' @rdname string_get_link
 string_extract_link <- function(fs) {
-  ok <- fs %in% get_par_names(NULL, link = TRUE)
+  ok <- fs %in% get_names_top(NULL, link = TRUE)
   fs[ok] <- sub("^(log|logit)\\((.*)\\)$", "\\1", fs[ok])
-  fs[!ok] <- NA_character_
+  fs[!ok] <- NA
   fs
 }
 
@@ -164,8 +151,7 @@ string_extract_link <- function(fs) {
 #' Retrieve the link function named by a string, or its inverse.
 #'
 #' @param f
-#'   A \link{character} string naming a link function,
-#'   either \code{"log"} or \code{"logit"}.
+#'   A \link{character} string naming a link function.
 #' @param inverse
 #'   A \link{logical} flag. If \code{TRUE}, then the inverse is returned.
 #'
@@ -173,10 +159,8 @@ string_extract_link <- function(fs) {
 #' A \link{function}.
 #'
 #' @examples
-#' # match_link("log")
-#' # match_link("log", inverse = TRUE)
-#' # match_link("logit")
-#' # match_link("logit", inverse = TRUE)
+#' ## match_link("log")
+#' ## match_link("log", inverse = TRUE)
 #'
 #' @name match_link
 #' @keywords internal
@@ -184,132 +168,159 @@ string_extract_link <- function(fs) {
 match_link <- function(f, inverse = FALSE) {
   if (inverse) {
     switch(f,
-           log = exp,
-           logit = function(q) plogis(q),
-           stop("Link not implemented.")
+      identity = identity,
+      log = exp,
+      logit = function(q) plogis(q),
+      stop("Link not implemented.")
     )
   } else {
     switch(f,
-           log = log,
-           logit = function(p) qlogis(p),
-           stop("Link not implemented.")
+      identity = identity,
+      log = log,
+      logit = function(p) qlogis(p),
+      stop("Link not implemented.")
     )
   }
 }
 
 #' Construct list of model frames
 #'
-#' Constructs time series and mixed effects model frames for use
-#' by \code{\link{egf}}, while performing a battery of checks on
-#' the supplied formulae and data.
+#' Constructs model frames for use by \code{\link{egf}} from corresponding
+#' formulae and data frames. A battery of checks is performed on the input.
 #'
 #' @inheritParams egf
 #'
 #' @return
-#' A list with elements \code{endpoints}, \code{frame}, \code{frame_par},
+#' A list with elements
+#' \code{frame}, \code{frame_windows}, \code{frame_parameters},
 #' and \code{frame_append}. See descriptions under \code{\link{egf}}.
 #'
 #' @keywords internal
-#' @importFrom stats terms model.frame na.pass as.formula complete.cases
+#' @importFrom stats terms model.frame na.fail na.pass as.formula complete.cases
 make_frames <- function(model,
-                        formula, formula_par,
-                        data, data_par,
-                        subset, subset_par,
-                        na_action, na_action_par,
-                        endpoints,
+                        formula, formula_windows, formula_parameters,
+                        data, data_windows,
+                        subset, subset_windows,
+                        na_action, na_action_windows,
                         init, origin, append) {
-  stop_if_not(
-    vapply(list(data, data_par, endpoints), inherits, FALSE, c("data.frame", "list", "environment")),
-    m = "`data`, `data_par`, and `endpoints` must be data frames, lists, or environments."
-  )
+  ## Utility for checking `formula` and `formula_windows`
+  check_ok_formula <- function(formula) {
+    s <- deparse(substitute(formula))
+    a <- attributes(terms(formula))
+    stop_if_not(
+      a$response > 0L,
+      is.call(lhs <- a$variables[[1L + a$response]]),
+      lhs[[1L]] == "cbind",
+      length(lhs) == 3L,
+      m = sprintf("Left hand side of `%s` must be a call to `cbind` with 2 arguments.", s)
+    )
+    stop_if_not(
+      a$intercept == 1L,
+      is.null(a$offset),
+      length(a$term.labels) < 2L,
+      m = sprintf("Right hand side of `%s` must be 1 or have exactly one term.", s)
+    )
+    invisible(NULL)
+  }
+
+  ## Utility for constructing `frame` and `frame_windows`
+  make_frame <- function(formula, data, subset, na.action, drop.unused.levels) {
+    ## Build model frame
+    group <- length(attr(terms(formula), "term.labels")) == 1L
+    tt <- c(if (group) list(formula[[3L]]), as.list(formula[[2L]])[-1L])
+    .names <- c(if (!group) "", vapply(tt, deparse, ""))
+    tt <- Map(call, c(if (group) "as.factor", "identity", "identity"), tt, USE.NAMES = FALSE)
+    cl <- match.call()
+    cl[[1L]] <- quote(model.frame)
+    cl$formula <- as.formula(call("~", unsplit_terms(tt)), env = environment(formula))
+    cl$subset <- subset
+    mf <- eval(cl, parent.frame(), baseenv())
+    if (!group) {
+      mf <- data.frame(rep_len(factor(1), nrow(mf)), mf)
+    }
+    attr(mf, "names_original") <- .names
+    attr(mf, "terms") <- NULL
+    mf
+  }
 
 
   ### Construction step ########################################################
 
-  ### Time series model frame
+  ### Time series stuff
 
-  ## Check that `formula` has the form `x ~ time` or `x ~ time | ts`
-  stop_if_not(
-    inherits(formula, "formula"),
-    m = "`formula` must be a formula."
+  check_ok_formula(formula)
+  frame <- make_frame(
+    formula = formula,
+    data = data,
+    subset = subset,
+    na.action = na.pass
   )
-  formula <- simplify_terms(formula)
-  a <- attributes(terms(formula))
+  names(frame) <- c("ts", "time", "x")
+  frame <- frame[!is.na(frame$ts), , drop = FALSE]
   stop_if_not(
-    a$response > 0L,
-    a$intercept == 1L,
-    is.null(a$offset),
-    length(a$term.labels) == 1L,
+    nrow(frame) > 0L,
     m = wrap(
-      "To be parsed correctly, `formula` must have a response, ",
-      "an intercept, no offsets, and exactly one term. ",
-      "In particular, after simplification of all formula operators, ",
-      "`formula` should have the form `x ~ time` or `x ~ time | ts."
+      "Data frame constructed from `formula`, `data`, and `subset` ",
+      "must have at least one row."
     )
   )
 
-  ## Build model frame by constructing and evaluating an appropriate
-  ## call to `data.frame`
-  l <- list(quote(data.frame), time = formula[[3L]], x = formula[[2L]])
-  is_bar <- function(x) is.call(x) && x[[1L]] == as.name("|")
-  if (ib <- is_bar(formula[[3L]])) {
-    l[c("time", "ts")] <- formula[[3L]][2:3]
-  }
-  frame <- eval(as.call(l), envir = data, enclos = environment(formula))
-  if (!ib) {
-    ## Assume that there is only one time series
-    frame$ts <- rep_len(factor(1), nrow(frame))
-  }
+  ### Fitting window stuff
 
-  ## Preserve deparsed `data.frame` arguments for error messages
-  nf <- lapply(l[-1L], deparse)
+  check_ok_formula(formula_windows)
+  frame_windows <- make_frame(
+    formula = formula_windows,
+    data = data_windows,
+    subset = subset_windows,
+    na.action = switch(na_action_windows, fail = na.fail, na.pass)
 
+  )
+  names(frame_windows) <- c("ts", "start", "end")
+  stop_if_not(
+    (N <- nrow(frame_windows)) > 0L,
+    m = wrap(
+      "Data frame constructed from ",
+      "`formula_windows`, `data_windows`, and `subset_windows` ",
+      "must have at least one row."
+    )
+  )
 
-  ### Mixed effects model frames
+  ### Mixed effects stuff
 
-  ## Nonlinear and dispersion model parameter names
-  par_names <- get_par_names(model, link = TRUE)
-  p <- length(par_names)
+  ## Names of top level nonlinear model parameters
+  names_top <- get_names_top(model, link = TRUE)
+  p <- length(names_top)
 
-  ## If `formula_par` is a formula of the form `~terms`,
-  ## then recycle to a list of length `p`
-  if (inherits(formula_par, "formula") && length(formula_par) == 2L) {
-    formula_par <- simplify_terms(formula_par)
-    formula_par <- rep_len(list(formula_par), p)
-    names(formula_par) <- par_names
-    ## Otherwise, test for a valid list of formulae
-    ## of the form `par ~ terms`, and complete with
-    ## the default `~1` to obtain a list of length `p`
+  if (inherits(formula_parameters, "formula")) {
+    formula_parameters <- simplify_terms(formula_parameters)
+    formula_parameters <- rep_len(list(formula_parameters), p)
+    names(formula_parameters) <- names_top
   } else {
+    names(formula_parameters) <- vapply(formula_parameters, function(x) deparse(x[[2L]]), "")
     stop_if_not(
-      is.list(formula_par),
-      vapply(formula_par, inherits, FALSE, "formula"),
-      lengths(formula_par) == 3L,
-      (nfp <- vapply(formula_par, function(x) deparse(x[[2L]]), "")) %in% par_names,
+      names(formula_parameters) %in% names_top,
       m = wrap(
-        "`formula_par` must be a formula of the form `~terms` ",
-        "or a list of formulae of the form `par ~ terms`, with ",
-        "`deparse(par)` an element of `get_par_names(model, link = TRUE)`."
+        "`deparse(formula_parameters[[i]][[2L]])` must be an element of ",
+        sprintf("`c(%s)`.", paste(dQuote(names_top, FALSE), collapse = ", "))
       )
     )
-    formula_par <- lapply(formula_par, `[`, -2L)
-    names(formula_par) <- nfp
-    formula_par[setdiff(par_names, names(formula_par))] <- list(~1)
-    formula_par <- lapply(formula_par[par_names], simplify_terms)
+    formula_parameters <- lapply(formula_parameters, function(x) simplify_terms(x[-2L]))
+    formula_parameters[setdiff(names_top, names(formula_parameters))] <- list(~1)
+    formula_parameters <- formula_parameters[names_top]
   }
 
   ## Warn about fixed effects formulae without an intercept
   ## when relying on default initial values of linear coefficients
   if (is.null(init)) {
-    is_intercept_ok <- function(formula) {
-      a <- attributes(terms(split_effects(formula)$fixed))
+    check_ok_intercept <- function(x) {
+      a <- attributes(terms(split_effects(x)$fixed))
       a$intercept == 1L || length(a$term.labels) == 0L
     }
     warn_if_not(
-      vapply(formula_par, is_intercept_ok, FALSE),
+      vapply(formula_parameters, check_ok_intercept, FALSE),
       m = wrap(
-        "Default initial values for linear coefficients are not ",
-        "reliable for fixed effects models with an intercept. ",
+        "Default initial values for linear fixed effects coefficients ",
+        "are not reliable for fixed effects models without an intercept. ",
         "Consider setting `init` explicitly or including an intercept."
       )
     )
@@ -317,346 +328,294 @@ make_frames <- function(model,
 
   ## Replace `|` operators with `+` operators in formulae
   ## to enable use of `model.frame` machinery
-  formula_par_no_bars <- lapply(formula_par, gsub_bar_plus)
+  formula_parameters_no_bars <- lapply(formula_parameters, gsub_bar_plus)
 
-  ## Build model frames using `model.frame`
-  frame_par <- lapply(formula_par_no_bars, model.frame,
-    data = data_par,
-    na.action = na.pass,
+  ## Build model frames
+  cl <- call("model.frame",
+    formula = NULL,
+    data = quote(data_windows),
+    subset = subset_windows,
+    na.action = quote(switch(na_action_windows, fail = na.fail, na.pass)),
     drop.unused.levels = TRUE
   )
-
-
-  ### Table of fitting windows
-
-  ## Build table by constructing and evaluating an appropriate
-  ## call to `data.frame`
-  l <- list(quote(data.frame), start = quote(start), end = quote(end))
-  if (ib) {
-    l$ts <- formula[[3L]][[3L]]
-  }
-  endpoints <- eval(as.call(l), envir = endpoints, enclos = environment(formula))
-  N <- nrow(endpoints)
-  if (!ib) {
-    ## Assume that there is only one time series
-    endpoints$ts <- rep_len(factor(1), N)
+  frame_parameters <- rep_len(list(), p)
+  names(frame_parameters) <- names_top
+  for (i in seq_len(p)) {
+    cl$formula <- formula_parameters_no_bars[[i]]
+    frame_parameters[[i]] <- eval(cl, parent.frame(), baseenv())
   }
 
-  ## Check for rowwise correspondence with mixed effects model frames.
-  ## For formulae without variables (e.g., `~1`),
-  ## `model.frame()` returns data frames of zero length with zero rows.
-  ## These should not prevent the check from passing.
-  len <- lengths(frame_par)
-  frame_par[len == 0L] <- list(data.frame(row.names = seq_len(N)))
+  ## Replace, e.g., `model.frame(~1, data)`, which is an empty data frame
+  ## with 0 length and 0 rows regardless of `data`, with a data frame with
+  ## 0 length and the _correct_ number of rows
+  len <- lengths(frame_parameters)
+  frame_parameters[len == 0L] <- list(data.frame(row.names = seq_len(N)))
+
+  ## Test model frames for rowwise correspondence with `frame_windows`
   stop_if_not(
-    vapply(frame_par, nrow, 0L) == N,
-    m = "`endpoints` and mixed effects model frames must have a common number of rows."
+    vapply(frame_parameters, nrow, 0L) == N,
+    m = wrap(
+      "Data frames constructed from `formula_windows` and `formula_parameters` ",
+      "must have a common number of rows."
+    )
   )
-
-  ## Preserve deparsed `data.frame` arguments for error messages
-  ne <- lapply(l[-1L], deparse)
-
 
   ### Appended stuff
 
-  if (is.data.frame(data_par) && nrow(data_par) == N) {
-    if (is.null(append)) {
-      append <- seq_along(data_par)
+  if (!is.null(append) && is.data.frame(data_windows)) {
+    i <- eval(subset_windows, data_windows, environment(formula_windows))
+    if (append == ".") {
+      j <- setdiff(names(data_windows), unlist(lapply(frame_parameters, names), FALSE, FALSE))
     } else {
-      append <- append_to_index(append, data = data_par, enclos = baseenv())
+      l <- as.list(seq_along(data_windows))
+      names(l) <- names(data_windows)
+      j <- eval(append, l, baseenv())
     }
-    frame_append <- data_par[append]
+    frame_append <- data_windows[i, j]
   } else {
     frame_append <- data.frame(row.names = seq_len(N))
   }
 
 
-  ### Subsetting step ##########################################################
-
-  if (is.data.frame(data)) {
-    subset <- subset_to_index(subset, data = data, enclos = parent.frame())
-    frame <- frame[subset, , drop = FALSE]
-  }
-  if (is.data.frame(data_par)) {
-    subset_par <- subset_to_index(subset_par, data = data_par, enclos = parent.frame())
-    endpoints <- endpoints[subset_par, , drop = FALSE]
-    frame_par <- lapply(frame_par, `[`, subset_par, , drop = FALSE)
-    frame_append <- frame_append[subset_par, , drop = FALSE]
-  }
-
-
   ### Validation step ##########################################################
 
-  ### Time series model frame
+  ### Time series stuff
 
-  stop_if_not(
-    nrow(frame) > 0L,
-    m = "Time series model frame has 0 rows (after subsetting with `subset`)."
-  )
+  nf <- as.list(attr(frame, "names_original"))
+  names(nf) <- names(frame)
 
-  ## Time variable
-  if (inherits(frame$time, "Date")) {
-    frame$time <- julian(frame$time, origin = origin)
-  }
-  stop_if_not(
-    is.numeric(frame$time),
-    is.finite(frame$time),
-    m = sprintf("`%s` must be a finite numeric or Date vector.", nf$time)
-  )
-  if (model$day_of_week > 0L && is.double(frame$time)) {
-    ## Day of week effect estimation requires integer time points,
-    ## corresponding to midnights in local time
+  if (inherits(frame$time, c("Date", "POSIXt"))) {
+    frame$time <- julian(frame$time)
+  } else {
     stop_if_not(
-      all.equal(frame$time, z <- round(frame$time)),
-      m = sprintf("model$day_of_week > 0: `%s` must be an integer or Date vector.", nf$time)
+      is.numeric(frame$time),
+      m = sprintf("`%s` must be a numeric, Date, or POSIXt vector.", nf$time)
     )
-    ## FIXME: fails for weird Date vectors like `.Date(0.1)`
-    frame$time <- z
   }
-
-  ## Incidence variable
   stop_if_not(
     is.numeric(frame$x),
-    frame$x[!is.na(frame$x)] >= 0,
-    m = sprintf("`%s` must be a non-negative numeric vector.", nf$x)
+    m = sprintf("`%s` must be a numeric vector.", nf$x)
   )
-  if (is.double(frame$x)) {
-    if (any(is_NaN_or_Inf <- is.nan(frame$x) | is.infinite(frame$x))) {
-      warning(sprintf("NaN, Inf, and -Inf in `%s` replaced with NA.", nf$x))
-      frame$x[is_NaN_or_Inf] <- NA
-    }
-    if (!isTRUE(all.equal(frame$x, z <- round(frame$x)))) {
-      warning(sprintf("Non-integer numeric elements of `%s` rounded to nearest integer.", nf$x))
-    }
-    frame$x <- z
-  }
 
-  ## Grouping variable
-  if (ib) {
+  ### Fitting window stuff
+
+  nfw <- as.list(attr(frame_windows, "names_original"))
+  names(nfw) <- names(frame_windows)
+
+  if (inherits(frame_windows$start, c("Date", "POSIXt"))) {
+    frame_windows$start <- julian(frame_windows$start)
+  } else {
     stop_if_not(
-      is.factor(frame$ts),
-      m = sprintf("`%s` must be a factor.", nf$ts)
+      is.numeric(frame_windows$start),
+      m = sprintf("`%s` must be a numeric, Date, or POSIXt vector.", nfw$start)
     )
-    frame$ts <- factor(frame$ts, exclude = NA)
+  }
+  if (inherits(frame_windows$end, c("Date", "POSIXt"))) {
+    frame_windows$end <- julian(frame_windows$end)
+  } else {
     stop_if_not(
-      !anyNA(frame$ts),
-      m = sprintf("`%s` must not have missing values.", nf$ts)
+      is.numeric(frame_windows$start),
+      m = sprintf("`%s` must be a numeric, Date, or POSIXt vector.", nfw$end)
     )
   }
 
 
-  ### Mixed effects model frames
+  ### Mixed effects stuff
 
-  stop_if_not(
-    nrow(frame_par[[1L]]) > 0L,
-    m = "Mixed effects model frames have 0 rows (after subsetting with `subset_par`)."
-  )
-
-  ## Test data frames for Inf and -Inf
-  any_infinite <- function(d) {
-    i <- vapply(d, is.double, FALSE)
-    any(vapply(d[i], function(x) any(is.infinite(x)), FALSE))
+  get_names_variables <- function(x) {
+    vapply(attr(terms(as.formula(call("~", x))), "variables"), deparse, "")[-1L]
   }
-  stop_if_not(
-    !vapply(frame_par, any_infinite, FALSE),
-    m = "Numeric `formula_par` variables must not contain Inf or -Inf."
-  )
-
-  ## Require that `x` and `g` in random effects terms `(x | g)`
-  ## are expressions involving only numeric vectors and factors,
-  ## respectively
-  get_var_names <- function(x) {
-    vapply(attr(terms(as.formula(call("~", x))), "variables")[-1L], deparse, "")
-  }
-  is_bar_ok <- function(bar, data) {
-    v <- lapply(bar[-1L], get_var_names)
+  check_ok_bar <- function(bar, data) {
+    v <- lapply(bar[-1L], get_names_variables)
     all(vapply(data[v[[1L]]], is.numeric, FALSE),
         vapply(data[v[[2L]]], is.factor,  FALSE))
   }
-  all_bars_ok <- function(formula, data) {
+  check_ok_bars <- function(formula, data) {
     bars <- split_effects(formula)$random
-    all(vapply(bars, is_bar_ok, FALSE, data = data))
+    all(vapply(bars, check_ok_bar, FALSE, data = data))
   }
   stop_if_not(
-    mapply(all_bars_ok, formula = formula_par, data = frame_par),
+    mapply(check_ok_bars, formula = formula_parameters, data = frame_parameters),
     m = wrap(
-      "`formula_par` variables on left and right hand sides ",
+      "`formula_parameters` variables on left and right hand sides ",
       "of `|` must be numeric vectors and factors, respectively."
     )
   )
 
 
-  ### Table of fitting windows
+  ### Subsetting step ##########################################################
 
-  ## Endpoints
-  if (inherits(endpoints$start, "Date")) {
-    endpoints$start <- julian(endpoints$start, origin = origin)
+  ## Discard fitting windows without observations on all
+  ## `formula_windows` and `formula_parameters` variables
+  cc <- do.call(complete.cases, c(list(frame_windows), frame_parameters[len > 0L]))
+  if (!all(cc)) {
+    frame_windows <- frame_windows[cc, , drop = FALSE]
+    frame_parameters <- lapply(frame_parameters, `[`, cc, , drop = FALSE)
+    frame_append <- frame_append[cc, , drop = FALSE]
+    frame_windows$ts <- droplevels(frame_windows$ts)
   }
-  if (inherits(endpoints$end, "Date")) {
-    endpoints$end <- julian(endpoints$end, origin = origin)
-  }
+
+  ## Discard time series without corresponding fitting windows
+  ## and fitting windows without corresponding time series
+  isl <- intersect(levels(frame$ts), levels(frame_windows$ts))
   stop_if_not(
-    is.numeric(endpoints$start),
-    is.numeric(endpoints$end),
-    is.finite(endpoints$start),
-    is.finite(endpoints$end),
-    m = sprintf("In `endpoints`: `%s` and `%s` must be finite numeric or Date vectors.", ne$start, ne$end)
+    length(isl) > 0L,
+    m = "There must be at least one fitting window with corresponding time series data."
   )
-  stop_if_not(
-    endpoints$start < endpoints$end,
-    m = sprintf("In `endpoints`: `%s` must precede `%s`.", ne$start, ne$end)
-  )
-
-  ## Grouping variable
-  if (ib) {
-    stop_if_not(
-      is.factor(endpoints$ts),
-      m = sprintf("In `endpoints`: `%s` must be a factor.", ne$ts)
-    )
-    endpoints$ts <- factor(endpoints$ts, exclude = NA)
-    stop_if_not(
-      !anyNA(endpoints$ts),
-      m = sprintf("In `endpoints`: `%s` must not have missing values.", ne$ts)
-    )
-    sdl <- setdiff(levels(endpoints$ts), levels(frame$ts))
-    stop_if_not(
-      length(sdl) == 0L,
-      m = paste0(
-        sprintf("These levels of `%s` are missing corresponding time series data:\n", ne$ts),
-        paste(sdl, collapse = "\n")
-      )
-    )
-    stop_if_not(
-      tapply(frame$time, frame$ts, function(x) all(diff(x) > 0)),
-      m = sprintf("`%s` must be increasing in each level of `%s`.", nf$time, nf$ts)
-    )
-  } else {
-    stop_if_not(
-      all(diff(frame$time) > 0),
-      m = sprintf("`%s` must be increasing.", nf$time)
-    )
-  }
-
-
-  ### Another subsetting step ##################################################
-
-  ## Discard fitting windows without observations
-  ## on all mixed effects variables
-  if (any(len > 0L)) {
-    cc <- do.call(complete.cases, frame_par[len > 0L])
-    if (!all(cc)) {
-      if (na_action_par == "fail") {
-        stop("na_action_par = \"fail\": `formula_par` variables must not have missing values.")
-      }
-      if (!any(cc)) {
-        stop("At least one fitting window must have complete mixed effects data.")
-      }
-      warning("Fitting windows with incomplete mixed effects data discarded.")
-      endpoints <- endpoints[cc, , drop = FALSE]
-      frame_par <- lapply(frame_par, `[`, cc, , drop = FALSE)
-      frame_append <- frame_append[cc, , drop = FALSE]
-      endpoints$ts <- factor(endpoints$ts)
-    }
-  }
-
-  ## Discard time series without fitting windows
-  frame$ts <- factor(frame$ts, levels = levels(endpoints$ts))
-  frame <- frame[!is.na(frame$ts), , drop = FALSE]
-
-  ## Order everything by time series and chronologically within time series
-  o1 <- do.call(order, unname(frame[c("ts", "time")]))
-  frame <- frame[o1, , drop = FALSE]
-  o2 <- do.call(order, unname(endpoints[c("ts", "start", "end")]))
-  endpoints <- endpoints[o2, , drop = FALSE]
-  frame_par <- lapply(frame_par, `[`, o2, , drop = FALSE)
-  frame_append <- frame_append[o2, , drop = FALSE]
-
-
-  ### Labeling step ############################################################
-
-  ## Enumerate fitting windows as currently ordered
-  N <- nrow(endpoints)
-  endpoints$window <- gl(N, 1L, labels = sprintf("window_%0*d", nchar(N), seq_len(N)))
-
-  ## Create a factor `window` such that `split(time, window)`
-  ## splits `time` by fitting window
-  make_window_segment <- function(time, endpoints) {
-    n <- length(time)
-    N <- nrow(endpoints)
-    lw <- levels(endpoints$window)
-    window <- rep_len(factor(NA, levels = lw), n)
-    if (n == 0L || N == 0L) {
-      return(window)
-    }
-    stop_if_not(
-      endpoints$start[-1L] > endpoints$end[-N],
-      m = "In `endpoints`: Intervals [start, end] must be disjoint within time series."
-    )
-    f <- function(t0, t1) which(time >= t0 & time <= t1)
-    il <- Map(f, t0 = endpoints$start, t1 = endpoints$end)
-    nl <- lengths(il)
-    stop_if_not(
-      nl >= 2L,
-      m = "In `endpoints`: Intervals [start, end] must contain at least two time points."
-    )
-    window[unlist(il, FALSE, FALSE)] <- rep.int(endpoints$window, nl)
-    window
-  }
-  window_split <- Map(make_window_segment,
-                      time = split(frame$time, frame$ts),
-                      endpoints = split(endpoints, endpoints$ts)
-  )
-  frame$window <- unsplit(window_split, frame$ts)
-
-  ## Contract endpoints in table to range of time points between
-  endpoints$start <- c(tapply(frame$time, frame$window, min))
-  endpoints$end <- c(tapply(frame$time, frame$window, max))
+  frame$ts <- factor(frame$ts, levels = isl, exclude = NULL)
+  i1 <- !is.na(frame$ts)
+  frame <- frame[i1, , drop = FALSE]
+  frame_windows$ts <- factor(frame_windows$ts, levels = isl, exclude = NULL)
+  i2 <- !is.na(frame_windows$ts)
+  frame_windows <- frame_windows[i2, , drop = FALSE]
+  frame_parameters <- lapply(frame_parameters, `[`, i2, , drop = FALSE)
+  frame_append <- frame_append[i2, , drop = FALSE]
 
 
   ### Another validation step ##################################################
 
-  if (na_action == "fail") {
-    stop_if_not(
-      !tapply(frame$x, frame$window, function(x) anyNA(x[-1L])),
-      m = sprintf("na_action = \"fail\": `%s` has missing values in at least one fitting window.", nf$x)
-    )
+  ### Time series stuff
+
+  stop_if_not(
+    is.finite(frame$time),
+    m = sprintf("`%s` must be finite (after coercion to numeric).", nf$time)
+  )
+  if (do_day_of_week <- (model$day_of_week > 0L)) {
+    if (is.double(frame$time)) {
+      stop_if_not(
+        all.equal(frame$time, z <- round(frame$time)),
+        m = sprintf("`%s` must be integer-valued (after coercion to numeric).", nf$time)
+      )
+      frame$time <- z
+    }
+    check_ok_diff_time <- function(x) all(diff(x) == 1)
   } else {
-    stop_if_not(
-      tapply(frame$x, frame$window, function(x) sum(!is.na(x[-1L])) > 0L),
-      m = sprintf("`%s` has zero observations in at least one fitting window.", nf$x)
-    )
+    check_ok_diff_time <- function(x) all(diff(x) > 0)
   }
-  if (model$day_of_week > 0L) {
-    stop_if_not(
-      tapply(frame$time, frame$window, function(x) all(diff(x) == 1)),
-      n = sprintf("model$day_of_week > 0: `%s` must have 1-day spacing in all fitting windows.", nf$time)
+  stop_if_not(
+    tapply(frame$time, frame$ts, check_ok_diff_time),
+    m = sprintf("`%s` must be increasing%s%s.",
+      nf$time,
+      if (do_day_of_week) " with one day spacing" else "",
+      if (nzchar(nf$ts)) sprintf(" in each level of `%s`", nf$ts) else ""
     )
+  )
+  stop_if_not(
+    frame$x[!is.na(frame$x)] >= 0,
+    m = sprintf("`%s` must be non-negative.", nf$x)
+  )
+  if (is.double(frame$x)) {
+    if (any(is_NaN_or_Inf <- is.nan(frame$x) | is.infinite(frame$x))) {
+      warning(sprintf("NaN and Inf in `%s` replaced with NA.", nf$x))
+      frame$x[is_NaN_or_Inf] <- NA
+    }
+    if (!isTRUE(all.equal(frame$x, z <- round(frame$x)))) {
+      warning(sprintf("Nonintegral elements of `%s` rounded to nearest integer.", nf$x))
+    }
+    frame$x <- z
   }
+
+  ### Mixed effects stuff
+
+  any_infinite <- function(d) {
+    i <- vapply(d, is.double, FALSE)
+    any(vapply(d[i], function(x) any(is.infinite(x)), FALSE))
+  }
+  stop_if_not(
+    !vapply(frame_parameters, any_infinite, FALSE),
+    m = "Numeric `formula_parameters` variables must not contain Inf or -Inf."
+  )
+
+
+  ### Labeling step ############################################################
+
+  ## Order everything by time series and chronologically within time series
+  o1 <- order(frame$ts)
+  frame <- frame[o1, , drop = FALSE]
+  o2 <- do.call(order, unname(frame_windows))
+  frame_windows <- frame_windows[o2, , drop = FALSE]
+  frame_parameters <- lapply(frame_parameters, `[`, o2, , drop = FALSE)
+  frame_append <- frame_append[o2, , drop = FALSE]
+
+  ## Create enumerated labels for fitting windows as ordered
+  N <- nrow(frame_windows)
+  frame_windows$window <- gl(N, 1L, labels = sprintf("window_%0*d", 1L + as.integer(log10(N)), seq_len(N)))
+
+  ## Create a factor grouping observations by fitting window
+  make_window_segment <- function(d, dw) {
+    m0 <- sprintf("Fitting windows (%s, %s]", nfw$start, nfw$end)
+    if (nzchar(nf$ts)) {
+      m0 <- paste(m0, "in time series", dQuote(dw$ts[1L], FALSE))
+    }
+    stop_if_not(
+      dw$start < dw$end,
+      m = paste(m0, sprintf("do not satisfy `%s < %s`.", nfw$start, nfw$end))
+    )
+    stop_if_not(
+      dw$start[-1L] >= dw$end[-nrow(dw)],
+      m = paste(m0, "are not disjoint.")
+    )
+    f <- function(a, b) which(d$time >= a & d$time <= b)[-1L]
+    index <- Map(f, a = dw$start, b = dw$end)
+    ulindex <- unlist(index, FALSE, FALSE)
+    if (na_action == "fail") {
+      stop_if_not(
+        !anyNA(d$x[ulindex]),
+        m = paste(m0, sprintf("contain missing values (instances of NA in `%s`).", nf$x))
+      )
+    }
+    stop_if_not(
+      vapply(index, function(i) sum(!is.na(d$x[i])), 0L) > 0L,
+      m = paste(m0, sprintf("contain zero observations of `%s`.", nf$x))
+    )
+    window <- rep_len(factor(NA, levels = levels(dw$window)), nrow(d))
+    window[ulindex] <- rep.int(dw$window, lengths(index))
+    window
+  }
+  window_split <- Map(make_window_segment,
+    d = split(frame, frame$ts),
+    dw = split(frame_windows, frame_windows$ts)
+  )
+  frame$window <- unsplit(window_split, frame$ts)
 
 
   ### Cleaning up ##############################################################
 
-  frame <- frame[c("ts", "window", "time", "x")]
-  endpoints <- endpoints[c("ts", "window", "start", "end")]
+  ## Ignore edge cases
+  frame$x[!duplicated(frame$ts)] <- NA
 
-  frame_par <- lapply(frame_par, droplevels)
+  ## Contract fitting windows to narrowest intervals
+  ## containing the same set of observations
+  first <- which(!(is.na(frame$window) | duplicated(frame$window))) - 1L
+  last  <- which(!(is.na(frame$window) | duplicated(frame$window, fromLast = TRUE)))
+  frame_windows$start <- frame$time[first]
+  frame_windows$end   <- frame$time[last]
+
+  ## Order variables hierarchically
+  frame <- frame[c("ts", "window", "time", "x")]
+  frame_windows <- frame_windows[c("ts", "window", "start", "end")]
+
+  ## Drop unused factor levels
+  frame_parameters <- lapply(frame_parameters, droplevels)
   frame_append <- droplevels(frame_append)
 
+  ## Discard row names
   row.names(frame) <- NULL
-  frame_par <- lapply(frame_par, `row.names<-`, NULL)
+  row.names(frame_windows) <- NULL
+  frame_parameters <- lapply(frame_parameters, `row.names<-`, NULL)
   row.names(frame_append) <- NULL
-  row.names(endpoints) <- NULL
 
-  attr(frame, "terms") <- terms(formula)
-  frame_par <- Map(`attr<-`, frame_par, "terms", lapply(formula_par, terms))
-
-  attr(frame, "origin") <- origin
-  attr(endpoints, "origin") <- origin
+  ## Set attributes
+  attr(frame, "first") <- first
+  attr(frame, "last")  <- last
+  attr(frame, "formula") <- formula
+  attr(frame_windows, "formula") <- formula_windows
+  frame_parameters <- Map(`attr<-`, frame_parameters, "terms", lapply(formula_parameters, terms))
 
   list(
-    endpoints = endpoints,
     frame = frame,
-    frame_par = frame_par,
+    frame_windows = frame_windows,
+    frame_parameters = frame_parameters,
     frame_append = frame_append
   )
 }
@@ -672,30 +631,23 @@ make_frames <- function(model,
 #' by evaluating the right hand side of each formula listed in \code{priors}.
 #'
 #' @keywords internal
-make_priors <- function(priors, model) {
-  par_names <- get_par_names(model, link = TRUE)
+make_priors <- function(model, priors) {
+  names_top <- get_names_top(model, link = TRUE)
+  names(priors) <- vapply(priors, function(x) deparse(x[[2L]]), "")
   stop_if_not(
-    is.list(priors),
-    vapply(priors, inherits, FALSE, "formula"),
-    lengths(priors) == 3L,
-    (np <- vapply(priors, function(x) deparse(x[[2L]]), "")) %in% par_names,
-    vapply(priors, function(x) is.call(x[[3L]]), FALSE),
+    names(priors) %in% names_top,
     m = wrap(
-      "`priors` must be a list of formulae of the form `par ~ f(...)`, ",
-      "with `deparse(par)` an element of `get_par_names(model, link = TRUE)`."
+      "`deparse(priors[[i]][[2L]])` must be an element of ",
+      sprintf("`c(%s)`.", paste(dQuote(names_top, FALSE), collapse = ", "))
     )
   )
-  priors <- lapply(priors, function(x) eval(x[[3L]], envir = environment(x)))
+  priors <- lapply(priors, function(x) eval(x[[3L]], environment(x), baseenv()))
   stop_if_not(
     vapply(priors, inherits, FALSE, "egf_prior"),
-    m = wrap(
-      "In `priors = list(par ~ f(...))`, `f(...)` must be a call ",
-      "evaluating to an \"egf_prior\" object. See `?egf_prior`."
-    )
+    m = "`priors[[i]][[3L]]` must evaluate to an \"egf_prior\" object."
   )
-  names(priors) <- np
-  priors[setdiff(par_names, names(priors))] <- list(NULL)
-  priors[par_names]
+  priors[setdiff(names_top, names(priors))] <- list(NULL)
+  priors[names_top]
 }
 
 #' Construct design matrices
@@ -707,20 +659,19 @@ make_priors <- function(priors, model) {
 #' @param x
 #'   For \code{make_X}, a \link{formula} of the form \code{~tt}.
 #'   For \code{make_Z}, a \link{call} to binary operator \code{`|`}
-#'   of the form \code{(tt | g)}. Here, \code{tt} is an expression
-#'   composed of potentially many terms, while \code{g}
-#'   is an unevaluated factor, possibly an interaction.
+#'   of the form \code{(tt | g)}.
+#'   Here, \code{tt} is an expression composed of potentially many terms,
+#'   while \code{g} is an unevaluated factor, possibly an interaction.
 #' @param frame
-#'   A \link[=model.frame]{model frame} listing the variables used
-#'   in \code{x}.
+#'   A \link[=model.frame]{model frame} listing the variables used in \code{x}.
 #' @param sparse
 #'   A \link{logical} flag. If \code{TRUE}, then the design matrix
 #'   is returned in \link[Matrix:sparseMatrix]{sparse} format.
 #'
 #' @details
 #' \code{make_X(x, frame, sparse)} constructs an \code{X} matrix
-#' by evaluating \code{\link{model.matrix}(x, frame)} or
-#' \code{\link[Matrix]{sparse.model.matrix}(x, frame)}
+#' by evaluating \code{\link{model.matrix}(x, frame)}
+#' or \code{\link[Matrix]{sparse.model.matrix}(x, frame)}
 #' (depending on \code{sparse}) and deleting from the result
 #' columns containing only zeros.
 #'
@@ -797,22 +748,22 @@ make_Z <- function(x, frame) {
 #' to the corresponding nonlinear or dispersion model parameter,
 #' mixed effects formula term, grouping variable, and group.
 #'
-#' @param xl
+#' @param x
 #'   A named \link{list} of \link{formula}e of the form \code{~tt}
 #'   or a named list of \link{call}s to binary operator \code{`|`}
-#'   of the form \code{(tt | g)}. \code{\link{names}(xl)} must specify
-#'   nonlinear and dispersion model parameters.
-#' @param ml
+#'   of the form \code{(tt | g)}. \code{\link{names}(x)} must indicate
+#'   corresponding top level nonlinear model parameters.
+#' @param m
 #'   A \link{list} of \code{X} or \code{Z} matrices obtained by
 #'   applying \code{\link{make_X}} or \code{\link{make_Z}} to the
-#'   elements of \code{xl}.
+#'   elements of \code{x}.
 #'
 #' @return
 #' A \link[=data.frame]{data frame} with rows corresponding to columns
-#' of the combined design matrix \code{\link{do.call}(\link{cbind}, ml)},
+#' of the combined design matrix \code{\link{do.call}(\link{cbind}, m)},
 #' and variables:
 #' \item{par}{
-#'   Nonlinear or dispersion model parameter.
+#'   Top level nonlinear model parameter.
 #' }
 #' \item{term}{
 #'   \link[=deparse]{Deparse}d term from right hand side of \code{`~`}
@@ -822,7 +773,7 @@ make_Z <- function(x, frame) {
 #'   \code{\link{NA}} if not applicable.
 #' }
 #' \item{level}{
-#'   Level of the interaction specified by \code{group}.
+#'   Level of factor or interaction \code{group}.
 #'   \code{\link{NA}} if not applicable.
 #' }
 #' \item{colname}{
@@ -831,22 +782,23 @@ make_Z <- function(x, frame) {
 #'
 #' @keywords internal
 #' @importFrom stats terms as.formula
-make_XZ_info <- function(xl, ml) {
-  if (length(xl) == 0L) {
-    cn <- c("par", "term", "group", "level", "colname")
-    m <- matrix(character(0L), ncol = 5L, dimnames = list(NULL, cn))
-    return(as.data.frame(m, stringsAsFactors = TRUE))
+make_XZ_info <- function(x, m) {
+  if (length(x) == 0L) {
+    s <- c("par", "term", "group", "level", "colname")
+    l <- rep_len(list(factor()), length(s))
+    names(l) <- s
+    return(as.data.frame(l))
   }
-  ml_ncol <- vapply(ml, ncol, 0L)
-  if (inherits(xl[[1L]], "formula")) { # X case
+  ncol_m <- vapply(m, ncol, 0L)
+  if (inherits(x[[1L]], "formula")) { # X case
     group <- NA_character_
     level <- NA_character_
   } else { # Z case
-    bar_lhs <- lapply(xl, `[[`, 2L)
-    bar_rhs <- lapply(xl, `[[`, 3L)
-    xl <- lapply(bar_lhs, function(x) as.formula(call("~", x)))
-    group <- rep.int(vapply(bar_rhs, deparse, ""), ml_ncol)
-    level <- unlist(lapply(ml, attr, "group"), FALSE, FALSE)
+    bar_lhs <- lapply(x, `[[`, 2L)
+    bar_rhs <- lapply(x, `[[`, 3L)
+    x <- lapply(bar_lhs, function(x) as.formula(call("~", x)))
+    group <- rep.int(vapply(bar_rhs, deparse, ""), ncol_m)
+    level <- unlist(lapply(m, attr, "group"), FALSE, FALSE)
   }
   get_term_labels <- function(formula) {
     labels(terms(formula))
@@ -854,12 +806,13 @@ make_XZ_info <- function(xl, ml) {
   rep_term_labels <- function(term_labels, assign) {
     c("(Intercept)", term_labels)[assign + 1L]
   }
-  term <- unlist(Map(rep_term_labels,
-                     term_labels = lapply(xl, get_term_labels),
-                     assign = lapply(ml, attr, "assign")
-  ), FALSE, FALSE)
-  par <- rep.int(names(xl), ml_ncol)
-  colname <- unlist(lapply(ml, colnames), FALSE, FALSE)
+  term <- Map(rep_term_labels,
+    term_labels = lapply(x, get_term_labels),
+    assign = lapply(m, attr, "assign")
+  )
+  term <- unlist(term, FALSE, FALSE)
+  par <- rep.int(names(x), ncol_m)
+  colname <- unlist(lapply(m, colnames), FALSE, FALSE)
   data.frame(par, term, group, level, colname, row.names = NULL, stringsAsFactors = TRUE)
 }
 
@@ -867,7 +820,7 @@ make_XZ_info <- function(xl, ml) {
 #'
 #' Gathers necessary components of a call to \code{\link[TMB]{MakeADFun}}.
 #'
-#' @param frame,frame_par
+#' @param frame,frame_parameters
 #'   Elements of the \link{list} output of \code{\link{make_frames}}.
 #' @inheritParams egf
 #'
@@ -877,12 +830,12 @@ make_XZ_info <- function(xl, ml) {
 #'
 #' @seealso \code{\link{make_tmb_data}}, \code{\link{make_tmb_parameters}}
 #' @keywords internal
-make_tmb_args <- function(model, frame, frame_par, priors, control,
+make_tmb_args <- function(model, frame, frame_parameters, priors, control,
                           do_fit, init, map) {
   tmb_data <- make_tmb_data(
     model = model,
     frame = frame,
-    frame_par = frame_par,
+    frame_parameters = frame_parameters,
     priors = priors,
     control = control
   )
@@ -890,7 +843,7 @@ make_tmb_args <- function(model, frame, frame_par, priors, control,
     tmb_data = tmb_data,
     model = model,
     frame = frame,
-    frame_par = frame_par,
+    frame_parameters = frame_parameters,
     do_fit = do_fit,
     init = init
   )
@@ -939,19 +892,18 @@ make_tmb_args <- function(model, frame, frame_par, priors, control,
 #'
 #' @return
 #' [Below,
-#' \code{n = \link{sum}(!\link{is.na}(frame$window))}
-#' is the total number of time points belonging to a fitting window,
 #' \code{N = \link{nlevels}(frame$window)}
-#' is the number of fitting windows, and
-#' \code{p = \link{length}(frame_par)}
-#' is the number of nonlinear and dispersion model parameters.]
+#' is the number of fitting windows,
+#' \code{n = N + \link{sum}(!\link{is.na}(frame$window))}
+#' is the total number of time points associated with a fitting window, and
+#' \code{p = \link{length}(frame_parameters)}
+#' is the number of top level nonlinear model parameters.]
 #'
 #' A \link{list} inheriting from \link{class} \code{"tmb_data"},
 #' with elements:
 #' \item{time}{
-#'   A \link[=double]{numeric} vector of length \code{n} giving time
-#'   as a number of days since the earliest time point in the current
-#'   fitting window.
+#'   A \link[=double]{numeric} vector of length \code{n} giving
+#'   times since the left endpoint of the current fitting window.
 #' }
 #' \item{time_seg_len}{
 #'   An \link{integer} vector of length \code{N} specifying the
@@ -982,14 +934,14 @@ make_tmb_args <- function(model, frame, frame_par, priors, control,
 #' \item{indices}{
 #'   A \link{list} with \link{integer} elements and \link{names} of the
 #'   form \code{"index_link_parameter"} (e.g., \code{"index_log_r"}),
-#'   giving the column 0-index of nonlinear and dispersion model parameters
+#'   giving the column 0-index of top level nonlinear model parameters
 #'   (e.g., \code{log(r)}) in the response matrix. Value \code{-1}
 #'   is used for parameters not belonging to the model being estimated.
 #' }
 #' \item{hyperparameters}{
-#'   A \link{list} of \code{p} \link{numeric} vectors, each listing
-#'   parameters (if any) of the prior distribution of a nonlinear
-#'   or dispersion model parameter.
+#'   A \link{list} of \code{p} \link{numeric} vectors listing parameters
+#'   of the prior distribution (if any) assigned to top level nonlinear
+#'   model parameters.
 #' }
 #' \item{X}{
 #'   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
@@ -1019,16 +971,16 @@ make_tmb_args <- function(model, frame, frame_par, priors, control,
 #'   \link[=integer]{Integer} vectors of length \code{\link{ncol}(X)}
 #'   and \code{\link{ncol}(Z)}, respectively, with values in \code{0:(p-1)}.
 #'   These split the columns of \code{X} and \code{Z} by relation to
-#'   a common nonlinear or dispersion model parameter.
+#'   a common top level nonlinear model parameter.
 #' }
 #' \item{beta_index_tab, b_index_tab}{
 #'   \link[=integer]{Integer} vectors of length \code{p} counting the
 #'   columns of \code{X} and \code{Z}, respectively, that relate to
-#'   a common nonlinear or dispersion model parameter.
+#'   a common top level nonlinear model parameter.
 #' }
 #' \item{block_rows, block_cols}{
 #'   \link[=integer]{Integer} vectors together giving the dimensions
-#'   of each block of the random effects matrix.
+#'   of each block of random effects.
 #' }
 #'
 #' @seealso \code{\link[TMB]{MakeADFun}}
@@ -1036,76 +988,70 @@ make_tmb_args <- function(model, frame, frame_par, priors, control,
 #' @importFrom stats formula terms model.matrix model.offset
 #' @importFrom methods as
 #' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
-make_tmb_data <- function(model, frame, frame_par, priors, control,
+make_tmb_data <- function(model, frame, frame_parameters, priors, control,
                           do_fit, init) {
-  ## Nonlinear and dispersion model parameter names
-  par_names <- names(frame_par)
-  p <- length(frame_par)
-
-  ## Time series model frame excluding rows not associated
-  ## with a fitting window
-  origin <- attr(frame, "origin")
-  frame <- frame[!is.na(frame$window), , drop = FALSE]
+  ## Indices of time points associated with fitting windows
+  first <- attr(frame, "first")
+  last <- attr(frame, "last")
+  index <- Map(seq.int, first, last)
 
   ## Fitting window lengths as numbers of time points
-  time_seg_len <- tabulate(frame$window)
-  N <- length(time_seg_len)
+  time_seg_len <- lengths(index)
+  N <- length(index)
 
-  ## Time as number of days since earliest time point
-  firsts <- which(!duplicated(frame$window))
-  time <- frame$time - rep.int(frame$time[firsts], time_seg_len)
+  ## Time since earliest time point
+  ulindex <- unlist(index, FALSE, FALSE)
+  time <- frame$time[ulindex] - rep.int(frame$time[first], time_seg_len)
 
-  ## Incidence without unused first elements
-  x <- frame$x[-firsts]
+  ## Incidence
+  x <- frame$x[!is.na(frame$window)]
 
-  ## Day of week during 1-day interval starting at earliest time point
-  ## NB: When `day_of_week > 0L`, time points are integer numbers of
-  ##     days since midnight on a reference date, so this 1-day interval
-  ##     indeed occurs on a unique day of week
   if (model$day_of_week > 0L) {
-    ## Date during that interval
-    ## NB: Reason for adding 1 is that the earliest time points are
-    ##     23:59:59 on Dates `origin + time[firsts]`, so the 1-day
-    ##     intervals that we seek occur on the following Dates
-    Date1 <- origin + 1 + frame$time[firsts]
-    ## Day of week during that interval, coded as an integer `i` in `0:6`
-    ## NB: `i` maps to the day of week `i` days after the reference day,
-    ##     which is the day `day_of_week` days after an arbitrary Saturday,
-    ##     in this case `.Date(2)`
-    day1 <- as.integer(julian(Date1, origin = .Date(2 + model$day_of_week)) %% 7)
+    ## Date during 24 hours starting at earliest time point
+    Date1 <- .Date(frame$time[first])
+
+    ## Day of week on that Date coded as an integer `i` in `0:6`.
+    ## Integer `i` maps to the day of week `i` days after a reference day,
+    ## which is the day `model$day_of_week` days after Saturday
+    ## NB: weekdays(.Date(2L)) == "Saturday"
+    day1 <- as.integer(julian(Date1, origin = .Date(2L + model$day_of_week)) %% 7)
   } else {
     day1 <- rep_len(-1L, N)
   }
 
+  ## Top level nonlinear model parameter names
+  names_top <- names(frame_parameters)
+  p <- length(frame_parameters)
+
   ## Fixed effects formula and list of random effects terms
   ## extracted from each mixed effects formula
-  formula_par <- lapply(frame_par, function(x) formula(terms(x)))
-  effects <- lapply(formula_par, split_effects)
+  formula_parameters <- lapply(frame_parameters, function(x) formula(terms(x)))
+  effects <- lapply(formula_parameters, split_effects)
   fixed <- lapply(effects, `[[`, "fixed")
   random <- lapply(effects, `[[`, "random")
   random <- Map(`names<-`, random, Map(rep_len, names(random), lengths(random)))
 
   ## Response matrix, offset component only
-  offsets <- lapply(frame_par, model.offset)
+  offsets <- lapply(frame_parameters, model.offset)
   offsets[vapply(offsets, is.null, FALSE)] <- list(rep_len(0, N))
   Y <- do.call(cbind, offsets)
 
   ## Fixed effects design matrices
-  Xl <- Map(make_X, x = fixed, frame = frame_par, sparse = control$sparse_X)
+  Xl <- Map(make_X, x = fixed, frame = frame_parameters, sparse = control$sparse_X)
   X <- do.call(cbind, Xl)
 
   ## Random effects design matrices
-  Zl <- Map(make_Z, x = do.call(c, unname(random)), frame = rep.int(frame_par, lengths(random)))
+  Zl <- Map(make_Z, x = do.call(c, unname(random)), frame = rep.int(frame_parameters, lengths(random)))
   Z <- do.call(cbind, Zl)
 
   ## Nonlinear or dispersion model parameter, formula term,
   ## group (g in (terms | g)), and group level associated
   ## with each column of each matrix
   ## FIXME: Preserve contrasts?
-  X_info <- make_XZ_info(xl = fixed, ml = Xl)
-  Z_info <- make_XZ_info(xl = do.call(c, unname(random)), ml = Zl)
-  X_info$par <- factor(X_info$par, levels = par_names)
-  Z_info$par <- factor(Z_info$par, levels = par_names)
+  X_info <- make_XZ_info(x = fixed, m = Xl)
+  Z_info <- make_XZ_info(x = do.call(c, unname(random)), m = Zl)
+  X_info$par <- factor(X_info$par, levels = names_top)
+  Z_info$par <- factor(Z_info$par, levels = names_top)
 
   ## Random effects coefficients factored by relation
   ## to a correlation matrix and to a random vector
@@ -1152,7 +1098,7 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
 
   ## Flags
   flag_regularize <- rep_len(-1L, p)
-  flag_regularize[has_prior] <- get_flag("prior", vapply(priors[has_prior], `[[`, "", "distribution"))
+  flag_regularize[has_prior] <- get_flag("prior", vapply(priors[has_prior], `[[`, "", "family"))
   flags <- list(
     flag_curve = get_flag("curve", model$curve),
     flag_excess = as.integer(model$excess),
@@ -1164,11 +1110,11 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
     flag_predict = 0L
   )
 
-  ## Column indices of nonlinear and dispersion model parameters
+  ## Column indices of top level nonlinear model parameters
   ## in response matrix
-  par_names_all <- get_par_names(NULL, link = TRUE)
-  indices <- as.list(match(par_names_all, par_names, 0L) - 1L)
-  names(indices) <- sub("^(log|logit)\\((.*)\\)$", "index_\\1_\\2", par_names_all)
+  names_top_all <- get_names_top(NULL, link = TRUE)
+  indices <- as.list(match(names_top_all, names_top, 0L) - 1L)
+  names(indices) <- sub("^(log|logit)\\((.*)\\)$", "index_\\1_\\2", names_top_all)
 
   out <- list(
     time = time,
@@ -1208,7 +1154,7 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
 #' @inheritParams make_tmb_args
 #'
 #' @details
-#' When \code{init = NULL}, naive estimates of nonlinear and dispersion
+#' When \code{init = NULL}, naive estimates of top level nonlinear
 #' model parameters are obtained for each fitting window as follows:
 #' \describe{
 #' \item{\code{r}}{
@@ -1227,26 +1173,25 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
 #'   of a linear model fit to \code{\link{log1p}(\link{cumsum}(x))}.
 #' }
 #' \item{\code{tinfl}}{
-#'   \code{\link{max}(t)}, assuming that the fitting window ends
-#'   near the time of a peak in interval incidence.
+#'   \code{\link{max}(time)}. This assumes that the fitting window
+#'   ends near the time of a peak in incidence.
 #' }
 #' \item{\code{K}}{
-#'   \code{2*\link{sum}(x)}, assuming that the fitting window
-#'   ends near the time of a peak in interval incidence _and_
-#'   that interval incidence is roughly symmetric about the peak.
+#'   \code{2*\link{sum}(x)}. This assumes that the fitting window
+#'   ends near the time of a peak in incidence _and_ that incidence
+#'   is roughly symmetric about the peak.
 #' }
-#' \item{\code{p}}{0.8}
-#' \item{\code{a, b, nbdisp, w[123456]}}{1}
+#' \item{\code{p}}{0.95}
+#' \item{\code{a, b, disp, w[123456]}}{1}
 #' }
-#' The naive estimates are log- or logit-transformed (all but
-#' \code{p} use a log link), and, for each nonlinear or dispersion
-#' model parameter, the initial value of the \code{"(Intercept)"}
-#' coefficient in its fixed effects model (if one exists) is taken
-#' to be the mean of the link scale estimates across fitting windows.
-#' The remaining elements of \code{beta} take initial value 0.
-#' All elements of \code{b} and \code{theta} take initial value 0,
-#' so that, initially, all random vectors follow a standard normal
-#' distribution.
+#' The naive estimates are log- or logit-transformed (all but \code{p}
+#' use a log link), and the initial value of the \code{"(Intercept)"}
+#' coefficient in a top level parameter's fixed effects model
+#' (if that coefficient exists) is taken to be the mean of the link scale
+#' estimates across fitting windows. The remaining elements of \code{beta}
+#' take initial value 0. All elements of \code{b} and \code{theta}
+#' take initial value 0, so that, initially, all random vectors follow
+#' a standard normal distribution.
 #'
 #' @return
 #' A \link{list} with elements:
@@ -1278,7 +1223,8 @@ make_tmb_data <- function(model, frame, frame_par, priors, control,
 #'
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis terms
-make_tmb_parameters <- function(tmb_data, model, frame, frame_par, do_fit, init) {
+make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
+                                do_fit, init) {
   ## Lengths of parameter objects
   f <- function(n) as.integer(n * (n + 1) / 2)
   len <- c(
@@ -1292,32 +1238,29 @@ make_tmb_parameters <- function(tmb_data, model, frame, frame_par, do_fit, init)
     ## Initialize each parameter object to a vector of zeros
     init_split <- lapply(len, numeric)
 
-    ## Get names of nonlinear and dispersion model parameters
+    ## Get names of top level nonlinear model parameters
     ## whose mixed effects formulae have an intercept
     has_intercept <- function(frame) {
       attr(terms(frame), "intercept") == 1L
     }
-    nfp <- names(frame_par)[vapply(frame_par, has_intercept, FALSE)]
+    nfp <- names(frame_parameters)[vapply(frame_parameters, has_intercept, FALSE)]
 
-    ## For each of these nonlinear and dispersion model parameters,
+    ## For each of these top level nonlinear model parameters,
     ## compute the mean over all fitting windows of the naive estimate,
-    ## and assign the result to the the coefficient of `beta` corresponding
-    ## to "(Intercept)".
+    ## and assign the result to the coefficient of `beta` corresponding
+    ## to "(Intercept)"
     if (length(nfp) > 0L) {
-      ## Time series split by fitting window
-      window <- frame$window[!is.na(frame$window)]
-      firsts <- which(!duplicated(window))
-      tx_split <- split(data.frame(time = tmb_data$time[-firsts], x = tmb_data$x), window[-firsts])
+      ## Time series segments
+      tx_split <- split(frame[c("time", "x")], frame$window)
 
-      ## Functions for computing naive estimates
-      ## given a time series segment
+      ## Functions computing naive estimates given time series segments
       get_r_c0 <- function(d) {
         n <- max(2, trunc(nrow(d) / 2))
-        a_b <- try(coef(lm(log1p(cumsum(x)) ~ time, data = d, subset = seq_len(n), na.action = na.omit)))
-        if (inherits(a_b, "try-error") || any(!is.finite(a_b))) {
-          return(c(0.1, 1))
+        ab <- try(coef(lm(log1p(cumsum(x)) ~ time, data = d, subset = seq_len(n), na.action = na.omit)), silent = TRUE)
+        if (inherits(ab, "try-error") || any(!is.finite(ab))) {
+          return(c(0.04, 1))
         }
-        c(a_b[[2L]], exp(a_b[[1L]]))
+        c(ab[[2L]], exp(ab[[1L]]))
       }
       get_tinfl <- function(d) {
         max(d$t)
@@ -1332,14 +1275,14 @@ make_tmb_parameters <- function(tmb_data, model, frame, frame_par, do_fit, init)
       c0 <- r_c0[2L, ]
       tinfl <- vapply(tx_split, get_tinfl, 0)
       K <- vapply(tx_split, get_K, 0)
-      p <- 0.8
+      p <- 0.95
       alpha <- switch(model$curve,
         subexponential = r * c0^(1 - p),
         gompertz = r / (log(K) - log(c0)),
         NA_real_
       )
       Y_init <- data.frame(r, alpha, c0, tinfl, K, p)
-      Y_init[c("a", "b", "nbdisp", paste0("w", 1:6))] <- 1
+      Y_init[c("a", "b", "disp", paste0("w", 1:6))] <- 1
 
       ## Link transform
       Y_init[] <- Map(function(x, s) match_link(s)(x),
@@ -1369,14 +1312,14 @@ make_tmb_parameters <- function(tmb_data, model, frame, frame_par, do_fit, init)
 
   ## Retain all naive estimates when debugging
   if (is.null(init) && !do_fit) {
-    attr(init_split, "Y_init") <- as.matrix(Y_init[names(frame_par)])
+    attr(init_split, "Y_init") <- as.matrix(Y_init[names(frame_parameters)])
   }
   init_split
 }
 
 #' Check for random effects
 #'
-#' Determine whether an object specifies a random effects model.
+#' Determines whether an object specifies a random effects model.
 #'
 #' @param object
 #'   An \code{"\link{egf}"} or \code{"\link[=make_tmb_data]{tmb_data}"} object.
@@ -1402,7 +1345,7 @@ has_random.egf <- function(object) {
 
 #' Patch TMB-generated functions
 #'
-#' Define a wrapper function on top of \code{\link[TMB]{MakeADFun}}-generated
+#' Define wrapper functions on top of \code{\link[TMB]{MakeADFun}}-generated
 #' functions \code{fn} and \code{gr}, so that function and gradient evaluations
 #' can retry inner optimization using fallback methods in the event that the
 #' default method (usually \code{\link[TMB]{newton}}) fails.
@@ -1486,11 +1429,11 @@ patch_gr <- function(gr, inner_optimizer) {
   pgr
 }
 
-#' Construct combined model frame
+#' Construct the combined model frame
 #'
 #' Joins in a single \link[=data.frame]{data frame} all mixed effects
-#' \link[=model.frame]{model frames} and further variables specified
-#' via \code{\link{egf}} argument \code{append}.
+#' \link[=model.frame]{model frames} and further variables originally
+#' indicated by \code{\link{egf}} argument \code{append}.
 #'
 #' @param object An \code{"\link{egf}"} object.
 #'
@@ -1501,20 +1444,17 @@ patch_gr <- function(gr, inner_optimizer) {
 #' all instances of a variable name are identical, and no information is lost.
 #'
 #' Since the data frames being combined each correspond rowwise
-#' to \code{object$endpoints}, so does the result.
+#' to \code{object$frame_windows}, so does the result.
 #'
 #' @return
-#' A \link[=data.frame]{data frame} combining (in the sense
-#' of \code{\link{cbind}}) all data frames in the \link{list}
-#' \code{object$frame_par} and the data frame \code{object$frame_append}.
+#' A data frame combining (in the sense of \code{\link{cbind}})
+#' all of data frames in the \link{list} \code{object$frame_parameters}
+#' and the data frame \code{object$frame_append}.
 #'
 #' @keywords internal
 make_combined <- function(object) {
-  stop_if_not(
-    inherits(object, "egf"),
-    m = "`object` must inherit from class \"egf\". See `?egf`."
-  )
-  l <- c(unname(object$frame_par), list(object$frame_append))
+  stopifnot(inherits(object, "egf"))
+  l <- c(unname(object$frame_parameters), list(object$frame_append))
   combined <- do.call(cbind, l)
   combined[!duplicated(names(combined))]
 }

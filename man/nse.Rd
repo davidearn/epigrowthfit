@@ -2,68 +2,68 @@
 % Please edit documentation in R/utils_nse.R
 \name{nse}
 \alias{nse}
-\alias{subset_to_index}
-\alias{append_to_index}
-\alias{order_to_index}
-\alias{label_to_character}
+\alias{eval_subset}
+\alias{eval_append}
+\alias{eval_order}
+\alias{eval_label}
 \title{Nonstandard evaluation}
 \usage{
-subset_to_index(subset, data, enclos = parent.frame(), .subset = NULL)
+eval_subset(subset, envir, enclos, .subset = NULL)
 
-append_to_index(append, data, enclos = parent.frame(), .append = NULL)
+eval_append(append, envir, enclos, .append = NULL)
 
-order_to_index(order, data, enclos = parent.frame(), .order = NULL)
+eval_order(order, envir, enclos, .order = NULL)
 
-label_to_character(label, data, enclos = parent.frame(), .label = NULL)
+eval_label(label, envir, enclos, .label = NULL)
 }
 \arguments{
-\item{subset, order, label}{Expressions to be evaluated in \code{data}.}
+\item{subset, order, label}{Expressions to be evaluated in \code{envir}.}
 
-\item{data}{A \link[=data.frame]{data frame}.}
-
-\item{enclos}{An \link{environment} to enclose \code{data}.}
+\item{envir, enclos}{See \code{\link{eval}}. \code{\link{is.list}(envir)} must be \code{TRUE}
+for \code{eval_append}.}
 
 \item{.subset, .order, .append, .label}{\link[=atomic]{Atomic} vectors to be used (if non-\code{\link{NULL}})
 in place of the result of evaluating the undotted argument.}
 
 \item{append}{An expression to be evaluated in
-\code{`\link{names}<-`(\link{as.list}(\link{seq_along}(data)), \link{names}(data))}.}
+\code{`\link{names<-}`(\link{as.list}(\link{seq_along}(envir)), \link{names}(envir))}.}
 }
 \value{
-Let \code{r} be the result of evaluating the supplied expression or,
-otherwise, the dotted argument.
+Let \code{r} be the result of evaluating the supplied expression.
 
-\code{subset_to_index} returns \code{r} with \code{FALSE} replacing
-\code{\link{NA}} (if any).
+\code{eval_subset} returns \code{r},
+with \code{\link{NA}} (if any) coerced to \code{FALSE}.
 
-\code{order_to_index} returns \code{r} as is.
+\code{eval_order} returns \code{r} as is.
 
-\code{append_to_index} returns
-\code{\link{match}(\link{names}(data[r]), \link{names}(data), 0L)},
+\code{eval_append} returns
+\code{\link{match}(\link{names}(envir[r]), \link{names}(envir), 0L)},
 with zeros (if any) deleted.
 
-\code{label_to_character} returns
-\code{\link{rep}(\link{as.character}(r), \link{nrow}(data))}.
+\code{eval_label} returns \code{\link{as.character}(r)},
+repeated to length \code{\link{nrow}(envir)}
+if \code{envir} is a \link[=data.frame]{data frame}.
 }
 \description{
 Utilities for obtaining index vectors from unevaluated \code{subset},
 \code{append}, and \code{order} expressions and character vectors from
-unevaluated \code{label} expressions (\code{xlab}, \code{ylab}, etc.).
+unevaluated \code{label} expressions.
 }
 \details{
-\code{subset} must evaluate to a logical vector of length
-\code{n = \link{nrow}(data)}.
-\code{\link{NULL}} is equivalent to \code{\link{rep}(TRUE, n)}.
+\code{subset} must evaluate to a \link{logical} vector.
+The result must have length \code{\link{nrow}(envir)}
+if \code{envir} is a \link[=data.frame]{data frame}.
 
-\code{order} must evaluate to a permutation of \code{\link{seq_len}(n)}.
-\code{\link{NULL}} is equivalent to \code{\link{seq_len}(n)}.
+\code{order} must evaluate to a permutation of \code{\link{seq_len}(n)}
+for some \code{n}. \code{n} must be \code{nrow(envir)} if \code{envir}
+is a data frame.
 
-\code{append} must evaluate to an \link{atomic} vector indexing \code{data}.
-\code{\link{NULL}} is equivalent to \code{\link{integer}(0)}.
+\code{append} must evaluate to an \link{atomic} vector
+indexing \code{envir}.
 
-\code{label} must evaluate to an \link{atomic} vector of length 1
-or \code{n}.
-\code{\link{NULL}} is a no-op.
+\code{label} must evaluate to an \link{atomic} vector.
+The result must have length of length 1 or length \code{nrow(envir)}
+if \code{envir} is a data frame.
 }
 \section{Note}{
 
@@ -77,7 +77,7 @@ See \code{\link{subset}} for additional usage examples.
 Nonstandard evaluation of \code{subset}, \code{order}, \code{append},
 and \code{label} is intended only to make interactive use more convenient.
 To avoid unexpected behaviour, especially when programming, use the dotted
-versions.
+arguments.
 }
 
 \examples{
@@ -92,10 +92,10 @@ order <- quote(order(month, day))
 append <- quote(-day)
 label <- quote(sprintf("\%d-\%02d-\%02d", year, match(month, month.abb, 0L), day))
 
-# subset_to_index(subset, data, parent.frame())
-# order_to_index(order, data, parent.frame())
-# append_to_index(append, data, parent.frame())
-# label_to_character(label, data, parent.frame())
+## eval_subset(subset, data, parent.frame())
+## eval_order(order, data, parent.frame())
+## eval_append(append, data, parent.frame())
+## eval_label(label, data, parent.frame())
 
 }
 \keyword{internal}

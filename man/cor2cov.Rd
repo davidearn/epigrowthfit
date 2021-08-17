@@ -7,7 +7,8 @@
 cor2cov(cor, sd)
 }
 \arguments{
-\item{cor}{A symmetric \link{numeric} \link{matrix}.}
+\item{cor}{A \link{numeric} \link{matrix}, typically (but not necessarily)
+symmetric positive definite.}
 
 \item{sd}{A \link{numeric} vector of length \code{\link{nrow}(cor)}.}
 }

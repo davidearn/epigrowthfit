@@ -4,12 +4,12 @@
 \alias{egf.egf_model_simulate}
 \title{Fit simulated incidence time series}
 \usage{
-\method{egf}{egf_model_simulate}(object, ...)
+\method{egf}{egf_model_simulate}(model, ...)
 }
 \arguments{
-\item{object}{An \code{"\link[=simulate.egf_model]{egf_model_simulate}"} object
-supplying simulated time series and details about the generative
-model to be estimated.}
+\item{model}{An \code{"\link[=simulate.egf_model]{egf_model_simulate}"} object
+supplying simulated time series and details about the generative model
+to be estimated.}
 
 \item{...}{Optional arguments passed to \code{\link{egf.egf_model}},
 such as \code{priors} and \code{control}.}

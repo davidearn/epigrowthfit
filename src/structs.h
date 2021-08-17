@@ -18,7 +18,7 @@ struct indices_t
     int index_logit_p;
     int index_log_a;
     int index_log_b;
-    int index_log_nbdisp;
+    int index_log_disp;
     int index_log_w1;
     int index_log_w2;
     int index_log_w3;
@@ -28,21 +28,21 @@ struct indices_t
   
     indices_t(SEXP x)
     {
-        index_log_r      = get_list_integer(x, "index_log_r");
-	index_log_alpha  = get_list_integer(x, "index_log_alpha");
-	index_log_c0     = get_list_integer(x, "index_log_c0");
-	index_log_tinfl  = get_list_integer(x, "index_log_tinfl");
-	index_log_K      = get_list_integer(x, "index_log_K");
-	index_logit_p    = get_list_integer(x, "index_logit_p");
-	index_log_a      = get_list_integer(x, "index_log_a");
-	index_log_b      = get_list_integer(x, "index_log_b");
-	index_log_nbdisp = get_list_integer(x, "index_log_nbdisp");
-	index_log_w1     = get_list_integer(x, "index_log_w1");
-	index_log_w2     = get_list_integer(x, "index_log_w2");
-	index_log_w3     = get_list_integer(x, "index_log_w3");
-	index_log_w4     = get_list_integer(x, "index_log_w4");
-	index_log_w5     = get_list_integer(x, "index_log_w5");
-	index_log_w6     = get_list_integer(x, "index_log_w6");
+        index_log_r     = get_list_integer(x, "index_log_r");
+	index_log_alpha = get_list_integer(x, "index_log_alpha");
+	index_log_c0    = get_list_integer(x, "index_log_c0");
+	index_log_tinfl = get_list_integer(x, "index_log_tinfl");
+	index_log_K     = get_list_integer(x, "index_log_K");
+	index_logit_p   = get_list_integer(x, "index_logit_p");
+	index_log_a     = get_list_integer(x, "index_log_a");
+	index_log_b     = get_list_integer(x, "index_log_b");
+	index_log_disp  = get_list_integer(x, "index_log_disp");
+	index_log_w1    = get_list_integer(x, "index_log_w1");
+	index_log_w2    = get_list_integer(x, "index_log_w2");
+	index_log_w3    = get_list_integer(x, "index_log_w3");
+	index_log_w4    = get_list_integer(x, "index_log_w4");
+	index_log_w5    = get_list_integer(x, "index_log_w5");
+	index_log_w6    = get_list_integer(x, "index_log_w6");
     }
 };
 

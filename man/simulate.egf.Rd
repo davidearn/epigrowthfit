@@ -14,8 +14,10 @@ mixed effects model.}
 
 \item{seed}{An integer used to set the \link{RNG} state before simulation.
 The default (\code{\link{NULL}}) is to use the state at the
-time of the function call. The RNG state is preserved as an
-\link[=attributes]{attribute} of the result (see Value).}
+time of the function call. The RNG state
+(either a \link{list} of arguments to \code{\link{set.seed}}
+or a value of \code{\link{.Random.seed}}) is preserved as an
+\link[=attributes]{attribute} of the result.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -24,14 +26,10 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
 \code{"egf_simulate"}, with variables \code{ts}, \code{window},
 and \code{time}, and \code{nsim} further variables with names
 of the form \code{x[0-9]+}.
-
-\code{ts}, \code{window}, and \code{time} are copied from the rows
-of \code{object$frame} corresponding observations in fitting windows.
-\link[=attributes]{Attribute} \code{subset} is an \link{integer} vector
-indexing these rows.
+It corresponds rowwise to \code{object$frame[!is.na(object$frame$window), ]}.
 }
 \description{
 Simulates new incidence data conditional on a fitted nonlinear
-mixed effects model. Only observations during fitting windows
-are simulated.
+mixed effects model of epidemic growth. Only observations within
+fitting windows are simulated.
 }

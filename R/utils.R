@@ -21,11 +21,11 @@
 #' ## names(y) <- x
 #' ## enum_dupl_names(y)
 #'
-#' @name enum_dupl_str
+#' @name enum_dupl_string
 #' @keywords internal
 NULL
 
-#' @rdname enum_dupl_str
+#' @rdname enum_dupl_string
 enum_dupl_string <- function(x) {
   f <- factor(x)
   n <- tabulate(f)
@@ -33,62 +33,12 @@ enum_dupl_string <- function(x) {
   sprintf("%s[%d]", x, i)
 }
 
-#' @rdname enum_dupl_str
+#' @rdname enum_dupl_string
 enum_dupl_names <- function(x) {
-  `names<-`(x, enum_dupl_string(names(x)))
-}
-
-#' Test whether an atomic vector is "constant"
-#'
-#' Tests whether the elements of an \link{atomic} vector are equal
-#' (or nearly equal in the case of \link{double} vectors).
-#'
-#' @param x
-#'   An \link{atomic} vector or \link[=data.frame]{data frame}.
-#' @param na.rm
-#'   A \link{logical} scalar. If \code{TRUE}, then \code{\link{NA}}
-#'   are ignored.
-#' @param tol
-#'   A positive number. \link[=double]{Double} vectors \code{x}
-#'   are considered constant if and only if the distance from
-#'   \code{\link{min}(x)} to \code{\link{max}(x)} is less than
-#'   \code{tol}.
-#'
-#' @details
-#' \code{TRUE} is returned if \code{\link{length}(x) = 0}.
-#'
-#' For data frames \code{x}, \code{is_constant(x)} tests
-#' whether all listed vectors are constant.
-#'
-#' @return
-#' \code{TRUE}, \code{FALSE}, or \code{\link{NA}}.
-#'
-#' @examples
-#' ## x <- c(0, 1e-03, NA)
-#' ## is_constant(x, na.rm = TRUE, tol = 1e-02)
-#' ## is_constant(x, na.rm = TRUE, tol = 1e-04)
-#' ## is_constant(x, na.rm = FALSE, tol = 1e-02)
-#' ## is_constant(x, na.rm = FALSE, tol = 1e-04)
-#'
-#' @keywords internal
-is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
-  if (is.data.frame(x)) {
-    return(all(vapply(x, is_constant, FALSE, na.rm = na.rm, tol = tol)))
+  if (!is.null(names(x))) {
+    names(x) <- enum_dupl_string(names(x))
   }
-  ok <- !is.na(x)
-  x <- x[ok]
-  if (length(x) == 0L) {
-    return(TRUE)
-  }
-  if (is.double(x)) {
-    yes <- abs(max(x) - min(x)) < tol
-  } else {
-    yes <- length(unique(x)) == 1L
-  }
-  if (yes && !na.rm && any(!ok)) {
-    return(NA)
-  }
-  yes
+  x
 }
 
 #' Correlation to covariance matrix conversion
@@ -96,7 +46,8 @@ is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
 #' Perform the inverse of \code{\link{cov2cor}}.
 #'
 #' @param cor
-#'   A symmetric \link{numeric} \link{matrix}.
+#'   A \link{numeric} \link{matrix}, typically (but not necessarily)
+#'   symmetric positive definite.
 #' @param sd
 #'   A \link{numeric} vector of length \code{\link{nrow}(cor)}.
 #'
@@ -112,17 +63,11 @@ is_constant <- function(x, na.rm = FALSE, tol = sqrt(.Machine$double.eps)) {
 #'
 #' @keywords internal
 cor2cov <- function(cor, sd) {
-  d <- dim(cor)
-  stop_if_not(
-    length(d) == 2L,
+  stopifnot(
+    is.matrix(cor),
     is.numeric(cor),
-    d[1L] == d[2L],
-    m = "`cor` must be a square numeric matrix."
-  )
-  stop_if_not(
     is.numeric(sd),
-    length(sd) == d[1L],
-    m = "`sd` must be a numeric vector of length `nrow(cor)`."
+    length(sd) == nrow(cor)
   )
   cor[] <- sd * cor * rep(sd, each = length(sd))
   cor
@@ -130,14 +75,13 @@ cor2cov <- function(cor, sd) {
 
 #' Concatenate, wrap, collapse
 #'
-#' Concatenates \R objects, formats the resulting string
-#' in paragraphs using \code{\link{strwrap}}, and collapses
-#' paragraph lines with newlines. Under default settings,
-#' the result is a string that prints in the console as
-#' one or more nicely wrapped paragraphs.
+#' Concatenates \R objects, formats the resulting string in paragraphs
+#' using \code{\link{strwrap}}, and collapses paragraph lines with newlines.
+#' Under default settings, the result is a string that prints in the console
+#' as one or more nicely wrapped paragraphs.
 #'
 #' @param ...
-#'   Zero or more \R objects (typically atomic vectors of length 1),
+#'   Zero or more \R objects (typically \link{atomic} vectors of length 1),
 #'   to be coerced to \link{character} and concatenated with no separator.
 #' @param width
 #'   A positive integer passed to \code{\link{strwrap}},
@@ -169,11 +113,11 @@ wrap <- function(..., width = 0.9 * getOption("width")) {
 #' @details
 #' The result is compatible with \code{\link{inverse.rle}}.
 #' More precisely,
-#' \code{function(x) inverse.rle(rle_literal(x))}
+#' \code{function(x) inverse.rle(literal_rle(x))}
 #' is an identity function for atomic \code{x}, and
-#' \code{function(x) rle_literal(inverse.rle(x))}
+#' \code{function(x) literal_rle(inverse.rle(x))}
 #' is an identity function for lists \code{x} generated
-#' by \code{rle_literal}.
+#' by \code{literal_rle}.
 #'
 #' @return
 #' A \link{list} similar to \code{\link{rle}(x)},
@@ -181,11 +125,11 @@ wrap <- function(..., width = 0.9 * getOption("width")) {
 #'
 #' @examples
 #' ## x <- rep.int(c(0, NA, NaN, 1), 1:4)
-#' ## rle_x <- rle_literal(x)
+#' ## rle_x <- literal_rle(x)
 #' ## identical(x, inverse.rle(rle_x))
 #'
 #' @keywords internal
-rle_literal <- function(x) {
+literal_rle <- function(x) {
   n <- length(x)
   if (n == 0L) {
     return(list(lengths = integer(0L), values = x))
@@ -229,7 +173,7 @@ locf <- function(x, x0 = NULL) {
   if (!anyNA(x)) {
     return(x)
   }
-  rle_x <- rle_literal(x)
+  rle_x <- literal_rle(x)
   y <- rle_x$values
   if (is.na(y[1L]) && !is.null(x0)) {
     y[1L] <- x0
@@ -242,49 +186,50 @@ locf <- function(x, x0 = NULL) {
   inverse.rle(rle_x)
 }
 
-#' Apply length-preserving functions
+#' Apply length-preserving functions to ragged vectors
 #'
-#' Replaces subsets of ragged vectors and data frames with the results
-#' of length-preserving functions.
+#' Modifies ragged vectors in place by replacing each group of elements
+#' with the result of applying a length-preserving function to that group
+#' of elements.
 #'
 #' @param x
 #'   A \link{vector} or \link[=data.frame]{data frame}.
 #' @param index
-#'   A \link{factor} defining a partition of the elements or rows of \code{x}.
-#'   \code{\link{split}(x, index)} should be a valid expression.
+#'   A \link{factor} (insofar that \code{\link{as.factor}(index)} is a factor)
+#'   defining a grouping of the elements or rows of \code{x}.
 #' @param f
 #'   A \link{function} or \link{list} of one or more functions to be applied
-#'   to subsets of \code{x}. These are recycled to match the number of levels
-#'   of \code{index} (unused levels are not dropped). Each function must
-#'   accept an initial \link{vector} argument matching \code{\link{typeof}(x)}
-#'   (or \code{typeof(x[[j]])} for all \code{j} if \code{x} is a
-#'   \link[=data.frame]{data frame}) and return a vector of the same length
-#'   (but not necessarily of the same type). It is expected that returned
-#'   vectors have compatible \link{mode}s: if one has an \link{atomic} mode,
-#'   then all should have an atomic mode (likewise for modes \code{"list"}
-#'   and \code{"expression"}).
+#'   to the subsets of \code{x} defined by \code{index}. Functions are recycled
+#'   to the number of levels of \code{index} (unused levels are not dropped).
+#'   Each function must accept an initial \link{vector} argument matching
+#'   \code{\link{typeof}(x)} (or \code{typeof(x[[j]])} for all \code{j}
+#'   if \code{x} is a \link[=data.frame]{data frame}) and return a vector
+#'   of the same length (though not necessarily of the same type). It is
+#'   expected that returned vectors have compatible \link{mode}s so that
+#'   they can be concatenated in a sensible way.
 #'
 #' @details
-#' Let \code{k = split(seq_len(f), f)}.
-#' For \link{vector}s \code{x}, function \code{f[[i]]} is applied
-#' to \code{x[k[[i]]]}.
-#' For \link[=data.frame]{data frame}s \code{x}, function \code{f[[i]]}
-#' is applied to \code{x[[j]][k[[i]]]} for all \code{j}.
+#' Let \code{f} be a list of \code{\link{nlevels}(index)} functions,
+#' and let \code{k = \link{split}(\link{seq_along}(index), index)}.
+#' For vectors \code{x}, function \code{f[[i]]} is applied to
+#' \code{x[k[[i]]]}.
+#' For data frames \code{x}, function \code{f[[i]]} is applied to
+#' \code{x[[j]][k[[i]]]} for all \code{j}.
 #'
 #' @return
 #' If \code{x} is a \link{vector}, then a vector of the same length.
 #' If \code{x} is a \link[=data.frame]{data frame}, then a data frame
-#' of the same length, with the same number of rows.
+#' with the same dimensions.
 #'
 #' @examples
 #' ## x <- 1:10
-#' ## lpapply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
+#' ## in_place_ragged_apply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
 #' ##
 #' ## x <- as.data.frame(replicate(3L, c(exp(rnorm(10L)), qlogis(runif(10L)))))
-#' ## lpapply(x, index = gl(2L, 10L), f = list(log, plogis))
+#' ## in_place_ragged_apply(x, index = gl(2L, 10L), f = list(log, plogis))
 #'
 #' @keywords internal
-lpapply <- function(x, index, f) {
+in_place_ragged_apply <- function(x, index, f) {
   if (!is.list(f)) {
     f <- list(f)
   }
@@ -316,9 +261,9 @@ lpapply <- function(x, index, f) {
 #' See the \href{https://en.wikipedia.org/wiki/Wald_test}{Wald test}.
 #'
 #' @return
-#' A \link{numeric} \link{matrix} with \code{length(estimate)} rows
-#' and 2 columns \code{lower} and \code{upper} giving approximate
-#' confidence limits.
+#' A \link{numeric} \link{matrix} with \code{\link{length}(estimate)} rows
+#' and 2 columns \code{lower} and \code{upper} giving approximate confidence
+#' limits.
 #'
 #' @examples
 #' ## estimate <- rep_len(0, 6L)

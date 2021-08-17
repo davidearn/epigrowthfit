@@ -4,24 +4,24 @@
 \alias{make_XZ_info}
 \title{Describe design matrix columns}
 \usage{
-make_XZ_info(xl, ml)
+make_XZ_info(x, m)
 }
 \arguments{
-\item{xl}{A named \link{list} of \link{formula}e of the form \code{~tt}
+\item{x}{A named \link{list} of \link{formula}e of the form \code{~tt}
 or a named list of \link{call}s to binary operator \code{`|`}
-of the form \code{(tt | g)}. \code{\link{names}(xl)} must specify
-nonlinear and dispersion model parameters.}
+of the form \code{(tt | g)}. \code{\link{names}(x)} must indicate
+corresponding top level nonlinear model parameters.}
 
-\item{ml}{A \link{list} of \code{X} or \code{Z} matrices obtained by
+\item{m}{A \link{list} of \code{X} or \code{Z} matrices obtained by
 applying \code{\link{make_X}} or \code{\link{make_Z}} to the
-elements of \code{xl}.}
+elements of \code{x}.}
 }
 \value{
 A \link[=data.frame]{data frame} with rows corresponding to columns
-of the combined design matrix \code{\link{do.call}(\link{cbind}, ml)},
+of the combined design matrix \code{\link{do.call}(\link{cbind}, m)},
 and variables:
 \item{par}{
-  Nonlinear or dispersion model parameter.
+  Top level nonlinear model parameter.
 }
 \item{term}{
   \link[=deparse]{Deparse}d term from right hand side of \code{`~`}
@@ -31,7 +31,7 @@ and variables:
   \code{\link{NA}} if not applicable.
 }
 \item{level}{
-  Level of the interaction specified by \code{group}.
+  Level of factor or interaction \code{group}.
   \code{\link{NA}} if not applicable.
 }
 \item{colname}{

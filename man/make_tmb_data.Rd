@@ -4,22 +4,23 @@
 \alias{make_tmb_data}
 \title{Construct data objects for C++ template}
 \usage{
-make_tmb_data(model, frame, frame_par, priors, control, do_fit, init)
+make_tmb_data(model, frame, frame_parameters, priors, control, do_fit, init)
 }
 \arguments{
+\item{model}{An \code{"\link{egf_model}"} object specifying a top level nonlinear model
+to be estimated.}
+
 \item{frame}{Elements of the \link{list} output of \code{\link{make_frames}}.}
 
-\item{frame_par}{Elements of the \link{list} output of \code{\link{make_frames}}.}
+\item{frame_parameters}{Elements of the \link{list} output of \code{\link{make_frames}}.}
 
-\item{priors}{An \link{list} of \link{formula}e of the form \code{par ~ f(...)},
-specifying priors on nonlinear and dispersion model parameters.
-\code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(object, link = TRUE)}.
+\item{priors}{A \link{list} of \link{formula}e of the form \code{parameter ~ f(...)}
+specifying priors on top level nonlinear model parameters.
+\code{\link{deparse}(parameter)} must be an element
+of \code{\link{get_names_top}(model, link = TRUE)}, and
 \code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
 with arguments specifying suitable hyperparameters.
-This call is evaluated in the corresponding formula environment.
-(Currently, the only implemented prior is Gaussian. As a result,
-formulae must have the form \code{par ~ \link{Normal}(mu, sigma)}.)}
+Calls are evaluated in the corresponding formula environments.}
 
 \item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
 
@@ -35,19 +36,18 @@ informative starting point.}
 }
 \value{
 [Below,
-\code{n = \link{sum}(!\link{is.na}(frame$window))}
-is the total number of time points belonging to a fitting window,
 \code{N = \link{nlevels}(frame$window)}
-is the number of fitting windows, and
-\code{p = \link{length}(frame_par)}
-is the number of nonlinear and dispersion model parameters.]
+is the number of fitting windows,
+\code{n = N + \link{sum}(!\link{is.na}(frame$window))}
+is the total number of time points associated with a fitting window, and
+\code{p = \link{length}(frame_parameters)}
+is the number of top level nonlinear model parameters.]
 
 A \link{list} inheriting from \link{class} \code{"tmb_data"},
 with elements:
 \item{time}{
-  A \link[=double]{numeric} vector of length \code{n} giving time
-  as a number of days since the earliest time point in the current
-  fitting window.
+  A \link[=double]{numeric} vector of length \code{n} giving
+  times since the left endpoint of the current fitting window.
 }
 \item{time_seg_len}{
   An \link{integer} vector of length \code{N} specifying the
@@ -78,14 +78,14 @@ with elements:
 \item{indices}{
   A \link{list} with \link{integer} elements and \link{names} of the
   form \code{"index_link_parameter"} (e.g., \code{"index_log_r"}),
-  giving the column 0-index of nonlinear and dispersion model parameters
+  giving the column 0-index of top level nonlinear model parameters
   (e.g., \code{log(r)}) in the response matrix. Value \code{-1}
   is used for parameters not belonging to the model being estimated.
 }
 \item{hyperparameters}{
-  A \link{list} of \code{p} \link{numeric} vectors, each listing
-  parameters (if any) of the prior distribution of a nonlinear
-  or dispersion model parameter.
+  A \link{list} of \code{p} \link{numeric} vectors listing parameters
+  of the prior distribution (if any) assigned to top level nonlinear
+  model parameters.
 }
 \item{X}{
   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
@@ -115,16 +115,16 @@ with elements:
   \link[=integer]{Integer} vectors of length \code{\link{ncol}(X)}
   and \code{\link{ncol}(Z)}, respectively, with values in \code{0:(p-1)}.
   These split the columns of \code{X} and \code{Z} by relation to
-  a common nonlinear or dispersion model parameter.
+  a common top level nonlinear model parameter.
 }
 \item{beta_index_tab, b_index_tab}{
   \link[=integer]{Integer} vectors of length \code{p} counting the
   columns of \code{X} and \code{Z}, respectively, that relate to
-  a common nonlinear or dispersion model parameter.
+  a common top level nonlinear model parameter.
 }
 \item{block_rows, block_cols}{
   \link[=integer]{Integer} vectors together giving the dimensions
-  of each block of the random effects matrix.
+  of each block of random effects.
 }
 }
 \description{

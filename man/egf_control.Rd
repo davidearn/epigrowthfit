@@ -30,10 +30,10 @@ are profiled out of the likelihood, which may stabilize optimization
 for models with many fixed effects. This feature is experimental,
 and in fact may \emph{de}stabilize optimization, as it relies on
 assumptions about the optimization problem that are not necessarily
-satisfied by the models fit by \code{\link{egf}}.}
+satisfied by the nonlinear mixed effects models fit by \code{\link{egf}}.}
 
 \item{sparse_X}{A \link{logical} flag. If \code{TRUE}, then the fixed effects
-\link[=model.matrix]{design} matrix is constructed in
+\link[=model.matrix]{design matrix} is constructed in
 \link[Matrix:sparseMatrix]{sparse} format.}
 
 \item{omp_num_threads}{An integer specifying a number of OpenMP threads to be used

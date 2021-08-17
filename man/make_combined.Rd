@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_egf.R
 \name{make_combined}
 \alias{make_combined}
-\title{Construct combined model frame}
+\title{Construct the combined model frame}
 \usage{
 make_combined(object)
 }
@@ -10,14 +10,14 @@ make_combined(object)
 \item{object}{An \code{"\link{egf}"} object.}
 }
 \value{
-A \link[=data.frame]{data frame} combining (in the sense
-of \code{\link{cbind}}) all data frames in the \link{list}
-\code{object$frame_par} and the data frame \code{object$frame_append}.
+A data frame combining (in the sense of \code{\link{cbind}})
+all of data frames in the \link{list} \code{object$frame_parameters}
+and the data frame \code{object$frame_append}.
 }
 \description{
 Joins in a single \link[=data.frame]{data frame} all mixed effects
-\link[=model.frame]{model frames} and further variables specified
-via \code{\link{egf}} argument \code{append}.
+\link[=model.frame]{model frames} and further variables originally
+indicated by \code{\link{egf}} argument \code{append}.
 }
 \details{
 If a variable name occurs in multiple mixed effects model frames,
@@ -26,6 +26,6 @@ then only one instance is retained. Except in unusual cases
 all instances of a variable name are identical, and no information is lost.
 
 Since the data frames being combined each correspond rowwise
-to \code{object$endpoints}, so does the result.
+to \code{object$frame_windows}, so does the result.
 }
 \keyword{internal}

@@ -8,7 +8,7 @@
   fitted,
   which = NULL,
   A = NULL,
-  par = get_par_names(fitted, link = TRUE),
+  par = get_names_top(fitted, link = TRUE),
   subset = NULL,
   append = NULL,
   max_level = 0.99,
@@ -32,8 +32,8 @@ Each row specifies a linear combination of the elements
 of \code{fitted$best[fitted$nonrandom]} to be profiled.
 Ignored if \code{which} is non-\code{\link{NULL}}.}
 
-\item{par}{A subset of \code{\link{get_par_names}(fitted, link = TRUE)}
-naming nonlinear and dispersion model parameters whose population
+\item{par}{A subset of \code{\link{get_names_top}(fitted, link = TRUE)}
+naming top level nonlinear model parameters whose population
 fitted values (see \code{\link{fitted.egf}}) should be profiled.
 Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.}
 
@@ -78,16 +78,16 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
 \code{"egf_profile"}, with variables:
 \item{par}{
   (\code{par}-based calls only.)
-  Nonlinear or dispersion model parameter,
-  from \code{\link{get_par_names}(fitted, link = link)}.
+  Top level nonlinear model parameter,
+  from \code{\link{get_names_top}(fitted, link = link)}.
 }
 \item{ts}{
   (\code{par}-based calls only.)
-  Time series, from \code{\link{levels}(fitted$endpoints$ts)}.
+  Time series, from \code{\link{levels}(fitted$frame_windows$ts)}.
 }
 \item{window}{
   (\code{par}-based calls only.)
-  Fitting window, from \code{\link{levels}(fitted$endpoints$window)}.
+  Fitting window, from \code{\link{levels}(fitted$frame_windows$window)}.
 }
 \item{linear_combination}{
   Row index of linear combination,
@@ -116,8 +116,8 @@ with 1 at array index \code{[i, which[i]]} for all \code{i}, such that
 
 \code{par} and \code{subset} are mapped to a block \code{A} matrix.
 Block \code{k} (from the top) is composed of rows of the fixed effects
-design matrix for parameter \code{par[k]} (those rows indexed by
-\code{subset}). \code{A \link[=matmult]{\%*\%} fitted$par[fitted$nonrandom]}
+design matrix for parameter \code{par[k]} (those indexed by \code{subset}).
+\code{A \link[=matmult]{\%*\%} fitted$par[fitted$nonrandom]}
 is a vector listing the population fitted values for each parameter
 named in \code{par}, for each fitting window indexed by \code{subset}.
 

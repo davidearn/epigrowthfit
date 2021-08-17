@@ -17,7 +17,7 @@
 #'
 #' @keywords internal
 negate <- function(x) {
-  if (is.call(x) && x[[1L]] == as.name("-") && length(x) == 2L) {
+  if (is.call(x) && x[[1L]] == "-" && length(x) == 2L) {
     return(x[[2L]])
   }
   call("-", x)
@@ -68,21 +68,18 @@ split_terms <- function(x) {
   if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
     return(list(x))
   }
-  stop_if_not(
-    is.call(x),
-    m = "`x` must be a call, name, or atomic scalar."
-  )
-  if (x[[1L]] == as.name("(")) {
+  stopifnot(is.call(x))
+  if (x[[1L]] == "(") {
     return(split_terms(x[[2L]]))
   }
-  if (x[[1L]] == as.name("+")) {
+  if (x[[1L]] == "+") {
     if (length(x) == 2L) {
       return(split_terms(x[[2L]]))
     } else {
       return(c(split_terms(x[[2L]]), split_terms(x[[3L]])))
     }
   }
-  if (x[[1L]] == as.name("-")) {
+  if (x[[1L]] == "-") {
     if (length(x) == 2L) {
       return(lapply(split_terms(x[[2L]]), negate))
     } else {
@@ -94,15 +91,12 @@ split_terms <- function(x) {
 
 #' @rdname split_terms
 unsplit_terms <- function(l) {
-  stop_if_not(
-    inherits(l, "list"),
-    m = "`l` must be a list."
-  )
+  stopifnot(inherits(l, "list"))
   if (length(l) == 0L) {
     return(NULL)
   }
   is_pm <- function(x) {
-    is.call(x) && (x[[1L]] == as.name("+") || x[[1L]] == as.name("-")) && length(x) == 2L
+    is.call(x) && (x[[1L]] == "+" || x[[1L]] == "-") && length(x) == 2L
   }
   x <- l[[1L]]
   for (i in seq_along(l)[-1L]) {
@@ -138,12 +132,9 @@ unsplit_terms <- function(l) {
 #' @keywords internal
 #' @importFrom stats as.formula
 split_effects <- function(x) {
-  stop_if_not(
-    inherits(x, "formula"),
-    m = "`x` must be a formula."
-  )
+  stopifnot(inherits(x, "formula"))
   l <- split_terms(x)
-  is_bar <- function(x) is.call(x) && x[[1L]] == as.name("|")
+  is_bar <- function(x) is.call(x) && x[[1L]] == "|"
   l_is_bar <- vapply(l, is_bar, FALSE)
   x[[length(x)]] <- if (all(l_is_bar)) 1 else unsplit_terms(l[!l_is_bar])
   list(fixed = x, random = l[l_is_bar])
@@ -170,7 +161,7 @@ split_interaction <- function(x) {
     return(list(x))
   }
   if (is.call(x)) {
-    if (x[[1L]] == as.name(":")) {
+    if (x[[1L]] == ":") {
       return(do.call(c, lapply(x[-1L], split_interaction)))
     } else {
       return(list(x))
@@ -196,10 +187,7 @@ split_interaction <- function(x) {
 #'
 #' @keywords internal
 gsub_bar_plus <- function(x) {
-  stop_if_not(
-    inherits(x, "formula"),
-    m = "`x` must be a formula."
-  )
+  stopifnot(inherits(x, "formula"))
   l <- split_effects(x)
   if (length(l$random) == 0L) {
     return(x)
@@ -271,12 +259,9 @@ simplify_terms <- function(x) {
   if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
     return(x)
   }
-  stop_if_not(
-    is.call(x),
-    m = "`x` must be a call, name, or atomic scalar."
-  )
+  stopifnot(is.call(x))
   l <- split_terms(x)
-  is_bar <- function(x) is.call(x) && x[[1L]] == as.name("|")
+  is_bar <- function(x) is.call(x) && x[[1L]] == "|"
   l_is_bar <- vapply(l, is_bar, FALSE)
   if (all(l_is_bar)) {
     no_bar <- NULL

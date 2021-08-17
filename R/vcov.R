@@ -22,10 +22,10 @@
 #'
 #' @section Note:
 #' Contrary to the documentation of generic function \code{\link{vcov}},
-#' \code{vcov.egf} returns the covariance matrix corresponding to the output
-#' of \code{\link{fixef.egf}}, not \code{\link{coef.egf}}. Currently,
-#' \code{\link{coef.egf}} is an alias for \code{\link{fitted.egf}}, hence
-#' it returns fitted values of nonlinear and dispersion model parameters,
+#' \code{vcov.egf} returns the covariance matrix corresponding
+#' to the output of \code{\link{fixef.egf}}, not \code{\link{coef.egf}}.
+#' Currently, \code{\link{coef.egf}} is an alias for \code{\link{fitted.egf}},
+#' hence it returns fitted values of top level nonlinear model parameters,
 #' not fixed effects coefficients.
 #'
 #' @return
@@ -40,11 +40,12 @@
 vcov.egf <- function(object, full = FALSE, cor = FALSE, ...) {
   stop_if_not_true_false(full)
   stop_if_not_true_false(cor)
+
   if (is.null(object$sdreport)) {
     if (has_random(object)) {
       warning(wrap(
-        "Computing a Hessian matrix for a model with random effects... ",
-        "This could take a while. To avoid needless recomputation, ",
+        "Computing a Hessian matrix for a model with random effects, ",
+        "which might take a while. To avoid needless recomputation, ",
         "do `object$sdreport <- try(TMB::sdreport(object$tmb_out))` ",
         "before trying `vcov`."
       ))
@@ -54,15 +55,17 @@ vcov.egf <- function(object, full = FALSE, cor = FALSE, ...) {
   if (inherits(object$sdreport, "try-error")) {
     stop(wrap(
       "Unable to proceed because `TMB::sdreport(object$tmb_out)` ",
-      "throws an error. Retry `vcov` after diagnosing and refitting."
+      "throws the following error:\n\n",
+      conditionMessage(attr(object$sdreport, "condition")), "\n\n",
+      "Retry `vcov` after diagnosing and refitting."
     ))
   }
 
   V <- object$sdreport$cov.fixed
-  dn <- names(object$best)[object$nonrandom]
-  dimnames(V) <- rep_len(list(dn), 2L)
+  s <- names(object$best)[object$nonrandom]
+  dimnames(V) <- rep_len(list(s), 2L)
   if (!full) {
-    k <- grep("^beta\\[", dn)
+    k <- grep("^beta\\[", s)
     V <- V[k, k, drop = FALSE]
   }
   if (cor) {

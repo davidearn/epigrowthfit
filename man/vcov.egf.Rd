@@ -36,10 +36,10 @@ and can be found in the \link{list} \code{object$sdreport}.
 \section{Note}{
 
 Contrary to the documentation of generic function \code{\link{vcov}},
-\code{vcov.egf} returns the covariance matrix corresponding to the output
-of \code{\link{fixef.egf}}, not \code{\link{coef.egf}}. Currently,
-\code{\link{coef.egf}} is an alias for \code{\link{fitted.egf}}, hence
-it returns fitted values of nonlinear and dispersion model parameters,
+\code{vcov.egf} returns the covariance matrix corresponding
+to the output of \code{\link{fixef.egf}}, not \code{\link{coef.egf}}.
+Currently, \code{\link{coef.egf}} is an alias for \code{\link{fitted.egf}},
+hence it returns fitted values of top level nonlinear model parameters,
 not fixed effects coefficients.
 }
 

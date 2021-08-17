@@ -8,9 +8,9 @@
 #'   A \link{character} string indicating a type of plot. The options are:
 #'   interval incidence (\code{"interval"}),
 #'   cumulative incidence (\code{"cumulative"}),
-#'   per capita growth rate as curve (\code{"rt1"}), and
-#'   per capita growth rate as heat map (\code{"rt2"}).
-#'   \code{"rt2"} displays \code{panels_per_plot} time series per plot.
+#'   per capita growth rate (\code{"rt"}), and
+#'   per capita growth rate \emph{as heat map} (\code{"rt_heat"}).
+#'   \code{"rt_heat"} displays \code{panels_per_plot} time series in each plot.
 #'   The rest display one time series per plot.
 #' @param subset
 #'   An expression to be evaluated in the combined model frame
@@ -32,32 +32,37 @@
 #'   A \link{logical} flag. If \code{FALSE}, then nothing is plotted.
 #'   Useful when only the returned \code{"egf_plot_cache"} object is desired.
 #' @param time_as
-#'   A \link{character} string indicating how time is displayed on the
-#'   bottom axis. The options are: as a calendar (\code{"Date"}) and
-#'   as a number of days since the earliest time point (\code{"numeric"}).
+#'   A \link{character} string indicating how time is displayed
+#'   on the bottom axis. The options are: as is (\code{"numeric"})
+#'   and with a calendar (\code{"Date"}). In the latter case,
+#'   numeric times are interpreted as numbers of days since
+#'   \code{1970-01-01 00:00:00}.
 #' @param dt
-#'   A positive number indicating an observation interval in days.
+#'   A positive number indicating an observation interval.
 #'   Predicted curves are evaluated on grids with this spacing.
 #'   When \code{type = "interval"}, counts observed over a shorter
 #'   or longer interval \code{dt0} are scaled by a factor of
 #'   \code{dt / dt0} so that their scale matches that of the curves.
 #'   These points can be highlighted via \code{control}.
+#'   If \code{x} specifies a model with day of week effects
+#'   (\code{x$model$day_of_week > 0}), then \code{dt} is set to 1
+#'   internally, and supplying a value other than 1 has no effect.
 #' @param log
 #'   A \link{logical} flag. If \code{TRUE}, then the dependent variable
 #'   is plotted on a logarithmic scale.
-#'   [\code{type != "rt1"} only.]
+#'   [\code{type != "rt"} only.]
 #' @param show_predict
 #'   An integer flag: 2 is to draw predicted curves with confidence bands,
 #'   1 is draw predicted curves only, 0 is to draw neither.
 #'   \link[=logical]{Logical} values are coerced to integer.
-#'   [\code{type != "rt2"} only.]
+#'   [\code{type != "rt_heat"} only.]
 #' @param show_tdoubling
 #'   An integer flag: 2 is to print initial doubling time estimates in
 #'   the top margin with confidence intervals, 1 is to print estimates
 #'   only, 0 is to print neither. \link[=logical]{Logical} values are
 #'   coerced to integer. Supported only if \code{x$model$curve} is
 #'   \code{"exponential"}, \code{"logistic"}, or \code{"richards"}.
-#'   [\code{type != "rt2"} only.]
+#'   [\code{type != "rt_heat"} only.]
 #' @param show_legend
 #'   A \link{logical} flag. If \code{TRUE}, then a legend is displayed
 #'   in the right margin.
@@ -65,15 +70,15 @@
 #' @param level
 #'   A number in the interval (0,1). This is the confidence level used
 #'   when \code{show_predict = 2} or \code{show_tdoubling = 2}.
-#'   [\code{type != "rt2"} only.]
+#'   [\code{type != "rt_heat"} only.]
 #' @param panels_per_plot
 #'   A positive integer giving the number of panels (time series)
 #'   displayed in one plot.
-#'   [\code{type = "rt2"} only.]
+#'   [\code{type = "rt_heat"} only.]
 #' @param inter_panel_space
 #'   A non-negative number giving the space between panels
 #'   in multipanel plots as a number of margin lines.
-#'   [\code{type = "rt2"} only.]
+#'   [\code{type = "rt_heat"} only.]
 #' @param control
 #'   An \code{"\link{egf_plot_control}"} object controlling the appearance
 #'   of almost all plot elements.
@@ -82,20 +87,20 @@
 #'   which are recycled for all plots. If \code{time_as = "Date"}, then
 #'   \code{xlim} can instead be a \link{Date} vector or a \link{character}
 #'   vector coercible to Date via \code{\link{as.Date}(xlim)}. \code{ylim}
-#'   is unused by \code{type = "rt2"}.
+#'   is unused by \code{type = "rt_heat"}.
 #' @param main,sub,xlab,ylab,ylab_outer,plab
 #'   \link[=character]{Character} strings or expressions used
 #'   to generate plot (\code{main}, \code{sub}), axis (\code{xlab},
 #'   \code{ylab}, \code{ylab_outer}), and panel (\code{plab}) titles.
 #'   \code{main}, \code{xlab}, and \code{ylab} are supported for all
 #'   values of \code{type}.
-#'   \code{sub} is unused by \code{type = "rt2"}.
-#'   \code{plab} is used by \code{type = "rt2"} only.
+#'   \code{sub} is unused by \code{type = "rt_heat"}.
+#'   \code{plab} is used by \code{type = "rt_heat"} only.
 #'   \code{ylab_outer} is used by \code{type = "rt[12]"} only.
-#'   When \code{type != "rt2"}, \code{main} and \code{sub} are evaluated
+#'   When \code{type != "rt_heat"}, \code{main} and \code{sub} are evaluated
 #'   in the combined model frame (see \code{\link{make_combined}})
 #'   in order to generate unique (sub)titles for each plot.
-#'   When \code{type = "rt2"}, \code{plab} is evaluated similarly
+#'   When \code{type = "rt_heat"}, \code{plab} is evaluated similarly
 #'   in order to generate unique titles for each panel.
 #'   \code{\link{plotmath}} expressions are not supported
 #'   for \code{main}, \code{sub}, and \code{plab} in these cases.
@@ -112,15 +117,17 @@
 #' Computation of fitted and predicted values and standard errors
 #' is performed before any plots are created. To avoid waste of
 #' computation time, cached computations are returned \emph{even if}
-#' an error is thrown during plotting. The cache will be temporarily
-#' available via \code{\link{.Last.value}}. To ensure that the cache
-#' is permanently available, assign the result of the call to
-#' \code{\link{plot}} to a name: \code{cache <- plot(x, \dots)}.
+#' an error is thrown during plotting. Hence the cache will be
+#' available temporarily via \code{\link{.Last.value}}. To ensure
+#' that the cache is available permanently, assign the result of
+#' the call to \code{\link{plot}} to a name:
+#' \code{cache <- plot(x, \dots)}.
 #'
-#' Caching functionality must be used with care, as mismatch
-#' between \code{x} and \code{cache} will \emph{not} be detected.
-#' Constructions such as \code{plot(y, cache = plot(x, \dots), \dots)}
-#' should \emph{not} be expected to produce correct results.
+#' Caching functionality must be used with care, as mismatch between
+#' \code{x} and \code{cache} will not be detected. Constructions such
+#' as \code{plot(y, cache = plot(x, \dots), \dots)}, where \code{x}
+#' and \code{y} are different objects, should not be expected to produce
+#' correct results.
 #'
 #' See topic \code{\link{nse}} for details on nonstandard evaluation
 #' of \code{subset} and \code{order}.
@@ -128,7 +135,7 @@
 #' @export
 #' @importFrom stats fitted predict complete.cases
 plot.egf <- function(x,
-                     type = c("interval", "cumulative", "rt1", "rt2"),
+                     type = c("interval", "cumulative", "rt", "rt_heat"),
                      subset = NULL,
                      order = NULL,
                      cache = NULL,
@@ -152,13 +159,14 @@ plot.egf <- function(x,
                      ylab_outer = NULL,
                      plab = NULL,
                      ...) {
-  ## FIXME: `order` _actually_ orders `levels(window)`,
-  ## not `levels(ts)`, leading to some indexing gore ...
-
   type <- match.arg(type)
   stop_if_not_true_false(do_plot)
-  stop_if_not_number(dt, "positive")
-  if (type == "rt2") {
+  if (x$model$day_of_week > 0L) {
+    dt <- 1
+  } else {
+    stop_if_not_number(dt, "positive")
+  }
+  if (type == "rt_heat") {
     show_predict <- 1L
     show_tdoubling <- 0L
   } else {
@@ -176,97 +184,77 @@ plot.egf <- function(x,
   }
 
   combined <- make_combined(x)
-  subset <- subset_to_index(substitute(subset), data = combined, enclos = parent.frame())
-  stop_if_not(
-    sum(subset) > 0L,
-    m = "`subset` must index at least one fitting window."
-  )
+  subset <- eval_subset(substitute(subset), combined, parent.frame())
+  stopifnot(sum(subset) > 0L)
+  order <- eval_order(substitute(order), combined, parent.frame())
+
+  subset <- order[order %in% which(subset)]
+  frame_windows <- x$frame_windows[subset, , drop = FALSE]
+
+  lts <- as.character(unique(frame_windows$ts))
+  frame_windows$ts <- factor(frame_windows$ts, levels = lts)
+
+  reorder <- base::order(frame_windows[c("ts", "start")])
+  subset <- subset[reorder]
+  frame_windows <- frame_windows[reorder, , drop = FALSE]
+
+  lw <- as.character(frame_windows$window)
+  frame_windows$window <- factor(frame_windows$window, levels = lw)
+
+  frame <- x$frame
+  frame$ts <- factor(frame$ts, levels = lts)
+  frame$window <- factor(frame$window, levels = lw)
+  frame <- frame[!is.na(frame$ts), , drop = FALSE]
 
   ## This code _could_ be run _after_ augmenting `cache`,
   ## but running it _before_ avoids waste of computation
   ## time in the event of errors. This really only matters
   ## for users who have not assigned `plot(x)`.
   if (do_plot) {
+    stopifnot(inherits(control, "egf_plot_control"))
     time_as <- match.arg(time_as)
-
     if (type == "interval") {
       stop_if_not_true_false(show_legend)
     } else {
       show_legend <- FALSE
     }
-    if (type == "rt1") {
+    if (type == "rt") {
       log <- FALSE
     } else {
       stop_if_not_true_false(log)
     }
-    if (type == "rt2") {
+    if (type == "rt_heat") {
       stop_if_not_integer(panels_per_plot, "positive")
       stop_if_not_number(inter_panel_space, "nonnegative")
     }
-
     if (!is.null(xlim)) {
       if (is.character(xlim)) {
-        xlim <- as.Date(xlim)
+        xlim <- try(as.Date(xlim))
       }
       stop_if_not(
         is.numeric(xlim) || inherits(xlim, "Date"),
         length(xlim) == 2L,
+        is.finite(xlim),
         xlim[1L] < xlim[2L],
         m = "Invalid `xlim`."
       )
     }
-
     if (!is.null(ylim)) {
       stop_if_not(
         is.numeric(ylim),
         length(ylim) == 2L,
+        is.finite(xlim),
         ylim[1L] < ylim[2L],
         m = "Invalid `ylim`."
       )
     }
 
-    stop_if_not(
-      inherits(control, "egf_plot_control"),
-      m = "`control` must inherit from class \"egf_plot_control\". See `?egf_plot_control`."
-    )
-
-    order <- order_to_index(substitute(order), data = combined, enclos = parent.frame())
-    if (type == "rt2") {
-      plab <- label_to_character(substitute(plab), data = combined, enclos = parent.frame())
+    subset1 <- subset[match(lts, frame_windows$ts, 0L)]
+    if (type == "rt_heat") {
+      plab <- eval_label(substitute(plab), combined, parent.frame())[subset1]
     } else {
-      main <- label_to_character(substitute(main), data = combined, enclos = parent.frame())
-      sub <- label_to_character(substitute(sub), data = combined, enclos = parent.frame())
-    }
-
-    frame <- x$frame
-    wl <- as.character(x$endpoints$window) # same as levels
-    tsl <- as.character(x$endpoints$ts) # same as levels but with duplicates
-
-    wl_subset <- wl[subset]
-    frame$window <- factor(frame$window, levels = wl_subset)
-
-    tsl_subset <- intersect(tsl[order], frame$ts[!is.na(frame$window)])
-    frame$ts <- factor(frame$ts, levels = tsl_subset)
-
-    if (type == "cumulative") {
-      keep <- !c(tapply(frame$x, frame$ts, function(x) anyNA(x[-1L])))
-      if (any(!keep)) {
-        warning(
-          wrap(
-            "Missing values preventing calculation of cumulative incidence. ",
-            "These time series will not be displayed:"
-          ),
-          "\n\n", paste0("  ", tsl_subset[!keep], collapse = "\n")
-        )
-        tsl_subset <- tsl_subset[keep]
-        frame$ts <- factor(frame$ts, levels = tsl_subset)
-        subset <- subset & (tsl %in% tsl_subset)
-        wl_subset <- wl[subset]
-        frame$window <- factor(frame$window, levels = wl_subset)
-      }
-      if (all(!keep)) {
-        stop("Nothing left to do ...")
-      }
+      main <- eval_label(substitute(main), combined, parent.frame())[subset1]
+      sub <- eval_label(substitute(sub), combined, parent.frame())[subset1]
     }
   }
 
@@ -282,30 +270,27 @@ plot.egf <- function(x,
       stringsAsFactors = TRUE
     )
   } else {
-    stop_if_not(
-      inherits(cache, "egf_plot_cache"),
-      m = "`cache` must inherit from class \"egf_plot_cache\"."
-    )
+    stopifnot(inherits(cache, "egf_plot_cache"))
   }
   nc <- names(cache)
 
   ## If necessary, augment `cache` with predicted values
   ## of whatever is being plotted and standard errors
   if (show_predict > 0L) {
-    what <- switch(type, interval = "log_int_inc", cumulative = "log_cum_inc", "log_rt")
-    ok <- cache$var == what & !(show_predict == 2L & is.na(cache$se))
-    need <- setdiff(x$endpoints$window[subset], cache$window[ok])
-    if (length(need) > 0L) {
-      w <- match(need, x$endpoints$window, 0L)
+    what <- if (grepl("^rt", type)) "rt" else type
+    ok <- cache$var == sprintf("log(%s)", what) & !(show_predict == 2L & is.na(cache$se))
+    required <- setdiff(lw, cache$window[ok])
+    if (length(required) > 0L) {
+      m <- match(required, x$frame_windows$window, 0L)
       time_split <- Map(seq.int,
-        from = x$endpoints$start[w],
-        to = x$endpoints$end[w],
+        from = x$frame_windows$start[m],
+        to = x$frame_windows$end[m],
         by = dt
       )
       pd <- predict(x,
         what = what,
         time = unlist(time_split, FALSE, FALSE),
-        window = rep.int(x$endpoints$window[w], lengths(time_split)),
+        window = rep.int(x$frame_windows$window[m], lengths(time_split)),
         log = TRUE,
         se = (show_predict == 2L)
       )
@@ -320,13 +305,13 @@ plot.egf <- function(x,
   ## and standard errors
   if (show_tdoubling > 0L) {
     ok <- cache$var == "log(r)" & !(show_tdoubling == 2L & is.na(cache$se))
-    need <- setdiff(x$endpoints$window[subset], cache$window[ok])
-    if (length(need) > 0L) {
+    required <- setdiff(lw, cache$window[ok])
+    if (length(required) > 0L) {
       ft <- fitted(x,
         par = "log(r)",
         link = TRUE,
         se = (show_tdoubling == 2L),
-        .subset = (x$endpoints$window %in% need)
+        .subset = (x$frame_windows$window %in% required)
       )
       if (show_tdoubling == 1L) {
         ft$se <- NA_real_
@@ -359,35 +344,36 @@ plot.egf <- function(x,
   })
 
   ## Extract only those rows of `cache` needed by the low level plot function
-  cache[nc[1:3]] <- Map(factor,
-    x = cache[nc[1:3]],
-    levels = list(c(what, if (show_tdoubling > 0L) "log(r)"), tsl_subset, wl_subset)
+  cache[nc[1:3]] <- Map(factor, cache[nc[1:3]],
+    levels = list(c(sprintf("log(%s)", what), if (show_tdoubling > 0L) "log(r)"), lts, lw)
   )
   i <- complete.cases(cache[nc[1:3]])
   cache <- cache[i, , drop = FALSE]
 
   ## Compute confidence intervals
-  i <- (show_predict == 2L & cache$var == what) | (show_tdoubling == 2L & cache$var == "log(r)")
-  cache[c("lower", "upper")] <- NA_real_
-  cache[i, c("lower", "upper")] <- do_wald(
-    estimate = cache$estimate[i],
-    se = cache$se[i],
-    level = level
-  )
+  i <- (show_predict == 2L & cache$var == sprintf("log(%s)", what)) | (show_tdoubling == 2L & cache$var == "log(r)")
+  if (any(i)) {
+    cache[c("lower", "upper")] <- list(NA_real_)
+    cache[i, c("lower", "upper")] <- do.call(do_wald, c(cache[i, c("estimate", "se"), drop = FALSE], list(level = level)))
+  }
 
-  ## Subset and order plot/axis/panel titles
-  ## so that they correspond elementwise to `tsl_subset`
-  subset <- order[order %in% subset]
-  m <- match(tsl_subset, tsl[subset], 0L)
+  ## Sigh...
+  if (type == "rt") {
+    pd <- predict(x,
+      what = "cumulative",
+      time = frame_windows$start,
+      window = frame_windows$window,
+      log = FALSE,
+      se = FALSE
+    )
+    attr(cache, "c0") <- pd$estimate[match(frame_windows$window, pd$window, 0L)]
+  }
 
-  origin <- attr(x$frame, "origin")
-
-  if (type == "rt2") {
+  if (type == "rt_heat") {
     do_heat_plot(
       cache = cache,
       time_as = time_as,
       dt = dt,
-      origin = origin,
       log = log,
       panels_per_plot = panels_per_plot,
       inter_panel_space = inter_panel_space,
@@ -398,16 +384,16 @@ plot.egf <- function(x,
       xlab = xlab,
       ylab = ylab,
       ylab_outer = ylab_outer,
-      plab = plab[subset][m]
+      plab = plab
     )
   } else {
     do_curve_plot(
       frame = frame,
+      frame_windows = frame_windows,
       cache = cache,
       type = type,
       time_as = time_as,
       dt = dt,
-      origin = origin,
       log = log,
       curve = x$model$curve,
       show_predict = show_predict,
@@ -417,8 +403,8 @@ plot.egf <- function(x,
       control = control,
       xlim = xlim,
       ylim = ylim,
-      main = main[subset][m],
-      sub = sub[subset][m],
+      main = main,
+      sub = sub,
       xlab = xlab,
       ylab = ylab,
       ylab_outer = ylab_outer
@@ -431,18 +417,15 @@ plot.egf <- function(x,
 }
 
 #' @import graphics
-do_curve_plot <- function(frame, cache, type, time_as,
-                          dt, origin, log, curve,
+do_curve_plot <- function(frame, frame_windows, cache, type, time_as,
+                          dt, log, curve,
                           show_predict, show_tdoubling, show_legend,
                           level, control, xlim, ylim,
                           main, sub, xlab, ylab, ylab_outer) {
   ### Set up ===================================================================
 
-  frame_split <- split(frame, frame$ts)
-  cache_split <- split(cache, cache$ts)
-  N <- nlevels(frame$ts)
+  K <- nlevels(frame$ts)
   formula <- as.formula(call("~", as.name(type), quote(time)))
-  var <- switch(type, interval = "log_int_inc", cumulative = "log_cum_inc", "log_rt")
 
   xlim_bak <- xlim
   ylim_bak <- ylim
@@ -453,17 +436,17 @@ do_curve_plot <- function(frame, cache, type, time_as,
     if (curve %in% c("gompertz", "richards")) {
       substr(curve, 1L, 1L) <- toupper(substr(curve, 1L, 1L))
     }
-    main <- rep_len(sprintf("Fitted %s model", curve), N)
+    main <- rep_len(sprintf("Fitted %s model", curve), K)
   }
 
   ## Plot subtitles
   if (is.null(sub)) {
-    sub <- names(frame_split)
+    sub <- levels(frame$ts)
   }
 
   ## Axis title (y)
   if (is.null(ylab)) {
-    if (type == "rt1") {
+    if (type == "rt") {
       ylab <- "growth rate, per day"
     } else {
       ylab <- paste(type, "incidence")
@@ -486,7 +469,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
   control$points_basic <- control$points
 
   ## Graphical parameters
-  if (type == "rt1") {
+  if (type == "rt") {
     ## Add space for secondary axis in left margin if necessary
     mar <- c(3.5, 4 + (is.null(ylim) || ylim[2L] > 0) * 4, 4, 1) + 0.1
   } else {
@@ -499,48 +482,53 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
   ### Loop over plots ==========================================================
 
-  for (k in seq_len(N)) {
+  for (k in seq_len(K)) {
     ### Set up for plot --------------------------------------------------------
 
-    frame <- droplevels(frame_split[[k]])
-    shift <- min(frame$time)
-    n <- nlevels(frame$window)
+    data <- frame[unclass(frame$ts) == k, , drop = FALSE]
+    endpoints <- frame_windows[unclass(frame_windows$ts) == k, c("start", "end"), drop = FALSE]
+    N <- nrow(endpoints)
+    if (type == "rt") {
+      c0 <- attr(cache, "c0")[unclass(frame_windows$ts) == k]
+    }
+    cache_log_r <- cache[unclass(cache$ts) == k & cache$var == "log(r)", , drop = FALSE]
+    cache_predict <- cache[unclass(cache$ts) == k & cache$var == sprintf("log(%s)", type), , drop = FALSE]
 
-    data <- data.frame(
-      time = frame$time - shift,
-      dt = c(NA, diff(frame$time))
-    )
+    data$dt <- c(NA, diff(data$time))
     data[[type]] <- switch(type,
-      interval = c(NA, frame$x[-1L]) * dt / data$dt,
-      cumulative = c(0, cumsum(frame$x[-1L])),
-      rt1 = c(NA, diff(base::log(frame$x))) / data$dt
+      interval = c(NA, data$x[-1L]) * dt / data$dt,
+      cumulative = c(0, cumsum(data$x[-1L])),
+      rt = {
+        tmp <- rep_len(NA_real_, nrow(data))
+        f <- function(x, y0) c(diff(log(cumsum(c(y0, x))), lag = 2) / 2, NA)
+        split(tmp, data$window, drop = TRUE) <- Map(f,
+          x = split(data$x, data$window, drop = TRUE),
+          y0 = c0
+        )
+        tmp
+      }
     )
-    data[[type]][!is.finite(data[[type]])] <- NA
-
-    t1 <- c(tapply(data$time, frame$window, min))
-    t2 <- c(tapply(data$time, frame$window, max))
-
-    cache <- droplevels(cache_split[[k]])
-    cache_log_r <- cache[cache$var == "log(r)", , drop = FALSE]
-    cache_predict <- cache[cache$var == var, , drop = FALSE]
-    cache_predict$time <- cache_predict$time - shift
-    cache_predict_split <- split(cache_predict, cache_predict$window)
+    if (type == "interval") {
+      data$pty <- factor(sign(data$dt - dt), levels = c(0, -1, 1), labels = c("basic", "short", "long"))
+    } else {
+      data$pty <- factor("basic")
+    }
 
     ## Axis limits (x)
     if (is.null(xlim_bak)) {
       xlim <- c(0, max(data$time) * 1.01)
     } else if (inherits(xlim_bak, "Date")) {
-      xlim <- julian(xlim_bak, origin = origin + shift)
+      xlim <- julian(xlim_bak)
     } else {
       xlim <- xlim_bak
     }
 
     ## Axis limits (y)
     if (is.null(ylim_bak)) {
-      if (type == "rt1") {
+      if (type == "rt") {
         ylim <- range(data[[type]], na.rm = TRUE)
         ylim[1L] <- max(-base::log(2), ylim[1L])
-        ylim[2L] <- min( base::log(2), ylim[2L])
+        ylim[2L] <- min(base::log(2), ylim[2L])
         ylim <- ylim + c(-1, 1) * 0.04 * (ylim[2L] - ylim[1L])
       } else {
         ymax <- max(data[[type]], na.rm = TRUE)
@@ -558,19 +546,9 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
     ## Axis title (x)
     if (is.null(xlab_bak)) {
-      xlab <- switch(time_as,
-        Date = "",
-        sprintf("number of days since %s", origin + shift)
-      )
+      xlab <- switch(time_as, Date = "", numeric = "time")
     } else {
       xlab <- xlab_bak
-    }
-
-    ## Point styles
-    if (type == "interval") {
-      data$pty <- factor(sign(data$dt - dt), levels = c(0, -1, 1), labels = c("basic", "short", "long"))
-    } else {
-      data$pty <- factor("basic")
     }
 
 
@@ -585,9 +563,9 @@ do_curve_plot <- function(frame, cache, type, time_as,
     ## Fitting windows
     if (!is.null(ct <- control$rect)) {
       args <- list(
-        xleft   = t1,
+        xleft   = endpoints$start,
         ybottom = yu_to_y(usr[3L]),
-        xright  = t2,
+        xright  = endpoints$end,
         ytop    = yu_to_y(usr[4L])
       )
       do.call(rect, c(args, ct))
@@ -603,7 +581,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
     ## Confidence bands on predicted curves
     if (show_predict == 2L && !is.null(ct <- control$polygon)) {
-      for (pd in cache_predict_split) {
+      for (pd in split(cache_predict, cache_predict$window, drop = TRUE)) {
         pd$lower <- exp(pd$lower)
         pd$upper <- exp(pd$upper)
         if (type == "cumulative") {
@@ -621,11 +599,9 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
     ## Predicted curves
     if (show_predict > 0L && !is.null(ct <- control$lines)) {
-      for (pd in cache_predict_split) {
-        pd$estimate <- exp(pd$estimate)
+      for (pd in split(cache_predict, cache_predict$window, drop = TRUE)) {
         if (type == "cumulative") {
-          c0 <- data[[type]][match(pd$time[1L], data$time, 0L)]
-          pd$estimate <- c0 + pd$estimate
+          pd$estimate <- pd$estimate - pd$estimate[1L] + data$cumulative[match(pd$time[1L], data$time, 0L)]
         }
         args <- list(formula = estimate ~ time, data = pd)
         do.call(lines, c(args, ct))
@@ -633,14 +609,14 @@ do_curve_plot <- function(frame, cache, type, time_as,
     }
 
     ## Asymptotes
-    if (type == "rt1") {
+    if (type == "rt") {
       if (!is.null(ct <- control$abline)) {
         args <- list(h = 0)
         do.call(abline, c(args, ct))
       }
       if (!is.null(ct <- control$segments)) {
         r <- exp(cache_log_r$estimate)
-        args <- list(x0 = t1, y0 = r, x1 = t2, y1 = r)
+        args <- list(x0 = endpoints$start, x1 = endpoints$end, y0 = r, y1 = r)
         do.call(segments, c(args, ct))
       }
     }
@@ -653,7 +629,6 @@ do_curve_plot <- function(frame, cache, type, time_as,
     if (time_as == "Date") {
       ## Axis (x)
       Daxis(
-        origin = origin + shift + 1,
         minor = control$axis_x_Date_minor,
         major = control$axis_x_Date_major,
         show_minor = !is.null(control$axis_x_Date_minor),
@@ -676,7 +651,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
     if (!is.null(ct1 <- control$axis_y)) {
       ## Axis (y)
       args <- list(side = 2, at = axTicks(side = 2), las = 1)
-      if (type != "rt1" && max(args$at) >= 1e05) {
+      if (type != "rt" && max(args$at) >= 1e05) {
         args$labels <- get_yax_labels(args$at)
         yac <- get_yax_cex(args$labels,
           mex = 3.5 - ct1$mgp[2L],
@@ -687,7 +662,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
       }
       do.call(baxis, c(args, ct1))
 
-      if (type == "rt1" && usr[4L] > 0) {
+      if (type == "rt" && usr[4L] > 0) {
         tdoubling <- c(1:5, 10, 20, 50, 100)
         args <- list(
           side = 2,
@@ -704,7 +679,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
 
       ## Axis title (y)
       if (!is.null(ct2 <- control$title_ylab)) {
-        if (type == "rt1") {
+        if (type == "rt") {
           win_tick_labels <- strwidth(axTicks(side = 2), units = "inches", cex = ct1$cex.axis, font = ct1$font.axis, family = ct1$family)
           line <- 0.5 + win_to_lines(max(win_tick_labels)) + ct1$mgp[2L]
         } else {
@@ -713,7 +688,7 @@ do_curve_plot <- function(frame, cache, type, time_as,
         args <- list(ylab = ylab, line = line)
         do.call(title, c(args, ct2))
 
-        if (type == "rt1" && usr[4L] > 0) {
+        if (type == "rt" && usr[4L] > 0) {
           win_tick_labels <- strwidth(tdoubling, units = "inches", cex = ct1$cex.axis, font = ct1$font.axis, family = ct1$family)
           win_axis_title <- strwidth(ylab_outer, units = "inches", cex = ct2$cex.lab, font = ct2$font.lab, family = ct2$family)
           line_ylab_outer <- 0.5 + win_to_lines(max(win_tick_labels)) + ct1_outer$mgp[2L]
@@ -770,8 +745,8 @@ do_curve_plot <- function(frame, cache, type, time_as,
         args <- list(
           text = c(sprintf("%.1f", elu[[1L]]), if (show_caption) "estimate"),
           side = 3,
-          line = c(rep_len(line_e, n), if (show_caption) line_lg_e),
-          at = c((t1 + t2) / 2, if (show_caption) x_lg_e),
+          line = c(rep_len(line_e, N), if (show_caption) line_lg_e),
+          at = c((endpoints$start + endpoints$end) / 2, if (show_caption) x_lg_e),
           adj = 0.5,
           padj = 0
         )
@@ -784,8 +759,8 @@ do_curve_plot <- function(frame, cache, type, time_as,
           text = c(sprintf("(%.1f, %.1f)", elu[[2L]], elu[[3L]]),
                    if (show_caption) sprintf("(%.3g%% CI)", 100 * level)),
           side = 3,
-          line = c(rep_len(line_ci, n), if (show_caption) line_lg_ci),
-          at = c((t1 + t2) / 2, if (show_caption) x_lg_e),
+          line = c(rep_len(line_ci, N), if (show_caption) line_lg_ci),
+          at = c((endpoints$start + endpoints$end) / 2, if (show_caption) x_lg_e),
           adj = 0.5,
           padj = 0
         )
@@ -826,9 +801,9 @@ do_curve_plot <- function(frame, cache, type, time_as,
       pty <- c("basic", "short", "long")
       ct <- control[sprintf("points_%s", pty)]
 
-      f <- function(x) if (is.null(x)) NA else x
-      ulf <- function(l) unlist(lapply(l, f), FALSE, FALSE)
-      get_el <- function(el) ulf(lapply(ct, `[[`, el))
+      null_to_na <- function(x) if (is.null(x)) NA else x
+      ul <- function(l) unlist(lapply(l, null_to_na), FALSE, FALSE)
+      get_el <- function(el) ul(lapply(ct, `[[`, el))
 
       args <- list(
         x = usr[2L] + 0.02 * (usr[2L] - usr[1L]),
@@ -870,23 +845,19 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
                          xlim, main, sub, xlab, ylab, ylab_outer, plab) {
   ### Set up ===================================================================
 
-  range_time <- range(cache$time)
-  shift <- range_time[1L]
-  cache$time <- cache$time - shift
-
   range_log_r <- range(cache$estimate, na.rm = TRUE)
   diff_range_log_r <- diff(range_log_r)
   range_r <- exp(range_log_r)
   range_tdoubling <- log(2) / range_r[2:1]
 
   cache_split <- split(cache, cache$ts)
-  N <- length(cache_split) # number of time series
+  K <- length(cache_split) # number of time series
 
   ## Axis limits (x)
   if (is.null(xlim)) {
-    xlim <- range_time - shift
+    xlim <- range(cache$time)
   } else if (inherits(xlim, "Date")) {
-    xlim <- julian(xlim, origin = origin + shift)
+    xlim <- julian(xlim)
   }
 
   ## Axis limits (y)
@@ -899,10 +870,7 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
 
   ## Axis title (x)
   if (is.null(xlab)) {
-    xlab <- switch(time_as,
-      Date = "",
-      sprintf("number of days since %s", origin + shift)
-    )
+    xlab <- switch(time_as, Date = "", numeric = "time")
   }
 
   ## Axis title (y)
@@ -946,16 +914,16 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
   op <- par(oma = c(3.5, 0, 3.5, 0), xaxs = "i", yaxs = "i", cex = 1)
   on.exit(par(op))
 
-  K <- 0L
-  while (K < N) {
+  k <- 0L
+  while (k < K) {
     ## Graphical parameters for heat map panels
     par(mar = c(0.5 * inter_panel_space, 2, 0.5 * inter_panel_space, 1))
 
 
     ### Loop over panels -------------------------------------------------------
 
-    for (k in K + seq_len(min(panels_per_plot, N - K))) {
-      d <- cache_split[[k]]
+    for (j in k + seq_len(min(panels_per_plot, K - k))) {
+      d <- cache_split[[j]]
 
       plot.new()
       plot.window(xlim = xlim, ylim = ylim)
@@ -963,7 +931,7 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
       pin <- par("pin")
 
       ## Plot (sub)title
-      if (k == K + 1L && !is.null(ct1 <- control$title_main)) {
+      if (j == k + 1L && !is.null(ct1 <- control$title_main)) {
         line <- 0.5
         if (!is.null(ct2 <- control$title_sub)) {
           names(ct2) <- base::sub("\\.sub$", ".main", names(ct2))
@@ -1009,8 +977,8 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
 
         ## Underlay
         if (!is.null(ct2 <- control$rect_bg_plab)) {
-          wu_plab <- strwidth(plab[k], units = "user", cex = ct1$cex, font = ct1$font, family = ct1$family)
-          hu_plab <- strheight(plab[k], units = "user", cex = ct1$cex, font = ct1$font, family = ct1$family)
+          wu_plab <- strwidth(plab[j], units = "user", cex = ct1$cex, font = ct1$font, family = ct1$family)
+          hu_plab <- strheight(plab[j], units = "user", cex = ct1$cex, font = ct1$font, family = ct1$family)
           args <- list(
             xleft   = usr[1L],
             xright  = usr[1L] + wu_plab + 2 * px,
@@ -1024,7 +992,7 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
         args <- list(
           x = usr[1L] + px,
           y = usr[4L] - py,
-          labels = plab[k],
+          labels = plab[j],
           adj = c(0, 1)
         )
         do.call(text, c(args, ct1))
@@ -1034,7 +1002,6 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
     if (time_as == "Date") {
       ## Axis (x)
       Daxis(
-        origin = origin + shift + 1,
         minor = control$axis_x_Date_minor,
         major = control$axis_x_Date_major,
         show_minor = !is.null(control$axis_x_Date_minor),
@@ -1055,9 +1022,9 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
     }
 
     ## Skip empty panels to get to the last
-    while (k %% panels_per_plot > 0L) {
+    while (j %% panels_per_plot > 0L) {
       plot.new()
-      k <- k + 1L
+      j <- j + 1L
     }
 
     ## Color scale
@@ -1119,7 +1086,7 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
       }
     }
 
-    K <- K + panels_per_plot
+    k <- k + panels_per_plot
   }
 
   invisible(NULL)
@@ -1134,7 +1101,7 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
 #' @param points
 #'   A named \link{list} of arguments to \code{\link{points}},
 #'   affecting the appearance of observed data.
-#'   [\code{type != "rt2"} only.]
+#'   [\code{type != "rt_heat"} only.]
 #' @param points_short,points_long
 #'   Alternatives to \code{points} used for counts over intervals
 #'   shorter or longer than \code{dt} days.
@@ -1142,29 +1109,29 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
 #' @param lines
 #'   A named \link{list} of arguments to \code{\link{lines}},
 #'   affecting the appearance of predicted curves.
-#'   [\code{type != "rt2"} only.]
+#'   [\code{type != "rt_heat"} only.]
 #' @param polygon
 #'   A named \link{list} of arguments to \code{\link{polygon}},
 #'   affecting the appearance of confidence bands on predicted curves.
-#'   [\code{type != "rt2"} only.]
+#'   [\code{type != "rt_heat"} only.]
 #' @param rect
 #'   A named \link{list} of arguments to \code{\link{rect}},
 #'   affecting the appearance of fitting windows.
-#'   [\code{type != "rt2"} only.]
+#'   [\code{type != "rt_heat"} only.]
 #' @param rect_bg_panel,rect_bg_plab
 #'   A named \link{list} of arguments to \code{\link{rect}},
 #'   affecting the appearance of panel backgrounds and panel title underlays.
-#'   [\code{type = "rt2"} only.]
+#'   [\code{type = "rt_heat"} only.]
 #' @param abline
 #'   A named \link{list} of arguments to \code{\link{abline}},
 #'   affecting the appearance of the line drawn at \code{y = 0}.
-#'   [\code{type = "rt1"} only.]
+#'   [\code{type = "rt"} only.]
 #' @param segments
 #'   A named \link{list} of arguments to \code{\link{segments}},
 #'   affecting the appearance of line segments drawn at \code{y = r}
 #'   when \code{x$model$curve} is \code{"exponential"}, \code{"logistic"},
 #'   or \code{"richards"}.
-#'   [\code{type = "rt1"} only.]
+#'   [\code{type = "rt"} only.]
 #' @param axis_x_Date_minor,axis_x_Date_major,axis_x_numeric,axis_y
 #'   Named \link{list}s of arguments to \code{\link{axis}},
 #'   affecting the appearance of plot axes. \code{axis_x_Date_*}
@@ -1173,7 +1140,7 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
 #' @param box
 #'   A named \link{list} of arguments to \code{\link{box}},
 #'   affecting the appearance of the box drawn around the plot region.
-#'   [\code{type != "rt2"} only.]
+#'   [\code{type != "rt_heat"} only.]
 #' @param title_main,title_sub,title_xlab,title_ylab,title_plab
 #'   Named \link{list}s of arguments to \code{\link{title}},
 #'   affecting the appearance of plot, axis, and panel titles.
@@ -1181,11 +1148,11 @@ do_heat_plot <- function(cache, time_as, dt, origin, log,
 #'   Named \link{list}s of arguments to \code{\link{mtext}},
 #'   affecting the appearance of initial doubling times printed
 #'   in the top margin.
-#'   [\code{type != "rt2"} only.]
+#'   [\code{type != "rt_heat"} only.]
 #' @param colorRamp
 #'   A named \link{list} of arguments to \code{\link{colorRamp}},
 #'   defining heat map colour palette.
-#'   [\code{type = "rt2"} only.]
+#'   [\code{type = "rt_heat"} only.]
 #'
 #' @details
 #' Unsupported and unmodifiable options are silently discarded.

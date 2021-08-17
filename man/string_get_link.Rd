@@ -5,7 +5,7 @@
 \alias{string_add_link}
 \alias{string_remove_link}
 \alias{string_extract_link}
-\title{Manipulate model parameter names}
+\title{Manipulate top level nonlinear model parameter names}
 \usage{
 string_get_link(s)
 
@@ -30,17 +30,17 @@ is returned for invalid input (see Examples).
 \description{
 Utilities for modifying strings \code{s} and
 \code{fs = \link{sprintf}("\%s(\%s)", f, s)},
-where \code{s} is the name used internally for
-a nonlinear or dispersion model parameter and
+where \code{s} is the name used internally
+for a top level nonlinear model parameter and
 \code{f} is the name (either \code{"log"} or \code{"logit"})
 of the corresponding link function.
 }
 \examples{
-# string_get_link("r")
-# string_add_link("r")
-# string_remove_link("log(r)")
-# string_extract_link("log(r)")
-# string_extract_link("invalid", "input", "log(r)", "r")
+## string_get_link("r")
+## string_add_link("r")
+## string_remove_link("log(r)")
+## string_extract_link("log(r)")
+## string_extract_link("invalid", "input", "r" , "log(r)")
 
 }
 \keyword{internal}

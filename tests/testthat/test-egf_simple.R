@@ -1,15 +1,12 @@
-library("epigrowthfit")
-library("testthat")
-
 test_that("exponential", {
   r <- log(2) / 20
   c0 <- 100
-  nbdisp <- 50
+  disp <- 50
 
   zz <- simulate(egf_model(curve = "exponential", family = "nbinom"),
     nsim = 1L,
     seed = 412575L,
-    mu = log(c(r, c0, nbdisp)),
+    mu = log(c(r, c0, disp)),
     cstart = 10
   )
   mm <- egf(zz)
@@ -20,12 +17,12 @@ test_that("subexponential", {
   alpha <- log(2) / 20
   c0 <- 100
   p <- 0.95
-  nbdisp <- 50
+  disp <- 50
 
   zz <- simulate(egf_model(curve = "subexponential", family = "nbinom"),
     nsim = 1L,
     seed = 696182L,
-    mu = c(log(alpha), log(c0), qlogis(p), log(nbdisp)),
+    mu = c(log(alpha), log(c0), qlogis(p), log(disp)),
     cstart = 10
   )
   mm <- egf(zz, priors = list(logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)))
@@ -37,12 +34,12 @@ test_that("gompertz", {
   alpha <- log(2) / 20
   tinfl <- 100
   K <- 25000
-  nbdisp <- 50
+  disp <- 50
 
   zz <- simulate(egf_model(curve = "gompertz", family = "nbinom"),
     nsim = 1L,
     seed = 720748L,
-    mu = log(c(alpha, tinfl, K, nbdisp)),
+    mu = log(c(alpha, tinfl, K, disp)),
     cstart = 10
   )
   mm <- egf(zz)
@@ -53,12 +50,12 @@ test_that("logistic", {
   r <- log(2) / 20
   tinfl <- 100
   K <- 25000
-  nbdisp <- 50
+  disp <- 50
 
   zz <- simulate(egf_model(curve = "logistic", family = "nbinom"),
     nsim = 1L,
     seed = 366465L,
-    mu = log(c(r, tinfl, K, nbdisp)),
+    mu = log(c(r, tinfl, K, disp)),
     cstart = 10
   )
   mm <- egf(zz)
@@ -70,12 +67,12 @@ test_that("richards", {
   tinfl <- 100
   K <- 25000
   a <- 1.005
-  nbdisp <- 50
+  disp <- 50
 
   zz <- simulate(egf_model(curve = "richards", family = "nbinom"),
     nsim = 1L,
     seed = 51520L,
-    mu = log(c(r, tinfl, K, a, nbdisp)),
+    mu = log(c(r, tinfl, K, a, disp)),
     cstart = 10
   )
   mm <- egf(zz)

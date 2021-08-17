@@ -49,22 +49,23 @@
 #' @seealso \code{\link{compute_final_size}}
 #' @export
 compute_R0 <- function(r, breaks, probs) {
-  stop_if_not(
-    is.numeric(r),
-    m = "`r` must be numeric."
-  )
+  stopifnot(is.numeric(r))
   if (length(r) == 0L) {
     return(numeric(0L))
   }
-  check_probs(probs)
-  probs <- probs / sum(probs)
-  stop_if_not(
+  stopifnot(
+    is.numeric(probs),
+    length(probs) > 0L,
+    is.finite(probs),
+    probs >= 0,
+    any(probs > 0)
+  )
+  stopifnot(
     is.numeric(breaks),
     length(breaks) == length(probs) + 1L,
-    is.finite(breaks),
-    m = "`breaks` must be a finite numeric vector of length `length(probs)+1`."
+    is.finite(breaks)
   )
-
+  probs <- probs / sum(probs)
   R0 <- rep_len(NA_real_, length(r))
 
   ## Degenerate cases
@@ -85,30 +86,4 @@ compute_R0 <- function(r, breaks, probs) {
     R0[ok] <- r[ok] / colSums(probs * (e1 - e2) / (breaks[-1L] - breaks[-n]))
   }
   R0
-}
-
-check_probs <- function(probs) {
-  s <- deparse(substitute(probs))
-  stop_if_not(
-    is.numeric(probs),
-    length(probs) > 0L,
-    m = sprintf("`%s` must be a numeric vector of nonzero length.", s),
-    n = 2L
-  )
-  stop_if_not(
-    is.finite(probs),
-    m = sprintf("`%s` must be finite.", s),
-    n = 2L
-  )
-  stop_if_not(
-    probs >= 0,
-    m = sprintf("`%s` be non-negative.", s),
-    n = 2L
-  )
-  stop_if_not(
-    any(probs > 0),
-    m = sprintf("`%s` must sum to a positive number.", s),
-    n = 2L
-  )
-  invisible(NULL)
 }

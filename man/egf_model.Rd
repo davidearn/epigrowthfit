@@ -5,7 +5,7 @@
 \title{Define an epidemic model}
 \usage{
 egf_model(
-  curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
+  curve = c("logistic", "exponential", "subexponential", "gompertz", "richards"),
   excess = FALSE,
   family = c("nbinom", "pois"),
   day_of_week = FALSE
@@ -13,15 +13,15 @@ egf_model(
 }
 \arguments{
 \item{curve}{A \link{character} string specifying a model for expected cumulative
-incidence as a function of time.}
+disease incidence as a function of time.}
 
 \item{excess}{A \link{logical} flag. If \code{TRUE}, then a constant baseline
-mortality rate is estimated. Set to \code{TRUE} if what is observed
-is multiple causes mortality rather than disease mortality or disease
-incidence.}
+mortality rate is estimated. Set to \code{TRUE} if what is
+observed is multiple causes mortality rather than disease mortality
+or disease incidence.}
 
-\item{family}{A \link{character} string specifying a model for observed interval
-incidence (i.e., an error distribution).}
+\item{family}{A \link{character} string specifying a family of discrete probability
+distributions assigned to observations of disease incidence.}
 
 \item{day_of_week}{An integer flag. If positive, then day of week effects are estimated
 as offsets relative to the indicated day of week
@@ -33,6 +33,6 @@ A \link{list} inheriting from \link{class} \code{"egf_model"}
 containing the arguments (after possible matching and coercion).
 }
 \description{
-Sets flags defining the phenomenological model of epidemic growth
+Sets flags defining the top level nonlinear model of epidemic growth
 to be estimated by \code{\link{egf}}.
 }

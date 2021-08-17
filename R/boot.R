@@ -24,19 +24,15 @@
 #' @export
 #' @importFrom TMB MakeADFun
 #' @import parallel
+#' @importFrom TMB openmp
 boot_par <- function(object,
                      n = 6L,
                      parallel = egf_parallel(),
                      trace = FALSE,
                      ...) {
-  ## FIXME: Should this be a method for a `boot()` generic?
-  stop_if_not(
+  stopifnot(
     inherits(object, "egf"),
-    m = "`object` must inherit from class \"egf\". See `?egf`."
-  )
-  stop_if_not(
-    inherits(parallel, "egf_parallel"),
-    m = "`parallel` must inherit from class \"egf_parallel\". See `?egf_parallel`."
+    inherits(parallel, "egf_parallel")
   )
   stop_if_not_integer(n, "positive")
   stop_if_not_true_false(trace)
@@ -50,7 +46,12 @@ boot_par <- function(object,
 
   do_sim <- function(i) {
     if (trace) {
-      cat(sprintf("Starting bootstrap simulation %*d of %d...\n", nchar(n), i, n))
+      cat(sprintf("Commencing bootstrap simulation %d of %d...\n", i, n))
+    }
+    on <- openmp(n = NULL)
+    if (on > 0L) {
+      openmp(n = object$control$omp_num_threads)
+      on.exit(openmp(n = on))
     }
     ## Simulate data from fitted model
     object$tmb_args$data$x <- object$tmb_out$simulate(object$best)$x
@@ -72,7 +73,7 @@ boot_par <- function(object,
         tmb_out_sim$env$last.par.best
       },
       error = function(cond) {
-        cat(sprintf("Error in bootstrap simulation %*d of %d:\n %s", nchar(n), i, n, conditionMessage(cond)))
+        cat(sprintf("Error in bootstrap simulation %d of %d:\n %s", i, n, conditionMessage(cond)))
         rep_len(NaN, length(object$best))
       }
     )
@@ -86,7 +87,7 @@ boot_par <- function(object,
     environment(do_sim) <- .GlobalEnv
 
     if (is.null(parallel$cl)) {
-      cl <- do.call(makePSOCKcluster, parallel$options)
+      cl <- do.call(makePSOCKcluster, parallel$args)
       on.exit(stopCluster(cl))
     } else {
       cl <- parallel$cl
@@ -99,15 +100,15 @@ boot_par <- function(object,
       envir = environment()
     )
     clusterSetRNGStream(cl)
-    m <- parSapply(cl, seq_len(n), do_sim)
+    res <- parSapply(cl, seq_len(n), do_sim)
   } else {
     if (nzchar(parallel$outfile)) {
       outfile <- file(parallel$outfile, open = "wt")
       sink(outfile, type = "output")
       sink(outfile, type = "message")
     }
-    m <- switch(parallel$method,
-      multicore = simplify2array(do.call(mclapply, c(list(X = seq_len(n), FUN = do_sim), parallel$options))),
+    res <- switch(parallel$method,
+      multicore = simplify2array(do.call(mclapply, c(list(X = seq_len(n), FUN = do_sim), parallel$args))),
       serial = vapply(seq_len(n), do_sim, unname(object$best))
     )
     if (nzchar(parallel$outfile)) {
@@ -115,9 +116,9 @@ boot_par <- function(object,
       sink(type = "message")
     }
   }
-  rownames(m) <- names(object$best)
-  class(m) <- c("egf_boot", "matrix", "array")
-  m
+  rownames(res) <- names(object$best)
+  class(res) <- c("egf_boot", "matrix", "array")
+  res
 }
 
 

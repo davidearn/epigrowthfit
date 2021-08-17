@@ -27,7 +27,9 @@ are divided by their sums internally.}
 
 \item{p}{A \link{numeric} vector listing probabilities.}
 
-\item{n}{A non-negative integer indicating a desired sample size.}
+\item{n}{A non-negative integer indicating a sample size.
+If \code{\link{length}(n) > 1}, then \code{length(n)} is taken
+to be the sample size.}
 }
 \value{
 A \link{numeric} vector with length equal to the that of the

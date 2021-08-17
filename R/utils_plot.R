@@ -43,7 +43,7 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
   do.call(axis, c(args, replace(dots, "lwd.ticks", list(0))))
 
   args <- list(side = side, at = at, labels = labels)
-  do.call(axis, c(args, replace(dots, "lwd", list(0))))
+  do.call(axis, c(args, replace(dots, c("lwd", "lwd.ticks"), list(0, dots[["lwd.ticks"]]))))
 }
 
 #' Date axis
@@ -54,8 +54,8 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 #'
 #' @param origin
 #'   A \link{Date}. It is assumed that horizontal user coordinates
-#'   measure time as a number of days since time 00:00:00 on Date
-#'   \code{origin}.
+#'   measure time as a number of days since the time
+#'   \code{\link{unclass}(origin)} days after 1970-01-01 00:00:00.
 #' @param minor,major
 #'   Named \link{list}s of arguments to \code{\link{axis}}, affecting
 #'   the appearance of the minor (day or month) and major (month or year)
@@ -95,29 +95,30 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 Daxis <- function(origin = .Date(0), minor = NULL, major = NULL,
                   show_minor = TRUE, show_major = TRUE) {
   usr <- par("usr")[1:2]
-  t0 <- min(ceiling(usr[1L]), floor(usr[2L]))
-  t1 <- max(ceiling(usr[1L]), floor(usr[2L]), t0 + 1)
-  d0 <- origin + t0
-  d1 <- origin + t1
+  Dusr <- origin + usr
+  D0 <- min(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]))
+  D1 <- max(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]), D0 + 1)
+  t0 <- julian(D0, origin = origin)
+  t1 <- julian(D1, origin = origin)
   w <- t1 - t0
 
   ## Determine tick coordinates and labels
   if (w <= 210) {
     ## Days
     by <- c(1, 2, 4, 7, 14)[w <= c(14, 28, 56, 112, 210)][1L]
-    minor_at_as_Date <- seq(d0, d1, by = by)
-    minor_at <- julian(minor_at_as_Date, origin = d0)
+    minor_at_as_Date <- seq(D0, D1, by = by)
+    minor_at <- julian(minor_at_as_Date, origin = D0)
     minor_labels <- ymd(minor_at_as_Date, "d")
 
     ## Months
-    if (ymd(d0, "m") == ymd(d1, "m")) {
-      major_at_as_Date <- d0
+    if (ymd(D0, "m") == ymd(D1, "m")) {
+      major_at_as_Date <- D0
       major_at <- 0
     } else {
-      major_at_as_Date <- seq(dceiling(d0, "month"), d1, by = "month")
-      major_at <- julian(major_at_as_Date, origin = d0)
+      major_at_as_Date <- seq(Dceiling(D0, "m"), D1, by = "m")
+      major_at <- julian(major_at_as_Date, origin = D0)
       if (major_at[1L] > w / 8) {
-        major_at_as_Date <- c(d0, major_at_as_Date)
+        major_at_as_Date <- c(D0, major_at_as_Date)
         major_at <- c(0, major_at)
       }
     }
@@ -126,19 +127,19 @@ Daxis <- function(origin = .Date(0), minor = NULL, major = NULL,
   else if (w <= 3 * 365) {
     ## Months
     by <- c(1L, 2L, 3L)[w <= c(1, 2, 3) * 365][1L]
-    minor_at_as_Date <- seq(dceiling(d0, "month"), d1, by = paste(by, "months"))
-    minor_at <- julian(minor_at_as_Date, origin = d0)
+    minor_at_as_Date <- seq(Dceiling(D0, "m"), D1, by = paste(by, "m"))
+    minor_at <- julian(minor_at_as_Date, origin = D0)
     minor_labels <- months(minor_at_as_Date, abbreviate = TRUE)
 
     ## Years
-    if (ymd(d0, "y") == ymd(d1, "y")) {
-      major_at_as_Date <- d0
+    if (ymd(D0, "y") == ymd(D1, "y")) {
+      major_at_as_Date <- D0
       major_at <- 0
     } else {
-      major_at_as_Date <- seq(dceiling(d0, "year"), d1, by = "year")
-      major_at <- julian(major_at_as_Date, origin = d0)
+      major_at_as_Date <- seq(Dceiling(D0, "y"), D1, by = "y")
+      major_at <- julian(major_at_as_Date, origin = D0)
       if (major_at[1L] > w / 8) {
-        major_at_as_Date <- c(d0, major_at_as_Date)
+        major_at_as_Date <- c(D0, major_at_as_Date)
         major_at <- c(0, major_at)
       }
     }
@@ -146,8 +147,8 @@ Daxis <- function(origin = .Date(0), minor = NULL, major = NULL,
   } else {
     ## Years
     by <- ceiling(ceiling(w / 365) / 7)
-    minor_at_as_Date <- seq(dceiling(d0, "year"), d1 + (by + 1) * 365, by = paste(by, "years"))
-    minor_at <- julian(minor_at_as_Date, origin = d0)
+    minor_at_as_Date <- seq(Dceiling(D0, "year"), D1 + (by + 1) * 365, by = paste(by, "y"))
+    minor_at <- julian(minor_at_as_Date, origin = D0)
     minor_labels <- ymd(minor_at_as_Date, "y")
     minor_at <- c(minor_at, (minor_at[-1L] + minor_at[-length(minor_at)]) / 2)
     length(minor_labels) <- length(minor_at)

@@ -12,12 +12,11 @@ make_Z(x, frame)
 \arguments{
 \item{x}{For \code{make_X}, a \link{formula} of the form \code{~tt}.
 For \code{make_Z}, a \link{call} to binary operator \code{`|`}
-of the form \code{(tt | g)}. Here, \code{tt} is an expression
-composed of potentially many terms, while \code{g}
-is an unevaluated factor, possibly an interaction.}
+of the form \code{(tt | g)}.
+Here, \code{tt} is an expression composed of potentially many terms,
+while \code{g} is an unevaluated factor, possibly an interaction.}
 
-\item{frame}{A \link[=model.frame]{model frame} listing the variables used
-in \code{x}.}
+\item{frame}{A \link[=model.frame]{model frame} listing the variables used in \code{x}.}
 
 \item{sparse}{A \link{logical} flag. If \code{TRUE}, then the design matrix
 is returned in \link[Matrix:sparseMatrix]{sparse} format.}
@@ -47,8 +46,8 @@ respectively.
 }
 \details{
 \code{make_X(x, frame, sparse)} constructs an \code{X} matrix
-by evaluating \code{\link{model.matrix}(x, frame)} or
-\code{\link[Matrix]{sparse.model.matrix}(x, frame)}
+by evaluating \code{\link{model.matrix}(x, frame)}
+or \code{\link[Matrix]{sparse.model.matrix}(x, frame)}
 (depending on \code{sparse}) and deleting from the result
 columns containing only zeros.
 

@@ -1,19 +1,20 @@
 #' Compute doubling time
 #'
-#' Computes \code{\link{log}(2) / r} for non-negative \code{r}, which
-#' is the doubling time corresponding to exponential growth rate \code{r}.
+#' Computes \code{\link{log}(2) / r} for non-negative \code{r},
+#' which is the doubling time corresponding to exponential growth
+#' rate \code{r}.
 #'
 #' @param r
-#'   A non-negative \link{numeric} vector listing exponential growth rates.
+#'   A non-negative \link{numeric} vector.
 #' @param per
 #'   A positive integer indicating that \code{r} is a rate per
 #'   \code{per} days, in which case the result is printed with units.
 #'   Use the default (\code{\link{NULL}}) if \code{r} is unitless.
 #'
 #' @return
-#' \code{\link{log}(2) / r} with \code{"tdoubling"} prepended to its
-#' \link{class}. \code{per} is retained as an \link[=attributes]{attribute}
-#' for use by \code{print.tdoubling}.
+#' \code{\link{log}(2) / r} with \code{"tdoubling"} prepended
+#' to its \link{class}. \code{per} is retained
+#' as an \link[=attributes]{attribute} for use by \code{print.tdoubling}.
 #'
 #' @examples
 #' r <- 10^(-2:0)
@@ -28,10 +29,7 @@
 #'
 #' @export
 compute_tdoubling <- function(r, per = NULL) {
-  stop_if_not(
-    is.numeric(r),
-    m = "`r` must be numeric."
-  )
+  stopifnot(is.numeric(r))
   if (!is.null(per)) {
     stop_if_not_integer(per, "positive")
   }

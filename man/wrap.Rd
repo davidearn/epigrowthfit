@@ -7,7 +7,7 @@
 wrap(..., width = 0.9 * getOption("width"))
 }
 \arguments{
-\item{...}{Zero or more \R objects (typically atomic vectors of length 1),
+\item{...}{Zero or more \R objects (typically \link{atomic} vectors of length 1),
 to be coerced to \link{character} and concatenated with no separator.}
 
 \item{width}{A positive integer passed to \code{\link{strwrap}},
@@ -17,10 +17,9 @@ indicating a target column width.}
 A \link{character} vector of length 1.
 }
 \description{
-Concatenates \R objects, formats the resulting string
-in paragraphs using \code{\link{strwrap}}, and collapses
-paragraph lines with newlines. Under default settings,
-the result is a string that prints in the console as
-one or more nicely wrapped paragraphs.
+Concatenates \R objects, formats the resulting string in paragraphs
+using \code{\link{strwrap}}, and collapses paragraph lines with newlines.
+Under default settings, the result is a string that prints in the console
+as one or more nicely wrapped paragraphs.
 }
 \keyword{internal}

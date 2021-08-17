@@ -1,6 +1,6 @@
 #' Extract fitted values
 #'
-#' Computes fitted values of nonlinear and dispersion model parameters.
+#' Computes fitted values of top level nonlinear model parameters.
 #' The fitted value for a given fitting window is obtained by adding
 #' (i) the population fitted value computed as a linear combination
 #' of fixed effects coefficients and
@@ -10,9 +10,9 @@
 #' @param object
 #'   An \code{"\link{egf}"} object.
 #' @param par
-#'   A subset of \code{\link{get_par_names}(object, link = TRUE)}
-#'   naming nonlinear and dispersion model parameters for which
-#'   fitted values should be retrieved.
+#'   A subset of \code{\link{get_names_top}(object, link = TRUE)}
+#'   naming top level nonlinear model parameters for which fitted values
+#'   should be retrieved.
 #' @param subset
 #'   An expression to be evaluated in the combined model frame
 #'   (see \code{\link{make_combined}}). Must evaluate to
@@ -25,8 +25,8 @@
 #'   (see \code{\link{make_combined}}) to be included with the result.
 #'   The default (\code{\link{NULL}}) is to append nothing.
 #' @param link
-#'   A \link{logical} flag. If \code{FALSE}, then fitted values
-#'   are inverse link-transformed.
+#'   A \link{logical} flag. If \code{FALSE},
+#'   then fitted values are inverse link-transformed.
 #' @param se
 #'   A \link{logical} flag. If \code{link = TRUE} and \code{se = TRUE},
 #'   then approximate (delta method) standard errors on fitted values
@@ -52,14 +52,14 @@
 #' A \link[=data.frame]{data frame} inheriting from \link{class}
 #' \code{"egf_fitted"}, with variables:
 #' \item{par}{
-#'   Nonlinear or dispersion model parameter,
-#'   from \code{\link{get_par_names}(object, link = link)}.
+#'   Top level nonlinear model parameter,
+#'   from \code{\link{get_names_top}(object, link = link)}.
 #' }
 #' \item{ts}{
-#'   Time series, from \code{\link{levels}(object$endpoints$ts)}.
+#'   Time series, from \code{\link{levels}(object$frame_windows$ts)}.
 #' }
 #' \item{window}{
-#'   Fitting window, from \code{\link{levels}(object$endpoints$window)}.
+#'   Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
 #' }
 #' \item{estimate}{
 #'   Fitted value of parameter \code{par} in fitting window \code{window}.
@@ -72,7 +72,7 @@
 #' @seealso \code{\link{confint.egf_fitted}}
 #' @export
 fitted.egf <- function(object,
-                       par = get_par_names(object, link = TRUE),
+                       par = get_names_top(object, link = TRUE),
                        subset = NULL,
                        append = NULL,
                        link = TRUE,
@@ -81,29 +81,30 @@ fitted.egf <- function(object,
                        .append = NULL,
                        ...) {
   stop_if_not_true_false(link)
-  par_names <- get_par_names(object, link = TRUE)
-  par <- unique(match.arg(par, par_names, several.ok = TRUE))
+  stop_if_not_true_false(se)
+  names_top <- get_names_top(object, link = TRUE)
+  par <- unique(match.arg(par, names_top, several.ok = TRUE))
   combined <- make_combined(object)
-  subset <- subset_to_index(substitute(subset), data = combined, enclos = parent.frame(),
-                            .subset = .subset)
-  append <- append_to_index(substitute(append), data = combined, enclos = parent.frame(),
-                            .append = .append)
+  subset <- eval_subset(substitute(subset), combined, parent.frame(), .subset = .subset)
+  append <- eval_append(substitute(append), combined, baseenv(), .append = .append)
 
   if (link && se) {
     if (is.null(object$sdreport)) {
       if (has_random(object)) {
         warning(wrap(
-          "Computing a Hessian matrix, which could take a while. ",
-          "To avoid needless recomputation, do ",
-          "`object$sdreport <- try(TMB::sdreport(object$tmb_out))` first."
+          "Computing a Hessian matrix for a model with random effects, ",
+          "which might take a while. To avoid needless recomputation, ",
+          "do `object$sdreport <- try(TMB::sdreport(object$tmb_out))`."
         ))
       }
-      object$sdreport <- try(TMB::sdreport(object$tmb_out))
+      object$sdreport <- try(TMB::sdreport(object$tmb_out), silent = TRUE)
     }
     if (inherits(object$sdreport, "try-error")) {
       stop(wrap(
         "Unable to proceed because `TMB::sdreport(object$tmb_out)` ",
-        "throws an error. Retry after diagnosing and refitting."
+        "throws the following error:\n\n",
+        conditionMessage(attr(object$sdreport, "condition")), "\n\n",
+        "Retry after diagnosing and refitting."
       ))
     }
     ssdr <- summary(object$sdreport, select = "report")
@@ -115,36 +116,36 @@ fitted.egf <- function(object,
     Y <- object$tmb_out$report(object$best)$Y
   }
 
-  ## `Y[i, j]` is the fitted value of nonlinear or dispersion parameter `j`
+  ## `Y[i, j]` is the fitted value of top level nonlinear model parameter `j`
   ## (link scale) in fitting window `i`
-  colnames(Y) <- par_names
+  colnames(Y) <- names_top
   Y <- Y[subset, par, drop = FALSE]
 
-  d <- data.frame(
-    par = rep(factor(par, levels = par_names), each = sum(subset)),
-    object$endpoints[subset, c("ts", "window"), drop = FALSE],
+  res <- data.frame(
+    par = rep(factor(par, levels = names_top), each = sum(subset)),
+    object$frame_windows[subset, c("ts", "window"), drop = FALSE],
     estimate = as.numeric(Y)
   )
   if (link && se) {
-    colnames(Y_se) <- par_names
+    colnames(Y_se) <- names_top
     Y_se <- Y_se[subset, par, drop = FALSE]
-    d$se <- as.numeric(Y_se)
+    res$se <- as.numeric(Y_se)
   }
   if (!link) {
-    d$estimate <- lpapply(d$estimate, d$par,
-      f = lapply(string_extract_link(levels(d$par)), match_link, inverse = TRUE)
+    res$estimate <- in_place_ragged_apply(res$estimate, res$par,
+      f = lapply(string_extract_link(levels(res$par)), match_link, inverse = TRUE)
     )
-    levels(d$par) <- string_remove_link(levels(d$par))
+    levels(res$par) <- string_remove_link(levels(res$par))
   }
-  d <- data.frame(
-    d,
+  res <- data.frame(
+    res,
     combined[subset, append, drop = FALSE],
     row.names = NULL,
     check.names = FALSE
   )
-  attr(d, "se") <- link && se
-  class(d) <- c("egf_fitted", "data.frame")
-  d
+  attr(res, "se") <- link && se
+  class(res) <- c("egf_fitted", "data.frame")
+  res
 }
 
 #' @rdname fitted.egf
@@ -153,12 +154,12 @@ coef.egf <- fitted.egf
 
 #' Confidence intervals on fitted values
 #'
-#' Computes confidence intervals on fitted values of nonlinear and dispersion
-#' model parameters.
+#' Computes confidence intervals on fitted values of top level nonlinear model
+#' parameters.
 #'
 #' @param object
 #'   An \code{"\link[=fitted.egf]{egf_fitted}"} object.
-#'   Must supply standard errors on fitted values.
+#'   Must supply link scale fitted values and corresponding standard errors.
 #' @param parm
 #'   Unused argument included for generic consistency.
 #' @param level
@@ -180,7 +181,7 @@ coef.egf <- fitted.egf
 #' \code{se} replaced with variables \code{lower} and \code{upper}
 #' supplying confidence limits on fitted values (link scale).
 #'
-#' Otherwise, the same object but with variables \code{estimate},
+#' Otherwise, the same result but with variables \code{estimate},
 #' \code{lower}, and \code{upper} inverse link-transformed and
 #' \code{\link{levels}(par)} modified accordingly.
 #'
@@ -188,19 +189,18 @@ coef.egf <- fitted.egf
 #'
 #' @export
 confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
-  stop_if_not(
-    attr(object, "se"),
-    m = wrap(
-      "`object` must supply standard errors on fitted values. ",
-      "Repeat `fitted` call with `link = TRUE` and `se = TRUE`, ",
-      "then try again."
-    )
-  )
+  if (!isTRUE(attr(object, "se"))) {
+    stop(wrap(
+      "`object` must supply link scale fitted values ",
+      "and corresponding standard errors. ",
+      "Retry with `object = fitted(., link = TRUE, se = TRUE)`."
+    ))
+  }
   stop_if_not_number_in_interval(level, 0, 1, "()")
   stop_if_not_true_false(link)
 
   s <- c("par", "ts", "window", "estimate", "se")
-  d <- data.frame(
+  res <- data.frame(
     object[s[1:4]],
     do_wald(estimate = object$estimate, se = object$se, level = level),
     object[-match(s, names(object), 0L)],
@@ -208,14 +208,13 @@ confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
     check.names = FALSE,
     stringsAsFactors = FALSE
   )
-  attr(d, "level") <- level
   if (link) {
-    return(d)
+    elu <- c("estimate", "lower", "upper")
+    res[elu] <- in_place_ragged_apply(res[elu], res$par,
+      f = lapply(string_extract_link(levels(res$par)), match_link, inverse = TRUE)
+    )
+    levels(res$par) <- string_remove_link(levels(res$par))
   }
-  elu <- c("estimate", "lower", "upper")
-  d[elu] <- lpapply(d[elu], d$par,
-    f = lapply(string_extract_link(levels(d$par)), match_link, inverse = TRUE)
-  )
-  levels(d$par) <- string_remove_link(levels(d$par))
-  d
+  attr(res, "level") <- level
+  res
 }

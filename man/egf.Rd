@@ -3,103 +3,105 @@
 \name{egf}
 \alias{egf}
 \alias{egf.egf_model}
-\title{Fit phenomenological models of epidemic growth}
+\title{Fit nonlinear mixed effects models of epidemic growth}
 \usage{
-egf(object, ...)
+egf(model, ...)
 
 \method{egf}{egf_model}(
-  object,
+  model,
   formula,
-  formula_par = list(),
-  data = parent.frame(),
-  data_par = parent.frame(),
+  formula_windows,
+  formula_parameters = list(),
+  data,
+  data_windows,
   subset = NULL,
-  subset_par = NULL,
+  subset_windows = NULL,
   na_action = c("fail", "pass"),
-  na_action_par = c("fail", "omit"),
-  endpoints,
+  na_action_windows = c("fail", "omit"),
   priors = list(),
   control = egf_control(),
   do_fit = TRUE,
   se = FALSE,
   init = NULL,
   map = NULL,
-  origin = .Date(0L),
   append = NULL,
   ...
 )
 }
 \arguments{
-\item{object}{An \code{"\link{egf_model}"} object specifying a nonlinear model
-and a dispersion model to be estimated.}
+\item{model}{An \code{"\link{egf_model}"} object specifying a top level nonlinear model
+to be estimated.}
 
 \item{...}{Arguments passed to methods by the generic function.}
 
-\item{formula}{A \link{formula} of the form \code{x ~ time} or \code{x ~ time | ts}
-specifying one or more incidence time series in long format.
-\code{time} must evaluate to a \link{numeric} or \link{Date} vector.
-Numeric \code{time} is expected to measure time as a number of days
-since \emph{the end of} Date \code{origin}. Date \code{time} is
-coerced to numeric \code{\link{julian}(time, origin)}. \code{x}
-must evaluate to a numeric vector. Within time series, \code{x[i]}
-should specify the number of cases observed from \code{time[i-1]}
-to \code{time[i]}. Finally, \code{ts} must evaluate to a \link{factor}
-such that \code{\link{split}(\link{data.frame}(time, x), ts)}
-returns a \link{list} of time series. Formulae \code{x ~ time}
-are equivalent to \code{x ~ time | ts} with \code{ts} set equal
-to \code{\link{rep}(\link{factor}(1), \link{length}(x))}.}
+\item{formula}{A \link{formula} of the form \code{cbind(time, x) ~ ts}
+specifying one or more disease incidence time series in long format.
+\code{ts} must evaluate to a \link{factor}
+(insofar that \code{\link{as.factor}(ts)} is a factor)
+grouping the data by time series.
+\code{time} must evaluate to a \link{numeric} vector
+that is increasing within \link{levels} of \code{ts}.
+\link{Date} and \link{POSIXt} vectors are tolerated and
+coerced to numeric with \code{\link{julian}(time)}.
+Finally, \code{x} must evaluate to a non-negative numeric vector
+with \code{x[i]} equal to the number of cases observed over the
+interval \code{(time[i-1], time[i]]}.
+Edge cases like \code{x[1]} are ignored internally.
+Nonintegral elements of \code{x} are rounded with a warning.
+\code{formula = cbind(time, x) ~ 1} can be supplied
+when there is only one time series; it is equivalent
+to \code{formula = cbind(time, x) ~ ts} with \code{ts}
+evaluating to \code{\link{rep}(factor(1), length(x))}.}
 
-\item{formula_par}{A \link{list} of \link{formula}e of the form \code{par ~ terms},
-specifying mixed effects models for nonlinear and dispersion model
-parameters using \code{\link[lme4:lmer]{lme4}}-like syntax.
-Alternatively, a formula of the form \code{~terms} to be recycled
-for all parameters. A list of parameters for which formulae may
-be specified can be retrieved with \code{\link{get_par_names}}.
-Specifically, \code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(object, link = TRUE)}. The default for
-parameters not assigned a formula is \code{~1}.}
+\item{formula_windows}{A \link{formula} of the form \code{cbind(start, end) ~ ts_windows}
+specifying disjoint fitting windows \code{(start, end]} in long format.
+Where \code{formula = cbind(time, x) ~ ts}, observation \code{x[i]}
+is associated with window \code{(start[j], end[j]]} if and only if
+\code{time[i-1] >= start[j]},
+\code{time[i] <= end[j]}, and
+\code{ts[i] == ts_windows[j]}.}
 
-\item{data, data_par}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s.
-These are searched prior to \link{formula} environments for variables
-used in \code{formula} and \code{formula_par}, respectively.}
+\item{formula_parameters}{A \link{list} of \link{formula}e of the form \code{parameter ~ terms}
+specifying mixed effects models for top level nonlinear model parameters,
+using \code{\link[lme4:lmer]{lme4}}-like syntax.
+Alternatively, a formula of the form \code{~terms} to be recycled for
+all parameters. A list of parameters for which formulae may be specified
+can be retrieved with \code{\link{get_names_top}}.
+Specifically, \code{\link{deparse}(parameter)} must be an element of
+\code{\link{get_names_top}(model, link = TRUE)}.
+The default for parameters not assigned a formula is \code{~1}.}
 
-\item{subset, subset_par}{Expressions to be evaluated in \code{data} and \code{data_par},
-respectively, provided the latter are data frames. The values,
-which must be \link{logical} vectors of suitable length,
-index rows of data to be used when fitting (see Details).
-The default (\code{\link{NULL}}) is to use all rows.}
+\item{data, data_windows}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s
+to be searched for variables named in the corresponding \link{formula}e.
+(\code{formula_parameters} uses \code{data_windows}.)
+Formula environments are searched for variables not found here.}
+
+\item{subset, subset_windows}{Expressions to be evaluated in the corresponding data frame.
+Formula environments are searched for variables not found there.
+The result can be any valid index vector for the rows of the
+data frame (see \code{\link{[.data.frame}}).
+Indexed rows are processed further; unindexed rows are discarded.
+The default (\code{\link{NULL}}) is to preserve all rows.}
 
 \item{na_action}{A \link{character} string affecting the handling of \code{\link{NA}}
-in \code{x} for \code{formula = x ~ time | ts}.
+in \code{x} if \code{formula = cbind(time, x) ~ ts}.
 \code{"fail"} is to throw an error.
 \code{"pass"} is to ignore \code{NA} when fitting and replace \code{NA}
 when predicting.
-Note that \code{NA} in \code{time} and \code{ts} are an error regardless
-of \code{na_action}.}
+Note that \code{NA} in \code{time} and \code{ts} are always an error.}
 
-\item{na_action_par}{A \link{character} string affecting the handling of \code{\link{NA}}
-in \code{formula_par} variables.
+\item{na_action_windows}{A \link{character} string affecting the handling of \code{\link{NA}}
+in \code{formula_windows} and \code{formula_parameters} variables.
 \code{"fail"} is to throw an error.
-\code{"omit"} is to discard fitting windows with incomplete data.}
+\code{"omit"} is to discard incomplete rows of data.}
 
-\item{endpoints}{A \link[=data.frame]{data frame}, \link{list}, or \link{environment}
-with variables \code{start} and \code{end}, and any further variables
-necessary to evaluate \code{ts} when \code{formula = x ~ time | ts}.
-\code{start} and \code{end} must be \link{numeric} or \link{Date}
-vectors listing start and end times for all fitting windows. \code{ts}
-must evaluate to a \link{factor} indicating the time series in which each
-window is found. Within time series, intervals \code{[start[i], end[i]]}
-must be disjoint and contain at least two time points from \code{time}.}
-
-\item{priors}{An \link{list} of \link{formula}e of the form \code{par ~ f(...)},
-specifying priors on nonlinear and dispersion model parameters.
-\code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(object, link = TRUE)}.
+\item{priors}{A \link{list} of \link{formula}e of the form \code{parameter ~ f(...)}
+specifying priors on top level nonlinear model parameters.
+\code{\link{deparse}(parameter)} must be an element
+of \code{\link{get_names_top}(model, link = TRUE)}, and
 \code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
 with arguments specifying suitable hyperparameters.
-This call is evaluated in the corresponding formula environment.
-(Currently, the only implemented prior is Gaussian. As a result,
-formulae must have the form \code{par ~ \link{Normal}(mu, sigma)}.)}
+Calls are evaluated in the corresponding formula environments.}
 
 \item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
 
@@ -117,66 +119,62 @@ to retrieve this default and other optimization inputs (in particular
 \code{Y_init}; see Value), which can often be used to construct a more
 informative starting point.}
 
-\item{map}{A \link{factor} of length \code{\link{length}(init)}. Elements
-of the full parameter vector corresponding to \code{\link{NA}}
-in \code{map} are fixed at their initial values, rather than
-estimated. Elements corresponding to a common factor level
-are constrained to have a common value during estimation.
-\link[=logical]{Logical} values of \code{map} are accepted
-and coerced to factor internally with
-\code{map <- \link{replace}(\link{gl}(\link{length}(map), 1L), map, NA)}.}
+\item{map}{A \link{factor} of length \code{\link{length}(init)}.
+Elements of the full parameter vector corresponding to \code{\link{NA}}
+in \code{map} are fixed at their initial values, rather than estimated.
+Elements corresponding to a common factor level are constrained to have
+a common value during estimation. \link[=logical]{Logical} values
+of \code{map} are accepted and coerced to factor internally with
+\code{map <- \link{replace}(\link{gl}(\link{length}(map), 1), map, NA)}.}
 
-\item{origin}{A \link{Date} specifying a reference time.}
-
-\item{append}{An expression indicating variables in \code{data_par} to be preserved
-in the returned object for use by methods. It is evaluated similarly
-to the \code{select} argument of \code{\link{subset}}. The default
-(\code{\link{NULL}}) is to preserve all variables. Currently, usage
-is supported only if \code{data_par} is a \link[=data.frame]{data frame}.}
+\item{append}{An expression indicating variables in \code{data_windows}
+to be preserved in the returned object for use by methods.
+Usage requires that \code{data_parameters} is a
+\link[=data.frame]{data frame}.
+The default (\code{\link{NULL}}) is to preserve nothing.
+A dot \samp{.} is to preserve all variables not occurring
+in \code{formula_parameters}.
+Outside of these two special cases, expressions are evaluated
+similarly to the \code{select} argument of \code{\link{subset}}.}
 }
 \value{
 If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
 \code{"egf"}, with elements:
-\item{endpoints}{
-  A \link[=data.frame]{data frame} with variables \code{ts}, \code{window},
-  \code{start}, and \code{end} listing start and end times for all fitting
-  windows. Rows are ordered by time series and chronologically within time
-  series. \code{origin} is retained as an \link[=attributes]{attribute}.
-  Note that \code{start} and \code{end} here are the minimum and maximum of
-  the set of time points contained in the supplied intervals. Hence supplied
-  and returned interval endpoints may not match exactly.
+\item{model}{
+  A copy of the so-named argument.
 }
 \item{frame}{
-  The time series model frame, constructed from \code{formula} and
-  \code{data}, with variables \code{ts}, \code{window}, \code{time},
-  and \code{x}. \code{ts} and \code{window} are \link{factor}s
-  that can be used to \link{split} \code{frame} by time series and
-  by fitting window, respectively. Rows are ordered by time series
-  and chronologically within time series. \code{\link{terms}(formula)}
-  and \code{origin} are retained as \link{attributes}.
-  \code{\link{as.integer}(window)} indexes rows of \code{endpoints}.
-  That is, time series data for the fitting window defined in row
-  \code{i} of \code{endpoints} can be found in the rows of \code{frame}
-  for which \code{window = \link{levels}(window)[i]}.
+  A \link[=data.frame]{data frame} constructed from \code{formula},
+  \code{data}, and \code{subset}, with variables \code{ts}, \code{time},
+  and \code{x} specifying time series relevant to the fitted model
+  (i.e., those with at least one valid fitting window). Variable
+  \code{window} groups the elements of \code{x} by fitting window.
+  Rows are ordered by time series and chronologically within time series.
+  \code{formula} is retained as an \link[=attributes]{attribute}.
 }
-\item{frame_par}{
-  A \link{list} of mixed effects model frames, constructed from
-  \code{formula_par} and \code{data_par} using \code{\link{model.frame}}.
-  There is one model frame for each nonlinear and dispersion model
-  parameter. \code{frame_par[[name]]} retains
-  \code{\link{terms}(formula_par[[name]])} as
-  an \link[=attributes]{attribute}.
-  Model frames correspond rowwise to \code{endpoints}. That is,
-  mixed effects data on the fitting window defined in row \code{i}
-  of \code{endpoints} can be found in row \code{i} of each model frame.
+\item{frame_windows}{
+  A \link[=data.frame]{data frame} constructed from \code{formula_windows},
+  \code{data_windows}, and \code{subset_windows}, with variables \code{ts},
+  \code{window}, \code{start}, and \code{end} listing fitting windows
+  for each time series. These intervals may not match the ones supplied
+  in the function call, which are contracted internally to the narrowest
+  intervals containing the same set of observations.
+  Rows are ordered by time series and chronologically within time series.
+  \code{formula_windows} is retained as an \link[=attributes]{attribute}.
+}
+\item{frame_parameters}{
+  A \link{list} of mixed effects \link[=model.frame]{model frames}
+  (one for each top level nonlinear model parameter) constructed from
+  \code{formula_parameters}, \code{data_windows}, and \code{subset_windows}.
+  \code{frame_parameters[[name]]} retains
+  \code{\link{terms}(formula_parameters[[name]])} as an
+  \link[=attributes]{attribute}.
+  Model frames correspond rowwise to \code{frame_windows}.
 }
 \item{frame_append}{
-  A \link[=data.frame]{data frame} preserving the variables from
-  \code{data_par} indicated by \code{append}. Corresponds rowwise
-  to \code{endpoints}.
-}
-\item{model}{
-  A copy of argument \code{object}.
+  A \link[=data.frame]{data frame} preserving variables
+  from \code{data_windows} indicated by \code{append}.
+  This corresponds rowwise to \code{frame_windows}.
 }
 \item{priors}{
   A \link{list} of \code{"\link{egf_prior}"} objects,
@@ -221,23 +219,47 @@ If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
 }
 If \code{do_fit = FALSE}, then a \link{list} inheriting from
 \link{class} \code{"egf_no_fit"} containing \code{model},
-\code{endpoints}, \code{frame}, \code{frame_par}, \code{tmb_args},
-\code{tmb_out} (\emph{before} optimization), \code{init},
-\code{nonrandom}, and \code{call}, as well as a \link[=double]{numeric}
-\link{matrix} \code{Y_init} specifying a naive estimate
-of each nonlinear and dispersion model parameter for each
-fitting window, corresponding rowwise to \code{endpoints}.
+\code{frame}, \code{frame_windows}, \code{frame_parameters},
+\code{tmb_args}, \code{tmb_out} (\emph{before} optimization),
+\code{init}, \code{nonrandom}, and \code{call}, as well as a
+\link[=double]{numeric} \link{matrix} \code{Y_init} specifying
+naive estimates of each top level nonlinear model parameter,
+corresponding rowwise to \code{frame_windows}.
 }
 \description{
 Fits nonlinear mixed effects models of epidemic growth
-to one or more disease incidence time series.
+to collections of one or more disease incidence time series.
 }
 \details{
-\code{endpoints} and \link[=model.frame]{model frame}s constructed from
-\code{formula_par} and \code{data_par} are expected to correspond rowwise.
+Let
+\code{formula = cbind(time, x) ~ ts}
+and
+\code{formula_windows = cbind(start, end) ~ ts_windows}.
+It is expected that \code{time}, \code{start}, and \code{end}
+(after possible coercion to \link{numeric}) measure time on
+the same scale. To be precise, numeric times should have a
+common unit of measure and, within time series, represent
+displacements from a common reference time. These conditions
+will always hold if \code{time}, \code{start}, and \code{end}
+all evaluate to \link{Date} or \link{POSIXt} vectors.
 
-Day of week effect estimation (see \code{\link{egf_model}})
-requires \code{time} in \code{formula = x ~ time | ts} to evaluate
-to an \link{integer} or \link{Date} vector with 1-day spacing in all
-fitting windows.
+Plot methods asked to display time on a Date axis rather than
+a numeric axis will interpret numeric times as numbers of days
+since \code{1970-01-01 00:00:00}. This interpretation will
+always be correct if \code{time}, \code{start}, and \code{end}
+all evaluate to \link{Date} or \link{POSIXt} vectors.
+
+When day of week effects are estimated (model$day_of_week > 0),
+numeric times \emph{must} be interpretable as numbers of days
+since \code{1970-01-01 00:00:00}, so that time points can be
+mapped unambiguously to days of week. Furthermore, in this case,
+\link{time} (after possible coercion to \link{numeric}) is required
+to be integer-valued with one day spacing in all time series.
+This means that
+\code{\link{all.equal}(time, \link{round}(time))}
+and
+\code{\link{all}(\link{diff}(\link{round}(time)) == 1)}
+must return \code{TRUE} in each level of \code{ts}.
+These conditions ensure that intervals between adjacent
+time points capture a single day of week.
 }

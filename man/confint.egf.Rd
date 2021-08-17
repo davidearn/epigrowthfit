@@ -8,7 +8,7 @@
   object,
   parm,
   level = 0.95,
-  par = get_par_names(object, link = TRUE),
+  par = get_names_top(object, link = TRUE),
   subset = NULL,
   append = NULL,
   link = TRUE,
@@ -31,10 +31,10 @@
 
 \item{level}{A number in the interval (0,1) indicating a confidence level.}
 
-\item{par}{A subset of \code{\link{get_par_names}(object, link = TRUE)}
-naming nonlinear and dispersion model parameters for which
-confidence intervals should be computed. If \code{object$model$curve}
-is \code{"exponential"}, \code{"logistic"}, or \code{"richards"}),
+\item{par}{A subset of \code{\link{get_names_top}(object, link = TRUE)}
+naming top level nonlinear model parameters for which confidence
+intervals should be computed. If \code{object$model$curve} is
+\code{"exponential"}, \code{"logistic"}, or \code{"richards"}),
 then \code{par} may also contain \code{"tdoubling"} and \code{"R0"}.}
 
 \item{subset}{An expression to be evaluated in the combined model frame
@@ -87,23 +87,24 @@ in place of the result of evaluating \code{subset}.}
 A \link[=data.frame]{data frame} inheriting from \link{class}
 \code{"egf_confint"}, with variables:
 \item{par}{
-  Nonlinear or dispersion model parameter,
-  from \code{\link{get_par_names}(object, link = TRUE)}.
+  Top level nonlinear model parameter,
+  from \code{\link{get_names_top}(object, link = TRUE)}.
 }
 \item{ts}{
-  Time series, from \code{\link{levels}(object$endpoints$ts)}.
+  Time series, from \code{\link{levels}(object$frame_windows$ts)}.
 }
 \item{window}{
-  Fitting window, from \code{\link{levels}(object$endpoints$window)}.
+  Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
 }
 \item{estimate, lower, upper}{
   Fitted value and approximate lower and upper confidence limits.
 }
-\code{level} and \code{object$endpoints} are retained as \link{attributes}.
+\code{level} and \code{object$frame_windows} are retained
+as \link{attributes}.
 }
 \description{
 Computes confidence intervals on \link[=fitted.egf]{fitted values}
-of nonlinear and dispersion model parameters and, if possible,
+of top level nonlinear model parameters and, where appropriate,
 initial doubling times (in days) and basic reproduction numbers.
 }
 \details{
@@ -122,14 +123,13 @@ Three methods are provided for calculating confidence intervals:
   (\code{\link{uniroot}} internally).
 }
 }
-For nonlinear and dispersion model parameters following random effects
-models, \code{"wald"} returns confidence intervals on individual fitted
-values, whereas \code{"profile"} and \code{"uniroot"} return confidence
-intervals on the fixed effects components only, namely the population
-fitted values.
+For top level parameters following random effects models, \code{"wald"}
+returns confidence intervals on individual fitted values,
+whereas \code{"profile"} and \code{"uniroot"} return confidence intervals
+on the fixed effects components only, namely the population fitted values.
 
-\code{"wald"} requires minimal computation time but assumes, e.g.,
-asymptotic normality of the maximum likelihood estimator.
+\code{"wald"} requires minimal computation time but assumes,
+e.g., asymptotic normality of the maximum likelihood estimator.
 A further limitation of \code{"wald"} is functional non-invariance.
 \code{"profile"} and \code{"uniroot"} avoid these issues but are
 much slower, requiring estimation of restricted models. Of the two,

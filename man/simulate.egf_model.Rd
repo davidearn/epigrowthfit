@@ -13,25 +13,26 @@
   tol = 1e-06,
   tmax = 100,
   cstart = 0,
-  origin = .Date(0L),
   ...
 )
 }
 \arguments{
-\item{object}{An \code{"\link{egf_model}"} specifying a phenomenological
-epidemic model to be simulated.}
+\item{object}{An \code{"\link{egf_model}"} specifying a top level nonlinear model
+to be simulated.}
 
 \item{nsim}{A positive integer indicating a number of simulated time series.}
 
 \item{seed}{An integer used to set the \link{RNG} state before simulation.
 The default (\code{\link{NULL}}) is to use the state at the
-time of the function call. The RNG state is preserved as an
-\link[=attributes]{attribute} of the result (see Value).}
+time of the function call. The RNG state
+(either a \link{list} of arguments to \code{\link{set.seed}}
+or a value of \code{\link{.Random.seed}}) is preserved as an
+\link[=attributes]{attribute} of the result.}
 
 \item{mu}{A \link{numeric} vector listing means across time series
-of nonlinear and dispersion model parameters (link scale).
+of top level nonlinear model parameters (link scale).
 It is assumed that elements are ordered as in
-\code{\link{get_par_names}(object, link = TRUE)}.}
+\code{\link{get_names_top}(object, link = TRUE)}.}
 
 \item{Sigma}{A symmetric positive definite \link{numeric} \link{matrix}
 to be used as the covariance matrix corresponding to \code{mu}.
@@ -46,17 +47,15 @@ spectral radius of \code{Sigma}. (However, regardless of \code{tol},
 are processed on the log scale.)}
 
 \item{tmax}{A positive number. Simulated time series run from 0 days to 1 day
-after the inflection time of the underlying cumulative incidence
+after the inflection time of the expected cumulative incidence
 function indicated by \code{object$curve}. However, if there is no
 inflection time, as in the exponential and subexponential models
-of cumulative incidence, then they run from 0 days to \code{tmax}
-days.}
+of cumulative incidence, then simulated time series run from 0 days
+to \code{tmax} days.}
 
 \item{cstart}{A number indicating a threshold value of cumulative incidence.
 Left endpoints of suggested fitting windows are those times
 when cumulative incidence first exceeds this threshold.}
-
-\item{origin}{A \link{Date} specifying a reference time.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -69,17 +68,21 @@ with elements:
 }
 \item{Y}{
   A \link[=double]{numeric} \link{matrix} with \code{nsim} rows and
-  \code{length(mu)} columns listing the nonlinear and dispersion model
+  \code{\link{length}(mu)} columns listing the top level nonlinear model
   parameter values underlying each time series.
   If \code{Sigma} is \code{\link{NULL}}, then the row vectors of \code{Y}
   are all \code{mu}. Otherwise, \code{Y} is (conceptually) the result of
   \code{MASS::mvrnorm(nsim, mu, Sigma, tol)}.
 }
 \item{formula}{
-  A \link{formula}, \code{x ~ time | ts}, expressing how simulated
-  time series are stored in \code{data}.
+  A \link{formula}, \code{cbind(time, x) ~ ts}, expressing how
+  simulated time series are stored in \code{data}.
 }
-\item{formula_par}{
+\item{formula_windows}{
+  A \link{formula}, \code{cbind(start, end) ~ ts}, expressing how
+  fitting window endpoints are stored in \code{data_windows}.
+}
+\item{formula_parameters}{
   A \link{formula} specifying the generative model.
   If \code{Sigma = \link{NULL}}, then the formula is
   \code{~1} if \code{nsim = 1} and \code{~ts} if \code{nsim > 1}.
@@ -88,19 +91,8 @@ with elements:
 \item{data}{
   A \link[=data.frame]{data frame} with variables \code{ts}, \code{time},
   and \code{x} storing \code{nsim} simulated time series in long format.
-  \code{ts} is a \link{factor} with \code{nsim} \link{levels} grouping
-  the rows by time series. \code{time} is a \link[=double]{numeric}
-  vector listing time points as numbers of days since \emph{the end of}
-  \link{Date} \code{origin}. \code{x} is an \link{integer} vector such that,
-  within time series, \code{x[i]} is the number of cases observed between
-  \code{time[i-1]} and \code{time[i]}.
 }
-\item{data_par}{
-  A \link[=data.frame]{data frame} with \code{nsim} rows defining
-  variables used in \code{formula_par}. It is either empty or has
-  one variable \code{ts = \link{gl}(nsim, 1L)}.
-}
-\item{endpoints}{
+\item{data_windows}{
   A \link[=data.frame]{data frame} with \code{nsim} rows and variables
   \code{ts}, \code{start}, and \code{end} suggesting a fitting window
   for each simulated time series. Start times are determined according
@@ -109,10 +101,10 @@ with elements:
 }
 \item{actual}{
   A \link[=double]{numeric} vector giving the full parameter vector
-  corresponding to the generative model. When estimating this model
-  from \code{data}, \code{\link{egf}} output should be compared against
-  \code{actual}. More precisely, if \code{m} is the \code{"\link{egf}"}
-  object, then \code{m$best} estimates \code{actual}.
+  of the generative model. When estimating this model from \code{data},
+  \code{\link{egf}} output should be compared against \code{actual}.
+  More precisely, if \code{m} is the \code{"\link{egf}"} object,
+  then \code{m$best} estimates \code{actual}.
 }
 \item{nonrandom}{
   An \link{integer} vector indexing the elements of \code{actual}
@@ -122,18 +114,12 @@ with elements:
   The \link{call} to \code{simulate.egf_model}, allowing for updates
   to the \code{"egf_model_simulate"} object via \code{\link{update}}.
 }
-If \code{seed = \link{NULL}}, then \link[=attributes]{attribute}
-\code{RNGstate} is the value of \code{\link{.Random.seed}} at the
-time of simulation.
-Otherwise, it is a \link{list} of arguments to \code{\link{set.seed}}
-such that \code{\link{do.call}(\link{set.seed}, RNGstate)} restores
-the value of \code{\link{.Random.seed}} at the time of simulation.
 }
 \description{
-Simulates daily incidence time series according to a specified
-phenomenological epidemic model. Nonlinear and dispersion model
-parameters vary between time series according to a fixed intercept
-model \code{~ts} or random intercept model \code{~(1 | ts)}.
+Simulates incidence time series with daily observations according to
+a specified nonlinear model. Top level nonlinear model parameters vary
+between time series according to a fixed intercept model \code{~ts} or
+random intercept model \code{~(1 | ts)}.
 }
 \examples{
 model <- egf_model(curve = "logistic", family = "nbinom")
@@ -141,9 +127,9 @@ model <- egf_model(curve = "logistic", family = "nbinom")
 r <- log(2) / 20
 tinfl <- 160
 K <- 25000
-nbdisp <- 50
+disp <- 50
 
-mu <- log(c(r, tinfl, K, nbdisp))
+mu <- log(c(r, tinfl, K, disp))
 Sigma <- diag(rep_len(0.5^2, length(mu)))
 
 sim <- simulate(model,

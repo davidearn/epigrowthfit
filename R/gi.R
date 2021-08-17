@@ -17,7 +17,9 @@
 #' @param p
 #'   A \link{numeric} vector listing probabilities.
 #' @param n
-#'   A non-negative integer indicating a desired sample size.
+#'   A non-negative integer indicating a sample size.
+#'   If \code{\link{length}(n) > 1}, then \code{length(n)} is taken
+#'   to be the sample size.
 #' @param latent,infectious
 #'   \link[=numeric]{Numeric} vectors such that \code{latent[i]} and
 #'   \code{infectious[i]} are the probabilities that the latent and
@@ -76,37 +78,41 @@ NULL
 #' @rdname gi
 #' @export
 dgi <- function(x, latent, infectious) {
-  stop_if_not(
-    is.numeric(x),
-    m = "`x` must be numeric."
-  )
+  stopifnot(is.numeric(x))
   if (length(x) == 0L) {
     return(x)
   }
-  check_probs(latent)
-  check_probs(infectious)
+  stopifnot(
+    is.numeric(latent),
+    (m <- length(latent)) > 0L,
+    is.finite(latent),
+    latent >= 0,
+    any(latent > 0),
+    is.numeric(infectious),
+    (n <- length(infectious)) > 0L,
+    is.finite(infectious),
+    infectious >= 0,
+    any(infectious > 0)
+  )
   latent <- latent / sum(latent)
   infectious <- infectious / sum(infectious)
-  m <- length(latent)
-  n <- length(infectious)
 
   d <- x
   d[] <- NA
   d[x < 1 | x >= m + n] <- 0
-
   l <- !is.na(x) & x >= 1 & x < m + n
   if (any(l)) {
     ## Take advantage of the fact that the generation interval density
     ## is constant on intervals [i,i+1)
-    x_floor <- floor(x[l])
-    x_floor_unique <- unique(x_floor)
-    k <- match(x_floor, x_floor_unique)
+    floor_x <- floor(x[l])
+    unique_floor_x <- unique(floor_x)
+    k <- match(floor_x, unique_floor_x)
 
-    ij_dim <- c(m, length(x_floor_unique))
+    ij_dim <- c(m, length(unique_floor_x))
     i <- .row(ij_dim)
     j <- .col(ij_dim)
 
-    d[l] <- colSums(latent * diwt(x_floor_unique[j] - i, infectious = infectious))[k]
+    d[l] <- colSums(latent * diwt(unique_floor_x[j] - i, infectious = infectious))[k]
   }
   d
 }
@@ -115,18 +121,20 @@ dgi <- function(x, latent, infectious) {
 #' @export
 #' @importFrom stats approx
 pgi <- function(q, latent, infectious) {
-  stop_if_not(
-    is.numeric(q),
-    m = "`q` must be numeric."
-  )
+  stopifnot(is.numeric(q))
   if (length(q) == 0L) {
     return(q)
   }
-  m <- length(latent)
-  n <- length(infectious)
+  stopifnot(
+    is.numeric(latent),
+    (m <- length(latent)) > 0L,
+    is.numeric(infectious),
+    (n <- length(infectious)) > 0L
+  )
 
   p <- q
   p[] <- NA
+  is_na_q <- is.na(q)
   p[q <= 1] <- 0
   p[q >= m + n] <- 1
   l <- !is.na(q) & q > 1 & q < m + n
@@ -144,15 +152,16 @@ pgi <- function(q, latent, infectious) {
 #' @export
 #' @importFrom stats approx
 qgi <- function(p, latent, infectious) {
-  stop_if_not(
-    is.numeric(p),
-    m = "`p` must be numeric."
-  )
+  stopifnot(is.numeric(p))
   if (length(p) == 0L) {
     return(p)
   }
-  m <- length(latent)
-  n <- length(infectious)
+  stopifnot(
+    is.numeric(latent),
+    (m <- length(latent)) > 0L,
+    is.numeric(infectious),
+    (n <- length(infectious)) > 0L
+  )
 
   q <- p
   q[] <- NA
@@ -174,35 +183,48 @@ qgi <- function(p, latent, infectious) {
 #' @export
 #' @importFrom stats runif
 rgi <- function(n, latent, infectious) {
-  stop_if_not(
-    is.numeric(n),
-    length(n) == 1L,
-    n >= 0,
-    m = "`n` must be a non-negative number."
-  )
-  n <- floor(n)
-  if (n == 0) {
-    return(numeric(0L))
+  if (length(n) > 1L) {
+    n <- length(n)
+  } else {
+    stopifnot(
+      is.numeric(n),
+      length(n) == 1L,
+      n >= 0
+    )
+    n <- trunc(n)
+    if (n == 0) {
+      return(numeric(0L))
+    }
   }
-  check_probs(latent)
-  check_probs(infectious)
+  stopifnot(
+    is.numeric(latent),
+    length(latent) > 0L,
+    is.finite(latent),
+    latent >= 0,
+    any(latent > 0),
+    is.numeric(infectious),
+    length(infectious) > 0L,
+    is.finite(infectious),
+    infectious >= 0,
+    any(infectious > 0)
+  )
   latent <- latent / sum(latent)
   infectious <- infectious / sum(infectious)
 
   ## Latent period is integer-valued,
   ## equal to `i` with probability `latent[i]`
-  rlat <- sample(seq_along(latent), size = n, replace = TRUE, prob = latent)
+  rlp <- sample(seq_along(latent), size = n, replace = TRUE, prob = latent)
 
   ## Infectious waiting time is real-valued,
   ## with distribution supported on [0,length(infectious))
-  ## and density constant on subintervals [i,i+1)
-  rwait_floor <- sample(seq_along(infectious) - 1L, size = n, replace = TRUE,
-                        prob = diwt(seq_along(infectious) - 1L, infectious = infectious))
-  rwait <- runif(n, min = rwait_floor, max = rwait_floor + 1L)
+  ## and density constant on intervals [i,i+1)
+  floor_riwt <- sample(seq_along(infectious) - 1L, size = n, replace = TRUE,
+                       prob = diwt(seq_along(infectious) - 1L, infectious = infectious))
+  riwt <- runif(n, min = floor_riwt, max = floor_riwt + 1L)
 
   ## Sum of latent period and infectious waiting time
   ## yields generation interval
-  rlat + rwait
+  rlp + riwt
 }
 
 ## Infectious period distribution function

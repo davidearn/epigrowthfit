@@ -25,8 +25,14 @@
 #'
 #' @keywords internal
 ymd <- function(x, which = "ymd", drop = TRUE) {
-  stop_if_not_string(which)
-  stop_if_not_true_false(drop)
+  stopifnot(
+    is.character(which),
+    length(which) == 1L,
+    !is.na(which),
+    is.logical(drop),
+    length(drop) == 1L,
+    !is.na(drop)
+  )
   X <- matrix(as.integer(unlist(strsplit(as.character(x), "-"), FALSE, FALSE)),
     nrow = length(x),
     ncol = 3L,
@@ -37,37 +43,72 @@ ymd <- function(x, which = "ymd", drop = TRUE) {
   X[, j, drop = drop]
 }
 
-#' Get ceiling of a date
+#' Round a Date vector
 #'
-#' Rounds each Date in a \link{Date} vector to the next first-of-the-month
-#' or first-of-the-year.
+#' Rounds each element of a \link{Date} vector to the previous or next
+#' midnight (\code{00:00:00}),
+#' midnight on a first-of-the-month (\code{YYYY-MM-01}), or
+#' midnight on a first-of-the-year (\code{YYYY-01-01}).
 #'
 #' @param x A \link{Date} vector.
 #' @param to A \link{character} string.
 #'
 #' @return
-#' \code{x} with elements replaced by firsts-of-the-month (\code{"YYYY-MM-01"})
-#' or firsts-of-the-year (\code{"YYYY-01-01"}), depending on \code{to}.
+#' \code{x} with elements rounded.
 #'
 #' @examples
-#' ## x <- .Date(sample.int(1e4L, 10L))
-#' ## dceiling(x, to = "month")
-#' ## dceiling(x, to = "year")
+#' ## n <- 10L
+#' ## x <- .Date(sample.int(10000L, n) + rnorm(n))
+#' ## dmy <- c("day", "month", "year")
+#' ##
+#' ## l <- sapply(dmy, Dceiling, x = x, simplify = FALSE)
+#' ## ceiling_x <- data.frame(unclass_x = unclass(x), x = x, l)
+#' ##
+#' ## l <- sapply(dmy, Dfloor, x = x, simplify = FALSE)
+#' ## floor_x <- replace(ceiling_y, dmy, l)
 #'
+#' @name Dround
 #' @keywords internal
-dceiling <- function(x, to = c("month", "year")) {
+NULL
+
+#' @rdname Dround
+Dceiling <- function(x, to = c("day", "month", "year")) {
+  stopifnot(inherits(x, "Date"))
+  to <- match.arg(to)
   if (length(x) == 0L) {
     return(.Date(numeric(0L)))
   }
-  to <- match.arg(to)
+  x <- .Date(ceiling(unclass(x)))
+  if (to == "day") {
+    return(x)
+  }
   X <- as.data.frame(ymd(x, drop = FALSE))
   if (to == "month") {
     X$m <- X$m + (X$d > 1L)
     X$y <- X$y + (i <- X$m == 13L)
     X$m[i] <- 1L
     as.Date(paste(X$y, X$m, "1", sep = "-"), format = "%Y-%m-%d")
-  } else { # "year"
+  } else { # to == "year"
     X$y <- X$y + (X$m > 1L || X$d > 1L)
+    as.Date(paste(X$y, "1", "1", sep = "-"), format = "%Y-%m-%d")
+  }
+}
+
+#' @rdname Dround
+Dfloor <- function(x, to = c("day", "month", "year")) {
+  stopifnot(inherits(x, "Date"))
+  to <- match.arg(to)
+  if (length(x) == 0L) {
+    return(.Date(numeric(0L)))
+  }
+  x <- .Date(floor(unclass(x)))
+  if (to == "day") {
+    return(x)
+  }
+  X <- as.data.frame(ymd(x, drop = FALSE))
+  if (to == "month") {
+    as.Date(paste(X$y, X$m, "1", sep = "-"), format = "%Y-%m-%d")
+  } else { # to == "year"
     as.Date(paste(X$y, "1", "1", sep = "-"), format = "%Y-%m-%d")
   }
 }

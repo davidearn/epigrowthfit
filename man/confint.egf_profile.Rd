@@ -15,9 +15,8 @@
 
 \item{link}{A \link{logical} flag. If \code{FALSE} and \code{object}
 supplies likelihood profiles of population fitted values
-of nonlinear or dispersion model parameters,
-then confidence intervals on inverse link-transformed
-fitted values are returned.}
+of top level nonlinear model parameters, then confidence
+intervals on inverse link-transformed fitted values are returned.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -32,7 +31,7 @@ and variables:
   Estimate of linear combination and approximate lower
   and upper confidence limits, inverse-link transformed
   if \code{link = FALSE} and linear combinations represent
-  population fitted values of nonlinear or dispersion model
+  population fitted values of top level nonlinear model
   parameters.
 }
 \link[=attributes]{Attributes} \code{A} and \code{x} of \code{object}

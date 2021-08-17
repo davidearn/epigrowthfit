@@ -14,9 +14,9 @@ standard errors.}
 \item{level}{A number in the interval (0,1) indicating a confidence level.}
 }
 \value{
-A \link{numeric} \link{matrix} with \code{length(estimate)} rows
-and 2 columns \code{lower} and \code{upper} giving approximate
-confidence limits.
+A \link{numeric} \link{matrix} with \code{\link{length}(estimate)} rows
+and 2 columns \code{lower} and \code{upper} giving approximate confidence
+limits.
 }
 \description{
 Computes approximate confidence intervals around a maximum likelihood

@@ -13,6 +13,6 @@ has_random(object)
 \code{TRUE} or \code{FALSE}.
 }
 \description{
-Determine whether an object specifies a random effects model.
+Determines whether an object specifies a random effects model.
 }
 \keyword{internal}

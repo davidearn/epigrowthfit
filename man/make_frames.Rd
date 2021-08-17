@@ -7,85 +7,95 @@
 make_frames(
   model,
   formula,
-  formula_par,
+  formula_windows,
+  formula_parameters,
   data,
-  data_par,
+  data_windows,
   subset,
-  subset_par,
+  subset_windows,
   na_action,
-  na_action_par,
-  endpoints,
+  na_action_windows,
   init,
   origin,
   append
 )
 }
 \arguments{
-\item{formula}{A \link{formula} of the form \code{x ~ time} or \code{x ~ time | ts}
-specifying one or more incidence time series in long format.
-\code{time} must evaluate to a \link{numeric} or \link{Date} vector.
-Numeric \code{time} is expected to measure time as a number of days
-since \emph{the end of} Date \code{origin}. Date \code{time} is
-coerced to numeric \code{\link{julian}(time, origin)}. \code{x}
-must evaluate to a numeric vector. Within time series, \code{x[i]}
-should specify the number of cases observed from \code{time[i-1]}
-to \code{time[i]}. Finally, \code{ts} must evaluate to a \link{factor}
-such that \code{\link{split}(\link{data.frame}(time, x), ts)}
-returns a \link{list} of time series. Formulae \code{x ~ time}
-are equivalent to \code{x ~ time | ts} with \code{ts} set equal
-to \code{\link{rep}(\link{factor}(1), \link{length}(x))}.}
+\item{model}{An \code{"\link{egf_model}"} object specifying a top level nonlinear model
+to be estimated.}
 
-\item{formula_par}{A \link{list} of \link{formula}e of the form \code{par ~ terms},
-specifying mixed effects models for nonlinear and dispersion model
-parameters using \code{\link[lme4:lmer]{lme4}}-like syntax.
-Alternatively, a formula of the form \code{~terms} to be recycled
-for all parameters. A list of parameters for which formulae may
-be specified can be retrieved with \code{\link{get_par_names}}.
-Specifically, \code{\link{deparse}(par)} must be an element of
-\code{\link{get_par_names}(object, link = TRUE)}. The default for
-parameters not assigned a formula is \code{~1}.}
+\item{formula}{A \link{formula} of the form \code{cbind(time, x) ~ ts}
+specifying one or more disease incidence time series in long format.
+\code{ts} must evaluate to a \link{factor}
+(insofar that \code{\link{as.factor}(ts)} is a factor)
+grouping the data by time series.
+\code{time} must evaluate to a \link{numeric} vector
+that is increasing within \link{levels} of \code{ts}.
+\link{Date} and \link{POSIXt} vectors are tolerated and
+coerced to numeric with \code{\link{julian}(time)}.
+Finally, \code{x} must evaluate to a non-negative numeric vector
+with \code{x[i]} equal to the number of cases observed over the
+interval \code{(time[i-1], time[i]]}.
+Edge cases like \code{x[1]} are ignored internally.
+Nonintegral elements of \code{x} are rounded with a warning.
+\code{formula = cbind(time, x) ~ 1} can be supplied
+when there is only one time series; it is equivalent
+to \code{formula = cbind(time, x) ~ ts} with \code{ts}
+evaluating to \code{\link{rep}(factor(1), length(x))}.}
 
-\item{data}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s.
-These are searched prior to \link{formula} environments for variables
-used in \code{formula} and \code{formula_par}, respectively.}
+\item{formula_windows}{A \link{formula} of the form \code{cbind(start, end) ~ ts_windows}
+specifying disjoint fitting windows \code{(start, end]} in long format.
+Where \code{formula = cbind(time, x) ~ ts}, observation \code{x[i]}
+is associated with window \code{(start[j], end[j]]} if and only if
+\code{time[i-1] >= start[j]},
+\code{time[i] <= end[j]}, and
+\code{ts[i] == ts_windows[j]}.}
 
-\item{data_par}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s.
-These are searched prior to \link{formula} environments for variables
-used in \code{formula} and \code{formula_par}, respectively.}
+\item{formula_parameters}{A \link{list} of \link{formula}e of the form \code{parameter ~ terms}
+specifying mixed effects models for top level nonlinear model parameters,
+using \code{\link[lme4:lmer]{lme4}}-like syntax.
+Alternatively, a formula of the form \code{~terms} to be recycled for
+all parameters. A list of parameters for which formulae may be specified
+can be retrieved with \code{\link{get_names_top}}.
+Specifically, \code{\link{deparse}(parameter)} must be an element of
+\code{\link{get_names_top}(model, link = TRUE)}.
+The default for parameters not assigned a formula is \code{~1}.}
 
-\item{subset}{Expressions to be evaluated in \code{data} and \code{data_par},
-respectively, provided the latter are data frames. The values,
-which must be \link{logical} vectors of suitable length,
-index rows of data to be used when fitting (see Details).
-The default (\code{\link{NULL}}) is to use all rows.}
+\item{data}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s
+to be searched for variables named in the corresponding \link{formula}e.
+(\code{formula_parameters} uses \code{data_windows}.)
+Formula environments are searched for variables not found here.}
 
-\item{subset_par}{Expressions to be evaluated in \code{data} and \code{data_par},
-respectively, provided the latter are data frames. The values,
-which must be \link{logical} vectors of suitable length,
-index rows of data to be used when fitting (see Details).
-The default (\code{\link{NULL}}) is to use all rows.}
+\item{data_windows}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s
+to be searched for variables named in the corresponding \link{formula}e.
+(\code{formula_parameters} uses \code{data_windows}.)
+Formula environments are searched for variables not found here.}
+
+\item{subset}{Expressions to be evaluated in the corresponding data frame.
+Formula environments are searched for variables not found there.
+The result can be any valid index vector for the rows of the
+data frame (see \code{\link{[.data.frame}}).
+Indexed rows are processed further; unindexed rows are discarded.
+The default (\code{\link{NULL}}) is to preserve all rows.}
+
+\item{subset_windows}{Expressions to be evaluated in the corresponding data frame.
+Formula environments are searched for variables not found there.
+The result can be any valid index vector for the rows of the
+data frame (see \code{\link{[.data.frame}}).
+Indexed rows are processed further; unindexed rows are discarded.
+The default (\code{\link{NULL}}) is to preserve all rows.}
 
 \item{na_action}{A \link{character} string affecting the handling of \code{\link{NA}}
-in \code{x} for \code{formula = x ~ time | ts}.
+in \code{x} if \code{formula = cbind(time, x) ~ ts}.
 \code{"fail"} is to throw an error.
 \code{"pass"} is to ignore \code{NA} when fitting and replace \code{NA}
 when predicting.
-Note that \code{NA} in \code{time} and \code{ts} are an error regardless
-of \code{na_action}.}
+Note that \code{NA} in \code{time} and \code{ts} are always an error.}
 
-\item{na_action_par}{A \link{character} string affecting the handling of \code{\link{NA}}
-in \code{formula_par} variables.
+\item{na_action_windows}{A \link{character} string affecting the handling of \code{\link{NA}}
+in \code{formula_windows} and \code{formula_parameters} variables.
 \code{"fail"} is to throw an error.
-\code{"omit"} is to discard fitting windows with incomplete data.}
-
-\item{endpoints}{A \link[=data.frame]{data frame}, \link{list}, or \link{environment}
-with variables \code{start} and \code{end}, and any further variables
-necessary to evaluate \code{ts} when \code{formula = x ~ time | ts}.
-\code{start} and \code{end} must be \link{numeric} or \link{Date}
-vectors listing start and end times for all fitting windows. \code{ts}
-must evaluate to a \link{factor} indicating the time series in which each
-window is found. Within time series, intervals \code{[start[i], end[i]]}
-must be disjoint and contain at least two time points from \code{time}.}
+\code{"omit"} is to discard incomplete rows of data.}
 
 \item{init}{A \link{numeric} vector to be used as the full parameter vector for
 the first likelihood evaluation. The default (\code{\link{NULL}}) is
@@ -94,21 +104,23 @@ to retrieve this default and other optimization inputs (in particular
 \code{Y_init}; see Value), which can often be used to construct a more
 informative starting point.}
 
-\item{origin}{A \link{Date} specifying a reference time.}
-
-\item{append}{An expression indicating variables in \code{data_par} to be preserved
-in the returned object for use by methods. It is evaluated similarly
-to the \code{select} argument of \code{\link{subset}}. The default
-(\code{\link{NULL}}) is to preserve all variables. Currently, usage
-is supported only if \code{data_par} is a \link[=data.frame]{data frame}.}
+\item{append}{An expression indicating variables in \code{data_windows}
+to be preserved in the returned object for use by methods.
+Usage requires that \code{data_parameters} is a
+\link[=data.frame]{data frame}.
+The default (\code{\link{NULL}}) is to preserve nothing.
+A dot \samp{.} is to preserve all variables not occurring
+in \code{formula_parameters}.
+Outside of these two special cases, expressions are evaluated
+similarly to the \code{select} argument of \code{\link{subset}}.}
 }
 \value{
-A list with elements \code{endpoints}, \code{frame}, \code{frame_par},
+A list with elements
+\code{frame}, \code{frame_windows}, \code{frame_parameters},
 and \code{frame_append}. See descriptions under \code{\link{egf}}.
 }
 \description{
-Constructs time series and mixed effects model frames for use
-by \code{\link{egf}}, while performing a battery of checks on
-the supplied formulae and data.
+Constructs model frames for use by \code{\link{egf}} from corresponding
+formulae and data frames. A battery of checks is performed on the input.
 }
 \keyword{internal}

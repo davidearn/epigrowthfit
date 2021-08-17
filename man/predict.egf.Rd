@@ -6,7 +6,7 @@
 \usage{
 \method{predict}{egf}(
   object,
-  what = c("log_int_inc", "log_cum_inc", "log_rt"),
+  what = c("interval", "cumulative", "rt"),
   time,
   window,
   append = NULL,
@@ -22,18 +22,16 @@
 \item{what}{A \link{character} vector listing one or more variables for which
 predicted values are sought.}
 
-\item{time}{A \link{numeric} or \link{Date} vector supplying time points at which
-predicted values are sought. Numeric \code{time} is assumed to measure
-time as a number of days since \emph{the end of} Date
-\code{origin = \link{attr}(object$frame, "origin")}. Date \code{time}
-is coerced to numeric \code{\link{julian}(time, origin)}. When missing,
-\code{object$frame$time} is used.}
+\item{time}{A \link{numeric} vector supplying time points at which predicted
+values are sought. \link{Date} and \link{POSIXt} vectors are
+tolerated and coerced to numeric with \code{\link{julian}(time)}.
+When \link{time} is missing, the original time points stored in
+\code{object} are used.}
 
-\item{window}{A \link{factor} of length \code{\link{length}(time)} such that
-\code{\link{split}(time, window)} splits \code{time} by fitting window.
-Levels not belonging to \code{\link{levels}(object$frame$window)}
-are ignored. When \code{time} is missing, \code{object$frame$window}
-is used.}
+\item{window}{A \link{factor} of length \code{\link{length}(time)} grouping
+the elements of \code{time} by fitting window. Levels not
+belonging to \code{\link{levels}(object$frame$window)} are ignored.
+\code{window} is ignored altogether if \code{time} is missing.}
 
 \item{append}{An expression indicating variables in the combined model frame
 (see \code{\link{make_combined}}) to be included with the result.
@@ -60,52 +58,47 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
   Predicted variable, from \code{what}.
 }
 \item{ts}{
-  Time series, from \code{\link{levels}(object$endpoints$ts)}.
+  Time series, from \code{\link{levels}(object$frame_windows$ts)}.
 }
 \item{window}{
-  Fitting window, from \code{\link{levels}(object$endpoints$window)}.
+  Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
 }
 \item{time}{
-  Time, after possible coercion from \link{Date} to \link{numeric}.
+  Time, after possible coercion to \link{numeric}.
 }
 \item{estimate}{
   Predicted value of \code{var} at \code{time} in \code{window},
-  conditional on the mixed effects data found in \code{object$frame_par}
-  and the fitted model specified by \code{object$best}.
+  conditional on the mixed effects data \code{object$frame_parameters}
+  and the fitted model \code{object$best}.
 }
 \item{se}{
   (If \code{log = TRUE} and \code{se = TRUE}.)
   Approximate (delta method) standard error on \code{estimate}.
 }
-\code{\link{attr}(object$frame, "origin")} is retained
-as an \link[=attributes]{attribute}.
 }
 \description{
 Computes predicted values of interval incidence, cumulative incidence,
-and the per capita growth rate, conditional on observed data and an
-estimated model of epidemic growth.
+and the per capita growth rate, conditional on observed data and a fitted
+nonlinear mixed effects model of epidemic growth.
 }
 \details{
 In the result, \code{estimate[i]} can be interpreted as follows
 assuming \code{log = FALSE}:
 \describe{
-\item{\code{int_inc}}{
-  The number of cases predicted from \code{time[i-1]} to \code{time[i]}
-  in \code{window[i]} (interval incidence).
+\item{\code{interval}}{
+  The expected number of cases observed from \code{time[i-1]}
+  to \code{time[i]} in \code{window[i]} (interval incidence).
 }
-\item{\code{cum_inc}}{
-  The number of cases predicted from the start of \code{window[i]}
-  to \code{time[i]} (cumulative incidence).
+\item{\code{cumulative}}{
+  The expected number of cases observed up to \code{time[i]}
+  in \code{window[i]} (cumulative incidence).
 }
 \item{\code{rt}}{
-  The per capita growth rate at \code{time[i]}. This is obtained
-  exactly from the differential equation model associated with
-  \code{object$model$curve}, unless \code{object$model$day_of_week > 0},
-  in which case it is approximated by 7-point local linear regression
-  of the log interval incidence time series.
+  The predicted per capita growth rate at \code{time[i]}.
+  This is computed exactly from the differential equation model
+  associated with \code{object$model$curve}.
 }
 }
-
 See topic \code{\link{nse}} for details on nonstandard evaluation
 of \code{append}.
 }

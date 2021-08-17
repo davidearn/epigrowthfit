@@ -19,8 +19,8 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
   Coefficient name in the full parameter vector \code{object$best}.
 }
 \item{par}{
-  Nonlinear or dispersion model parameter,
-  from \code{\link{get_par_names}(object, link = TRUE)}.
+  Top level nonlinear model parameter,
+  from \code{\link{get_names_top}(object, link = TRUE)}.
 }
 \item{term}{
   Term from fixed effects component of mixed effects \link{formula}

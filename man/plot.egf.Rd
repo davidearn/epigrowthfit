@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{egf}(
   x,
-  type = c("interval", "cumulative", "rt1", "rt2"),
+  type = c("interval", "cumulative", "rt", "rt_heat"),
   subset = NULL,
   order = NULL,
   cache = NULL,
@@ -38,9 +38,9 @@
 \item{type}{A \link{character} string indicating a type of plot. The options are:
 interval incidence (\code{"interval"}),
 cumulative incidence (\code{"cumulative"}),
-per capita growth rate as curve (\code{"rt1"}), and
-per capita growth rate as heat map (\code{"rt2"}).
-\code{"rt2"} displays \code{panels_per_plot} time series per plot.
+per capita growth rate (\code{"rt"}), and
+per capita growth rate \emph{as heat map} (\code{"rt_heat"}).
+\code{"rt_heat"} displays \code{panels_per_plot} time series in each plot.
 The rest display one time series per plot.}
 
 \item{subset}{An expression to be evaluated in the combined model frame
@@ -62,32 +62,37 @@ stored in \code{cache} are reused if possible to avoid recomputation.}
 \item{do_plot}{A \link{logical} flag. If \code{FALSE}, then nothing is plotted.
 Useful when only the returned \code{"egf_plot_cache"} object is desired.}
 
-\item{time_as}{A \link{character} string indicating how time is displayed on the
-bottom axis. The options are: as a calendar (\code{"Date"}) and
-as a number of days since the earliest time point (\code{"numeric"}).}
+\item{time_as}{A \link{character} string indicating how time is displayed
+on the bottom axis. The options are: as is (\code{"numeric"})
+and with a calendar (\code{"Date"}). In the latter case,
+numeric times are interpreted as numbers of days since
+\code{1970-01-01 00:00:00}.}
 
-\item{dt}{A positive number indicating an observation interval in days.
+\item{dt}{A positive number indicating an observation interval.
 Predicted curves are evaluated on grids with this spacing.
 When \code{type = "interval"}, counts observed over a shorter
 or longer interval \code{dt0} are scaled by a factor of
 \code{dt / dt0} so that their scale matches that of the curves.
-These points can be highlighted via \code{control}.}
+These points can be highlighted via \code{control}.
+If \code{x} specifies a model with day of week effects
+(\code{x$model$day_of_week > 0}), then \code{dt} is set to 1
+internally, and supplying a value other than 1 has no effect.}
 
 \item{log}{A \link{logical} flag. If \code{TRUE}, then the dependent variable
 is plotted on a logarithmic scale.
-[\code{type != "rt1"} only.]}
+[\code{type != "rt"} only.]}
 
 \item{show_predict}{An integer flag: 2 is to draw predicted curves with confidence bands,
 1 is draw predicted curves only, 0 is to draw neither.
 \link[=logical]{Logical} values are coerced to integer.
-[\code{type != "rt2"} only.]}
+[\code{type != "rt_heat"} only.]}
 
 \item{show_tdoubling}{An integer flag: 2 is to print initial doubling time estimates in
 the top margin with confidence intervals, 1 is to print estimates
 only, 0 is to print neither. \link[=logical]{Logical} values are
 coerced to integer. Supported only if \code{x$model$curve} is
 \code{"exponential"}, \code{"logistic"}, or \code{"richards"}.
-[\code{type != "rt2"} only.]}
+[\code{type != "rt_heat"} only.]}
 
 \item{show_legend}{A \link{logical} flag. If \code{TRUE}, then a legend is displayed
 in the right margin.
@@ -95,15 +100,15 @@ in the right margin.
 
 \item{level}{A number in the interval (0,1). This is the confidence level used
 when \code{show_predict = 2} or \code{show_tdoubling = 2}.
-[\code{type != "rt2"} only.]}
+[\code{type != "rt_heat"} only.]}
 
 \item{panels_per_plot}{A positive integer giving the number of panels (time series)
 displayed in one plot.
-[\code{type = "rt2"} only.]}
+[\code{type = "rt_heat"} only.]}
 
 \item{inter_panel_space}{A non-negative number giving the space between panels
 in multipanel plots as a number of margin lines.
-[\code{type = "rt2"} only.]}
+[\code{type = "rt_heat"} only.]}
 
 \item{control}{An \code{"\link{egf_plot_control}"} object controlling the appearance
 of almost all plot elements.}
@@ -112,20 +117,20 @@ of almost all plot elements.}
 which are recycled for all plots. If \code{time_as = "Date"}, then
 \code{xlim} can instead be a \link{Date} vector or a \link{character}
 vector coercible to Date via \code{\link{as.Date}(xlim)}. \code{ylim}
-is unused by \code{type = "rt2"}.}
+is unused by \code{type = "rt_heat"}.}
 
 \item{main, sub, xlab, ylab, ylab_outer, plab}{\link[=character]{Character} strings or expressions used
 to generate plot (\code{main}, \code{sub}), axis (\code{xlab},
 \code{ylab}, \code{ylab_outer}), and panel (\code{plab}) titles.
 \code{main}, \code{xlab}, and \code{ylab} are supported for all
 values of \code{type}.
-\code{sub} is unused by \code{type = "rt2"}.
-\code{plab} is used by \code{type = "rt2"} only.
+\code{sub} is unused by \code{type = "rt_heat"}.
+\code{plab} is used by \code{type = "rt_heat"} only.
 \code{ylab_outer} is used by \code{type = "rt[12]"} only.
-When \code{type != "rt2"}, \code{main} and \code{sub} are evaluated
+When \code{type != "rt_heat"}, \code{main} and \code{sub} are evaluated
 in the combined model frame (see \code{\link{make_combined}})
 in order to generate unique (sub)titles for each plot.
-When \code{type = "rt2"}, \code{plab} is evaluated similarly
+When \code{type = "rt_heat"}, \code{plab} is evaluated similarly
 in order to generate unique titles for each panel.
 \code{\link{plotmath}} expressions are not supported
 for \code{main}, \code{sub}, and \code{plab} in these cases.}
@@ -145,15 +150,17 @@ Methods for plotting \code{"\link{egf}"} objects.
 Computation of fitted and predicted values and standard errors
 is performed before any plots are created. To avoid waste of
 computation time, cached computations are returned \emph{even if}
-an error is thrown during plotting. The cache will be temporarily
-available via \code{\link{.Last.value}}. To ensure that the cache
-is permanently available, assign the result of the call to
-\code{\link{plot}} to a name: \code{cache <- plot(x, \dots)}.
+an error is thrown during plotting. Hence the cache will be
+available temporarily via \code{\link{.Last.value}}. To ensure
+that the cache is available permanently, assign the result of
+the call to \code{\link{plot}} to a name:
+\code{cache <- plot(x, \dots)}.
 
-Caching functionality must be used with care, as mismatch
-between \code{x} and \code{cache} will \emph{not} be detected.
-Constructions such as \code{plot(y, cache = plot(x, \dots), \dots)}
-should \emph{not} be expected to produce correct results.
+Caching functionality must be used with care, as mismatch between
+\code{x} and \code{cache} will not be detected. Constructions such
+as \code{plot(y, cache = plot(x, \dots), \dots)}, where \code{x}
+and \code{y} are different objects, should not be expected to produce
+correct results.
 
 See topic \code{\link{nse}} for details on nonstandard evaluation
 of \code{subset} and \code{order}.

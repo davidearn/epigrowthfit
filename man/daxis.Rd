@@ -14,8 +14,8 @@ Daxis(
 }
 \arguments{
 \item{origin}{A \link{Date}. It is assumed that horizontal user coordinates
-measure time as a number of days since time 00:00:00 on Date
-\code{origin}.}
+measure time as a number of days since the time
+\code{\link{unclass}(origin)} days after 1970-01-01 00:00:00.}
 
 \item{minor, major}{Named \link{list}s of arguments to \code{\link{axis}}, affecting
 the appearance of the minor (day or month) and major (month or year)

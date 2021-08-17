@@ -7,7 +7,7 @@
 \usage{
 \method{fitted}{egf}(
   object,
-  par = get_par_names(object, link = TRUE),
+  par = get_names_top(object, link = TRUE),
   subset = NULL,
   append = NULL,
   link = TRUE,
@@ -19,7 +19,7 @@
 
 \method{coef}{egf}(
   object,
-  par = get_par_names(object, link = TRUE),
+  par = get_names_top(object, link = TRUE),
   subset = NULL,
   append = NULL,
   link = TRUE,
@@ -32,9 +32,9 @@
 \arguments{
 \item{object}{An \code{"\link{egf}"} object.}
 
-\item{par}{A subset of \code{\link{get_par_names}(object, link = TRUE)}
-naming nonlinear and dispersion model parameters for which
-fitted values should be retrieved.}
+\item{par}{A subset of \code{\link{get_names_top}(object, link = TRUE)}
+naming top level nonlinear model parameters for which fitted values
+should be retrieved.}
 
 \item{subset}{An expression to be evaluated in the combined model frame
 (see \code{\link{make_combined}}). Must evaluate to
@@ -47,8 +47,8 @@ is to consider all windows.}
 (see \code{\link{make_combined}}) to be included with the result.
 The default (\code{\link{NULL}}) is to append nothing.}
 
-\item{link}{A \link{logical} flag. If \code{FALSE}, then fitted values
-are inverse link-transformed.}
+\item{link}{A \link{logical} flag. If \code{FALSE},
+then fitted values are inverse link-transformed.}
 
 \item{se}{A \link{logical} flag. If \code{link = TRUE} and \code{se = TRUE},
 then approximate (delta method) standard errors on fitted values
@@ -68,14 +68,14 @@ in place of the result of evaluating \code{subset}.}
 A \link[=data.frame]{data frame} inheriting from \link{class}
 \code{"egf_fitted"}, with variables:
 \item{par}{
-  Nonlinear or dispersion model parameter,
-  from \code{\link{get_par_names}(object, link = link)}.
+  Top level nonlinear model parameter,
+  from \code{\link{get_names_top}(object, link = link)}.
 }
 \item{ts}{
-  Time series, from \code{\link{levels}(object$endpoints$ts)}.
+  Time series, from \code{\link{levels}(object$frame_windows$ts)}.
 }
 \item{window}{
-  Fitting window, from \code{\link{levels}(object$endpoints$window)}.
+  Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
 }
 \item{estimate}{
   Fitted value of parameter \code{par} in fitting window \code{window}.
@@ -86,7 +86,7 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
 }
 }
 \description{
-Computes fitted values of nonlinear and dispersion model parameters.
+Computes fitted values of top level nonlinear model parameters.
 The fitted value for a given fitting window is obtained by adding
 (i) the population fitted value computed as a linear combination
 of fixed effects coefficients and

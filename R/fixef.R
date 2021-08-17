@@ -13,8 +13,8 @@
 #'   Coefficient name in the full parameter vector \code{object$best}.
 #' }
 #' \item{par}{
-#'   Nonlinear or dispersion model parameter,
-#'   from \code{\link{get_par_names}(object, link = TRUE)}.
+#'   Top level nonlinear model parameter,
+#'   from \code{\link{get_names_top}(object, link = TRUE)}.
 #' }
 #' \item{term}{
 #'   Term from fixed effects component of mixed effects \link{formula}
@@ -34,13 +34,13 @@
 #' @importFrom nlme fixef
 fixef.egf <- function(object, ...) {
   beta <- object$best[grep("^beta\\[", names(object$best))]
-  d <- data.frame(
+  res <- data.frame(
     name = names(beta),
     object$tmb_args$data$X_info[c("par", "term", "colname")],
     estimate = beta,
     row.names = NULL,
     stringsAsFactors = FALSE
   )
-  class(d) <- c("egf_fixef", "data.frame")
-  d
+  class(res) <- c("egf_fixef", "data.frame")
+  res
 }

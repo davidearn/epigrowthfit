@@ -18,8 +18,6 @@ warn_if_not(..., m = "", n = 1L)
 the error or warning message. \code{n} indicates a number of
 generations backwards relative to the function call. The default
 (\code{n = 1}) corresponds to the call from the parent frame.}
-
-\item{x}{An object to be checked.}
 }
 \value{
 \code{\link{NULL}} (invisibly).

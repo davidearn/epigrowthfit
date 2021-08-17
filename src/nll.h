@@ -5,16 +5,17 @@ bool is_nll_term_ok(Type nll_term, double tol = 1.0e+09)
 }
 
 template<class Type>
-void add_nll_ob(Type &nll,
-		objective_function<Type> *obj,
-		const vector<Type> &time,
-		const vector<int> &time_seg_len,
-		vector<Type> &x,
-		const matrix<Type> &Y,
-		const egf::indices_t<Type> &indices,
-		const egf::flags_t<Type> &flags,
-		const vector<int> &day1)
+Type nll_ob(objective_function<Type> *obj,
+	    const vector<Type> &time,
+	    const vector<int> &time_seg_len,
+	    vector<Type> &x,
+	    const matrix<Type> &Y,
+	    const egf::indices_t<Type> &indices,
+	    const egf::flags_t<Type> &flags,
+	    const vector<int> &day1)
 {
+    Type res = Type(0.0);
+    
     int N = time_seg_len.size();
     int n;
     vector<Type> Y_row;
@@ -49,25 +50,27 @@ void add_nll_ob(Type &nll,
 				      Y_row(indices.index_log_w6),
 				      day1(s));
 	}
-	add_nll_ob(nll, obj, x, predict, Y_row, indices, flags,
-		   i - s, s);
+	res += nll_ob(obj, x, predict, Y_row, indices, flags, i - s, s);
 	i += n;
     } /* loop over segments */
+
+    return res;
 }
 
 
 template<class Type>
-void add_nll_ob(Type &nll,
-		objective_function<Type> *obj,
-		vector<Type> &x,
-		const vector<Type> &log_diff_curve,
-		const vector<Type> &Y_row,
-		const egf::indices_t<Type> &indices,
-		const egf::flags_t<Type> &flags,
-		int ix,
-		int sx)
+Type nll_ob(objective_function<Type> *obj,
+	    vector<Type> &x,
+	    const vector<Type> &log_diff_curve,
+	    const vector<Type> &Y_row,
+	    const egf::indices_t<Type> &indices,
+	    const egf::flags_t<Type> &flags,
+	    int ix,
+	    int sx)
 {
+    Type res = Type(0.0);
     Type nll_term;
+
     int n = log_diff_curve.size();
     bool print_Y_row = flags.do_trace_verbose;
 
@@ -77,7 +80,7 @@ void add_nll_ob(Type &nll,
     Type log_var_minus_mu;
     if (flags.flag_family == nbinom)
     {
-        log_size = Y_row(indices.index_log_nbdisp);
+        log_size = Y_row(indices.index_log_disp);
     }
 
     for (int i = ix, k = 0; k < n; ++i, ++k)
@@ -116,7 +119,7 @@ void add_nll_ob(Type &nll,
 		nll_term = -dnbinom_robust(x(i), log_mu, log_var_minus_mu, true);
 		break;
 	    }
-	    nll += nll_term;
+	    res += nll_term;
 
 	    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 	    {
@@ -142,17 +145,20 @@ void add_nll_ob(Type &nll,
     {
 	std::cout << "Y.row(" << sx << ") =\n" << Y_row << "\n";
     }
+
+    return res;
 }
 
 
 template<class Type>
-void add_nll_re(Type &nll,
-		objective_function<Type> *obj,
-		const vector< matrix<Type> > &list_of_blocks,
-		vector< density::MVNORM_t<Type> > list_of_nld,
-		const egf::flags_t<Type> &flags)
+Type nll_re(objective_function<Type> *obj,
+	    const vector< matrix<Type> > &list_of_blocks,
+	    vector< density::MVNORM_t<Type> > list_of_nld,
+	    const egf::flags_t<Type> &flags)
 {
+    Type res = Type(0.0);
     Type nll_term;
+
     int M = list_of_blocks.size();
     int nc;
     
@@ -164,7 +170,7 @@ void add_nll_re(Type &nll,
 	    if (obj->parallel_region())
 	    {
 	        nll_term = list_of_nld(m)(list_of_blocks(m).col(j));
-		nll += nll_term;
+		res += nll_term;
 
 		if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 		{
@@ -174,16 +180,19 @@ void add_nll_re(Type &nll,
 	    }
 	} /* loop over group levels */
     } /* loop over terms */
+
+    return res;
 }
 
 template<class Type>
-void add_nll_pv(Type &nll,
-		objective_function<Type> *obj,
-		const matrix<Type> &Y,
-		const vector< vector<Type> > &hyperparameters,
-		const egf::flags_t<Type> &flags)
+Type nll_pv(objective_function<Type> *obj,
+	    const matrix<Type> &Y,
+	    const vector< vector<Type> > &hyperparameters,
+	    const egf::flags_t<Type> &flags)
 {
+    Type res = Type(0.0);
     Type nll_term;
+
     int nr = Y.rows();
     int nc = Y.cols();
 
@@ -213,7 +222,7 @@ void add_nll_pv(Type &nll,
 			nll_term = -dnorm(Y(i, j), mu, sigma, true);
 			break;
 		    }
-		    nll += nll_term;
+		    res += nll_term;
 
 		    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 		    {
@@ -231,4 +240,6 @@ void add_nll_pv(Type &nll,
 	    } /* loop over values */
 	}
     } /* loop over parameters */
+
+    return res;
 }

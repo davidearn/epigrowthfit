@@ -8,7 +8,7 @@
 }
 \arguments{
 \item{object}{An \code{"\link[=fitted.egf]{egf_fitted}"} object.
-Must supply standard errors on fitted values.}
+Must supply link scale fitted values and corresponding standard errors.}
 
 \item{parm}{Unused argument included for generic consistency.}
 
@@ -24,15 +24,15 @@ If \code{link = TRUE}, then \code{object} but with variable
 \code{se} replaced with variables \code{lower} and \code{upper}
 supplying confidence limits on fitted values (link scale).
 
-Otherwise, the same object but with variables \code{estimate},
+Otherwise, the same result but with variables \code{estimate},
 \code{lower}, and \code{upper} inverse link-transformed and
 \code{\link{levels}(par)} modified accordingly.
 
 \code{level} is retained as an \link[=attributes]{attribute}.
 }
 \description{
-Computes confidence intervals on fitted values of nonlinear and dispersion
-model parameters.
+Computes confidence intervals on fitted values of top level nonlinear model
+parameters.
 }
 \details{
 Confidence limits on fitted values (link scale) are computed

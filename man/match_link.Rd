@@ -7,8 +7,7 @@
 match_link(f, inverse = FALSE)
 }
 \arguments{
-\item{f}{A \link{character} string naming a link function,
-either \code{"log"} or \code{"logit"}.}
+\item{f}{A \link{character} string naming a link function.}
 
 \item{inverse}{A \link{logical} flag. If \code{TRUE}, then the inverse is returned.}
 }
@@ -19,10 +18,8 @@ A \link{function}.
 Retrieve the link function named by a string, or its inverse.
 }
 \examples{
-# match_link("log")
-# match_link("log", inverse = TRUE)
-# match_link("logit")
-# match_link("logit", inverse = TRUE)
+## match_link("log")
+## match_link("log", inverse = TRUE)
 
 }
 \keyword{internal}

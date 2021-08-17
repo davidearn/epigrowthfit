@@ -1,7 +1,7 @@
 #' Confidence intervals on fitted values
 #'
 #' Computes confidence intervals on \link[=fitted.egf]{fitted values}
-#' of nonlinear and dispersion model parameters and, if possible,
+#' of top level nonlinear model parameters and, where appropriate,
 #' initial doubling times (in days) and basic reproduction numbers.
 #'
 #' @param object
@@ -11,10 +11,10 @@
 #' @param level
 #'   A number in the interval (0,1) indicating a confidence level.
 #' @param par
-#'   A subset of \code{\link{get_par_names}(object, link = TRUE)}
-#'   naming nonlinear and dispersion model parameters for which
-#'   confidence intervals should be computed. If \code{object$model$curve}
-#'   is \code{"exponential"}, \code{"logistic"}, or \code{"richards"}),
+#'   A subset of \code{\link{get_names_top}(object, link = TRUE)}
+#'   naming top level nonlinear model parameters for which confidence
+#'   intervals should be computed. If \code{object$model$curve} is
+#'   \code{"exponential"}, \code{"logistic"}, or \code{"richards"}),
 #'   then \code{par} may also contain \code{"tdoubling"} and \code{"R0"}.
 #' @param subset
 #'   An expression to be evaluated in the combined model frame
@@ -74,14 +74,13 @@
 #'   (\code{\link{uniroot}} internally).
 #' }
 #' }
-#' For nonlinear and dispersion model parameters following random effects
-#' models, \code{"wald"} returns confidence intervals on individual fitted
-#' values, whereas \code{"profile"} and \code{"uniroot"} return confidence
-#' intervals on the fixed effects components only, namely the population
-#' fitted values.
+#' For top level parameters following random effects models, \code{"wald"}
+#' returns confidence intervals on individual fitted values,
+#' whereas \code{"profile"} and \code{"uniroot"} return confidence intervals
+#' on the fixed effects components only, namely the population fitted values.
 #'
-#' \code{"wald"} requires minimal computation time but assumes, e.g.,
-#' asymptotic normality of the maximum likelihood estimator.
+#' \code{"wald"} requires minimal computation time but assumes,
+#' e.g., asymptotic normality of the maximum likelihood estimator.
 #' A further limitation of \code{"wald"} is functional non-invariance.
 #' \code{"profile"} and \code{"uniroot"} avoid these issues but are
 #' much slower, requiring estimation of restricted models. Of the two,
@@ -94,31 +93,32 @@
 #' A \link[=data.frame]{data frame} inheriting from \link{class}
 #' \code{"egf_confint"}, with variables:
 #' \item{par}{
-#'   Nonlinear or dispersion model parameter,
-#'   from \code{\link{get_par_names}(object, link = TRUE)}.
+#'   Top level nonlinear model parameter,
+#'   from \code{\link{get_names_top}(object, link = TRUE)}.
 #' }
 #' \item{ts}{
-#'   Time series, from \code{\link{levels}(object$endpoints$ts)}.
+#'   Time series, from \code{\link{levels}(object$frame_windows$ts)}.
 #' }
 #' \item{window}{
-#'   Fitting window, from \code{\link{levels}(object$endpoints$window)}.
+#'   Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
 #' }
 #' \item{estimate, lower, upper}{
 #'   Fitted value and approximate lower and upper confidence limits.
 #' }
-#' \code{level} and \code{object$endpoints} are retained as \link{attributes}.
+#' \code{level} and \code{object$frame_windows} are retained
+#' as \link{attributes}.
 #'
 #' @seealso \code{plot.egf_confint}
 #' @export
 #' @importFrom Matrix KhatriRao
 #' @importFrom methods as
 #' @importFrom stats qchisq fitted profile confint
-#' @importFrom TMB tmbroot
+#' @importFrom TMB tmbroot openmp
 #' @import parallel
 confint.egf <- function(object,
                         parm,
                         level = 0.95,
-                        par = get_par_names(object, link = TRUE),
+                        par = get_names_top(object, link = TRUE),
                         subset = NULL,
                         append = NULL,
                         link = TRUE,
@@ -137,32 +137,29 @@ confint.egf <- function(object,
   method <- match.arg(method)
   elu <- c("estimate", "lower", "upper")
 
-  par_names <- par_names_bak <- get_par_names(object, link = TRUE)
+  names_top <- names_top_bak <- get_names_top(object, link = TRUE)
   spec <- c("tdoubling", "R0")
   if (object$model$curve %in% c("exponential", "logistic", "richards")) {
-    par_names <- c(par_names, spec)
+    names_top <- c(names_top, spec)
   }
 
-  par <- par_bak <- unique(match.arg(par, par_names, several.ok = TRUE))
+  par <- par_bak <- unique(match.arg(par, names_top, several.ok = TRUE))
   if ("R0" %in% par) {
-    stop_if_not(
+    stopifnot(
       !is.null(breaks),
-      !is.null(probs),
-      m = "par = \"R0\": `breaks` and `probs` must be non-NULL. See `?compute_R0`."
+      !is.null(probs)
     )
   }
   par[par %in% spec] <- "log(r)"
   par <- unique(par)
 
   combined <- make_combined(object)
-  subset <- subset_to_index(substitute(subset), data = combined, enclos = parent.frame(),
-                            .subset = .subset)
-  append <- append_to_index(substitute(append), data = combined, enclos = parent.frame(),
-                            .append = .append)
+  subset <- eval_subset(substitute(subset), combined, parent.frame(), .subset = .subset)
+  append <- eval_append(substitute(append), combined, baseenv(), .append = .append)
 
   if (method == "wald") {
     ft <- fitted(object, par = par, se = TRUE, .subset = subset, .append = append)
-    out <- confint(ft, level = level, link = link)
+    res <- confint(ft, level = level, link = link)
 
   } else if (method == "profile") {
     pf <- profile(object, par = par, .subset = subset, .append = append,
@@ -171,8 +168,8 @@ confint.egf <- function(object,
       parallel = parallel,
       trace = trace
     )
-    out <- confint(pf, level = level, link = link)
-    out$linear_combination <- NULL
+    res <- confint(pf, level = level, link = link)
+    res$linear_combination <- NULL
 
   } else { "uniroot"
     stop_if_not_number(max_width, "positive")
@@ -203,7 +200,12 @@ confint.egf <- function(object,
 
     do_uniroot <- function(r, i) {
       if (trace) {
-        cat(sprintf("Computing confidence interval %*d of %d...\n", nchar(m), i, m))
+        cat(sprintf("Computing confidence interval %d of %d...\n", i, m))
+      }
+      on <- openmp(n = NULL)
+      if (on > 0L) {
+        openmp(n = object$control$omp_num_threads)
+        on.exit(openmp(n = on))
       }
       tmbroot_args$lincomb <- r
       do.call(tmbroot, tmbroot_args)
@@ -237,10 +239,10 @@ confint.egf <- function(object,
       }
     }
 
-    out <- data.frame(
-      par = rep(factor(par, levels = par_names), each = N),
-      ts = object$endpoints$ts[subset],
-      window = object$endpoints$window[subset],
+    res <- data.frame(
+      par = rep(factor(par, levels = names_top), each = N),
+      ts = object$frame_windows$ts[subset],
+      window = object$frame_windows$window[subset],
       estimate = as.numeric(A %*% object$best[object$nonrandom]),
       do.call(rbind, vl), # "lower" "upper"
       combined[subset, append, drop = FALSE],
@@ -250,45 +252,45 @@ confint.egf <- function(object,
     )
 
     if (!link) {
-      out[elu] <- lpapply(out[elu], out$par,
-        f = lapply(string_extract_link(levels(out$par)), match_link, inverse = TRUE)
+      res[elu] <- in_place_ragged_apply(res[elu], res$par,
+        f = lapply(string_extract_link(levels(res$par)), match_link, inverse = TRUE)
       )
-      levels(out$par) <- string_remove_link(levels(out$par))
+      levels(res$par) <- string_remove_link(levels(res$par))
     }
   }
 
   if (any(par_bak %in% spec)) {
     s <- if (link) "log(r)" else "r"
-    d_r <- out[out$par == s, , drop = FALSE]
+    res_r <- res[res$par == s, , drop = FALSE]
     if (link) {
-      d_r[elu] <- exp(d_r[elu])
+      res_r[elu] <- exp(res_r[elu])
     }
 
     if ("tdoubling" %in% par_bak) {
       eul <- elu[c(1L, 3L, 2L)]
-      d_tdoubling <- d_r
-      d_tdoubling[elu] <- log(2) / d_r[eul]
-      d_tdoubling$par <- factor("tdoubling")
-      out <- rbind(out, d_tdoubling)
+      res_tdoubling <- res_r
+      res_tdoubling[elu] <- log(2) / res_r[eul]
+      res_tdoubling$par <- factor("tdoubling")
+      res <- rbind(res, res_tdoubling)
     }
 
     if ("R0" %in% par_bak) {
-      d_R0 <- d_r
-      d_R0[elu] <- lapply(d_r[elu], compute_R0, breaks = breaks, probs = probs)
-      d_R0$par <- factor("R0")
-      out <- rbind(out, d_R0)
+      res_R0 <- res_r
+      res_R0[elu] <- lapply(res_r[elu], compute_R0, breaks = breaks, probs = probs)
+      res_R0$par <- factor("R0")
+      res <- rbind(res, res_R0)
     }
 
     if (!"log(r)" %in% par_bak) {
-      out <- out[out$par != s, , drop = FALSE]
+      res <- res[res$par != s, , drop = FALSE]
     }
   }
 
-  row.names(out) <- NULL
-  attr(out, "level") <- level
-  attr(out, "endpoints") <- object$endpoints # for `plot.egf_confint`
-  class(out) <- c("egf_confint", "data.frame")
-  out
+  row.names(res) <- NULL
+  attr(res, "level") <- level
+  attr(res, "frame_windows") <- object$frame_windows # for `plot.egf_confint`
+  class(res) <- c("egf_confint", "data.frame")
+  res
 }
 
 # #' Plot confidence intervals

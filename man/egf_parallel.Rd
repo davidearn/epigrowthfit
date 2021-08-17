@@ -8,41 +8,46 @@ egf_parallel(
   method = c("serial", "multicore", "snow"),
   outfile = "",
   cores = getOption("egf.cores", 1L),
-  options = list(),
-  cl = NULL
+  args = list(),
+  cl = nullfile()
 )
 }
 \arguments{
 \item{method}{A \link{character} string indicating a method of parallelization.
 \code{"\link[=lapply]{serial}"} indicates no parallelization.
-\code{"\link[parallel:mclapply]{multicore}"} indicates forking.
-It is intended for use from a terminal rather than a GUI.
-On Windows, it is equivalent to \code{"serial"}.
+\code{"\link[parallel:mclapply]{multicore}"} indicates \R level
+forking. It is intended for use from a terminal rather than a GUI.
+On Windows, \code{"multicore"} is equivalent to \code{"serial"}.
 \code{"\link[parallel:parLapply]{snow}"} indicates socket clusters.
-It supports parallelization on both Unix-alikes and Windows.}
+\code{"snow"} is supported on both Unix-alikes and Windows.}
 
-\item{outfile}{A \link{character} string indicating a file path where
-console output should be diverted. \code{\link{NULL}} is
-equivalent to \code{\link{nullfile}()}. \code{""} means
-no diversion. If \code{method = "snow"}, then diversion
-may be necessary to view output.}
+\item{outfile}{A \link{character} string indicating a file path where console output
+should be diverted. An empty string indicates no diversion.
+If \code{method = "snow"}, then diversion may be necessary to view output.}
 
-\item{cores}{A positive integer indicating a number of worker processes
-to spawn when \code{parallel != "serial"}. The maximum is
-typically \code{\link[parallel]{detectCores}(TRUE, FALSE)}.}
+\item{cores}{A positive integer indicating a number of threads/processes
+to fork/spawn when \code{parallel != "serial"}. The maximum
+is typically \code{\link[parallel]{detectCores}(TRUE, FALSE)}.}
 
-\item{options}{A \link{list} of optional arguments to
+\item{args}{A \link{list} of optional arguments to
 \code{\link[parallel]{mclapply}} (\code{method = "multicore"}) or
 \code{\link[parallel]{makePSOCKcluster}} (\code{method = "snow"}).}
 
-\item{cl}{An optional \link[parallel:makePSOCKcluster]{socket cluster}
-to be used when \code{parallel = "snow"}. If non-\code{\link{NULL}},
-then \code{outfile}, \code{cores}, and \code{options} are ignored.}
+\item{cl}{An existing \link[parallel:makePSOCKcluster]{socket cluster}
+(\code{method = "snow"}).
+The default (\code{\link{NULL}}) is to create a new clusters
+as necessary and terminate them upon job completion.
+(If non-\code{\link{NULL}}, then \code{outfile}, \code{cores},
+and \code{options} are ignored.)}
 }
 \value{
 A \link{list} inheriting from \link{class} \code{"egf_parallel"}
-containing the arguments (after possible matching and substitution).
+containing the arguments (after possible matching and coercion).
 }
 \description{
 Defines instructions for parallelization by linking a method with options.
+}
+\details{
+For general information about parallelism in \R,
+see \code{\link{vignette}("parallel", "parallel")}.
 }

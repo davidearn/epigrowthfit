@@ -15,8 +15,8 @@ Normal(mu = 0, sigma = 1)
 \value{
 A \link{list} inheriting from \link{class} \code{"egf_prior"},
 with elements:
-\item{distribution}{
-  A \link{character} string naming the prior distribution.
+\item{family}{
+  A \link{character} string naming a family of distributions.
 }
 \item{parameters}{
   A named \link{numeric} vector listing parameter values.
@@ -24,5 +24,5 @@ with elements:
 }
 \description{
 Functions used by \code{\link{egf}} to specify prior distributions
-of nonlinear and dispersion model parameters.
+of top level nonlinear model parameters.
 }

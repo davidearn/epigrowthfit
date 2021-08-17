@@ -20,7 +20,7 @@ specifying inner optimization methods to be tried in turn.}
 A patched version of \link{function} \code{fn} or \code{gr}.
 }
 \description{
-Define a wrapper function on top of \code{\link[TMB]{MakeADFun}}-generated
+Define wrapper functions on top of \code{\link[TMB]{MakeADFun}}-generated
 functions \code{fn} and \code{gr}, so that function and gradient evaluations
 can retry inner optimization using fallback methods in the event that the
 default method (usually \code{\link[TMB]{newton}}) fails.

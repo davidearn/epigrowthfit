@@ -8,7 +8,7 @@
 }
 \arguments{
 \item{object}{An \code{"\link[=predict.egf]{egf_predict}"} object.
-Must supply standard errors on predicted values.}
+Must supply log scale predicted values and corresponding standard errors.}
 
 \item{parm}{Unused argument included for generic consistency.}
 
@@ -24,16 +24,15 @@ If \code{log = TRUE}, then \code{object} but with variable
 \code{se} replaced with variables \code{lower} and \code{upper}
 supplying confidence limits on log predicted values.
 
-Otherwise, the same object but with variables \code{estimate},
+Otherwise, the same result but with variables \code{estimate},
 \code{lower}, and \code{upper} inverse log-transformed and
 \code{\link{levels}(var)} modified accordingly.
 
 \code{level} is retained as an \link[=attributes]{attribute}.
 }
 \description{
-Computes confidence intervals on predicted values of
-log cumulative incidence, log interval incidence, and
-log per capita growth rate.
+Computes confidence intervals on predicted values of interval incidence,
+cumulative incidence, and the per capita growth rate.
 }
 \details{
 Confidence limits on predicted values (log scale) are computed
