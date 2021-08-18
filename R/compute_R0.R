@@ -54,16 +54,17 @@ compute_R0 <- function(r, breaks, probs) {
     return(numeric(0L))
   }
   stopifnot(
+    is.numeric(breaks),
+    length(breaks) >= 2L,
+    is.finite(breaks),
+    diff(breaks) > 0
+  )
+  stopifnot(
     is.numeric(probs),
-    length(probs) > 0L,
+    length(probs) == length(breaks) - 1L,
     is.finite(probs),
     probs >= 0,
     any(probs > 0)
-  )
-  stopifnot(
-    is.numeric(breaks),
-    length(breaks) == length(probs) + 1L,
-    is.finite(breaks)
   )
   probs <- probs / sum(probs)
   R0 <- rep_len(NA_real_, length(r))

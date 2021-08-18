@@ -26,6 +26,7 @@
 #' @keywords internal
 ymd <- function(x, which = "ymd", drop = TRUE) {
   stopifnot(
+    inherits(x, "Date") || is.character(x),
     is.character(which),
     length(which) == 1L,
     !is.na(which),
@@ -33,13 +34,13 @@ ymd <- function(x, which = "ymd", drop = TRUE) {
     length(drop) == 1L,
     !is.na(drop)
   )
-  X <- matrix(as.integer(unlist(strsplit(as.character(x), "-"), FALSE, FALSE)),
-    nrow = length(x),
-    ncol = 3L,
-    byrow = TRUE,
-    dimnames = list(NULL, c("y", "m", "d"))
-  )
-  j <- unique(match(strsplit(which, "")[[1L]], colnames(X), 0L))
+  X <- matrix(NA_integer_, nrow = length(x), ncol = 3L, dimnames = list(names(x), c("y", "m", "d")))
+  if (length(x) > 0L) {
+    ok <- is.finite(x)
+    i <- as.integer(unlist(strsplit(as.character(x[ok]), "-"), FALSE, FALSE))
+    X[ok, ] <- matrix(i, nrow = sum(ok), ncol = 3L, byrow = TRUE)
+  }
+  j <- match(strsplit(which, "")[[1L]], colnames(X), 0L)
   X[, j, drop = drop]
 }
 
@@ -75,40 +76,36 @@ NULL
 Dceiling <- function(x, to = c("day", "month", "year")) {
   stopifnot(inherits(x, "Date"))
   to <- match.arg(to)
-  if (length(x) == 0L) {
-    return(.Date(numeric(0L)))
-  }
   x <- .Date(ceiling(unclass(x)))
-  if (to == "day") {
+  if (to == "day" || !any(ok <- is.finite(x))) {
     return(x)
   }
-  X <- as.data.frame(ymd(x, drop = FALSE))
+  X <- as.data.frame(ymd(x[ok], drop = FALSE))
   if (to == "month") {
     X$m <- X$m + (X$d > 1L)
     X$y <- X$y + (i <- X$m == 13L)
     X$m[i] <- 1L
-    as.Date(paste(X$y, X$m, "1", sep = "-"), format = "%Y-%m-%d")
+    x[ok] <- as.Date(paste(X$y, X$m, "1", sep = "-"), format = "%Y-%m-%d")
   } else { # to == "year"
     X$y <- X$y + (X$m > 1L || X$d > 1L)
-    as.Date(paste(X$y, "1", "1", sep = "-"), format = "%Y-%m-%d")
+    x[ok] <- as.Date(paste(X$y, "1", "1", sep = "-"), format = "%Y-%m-%d")
   }
+  x
 }
 
 #' @rdname Dround
 Dfloor <- function(x, to = c("day", "month", "year")) {
   stopifnot(inherits(x, "Date"))
   to <- match.arg(to)
-  if (length(x) == 0L) {
-    return(.Date(numeric(0L)))
-  }
   x <- .Date(floor(unclass(x)))
-  if (to == "day") {
+  if (to == "day" || !any(ok <- is.finite(x))) {
     return(x)
   }
-  X <- as.data.frame(ymd(x, drop = FALSE))
+  X <- as.data.frame(ymd(x[ok], drop = FALSE))
   if (to == "month") {
-    as.Date(paste(X$y, X$m, "1", sep = "-"), format = "%Y-%m-%d")
+    x[ok] <- as.Date(paste(X$y, X$m, "1", sep = "-"), format = "%Y-%m-%d")
   } else { # to == "year"
-    as.Date(paste(X$y, "1", "1", sep = "-"), format = "%Y-%m-%d")
+    x[ok] <- as.Date(paste(X$y, "1", "1", sep = "-"), format = "%Y-%m-%d")
   }
+  x
 }

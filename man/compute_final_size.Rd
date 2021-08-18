@@ -4,7 +4,7 @@
 \alias{compute_final_size}
 \title{Compute expected epidemic final size}
 \usage{
-compute_final_size(R0, S0 = 1, I0 = 0)
+compute_final_size(R0, S0, I0)
 }
 \arguments{
 \item{R0}{A \link{numeric} vector listing non-negative values for the basic
@@ -13,7 +13,7 @@ reproduction number.}
 \item{S0, I0}{\link[=numeric]{Numeric} vectors listing values in the interval [0,1]
 for the proportions of the population that are susceptible and infected,
 respectively, at the start of the epidemic. (Hence \code{S0 + I0} should
-not exceed 1.)}
+be less than or equal to 1.)}
 }
 \value{
 A \link{numeric} vector listing values in the interval [0,1]
@@ -26,6 +26,10 @@ the course of an epidemic, as a function of the basic reproduction number.
 \details{
 \code{R0}, \code{S0}, and \code{I0} are recycled to length
 \code{\link{max}(\link{lengths}(\link{list}(R0, S0, I0)))}.
+
+At least one of \code{S0} and \code{I0} must be supplied.
+If \code{(S|I)0} is supplied but not \code{(S|I)0}, then
+the latter is assigned the value of one minus the former.
 }
 \section{Computation}{
 
@@ -44,8 +48,8 @@ epidemic final size \code{Z} through the implicit relation
 }
 
 \examples{
-R0 <- 10^seq(-3, 1, length.out = 150L)
-final_size <- compute_final_size(R0)
+R0 <- 10^seq(-3, 1, length.out = 151L)
+final_size <- compute_final_size(R0, S0 = 1, I0 = 0)
 
 plot(R0, final_size, type = "l", las = 1,
   xlab = "basic reproduction number",

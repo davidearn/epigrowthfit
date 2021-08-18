@@ -225,8 +225,8 @@ locf <- function(x, x0 = NULL) {
 #' ## x <- 1:10
 #' ## in_place_ragged_apply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
 #' ##
-#' ## x <- as.data.frame(replicate(3L, c(exp(rnorm(10L)), qlogis(runif(10L)))))
-#' ## in_place_ragged_apply(x, index = gl(2L, 10L), f = list(log, plogis))
+#' ## x <- as.data.frame(replicate(3L, c(exp(rnorm(5L)), qlogis(runif(5L)))))
+#' ## in_place_ragged_apply(x, index = gl(2L, 5L), f = list(log, plogis))
 #'
 #' @keywords internal
 in_place_ragged_apply <- function(x, index, f) {
@@ -266,8 +266,8 @@ in_place_ragged_apply <- function(x, index, f) {
 #' limits.
 #'
 #' @examples
-#' ## estimate <- rep_len(0, 6L)
-#' ## se <- exp(rnorm(6L, sd = 0.1))
+#' ## estimate <- rnorm(6L, 0, 1)
+#' ## se <- rlnorm(6L, 0, 0.1)
 #' ## do_wald(estimate = estimate, se = se, level = 0.95)
 #'
 #' @keywords internal
