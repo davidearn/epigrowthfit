@@ -566,7 +566,7 @@ server <- function(input, output, session) {
 
       output[[sprintf("plot_%d_caption", i)]] <- renderUI(HTML(paste0(
         "<small>",
-        "To select a fitting window, double click and drag the pointer over the plot region. ",
+        "To select a fitting window, click and drag the pointer over the plot region. ",
         "<br>",
         "To deselect a fitting window, double click anywhere inside of it.",
         "</small>"
@@ -595,7 +595,7 @@ server <- function(input, output, session) {
         plot.new()
         plot.window(xlim = xlim, ylim = ylim, log = "y")
         usr <- par("usr")
-        if (N()[[i]] > 0L) {
+        if (nrow(dp2) > 0L) {
           rect(
             xleft = dp2$start,
             xright = dp2$end,
@@ -607,8 +607,8 @@ server <- function(input, output, session) {
         }
         points(y ~ time, data = dp1, col = "#BBBBBBA8")
         spar <- input[[sprintf("spar_%d", i)]]
-        if (n()[[i]] >= 4L && spar > 0) {
-          argna <- is.na(dp1$y)
+        argna <- is.na(dp1$y)
+        if (sum(!argna) >= 4L && spar > 0) {
           ss <- smooth.spline(dp1$time[!argna], dp1$y[!argna], spar = spar)
           xx <- seq.int(
             from = max(usr[1L], limits()$xmin[i]),
@@ -674,7 +674,7 @@ server <- function(input, output, session) {
     res <- res[do.call(order, unname(res)), , drop = FALSE]
     if (N()[[i]] > 0L) {
       k <- which(unclass(res$ts) == i)
-      req(res$start[k[-1L]] >= res$end[k[-length(k)]])
+      req(all(res$start[k[-1L]] >= res$end[k[-length(k)]]))
     }
     accumulator(res)
   })
