@@ -22,7 +22,7 @@
 #'   Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.
 #' @param subset
 #'   An expression to be evaluated in the combined model frame
-#'   (see \code{\link{make_combined}}). Must evaluate to
+#'   (see \code{\link{egf_make_combined}}). Must evaluate to
 #'   a \link{logical} vector indexing rows of the data frame,
 #'   and thus fitting windows. Only population fitted values for
 #'   indexed windows are profiled. The default (\code{\link{NULL}})
@@ -30,8 +30,8 @@
 #'   is non-\code{\link{NULL}}.
 #' @param append
 #'   An expression indicating variables in the combined model frame
-#'   (see \code{\link{make_combined}}) to be included with the result.
-#'   The default (\code{\link{NULL}}) is to append nothing.
+#'   (see \code{\link{egf_make_combined}}) to be included with the
+#'   result. The default (\code{\link{NULL}}) is to append nothing.
 #'   Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.
 #' @param max_level
 #'   A number in the interval (0,1) indicating a confidence level.
@@ -164,7 +164,7 @@ profile.egf <- function(fitted,
     method <- "par"
     names_top <- get_names_top(fitted, link = TRUE)
     par <- unique(match.arg(par, names_top, several.ok = TRUE))
-    combined <- make_combined(fitted)
+    combined <- egf_make_combined(fitted)
     subset <- eval_subset(substitute(subset), combined, parent.frame(), .subset = .subset)
     append <- eval_append(substitute(append), combined, baseenv(), .append = .append)
 

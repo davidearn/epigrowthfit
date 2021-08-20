@@ -2,12 +2,13 @@
 % Please edit documentation in R/utils_egf.R
 \name{patch_fn}
 \alias{patch_fn}
-\alias{patch_gr}
+\alias{egf_patch_fn}
+\alias{egf_patch_gr}
 \title{Patch TMB-generated functions}
 \usage{
-patch_fn(fn, inner_optimizer)
+egf_patch_fn(fn, inner_optimizer)
 
-patch_gr(gr, inner_optimizer)
+egf_patch_gr(gr, inner_optimizer)
 }
 \arguments{
 \item{fn, gr}{\link[=function]{Function}s from a \code{\link[TMB]{MakeADFun}}-generated

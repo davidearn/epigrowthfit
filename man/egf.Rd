@@ -20,7 +20,7 @@ egf(model, ...)
   na_action_windows = c("fail", "omit"),
   priors = list(),
   control = egf_control(),
-  do_fit = TRUE,
+  fit = TRUE,
   se = FALSE,
   init = NULL,
   map = NULL,
@@ -105,7 +105,7 @@ Calls are evaluated in the corresponding formula environments.}
 
 \item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
 
-\item{do_fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
+\item{fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 with a \link{list} of optimization inputs.}
 
 \item{se}{A \link{logical} flag. If \code{TRUE}, then standard errors on mixed
@@ -114,7 +114,7 @@ by methods.}
 
 \item{init}{A \link{numeric} vector to be used as the full parameter vector for
 the first likelihood evaluation. The default (\code{\link{NULL}}) is
-to accept the internally generated default. Use \code{do_fit = FALSE}
+to accept the internally generated default. Use \code{fit = FALSE}
 to retrieve this default and other optimization inputs (in particular
 \code{Y_init}; see Value), which can often be used to construct a more
 informative starting point.}
@@ -138,7 +138,7 @@ Outside of these two special cases, expressions are evaluated
 similarly to the \code{select} argument of \code{\link{subset}}.}
 }
 \value{
-If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
+If \code{fit = TRUE}, then a \link{list} inheriting from \link{class}
 \code{"egf"}, with elements:
 \item{model}{
   A copy of the so-named argument.
@@ -185,8 +185,8 @@ If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
   A copy of the so-named argument.
 }
 \item{tmb_args}{
-  A \link{list} of arguments to \code{\link[TMB]{MakeADFun}}
-  constructed by \code{\link{make_tmb_args}}.
+  A \link{list} of arguments to \code{\link[TMB]{MakeADFun}},
+  enabling reinitialization of \code{tmb_out}.
 }
 \item{tmb_out}{
   The \link{list} output of \code{\link[TMB]{MakeADFun}}
@@ -217,7 +217,7 @@ If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
   The \link{call} to \code{egf}, allowing for updates to the
   \code{"egf"} object via \code{\link{update}}.
 }
-If \code{do_fit = FALSE}, then a \link{list} inheriting from
+If \code{fit = FALSE}, then a \link{list} inheriting from
 \link{class} \code{"egf_no_fit"} containing \code{model},
 \code{frame}, \code{frame_windows}, \code{frame_parameters},
 \code{tmb_args}, \code{tmb_out} (\emph{before} optimization),

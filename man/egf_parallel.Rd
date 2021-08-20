@@ -6,10 +6,10 @@
 \usage{
 egf_parallel(
   method = c("serial", "multicore", "snow"),
-  outfile = "",
+  outfile = nullfile(),
   cores = getOption("egf.cores", 1L),
   args = list(),
-  cl = nullfile()
+  cl = NULL
 )
 }
 \arguments{

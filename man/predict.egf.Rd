@@ -34,8 +34,8 @@ belonging to \code{\link{levels}(object$frame$window)} are ignored.
 \code{window} is ignored altogether if \code{time} is missing.}
 
 \item{append}{An expression indicating variables in the combined model frame
-(see \code{\link{make_combined}}) to be included with the result.
-The default (\code{\link{NULL}}) is to append nothing.}
+(see \code{\link{egf_make_combined}}) to be included with the
+result. The default (\code{\link{NULL}}) is to append nothing.}
 
 \item{log}{A \link{logical} flag. If \code{FALSE},
 then inverse log-transformed predicted values are returned.}

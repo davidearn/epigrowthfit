@@ -18,15 +18,15 @@
 #'   then \code{par} may also contain \code{"tdoubling"} and \code{"R0"}.
 #' @param subset
 #'   An expression to be evaluated in the combined model frame
-#'   (see \code{\link{make_combined}}). Must evaluate to
+#'   (see \code{\link{egf_make_combined}}). Must evaluate to
 #'   a \link{logical} vector indexing rows of the data frame,
 #'   and thus fitting windows. Confidence intervals are computed
 #'   only for indexed windows. The default (\code{\link{NULL}})
 #'   is to consider all windows.
 #' @param append
 #'   An expression indicating variables in the combined model frame
-#'   (see \code{\link{make_combined}}) to be included with the result.
-#'   The default (\code{\link{NULL}}) is to append nothing.
+#'   (see \code{\link{egf_make_combined}}) to be included with the
+#'   result. The default (\code{\link{NULL}}) is to append nothing.
 #' @param link
 #'   A \link{logical} flag. If \code{FALSE}, then confidence intervals
 #'   on inverse link-transformed fitted values are computed.
@@ -153,7 +153,7 @@ confint.egf <- function(object,
   par[par %in% spec] <- "log(r)"
   par <- unique(par)
 
-  combined <- make_combined(object)
+  combined <- egf_make_combined(object)
   subset <- eval_subset(substitute(subset), combined, parent.frame(), .subset = .subset)
   append <- eval_append(substitute(append), combined, baseenv(), .append = .append)
 

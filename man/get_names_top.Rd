@@ -20,7 +20,7 @@ get_names_top(object, ...)
 }
 \arguments{
 \item{object}{An \code{"\link{egf_model}"}, \code{"\link{egf}"},
-or \code{"\link[=make_tmb_data]{tmb_data}"} object
+or \code{"\link[=egf_make_tmb_data]{tmb_data}"} object
 specifying a top level nonlinear model. Otherwise,
 \code{\link{NULL}}.}
 

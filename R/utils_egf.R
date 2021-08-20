@@ -5,7 +5,7 @@
 #'
 #' @param object
 #'   An \code{"\link{egf_model}"}, \code{"\link{egf}"},
-#'   or \code{"\link[=make_tmb_data]{tmb_data}"} object
+#'   or \code{"\link[=egf_make_tmb_data]{tmb_data}"} object
 #'   specifying a top level nonlinear model. Otherwise,
 #'   \code{\link{NULL}}.
 #' @param link
@@ -183,47 +183,75 @@ match_link <- function(f, inverse = FALSE) {
   }
 }
 
-#' Construct list of model frames
-#'
-#' Constructs model frames for use by \code{\link{egf}} from corresponding
-#' formulae and data frames. A battery of checks is performed on the input.
-#'
-#' @inheritParams egf
-#'
-#' @return
-#' A list with elements
-#' \code{frame}, \code{frame_windows}, \code{frame_parameters},
-#' and \code{frame_append}. See descriptions under \code{\link{egf}}.
-#'
-#' @keywords internal
-#' @importFrom stats terms model.frame na.fail na.pass as.formula complete.cases
-make_frames <- function(model,
-                        formula, formula_windows, formula_parameters,
-                        data, data_windows,
-                        subset, subset_windows,
-                        na_action, na_action_windows,
-                        init, origin, append) {
-  ## Utility for checking `formula` and `formula_windows`
-  check_ok_formula <- function(formula) {
-    s <- deparse(substitute(formula))
-    a <- attributes(terms(formula))
-    stop_if_not(
-      a$response > 0L,
-      is.call(lhs <- a$variables[[1L + a$response]]),
-      lhs[[1L]] == "cbind",
-      length(lhs) == 3L,
-      m = sprintf("Left hand side of `%s` must be a call to `cbind` with 2 arguments.", s)
-    )
-    stop_if_not(
-      a$intercept == 1L,
-      is.null(a$offset),
-      length(a$term.labels) < 2L,
-      m = sprintf("Right hand side of `%s` must be 1 or have exactly one term.", s)
-    )
-    invisible(NULL)
-  }
+#' @importFrom stats terms formula
+egf_sanitize_formula <- function(formula) {
+  s <- deparse(substitute(formula))
+  tt <- terms(formula, simplify = TRUE)
+  a <- attributes(tt)
+  stop_if_not(
+    a$response > 0L,
+    is.call(lhs <- a$variables[[1L + a$response]]),
+    lhs[[1L]] == "cbind",
+    length(lhs) == 3L,
+    m = sprintf("Left hand side of `%s` must be a call to `cbind` with 2 arguments.", s)
+  )
+  stop_if_not(
+    a$intercept == 1L,
+    is.null(a$offset),
+    length(a$term.labels) < 2L,
+    m = sprintf("Right hand side of `%s` must be 1 or have exactly one term.", s)
+  )
+  formula(tt)
+}
 
-  ## Utility for constructing `frame` and `frame_windows`
+#' @importFrom stats terms
+egf_sanitize_formula_parameters <- function(formula_parameters, model, ignore_intercept) {
+  check_ok_intercept <- function(x) {
+    a <- attributes(terms(split_effects(x)$fixed))
+    a$intercept == 1L || length(a$term.labels) == 0L
+  }
+  names_top <- get_names_top(model, link = TRUE)
+  if (repeated <- inherits(formula_parameters, "formula")) {
+    formula_parameters <- simplify_terms(formula_parameters)
+    formula_parameters <- rep_len(list(formula_parameters), length(names_top))
+    names(formula_parameters) <- names_top
+  } else {
+    names(formula_parameters) <- vapply(formula_parameters, function(x) deparse(x[[2L]]), "")
+    if (!all(names(formula_parameters) %in% names_top)) {
+      stop(wrap(
+        "`deparse(formula_parameters[[i]][[2L]])` must be an element of ",
+        sprintf("`c(%s)`.", paste(dQuote(names_top, FALSE), collapse = ", "))
+      ))
+    }
+    formula_parameters <- lapply(formula_parameters, function(x) simplify_terms(x[-2L]))
+    formula_parameters[setdiff(names_top, names(formula_parameters))] <- list(~1)
+    formula_parameters <- formula_parameters[names_top]
+  }
+  if (!ignore_intercept) {
+    if (repeated) {
+      ok <- check_ok_intercept(formula_parameters[[1L]])
+    } else {
+      ok <- all(vapply(formula_parameters, check_ok_intercept, FALSE))
+    }
+    if (!ok) {
+      warning(wrap(
+        "Default initial values for linear fixed effects coefficients ",
+        "are not reliable for fixed effects models without an intercept. ",
+        "Consider setting `init` explicitly or including an intercept."
+      ))
+    }
+  }
+  formula_parameters
+}
+
+#' @importFrom stats terms as.formula model.frame na.fail na.pass complete.cases
+egf_make_frames <- function(model,
+                            formula, formula_windows, formula_parameters,
+                            data, data_windows,
+                            subset, subset_windows,
+                            na_action, na_action_windows,
+                            append) {
+  ## Reused for `frame` and `frame_windows`
   make_frame <- function(formula, data, subset, na.action, drop.unused.levels) {
     ## Build model frame
     group <- length(attr(terms(formula), "term.labels")) == 1L
@@ -248,12 +276,12 @@ make_frames <- function(model,
 
   ### Time series stuff
 
-  check_ok_formula(formula)
   frame <- make_frame(
     formula = formula,
     data = data,
     subset = subset,
-    na.action = na.pass
+    na.action = na.pass,
+    drop.unused.levels = TRUE
   )
   names(frame) <- c("ts", "time", "x")
   frame <- frame[!is.na(frame$ts), , drop = FALSE]
@@ -267,13 +295,12 @@ make_frames <- function(model,
 
   ### Fitting window stuff
 
-  check_ok_formula(formula_windows)
   frame_windows <- make_frame(
     formula = formula_windows,
     data = data_windows,
     subset = subset_windows,
-    na.action = switch(na_action_windows, fail = na.fail, na.pass)
-
+    na.action = switch(na_action_windows, fail = na.fail, na.pass),
+    drop.unused.levels = TRUE
   )
   names(frame_windows) <- c("ts", "start", "end")
   stop_if_not(
@@ -287,61 +314,18 @@ make_frames <- function(model,
 
   ### Mixed effects stuff
 
-  ## Names of top level nonlinear model parameters
-  names_top <- get_names_top(model, link = TRUE)
-  p <- length(names_top)
-
-  if (inherits(formula_parameters, "formula")) {
-    formula_parameters <- simplify_terms(formula_parameters)
-    formula_parameters <- rep_len(list(formula_parameters), p)
-    names(formula_parameters) <- names_top
-  } else {
-    names(formula_parameters) <- vapply(formula_parameters, function(x) deparse(x[[2L]]), "")
-    stop_if_not(
-      names(formula_parameters) %in% names_top,
-      m = wrap(
-        "`deparse(formula_parameters[[i]][[2L]])` must be an element of ",
-        sprintf("`c(%s)`.", paste(dQuote(names_top, FALSE), collapse = ", "))
-      )
-    )
-    formula_parameters <- lapply(formula_parameters, function(x) simplify_terms(x[-2L]))
-    formula_parameters[setdiff(names_top, names(formula_parameters))] <- list(~1)
-    formula_parameters <- formula_parameters[names_top]
-  }
-
-  ## Warn about fixed effects formulae without an intercept
-  ## when relying on default initial values of linear coefficients
-  if (is.null(init)) {
-    check_ok_intercept <- function(x) {
-      a <- attributes(terms(split_effects(x)$fixed))
-      a$intercept == 1L || length(a$term.labels) == 0L
-    }
-    warn_if_not(
-      vapply(formula_parameters, check_ok_intercept, FALSE),
-      m = wrap(
-        "Default initial values for linear fixed effects coefficients ",
-        "are not reliable for fixed effects models without an intercept. ",
-        "Consider setting `init` explicitly or including an intercept."
-      )
-    )
-  }
-
-  ## Replace `|` operators with `+` operators in formulae
-  ## to enable use of `model.frame` machinery
-  formula_parameters_no_bars <- lapply(formula_parameters, gsub_bar_plus)
-
   ## Build model frames
   cl <- call("model.frame",
     formula = NULL,
     data = quote(data_windows),
     subset = subset_windows,
-    na.action = quote(switch(na_action_windows, fail = na.fail, na.pass)),
+    na.action = switch(na_action_windows, fail = quote(na.fail), quote(na.pass)),
     drop.unused.levels = TRUE
   )
-  frame_parameters <- rep_len(list(), p)
-  names(frame_parameters) <- names_top
-  for (i in seq_len(p)) {
-    cl$formula <- formula_parameters_no_bars[[i]]
+  frame_parameters <- rep_len(list(), length(formula_parameters))
+  names(frame_parameters) <- names(formula_parameters)
+  for (i in seq_along(frame_parameters)) {
+    cl$formula <- gsub_bar_plus(formula_parameters[[i]])
     frame_parameters[[i]] <- eval(cl, parent.frame(), baseenv())
   }
 
@@ -419,26 +403,28 @@ make_frames <- function(model,
     )
   }
 
-
   ### Mixed effects stuff
 
-  get_names_variables <- function(x) {
-    vapply(attr(terms(as.formula(call("~", x))), "variables"), deparse, "")[-1L]
-  }
-  check_ok_bar <- function(bar, data) {
-    v <- lapply(bar[-1L], get_names_variables)
-    all(vapply(data[v[[1L]]], is.numeric, FALSE),
-        vapply(data[v[[2L]]], is.factor,  FALSE))
-  }
-  check_ok_bars <- function(formula, data) {
+  get_names_bar_lhs <- function(formula) {
     bars <- split_effects(formula)$random
-    all(vapply(bars, check_ok_bar, FALSE, data = data))
+    if (length(bars) == 0L) {
+      return(character(0L))
+    }
+    f <- function(lhs) {
+      vapply(attr(terms(as.formula(call("~", lhs))), "variables"), deparse, "")[-1L]
+    }
+    unique(unlist(lapply(bars, function(x) f(x[[2L]])), FALSE, FALSE))
+  }
+  names_bar_lhs <- lapply(formula_parameters, get_names_bar_lhs)
+  check_ok_bar_lhs <- function(data, names) {
+    f <- function(x) is.double(x) || is.integer(x) || is.logical(x)
+    all(vapply(data[names], f, FALSE))
   }
   stop_if_not(
-    mapply(check_ok_bars, formula = formula_parameters, data = frame_parameters),
+    mapply(check_ok_bar_lhs, data = frame_parameters, names = names_bar_lhs),
     m = wrap(
-      "`formula_parameters` variables on left and right hand sides ",
-      "of `|` must be numeric vectors and factors, respectively."
+      "`formula_parameters` variables on left hand side of `|` ",
+      "must be of double, integer, or logical type."
     )
   )
 
@@ -517,13 +503,18 @@ make_frames <- function(model,
 
   ### Mixed effects stuff
 
-  any_infinite <- function(d) {
-    i <- vapply(d, is.double, FALSE)
-    any(vapply(d[i], function(x) any(is.infinite(x)), FALSE))
+  check_ok_bar_lhs_double <- function(data, names) {
+    data <- data[names]
+    i <- vapply(data, is.double, FALSE)
+    f <- function(x) any(is.infinite(x))
+    !any(vapply(data[i], f, FALSE))
   }
   stop_if_not(
-    !vapply(frame_parameters, any_infinite, FALSE),
-    m = "Numeric `formula_parameters` variables must not contain Inf or -Inf."
+    mapply(check_ok_bar_lhs_double, data = frame_parameters, names = names_bar_lhs),
+    m = wrap(
+      "Numeric `formula_parameters` variables on left hand side of `|` ",
+      "must not contain Inf or -Inf."
+    )
   )
 
 
@@ -591,21 +582,17 @@ make_frames <- function(model,
   frame_windows$start <- frame$time[first]
   frame_windows$end   <- frame$time[last]
 
-  ## Order variables hierarchically
   frame <- frame[c("ts", "window", "time", "x")]
   frame_windows <- frame_windows[c("ts", "window", "start", "end")]
 
-  ## Drop unused factor levels
   frame_parameters <- lapply(frame_parameters, droplevels)
   frame_append <- droplevels(frame_append)
 
-  ## Discard row names
   row.names(frame) <- NULL
   row.names(frame_windows) <- NULL
   frame_parameters <- lapply(frame_parameters, `row.names<-`, NULL)
   row.names(frame_append) <- NULL
 
-  ## Set attributes
   attr(frame, "first") <- first
   attr(frame, "last")  <- last
   attr(frame, "formula") <- formula
@@ -631,7 +618,7 @@ make_frames <- function(model,
 #' by evaluating the right hand side of each formula listed in \code{priors}.
 #'
 #' @keywords internal
-make_priors <- function(model, priors) {
+egf_make_priors <- function(model, priors) {
   names_top <- get_names_top(model, link = TRUE)
   names(priors) <- vapply(priors, function(x) deparse(x[[2L]]), "")
   stop_if_not(
@@ -657,8 +644,8 @@ make_priors <- function(model, priors) {
 #' respectively.
 #'
 #' @param x
-#'   For \code{make_X}, a \link{formula} of the form \code{~tt}.
-#'   For \code{make_Z}, a \link{call} to binary operator \code{`|`}
+#'   For \code{egf_make_X}, a \link{formula} of the form \code{~tt}.
+#'   For \code{egf_make_Z}, a \link{call} to binary operator \code{`|`}
 #'   of the form \code{(tt | g)}.
 #'   Here, \code{tt} is an expression composed of potentially many terms,
 #'   while \code{g} is an unevaluated factor, possibly an interaction.
@@ -669,16 +656,16 @@ make_priors <- function(model, priors) {
 #'   is returned in \link[Matrix:sparseMatrix]{sparse} format.
 #'
 #' @details
-#' \code{make_X(x, frame, sparse)} constructs an \code{X} matrix
+#' \code{egf_make_X(x, frame, sparse)} constructs an \code{X} matrix
 #' by evaluating \code{\link{model.matrix}(x, frame)}
 #' or \code{\link[Matrix]{sparse.model.matrix}(x, frame)}
 #' (depending on \code{sparse}) and deleting from the result
 #' columns containing only zeros.
 #'
-#' \code{make_Z(x, frame)} constructs a \code{Z} matrix
+#' \code{egf_make_Z(x, frame)} constructs a \code{Z} matrix
 #' following steps outlined in \code{\link{vignette}("lmer", "lme4")}.
-#' It uses \code{make_X} to construct the so-called raw model matrix
-#' from \code{x[[2L]]}. The result is always sparse.
+#' It uses \code{egf_make_X} to construct the so-called raw
+#' model matrix from \code{x[[2L]]}. The result is always sparse.
 #'
 #' @return
 #' A matrix with \link{attributes}:
@@ -693,19 +680,19 @@ make_priors <- function(model, priors) {
 #'   for the expression \code{tt} in \code{x = ~tt} or \code{x = (tt | g)}.
 #' }
 #' \item{group}{
-#'   (\code{make_Z} only.) For \code{x = (tt | g)}, a \link{factor} of
-#'   length \code{\link{ncol}(Z)} with levels \code{\link{levels}(g)},
+#'   (\code{egf_make_Z} only.) For \code{x = (tt | g)}, a \link{factor}
+#'   of length \code{\link{ncol}(Z)} with levels \code{\link{levels}(g)},
 #'   useful for splitting \code{Z} into group-specific submatrices.
 #' }
 #'
-#' @name make_X
+#' @name egf_make_X
 #' @keywords internal
 NULL
 
-#' @rdname make_X
+#' @rdname egf_make_X
 #' @importFrom stats model.matrix
 #' @importFrom Matrix sparse.model.matrix
-make_X <- function(x, frame, sparse) {
+egf_make_X <- function(x, frame, sparse) {
   f <- if (sparse) sparse.model.matrix else model.matrix
   X <- f(x, data = frame)
   j <- colSums(abs(X)) > 0
@@ -715,13 +702,13 @@ make_X <- function(x, frame, sparse) {
   )
 }
 
-#' @rdname make_X
+#' @rdname egf_make_X
 #' @importFrom methods as
 #' @importFrom stats model.matrix as.formula
 #' @importFrom Matrix KhatriRao
 #' @importMethodsFrom Matrix t
-make_Z <- function(x, frame) {
-  X <- make_X(as.formula(call("~", x[[2L]])), frame = frame, sparse = FALSE)
+egf_make_Z <- function(x, frame) {
+  X <- egf_make_X(as.formula(call("~", x[[2L]])), frame = frame, sparse = FALSE)
   ng <- vapply(split_interaction(x[[3L]]), deparse, "")
   g <- interaction(frame[ng], drop = TRUE, sep = ":", lex.order = FALSE)
   J <- t(as(g, Class = "sparseMatrix"))
@@ -755,8 +742,8 @@ make_Z <- function(x, frame) {
 #'   corresponding top level nonlinear model parameters.
 #' @param m
 #'   A \link{list} of \code{X} or \code{Z} matrices obtained by
-#'   applying \code{\link{make_X}} or \code{\link{make_Z}} to the
-#'   elements of \code{x}.
+#'   applying \code{\link{egf_make_X}} or \code{\link{egf_make_Z}}
+#'   to the elements of \code{x}.
 #'
 #' @return
 #' A \link[=data.frame]{data frame} with rows corresponding to columns
@@ -782,7 +769,7 @@ make_Z <- function(x, frame) {
 #'
 #' @keywords internal
 #' @importFrom stats terms as.formula
-make_XZ_info <- function(x, m) {
+egf_make_XZ_info <- function(x, m) {
   if (length(x) == 0L) {
     s <- c("par", "term", "group", "level", "colname")
     l <- rep_len(list(factor()), length(s))
@@ -816,35 +803,21 @@ make_XZ_info <- function(x, m) {
   data.frame(par, term, group, level, colname, row.names = NULL, stringsAsFactors = TRUE)
 }
 
-#' Create TMB infrastructure
-#'
-#' Gathers necessary components of a call to \code{\link[TMB]{MakeADFun}}.
-#'
-#' @param frame,frame_parameters
-#'   Elements of the \link{list} output of \code{\link{make_frames}}.
-#' @inheritParams egf
-#'
-#' @return
-#' A \link{list} with elements \code{data}, \code{parameters}, \code{map},
-#' \code{random}, \code{profile}, \code{DLL}, and \code{silent}.
-#'
-#' @seealso \code{\link{make_tmb_data}}, \code{\link{make_tmb_parameters}}
-#' @keywords internal
-make_tmb_args <- function(model, frame, frame_parameters, priors, control,
-                          do_fit, init, map) {
-  tmb_data <- make_tmb_data(
+egf_make_tmb_args <- function(model, frame, frame_parameters, priors, control,
+                              fit, init, map) {
+  tmb_data <- egf_make_tmb_data(
     model = model,
     frame = frame,
     frame_parameters = frame_parameters,
     priors = priors,
     control = control
   )
-  tmb_parameters <- make_tmb_parameters(
+  tmb_parameters <- egf_make_tmb_parameters(
     tmb_data = tmb_data,
     model = model,
     frame = frame,
     frame_parameters = frame_parameters,
-    do_fit = do_fit,
+    fit = fit,
     init = init
   )
   if (is.null(map)) {
@@ -888,7 +861,9 @@ make_tmb_args <- function(model, frame, frame_parameters, priors, control,
 #' Gathers in a \link{list} data objects to be passed to
 #' the package's C++ template via \pkg{TMB}'s \code{DATA_*} macros.
 #'
-#' @inheritParams make_tmb_args
+#' @inheritParams egf
+#' @param frame,frame_parameters
+#'   Model frames obtained from the list output of \code{egf_make_frames}.
 #'
 #' @return
 #' [Below,
@@ -960,7 +935,7 @@ make_tmb_args <- function(model, frame, frame_parameters, priors, control,
 #' \item{X_info, Z_info}{
 #'   \link[=data.frame]{Data frame}s with \code{\link{ncol}(X)}
 #'   and \code{\link{ncol}(Z)} rows, respectively, constructed
-#'   by \code{\link{make_XZ_info}}. Row \code{j} describes the
+#'   by \code{\link{egf_make_XZ_info}}. Row \code{j} describes the
 #'   coefficient associated with column \code{j} of \code{X}
 #'   or \code{Z}. \code{Z_info} has additional \link{factor}s
 #'   \code{cor} and \code{vec} \link{split}ting coefficients
@@ -988,8 +963,8 @@ make_tmb_args <- function(model, frame, frame_parameters, priors, control,
 #' @importFrom stats formula terms model.matrix model.offset
 #' @importFrom methods as
 #' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
-make_tmb_data <- function(model, frame, frame_parameters, priors, control,
-                          do_fit, init) {
+egf_make_tmb_data <- function(model, frame, frame_parameters, priors, control,
+                              fit, init) {
   ## Indices of time points associated with fitting windows
   first <- attr(frame, "first")
   last <- attr(frame, "last")
@@ -1037,19 +1012,19 @@ make_tmb_data <- function(model, frame, frame_parameters, priors, control,
   Y <- do.call(cbind, offsets)
 
   ## Fixed effects design matrices
-  Xl <- Map(make_X, x = fixed, frame = frame_parameters, sparse = control$sparse_X)
+  Xl <- Map(egf_make_X, x = fixed, frame = frame_parameters, sparse = control$sparse_X)
   X <- do.call(cbind, Xl)
 
   ## Random effects design matrices
-  Zl <- Map(make_Z, x = do.call(c, unname(random)), frame = rep.int(frame_parameters, lengths(random)))
+  Zl <- Map(egf_make_Z, x = do.call(c, unname(random)), frame = rep.int(frame_parameters, lengths(random)))
   Z <- do.call(cbind, Zl)
 
   ## Nonlinear or dispersion model parameter, formula term,
   ## group (g in (terms | g)), and group level associated
   ## with each column of each matrix
   ## FIXME: Preserve contrasts?
-  X_info <- make_XZ_info(x = fixed, m = Xl)
-  Z_info <- make_XZ_info(x = do.call(c, unname(random)), m = Zl)
+  X_info <- egf_make_XZ_info(x = fixed, m = Xl)
+  Z_info <- egf_make_XZ_info(x = do.call(c, unname(random)), m = Zl)
   X_info$par <- factor(X_info$par, levels = names_top)
   Z_info$par <- factor(Z_info$par, levels = names_top)
 
@@ -1149,9 +1124,11 @@ make_tmb_data <- function(model, frame, frame_parameters, priors, control,
 #' macros during the first likelihood evaluation.
 #' See also \code{\link[TMB]{MakeADFun}}.
 #'
+#' @inheritParams egf
 #' @param tmb_data
-#'   A \code{"\link[=make_tmb_data]{tmb_data}"} object.
-#' @inheritParams make_tmb_args
+#'   A \code{"\link[=egf_make_tmb_data]{tmb_data}"} object.
+#' @param
+#'   Model frames obtained from the list output of \code{egf_make_frames}.
 #'
 #' @details
 #' When \code{init = NULL}, naive estimates of top level nonlinear
@@ -1223,8 +1200,8 @@ make_tmb_data <- function(model, frame, frame_parameters, priors, control,
 #'
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis terms
-make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
-                                do_fit, init) {
+egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
+                                    fit, init) {
   ## Lengths of parameter objects
   f <- function(n) as.integer(n * (n + 1) / 2)
   len <- c(
@@ -1311,7 +1288,7 @@ make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
   }
 
   ## Retain all naive estimates when debugging
-  if (is.null(init) && !do_fit) {
+  if (is.null(init) && !fit) {
     attr(init_split, "Y_init") <- as.matrix(Y_init[names(frame_parameters)])
   }
   init_split
@@ -1322,7 +1299,7 @@ make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
 #' Determines whether an object specifies a random effects model.
 #'
 #' @param object
-#'   An \code{"\link{egf}"} or \code{"\link[=make_tmb_data]{tmb_data}"} object.
+#'   An \code{"\link{egf}"} or \code{"\link[=egf_make_tmb_data]{tmb_data}"} object.
 #'
 #' @return
 #' \code{TRUE} or \code{FALSE}.
@@ -1365,7 +1342,7 @@ has_random.egf <- function(object) {
 NULL
 
 #' @rdname patch_fn
-patch_fn <- function(fn, inner_optimizer) {
+egf_patch_fn <- function(fn, inner_optimizer) {
   e <- environment(fn)
   if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
     e$.egf_env <- new.env(parent = emptyenv())
@@ -1397,7 +1374,7 @@ patch_fn <- function(fn, inner_optimizer) {
 }
 
 #' @rdname patch_fn
-patch_gr <- function(gr, inner_optimizer) {
+egf_patch_gr <- function(gr, inner_optimizer) {
   e <- environment(gr)
   if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
     e$.egf_env <- new.env(parent = emptyenv())
@@ -1452,7 +1429,7 @@ patch_gr <- function(gr, inner_optimizer) {
 #' and the data frame \code{object$frame_append}.
 #'
 #' @keywords internal
-make_combined <- function(object) {
+egf_make_combined <- function(object) {
   stopifnot(inherits(object, "egf"))
   l <- c(unname(object$frame_parameters), list(object$frame_append))
   combined <- do.call(cbind, l)

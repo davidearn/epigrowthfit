@@ -7,7 +7,7 @@
 has_random(object)
 }
 \arguments{
-\item{object}{An \code{"\link{egf}"} or \code{"\link[=make_tmb_data]{tmb_data}"} object.}
+\item{object}{An \code{"\link{egf}"} or \code{"\link[=egf_make_tmb_data]{tmb_data}"} object.}
 }
 \value{
 \code{TRUE} or \code{FALSE}.

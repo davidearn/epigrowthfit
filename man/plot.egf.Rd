@@ -44,13 +44,13 @@ per capita growth rate \emph{as heat map} (\code{"rt_heat"}).
 The rest display one time series per plot.}
 
 \item{subset}{An expression to be evaluated in the combined model frame
-(see \code{\link{make_combined}}). Must evaluate to
+(see \code{\link{egf_make_combined}}). Must evaluate to
 a \link{logical} vector indexing rows of the data frame,
 and thus fitting windows. Only indexed fitting windows are plotted.
 The default (\code{\link{NULL}}) is to plot all fitting windows.}
 
 \item{order}{An expression to be evaluated in the combined model frame
-(see \code{\link{make_combined}}), typically a call to
+(see \code{\link{egf_make_combined}}), typically a call to
 \code{\link{order}}, determining the order in which time series
 are plotted. The default (\code{\link{NULL}}) is equivalent to
 \code{\link{seq_len}(\link{nrow}(combined))}.}
@@ -128,7 +128,7 @@ values of \code{type}.
 \code{plab} is used by \code{type = "rt_heat"} only.
 \code{ylab_outer} is used by \code{type = "rt[12]"} only.
 When \code{type != "rt_heat"}, \code{main} and \code{sub} are evaluated
-in the combined model frame (see \code{\link{make_combined}})
+in the combined model frame (see \code{\link{egf_make_combined}})
 in order to generate unique (sub)titles for each plot.
 When \code{type = "rt_heat"}, \code{plab} is evaluated similarly
 in order to generate unique titles for each panel.

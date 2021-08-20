@@ -22,8 +22,8 @@
 #'   \code{window} is ignored altogether if \code{time} is missing.
 #' @param append
 #'   An expression indicating variables in the combined model frame
-#'   (see \code{\link{make_combined}}) to be included with the result.
-#'   The default (\code{\link{NULL}}) is to append nothing.
+#'   (see \code{\link{egf_make_combined}}) to be included with the
+#'   result. The default (\code{\link{NULL}}) is to append nothing.
 #' @param log
 #'   A \link{logical} flag. If \code{FALSE},
 #'   then inverse log-transformed predicted values are returned.
@@ -100,7 +100,7 @@ predict.egf <- function(object,
   stop_if_not_true_false(log)
   stop_if_not_true_false(se)
 
-  combined <- make_combined(object)
+  combined <- egf_make_combined(object)
   append <- eval_append(substitute(append), combined, baseenv(), .append = .append)
   do_day_of_week <- object$model$day_of_week > 0L
 

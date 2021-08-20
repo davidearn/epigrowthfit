@@ -78,7 +78,7 @@
 #'   Calls are evaluated in the corresponding formula environments.
 #' @param control
 #'   An \code{"\link{egf_control}"} object specifying control parameters.
-#' @param do_fit
+#' @param fit
 #'   A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 #'   with a \link{list} of optimization inputs.
 #' @param se
@@ -88,7 +88,7 @@
 #' @param init
 #'   A \link{numeric} vector to be used as the full parameter vector for
 #'   the first likelihood evaluation. The default (\code{\link{NULL}}) is
-#'   to accept the internally generated default. Use \code{do_fit = FALSE}
+#'   to accept the internally generated default. Use \code{fit = FALSE}
 #'   to retrieve this default and other optimization inputs (in particular
 #'   \code{Y_init}; see Value), which can often be used to construct a more
 #'   informative starting point.
@@ -147,7 +147,7 @@
 #' time points capture a single day of week.
 #'
 #' @return
-#' If \code{do_fit = TRUE}, then a \link{list} inheriting from \link{class}
+#' If \code{fit = TRUE}, then a \link{list} inheriting from \link{class}
 #' \code{"egf"}, with elements:
 #' \item{model}{
 #'   A copy of the so-named argument.
@@ -194,8 +194,8 @@
 #'   A copy of the so-named argument.
 #' }
 #' \item{tmb_args}{
-#'   A \link{list} of arguments to \code{\link[TMB]{MakeADFun}}
-#'   constructed by \code{\link{make_tmb_args}}.
+#'   A \link{list} of arguments to \code{\link[TMB]{MakeADFun}},
+#'   enabling reinitialization of \code{tmb_out}.
 #' }
 #' \item{tmb_out}{
 #'   The \link{list} output of \code{\link[TMB]{MakeADFun}}
@@ -226,7 +226,7 @@
 #'   The \link{call} to \code{egf}, allowing for updates to the
 #'   \code{"egf"} object via \code{\link{update}}.
 #' }
-#' If \code{do_fit = FALSE}, then a \link{list} inheriting from
+#' If \code{fit = FALSE}, then a \link{list} inheriting from
 #' \link{class} \code{"egf_no_fit"} containing \code{model},
 #' \code{frame}, \code{frame_windows}, \code{frame_parameters},
 #' \code{tmb_args}, \code{tmb_out} (\emph{before} optimization),
@@ -256,7 +256,7 @@ egf.egf_model <- function(model,
                           na_action_windows = c("fail", "omit"),
                           priors = list(),
                           control = egf_control(),
-                          do_fit = TRUE,
+                          fit = TRUE,
                           se = FALSE,
                           init = NULL,
                           map = NULL,
@@ -295,7 +295,7 @@ egf.egf_model <- function(model,
     lengths(priors) == 3L
   )
   stopifnot(inherits(control, "egf_control"))
-  stop_if_not_true_false(do_fit)
+  stop_if_not_true_false(fit)
   stop_if_not_true_false(se)
   stopifnot(is.numeric(init) || is.null(init))
   if (is.logical(map)) {
@@ -305,7 +305,10 @@ egf.egf_model <- function(model,
   }
   append <- substitute(append)
 
-  frames <- make_frames(
+  formula <- egf_sanitize_formula(formula)
+  formula_windows <- egf_sanitize_formula(formula_windows)
+  formula_parameters <- egf_sanitize_formula_parameters(formula_parameters, model = model, ignore_intercept = !is.null(init))
+  frames <- egf_make_frames(
     model = model,
     formula = formula,
     formula_windows = formula_windows,
@@ -316,20 +319,19 @@ egf.egf_model <- function(model,
     subset_windows = subset_windows,
     na_action = na_action,
     na_action_windows = na_action_windows,
-    init = init,
     append = append
   )
-  priors <- make_priors(
+  priors <- egf_make_priors(
     model = model,
     priors = priors
   )
-  tmb_args <- make_tmb_args(
+  tmb_args <- egf_make_tmb_args(
     model = model,
     frame = frames$frame,
     frame_parameters = frames$frame_parameters,
     priors = priors,
     control = control,
-    do_fit = do_fit,
+    fit = fit,
     init = init,
     map = map
   )
@@ -340,15 +342,15 @@ egf.egf_model <- function(model,
     on.exit(openmp(n = on))
   }
   tmb_out <- do.call(MakeADFun, tmb_args)
-  tmb_out$fn <- patch_fn(tmb_out$fn, inner_optimizer = control$inner_optimizer)
-  tmb_out$gr <- patch_gr(tmb_out$gr, inner_optimizer = control$inner_optimizer)
+  tmb_out$fn <- egf_patch_fn(tmb_out$fn, inner_optimizer = control$inner_optimizer)
+  tmb_out$gr <- egf_patch_gr(tmb_out$gr, inner_optimizer = control$inner_optimizer)
   init <- enum_dupl_names(tmb_out$env$par)
   nonrandom <- seq_along(init)
   if (!is.null(tmb_out$env$random)) {
     nonrandom <- nonrandom[-tmb_out$env$random]
   }
 
-  if (!do_fit) {
+  if (!fit) {
     res <- frames[c("frame", "frame_windows", "frame_parameters")]
     res <- c(res, list(
       model = model,
@@ -513,6 +515,7 @@ egf_control <- function(optimizer = egf_optimizer(),
   } else {
     stopifnot(
       is.list(inner_optimizer),
+      length(inner_optimizer) > 0L,
       vapply(inner_optimizer, inherits, FALSE, "egf_inner_optimizer")
     )
   }
@@ -521,6 +524,7 @@ egf_control <- function(optimizer = egf_optimizer(),
   stop_if_not_true_false(profile)
   stop_if_not_true_false(sparse_X)
   stop_if_not_integer(omp_num_threads, "positive")
+  omp_num_threads <- as.integer(omp_num_threads)
 
   res <- list(
     optimizer = optimizer,
@@ -653,7 +657,7 @@ egf_optimizer <- function(f = nlminb, args = list(), control = list()) {
     }
   }
   if (!is.null(names(args))) {
-    reserved <- c("par", "fn", "gr", "control", "...", names(formals(optimizer))[1:3])
+    reserved <- c(names(formals(f)), names(formals(optimizer))[1:3])
     args <- args[setdiff(names(args), reserved)]
   }
 
@@ -671,20 +675,20 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
     is.list(args),
     is.list(control)
   )
-  if (identical(f, optim)) {
-    if (is.null(args$method)) {
-      method <- "BFGS"
-      warning(sprintf("`optim` argument `method` not specified, using \"%s\".", method))
-    } else {
-      method <- match.arg(args$method, eval(formals(optim)$method))
-    }
-  } else if (identical(f, newton)) {
+  if (identical(f, newton)) {
     method <- "newton"
     if (!is.null(names(args))) {
       reserved <- c("par", "fn", "gr", "he", "env", "...")
       args <- args[setdiff(names(args), reserved)]
     }
     control <- args
+  } else if (identical(f, optim)) {
+    if (is.null(args$method)) {
+      method <- "BFGS"
+      warning(sprintf("`optim` argument `method` not specified, using \"%s\".", method))
+    } else {
+      method <- match.arg(args$method, eval(formals(optim)$method))
+    }
   } else {
     stop("`f` is currently restricted to `TMB::newton` and `stats::optim`.")
   }
@@ -737,10 +741,10 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
 #' @export
 #' @importFrom TMB openmp
 egf_parallel <- function(method = c("serial", "multicore", "snow"),
-                         outfile = "",
+                         outfile = nullfile(),
                          cores = getOption("egf.cores", 1L),
                          args = list(),
-                         cl = nullfile()) {
+                         cl = NULL) {
   method <- match.arg(method)
   stop_if_not_string(outfile)
   if (method == "serial") {
@@ -749,6 +753,7 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
     cl <- NULL
   } else if (method == "multicore" || (method == "snow" && is.null(cl))) {
     stop_if_not_integer(cores, "positive")
+    cores <- as.integer(cores)
     stopifnot(is.list(args))
     if (method == "multicore") {
       args$mc.cores <- cores

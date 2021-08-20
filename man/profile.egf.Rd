@@ -38,7 +38,7 @@ fitted values (see \code{\link{fitted.egf}}) should be profiled.
 Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.}
 
 \item{subset}{An expression to be evaluated in the combined model frame
-(see \code{\link{make_combined}}). Must evaluate to
+(see \code{\link{egf_make_combined}}). Must evaluate to
 a \link{logical} vector indexing rows of the data frame,
 and thus fitting windows. Only population fitted values for
 indexed windows are profiled. The default (\code{\link{NULL}})
@@ -46,8 +46,8 @@ is to consider all windows. Ignored if \code{which} or \code{A}
 is non-\code{\link{NULL}}.}
 
 \item{append}{An expression indicating variables in the combined model frame
-(see \code{\link{make_combined}}) to be included with the result.
-The default (\code{\link{NULL}}) is to append nothing.
+(see \code{\link{egf_make_combined}}) to be included with the
+result. The default (\code{\link{NULL}}) is to append nothing.
 Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.}
 
 \item{max_level}{A number in the interval (0,1) indicating a confidence level.

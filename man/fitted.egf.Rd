@@ -37,15 +37,15 @@ naming top level nonlinear model parameters for which fitted values
 should be retrieved.}
 
 \item{subset}{An expression to be evaluated in the combined model frame
-(see \code{\link{make_combined}}). Must evaluate to
+(see \code{\link{egf_make_combined}}). Must evaluate to
 a \link{logical} vector indexing rows of the data frame,
 and thus fitting windows. Fitted values are retrieved
 only for indexed windows. The default (\code{\link{NULL}})
 is to consider all windows.}
 
 \item{append}{An expression indicating variables in the combined model frame
-(see \code{\link{make_combined}}) to be included with the result.
-The default (\code{\link{NULL}}) is to append nothing.}
+(see \code{\link{egf_make_combined}}) to be included with the
+result. The default (\code{\link{NULL}}) is to append nothing.}
 
 \item{link}{A \link{logical} flag. If \code{FALSE},
 then fitted values are inverse link-transformed.}

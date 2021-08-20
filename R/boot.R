@@ -38,9 +38,9 @@ boot_par <- function(object,
   stop_if_not_true_false(trace)
 
   ## Make sure that bootstrap optimizations start from fitted model
-  object$tmb_args$parameters <- make_tmb_parameters(
+  object$tmb_args$parameters <- egf_make_tmb_parameters(
     tmb_data = object$tmb_args$data,
-    do_fit = TRUE,
+    fit = TRUE,
     init = object$best
   )
 
@@ -58,8 +58,8 @@ boot_par <- function(object,
     ## Define objective function and gradient conditional on simulated data
     tmb_out_sim <- do.call(MakeADFun, object$tmb_args)
     ## Patch
-    tmb_out_sim$fn <- patch_fn(tmb_out_sim$fn, inner_optimizer = object$control$inner_optimizer)
-    tmb_out_sim$gr <- patch_gr(tmb_out_sim$gr, inner_optimizer = object$control$inner_optimizer)
+    tmb_out_sim$fn <- egf_patch_fn(tmb_out_sim$fn, inner_optimizer = object$control$inner_optimizer)
+    tmb_out_sim$gr <- egf_patch_gr(tmb_out_sim$gr, inner_optimizer = object$control$inner_optimizer)
     ## Optimize
     optimizer <- object$control$optimizer$f
     optimizer_args <- c(
@@ -93,10 +93,10 @@ boot_par <- function(object,
       cl <- parallel$cl
     }
     clusterEvalQ(cl, library("TMB"))
-    ## Need to make internal functions `patch_fn` and `patch_gr`
+    ## Need to make internal functions `egf_patch_fn` and `egf_patch_gr`
     ## available in global environment of worker processes
     clusterExport(cl,
-      varlist = c("object", "n", "trace", "patch_fn", "patch_gr"),
+      varlist = c("object", "n", "trace", "egf_patch_fn", "egf_patch_gr"),
       envir = environment()
     )
     clusterSetRNGStream(cl)

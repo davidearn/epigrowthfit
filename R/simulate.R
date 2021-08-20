@@ -298,7 +298,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     data = data,
     data_windows = data_windows,
     init = init,
-    do_fit = FALSE
+    fit = FALSE
   )
 
   if (has_inflection && !is.null(Sigma)) {
