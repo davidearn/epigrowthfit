@@ -8,9 +8,9 @@
 Normal(mu = 0, sigma = 1)
 }
 \arguments{
-\item{mu}{Mean.}
+\item{mu}{A \link{numeric} vector listing means.}
 
-\item{sigma}{Standard deviation. Must be positive.}
+\item{sigma}{A positive \link{numeric} vector listing standard deviations.}
 }
 \value{
 A \link{list} inheriting from \link{class} \code{"egf_prior"},
@@ -19,10 +19,10 @@ with elements:
   A \link{character} string naming a family of distributions.
 }
 \item{parameters}{
-  A named \link{numeric} vector listing parameter values.
+  A named \link{list} of \link{numeric} vectors listing parameter values.
 }
 }
 \description{
 Functions used by \code{\link{egf}} to specify prior distributions
-of top level nonlinear model parameters.
+of bottom level mixed effects model parameters.
 }

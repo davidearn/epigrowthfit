@@ -15,12 +15,13 @@ to be estimated.}
 \item{fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 with a \link{list} of optimization inputs.}
 
-\item{init}{A \link{numeric} vector to be used as the full parameter vector for
-the first likelihood evaluation. The default (\code{\link{NULL}}) is
-to accept the internally generated default. Use \code{fit = FALSE}
-to retrieve this default and other optimization inputs (in particular
-\code{Y_init}; see Value), which can often be used to construct a more
-informative starting point.}
+\item{init}{A \link{numeric} vector to be used as the full parameter vector
+\code{c(beta, theta, b)} for the first likelihood evaluation.
+The default (\code{\link{NULL}}) is to accept the internally generated
+default.
+Use \code{fit = FALSE} to retrieve this default and other optimization
+inputs (in particular \code{Y_init}; see Value), which can often be used
+to construct a more informative starting point.}
 
 \item{Model}{frames obtained from the list output of \code{egf_make_frames}.}
 }
@@ -30,11 +31,6 @@ A \link{list} with elements:
   A \link[=double]{numeric} vector of length
   \code{\link{length}(tmb_data$beta_index)} listing
   initial values for fixed effects coefficients.
-}
-\item{b}{
-  A \link[=double]{numeric} vector of length
-  \code{\link{length}(tmb_data$b_index)} listing initial values
-  for random effects coefficients (unit variance scale).
 }
 \item{theta}{
   A \link[=double]{numeric} vector of length
@@ -50,6 +46,11 @@ A \link{list} with elements:
   \code{S = A \link[=matmult]{\%*\%} \link{t}(A)}\cr
   \code{A = D^-0.5 \link[=matmult]{\%*\%} L}\cr
   \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}
+}
+\item{b}{
+  A \link[=double]{numeric} vector of length
+  \code{\link{length}(tmb_data$b_index)} listing initial values
+  for random effects coefficients (unit variance scale).
 }
 }
 \description{
@@ -94,7 +95,7 @@ use a log link), and the initial value of the \code{"(Intercept)"}
 coefficient in a top level parameter's fixed effects model
 (if that coefficient exists) is taken to be the mean of the link scale
 estimates across fitting windows. The remaining elements of \code{beta}
-take initial value 0. All elements of \code{b} and \code{theta}
+take initial value 0. All elements of \code{theta} and \code{b}
 take initial value 0, so that, initially, all random vectors follow
 a standard normal distribution.
 }

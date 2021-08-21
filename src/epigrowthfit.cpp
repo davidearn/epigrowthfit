@@ -18,11 +18,11 @@ Type objective_function<Type>::operator() ()
     /* Concatenated vectors of fixed effects coefficients */
     PARAMETER_VECTOR(beta);
 
-    /* Concatenated vectors of random effects coefficients (unit variance) */
-    PARAMETER_VECTOR(b);
-
     /* Concatenated vectors of random effects covariance parameters */
     PARAMETER_VECTOR(theta);
+
+    /* Concatenated vectors of random effects coefficients (unit variance) */
+    PARAMETER_VECTOR(b);
     
 
     /* Flags ================================================================ */
@@ -270,7 +270,7 @@ Type objective_function<Type>::operator() ()
 	printf("nll initialized to %.6e\n", asDouble(res));
 	std::cout << "commencing loop over observations\n";
     }
-    res += nll_ob(this, time, time_seg_len, x, Y, indices, flags, day1);
+    res += nll_obs(this, time, time_seg_len, x, Y, indices, flags, day1);
     if (flags.do_simulate)
     {
         REPORT(x);
@@ -290,7 +290,7 @@ Type objective_function<Type>::operator() ()
 	{
 	    std::cout << "commencing loop over random effects\n";
 	}
-	res += nll_re(this, list_of_blocks, list_of_nld, flags);
+	res += nll_ran(this, list_of_blocks, list_of_nld, flags);
 	if (flags.do_trace)
 	{
 	    std::cout << "loop over random effects complete\n";
@@ -299,23 +299,45 @@ Type objective_function<Type>::operator() ()
     }
 
     
-    /* Parameter value likelihood ------------------------------------------- */
+    /* Top level parameter value likelihood --------------------------------- */
 
-    if (flags.do_regularize)
+    if (flags.do_regularize_top)
     {
         /* List of vectors of hyperparameters for regularization
 	   - length=p
 	*/
-        DATA_STRUCT(hyperparameters, egf::list_of_vectors_t);
+        DATA_STRUCT(hyperparameters_top, egf::list_of_vectors_t);
 
 	if (flags.do_trace)
 	{
-	    std::cout << "commencing loop over regularized parameters\n";
+	    std::cout << "commencing loop over regularized top level parameters\n";
 	}
-        res += nll_pv(this, Y, hyperparameters, flags);
+        res += nll_top(this, Y, hyperparameters_top, flags);
         if (flags.do_trace)
 	{
-	    std::cout << "loop over regularized parameters complete\n";
+	    std::cout << "loop over regularized top level parameters complete\n";
+	    printf("nll is %.6e\n", asDouble(res));
+	}
+    }
+
+
+    /* Bottom level parameter value likelihood ------------------------------ */
+
+    if (flags.do_regularize_bottom)
+    {
+        /* List of vectors of hyperparameters for regularization
+	   - length=length(beta)+length(theta)
+	*/
+        DATA_STRUCT(hyperparameters_bottom, egf::list_of_vectors_t);
+
+	if (flags.do_trace)
+	{
+	    std::cout << "commencing loop over regularized bottom level parameters\n";
+	}
+        res += nll_bot(this, beta, theta, hyperparameters_bottom, flags);
+        if (flags.do_trace)
+	{
+	    std::cout << "loop over regularized bottom level parameters complete\n";
 	    printf("nll is %.6e\n", asDouble(res));
 	}
     }

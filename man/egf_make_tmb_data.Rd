@@ -4,7 +4,7 @@
 \alias{egf_make_tmb_data}
 \title{Construct data objects for C++ template}
 \usage{
-egf_make_tmb_data(model, frame, frame_parameters, priors, control, fit, init)
+egf_make_tmb_data(model, frame, frame_parameters, control, fit, init)
 }
 \arguments{
 \item{model}{An \code{"\link{egf_model}"} object specifying a top level nonlinear model
@@ -12,25 +12,18 @@ to be estimated.}
 
 \item{frame, frame_parameters}{Model frames obtained from the list output of \code{egf_make_frames}.}
 
-\item{priors}{A \link{list} of \link{formula}e of the form \code{parameter ~ f(...)}
-specifying priors on top level nonlinear model parameters.
-\code{\link{deparse}(parameter)} must be an element
-of \code{\link{get_names_top}(model, link = TRUE)}, and
-\code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
-with arguments specifying suitable hyperparameters.
-Calls are evaluated in the corresponding formula environments.}
-
 \item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
 
 \item{fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 with a \link{list} of optimization inputs.}
 
-\item{init}{A \link{numeric} vector to be used as the full parameter vector for
-the first likelihood evaluation. The default (\code{\link{NULL}}) is
-to accept the internally generated default. Use \code{fit = FALSE}
-to retrieve this default and other optimization inputs (in particular
-\code{Y_init}; see Value), which can often be used to construct a more
-informative starting point.}
+\item{init}{A \link{numeric} vector to be used as the full parameter vector
+\code{c(beta, theta, b)} for the first likelihood evaluation.
+The default (\code{\link{NULL}}) is to accept the internally generated
+default.
+Use \code{fit = FALSE} to retrieve this default and other optimization
+inputs (in particular \code{Y_init}; see Value), which can often be used
+to construct a more informative starting point.}
 }
 \value{
 [Below,
@@ -79,11 +72,6 @@ with elements:
   giving the column 0-index of top level nonlinear model parameters
   (e.g., \code{log(r)}) in the response matrix. Value \code{-1}
   is used for parameters not belonging to the model being estimated.
-}
-\item{hyperparameters}{
-  A \link{list} of \code{p} \link{numeric} vectors listing parameters
-  of the prior distribution (if any) assigned to top level nonlinear
-  model parameters.
 }
 \item{X}{
   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}

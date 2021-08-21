@@ -1,12 +1,12 @@
 #' Prior distributions
 #'
 #' Functions used by \code{\link{egf}} to specify prior distributions
-#' of top level nonlinear model parameters.
+#' of bottom level mixed effects model parameters.
 #'
 #' @param mu
-#'   Mean.
+#'   A \link{numeric} vector listing means.
 #' @param sigma
-#'   Standard deviation. Must be positive.
+#'   A positive \link{numeric} vector listing standard deviations.
 #'
 #' @return
 #' A \link{list} inheriting from \link{class} \code{"egf_prior"},
@@ -15,7 +15,7 @@
 #'   A \link{character} string naming a family of distributions.
 #' }
 #' \item{parameters}{
-#'   A named \link{numeric} vector listing parameter values.
+#'   A named \link{list} of \link{numeric} vectors listing parameter values.
 #' }
 #'
 #' @name egf_prior
@@ -24,9 +24,16 @@ NULL
 #' @rdname egf_prior
 #' @export
 Normal <- function(mu = 0, sigma = 1) {
-  stop_if_not_number_in_interval(mu, -Inf, Inf, "()")
-  stop_if_not_number_in_interval(sigma, 0, Inf, "()")
-  res <- list(family = "norm", parameters = c(mu = mu, sigma = sigma))
+  stopifnot(
+    is.numeric(mu),
+    length(mu) > 0L,
+    is.finite(mu),
+    is.numeric(sigma),
+    length(sigma) > 0L,
+    is.finite(sigma),
+    sigma > 0
+  )
+  res <- list(family = "norm", parameters = list(mu = mu, sigma = sigma))
   class(res) <- c("egf_prior", "list")
   res
 }

@@ -262,7 +262,7 @@ egf_make_frames <- function(model,
     cl[[1L]] <- quote(model.frame)
     cl$formula <- as.formula(call("~", unsplit_terms(tt)), env = environment(formula))
     cl$subset <- subset
-    mf <- eval(cl, parent.frame(), baseenv())
+    mf <- eval(cl, parent.frame())
     if (!group) {
       mf <- data.frame(rep_len(factor(1), nrow(mf)), mf)
     }
@@ -326,7 +326,7 @@ egf_make_frames <- function(model,
   names(frame_parameters) <- names(formula_parameters)
   for (i in seq_along(frame_parameters)) {
     cl$formula <- gsub_bar_plus(formula_parameters[[i]])
-    frame_parameters[[i]] <- eval(cl, parent.frame(), baseenv())
+    frame_parameters[[i]] <- eval(cl, parent.frame())
   }
 
   ## Replace, e.g., `model.frame(~1, data)`, which is an empty data frame
@@ -607,34 +607,121 @@ egf_make_frames <- function(model,
   )
 }
 
-#' Construct list of prior objects
-#'
-#' Validates and processes \code{\link{egf}} argument \code{priors}.
-#'
-#' @inheritParams egf
-#'
-#' @return
-#' A named \link{list} of \code{"\link{egf_prior}"} objects obtained
-#' by evaluating the right hand side of each formula listed in \code{priors}.
-#'
-#' @keywords internal
-egf_make_priors <- function(model, priors) {
+egf_make_priors_top <- function(formula_priors_top, model) {
   names_top <- get_names_top(model, link = TRUE)
-  names(priors) <- vapply(priors, function(x) deparse(x[[2L]]), "")
-  stop_if_not(
-    names(priors) %in% names_top,
-    m = wrap(
-      "`deparse(priors[[i]][[2L]])` must be an element of ",
+  res <- vector(length(names_top), mode = "list")
+  names(res) <- names_top
+  if (length(formula_priors_top) == 0L) {
+    return(res)
+  }
+  names(formula_priors_top) <- vapply(formula_priors_top, function(x) deparse(x[[2L]]), "")
+  if (!all(names(formula_priors_top) %in% names_top)) {
+    stop(wrap(
+      "`deparse(formula_priors_top[[i]][[2L]])` must be an element of ",
       sprintf("`c(%s)`.", paste(dQuote(names_top, FALSE), collapse = ", "))
-    )
-  )
-  priors <- lapply(priors, function(x) eval(x[[3L]], environment(x), baseenv()))
-  stop_if_not(
-    vapply(priors, inherits, FALSE, "egf_prior"),
-    m = "`priors[[i]][[3L]]` must evaluate to an \"egf_prior\" object."
-  )
-  priors[setdiff(names_top, names(priors))] <- list(NULL)
-  priors[names_top]
+    ))
+  }
+  if (anyDuplicated(names(formula_priors_top)) > 0L) {
+    stop(wrap(
+      "At least one top level parameter has a multiply defined prior. ",
+      "Priors should be specified exactly once (or not at all)."
+    ))
+  }
+  priors <- lapply(formula_priors_top, function(x) eval(x[[3L]], environment(x)))
+  if (!all(vapply(priors, inherits, FALSE, "egf_prior"))) {
+    stop("`formula_priors_top[[i]][[3L]])` must evaluate to an \"egf_prior\" object.")
+  }
+  priors <- lapply(priors, function(x) {
+    x$parameters <- lapply(x$parameters, `[[`, 1L)
+    x
+  })
+  res[names(priors)] <- priors
+  res
+}
+
+egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
+  len <- c(beta = length(beta), theta = length(theta))
+  initialize <- function(s) {
+    x <- vector(len[[s]], mode = "list")
+    names(x) <- enum_dupl_string(rep_len(s, len[[s]]))
+    x
+  }
+  res <- sapply(names(len), initialize, simplify = FALSE)
+  if (length(formula_priors_bottom) == 0L || sum(len) == 0L) {
+    return(unlist(unname(res), FALSE, TRUE))
+  }
+
+  lhs <- lapply(formula_priors_bottom, `[[`, 2L)
+  f <- function(s) {
+    function(x) {
+      (is.name(x) && x == s) ||
+        (is.call(x) && (x[[1L]] == "[" || x[[1L]] == "[[") &&
+           is.name(x[[2L]]) && x[[2L]] == s)
+    }
+  }
+  is_beta <- f("beta")
+  is_theta <- f("theta")
+  ib <- rep_len(FALSE, length(lhs))
+  for (i in seq_along(lhs)) {
+    if (len[["beta"]] > 0L && is_beta(lhs[[i]])) {
+      ib[i] <- TRUE
+    } else if (!(len[["theta"]] > 0L && is_theta(lhs[[i]]))) {
+      s <- Reduce(function(x, y) paste(x, "or", y), sprintf("`%s`", names(len)[len > 0L]))
+      stop(wrap(
+        "`formula_priors_bottom[[i]][[2L]]` must be ", s, " or a call ",
+        "to `[` or `[[` subsetting ", s, "."
+      ))
+    }
+  }
+  l <- lapply(len, seq_len)
+  eval_lhs <- function(x, formula) eval(x, l, environment(formula))
+  indices <- Map(eval_lhs, x = lhs, formula = formula_priors_bottom)
+  if (sum(lengths(indices)) == 0L) {
+    return(unlist(unname(res), FALSE, TRUE))
+  }
+
+  rhs <- lapply(formula_priors_bottom, `[[`, 3L)
+  eval_rhs <- function(x, formula) eval(x, environment(formula))
+  priors <- Map(eval_rhs, x = rhs, formula = formula_priors_bottom)
+  if (!all(vapply(priors, inherits, FALSE, "egf_prior"))) {
+    stop("`formula_priors_bottom[[i]][[3L]]` must evaluate to an \"egf_prior\" object.")
+  }
+  for (l in split(indices, ib)) {
+    i <- unlist(l, FALSE, FALSE)
+    if (anyNA(i)) {
+      stop("Invalid index vector in `formula_priors_bottom`.")
+    }
+    if (anyDuplicated(i) > 0L) {
+      stop(wrap(
+        "At least one bottom level parameter has a multiply defined prior. ",
+        "Priors should be specified exactly once (or not at all)."
+      ))
+    }
+  }
+  decompose <- function(prior, length.out) {
+    if (length.out == 0L) {
+      return(list())
+    }
+    prior$parameters <- lapply(prior$parameters, rep_len, length.out = length.out)
+    f <- function(i) {
+      prior$parameters <- lapply(prior$parameters, `[[`, i)
+      prior
+    }
+    lapply(seq_len(length.out), f)
+  }
+  priors <- Map(decompose, prior = priors, length.out = lengths(indices))
+
+  if (len[["beta"]] > 0L && any(ib)) {
+    i <- unlist(indices[ib], FALSE, FALSE)
+    value <- unlist(priors[ib], FALSE, FALSE)
+    res[["beta"]][i] <- value
+  }
+  if (len[["theta"]] > 0L && !all(ib)) {
+    i <- unlist(indices[!ib], FALSE, FALSE)
+    value <- unlist(priors[!ib], FALSE, FALSE)
+    res[["theta"]][i] <- value
+  }
+  unlist(unname(res), FALSE, TRUE)
 }
 
 #' Construct design matrices
@@ -803,59 +890,6 @@ egf_make_XZ_info <- function(x, m) {
   data.frame(par, term, group, level, colname, row.names = NULL, stringsAsFactors = TRUE)
 }
 
-egf_make_tmb_args <- function(model, frame, frame_parameters, priors, control,
-                              fit, init, map) {
-  tmb_data <- egf_make_tmb_data(
-    model = model,
-    frame = frame,
-    frame_parameters = frame_parameters,
-    priors = priors,
-    control = control
-  )
-  tmb_parameters <- egf_make_tmb_parameters(
-    tmb_data = tmb_data,
-    model = model,
-    frame = frame,
-    frame_parameters = frame_parameters,
-    fit = fit,
-    init = init
-  )
-  if (is.null(map)) {
-    tmb_map <- list()
-  } else {
-    len <- lengths(tmb_parameters)
-    if (is.logical(map)) {
-      map <- replace(gl(length(map), 1L), map, NA)
-    }
-    stop_if_not(
-      is.factor(map),
-      length(map) == sum(len),
-      m = sprintf("`map` must be a factor or logical vector of length %d.", sum(len))
-    )
-    tmb_map <- split(map, rep.int(gl(3L, 1L, labels = names(len)), len))
-    tmb_map <- lapply(tmb_map, factor, exclude = NA)
-  }
-  if (has_random(tmb_data)) {
-    ## Declare that `b` contains random effects
-    tmb_random <- "b"
-  } else {
-    ## Declare that there are no random effects
-    tmb_random <- NULL
-    ## Fix `b` and `theta` to NA_real_ since only `beta` is used
-    tmb_parameters$b <- tmb_parameters$theta <- NA_real_
-    tmb_map$b <- tmb_map$theta <- factor(NA)
-  }
-  list(
-    data = tmb_data,
-    parameters = tmb_parameters,
-    map = tmb_map,
-    random = tmb_random,
-    profile = if (control$profile) "beta",
-    DLL = "epigrowthfit",
-    silent = (control$trace == 0L)
-  )
-}
-
 #' Construct data objects for C++ template
 #'
 #' Gathers in a \link{list} data objects to be passed to
@@ -913,11 +947,6 @@ egf_make_tmb_args <- function(model, frame, frame_parameters, priors, control,
 #'   (e.g., \code{log(r)}) in the response matrix. Value \code{-1}
 #'   is used for parameters not belonging to the model being estimated.
 #' }
-#' \item{hyperparameters}{
-#'   A \link{list} of \code{p} \link{numeric} vectors listing parameters
-#'   of the prior distribution (if any) assigned to top level nonlinear
-#'   model parameters.
-#' }
 #' \item{X}{
 #'   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
 #'   or dense format, depending on \code{control$sparse_X}, with \code{N} rows.
@@ -962,9 +991,8 @@ egf_make_tmb_args <- function(model, frame, frame_parameters, priors, control,
 #' @keywords internal
 #' @importFrom stats formula terms model.matrix model.offset
 #' @importFrom methods as
-#' @importFrom Matrix sparseMatrix sparse.model.matrix KhatriRao
-egf_make_tmb_data <- function(model, frame, frame_parameters, priors, control,
-                              fit, init) {
+#' @importFrom Matrix sparseMatrix sparse.model.matrix
+egf_make_tmb_data <- function(model, frame, frame_parameters, control, fit, init) {
   ## Indices of time points associated with fitting windows
   first <- attr(frame, "first")
   last <- attr(frame, "last")
@@ -1066,20 +1094,12 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, priors, control,
     dims = c(N, 0L)
   )
 
-  ## Parameters of priors on nonlinear and dispersion model parameters
-  has_prior <- !vapply(priors, is.null, FALSE)
-  hyperparameters <- rep_len(list(numeric(0L)), p)
-  hyperparameters[has_prior] <- lapply(priors[has_prior], `[[`, "parameters")
-
   ## Flags
-  flag_regularize <- rep_len(-1L, p)
-  flag_regularize[has_prior] <- get_flag("prior", vapply(priors[has_prior], `[[`, "", "family"))
   flags <- list(
     flag_curve = get_flag("curve", model$curve),
     flag_excess = as.integer(model$excess),
     flag_family = get_flag("family", model$family),
     flag_day_of_week = as.integer(model$day_of_week > 0L),
-    flag_regularize = flag_regularize,
     flag_trace = control$trace,
     flag_sparse_X = as.integer(control$sparse_X),
     flag_predict = 0L
@@ -1099,7 +1119,6 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, priors, control,
     flags = flags,
     Y = Y,
     indices = indices,
-    hyperparameters = hyperparameters,
     X = X,
     Xd = if (control$sparse_X) empty_dense_matrix else X,
     Xs = if (control$sparse_X) X else empty_sparse_matrix,
@@ -1166,7 +1185,7 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, priors, control,
 #' coefficient in a top level parameter's fixed effects model
 #' (if that coefficient exists) is taken to be the mean of the link scale
 #' estimates across fitting windows. The remaining elements of \code{beta}
-#' take initial value 0. All elements of \code{b} and \code{theta}
+#' take initial value 0. All elements of \code{theta} and \code{b}
 #' take initial value 0, so that, initially, all random vectors follow
 #' a standard normal distribution.
 #'
@@ -1176,11 +1195,6 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, priors, control,
 #'   A \link[=double]{numeric} vector of length
 #'   \code{\link{length}(tmb_data$beta_index)} listing
 #'   initial values for fixed effects coefficients.
-#' }
-#' \item{b}{
-#'   A \link[=double]{numeric} vector of length
-#'   \code{\link{length}(tmb_data$b_index)} listing initial values
-#'   for random effects coefficients (unit variance scale).
 #' }
 #' \item{theta}{
 #'   A \link[=double]{numeric} vector of length
@@ -1197,6 +1211,11 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, priors, control,
 #'   \code{A = D^-0.5 \link[=matmult]{\%*\%} L}\cr
 #'   \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}
 #' }
+#' \item{b}{
+#'   A \link[=double]{numeric} vector of length
+#'   \code{\link{length}(tmb_data$b_index)} listing initial values
+#'   for random effects coefficients (unit variance scale).
+#' }
 #'
 #' @keywords internal
 #' @importFrom stats coef lm na.omit qlogis terms
@@ -1206,8 +1225,8 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
   f <- function(n) as.integer(n * (n + 1) / 2)
   len <- c(
     beta  = length(tmb_data$beta_index),
-    b     = length(tmb_data$b_index),
-    theta = sum(f(tmb_data$block_rows))
+    theta = sum(f(tmb_data$block_rows)),
+    b     = length(tmb_data$b_index)
   )
 
   ## If user does not specify a full parameter vector
@@ -1215,18 +1234,18 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
     ## Initialize each parameter object to a vector of zeros
     init_split <- lapply(len, numeric)
 
-    ## Get names of top level nonlinear model parameters
+    ## Identify top level nonlinear model parameters
     ## whose mixed effects formulae have an intercept
     has_intercept <- function(frame) {
       attr(terms(frame), "intercept") == 1L
     }
-    nfp <- names(frame_parameters)[vapply(frame_parameters, has_intercept, FALSE)]
+    i1 <- vapply(frame_parameters, has_intercept, FALSE)
 
     ## For each of these top level nonlinear model parameters,
     ## compute the mean over all fitting windows of the naive estimate,
     ## and assign the result to the coefficient of `beta` corresponding
     ## to "(Intercept)"
-    if (length(nfp) > 0L) {
+    if (any(i1)) {
       ## Time series segments
       tx_split <- split(frame[c("time", "x")], frame$window)
 
@@ -1268,11 +1287,11 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
       )
       names(Y_init) <- string_add_link(names(Y_init))
 
-      ## Index of elements of `beta` corresponding to "(Intercept)"
-      i1 <- match(nfp, tmb_data$X_info$par, 0L)
-
-      ## Assign means over windows
-      init_split$beta[i1] <- colMeans(Y_init[nfp])
+      ## Identify elements of `beta` corresponding to "(Intercept)"
+      ## and assign means over fitting windows
+      nfp <- names(frame_parameters)[i1]
+      index <- match(nfp, tmb_data$X_info$par, 0L)
+      init_split$beta[index] <- colMeans(Y_init[nfp])
     }
   } else {
     ## Validate and split full parameter vector,
@@ -1287,11 +1306,78 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
     init_split <- split(init, rep.int(gl(3L, 1L, labels = names(len)), len))
   }
 
-  ## Retain all naive estimates when debugging
+  ## Retain all naive estimates if debugging
   if (is.null(init) && !fit) {
     attr(init_split, "Y_init") <- as.matrix(Y_init[names(frame_parameters)])
   }
   init_split
+}
+
+egf_make_tmb_args <- function(model, frame, frame_parameters, control, fit, init, map) {
+  tmb_data <- egf_make_tmb_data(
+    model = model,
+    frame = frame,
+    frame_parameters = frame_parameters,
+    control = control
+  )
+  tmb_parameters <- egf_make_tmb_parameters(
+    tmb_data = tmb_data,
+    model = model,
+    frame = frame,
+    frame_parameters = frame_parameters,
+    fit = fit,
+    init = init
+  )
+  if (is.null(map)) {
+    tmb_map <- list()
+  } else {
+    len <- lengths(tmb_parameters)
+    stop_if_not(
+      is.factor(map),
+      length(map) == sum(len),
+      m = sprintf("`map` must be a factor of length %d.", sum(len))
+    )
+    tmb_map <- split(map, rep.int(gl(3L, 1L, labels = names(len)), len))
+    tmb_map <- lapply(tmb_map, factor)
+  }
+  if (has_random(tmb_data)) {
+    ## Declare that `b` contains random effects
+    tmb_random <- "b"
+  } else {
+    ## Declare that there are no random effects
+    tmb_random <- NULL
+    ## Fix `theta` and `b` to NA_real_ since only `beta` is used
+    tmb_parameters$theta <- tmb_parameters$b <- NA_real_
+    tmb_map$theta <- tmb_map$b <- factor(NA)
+  }
+  list(
+    data = tmb_data,
+    parameters = tmb_parameters,
+    map = tmb_map,
+    random = tmb_random,
+    profile = if (control$profile) "beta" else NULL,
+    DLL = "epigrowthfit",
+    silent = (control$trace == 0L)
+  )
+}
+
+egf_update_tmb_args <- function(tmb_args, priors_top, priors_bottom) {
+  f <- function(priors) {
+    n <- length(priors)
+    has_prior <- !vapply(priors, is.null, FALSE)
+    flag_regularize <- rep_len(-1L, n)
+    flag_regularize[has_prior] <- get_flag("prior", vapply(priors[has_prior], `[[`, "", "family"))
+    hyperparameters <- rep_len(list(numeric(0L)), n)
+    hyperparameters[has_prior] <- lapply(priors[has_prior], function(x) unlist(x$parameters, FALSE, FALSE))
+    list(flag_regularize = flag_regularize, hyperparameters = hyperparameters)
+  }
+  l <- f(priors_top)
+  tmb_args$data$flags$flag_regularize_top <- l$flag_regularize
+  tmb_args$data$hyperparameters_top <- l$hyperparameters
+  l <- f(priors_bottom)
+  tmb_args$data$flags$flag_regularize_bottom <- l$flag_regularize
+  tmb_args$data$hyperparameters_bottom <- l$hyperparameters
+  tmb_args
 }
 
 #' Check for random effects
@@ -1299,26 +1385,29 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
 #' Determines whether an object specifies a random effects model.
 #'
 #' @param object
-#'   An \code{"\link{egf}"} or \code{"\link[=egf_make_tmb_data]{tmb_data}"} object.
+#'   An \code{"\link{egf}"} or \code{"\link[=egf_make_tmb_data]{tmb_data}"}
+#'   object.
 #'
 #' @return
 #' \code{TRUE} or \code{FALSE}.
 #'
+#' @name has_random
 #' @keywords internal
 has_random <- function(object) {
   UseMethod("has_random", object)
 }
 
+#' @rdname has_random
 #' @export
 has_random.tmb_data <- function(object) {
   ncol(object$Z) > 0L
 }
 
+#' @rdname has_random
 #' @export
 has_random.egf <- function(object) {
   has_random(object$tmb_args$data)
 }
-
 
 #' Patch TMB-generated functions
 #'
@@ -1337,11 +1426,11 @@ has_random.egf <- function(object) {
 #' @return
 #' A patched version of \link{function} \code{fn} or \code{gr}.
 #'
-#' @name patch_fn
+#' @name egf_patch_fn
 #' @keywords internal
 NULL
 
-#' @rdname patch_fn
+#' @rdname egf_patch_fn
 egf_patch_fn <- function(fn, inner_optimizer) {
   e <- environment(fn)
   if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
@@ -1373,7 +1462,7 @@ egf_patch_fn <- function(fn, inner_optimizer) {
   pfn
 }
 
-#' @rdname patch_fn
+#' @rdname egf_patch_fn
 egf_patch_gr <- function(gr, inner_optimizer) {
   e <- environment(gr)
   if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {

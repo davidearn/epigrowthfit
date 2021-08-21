@@ -5,14 +5,14 @@ bool is_nll_term_ok(Type nll_term, double tol = 1.0e+09)
 }
 
 template<class Type>
-Type nll_ob(objective_function<Type> *obj,
-	    const vector<Type> &time,
-	    const vector<int> &time_seg_len,
-	    vector<Type> &x,
-	    const matrix<Type> &Y,
-	    const egf::indices_t<Type> &indices,
-	    const egf::flags_t<Type> &flags,
-	    const vector<int> &day1)
+Type nll_obs(objective_function<Type> *obj,
+	     const vector<Type> &time,
+	     const vector<int> &time_seg_len,
+	     vector<Type> &x,
+	     const matrix<Type> &Y,
+	     const egf::indices_t<Type> &indices,
+	     const egf::flags_t<Type> &flags,
+	     const vector<int> &day1)
 {
     Type res = Type(0.0);
     
@@ -50,7 +50,7 @@ Type nll_ob(objective_function<Type> *obj,
 				      Y_row(indices.index_log_w6),
 				      day1(s));
 	}
-	res += nll_ob(obj, x, predict, Y_row, indices, flags, i - s, s);
+	res += nll_obs(obj, x, predict, Y_row, indices, flags, i - s, s);
 	i += n;
     } /* loop over segments */
 
@@ -59,14 +59,14 @@ Type nll_ob(objective_function<Type> *obj,
 
 
 template<class Type>
-Type nll_ob(objective_function<Type> *obj,
-	    vector<Type> &x,
-	    const vector<Type> &log_diff_curve,
-	    const vector<Type> &Y_row,
-	    const egf::indices_t<Type> &indices,
-	    const egf::flags_t<Type> &flags,
-	    int ix,
-	    int sx)
+Type nll_obs(objective_function<Type> *obj,
+	     vector<Type> &x,
+	     const vector<Type> &log_diff_curve,
+	     const vector<Type> &Y_row,
+	     const egf::indices_t<Type> &indices,
+	     const egf::flags_t<Type> &flags,
+	     int ix,
+	     int sx)
 {
     Type res = Type(0.0);
     Type nll_term;
@@ -151,10 +151,10 @@ Type nll_ob(objective_function<Type> *obj,
 
 
 template<class Type>
-Type nll_re(objective_function<Type> *obj,
-	    const vector< matrix<Type> > &list_of_blocks,
-	    vector< density::MVNORM_t<Type> > list_of_nld,
-	    const egf::flags_t<Type> &flags)
+Type nll_ran(objective_function<Type> *obj,
+	     const vector< matrix<Type> > &list_of_blocks,
+	     vector< density::MVNORM_t<Type> > list_of_nld,
+	     const egf::flags_t<Type> &flags)
 {
     Type res = Type(0.0);
     Type nll_term;
@@ -185,10 +185,10 @@ Type nll_re(objective_function<Type> *obj,
 }
 
 template<class Type>
-Type nll_pv(objective_function<Type> *obj,
-	    const matrix<Type> &Y,
-	    const vector< vector<Type> > &hyperparameters,
-	    const egf::flags_t<Type> &flags)
+Type nll_top(objective_function<Type> *obj,
+	     const matrix<Type> &Y,
+	     const vector< vector<Type> > &hyperparameters_top,
+	     const egf::flags_t<Type> &flags)
 {
     Type res = Type(0.0);
     Type nll_term;
@@ -202,21 +202,22 @@ Type nll_pv(objective_function<Type> *obj,
 
     for (int j = 0; j < nc; ++j)
     { /* loop over parameters */
-	if (flags.flag_regularize(j) >= 0)
+	if (flags.flag_regularize_top(j) >= 0)
 	{
-	    hp = hyperparameters(j);
-	    switch (flags.flag_regularize(j))
+	    hp = hyperparameters_top(j);
+	    switch (flags.flag_regularize_top(j))
 	    {
 	    case norm:
 		mu = hp(0);
 		sigma = hp(1);
+		break;
 	    }
 	    
 	    for (int i = 0; i < nr; ++i)
 	    { /* loop over values */
 	        if (obj->parallel_region())
 		{
-		    switch (flags.flag_regularize(j))
+		    switch (flags.flag_regularize_top(j))
 		    {
 		    case norm:
 			nll_term = -dnorm(Y(i, j), mu, sigma, true);
@@ -228,7 +229,7 @@ Type nll_pv(objective_function<Type> *obj,
 		    {
 			printf("parameter %d in segment %d: nll term is %.6e\n",
 			       j, i, asDouble(nll_term));
-			switch (flags.flag_regularize(j))
+			switch (flags.flag_regularize_top(j))
 			{
 			case norm:
 			    printf("-log(dnorm(x = %.6e, mean = %.6e, sd = %.6e))\n",
@@ -240,6 +241,89 @@ Type nll_pv(objective_function<Type> *obj,
 	    } /* loop over values */
 	}
     } /* loop over parameters */
+
+    return res;
+}
+
+template<class Type>
+Type nll_bot(objective_function<Type> *obj,
+	     const vector<Type> &beta,
+	     const vector<Type> &theta,
+	     const vector< vector<Type> > &hyperparameters_bottom,
+	     const egf::flags_t<Type> &flags)
+{
+    Type res = Type(0.0);
+    Type nll_term;
+
+    vector<Type> hp;
+    Type mu;
+    Type sigma;
+
+    int i = 0;
+    for (int j = 0; j < beta.size(); ++i, ++j)
+    { /* loop over `beta` elements */
+	if (obj->parallel_region() && flags.flag_regularize_bottom(i) >= 0)
+	{
+	    hp = hyperparameters_bottom(i);
+	    switch (flags.flag_regularize_bottom(i))
+	    {
+	    case norm:
+		mu = hp(0);
+		sigma = hp(1);
+		nll_term = -dnorm(beta(j), mu, sigma, true);
+		break;
+	    }
+	    res += nll_term;
+
+	    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
+	    {
+		printf("beta element %d: nll term is %.6e\n",
+		       j, asDouble(nll_term));
+		switch (flags.flag_regularize_bottom(i))
+		{
+		case norm:
+		    printf("-log(dnorm(x = %.6e, mean = %.6e, sd = %.6e))\n",
+			   asDouble(beta(j)), asDouble(mu), asDouble(sigma));
+		    break;
+		}
+	    }
+	}
+    } /* loop over `beta` elements */
+
+    if (!flags.do_random_effects)
+    {
+        return res;
+    }
+    
+    for (int j = 0; j < theta.size(); ++i, ++j)
+    { /* loop over `theta` elements */
+	if (obj->parallel_region() && flags.flag_regularize_bottom(i) >= 0)
+	{
+	    hp = hyperparameters_bottom(j);
+	    switch (flags.flag_regularize_bottom(i))
+	    {
+	    case norm:
+		mu = hp(0);
+		sigma = hp(1);
+		nll_term = -dnorm(theta(j), mu, sigma, true);
+		break;
+	    }
+	    res += nll_term;
+
+	    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
+	    {
+		printf("theta element %d: nll term is %.6e\n",
+		       j, asDouble(nll_term));
+		switch (flags.flag_regularize_bottom(i))
+		{
+		case norm:
+		    printf("-log(dnorm(x = %.6e, mean = %.6e, sd = %.6e))\n",
+			   asDouble(theta(j)), asDouble(mu), asDouble(sigma));
+		    break;
+		}
+	    }
+	}
+    } /* loop over `theta` elements */
 
     return res;
 }

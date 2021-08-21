@@ -14,6 +14,8 @@ test_that("exponential", {
 })
 
 test_that("subexponential", {
+  library("epigrowthfit")
+  library("testthat")
   alpha <- log(2) / 20
   c0 <- 100
   p <- 0.95
@@ -25,7 +27,11 @@ test_that("subexponential", {
     mu = c(log(alpha), log(c0), qlogis(p), log(disp)),
     cstart = 10
   )
-  mm <- egf(zz, priors = list(logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)))
+  mm <- egf(zz,
+    formula_priors_top = list(
+      logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)
+    )
+  )
   ## Much worse without a prior on `logit(p)`
   expect_equal(mm$best, zz$actual, tolerance = 1e-1)
 })

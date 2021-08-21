@@ -2,12 +2,19 @@
 % Please edit documentation in R/utils_egf.R
 \name{has_random}
 \alias{has_random}
+\alias{has_random.tmb_data}
+\alias{has_random.egf}
 \title{Check for random effects}
 \usage{
 has_random(object)
+
+\method{has_random}{tmb_data}(object)
+
+\method{has_random}{egf}(object)
 }
 \arguments{
-\item{object}{An \code{"\link{egf}"} or \code{"\link[=egf_make_tmb_data]{tmb_data}"} object.}
+\item{object}{An \code{"\link{egf}"} or \code{"\link[=egf_make_tmb_data]{tmb_data}"}
+object.}
 }
 \value{
 \code{TRUE} or \code{FALSE}.

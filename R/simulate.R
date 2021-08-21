@@ -281,8 +281,8 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     R[iR] <- R[iR] * rep.int(1 / diag(R), seq_len(p))
     l <- list(
       beta = mu,
-      b = rep_len(0, nsim * p),
-      theta = c(0.5 * log(diag(Sigma)), R[upper.tri(R, diag = FALSE)])
+      theta = c(0.5 * log(diag(Sigma)), R[upper.tri(R, diag = FALSE)]),
+      b = rep_len(0, nsim * p)
     )
     init <- unlist(l, FALSE, FALSE)
     names(init) <- enum_dupl_string(rep.int(names(l), lengths(l)))

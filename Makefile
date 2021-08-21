@@ -42,4 +42,4 @@ clean:
 	rm -fr $(TARBALL) $(PACKAGE)-manual.pdf $(CHECKDIR)
 	find . \( -name "#*" -o -name "*~" -o -name ".Rhistory" \) \
 		-exec rm {} +
-	rm -f src/*.{o,so}
+	rm -f src/*.{o,so,tmp}

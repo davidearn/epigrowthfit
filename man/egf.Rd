@@ -12,13 +12,14 @@ egf(model, ...)
   formula,
   formula_windows,
   formula_parameters = list(),
+  formula_priors_top = list(),
+  formula_priors_bottom = list(),
   data,
   data_windows,
   subset = NULL,
   subset_windows = NULL,
   na_action = c("fail", "pass"),
   na_action_windows = c("fail", "omit"),
-  priors = list(),
   control = egf_control(),
   fit = TRUE,
   se = FALSE,
@@ -71,6 +72,25 @@ Specifically, \code{\link{deparse}(parameter)} must be an element of
 \code{\link{get_names_top}(model, link = TRUE)}.
 The default for parameters not assigned a formula is \code{~1}.}
 
+\item{formula_priors_top, formula_priors_bottom}{\link[=list]{List}s of \link{formula}e of the form \code{parameter ~ prior}
+defining priors on top level nonlinear model parameters or bottom level
+mixed effects model parameters, i.e., elements of segments \code{beta}
+and \code{theta} of the full parameter vector \code{c(beta, theta, b)}.
+\code{prior} must be a \link{call}
+to a valid \link[=egf_prior]{prior function}
+with arguments specifying suitable hyperparameters
+(e.g., \code{\link{Normal}(mu = 0, sigma = 1)}).
+In the top level case, \code{deparse(parameter)} must be an element
+of \code{\link{get_names_top}(model, link = TRUE)},
+and hyperparameters supplied on the right hand side must have length 1.
+In the bottom level case, \code{parameter} must be \code{beta}
+or \code{theta} or a call to \code{\link{[}} or \code{\link{[[}}
+subsetting \code{beta} or \code{theta} (e.g., \code{beta[index]},
+where \code{index} is any valid index vector for \code{beta}),
+and hyperparameters are recycled to the length of the indicated subset.
+All expressions \code{prior} and \code{index} are evaluated in the
+corresponding formula environment.}
+
 \item{data, data_windows}{\link[=data.frame]{Data frame}s, \link{list}s, or \link{environment}s
 to be searched for variables named in the corresponding \link{formula}e.
 (\code{formula_parameters} uses \code{data_windows}.)
@@ -95,14 +115,6 @@ in \code{formula_windows} and \code{formula_parameters} variables.
 \code{"fail"} is to throw an error.
 \code{"omit"} is to discard incomplete rows of data.}
 
-\item{priors}{A \link{list} of \link{formula}e of the form \code{parameter ~ f(...)}
-specifying priors on top level nonlinear model parameters.
-\code{\link{deparse}(parameter)} must be an element
-of \code{\link{get_names_top}(model, link = TRUE)}, and
-\code{f(...)} must be a \link{call} to a \link[=egf_prior]{prior function}
-with arguments specifying suitable hyperparameters.
-Calls are evaluated in the corresponding formula environments.}
-
 \item{control}{An \code{"\link{egf_control}"} object specifying control parameters.}
 
 \item{fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
@@ -112,19 +124,23 @@ with a \link{list} of optimization inputs.}
 effects model coefficients are computed and stored for later reuse
 by methods.}
 
-\item{init}{A \link{numeric} vector to be used as the full parameter vector for
-the first likelihood evaluation. The default (\code{\link{NULL}}) is
-to accept the internally generated default. Use \code{fit = FALSE}
-to retrieve this default and other optimization inputs (in particular
-\code{Y_init}; see Value), which can often be used to construct a more
-informative starting point.}
+\item{init}{A \link{numeric} vector to be used as the full parameter vector
+\code{c(beta, theta, b)} for the first likelihood evaluation.
+The default (\code{\link{NULL}}) is to accept the internally generated
+default.
+Use \code{fit = FALSE} to retrieve this default and other optimization
+inputs (in particular \code{Y_init}; see Value), which can often be used
+to construct a more informative starting point.}
 
-\item{map}{A \link{factor} of length \code{\link{length}(init)}.
-Elements of the full parameter vector corresponding to \code{\link{NA}}
-in \code{map} are fixed at their initial values, rather than estimated.
+\item{map}{A \link{factor} corresponding elementwise to the full parameter vector
+\code{c(beta, theta, b)}.
+Elements of c(beta, theta, b) corresponding to \code{\link{NA}} in
+\code{map} are fixed at their initial values, rather than estimated.
 Elements corresponding to a common factor level are constrained to have
-a common value during estimation. \link[=logical]{Logical} values
-of \code{map} are accepted and coerced to factor internally with
+a common value during estimation. (However, note that grouping across
+segments \code{beta}, \code{theta}, and \code{b} is not implemented.)
+\link[=logical]{Logical} values of \code{map} are accepted and coerced
+to factor internally with
 \code{map <- \link{replace}(\link{gl}(\link{length}(map), 1), map, NA)}.}
 
 \item{append}{An expression indicating variables in \code{data_windows}
@@ -176,10 +192,12 @@ If \code{fit = TRUE}, then a \link{list} inheriting from \link{class}
   from \code{data_windows} indicated by \code{append}.
   This corresponds rowwise to \code{frame_windows}.
 }
-\item{priors}{
-  A \link{list} of \code{"\link{egf_prior}"} objects,
-  obtained by evaluating the right hand side of each
-  \link{formula} listed in the so-named argument.
+\item{priors_top, priors_bottom}{
+  Named \link{list}s of \code{"\link{egf_prior}"} objects obtained after
+  processing of \code{formula_priors_top} and \code{formula_priors_bottom}.
+  \code{priors_top} has one element for each top level nonlinear model
+  parameter.
+  \code{priors_bottom} corresponds elementwise to \code{c(beta, theta)}.
 }
 \item{control}{
   A copy of the so-named argument.
@@ -198,11 +216,12 @@ If \code{fit = TRUE}, then a \link{list} inheriting from \link{class}
 }
 \item{init, best}{
   Numeric vectors. These are the full parameter vectors
-  of the first and best likelihood evaluations.
+  \code{c(beta, theta, b)} of the first and best likelihood evaluations.
 }
 \item{nonrandom}{
-  An \link{integer} vector indexing the elements of \code{init}
-  and \code{best} that are not random effects.
+  An \link{integer} vector indexing segments \code{beta} and \code{theta}
+  of the full parameter vector \code{c(beta, theta, b)}. These are the
+  elements that are \emph{not} random effects.
 }
 \item{sdreport}{
   If \code{se = TRUE}, then an \code{"sdreport"} object resulting
@@ -218,13 +237,12 @@ If \code{fit = TRUE}, then a \link{list} inheriting from \link{class}
   \code{"egf"} object via \code{\link{update}}.
 }
 If \code{fit = FALSE}, then a \link{list} inheriting from
-\link{class} \code{"egf_no_fit"} containing \code{model},
-\code{frame}, \code{frame_windows}, \code{frame_parameters},
-\code{tmb_args}, \code{tmb_out} (\emph{before} optimization),
-\code{init}, \code{nonrandom}, and \code{call}, as well as a
-\link[=double]{numeric} \link{matrix} \code{Y_init} specifying
-naive estimates of each top level nonlinear model parameter,
-corresponding rowwise to \code{frame_windows}.
+\link{class} \code{"egf_no_fit"} containing all of the above
+except \code{optimizer_out}, \code{best}, \code{sdreport},
+and \code{nll}. It contains an additional element
+\code{Y_init}, a \link[=double]{numeric} \link{matrix}
+supplying naive estimates of each top level nonlinear model
+parameter, corresponding rowwise to \code{frame_windows}.
 }
 \description{
 Fits nonlinear mixed effects models of epidemic growth
@@ -236,12 +254,12 @@ Let
 and
 \code{formula_windows = cbind(start, end) ~ ts_windows}.
 It is expected that \code{time}, \code{start}, and \code{end}
-(after possible coercion to \link{numeric}) measure time on
-the same scale. To be precise, numeric times should have a
-common unit of measure and, within time series, represent
-displacements from a common reference time. These conditions
-will always hold if \code{time}, \code{start}, and \code{end}
-all evaluate to \link{Date} or \link{POSIXt} vectors.
+(after possible coercion to \link{numeric}) measure time
+on the same scale. To be precise, numeric times should have
+a common unit of measure and, at least within time series,
+represent displacements from a common reference time.
+These conditions will always hold if \code{time}, \code{start},
+and \code{end} all evaluate to \link{Date} or \link{POSIXt} vectors.
 
 Plot methods asked to display time on a Date axis rather than
 a numeric axis will interpret numeric times as numbers of days

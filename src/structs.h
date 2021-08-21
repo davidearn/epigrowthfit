@@ -49,16 +49,17 @@ struct indices_t
 template<class Type>
 struct flags_t
 {
-    /* Model of cumulative incidence (enums.hpp) */
+    /* Model of cumulative incidence (enums.h) */
     int flag_curve;
     /* Baseline term in model of cumulative incidence (1=yes, 0=no) */
     int flag_excess;
-    /* Model of observation error (enums.hpp) */
+    /* Model of observation error (enums.h) */
     int flag_family;
     /* Day of week effects (1=yes, 0=no) */
     int flag_day_of_week;
-    /* Priors on nonlinear model parameters (enums.hpp, -1=no prior) */
-    vector<int> flag_regularize;
+    /* Priors on top and bottom level parameters (enums.h, -1=no prior) */
+    vector<int> flag_regularize_top;
+    vector<int> flag_regularize_bottom;
     /* Trace
        0=nothing
        1=degenerate nll terms
@@ -72,7 +73,8 @@ struct flags_t
 
     bool do_excess;
     bool do_day_of_week;
-    bool do_regularize;
+    bool do_regularize_top;
+    bool do_regularize_bottom;
     bool do_trace;
     bool do_trace_verbose;
     bool do_sparse_X;
@@ -86,21 +88,30 @@ struct flags_t
 	flag_excess      = get_list_integer(x, "flag_excess");
 	flag_family      = get_list_integer(x, "flag_family");
 	flag_day_of_week = get_list_integer(x, "flag_day_of_week");
-	flag_regularize  = asVector<int>(getListElement(x, "flag_regularize", &Rf_isNumeric));
 	flag_trace       = get_list_integer(x, "flag_trace");
 	flag_sparse_X    = get_list_integer(x, "flag_sparse_X");
 	flag_predict     = get_list_integer(x, "flag_predict");
 
 	do_excess        = (flag_excess         == 1);
 	do_day_of_week   = (flag_day_of_week    == 1);
-	do_regularize    = false;
 	do_trace         = (flag_trace          >= 1);
 	do_trace_verbose = (flag_trace          >= 2);
 	do_sparse_X      = (flag_sparse_X       == 1);
 	do_predict       = (flag_predict        == 1);
-	for (int i = 0; !do_regularize && i < flag_regularize.size(); ++i)
+
+	flag_regularize_top = asVector<int>(getListElement(x, "flag_regularize_top", &Rf_isNumeric));
+	flag_regularize_bottom = asVector<int>(getListElement(x, "flag_regularize_bottom", &Rf_isNumeric));
+	
+	do_regularize_top = false;
+	for (int i = 0; !do_regularize_top && i < flag_regularize_top.size(); ++i)
 	{
-	    do_regularize = flag_regularize(i) >= 0;
+	    do_regularize_top = flag_regularize_top(i) >= 0;
+	}
+	
+	do_regularize_bottom = false;
+	for (int i = 0; !do_regularize_bottom && i < flag_regularize_bottom.size(); ++i)
+	{
+	    do_regularize_bottom = flag_regularize_bottom(i) >= 0;
 	}
     }
 };
