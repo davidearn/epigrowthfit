@@ -299,7 +299,7 @@ Type nll_bot(objective_function<Type> *obj,
     { /* loop over `theta` elements */
 	if (obj->parallel_region() && flags.flag_regularize_bottom(i) >= 0)
 	{
-	    hp = hyperparameters_bottom(j);
+	    hp = hyperparameters_bottom(i);
 	    switch (flags.flag_regularize_bottom(i))
 	    {
 	    case norm:

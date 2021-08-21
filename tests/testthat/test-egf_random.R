@@ -1,5 +1,7 @@
 options(egf.cores = 4L)
 
+library("epigrowthfit")
+library("testthat")
 test_that("exponential", {
   r <- log(2) / 20
   c0 <- 100
