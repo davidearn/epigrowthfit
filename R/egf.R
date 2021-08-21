@@ -690,7 +690,7 @@ egf_optimizer <- function(f = nlminb, args = list(), control = list()) {
     }
   }
   if (!is.null(names(args))) {
-    reserved <- c(names(formals(f)), names(formals(optimizer))[1:3])
+    reserved <- c("par", "fn", "gr", "control", "...", names(formals(optimizer))[1:3])
     args <- args[setdiff(names(args), reserved)]
   }
 
