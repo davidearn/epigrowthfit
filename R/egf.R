@@ -625,6 +625,8 @@ egf_control <- function(optimizer = egf_optimizer(),
 #'   A \link{list}. This is \code{control} if \code{f = \link{optim}} and
 #'   \code{args} (after possible deletion of elements with reserved names)
 #'   if \code{f = \link[TMB]{newton}}.
+#'   To align the default behaviour of \code{newton} with that of \code{optim},
+#'   \code{trace = 0L} is set if not specified in \code{args}.
 #' }
 #'
 #' @seealso
@@ -718,6 +720,9 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
     if (!is.null(names(args))) {
       reserved <- c("par", "fn", "gr", "he", "env", "...")
       args <- args[setdiff(names(args), reserved)]
+    }
+    if (!"trace" %in% names(args)) {
+      args[["trace"]] <- 0L
     }
     control <- args
   } else if (identical(f, optim)) {

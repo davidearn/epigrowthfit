@@ -56,6 +56,8 @@ from \link{class} \code{"egf_inner_optimizer"}, with elements:
   A \link{list}. This is \code{control} if \code{f = \link{optim}} and
   \code{args} (after possible deletion of elements with reserved names)
   if \code{f = \link[TMB]{newton}}.
+  To align the default behaviour of \code{newton} with that of \code{optim},
+  \code{trace = 0L} is set if not specified in \code{args}.
 }
 }
 \description{

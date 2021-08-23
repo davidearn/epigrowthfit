@@ -1,11 +1,11 @@
 library("countrycode")
 source("utils.R")
-endpoints <- readRDS("rds/endpoints.rds")
+windows <- readRDS("rds/world_windows.rds")
 
 ## ISO 3166-1 alpha-3 code
-country_iso_alpha3 <- levels(endpoints$country_iso_alpha3)
+country_iso_alpha3 <- levels(windows$country_iso_alpha3)
 n <- length(country_iso_alpha3)
-r <- match(endpoints$country_iso_alpha3, country_iso_alpha3, 0L)
+r <- match(windows$country_iso_alpha3, country_iso_alpha3, 0L)
 
 ## ISO 3166-1 alpha-2 code
 country_iso_alpha2 <- countrycode(
@@ -13,7 +13,7 @@ country_iso_alpha2 <- countrycode(
   origin = "iso3c",
   destination = "iso2c"
 )
-endpoints$country_iso_alpha2 <- gl(n, 1L, labels = country_iso_alpha2)[r]
+windows$country_iso_alpha2 <- gl(n, 1L, labels = country_iso_alpha2)[r]
 
 ## ISO 3166-1 numeric code
 country_iso_numeric <- countrycode(
@@ -21,7 +21,7 @@ country_iso_numeric <- countrycode(
   origin = "iso3c",
   destination = "iso3n"
 )
-endpoints$country_iso_numeric <- gl(n, 1L, labels = country_iso_numeric)[r]
+windows$country_iso_numeric <- gl(n, 1L, labels = country_iso_numeric)[r]
 
 ## Name
 country <- countrycode(
@@ -34,7 +34,7 @@ country <- countrycode(
                    PSE = "Palestine",
                    TTO = "Trinidad and Tobago")
 )
-endpoints$country <- gl(n, 1L, labels = country)[r]
+windows$country <- gl(n, 1L, labels = country)[r]
 
 ## Subregion
 subregion <- countrycode(
@@ -43,7 +43,7 @@ subregion <- countrycode(
   destination = "un.regionsub.name",
   custom_match = c(TWN = "Eastern Asia")
 )
-endpoints$subregion <- factor(subregion)[r]
+windows$subregion <- factor(subregion)[r]
 
 ## Region
 region <- countrycode(
@@ -52,7 +52,7 @@ region <- countrycode(
   destination = "un.region.name",
   custom_match = c(TWN = "Asia")
 )
-endpoints$region <- factor(region)[r]
+windows$region <- factor(region)[r]
 
 ## Population-weighted latitude and longitude
 coords <- readRDS("rds/coords.rds")
@@ -63,7 +63,7 @@ f <- function(d) {
 }
 ll_rows <- by(coords, coords$country_iso_alpha3, f, simplify = FALSE)
 ll <- matrix(unlist(ll_rows), ncol = 2L, byrow = TRUE)
-endpoints[c("latitude", "longitude")] <- ll[r, , drop = FALSE]
+windows[c("latitude", "longitude")] <- ll[r, , drop = FALSE]
 rm(coords)
 
 ## Latitude and longitude bands
@@ -79,14 +79,14 @@ longitude_band_20deg <- cut(ll[, 2L],
   include.lowest = FALSE,
   ordered_result = TRUE
 )
-endpoints$latitude_band_20deg <- latitude_band_20deg[r]
-endpoints$longitude_band_20deg <- longitude_band_20deg[r]
+windows$latitude_band_20deg <- latitude_band_20deg[r]
+windows$longitude_band_20deg <- longitude_band_20deg[r]
 
 ## Population size
 population <- readRDS("rds/population.rds")
 population <- population[population$year == "2020", , drop = FALSE]
 m <- match(country_iso_numeric, population$country_iso_numeric, 0L)
-endpoints$population <- population$population[m][r]
+windows$population <- population$population[m][r]
 rm(population)
 
 ## Mobility
@@ -97,8 +97,8 @@ M <- get_summary(
   d = mobility[s],
   d_Date = mobility$Date,
   d_index = mobility$country_iso_alpha2,
-  start = endpoints$start,
-  start_index = endpoints$country_iso_alpha2,
+  start = windows$start,
+  start_index = windows$country_iso_alpha2,
   func = geom_mean,
   na.rm = TRUE,
   zero.rm = FALSE,
@@ -110,7 +110,7 @@ M <- get_summary(
   period = 7L,
   geom = TRUE
 )
-endpoints[s] <- M[, s]
+windows[s] <- M[, s]
 rm(mobility)
 
 ## NPI
@@ -124,21 +124,21 @@ M_ordered <- get_summary(
   d = npi[s_ordered],
   d_Date = npi$Date,
   d_index = npi$country_iso_alpha3,
-  start = endpoints$start,
-  start_index = endpoints$country_iso_alpha3,
+  start = windows$start,
+  start_index = windows$country_iso_alpha3,
   func = function(x) min(stat_mode(x, na.rm = TRUE)),
   lag = 14L,
   k = 14L,
   method = "locf",
   x0 = 0L
 )
-endpoints[s_ordered] <- lapply(as.data.frame(M_ordered[, s_ordered]), ordered)
+windows[s_ordered] <- lapply(as.data.frame(M_ordered[, s_ordered]), ordered)
 M <- get_summary(
   d = npi[s_numeric],
   d_Date = npi$Date,
   d_index = npi$country_iso_alpha3,
-  start = endpoints$start,
-  start_index = endpoints$country_iso_alpha3,
+  start = windows$start,
+  start_index = windows$country_iso_alpha3,
   func = mean,
   na.rm = TRUE,
   lag = 14L,
@@ -149,7 +149,7 @@ M <- get_summary(
   period = 1L,
   geom = FALSE
 )
-endpoints[s_numeric] <- M[, s_numeric]
+windows[s_numeric] <- M[, s_numeric]
 rm(npi)
 
 ## Vaccination
@@ -160,8 +160,8 @@ M <- get_summary(
   d = vaccine[s],
   d_Date = vaccine$Date,
   d_index = vaccine$country_iso_alpha3,
-  start = endpoints$start,
-  start_index = endpoints$country_iso_alpha3,
+  start = windows$start,
+  start_index = windows$country_iso_alpha3,
   func = mean,
   na.rm = TRUE,
   lag = 14L,
@@ -172,7 +172,7 @@ M <- get_summary(
   period = 1L,
   geom = FALSE
 )
-endpoints[sub("_per_100$", "", s)] <- M[, s] / 100
+windows[sub("_per_100$", "", s)] <- M[, s] / 100
 rm(vaccine)
 
 ## Weather
@@ -183,8 +183,8 @@ M <- get_summary(
   d = weather[s],
   d_Date = weather$Date,
   d_index = weather$country_iso_alpha3,
-  start = endpoints$start,
-  start_index = endpoints$country_iso_alpha3,
+  start = windows$start,
+  start_index = windows$country_iso_alpha3,
   func = mean,
   na.rm = TRUE,
   lag = 14L,
@@ -195,7 +195,7 @@ M <- get_summary(
   period = 1L,
   geom = FALSE
 )
-endpoints[s] <- M[, s]
+windows[s] <- M[, s]
 rm(weather)
 
 ## Economic indicators
@@ -213,8 +213,8 @@ lo <- function(x) {
   if (all(argna <- is.na(x))) NA else x[max(which(!argna))]
 }
 lodevel <- aggregate(devel["value"], by = devel[c("country_iso_alpha3", "indic")], lo, drop = FALSE)
-endpoints[levels(lodevel$indic)] <- c(tapply(lodevel$value, lodevel$indic, `[`, r, simplify = FALSE))
-endpoints$econ_gini <- endpoints$econ_gini / 100
+windows[levels(lodevel$indic)] <- c(tapply(lodevel$value, lodevel$indic, `[`, r, simplify = FALSE))
+windows$econ_gini <- windows$econ_gini / 100
 rm(devel)
 
 ## Number of days since:
@@ -235,10 +235,10 @@ Date_50 <- .Date(c(by(covid19, covid19$country_iso_alpha3, f, min = 50L)))
 Date_2in1m <- .Date(mapply(f,
   d = split(covid19, covid19$country_iso_alpha3),
   min = 2e-06,
-  population = endpoints$population[match(country_iso_alpha3, endpoints$country_iso_alpha3)]
+  population = windows$population[match(country_iso_alpha3, windows$country_iso_alpha3)]
 ))
-endpoints$days_since_50 <- as.numeric(endpoints$start - Date_50[r])
-endpoints$days_since_2in1m <- as.numeric(endpoints$start - Date_2in1m[r])
+windows$days_since_50 <- as.numeric(windows$start - Date_50[r])
+windows$days_since_2in1m <- as.numeric(windows$start - Date_2in1m[r])
 rm(covid19)
 
-saveRDS(endpoints, file = "rds/endpoints.rds")
+saveRDS(windows, file = "rds/windows.rds")

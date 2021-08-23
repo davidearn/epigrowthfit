@@ -12,13 +12,13 @@ csv = $(addprefix $(dir_csv)/,$(addsuffix .csv,$(datasets)))
 rds = $(addprefix $(dir_rds)/,$(addsuffix .rds,$(datasets)))
 rsc = $(addsuffix .R,$(scripts))
 
-all: world endpoints
+all: world windows
 .PHONY: weather clean download
 
 world: make_world.R rds/covid19.rds
 	$(R) --quiet -f $<
 
-endpoints: make_endpoints.R augment_endpoints.R utils.R $(rds) rds/weather.rds
+windows: make_windows.R augment_windows.R utils.R $(rds) rds/weather.rds
 	$(R) --quiet -f $(word 1,$^)
 	$(R) --quiet -f $(word 2,$^)
 
