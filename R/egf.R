@@ -647,7 +647,7 @@ egf_optimizer <- function(f = nlminb, args = list(), control = list()) {
   if (identical(f, optim)) {
     if (is.null(args$method)) {
       args$method <- "BFGS"
-      warning(sprintf("`optim` argument `method` not specified, using \"%s\".", args$method))
+      warning("`optim` argument `method` not specified, using ", dQuote(args$method), ".")
     } else {
       args$method <- match.arg(args$method, eval(formals(optim)$method))
     }
@@ -676,15 +676,20 @@ egf_optimizer <- function(f = nlminb, args = list(), control = list()) {
     e <- quote(f(c(1, 1), function(x) sum(x^2), function(x) 2 * x))
     f_out <- tryCatch(eval(e),
       error = function(cond) {
-        stop(wrap(sprintf("Unable to validate `f` due to following error in test `%s`:\n\n%s.", deparse(e), conditionMessage(cond))))
+        stop(wrap(
+          "Unable to validate `f` due to following error in test ", deparse(e), ":\n\n",
+          conditionMessage(cond)
+        ))
       }
     )
     required <- c("par", "value", "convergence", "message")
-    stop_if_not(
-      is.list(f_out),
-      required %in% names(f_out),
-      m = wrap(sprintf("`f` must return a list with elements %s, but _does not_ for test `%s`.", paste(sQuote(required, FALSE), collapse = ", "), deparse(e)))
-    )
+    if (!(is.list(f_out) && all(required %in% names(f_out)))) {
+      stop(wrap(
+        "`f` must return a list with elements ",
+        paste(sQuote(required), collapse = ", "),
+        " but _does not_ for test ", deparse(e), "."
+      ))
+    }
     f <- function(par, fn, gr, control, ...) {
       optimizer(par, fn, gr, control = control, ...)
     }
@@ -718,7 +723,7 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
   } else if (identical(f, optim)) {
     if (is.null(args$method)) {
       method <- "BFGS"
-      warning(sprintf("`optim` argument `method` not specified, using \"%s\".", method))
+      warning("`optim` argument `method` not specified, using ", dQuote(method), ".")
     } else {
       method <- match.arg(args$method, eval(formals(optim)$method))
     }

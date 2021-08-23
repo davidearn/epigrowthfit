@@ -26,10 +26,8 @@ specifying a top level nonlinear model. Otherwise,
 
 \item{...}{Unused optional arguments.}
 
-\item{link}{A \link{logical} flag. If \code{TRUE}, then \code{"name"}
-is replaced with \code{"log(name)"} or \code{"logit(name)"}
-depending on the link function used internally for the
-parameter.}
+\item{link}{A \link{logical} flag. If \code{TRUE},
+then \code{"link(name)"} is returned instead of \code{"name"}.}
 }
 \value{
 A \link{character} vector giving the subset of names relevant to
@@ -37,11 +35,14 @@ A \link{character} vector giving the subset of names relevant to
 }
 \description{
 Retrieves the names used internally for top level nonlinear model
-parameter names.
+parameters.
 }
 \examples{
 get_names_top(NULL, link = FALSE)
 get_names_top(NULL, link = TRUE)
-get_names_top(egf_model(), link = FALSE)
+
+model <- egf_model()
+get_names_top(model, link = FALSE)
+get_names_top(model, link = TRUE)
 
 }

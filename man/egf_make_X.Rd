@@ -14,7 +14,8 @@ egf_make_Z(x, frame)
 For \code{egf_make_Z}, a \link{call} to binary operator \code{`|`}
 of the form \code{(tt | g)}.
 Here, \code{tt} is an expression composed of potentially many terms,
-while \code{g} is an unevaluated factor, possibly an interaction.}
+while \code{g} is an expression, possibly an interaction, indicating
+a grouping.}
 
 \item{frame}{A \link[=model.frame]{model frame} listing the variables used in \code{x}.}
 

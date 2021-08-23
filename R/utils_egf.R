@@ -1,7 +1,7 @@
 #' Get top level nonlinear model parameter names
 #'
 #' Retrieves the names used internally for top level nonlinear model
-#' parameter names.
+#' parameters.
 #'
 #' @param object
 #'   An \code{"\link{egf_model}"}, \code{"\link{egf}"},
@@ -9,10 +9,8 @@
 #'   specifying a top level nonlinear model. Otherwise,
 #'   \code{\link{NULL}}.
 #' @param link
-#'   A \link{logical} flag. If \code{TRUE}, then \code{"name"}
-#'   is replaced with \code{"log(name)"} or \code{"logit(name)"}
-#'   depending on the link function used internally for the
-#'   parameter.
+#'   A \link{logical} flag. If \code{TRUE},
+#'   then \code{"link(name)"} is returned instead of \code{"name"}.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -23,7 +21,10 @@
 #' @examples
 #' get_names_top(NULL, link = FALSE)
 #' get_names_top(NULL, link = TRUE)
-#' get_names_top(egf_model(), link = FALSE)
+#'
+#' model <- egf_model()
+#' get_names_top(model, link = FALSE)
+#' get_names_top(model, link = TRUE)
 #'
 #' @export
 get_names_top <- function(object, ...) {
@@ -88,27 +89,30 @@ get_names_top.tmb_data <- function(object, link = TRUE, ...) {
 #' Utilities for modifying strings \code{s} and
 #' \code{fs = \link{sprintf}("\%s(\%s)", f, s)},
 #' where \code{s} is the name used internally
-#' for a top level nonlinear model parameter and
-#' \code{f} is the name (either \code{"log"} or \code{"logit"})
+#' for a top level nonlinear model parameter
+#' and \code{f} is the name
+#' (either \code{"log"} or \code{"logit"})
 #' of the corresponding link function.
 #'
 #' @param s,fs \link[=character]{Character} vectors.
 #'
 #' @return
 #' For strings \code{s}, \code{f}, and \code{fs} as described above,
-#' \code{string_get_link(s)} returns \code{f}, \code{string_add_link(s)}
-#' returns \code{fs}, \code{string_remove_link(fs)} returns \code{s},
-#' and \code{string_extract_link(fs)} returns \code{f}.
+#' \code{string_get_link(s)} returns \code{f},
+#' \code{string_add_link(s)} returns \code{fs},
+#' \code{string_remove_link(fs)} returns \code{s}, and
+#' \code{string_extract_link(fs)} returns \code{f}.
 #'
-#' All functions are vectorized. \code{\link{NA_character_}}
-#' is returned for invalid input (see Examples).
+#' \code{\link{NA_character_}} is returned for invalid values
+#' of the argument.
 #'
 #' @examples
 #' ## string_get_link("r")
 #' ## string_add_link("r")
 #' ## string_remove_link("log(r)")
 #' ## string_extract_link("log(r)")
-#' ## string_extract_link("invalid", "input", "r" , "log(r)")
+#'
+#' ## string_extract_link("invalid string", "r" , "log(r)")
 #'
 #' @name string_get_link
 #' @keywords internal
@@ -193,23 +197,19 @@ egf_sanitize_formula <- function(formula) {
     is.call(lhs <- a$variables[[1L + a$response]]),
     lhs[[1L]] == "cbind",
     length(lhs) == 3L,
-    m = sprintf("Left hand side of `%s` must be a call to `cbind` with 2 arguments.", s)
+    m = wrap("Left hand side of ", sQuote(s), " must be a call to `cbind` with 2 arguments.")
   )
   stop_if_not(
     a$intercept == 1L,
     is.null(a$offset),
     length(a$term.labels) < 2L,
-    m = sprintf("Right hand side of `%s` must be 1 or have exactly one term.", s)
+    m = wrap("Right hand side of ", sQuote(s), " must be 1 or have exactly one term.")
   )
   formula(tt)
 }
 
 #' @importFrom stats terms
 egf_sanitize_formula_parameters <- function(formula_parameters, model, ignore_intercept) {
-  check_ok_intercept <- function(x) {
-    a <- attributes(terms(split_effects(x)$fixed))
-    a$intercept == 1L || length(a$term.labels) == 0L
-  }
   names_top <- get_names_top(model, link = TRUE)
   if (repeated <- inherits(formula_parameters, "formula")) {
     formula_parameters <- simplify_terms(formula_parameters)
@@ -220,7 +220,7 @@ egf_sanitize_formula_parameters <- function(formula_parameters, model, ignore_in
     if (!all(names(formula_parameters) %in% names_top)) {
       stop(wrap(
         "`deparse(formula_parameters[[i]][[2L]])` must be an element of ",
-        sprintf("`c(%s)`.", paste(dQuote(names_top, FALSE), collapse = ", "))
+        sprintf("c(%s).", paste(dQuote(names_top), collapse = ", "))
       ))
     }
     formula_parameters <- lapply(formula_parameters, function(x) simplify_terms(x[-2L]))
@@ -228,6 +228,10 @@ egf_sanitize_formula_parameters <- function(formula_parameters, model, ignore_in
     formula_parameters <- formula_parameters[names_top]
   }
   if (!ignore_intercept) {
+    check_ok_intercept <- function(x) {
+      a <- attributes(terms(split_effects(x)$fixed))
+      a$intercept == 1L || length(a$term.labels) == 0L
+    }
     if (repeated) {
       ok <- check_ok_intercept(formula_parameters[[1L]])
     } else {
@@ -253,10 +257,9 @@ egf_make_frames <- function(model,
                             append) {
   ## Reused for `frame` and `frame_windows`
   make_frame <- function(formula, data, subset, na.action, drop.unused.levels) {
-    ## Build model frame
     group <- length(attr(terms(formula), "term.labels")) == 1L
     tt <- c(if (group) list(formula[[3L]]), as.list(formula[[2L]])[-1L])
-    .names <- c(if (!group) "", vapply(tt, deparse, ""))
+    names_original <- c(if (!group) "", vapply(tt, deparse, ""))
     tt <- Map(call, c(if (group) "as.factor", "identity", "identity"), tt, USE.NAMES = FALSE)
     cl <- match.call()
     cl[[1L]] <- quote(model.frame)
@@ -266,7 +269,7 @@ egf_make_frames <- function(model,
     if (!group) {
       mf <- data.frame(rep_len(factor(1), nrow(mf)), mf)
     }
-    attr(mf, "names_original") <- .names
+    attr(mf, "names_original") <- names_original
     attr(mf, "terms") <- NULL
     mf
   }
@@ -285,13 +288,12 @@ egf_make_frames <- function(model,
   )
   names(frame) <- c("ts", "time", "x")
   frame <- frame[!is.na(frame$ts), , drop = FALSE]
-  stop_if_not(
-    nrow(frame) > 0L,
-    m = wrap(
+  if (nrow(frame) == 0L) {
+    stop(wrap(
       "Data frame constructed from `formula`, `data`, and `subset` ",
       "must have at least one row."
-    )
-  )
+    ))
+  }
 
   ### Fitting window stuff
 
@@ -303,14 +305,13 @@ egf_make_frames <- function(model,
     drop.unused.levels = TRUE
   )
   names(frame_windows) <- c("ts", "start", "end")
-  stop_if_not(
-    (N <- nrow(frame_windows)) > 0L,
-    m = wrap(
+  if((N <- nrow(frame_windows)) == 0L) {
+    stop(wrap(
       "Data frame constructed from ",
       "`formula_windows`, `data_windows`, and `subset_windows` ",
       "must have at least one row."
-    )
-  )
+    ))
+  }
 
   ### Mixed effects stuff
 
@@ -336,13 +337,12 @@ egf_make_frames <- function(model,
   frame_parameters[len == 0L] <- list(data.frame(row.names = seq_len(N)))
 
   ## Test model frames for rowwise correspondence with `frame_windows`
-  stop_if_not(
-    vapply(frame_parameters, nrow, 0L) == N,
-    m = wrap(
+  if (any(vapply(frame_parameters, nrow, 0L) != N)) {
+    stop(wrap(
       "Data frames constructed from `formula_windows` and `formula_parameters` ",
       "must have a common number of rows."
-    )
-  )
+    ))
+  }
 
   ### Appended stuff
 
@@ -370,16 +370,12 @@ egf_make_frames <- function(model,
 
   if (inherits(frame$time, c("Date", "POSIXt"))) {
     frame$time <- julian(frame$time)
-  } else {
-    stop_if_not(
-      is.numeric(frame$time),
-      m = sprintf("`%s` must be a numeric, Date, or POSIXt vector.", nf$time)
-    )
+  } else if (!is.numeric(frame$time)) {
+    stop(sQuote(nf$time), " must be a numeric, Date, or POSIXt vector.")
   }
-  stop_if_not(
-    is.numeric(frame$x),
-    m = sprintf("`%s` must be a numeric vector.", nf$x)
-  )
+  if (!is.numeric(frame$x)) {
+    stop(sQuote(nf$x), " must be a numeric vector.")
+  }
 
   ### Fitting window stuff
 
@@ -388,19 +384,13 @@ egf_make_frames <- function(model,
 
   if (inherits(frame_windows$start, c("Date", "POSIXt"))) {
     frame_windows$start <- julian(frame_windows$start)
-  } else {
-    stop_if_not(
-      is.numeric(frame_windows$start),
-      m = sprintf("`%s` must be a numeric, Date, or POSIXt vector.", nfw$start)
-    )
+  } else if (!is.numeric(frame_windows$start)) {
+    stop(sQuote(nfw$start), " must be a numeric, Date, or POSIXt vector.")
   }
   if (inherits(frame_windows$end, c("Date", "POSIXt"))) {
     frame_windows$end <- julian(frame_windows$end)
-  } else {
-    stop_if_not(
-      is.numeric(frame_windows$start),
-      m = sprintf("`%s` must be a numeric, Date, or POSIXt vector.", nfw$end)
-    )
+  } else if (!is.numeric(frame_windows$start)) {
+    stop(sQuote(nfw$end), " must be a numeric, Date, or POSIXt vector.")
   }
 
   ### Mixed effects stuff
@@ -410,23 +400,22 @@ egf_make_frames <- function(model,
     if (length(bars) == 0L) {
       return(character(0L))
     }
-    f <- function(lhs) {
-      vapply(attr(terms(as.formula(call("~", lhs))), "variables"), deparse, "")[-1L]
+    f <- function(x) {
+      vapply(attr(terms(as.formula(call("~", x[[2L]]))), "variables"), deparse, "")[-1L]
     }
-    unique(unlist(lapply(bars, function(x) f(x[[2L]])), FALSE, FALSE))
+    unique(unlist(lapply(bars, f), FALSE, FALSE))
   }
   names_bar_lhs <- lapply(formula_parameters, get_names_bar_lhs)
   check_ok_bar_lhs <- function(data, names) {
     f <- function(x) is.double(x) || is.integer(x) || is.logical(x)
     all(vapply(data[names], f, FALSE))
   }
-  stop_if_not(
-    mapply(check_ok_bar_lhs, data = frame_parameters, names = names_bar_lhs),
-    m = wrap(
+  if (!all(mapply(check_ok_bar_lhs, data = frame_parameters, names = names_bar_lhs))) {
+    stop(wrap(
       "`formula_parameters` variables on left hand side of `|` ",
       "must be of double, integer, or logical type."
-    )
-  )
+    ))
+  }
 
 
   ### Subsetting step ##########################################################
@@ -443,15 +432,14 @@ egf_make_frames <- function(model,
 
   ## Discard time series without corresponding fitting windows
   ## and fitting windows without corresponding time series
-  isl <- intersect(levels(frame$ts), levels(frame_windows$ts))
-  stop_if_not(
-    length(isl) > 0L,
-    m = "There must be at least one fitting window with corresponding time series data."
-  )
-  frame$ts <- factor(frame$ts, levels = isl, exclude = NULL)
+  lts <- intersect(levels(frame$ts), levels(frame_windows$ts))
+  if (length(lts) == 0L) {
+    stop("There must be at least one fitting window with corresponding time series data.")
+  }
+  frame$ts <- factor(frame$ts, levels = lts, exclude = NULL)
   i1 <- !is.na(frame$ts)
   frame <- frame[i1, , drop = FALSE]
-  frame_windows$ts <- factor(frame_windows$ts, levels = isl, exclude = NULL)
+  frame_windows$ts <- factor(frame_windows$ts, levels = lts, exclude = NULL)
   i2 <- !is.na(frame_windows$ts)
   frame_windows <- frame_windows[i2, , drop = FALSE]
   frame_parameters <- lapply(frame_parameters, `[`, i2, , drop = FALSE)
@@ -462,41 +450,38 @@ egf_make_frames <- function(model,
 
   ### Time series stuff
 
-  stop_if_not(
-    is.finite(frame$time),
-    m = sprintf("`%s` must be finite (after coercion to numeric).", nf$time)
-  )
+  if (!all(is.finite(frame$time))) {
+    stop(sQuote(nf$time), " must be finite (after coercion to numeric).")
+  }
   if (do_day_of_week <- (model$day_of_week > 0L)) {
     if (is.double(frame$time)) {
-      stop_if_not(
-        all.equal(frame$time, z <- round(frame$time)),
-        m = sprintf("`%s` must be integer-valued (after coercion to numeric).", nf$time)
-      )
+      if (!isTRUE(all.equal(frame$time, z <- round(frame$time)))) {
+        stop(sQuote(nf$time), " must be integer-valued (after coercion to numeric).")
+      }
       frame$time <- z
     }
     check_ok_diff_time <- function(x) all(diff(x) == 1)
   } else {
     check_ok_diff_time <- function(x) all(diff(x) > 0)
   }
-  stop_if_not(
-    tapply(frame$time, frame$ts, check_ok_diff_time),
-    m = sprintf("`%s` must be increasing%s%s.",
-      nf$time,
+  if (!all(tapply(frame$time, frame$ts, check_ok_diff_time))) {
+    stop(wrap(
+      sQuote(nf$time), " must be increasing",
       if (do_day_of_week) " with one day spacing" else "",
-      if (nzchar(nf$ts)) sprintf(" in each level of `%s`", nf$ts) else ""
-    )
-  )
-  stop_if_not(
-    frame$x[!is.na(frame$x)] >= 0,
-    m = sprintf("`%s` must be non-negative.", nf$x)
-  )
+      if (nzchar(nf$ts)) paste0(" in each level of ", sQuote(nf$ts)) else "",
+      "."
+    ))
+  }
+  if (!all(frame$x[!is.na(frame$x)] >= 0)) {
+    stop(sQuote(nf$x), " must be non-negative.")
+  }
   if (is.double(frame$x)) {
     if (any(is_NaN_or_Inf <- is.nan(frame$x) | is.infinite(frame$x))) {
-      warning(sprintf("NaN and Inf in `%s` replaced with NA.", nf$x))
+      warning("NaN and Inf in ", sQuote(nf$x), " replaced with NA.")
       frame$x[is_NaN_or_Inf] <- NA
     }
     if (!isTRUE(all.equal(frame$x, z <- round(frame$x)))) {
-      warning(sprintf("Nonintegral elements of `%s` rounded to nearest integer.", nf$x))
+      warning("Nonintegral elements of ", sQuote(nf$x), " rounded to nearest integer.")
     }
     frame$x <- z
   }
@@ -509,13 +494,12 @@ egf_make_frames <- function(model,
     f <- function(x) any(is.infinite(x))
     !any(vapply(data[i], f, FALSE))
   }
-  stop_if_not(
-    mapply(check_ok_bar_lhs_double, data = frame_parameters, names = names_bar_lhs),
-    m = wrap(
+  if (!all(mapply(check_ok_bar_lhs_double, data = frame_parameters, names = names_bar_lhs))) {
+    stop(wrap(
       "Numeric `formula_parameters` variables on left hand side of `|` ",
       "must not contain Inf or -Inf."
-    )
-  )
+    ))
+  }
 
 
   ### Labeling step ############################################################
@@ -530,7 +514,8 @@ egf_make_frames <- function(model,
 
   ## Create enumerated labels for fitting windows as ordered
   N <- nrow(frame_windows)
-  frame_windows$window <- gl(N, 1L, labels = sprintf("window_%0*d", 1L + as.integer(log10(N)), seq_len(N)))
+  lw <- sprintf("window_%0*d", 1L + as.integer(log10(N)), seq_len(N))
+  frame_windows$window <- gl(N, 1L, labels = lw)
 
   ## Create a factor grouping observations by fitting window
   make_window_segment <- function(d, dw) {
@@ -538,27 +523,21 @@ egf_make_frames <- function(model,
     if (nzchar(nf$ts)) {
       m0 <- paste(m0, "in time series", dQuote(dw$ts[1L], FALSE))
     }
-    stop_if_not(
-      dw$start < dw$end,
-      m = paste(m0, sprintf("do not satisfy `%s < %s`.", nfw$start, nfw$end))
-    )
-    stop_if_not(
-      dw$start[-1L] >= dw$end[-nrow(dw)],
-      m = paste(m0, "are not disjoint.")
-    )
+    if (!all(dw$start < dw$end)) {
+      stop(wrap(m0, " do not satisfy ", nfw$start, "<", nfw$end, "."))
+    }
+    if (!all(dw$start[-1L] >= dw$end[-nrow(dw)])) {
+      stop(wrap(m0, " are not disjoint."))
+    }
     f <- function(a, b) which(d$time >= a & d$time <= b)[-1L]
     index <- Map(f, a = dw$start, b = dw$end)
     ulindex <- unlist(index, FALSE, FALSE)
-    if (na_action == "fail") {
-      stop_if_not(
-        !anyNA(d$x[ulindex]),
-        m = paste(m0, sprintf("contain missing values (instances of NA in `%s`).", nf$x))
-      )
+    if (na_action == "fail" && anyNA(d$x[ulindex])) {
+      stop(wrap(m0, " contain missing values (instances of NA in ", sQuote(nf$x), ")."))
     }
-    stop_if_not(
-      vapply(index, function(i) sum(!is.na(d$x[i])), 0L) > 0L,
-      m = paste(m0, sprintf("contain zero observations of `%s`.", nf$x))
-    )
+    if (any(vapply(index, function(i) sum(!is.na(d$x[i])) == 0L, FALSE))) {
+      stop(wrap(m0, " contain zero observations of ", sQuote(nf$x), "."))
+    }
     window <- rep_len(factor(NA, levels = levels(dw$window)), nrow(d))
     window[ulindex] <- rep.int(dw$window, lengths(index))
     window
@@ -618,7 +597,7 @@ egf_make_priors_top <- function(formula_priors_top, model) {
   if (!all(names(formula_priors_top) %in% names_top)) {
     stop(wrap(
       "`deparse(formula_priors_top[[i]][[2L]])` must be an element of ",
-      sprintf("`c(%s)`.", paste(dQuote(names_top, FALSE), collapse = ", "))
+      sprintf("c(%s).", paste(dQuote(names_top, FALSE), collapse = ", "))
     ))
   }
   if (anyDuplicated(names(formula_priors_top)) > 0L) {
@@ -631,11 +610,11 @@ egf_make_priors_top <- function(formula_priors_top, model) {
   if (!all(vapply(priors, inherits, FALSE, "egf_prior"))) {
     stop("`formula_priors_top[[i]][[3L]])` must evaluate to an \"egf_prior\" object.")
   }
-  priors <- lapply(priors, function(x) {
+  f <- function(x) {
     x$parameters <- lapply(x$parameters, `[[`, 1L)
     x
-  })
-  res[names(priors)] <- priors
+  }
+  res[names(priors)] <- lapply(priors, f)
   res
 }
 
@@ -646,9 +625,12 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
     names(x) <- enum_dupl_string(rep_len(s, len[[s]]))
     x
   }
-  res <- sapply(names(len), initialize, simplify = FALSE)
+  res <- sapply(names(len)[len > 0L], initialize, simplify = FALSE)
+  finalize <- function(x) {
+    unlist(x, FALSE, TRUE)
+  }
   if (length(formula_priors_bottom) == 0L || sum(len) == 0L) {
-    return(unlist(unname(res), FALSE, TRUE))
+    return(finalize(res))
   }
 
   lhs <- lapply(formula_priors_bottom, `[[`, 2L)
@@ -659,25 +641,29 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
            is.name(x[[2L]]) && x[[2L]] == s)
     }
   }
-  is_beta <- f("beta")
-  is_theta <- f("theta")
-  ib <- rep_len(FALSE, length(lhs))
+  classify <- sapply(names(res), f, simplify = FALSE)
+  lhs_parameter <- rep_len(factor(NA, levels = names(res)), length(lhs))
   for (i in seq_along(lhs)) {
-    if (len[["beta"]] > 0L && is_beta(lhs[[i]])) {
-      ib[i] <- TRUE
-    } else if (!(len[["theta"]] > 0L && is_theta(lhs[[i]]))) {
-      s <- Reduce(function(x, y) paste(x, "or", y), sprintf("`%s`", names(len)[len > 0L]))
+    for (parameter in names(res)) {
+      if (classify[[parameter]](lhs[[i]])) {
+        lhs_parameter[i] <- parameter
+        break
+      }
+    }
+    if (is.na(lhs_parameter[i])) {
+      s <- Reduce(function(x, y) paste(x, "or", y), sQuote(names(res)))
       stop(wrap(
         "`formula_priors_bottom[[i]][[2L]]` must be ", s, " or a call ",
         "to `[` or `[[` subsetting ", s, "."
       ))
     }
   }
-  l <- lapply(len, seq_len)
-  eval_lhs <- function(x, formula) eval(x, l, environment(formula))
+
+  e <- lapply(res, seq_along)
+  eval_lhs <- function(x, formula) eval(x, e, environment(formula))
   indices <- Map(eval_lhs, x = lhs, formula = formula_priors_bottom)
   if (sum(lengths(indices)) == 0L) {
-    return(unlist(unname(res), FALSE, TRUE))
+    return(finalize(res))
   }
 
   rhs <- lapply(formula_priors_bottom, `[[`, 3L)
@@ -686,7 +672,7 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
   if (!all(vapply(priors, inherits, FALSE, "egf_prior"))) {
     stop("`formula_priors_bottom[[i]][[3L]]` must evaluate to an \"egf_prior\" object.")
   }
-  for (l in split(indices, ib)) {
+  for (l in split(indices, lhs_parameter)) {
     i <- unlist(l, FALSE, FALSE)
     if (anyNA(i)) {
       stop("Invalid index vector in `formula_priors_bottom`.")
@@ -711,17 +697,14 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
   }
   priors <- Map(decompose, prior = priors, length.out = lengths(indices))
 
-  if (len[["beta"]] > 0L && any(ib)) {
-    i <- unlist(indices[ib], FALSE, FALSE)
-    value <- unlist(priors[ib], FALSE, FALSE)
-    res[["beta"]][i] <- value
+  for (parameter in names(res)) {
+    if (any(m <- lhs_parameter == parameter)) {
+      i <- unlist(indices[m], FALSE, FALSE)
+      value <- unlist(priors[m], FALSE, FALSE)
+      res[[parameter]][i] <- value
+    }
   }
-  if (len[["theta"]] > 0L && !all(ib)) {
-    i <- unlist(indices[!ib], FALSE, FALSE)
-    value <- unlist(priors[!ib], FALSE, FALSE)
-    res[["theta"]][i] <- value
-  }
-  unlist(unname(res), FALSE, TRUE)
+  finalize(res)
 }
 
 #' Construct design matrices
@@ -735,7 +718,8 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
 #'   For \code{egf_make_Z}, a \link{call} to binary operator \code{`|`}
 #'   of the form \code{(tt | g)}.
 #'   Here, \code{tt} is an expression composed of potentially many terms,
-#'   while \code{g} is an unevaluated factor, possibly an interaction.
+#'   while \code{g} is an expression, possibly an interaction, indicating
+#'   a grouping.
 #' @param frame
 #'   A \link[=model.frame]{model frame} listing the variables used in \code{x}.
 #' @param sparse
@@ -1455,8 +1439,7 @@ egf_patch_fn <- function(fn, inner_optimizer) {
         return(v)
       }
     }
-    warning("Unable to evaluate `fn(x)`, returning NaN.")
-    NaN
+    NaN # no warning to avoid duplication of `optim` and `nlminb` warnings
   }
   environment(pfn) <- e
   pfn
@@ -1489,7 +1472,7 @@ egf_patch_gr <- function(gr, inner_optimizer) {
       }
     }
     warning("Unable to evaluate `gr(x)`, returning NaN.")
-    NaN
+    NaN # warning because scalar result is unexpected
   }
   environment(pgr) <- e
   pgr

@@ -20,19 +20,21 @@ string_extract_link(fs)
 }
 \value{
 For strings \code{s}, \code{f}, and \code{fs} as described above,
-\code{string_get_link(s)} returns \code{f}, \code{string_add_link(s)}
-returns \code{fs}, \code{string_remove_link(fs)} returns \code{s},
-and \code{string_extract_link(fs)} returns \code{f}.
+\code{string_get_link(s)} returns \code{f},
+\code{string_add_link(s)} returns \code{fs},
+\code{string_remove_link(fs)} returns \code{s}, and
+\code{string_extract_link(fs)} returns \code{f}.
 
-All functions are vectorized. \code{\link{NA_character_}}
-is returned for invalid input (see Examples).
+\code{\link{NA_character_}} is returned for invalid values
+of the argument.
 }
 \description{
 Utilities for modifying strings \code{s} and
 \code{fs = \link{sprintf}("\%s(\%s)", f, s)},
 where \code{s} is the name used internally
-for a top level nonlinear model parameter and
-\code{f} is the name (either \code{"log"} or \code{"logit"})
+for a top level nonlinear model parameter
+and \code{f} is the name
+(either \code{"log"} or \code{"logit"})
 of the corresponding link function.
 }
 \examples{
@@ -40,7 +42,8 @@ of the corresponding link function.
 ## string_add_link("r")
 ## string_remove_link("log(r)")
 ## string_extract_link("log(r)")
-## string_extract_link("invalid", "input", "r" , "log(r)")
+
+## string_extract_link("invalid string", "r" , "log(r)")
 
 }
 \keyword{internal}
