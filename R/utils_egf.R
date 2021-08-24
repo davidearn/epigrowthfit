@@ -627,7 +627,7 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
   }
   res <- sapply(names(len)[len > 0L], initialize, simplify = FALSE)
   finalize <- function(x) {
-    unlist(x, FALSE, TRUE)
+    unlist(unname(x), FALSE, TRUE)
   }
   if (length(formula_priors_bottom) == 0L || sum(len) == 0L) {
     return(finalize(res))
@@ -720,35 +720,36 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
 #'   Here, \code{tt} is an expression composed of potentially many terms,
 #'   while \code{g} is an expression, possibly an interaction, indicating
 #'   a grouping.
-#' @param frame
+#' @param data
 #'   A \link[=model.frame]{model frame} listing the variables used in \code{x}.
 #' @param sparse
 #'   A \link{logical} flag. If \code{TRUE}, then the design matrix
 #'   is returned in \link[Matrix:sparseMatrix]{sparse} format.
 #'
 #' @details
-#' \code{egf_make_X(x, frame, sparse)} constructs an \code{X} matrix
-#' by evaluating \code{\link{model.matrix}(x, frame)}
-#' or \code{\link[Matrix]{sparse.model.matrix}(x, frame)}
+#' \code{egf_make_X(x, data, sparse)} constructs an \code{X} matrix
+#' by evaluating \code{\link{model.matrix}(x, data)}
+#' or \code{\link[Matrix]{sparse.model.matrix}(x, data)}
 #' (depending on \code{sparse}) and deleting from the result
 #' columns containing only zeros.
 #'
-#' \code{egf_make_Z(x, frame)} constructs a \code{Z} matrix
+#' \code{egf_make_Z(x, data)} constructs a \code{Z} matrix
 #' following steps outlined in \code{\link{vignette}("lmer", "lme4")}.
 #' It uses \code{egf_make_X} to construct the so-called raw
 #' model matrix from \code{x[[2L]]}. The result is always sparse.
 #'
 #' @return
 #' A matrix with \link{attributes}:
-#' \item{contrasts}{
-#'   See \code{\link{model.matrix}}.
-#'   Absent if the expression \code{tt} in \code{x = ~tt}
-#'   or \code{x = (tt | g)} does not involve \link{factor}s.
-#' }
 #' \item{assign}{
 #'   See \code{\link{model.matrix}}.
 #'   Indexes \code{\link{labels}(\link{terms}(~tt))}
 #'   for the expression \code{tt} in \code{x = ~tt} or \code{x = (tt | g)}.
+#' }
+#' \item{contrasts}{
+#'   See \code{\link{model.matrix}}.
+#'   Absent if the expression \code{tt} in \code{x = ~tt}
+#'   or \code{x = (tt | g)} does not contain terms that are
+#'   \link{character} vectors or \link{factor}s.
 #' }
 #' \item{group}{
 #'   (\code{egf_make_Z} only.) For \code{x = (tt | g)}, a \link{factor}
@@ -762,14 +763,18 @@ NULL
 
 #' @rdname egf_make_X
 #' @importFrom stats model.matrix
-#' @importFrom Matrix sparse.model.matrix
-egf_make_X <- function(x, frame, sparse) {
-  f <- if (sparse) sparse.model.matrix else model.matrix
-  X <- f(x, data = frame)
-  j <- colSums(abs(X)) > 0
+egf_make_X <- function(x, data, sparse) {
+  if (sparse) {
+    X <- Matrix::sparse.model.matrix(x, data = data)
+    j <- Matrix::colSums(abs(X)) > 0
+  } else {
+    X <- model.matrix(x, data = data)
+    j <- colSums(abs(X)) > 0
+  }
+  ## FIXME: setting attributes on an S4 object is probably a bad idea...
   structure(X[, j, drop = FALSE],
-    contrasts = attr(X, "contrasts"),
-    assign = attr(X, "assign")[j]
+    assign = attr(X, "assign")[j],
+    contrasts = attr(X, "contrasts")
   )
 }
 
@@ -778,24 +783,24 @@ egf_make_X <- function(x, frame, sparse) {
 #' @importFrom stats model.matrix as.formula
 #' @importFrom Matrix KhatriRao
 #' @importMethodsFrom Matrix t
-egf_make_Z <- function(x, frame) {
-  X <- egf_make_X(as.formula(call("~", x[[2L]])), frame = frame, sparse = FALSE)
+egf_make_Z <- function(x, data) {
+  X <- egf_make_X(as.formula(call("~", x[[2L]])), data = data, sparse = FALSE)
   ng <- vapply(split_interaction(x[[3L]]), deparse, "")
-  g <- interaction(frame[ng], drop = TRUE, sep = ":", lex.order = FALSE)
+  g <- interaction(data[ng], drop = TRUE, sep = ":", lex.order = FALSE)
   J <- t(as(g, Class = "sparseMatrix"))
   Z <- t(KhatriRao(t(J), t(X)))
-  ## For consistency, we want `model.matrix()`-style names
-  ## for group levels
-  G <- model.matrix(as.formula(call("~", call("+", 0, x[[3L]]))), data = frame)
+  ## For consistency, we want `model.matrix`-style names for group levels
+  G <- model.matrix(as.formula(call("~", call("+", 0, x[[3L]]))), data = data)
   j <- colSums(abs(G)) > 0
   G <- G[, j, drop = FALSE]
   colnames(Z) <- sprintf("(%s | %s)",
     rep(colnames(X), times = ncol(G)),
     rep(colnames(G), each = ncol(X))
   )
+  ## FIXME: setting attributes on an S4 object is probably a bad idea...
   structure(Z,
-    contrasts = attr(X, "contrasts"),
     assign = rep(attr(X, "assign"), times = ncol(G)),
+    contrasts = attr(X, "contrasts"),
     group = gl(ncol(G), ncol(X), labels = levels(g))
   )
 }
@@ -1024,11 +1029,11 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, control, fit, init
   Y <- do.call(cbind, offsets)
 
   ## Fixed effects design matrices
-  Xl <- Map(egf_make_X, x = fixed, frame = frame_parameters, sparse = control$sparse_X)
+  Xl <- Map(egf_make_X, x = fixed, data = frame_parameters, sparse = control$sparse_X)
   X <- do.call(cbind, Xl)
 
   ## Random effects design matrices
-  Zl <- Map(egf_make_Z, x = do.call(c, unname(random)), frame = rep.int(frame_parameters, lengths(random)))
+  Zl <- Map(egf_make_Z, x = do.call(c, unname(random)), data = rep.int(frame_parameters, lengths(random)))
   Z <- do.call(cbind, Zl)
 
   ## Nonlinear or dispersion model parameter, formula term,

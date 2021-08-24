@@ -5,9 +5,9 @@
 \alias{egf_make_Z}
 \title{Construct design matrices}
 \usage{
-egf_make_X(x, frame, sparse)
+egf_make_X(x, data, sparse)
 
-egf_make_Z(x, frame)
+egf_make_Z(x, data)
 }
 \arguments{
 \item{x}{For \code{egf_make_X}, a \link{formula} of the form \code{~tt}.
@@ -17,22 +17,23 @@ Here, \code{tt} is an expression composed of potentially many terms,
 while \code{g} is an expression, possibly an interaction, indicating
 a grouping.}
 
-\item{frame}{A \link[=model.frame]{model frame} listing the variables used in \code{x}.}
+\item{data}{A \link[=model.frame]{model frame} listing the variables used in \code{x}.}
 
 \item{sparse}{A \link{logical} flag. If \code{TRUE}, then the design matrix
 is returned in \link[Matrix:sparseMatrix]{sparse} format.}
 }
 \value{
 A matrix with \link{attributes}:
-\item{contrasts}{
-  See \code{\link{model.matrix}}.
-  Absent if the expression \code{tt} in \code{x = ~tt}
-  or \code{x = (tt | g)} does not involve \link{factor}s.
-}
 \item{assign}{
   See \code{\link{model.matrix}}.
   Indexes \code{\link{labels}(\link{terms}(~tt))}
   for the expression \code{tt} in \code{x = ~tt} or \code{x = (tt | g)}.
+}
+\item{contrasts}{
+  See \code{\link{model.matrix}}.
+  Absent if the expression \code{tt} in \code{x = ~tt}
+  or \code{x = (tt | g)} does not contain terms that are
+  \link{character} vectors or \link{factor}s.
 }
 \item{group}{
   (\code{egf_make_Z} only.) For \code{x = (tt | g)}, a \link{factor}
@@ -46,13 +47,13 @@ associated with a fixed effects model formula and a random effects term,
 respectively.
 }
 \details{
-\code{egf_make_X(x, frame, sparse)} constructs an \code{X} matrix
-by evaluating \code{\link{model.matrix}(x, frame)}
-or \code{\link[Matrix]{sparse.model.matrix}(x, frame)}
+\code{egf_make_X(x, data, sparse)} constructs an \code{X} matrix
+by evaluating \code{\link{model.matrix}(x, data)}
+or \code{\link[Matrix]{sparse.model.matrix}(x, data)}
 (depending on \code{sparse}) and deleting from the result
 columns containing only zeros.
 
-\code{egf_make_Z(x, frame)} constructs a \code{Z} matrix
+\code{egf_make_Z(x, data)} constructs a \code{Z} matrix
 following steps outlined in \code{\link{vignette}("lmer", "lme4")}.
 It uses \code{egf_make_X} to construct the so-called raw
 model matrix from \code{x[[2L]]}. The result is always sparse.

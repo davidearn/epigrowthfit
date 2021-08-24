@@ -33,7 +33,13 @@ Normal <- function(mu = 0, sigma = 1) {
     is.finite(sigma),
     sigma > 0
   )
-  res <- list(family = "norm", parameters = list(mu = mu, sigma = sigma))
+  res <- list(
+    family = "norm",
+    parameters = list(
+      mu = as.numeric(mu),
+      sigma = as.numeric(sigma)
+    )
+  )
   class(res) <- c("egf_prior", "list")
   res
 }

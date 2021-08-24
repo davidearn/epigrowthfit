@@ -215,22 +215,100 @@ test_that("egf_make_frames", {
   expect_identical(o6, droplevels(data_windows[3:5, names(o6), drop = FALSE]), ignore_attr = c("row.names", "terms"))
 })
 
-# test_that("egf_make_priors", {
-#
-# })
-#
-# test_that("egf_make_X", {
-#
-# })
-#
-# test_that("egf_make_Z", {
-#
-# })
-#
+devtools::load_all(".")
+test_that("egf_make_priors_top", {
+  model <- egf_model()
+  names_top <- get_names_top(model, link = TRUE)
+  prior <- Normal(mu = 0, sigma = 1)
+  formula_priors_top <- list(
+    log(r) ~ prior
+  )
+  priors_top <- egf_make_priors_top(
+    formula_priors_top = formula_priors_top,
+    model = model
+  )
+
+  expect_type(priors_top, "list")
+  expect_length(priors_top, length(names_top))
+  expect_named(priors_top, names_top)
+  expect_identical(priors_top[["log(r)"]], prior)
+  for (s in setdiff(names(priors), "log(r)")) {
+    eval(bquote(expect_null(priors[[.(s)]])))
+  }
+})
+
+test_that("egf_make_priors_bottom", {
+  beta <- numeric(4L)
+  theta <- numeric(10L)
+  prior <- Normal(mu = 0, sigma = 1)
+  formula_priors_bottom <- list(
+    beta ~ prior,
+    theta[[1L]] ~ prior,
+    theta[2:3] ~ prior,
+    theta[-c(1:3, 8:10)] ~ prior,
+    theta[rep.int(c(FALSE, TRUE, FALSE), c(7L, 2L, 1L))] ~ prior
+  )
+  priors_bottom <- egf_make_priors_bottom(
+    formula_priors_bottom = formula_priors_bottom,
+    beta = beta,
+    theta = theta
+  )
+
+  expect_type(priors_bottom, "list")
+  expect_length(priors_bottom, sum(len))
+  expect_named(priors_bottom, enum_dupl_string(rep.int(names(len), c(4L, 10L))))
+  expect_identical(unname(priors_bottom[-sum(len)]), rep_len(list(prior), 13L))
+  expect_null(priors_bottom[[14L]])
+})
+
+devtools::load_all(".")
+library("testthat")
+
+test_that("egf_make_X", {
+  formula <- ~x + y + z
+  data <- list(
+    x = rep_len(0, 10L),
+    y = gl(2L, 5L),
+    z = rnorm(10L)
+  )
+  data <- model.frame(formula, data = data)
+
+  mm1 <- model.matrix(formula, data = data)
+  X1 <- egf_make_X(formula, data = data, sparse = FALSE)
+  expect_identical(X1, mm1[, -2L], ignore_attr = c("assign", "contrasts"))
+  expect_equal(attr(X1, "assign"), attr(mm1, "assign")[-2L])
+  expect_identical(attr(X1, "contrasts"), attr(mm1, "contrasts"))
+
+  mm2 <- sparse.model.matrix(formula, data = data)
+  X2 <- egf_make_X(formula, data = data, sparse = TRUE)
+  expect_identical(as.matrix(X2), as.matrix(mm2[, -2L]))
+  expect_equal(X2@assign, mm2@assign[-2L])
+  expect_identical(X2@contrasts, mm2@contrasts)
+})
+
+test_that("egf_make_Z", {
+  bar <- quote(x - 1 | f:g)
+  data <- list(
+    x = rnorm(10L),
+    f = gl(5L, 2L),
+    g = gl(2L, 5L)
+  )
+  data <- model.frame(~x - 1 + f:g, data = data)
+  Z <- egf_make_Z(bar, data = data)
+  expect_equal(Z@Dim, c(10L, 6L))
+  expect_identical(Z@Dimnames, list(NULL, sprintf("(x | %s)", c("f1:g1", "f2:g1", "f3:g1", "f3:g2", "f4:g2", "f5:g2"))))
+  expect_equal(Z@x, data$x)
+  expect_equal(Z@i, 0:9)
+  expect_equal(Z@p, c(0L, cumsum(c(2L, 2L, 1L, 1L, 2L, 2L))))
+  expect_equal(Z@assign, rep_len(1L, 6L))
+  expect_error(Z@contrasts)
+  expect_equal(Z@group, gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5:2")))
+})
+
 # test_that("egf_make_XZ_info", {
 #
 # })
-#
+
 # test_that("egf_make_tmb_data", {
 #
 # })
