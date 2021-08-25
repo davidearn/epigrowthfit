@@ -22,10 +22,9 @@
 #' ## enum_dupl_names(y)
 #'
 #' @name enum_dupl_string
-#' @keywords internal
+#' @noRd
 NULL
 
-#' @rdname enum_dupl_string
 enum_dupl_string <- function(x) {
   f <- factor(x)
   n <- tabulate(f)
@@ -33,7 +32,6 @@ enum_dupl_string <- function(x) {
   sprintf("%s[%d]", x, i)
 }
 
-#' @rdname enum_dupl_string
 enum_dupl_names <- function(x) {
   if (!is.null(names(x))) {
     names(x) <- enum_dupl_string(names(x))
@@ -57,11 +55,11 @@ enum_dupl_names <- function(x) {
 #' obtained slightly more efficiently, following \code{\link{cov2cor}}.
 #'
 #' @examples
-#' ## X <- replicate(6L, rnorm(10L))
-#' ## V <- cov(X, X)
-#' ## all.equal(V, cor2cov(cov2cor(V), sqrt(diag(V))))
+#' X <- replicate(6L, rnorm(10L))
+#' V <- cov(X, X)
+#' all.equal(V, cor2cov(cov2cor(V), sqrt(diag(V))))
 #'
-#' @keywords internal
+#' @noRd
 cor2cov <- function(cor, sd) {
   stopifnot(
     is.matrix(cor),
@@ -90,7 +88,7 @@ cor2cov <- function(cor, sd) {
 #' @return
 #' A \link{character} vector of length 1.
 #'
-#' @keywords internal
+#' @noRd
 wrap <- function(..., width = 0.9 * getOption("width")) {
   dots <- unname(list(...))
   x <- vapply(dots, paste0, "", collapse = "")
@@ -124,11 +122,11 @@ wrap <- function(..., width = 0.9 * getOption("width")) {
 #' though not inheriting from \link{class} \code{"rle"}.
 #'
 #' @examples
-#' ## x <- rep.int(c(0, NA, NaN, 1), 1:4)
-#' ## rle_x <- literal_rle(x)
-#' ## identical(x, inverse.rle(rle_x))
+#' x <- rep.int(c(0, NA, NaN, 1), 1:4)
+#' rle_x <- literal_rle(x)
+#' identical(x, inverse.rle(rle_x))
 #'
-#' @keywords internal
+#' @noRd
 literal_rle <- function(x) {
   n <- length(x)
   if (n == 0L) {
@@ -164,11 +162,11 @@ literal_rle <- function(x) {
 #' \code{x} with missing values replaced.
 #'
 #' @examples
-#' ## x <- c(NA, NA, 1, NA, 2, 2, 3, NA)
-#' ## locf(x)
-#' ## locf(x, x0 = 0)
+#' x <- c(NA, NA, 1, NA, 2, 2, 3, NA)
+#' locf(x)
+#' locf(x, x0 = 0)
 #'
-#' @keywords internal
+#' @noRd
 locf <- function(x, x0 = NULL) {
   if (!anyNA(x)) {
     return(x)
@@ -222,13 +220,13 @@ locf <- function(x, x0 = NULL) {
 #' with the same dimensions.
 #'
 #' @examples
-#' ## x <- 1:10
-#' ## in_place_ragged_apply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
-#' ##
-#' ## x <- as.data.frame(replicate(3L, c(exp(rnorm(5L)), qlogis(runif(5L)))))
-#' ## in_place_ragged_apply(x, index = gl(2L, 5L), f = list(log, plogis))
+#' x <- 1:10
+#' in_place_ragged_apply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
 #'
-#' @keywords internal
+#' x <- as.data.frame(replicate(3L, c(exp(rnorm(5L)), qlogis(runif(5L)))))
+#' in_place_ragged_apply(x, index = gl(2L, 5L), f = list(log, plogis))
+#'
+#' @noRd
 in_place_ragged_apply <- function(x, index, f) {
   if (!is.list(f)) {
     f <- list(f)
@@ -266,11 +264,11 @@ in_place_ragged_apply <- function(x, index, f) {
 #' limits.
 #'
 #' @examples
-#' ## estimate <- rnorm(6L, 0, 1)
-#' ## se <- rlnorm(6L, 0, 0.1)
-#' ## do_wald(estimate = estimate, se = se, level = 0.95)
+#' estimate <- rnorm(6L, 0, 1)
+#' se <- rlnorm(6L, 0, 0.1)
+#' do_wald(estimate = estimate, se = se, level = 0.95)
 #'
-#' @keywords internal
+#' @noRd
 #' @importFrom stats qchisq
 do_wald <- function(estimate, se, level) {
   q <- qchisq(level, df = 1)

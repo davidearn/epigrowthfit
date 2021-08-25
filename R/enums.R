@@ -16,9 +16,9 @@
 #' An \link{integer}.
 #'
 #' @examples
-#' # get_flag("curve", "exponential")
-#' # get_flag("family", "pois")
-#' # get_flag("prior", "norm")
+#' get_flag("curve", "exponential")
+#' get_flag("family", "pois")
+#' get_flag("prior", "norm")
 #'
 #' @noRd
 get_flag <- function(type, enum) {
@@ -29,6 +29,6 @@ get_flag <- function(type, enum) {
     curve = match(enum, curve_names) - 1L,
     family = match(enum, family_names) - 1L,
     prior = match(enum, prior_names) - 1L,
-    rep_len(NA_integer_, length(enum))
+    stop("Type not implemented.")
   )
 }

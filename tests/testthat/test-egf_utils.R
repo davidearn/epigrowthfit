@@ -1,61 +1,3 @@
-devtools::load_all(".")
-library("testthat")
-
-test_that("get_names_top", {
-  names_top_all <- get_names_top(NULL, link = FALSE)
-  expect_type(names_top_all, "character")
-  expect_gt(length(names_top_all), 0L)
-  expect_false(anyNA(names_top_all))
-  expect_named(names_top_all, NULL)
-
-  model <- egf_model(
-    curve = "richards",
-    excess = TRUE,
-    family = "nbinom",
-    day_of_week = TRUE
-  )
-  names_top <- get_names_top(egf_model(), link = FALSE)
-  expect_type(names_top, "character")
-  expect_gt(length(names_top), 0L)
-  expect_true(all(names_top %in% names_top_all))
-})
-
-test_that("string_*_link", {
-  names_top_link0 <- get_names_top(NULL, link = FALSE)
-  names_link <- string_get_link(names_top_link0)
-
-  expect_equal(names_link, ifelse(names_top_link0 == "p", "logit", "log"))
-  expect_equal(string_get_link("invalid string"), NA_character_)
-  expect_equal(string_get_link("log(r)"), NA_character_)
-
-  names_top_link1 <- string_add_link(names_top_link0)
-  expect_equal(string_add_link(names_top_link0), sprintf("%s(%s)", names_link, names_top_link0))
-  expect_equal(string_add_link("invalid string"), NA_character_)
-  expect_equal(string_add_link("log(r)"), NA_character_)
-
-  expect_equal(string_remove_link(names_top_link1), names_top_link0)
-  expect_equal(string_remove_link("invalid string"), NA_character_)
-  expect_equal(string_remove_link("r"), NA_character_)
-
-  expect_equal(string_extract_link(names_top_link1), names_link)
-  expect_equal(string_extract_link("invalid string"), NA_character_)
-  expect_equal(string_extract_link("r"), NA_character_)
-
-  expect_equal(names_top_link1, get_names_top(NULL, link = TRUE))
-})
-
-test_that("match_link", {
-  expect_identical(match_link("identity"), identity)
-  expect_identical(match_link("log"), log)
-  expect_identical(match_link("logit"), function(p) qlogis(p), ignore_function_env = TRUE)
-  expect_error(match_link("invalid string"))
-
-  expect_identical(match_link("identity", inverse = TRUE), identity)
-  expect_identical(match_link("log", inverse = TRUE), exp)
-  expect_identical(match_link("logit", inverse = TRUE), function(q) plogis(q), ignore_function_env = TRUE)
-  expect_error(match_link("invalid string", inverse = TRUE))
-})
-
 test_that("egf_sanitize_formula", {
   l1 <- list(
     cbind(x, y) ~ 1,
@@ -218,7 +160,7 @@ test_that("egf_make_frames", {
 devtools::load_all(".")
 test_that("egf_make_priors_top", {
   model <- egf_model()
-  names_top <- get_names_top(model, link = TRUE)
+  names_top <- egf_get_names_top(model, link = TRUE)
   prior <- Normal(mu = 0, sigma = 1)
   formula_priors_top <- list(
     log(r) ~ prior
@@ -232,8 +174,8 @@ test_that("egf_make_priors_top", {
   expect_length(priors_top, length(names_top))
   expect_named(priors_top, names_top)
   expect_identical(priors_top[["log(r)"]], prior)
-  for (s in setdiff(names(priors), "log(r)")) {
-    eval(bquote(expect_null(priors[[.(s)]])))
+  for (s in setdiff(names(priors_top), "log(r)")) {
+    eval(bquote(expect_null(priors_top[[.(s)]])))
   }
 })
 
@@ -255,14 +197,11 @@ test_that("egf_make_priors_bottom", {
   )
 
   expect_type(priors_bottom, "list")
-  expect_length(priors_bottom, sum(len))
-  expect_named(priors_bottom, enum_dupl_string(rep.int(names(len), c(4L, 10L))))
-  expect_identical(unname(priors_bottom[-sum(len)]), rep_len(list(prior), 13L))
+  expect_length(priors_bottom, 14L)
+  expect_named(priors_bottom, enum_dupl_string(rep.int(c("beta", "theta"), c(4L, 10L))))
+  expect_identical(unname(priors_bottom[-14L]), rep_len(list(prior), 13L))
   expect_null(priors_bottom[[14L]])
 })
-
-devtools::load_all(".")
-library("testthat")
 
 test_that("egf_make_X", {
   formula <- ~x + y + z
@@ -279,7 +218,7 @@ test_that("egf_make_X", {
   expect_equal(attr(X1, "assign"), attr(mm1, "assign")[-2L])
   expect_identical(attr(X1, "contrasts"), attr(mm1, "contrasts"))
 
-  mm2 <- sparse.model.matrix(formula, data = data)
+  mm2 <- Matrix::sparse.model.matrix(formula, data = data)
   X2 <- egf_make_X(formula, data = data, sparse = TRUE)
   expect_identical(as.matrix(X2), as.matrix(mm2[, -2L]))
   expect_equal(X2@assign, mm2@assign[-2L])
@@ -305,22 +244,64 @@ test_that("egf_make_Z", {
   expect_equal(Z@group, gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5:2")))
 })
 
-# test_that("egf_make_XZ_info", {
-#
-# })
+test_that("egf_combine_X", {
+  fixed <- list(a = ~x, b = ~f)
+  data <- data.frame(x = 1:6, f = gl(2L, 3L))
+  l <- lapply(fixed, egf_make_X, data = data, sparse = FALSE)
+  X <- egf_combine_X(fixed = fixed, X = l)
+  expect_type(X, "double")
+  expect_true(is.matrix(X))
+  expect_equal(dim(X), c(6L, 4L))
+  expect_identical(dimnames(X), list(as.character(1:6), c("(Intercept)", "x", "(Intercept)", "f2")))
+  X0 <- cbind(1, 1:6, 1, rep.int(c(0, 1), c(3L, 3L)))
+  expect_equal(unname(X), X0, ignore_attr = "info")
 
-# test_that("egf_make_tmb_data", {
-#
-# })
-#
-# test_that("egf_make_tmb_parameters", {
-#
-# })
-#
-# test_that("egf_make_tmb_args", {
-#
-# })
-#
-# test_that("egf_make_combined", {
-#
-# })
+  info <- attr(X, "info")
+  expect_type(info, "list")
+  expect_s3_class(info, "data.frame")
+  expect_length(info, 4L)
+  expect_equal(row.names(info), as.character(seq_len(4L)))
+  expect_named(info, c("bottom", "top", "term", "colname"))
+  expect_equal(info$bottom, enum_dupl_string(rep_len("beta", 4L)))
+  expect_equal(info$top, gl(2L, 2L, labels = c("a", "b")))
+  expect_equal(info$term, factor(c("(Intercept)", "x", "(Intercept)", "f")))
+  expect_equal(info$colname, colnames(X))
+})
+
+test_that("egf_combine_Z", {
+  random <- list(a = quote(x | f), b = quote(y | g))
+  data <- data.frame(x = 1:6, y = -1, f = gl(2L, 3L), g = gl(3L, 2L))
+  l <- lapply(random, egf_make_Z, data = data)
+  Z <- egf_combine_Z(random = random, Z = l)
+  expect_type(Z, "S4")
+  expect_s4_class(Z, "dgCMatrix")
+  expect_equal(dim(Z), c(6L, 10L))
+  expect_identical(dimnames(Z), list(NULL, sprintf("(%s | %s)", rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L)), rep.int(c("f1", "f2", "g1", "g2", "g3"), 2L))))
+  Z0 <- cbind(
+    c(1, 1, 1, 0, 0, 0),
+    c(0, 0, 0, 1, 1, 1),
+    c(1, 1, 0, 0, 0, 0),
+    c(0, 0, 1, 1, 0, 0),
+    c(0, 0, 0, 0, 1, 1),
+    c(1, 2, 3, 0, 0, 0),
+    c(0, 0, 0, 4, 5, 6),
+    c(-1, -1, 0, 0, 0, 0),
+    c(0, 0, -1, -1, 0, 0),
+    c(0, 0, 0, 0, -1, -1)
+  )
+  expect_equal(unname(as.matrix(Z)), Z0)
+
+  info <- attr(Z, "info")
+  expect_type(info, "list")
+  expect_s3_class(info, "data.frame")
+  expect_length(info, 6L)
+  expect_equal(row.names(info), as.character(seq_len(10L)))
+  expect_named(info, c("bottom", "top", "term", "group", "level", "colname"))
+  expect_equal(info$bottom, enum_dupl_string(rep_len("b", 10L)))
+  expect_equal(info$top, rep.int(factor(rep.int(c("a", "b"), c(2L, 3L))), 2L))
+  expect_equal(info$term, factor(rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L))))
+  expect_equal(info$group, rep.int(factor(rep.int(c("f", "g"), c(2L, 3L))), 2L))
+  expect_equal(info$level, rep.int(factor(c(seq_len(2L), seq_len(3L))), 2L))
+  expect_equal(info$colname, colnames(Z))
+  expect_equal(do.call(order, unname(info[c("term", "group", "level", "top")])), seq_len(10L))
+})

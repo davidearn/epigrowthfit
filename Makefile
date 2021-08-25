@@ -18,7 +18,7 @@ install-deps:
 
 build: $(TARBALL)
 
-$(TARBALL): enums docs src/$(PACKAGE).cpp src/*.h DESCRIPTION NAMESPACE
+$(TARBALL): enums docs src/*.cpp src/*.h DESCRIPTION NAMESPACE
 	$(R) CMD build --no-manual .
 
 enums: utils/update_enums.R src/enums.h
@@ -29,7 +29,7 @@ docs: R/*.R
 
 manual: $(MANUAL)
 
-$(MANUAL): enum docs
+$(MANUAL): enums docs
 	$(R) CMD Rd2pdf -o $@ --force --no-preview .
 
 check: build
@@ -37,6 +37,9 @@ check: build
 
 test:
 	$(R) --quiet -e 'devtools::test(".")'
+
+release:
+	$(R) --quiet -e 'codemetar::write_codemeta(".")'
 
 clean:
 	rm -fr $(TARBALL) $(PACKAGE)-manual.pdf $(CHECKDIR)

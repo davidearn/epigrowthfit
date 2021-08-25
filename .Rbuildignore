@@ -8,3 +8,5 @@
 ^.*\.pdf$
 ^.*\.tar\.gz$
 ^.*\.Rcheck$
+^codemeta\.json$
+^R/old$

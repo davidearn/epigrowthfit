@@ -10,12 +10,12 @@
 #' the \code{`-`} operator with \code{x} as its only argument.
 #'
 #' @examples
-#' ## x <- quote(x)
-#' ## minus_x <- call("-", x)
-#' ## identical(negate(x), minus_x)
-#' ## identical(negate(minus_x), x)
+#' x <- quote(x)
+#' minus_x <- call("-", x)
+#' identical(negate(x), minus_x)
+#' identical(negate(minus_x), x)
 #'
-#' @keywords internal
+#' @noRd
 negate <- function(x) {
   if (is.call(x) && x[[1L]] == "-" && length(x) == 2L) {
     return(x[[2L]])
@@ -50,17 +50,15 @@ negate <- function(x) {
 #' A \link{list} of \link{call}s, \link{name}s, and \link{atomic} scalars.
 #'
 #' @examples
-#' ## x <- quote(1 + a * b - b + (c | d) + (0 + e | f))
-#' ## l <- split_terms(x)
-#' ## y <- unsplit_terms(l)
-#' ## identical(x, y)
-#' ## # [1] FALSE
+#' x <- quote(1 + a * b - b + (c | d) + (0 + e | f))
+#' l <- split_terms(x)
+#' y <- unsplit_terms(l)
+#' identical(x, y)
+#' ## [1] FALSE
 #'
-#' @name split_terms
-#' @keywords internal
+#' @noRd
 NULL
 
-#' @rdname split_terms
 split_terms <- function(x) {
   if (inherits(x, "formula")) {
     x <- x[[length(x)]]
@@ -89,7 +87,6 @@ split_terms <- function(x) {
   list(x)
 }
 
-#' @rdname split_terms
 unsplit_terms <- function(l) {
   stopifnot(inherits(l, "list"))
   if (length(l) == 0L) {
@@ -127,9 +124,9 @@ unsplit_terms <- function(l) {
 #' }
 #'
 #' @examples
-#' ## split_effects(y ~ 0 + x + (1 | f) + (a | g))
+#' split_effects(y ~ 0 + x + (1 | f) + (a | g))
 #'
-#' @keywords internal
+#' @noRd
 #' @importFrom stats as.formula
 split_effects <- function(x) {
   stopifnot(inherits(x, "formula"))
@@ -152,10 +149,10 @@ split_effects <- function(x) {
 #' A \link{list} of \link{call}s, \link{name}s, and \link{atomic} scalars.
 #'
 #' @examples
-#' ## x <- quote(a:b:I(f:g):log(h))
-#' ## split_interaction(x)
+#' x <- quote(a:b:I(f:g):sort(h))
+#' split_interaction(x)
 #'
-#' @keywords internal
+#' @noRd
 split_interaction <- function(x) {
   if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
     return(list(x))
@@ -179,13 +176,13 @@ split_interaction <- function(x) {
 #' @param x A \link{formula}.
 #'
 #' @return
-#' \code{x} with \code{`|`} in terms of the form
-#' \code{(expression1 | expression2)} replaced with \code{`+`}.
+#' \code{x} with \code{`|`} in terms of the form \code{(tt | g)} replaced
+#' with \code{`+`}.
 #'
 #' @examples
-#' ## gsub_bar_plus(~x + (1 | f))
+#' gsub_bar_plus(~x + (1 | f))
 #'
-#' @keywords internal
+#' @noRd
 gsub_bar_plus <- function(x) {
   stopifnot(inherits(x, "formula"))
   l <- split_effects(x)
@@ -245,11 +242,11 @@ gsub_bar_plus <- function(x) {
 #' expansion and simplification of the constituent terms of \code{x}.
 #'
 #' @examples
-#' ## simplify_terms(~0 + x * y - y)
-#' ## simplify_terms(~0 + x * y - y + (1 | f/g))
-#' ## simplify_terms(~0 + x * y - y + (1 | f/g) + (a | f) + (0 + b | f:g))
+#' simplify_terms(~0 + x * y - y)
+#' simplify_terms(~0 + x * y - y + (1 | f/g))
+#' simplify_terms(~0 + x * y - y + (1 | f/g) + (a | f) + (0 + b | f:g))
 #'
-#' @keywords internal
+#' @noRd
 #' @importFrom stats terms as.formula
 simplify_terms <- function(x) {
   if (inherits(x, "formula")) {

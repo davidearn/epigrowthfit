@@ -1,5 +1,10 @@
 #' Utilities for object validation
 #'
+#' \code{stop_if_not} is a drop-in replacement for \code{\link{stopifnot}},
+#' signalling an error with a user-specified message if at least one assertion
+#' is not true. \code{warn_if_not} behaves identically but issues a warning
+#' instead of an error.
+#'
 #' @param ...
 #'   \link[=logical]{Logical} vectors.
 #' @param m
@@ -10,31 +15,22 @@
 #'   generations backwards relative to the function call. The default
 #'   (\code{n = 1}) corresponds to the call from the parent frame.
 #'
-#' @details
-#' \code{stop_if_not} is a replacement for \code{\link{stopifnot}}
-#' allowing the user to specify an error message and function call.
-#'
-#' \code{warn_if_not} behaves identically to \code{stop_if_not} but
-#' issues a warning instead of an error.
-#'
 #' @return
 #' \code{\link{NULL}} (invisibly).
 #'
 #' @examples
-#' ## x <- 1.1
-#' ## stop_if_not(
-#' ##   is.numeric(x),
-#' ##   length(x) == 1L,
-#' ##   x > 0,
-#' ##   x < 1,
-#' ##   m = "`x` must be a number in the interval (0,1)."
-#' ## )
+#' x <- 1.1
+#' stop_if_not(
+#'   is.numeric(x),
+#'   length(x) == 1L,
+#'   x > 0,
+#'   x < 1,
+#'   m = "`x` must be a number in the interval (0,1)."
+#' )
 #'
-#' @name stop_if_not
-#' @keywords internal
+#' @noRd
 NULL
 
-#' @rdname stop_if_not
 stop_if_not <- function(..., m = "", n = 1L) {
   l <- ...length()
   for (i in seq_len(l)) {
@@ -47,7 +43,6 @@ stop_if_not <- function(..., m = "", n = 1L) {
   invisible(NULL)
 }
 
-#' @rdname stop_if_not
 warn_if_not <- function(..., m = "", n = 1L) {
   l <- ...length()
   for (i in seq_len(l)) {
@@ -98,7 +93,7 @@ stop_if_not_number <- function(x, kind = c("any", "positive", "nonnegative", "ne
   kind <- match.arg(kind)
   a <- switch(kind, any = "a", paste("a", kind))
   f <- switch(kind,
-    any         = function(x, y) TRUE,
+    any         = function(x, y) is.finite(x),
     positive    = `>`,
     nonnegative = `>=`,
     negative    = `<`,
@@ -138,17 +133,6 @@ stop_if_not_string <- function(x, n = 1L) {
     length(x) == 1L,
     !is.na(x),
     m = sprintf("`%s` must be a character string.", s),
-    n = 1L + n
-  )
-}
-
-stop_if_not_Date <- function(x, n = 1L) {
-  s <- deparse(substitute(x))
-  stop_if_not(
-    inherits(x, "Date"),
-    length(x) == 1L,
-    !is.na(x),
-    m = sprintf("`%s` must be a Date vector of length one.", s),
     n = 1L + n
   )
 }

@@ -19,11 +19,11 @@
 #' from \code{which}.
 #'
 #' @examples
-#' ## x <- .Date(sample.int(1e4L, 10L))
-#' ## ymd(x)
-#' ## ymd(x, which = "d", drop = TRUE)
+#' x <- .Date(sample.int(1e4L, 10L))
+#' ymd(x)
+#' ymd(x, which = "d", drop = TRUE)
 #'
-#' @keywords internal
+#' @noRd
 ymd <- function(x, which = "ymd", drop = TRUE) {
   stopifnot(
     inherits(x, "Date") || is.character(x),
@@ -58,21 +58,19 @@ ymd <- function(x, which = "ymd", drop = TRUE) {
 #' \code{x} with elements rounded.
 #'
 #' @examples
-#' ## n <- 10L
-#' ## x <- .Date(sample.int(10000L, n) + rnorm(n))
-#' ## dmy <- c("day", "month", "year")
-#' ##
-#' ## l <- sapply(dmy, Dceiling, x = x, simplify = FALSE)
-#' ## ceiling_x <- data.frame(unclass_x = unclass(x), x = x, l)
-#' ##
-#' ## l <- sapply(dmy, Dfloor, x = x, simplify = FALSE)
-#' ## floor_x <- replace(ceiling_y, dmy, l)
+#' n <- 10L
+#' x <- .Date(sample.int(10000L, n) + rnorm(n))
+#' dmy <- c("day", "month", "year")
 #'
-#' @name Dround
-#' @keywords internal
+#' l <- sapply(dmy, Dceiling, x = x, simplify = FALSE)
+#' ceiling_x <- data.frame(unclass_x = unclass(x), x = x, l)
+#'
+#' l <- sapply(dmy, Dfloor, x = x, simplify = FALSE)
+#' floor_x <- replace(ceiling_y, dmy, l)
+#'
+#' @noRd
 NULL
 
-#' @rdname Dround
 Dceiling <- function(x, to = c("day", "month", "year")) {
   stopifnot(inherits(x, "Date"))
   to <- match.arg(to)
@@ -93,7 +91,6 @@ Dceiling <- function(x, to = c("day", "month", "year")) {
   x
 }
 
-#' @rdname Dround
 Dfloor <- function(x, to = c("day", "month", "year")) {
   stopifnot(inherits(x, "Date"))
   to <- match.arg(to)

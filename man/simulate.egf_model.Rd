@@ -32,7 +32,7 @@ or a value of \code{\link{.Random.seed}}) is preserved as an
 \item{mu}{A \link{numeric} vector listing means across time series
 of top level nonlinear model parameters (link scale).
 It is assumed that elements are ordered as in
-\code{\link{get_names_top}(object, link = TRUE)}.}
+\code{\link{egf_get_names_top}(object, link = TRUE)}.}
 
 \item{Sigma}{A symmetric positive definite \link{numeric} \link{matrix}
 to be used as the covariance matrix corresponding to \code{mu}.

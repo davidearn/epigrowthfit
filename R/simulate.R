@@ -75,7 +75,7 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL, ...) {
 #'   A \link{numeric} vector listing means across time series
 #'   of top level nonlinear model parameters (link scale).
 #'   It is assumed that elements are ordered as in
-#'   \code{\link{get_names_top}(object, link = TRUE)}.
+#'   \code{\link{egf_get_names_top}(object, link = TRUE)}.
 #' @param Sigma
 #'   A symmetric positive definite \link{numeric} \link{matrix}
 #'   to be used as the covariance matrix corresponding to \code{mu}.
@@ -204,7 +204,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     set_RNGstate <- function() do.call(set.seed, RNGstate)
   }
 
-  names_top <- get_names_top(object, link = TRUE)
+  names_top <- egf_get_names_top(object, link = TRUE)
   p <- length(names_top)
   stopifnot(
     is.numeric(mu),

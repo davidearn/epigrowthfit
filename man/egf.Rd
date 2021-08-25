@@ -67,9 +67,9 @@ specifying mixed effects models for top level nonlinear model parameters,
 using \code{\link[lme4:lmer]{lme4}}-like syntax.
 Alternatively, a formula of the form \code{~terms} to be recycled for
 all parameters. A list of parameters for which formulae may be specified
-can be retrieved with \code{\link{get_names_top}}.
+can be retrieved with \code{\link{egf_get_names_top}}.
 Specifically, \code{\link{deparse}(parameter)} must be an element of
-\code{\link{get_names_top}(model, link = TRUE)}.
+\code{\link{egf_get_names_top}(model, link = TRUE)}.
 The default for parameters not assigned a formula is \code{~1}.}
 
 \item{formula_priors_top, formula_priors_bottom}{\link[=list]{List}s of \link{formula}e of the form \code{parameter ~ prior}
@@ -81,7 +81,7 @@ to a valid \link[=egf_prior]{prior function}
 with arguments specifying suitable hyperparameters
 (e.g., \code{\link{Normal}(mu = 0, sigma = 1)}).
 In the top level case, \code{deparse(parameter)} must be an element
-of \code{\link{get_names_top}(model, link = TRUE)},
+of \code{\link{egf_get_names_top}(model, link = TRUE)},
 and hyperparameters supplied on the right hand side must have length 1.
 In the bottom level case, \code{parameter} must be \code{beta}
 or \code{theta} or a call to \code{\link{[}} or \code{\link{[[}}

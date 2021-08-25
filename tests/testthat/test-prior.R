@@ -1,0 +1,20 @@
+test_that("Normal", {
+  mu <- rnorm(10L)
+  sigma <- rlnorm(5L)
+  prior <- Normal(mu = mu, sigma = sigma)
+  expect_type(prior, "list")
+  expect_s3_class(prior, "egf_prior")
+  expect_identical(unclass(prior), list(family = "norm", parameters = list(mu = mu, sigma = sigma)))
+
+  expect_error(Normal(mu = "foo",       sigma = sigma))
+  expect_error(Normal(mu = numeric(0L), sigma = sigma))
+  expect_error(Normal(mu = NA_real_,    sigma = sigma))
+  expect_error(Normal(mu = Inf,         sigma = sigma))
+
+  expect_error(Normal(mu = mu, sigma = "foo"))
+  expect_error(Normal(mu = mu, sigma = numeric(0L)))
+  expect_error(Normal(mu = mu, sigma = NA_real_))
+  expect_error(Normal(mu = mu, sigma = Inf))
+  expect_error(Normal(mu = mu, sigma = 0))
+  expect_error(Normal(mu = mu, sigma = -1))
+})

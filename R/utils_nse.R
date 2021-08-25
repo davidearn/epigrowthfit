@@ -71,16 +71,14 @@
 #' append <- quote(-day)
 #' label <- quote(sprintf("%d-%02d-%02d", year, match(month, month.abb, 0L), day))
 #'
-#' ## eval_subset(subset, data, parent.frame())
-#' ## eval_order(order, data, parent.frame())
-#' ## eval_append(append, data, parent.frame())
-#' ## eval_label(label, data, parent.frame())
+#' eval_subset(subset, data, parent.frame())
+#' eval_order(order, data, parent.frame())
+#' eval_append(append, data, parent.frame())
+#' eval_label(label, data, parent.frame())
 #'
-#' @name nse
-#' @keywords internal
+#' @noRd
 NULL
 
-#' @rdname nse
 eval_subset <- function(subset, envir, enclos, .subset = NULL) {
   if (is.null(.subset)) {
     if (is.null(subset)) {
@@ -97,7 +95,6 @@ eval_subset <- function(subset, envir, enclos, .subset = NULL) {
   !is.na(subset) & subset
 }
 
-#' @rdname nse
 eval_append <- function(append, envir, enclos, .append = NULL) {
   stopifnot(is.list(envir))
   if (is.null(.append)) {
@@ -114,7 +111,6 @@ eval_append <- function(append, envir, enclos, .append = NULL) {
   m[m > 0L]
 }
 
-#' @rdname nse
 eval_order <- function(order, envir, enclos, .order = NULL) {
   if (is.null(.order)) {
     if (is.null(order)) {
@@ -134,7 +130,6 @@ eval_order <- function(order, envir, enclos, .order = NULL) {
   order
 }
 
-#' @rdname nse
 eval_label <- function(label, envir, enclos, .label = NULL) {
   if (is.null(.label)) {
     if (is.null(label)) {
