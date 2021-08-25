@@ -241,7 +241,7 @@ test_that("egf_make_Z", {
   expect_equal(Z@p, c(0L, cumsum(c(2L, 2L, 1L, 1L, 2L, 2L))))
   expect_equal(Z@assign, rep_len(1L, 6L))
   expect_error(Z@contrasts)
-  expect_equal(Z@group, gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5:2")))
+  expect_equal(Z@index, gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5:2")))
 })
 
 test_that("egf_combine_X", {
