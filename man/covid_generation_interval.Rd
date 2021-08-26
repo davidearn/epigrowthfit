@@ -14,7 +14,7 @@ A \link{list} with 4 elements:
   Estimated scale parameter. See \code{\link{dgamma}}.
 }
 \item{\code{breaks}}{
-  An \link{integer} vector listing numbers of days. Equal to `0:20`.
+  An \link{integer} vector listing numbers of days. Equal to \code{0:20}.
 }
 \item{\code{probs}}{
   A \link[=double]{numeric} vector of length \code{\link{length}(breaks-1)}.

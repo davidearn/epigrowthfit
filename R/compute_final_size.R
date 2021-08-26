@@ -56,8 +56,8 @@
 compute_final_size <- function(R0, S0, I0) {
   if (!requireNamespace("emdbook", quietly = TRUE)) {
     stop(wrap(
-      "`emdbook::lambertW` is needed, but `emdbook` is not installed. ",
-      "Install it by running `install.packages(\"emdbook\")`, then try again."
+      "'emdbook::lambertW' is needed, but 'emdbook' is not installed. ",
+      "Install it by running 'install.packages(\"emdbook\")', then try again."
     ))
   }
   stopifnot(
@@ -67,7 +67,7 @@ compute_final_size <- function(R0, S0, I0) {
   )
   if (missing(S0)) {
     if (missing(I0)) {
-      stop("At least one of `S0` and `I0` must be supplied.")
+      stop("At least one of 'S0' and 'I0' must be supplied.")
     }
     S0 <- 1 - I0
   } else if (missing(I0)) {

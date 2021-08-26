@@ -164,7 +164,7 @@ split_interaction <- function(x) {
       return(list(x))
     }
   }
-  stop("`x` must be a call, name, or atomic scalar.")
+  stop("'x' must be a call, name, or atomic scalar.")
 }
 
 #' Replace `|` with `+` in formula terms
@@ -211,7 +211,7 @@ gsub_bar_plus <- function(x) {
 #' Terms that _are not_ \link{call}s to \code{`|`} are regrouped,
 #' and the resulting expression is expanded and simplified
 #' using \code{\link{terms}(simplify = TRUE)}.
-#' Terms that _are_ \link{call}s to ```|``` are regrouped,
+#' Terms that _are_ \link{call}s to \code{`|`} are regrouped,
 #' and the resulting expression is expanded and simplified
 #' following extended rules (see below).
 #' Finally, the two expressions are merged, yielding the final result.

@@ -7,7 +7,7 @@ l <- local({
   )
   list(data = data)
 })
-attach(l, name = "test_data")
+attach(l, name = "testdata")
 
 test_that("eval_subset", {
   expect_equal(eval_subset(quote(x > 5L), data), 6:10)
@@ -37,3 +37,5 @@ test_that("eval_label", {
   expect_equal(eval_label("1", data), rep_len("1", 10L))
   expect_equal(eval_label(1, data), rep_len("1", 10L))
 })
+
+detach("testdata")

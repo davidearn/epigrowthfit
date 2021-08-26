@@ -21,7 +21,7 @@
 #' tdoubling <- compute_tdoubling(r)
 #' all.equal(tdoubling, log(2) / r)
 #'
-#' ## Attribute `per` affects printing
+#' ## Attribute 'per' affects printing
 #' for (i in c(1, 2, 7, 8, 365, 366)) {
 #'   attr(tdoubling, "per") <- i
 #'   print(tdoubling)
@@ -35,7 +35,7 @@ compute_tdoubling <- function(r, per = NULL) {
   }
   if (any(r < 0, na.rm = TRUE)) {
     r[r < 0] <- NA
-    warning("NA returned for negative `r`.")
+    warning("NA returned for negative 'r'.")
   }
   tdoubling <- log(2) / r
   class(tdoubling) <- c("tdoubling", class(tdoubling))

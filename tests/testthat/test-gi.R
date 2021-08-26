@@ -5,7 +5,7 @@ l <- local({
   n <- length(infectious)
   list(latent = latent, m = m, infectious = infectious, n = n)
 })
-attach(l, name = "test_data")
+attach(l, name = "testdata")
 
 test_that("dgi", {
   dgi_ <- function(x) dgi(x = x, latent = latent, infectious = infectious)
@@ -27,3 +27,5 @@ test_that("rgi", {
   probs <- dgi(seq_len(m + n - 1L), latent = latent, infectious = infectious)
   expect_equal(freqs, probs, tolerance = 1e-3)
 })
+
+detach("testdata")

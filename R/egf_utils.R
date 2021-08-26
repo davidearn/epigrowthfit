@@ -36,7 +36,7 @@ egf_sanitize_formula <- function(formula) {
     is.call(lhs <- a$variables[[1L + a$response]]),
     lhs[[1L]] == "cbind",
     length(lhs) == 3L,
-    m = wrap("Left hand side of ", sQuote(s), " must be a call to `cbind` with 2 arguments.")
+    m = wrap("Left hand side of ", sQuote(s), " must be a call to 'cbind' with 2 arguments.")
   )
   stop_if_not(
     a$intercept == 1L,
@@ -58,7 +58,7 @@ egf_sanitize_formula_parameters <- function(formula_parameters, model, ignore_in
     names(formula_parameters) <- vapply(formula_parameters, function(x) deparse(x[[2L]]), "")
     if (!all(names(formula_parameters) %in% names_top)) {
       stop(wrap(
-        "`deparse(formula_parameters[[i]][[2L]])` must be an element of ",
+        "'deparse(formula_parameters[[i]][[2L]])' must be an element of ",
         sprintf("c(%s).", paste(dQuote(names_top), collapse = ", "))
       ))
     }
@@ -80,7 +80,7 @@ egf_sanitize_formula_parameters <- function(formula_parameters, model, ignore_in
       warning(wrap(
         "Default initial values for linear fixed effects coefficients ",
         "are not reliable for fixed effects models without an intercept. ",
-        "Consider setting `init` explicitly or including an intercept."
+        "Consider setting 'init' explicitly or including an intercept."
       ))
     }
   }
@@ -94,7 +94,7 @@ egf_make_frames <- function(model,
                             subset, subset_windows,
                             na_action, na_action_windows,
                             append) {
-  ## Reused for `frame` and `frame_windows`
+  ## Reused for 'frame' and 'frame_windows'
   make_frame <- function(formula, data, subset, na.action, drop.unused.levels) {
     group <- length(attr(terms(formula), "term.labels")) == 1L
     tt <- c(if (group) list(formula[[3L]]), as.list(formula[[2L]])[-1L])
@@ -129,7 +129,7 @@ egf_make_frames <- function(model,
   frame <- frame[!is.na(frame$ts), , drop = FALSE]
   if (nrow(frame) == 0L) {
     stop(wrap(
-      "Data frame constructed from `formula`, `data`, and `subset` ",
+      "Data frame constructed from 'formula', 'data', and 'subset' ",
       "must have at least one row."
     ))
   }
@@ -147,7 +147,7 @@ egf_make_frames <- function(model,
   if((N <- nrow(frame_windows)) == 0L) {
     stop(wrap(
       "Data frame constructed from ",
-      "`formula_windows`, `data_windows`, and `subset_windows` ",
+      "'formula_windows', 'data_windows', and 'subset_windows' ",
       "must have at least one row."
     ))
   }
@@ -169,16 +169,16 @@ egf_make_frames <- function(model,
     frame_parameters[[i]] <- eval(cl, parent.frame())
   }
 
-  ## Replace, e.g., `model.frame(~1, data)`, which is an empty data frame
-  ## with 0 length and 0 rows regardless of `data`, with a data frame with
+  ## Replace, e.g., 'model.frame(~1, data)', which is an empty data frame
+  ## with 0 length and 0 rows regardless of 'data', with a data frame with
   ## 0 length and the _correct_ number of rows
   len <- lengths(frame_parameters)
   frame_parameters[len == 0L] <- list(data.frame(row.names = seq_len(N)))
 
-  ## Test model frames for rowwise correspondence with `frame_windows`
+  ## Test model frames for rowwise correspondence with 'frame_windows'
   if (any(vapply(frame_parameters, nrow, 0L) != N)) {
     stop(wrap(
-      "Data frames constructed from `formula_windows` and `formula_parameters` ",
+      "Data frames constructed from 'formula_windows' and 'formula_parameters' ",
       "must have a common number of rows."
     ))
   }
@@ -249,7 +249,7 @@ egf_make_frames <- function(model,
   }
   if (!all(mapply(check_ok_bar_lhs, data = frame_parameters, names = names_bar_lhs))) {
     stop(wrap(
-      "`formula_parameters` variables on left hand side of `|` ",
+      "'formula_parameters' variables on left hand side of `|` ",
       "must be of double, integer, or logical type."
     ))
   }
@@ -258,7 +258,7 @@ egf_make_frames <- function(model,
   ### Subsetting step ##########################################################
 
   ## Discard fitting windows without observations on all
-  ## `formula_windows` and `formula_parameters` variables
+  ## 'formula_windows' and 'formula_parameters' variables
   cc <- do.call(complete.cases, c(list(frame_windows), frame_parameters[len > 0L]))
   if (!all(cc)) {
     frame_windows <- frame_windows[cc, , drop = FALSE]
@@ -333,7 +333,7 @@ egf_make_frames <- function(model,
   }
   if (!all(mapply(check_ok_bar_lhs_double, data = frame_parameters, names = names_bar_lhs))) {
     stop(wrap(
-      "Numeric `formula_parameters` variables on left hand side of `|` ",
+      "Numeric 'formula_parameters' variables on left hand side of `|` ",
       "must not contain Inf or -Inf."
     ))
   }
@@ -433,7 +433,7 @@ egf_make_priors_top <- function(formula_priors_top, model) {
   names(formula_priors_top) <- vapply(formula_priors_top, function(x) deparse(x[[2L]]), "")
   if (!all(names(formula_priors_top) %in% names_top)) {
     stop(wrap(
-      "`deparse(formula_priors_top[[i]][[2L]])` must be an element of ",
+      "'deparse(formula_priors_top[[i]][[2L]])' must be an element of ",
       sprintf("c(%s).", paste(dQuote(names_top, FALSE), collapse = ", "))
     ))
   }
@@ -445,7 +445,7 @@ egf_make_priors_top <- function(formula_priors_top, model) {
   }
   priors <- lapply(formula_priors_top, function(x) eval(x[[3L]], environment(x)))
   if (!all(vapply(priors, inherits, FALSE, "egf_prior"))) {
-    stop("`formula_priors_top[[i]][[3L]])` must evaluate to an \"egf_prior\" object.")
+    stop("'formula_priors_top[[i]][[3L]])' must evaluate to an \"egf_prior\" object.")
   }
   f <- function(x) {
     x$parameters <- lapply(x$parameters, `[[`, 1L)
@@ -490,7 +490,7 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
     if (is.na(lhs_parameter[i])) {
       s <- Reduce(function(x, y) paste(x, "or", y), sQuote(names(res)))
       stop(wrap(
-        "`formula_priors_bottom[[i]][[2L]]` must be ", s, " or a call ",
+        "'formula_priors_bottom[[i]][[2L]]' must be ", s, " or a call ",
         "to `[` or `[[` subsetting ", s, "."
       ))
     }
@@ -507,12 +507,12 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
   eval_rhs <- function(x, formula) eval(x, environment(formula))
   priors <- Map(eval_rhs, x = rhs, formula = formula_priors_bottom)
   if (!all(vapply(priors, inherits, FALSE, "egf_prior"))) {
-    stop("`formula_priors_bottom[[i]][[3L]]` must evaluate to an \"egf_prior\" object.")
+    stop("'formula_priors_bottom[[i]][[3L]]' must evaluate to an \"egf_prior\" object.")
   }
   for (l in split(indices, lhs_parameter)) {
     i <- unlist(l, FALSE, FALSE)
     if (anyNA(i)) {
-      stop("Invalid index vector in `formula_priors_bottom`.")
+      stop("Invalid index vector in 'formula_priors_bottom'.")
     }
     if (anyDuplicated(i) > 0L) {
       stop(wrap(
@@ -627,7 +627,7 @@ egf_make_Z <- function(random, data) {
   g <- interaction(data[ng], drop = TRUE, sep = ":", lex.order = FALSE)
   J <- t(as(g, Class = "sparseMatrix"))
   Z <- t(KhatriRao(t(J), t(X)))
-  ## For consistency, we want `model.matrix`-style names for group levels
+  ## For consistency, we want 'model.matrix'-style names for group levels
   G <- model.matrix(as.formula(call("~", call("+", 0, random[[3L]]))), data = data)
   j <- colSums(abs(G)) > 0
   G <- G[, j, drop = FALSE]

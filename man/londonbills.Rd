@@ -8,7 +8,7 @@
 A \link[=data.frame]{data frame} with 2041 rows and 6 variables:
 \describe{
 \item{\code{Date}}{
-  A \link{Date} vector. Weekly within each level of `outbreak`,
+  A \link{Date} vector. Weekly within each level of \code{outbreak},
   except for 78 instances of spacing not equal to 7 days.
 }
 \item{\code{deaths_all_causes}}{

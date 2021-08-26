@@ -111,9 +111,9 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, control, fit, init
     ## Date during 24 hours starting at earliest time point
     Date1 <- .Date(frame$time[first])
 
-    ## Day of week on that Date coded as an integer `i` in `0:6`.
-    ## Integer `i` maps to the day of week `i` days after a reference day,
-    ## which is the day `model$day_of_week` days after Saturday
+    ## Day of week on that Date coded as an integer 'i' in '0:6'.
+    ## Integer 'i' maps to the day of week 'i' days after a reference day,
+    ## which is the day 'model$day_of_week' days after Saturday
     ## NB: weekdays(.Date(2L)) == "Saturday"
     day1 <- as.integer(julian(Date1, origin = .Date(2L + model$day_of_week)) %% 7)
   } else {
@@ -318,7 +318,7 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
 
     ## For each of these top level nonlinear model parameters,
     ## compute the mean over all fitting windows of the naive estimate,
-    ## and assign the result to the coefficient of `beta` corresponding
+    ## and assign the result to the coefficient of 'beta' corresponding
     ## to "(Intercept)"
     if (any(i1)) {
       ## Time series segments
@@ -362,7 +362,7 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
       )
       names(Y_init) <- egf_link_add(names(Y_init))
 
-      ## Identify elements of `beta` corresponding to "(Intercept)"
+      ## Identify elements of 'beta' corresponding to "(Intercept)"
       ## and assign means over fitting windows
       nfp <- names(frame_parameters)[i1]
       index <- match(nfp, attr(tmb_data$X, "info")$top, 0L)
@@ -370,12 +370,12 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
     }
   } else {
     ## Validate and split full parameter vector,
-    ## producing `list(beta, b, theta)`
+    ## producing 'list(beta, b, theta)'
     stop_if_not(
       is.numeric(init),
       length(init) == sum(len),
       is.finite(init),
-      m = sprintf("`init` must be a finite numeric vector of length %d.", sum(len))
+      m = sprintf("'init' must be a finite numeric vector of length %d.", sum(len))
     )
     names(init) <- NULL
     init_split <- split(init, rep.int(gl(3L, 1L, labels = names(len)), len))
@@ -410,18 +410,18 @@ egf_make_tmb_args <- function(model, frame, frame_parameters, control, fit, init
     stop_if_not(
       is.factor(map),
       length(map) == sum(len),
-      m = sprintf("`map` must be a factor of length %d.", sum(len))
+      m = sprintf("'map' must be a factor of length %d.", sum(len))
     )
     tmb_map <- split(map, rep.int(gl(3L, 1L, labels = names(len)), len))
     tmb_map <- lapply(tmb_map, factor)
   }
   if (egf_has_random(tmb_data)) {
-    ## Declare that `b` contains random effects
+    ## Declare that 'b' contains random effects
     tmb_random <- "b"
   } else {
     ## Declare that there are no random effects
     tmb_random <- NULL
-    ## Fix `theta` and `b` to NA_real_ since only `beta` is used
+    ## Fix 'theta' and 'b' to NA_real_ since only 'beta' is used
     tmb_parameters$theta <- tmb_parameters$b <- NA_real_
     tmb_map$theta <- tmb_map$b <- factor(NA)
   }
@@ -483,7 +483,7 @@ egf_patch_fn <- function(fn, inner_optimizer) {
   e$.egf_env$fn <- fn
   e$.egf_env$inner_optimizer <- inner_optimizer
 
-  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for `check`
+  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for 'check'
   pfn <- function(x = last.par[-random], ...) {
     oim <- inner.method
     oic <- inner.control
@@ -499,7 +499,7 @@ egf_patch_fn <- function(fn, inner_optimizer) {
         return(v)
       }
     }
-    NaN # no warning to avoid duplication of `optim` and `nlminb` warnings
+    NaN # no warning to avoid duplication of 'optim' and 'nlminb' warnings
   }
   environment(pfn) <- e
   pfn
@@ -513,7 +513,7 @@ egf_patch_gr <- function(gr, inner_optimizer) {
   e$.egf_env$gr <- gr
   e$.egf_env$inner_optimizer <- inner_optimizer
 
-  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for `check`
+  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for 'check'
   pgr <- function(x = last.par[-random], ...) {
     oim <- inner.method
     oic <- inner.control
@@ -530,7 +530,7 @@ egf_patch_gr <- function(gr, inner_optimizer) {
         return(v)
       }
     }
-    warning("Unable to evaluate `gr(x)`, returning NaN.")
+    warning("Unable to evaluate 'gr(x)', returning NaN.")
     NaN # warning because scalar result is unexpected
   }
   environment(pgr) <- e

@@ -71,7 +71,7 @@ compute_R0 <- function(r, breaks, probs) {
 
   ## Degenerate cases
   if (any(r < 0, na.rm = TRUE)) {
-    warning("NA returned for negative elements of `r`.")
+    warning("NA returned for negative elements of 'r'.")
   }
 
   ## Limiting cases

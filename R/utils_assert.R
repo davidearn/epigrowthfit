@@ -25,7 +25,7 @@
 #'   length(x) == 1L,
 #'   x > 0,
 #'   x < 1,
-#'   m = "`x` must be a number in the interval (0,1)."
+#'   m = "'x' must be a number in the interval (0,1)."
 #' )
 #'
 #' @noRd
@@ -62,7 +62,7 @@ stop_if_not_true_false <- function(x, allow_numeric = FALSE, n = 1L) {
     is.logical(x) || (allow_numeric && is.numeric(x)),
     length(x) == 1L,
     !is.na(x),
-    m = sprintf("`%s` must be TRUE or FALSE%s.", s, a),
+    m = paste0(sQuote(s), " must be TRUE or FALSE", a, "."),
     n = 1L + n
   )
 }
@@ -83,7 +83,7 @@ stop_if_not_integer <- function(x, kind = c("any", "positive", "nonnegative", "n
     length(x) == 1L,
     x %% 1 == 0,
     f(x, 0),
-    m = sprintf("`%s` must be %s integer.", s, a),
+    m = paste0(sQuote(s), " must be ", a, " integer."),
     n = 1L + n
   )
 }
@@ -103,7 +103,7 @@ stop_if_not_number <- function(x, kind = c("any", "positive", "nonnegative", "ne
     is.numeric(x),
     length(x) == 1L,
     f(x, 0),
-    m = sprintf("`%s` must be %s number.", s, a),
+    m = paste0(sQuote(s), " must be ", a, " number."),
     n = 1L + n
   )
 }
@@ -121,7 +121,7 @@ stop_if_not_number_in_interval <- function(x, a = -Inf, b = Inf, include = c("()
     length(x) == 1L,
     f1(x, a),
     f2(x, b),
-    m = sprintf("`%s` must be a number in the interval %s.", s, interval),
+    m = paste0(sQuote(s), " must be a number in the interval ", interval, "."),
     n = 1L + n
   )
 }
@@ -132,7 +132,7 @@ stop_if_not_string <- function(x, n = 1L) {
     is.character(x),
     length(x) == 1L,
     !is.na(x),
-    m = sprintf("`%s` must be a character string.", s),
+    m = paste0(sQuote(s), " must be a character string."),
     n = 1L + n
   )
 }

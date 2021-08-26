@@ -212,7 +212,7 @@ rgi <- function(n, latent, infectious) {
   infectious <- infectious / sum(infectious)
 
   ## Latent period is integer-valued,
-  ## equal to `i` with probability `latent[i]`
+  ## equal to 'i' with probability 'latent[i]'
   rlp <- sample(seq_along(latent), size = n, replace = TRUE, prob = latent)
 
   ## Infectious waiting time is real-valued,

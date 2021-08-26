@@ -28,7 +28,7 @@ r <- 10^(-2:0)
 tdoubling <- compute_tdoubling(r)
 all.equal(tdoubling, log(2) / r)
 
-## Attribute `per` affects printing
+## Attribute 'per' affects printing
 for (i in c(1, 2, 7, 8, 365, 366)) {
   attr(tdoubling, "per") <- i
   print(tdoubling)

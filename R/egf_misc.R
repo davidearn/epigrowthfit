@@ -34,7 +34,7 @@ egf_model <- function(curve = c("logistic", "exponential", "subexponential", "go
   family <- match.arg(family)
   stop_if_not_true_false(day_of_week, allow_numeric = TRUE)
   day_of_week <- as.integer(day_of_week)
-  day_of_week <- (day_of_week > 0L) * (1L + (day_of_week - 1L) %% 7L) # coercion to `0:7`
+  day_of_week <- (day_of_week > 0L) * (1L + (day_of_week - 1L) %% 7L) # coercion to '0:7'
 
   res <- list(
     curve = curve,
@@ -124,7 +124,7 @@ egf_control <- function(optimizer = egf_optimizer(),
     )
   }
   stop_if_not_true_false(trace, allow_numeric = TRUE)
-  trace <- min(2L, max(0L, as.integer(trace))) # coercion to `0:2`
+  trace <- min(2L, max(0L, as.integer(trace))) # coercion to '0:2'
   stop_if_not_true_false(profile)
   stop_if_not_true_false(sparse_X)
   stop_if_not_integer(omp_num_threads, "positive")
@@ -220,7 +220,7 @@ egf_optimizer <- function(f = nlminb, args = list(), control = list()) {
   if (identical(f, optim)) {
     if (is.null(args$method)) {
       args$method <- "BFGS"
-      warning("`optim` argument `method` not specified, using ", dQuote(args$method), ".")
+      warning("'optim' argument 'method' not specified, using ", dQuote(args$method), ".")
     } else {
       args$method <- match.arg(args$method, eval(formals(optim)$method))
     }
@@ -250,7 +250,7 @@ egf_optimizer <- function(f = nlminb, args = list(), control = list()) {
     f_out <- tryCatch(eval(e),
       error = function(cond) {
         stop(wrap(
-          "Unable to validate `f` due to following error in test ", deparse(e), ":\n\n",
+          "Unable to validate 'f' due to following error in test ", sQuote(deparse(e)), ":\n\n",
           conditionMessage(cond)
         ))
       }
@@ -258,9 +258,9 @@ egf_optimizer <- function(f = nlminb, args = list(), control = list()) {
     required <- c("par", "value", "convergence", "message")
     if (!(is.list(f_out) && all(required %in% names(f_out)))) {
       stop(wrap(
-        "`f` must return a list with elements ",
+        "'f' must return a list with elements ",
         paste(sQuote(required), collapse = ", "),
-        " but _does not_ for test ", deparse(e), "."
+        " but _does not_ for test ", sQuote(deparse(e)), "."
       ))
     }
     f <- function(par, fn, gr, control, ...) {
@@ -299,12 +299,12 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
   } else if (identical(f, optim)) {
     if (is.null(args$method)) {
       method <- "BFGS"
-      warning("`optim` argument `method` not specified, using ", dQuote(method), ".")
+      warning("'optim' argument 'method' not specified, using ", dQuote(method), ".")
     } else {
       method <- match.arg(args$method, eval(formals(optim)$method))
     }
   } else {
-    stop("`f` is currently restricted to `TMB::newton` and `stats::optim`.")
+    stop("'f' is currently restricted to 'TMB::newton' and 'stats::optim'.")
   }
 
   res <- list(method = method, control = control)

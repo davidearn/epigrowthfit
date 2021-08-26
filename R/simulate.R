@@ -224,7 +224,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     e <- eigen(Sigma, symmetric = TRUE)$values
     stop_if_not(
       e >= -tol * abs(e[1L]),
-      m = "`Sigma` must be positive definite."
+      m = "'Sigma' must be positive definite."
     )
     dimnames(Sigma) <- rep_len(list(names_top), 2L)
   }
@@ -238,19 +238,19 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     } else {
       ## Random intercept model: inflection time is not known up front.
       ## Two passes are necessary. The first pass asks for time series
-      ## of minimal length (hence `tmax <- 1`) and serves only to
+      ## of minimal length (hence 'tmax <- 1') and serves only to
       ## retrieve randomly generated inflection times. The second pass
       ## asks for time series of appropriate length.
       tmax <- 1
     }
   } else {
-    ## Time: daily from 0 days to user-specified `tmax` days
+    ## Time: daily from 0 days to user-specified 'tmax' days
     stop_if_not_number(tmax, "positive")
     tmax <- max(1, trunc(tmax))
   }
   stop_if_not_number(cstart)
 
-  ## Construct arguments to `egf` corresponding to `nsim`, `mu`, `Sigma`
+  ## Construct arguments to 'egf' corresponding to 'nsim', 'mu', 'Sigma'
   formula <- cbind(time, x) ~ ts
   formula_windows <- cbind(start, end) ~ ts
   data <- data.frame(
@@ -302,7 +302,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   )
 
   if (has_inflection && !is.null(Sigma)) {
-    ## Second pass with `data` of appropriate length,
+    ## Second pass with 'data' of appropriate length,
     ## determined by simulated inflection times
     set_RNGstate()
     Y <- zz$tmb_out$simulate(init)$Y
@@ -322,11 +322,11 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   set_RNGstate()
   sim <- zz$tmb_out$simulate(init)
 
-  ## Replace dummy observations in `data` with simulated ones
+  ## Replace dummy observations in 'data' with simulated ones
   data$x[] <- NA
   data$x[duplicated(data$ts)] <- sim$x
 
-  ## Choose fitting window start times according to `cstart` rule
+  ## Choose fitting window start times according to 'cstart' rule
   get_start <- function(d) {
     l <- c(0L, cumsum(d$x[-1L])) > cstart
     if (any(l)) d$time[which.max(l)] else NA_real_
@@ -336,7 +336,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     argna <- is.na(data_windows$start)
     data_windows$start[argna] <- 0
     warning(wrap(
-      "Threshold `cstart` not exceeded in these time series:\n\n",
+      "Threshold 'cstart' not exceeded in these time series:\n\n",
       paste(sprintf("  %*d", as.integer(log10(nsim)) + 1L, which(argna)), collapse = "\n"), "\n\n",
       "Corresponding fitting windows contain all observations (for better or for worse)."
     ))

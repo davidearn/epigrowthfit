@@ -1,4 +1,4 @@
-options(egf.cores = 4L)
+oo <- options(egf.cores = 4L)
 
 test_that("exponential", {
   r <- log(2) / 20
@@ -104,3 +104,5 @@ test_that("richards", {
   expect_equal(pp$theta$fitted[1:5], pp$theta$actual[1:5], tolerance = 5e-1)
   expect_equal(pp$theta$fitted[-(1:5)], pp$theta$actual[-(1:5)], tolerance = 1)
 })
+
+options(oo)

@@ -222,7 +222,7 @@ NULL
 #' A \link[=data.frame]{data frame} with 2041 rows and 6 variables:
 #' \describe{
 #' \item{\code{Date}}{
-#'   A \link{Date} vector. Weekly within each level of `outbreak`,
+#'   A \link{Date} vector. Weekly within each level of \code{outbreak},
 #'   except for 78 instances of spacing not equal to 7 days.
 #' }
 #' \item{\code{deaths_all_causes}}{
@@ -325,7 +325,7 @@ NULL
 #'   Estimated scale parameter. See \code{\link{dgamma}}.
 #' }
 #' \item{\code{breaks}}{
-#'   An \link{integer} vector listing numbers of days. Equal to `0:20`.
+#'   An \link{integer} vector listing numbers of days. Equal to \code{0:20}.
 #' }
 #' \item{\code{probs}}{
 #'   A \link[=double]{numeric} vector of length \code{\link{length}(breaks-1)}.
