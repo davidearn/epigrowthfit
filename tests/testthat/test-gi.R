@@ -5,7 +5,7 @@ l <- local({
   n <- length(infectious)
   list(latent = latent, m = m, infectious = infectious, n = n)
 })
-attach(l, name = "test-gi")
+attach(l, name = "test_data")
 
 test_that("dgi", {
   dgi_ <- function(x) dgi(x = x, latent = latent, infectious = infectious)

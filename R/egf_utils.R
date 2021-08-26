@@ -186,13 +186,11 @@ egf_make_frames <- function(model,
   ### Appended stuff
 
   if (!is.null(append) && is.data.frame(data_windows)) {
-    i <- eval(subset_windows, data_windows, environment(formula_windows))
+    i <- eval_subset(subset_windows, data_windows, environment(formula_windows))
     if (append == ".") {
       j <- setdiff(names(data_windows), unlist(lapply(frame_parameters, names), FALSE, FALSE))
     } else {
-      l <- as.list(seq_along(data_windows))
-      names(l) <- names(data_windows)
-      j <- eval(append, l, baseenv())
+      j <- eval_append(append, data_windows, baseenv())
     }
     frame_append <- data_windows[i, j]
   } else {

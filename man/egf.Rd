@@ -98,9 +98,10 @@ Formula environments are searched for variables not found here.}
 
 \item{subset, subset_windows}{Expressions to be evaluated in the corresponding data frame.
 Formula environments are searched for variables not found there.
-The result can be any valid index vector for the rows of the
+The result should be a valid index vector for the rows of the
 data frame (see \code{\link{[.data.frame}}).
-Indexed rows are processed further; unindexed rows are discarded.
+Rows that are indexed are processed further; rows that are not
+are discarded.
 The default (\code{\link{NULL}}) is to preserve all rows.}
 
 \item{na_action}{A \link{character} string affecting the handling of \code{\link{NA}}
@@ -145,13 +146,13 @@ to factor internally with
 
 \item{append}{An expression indicating variables in \code{data_windows}
 to be preserved in the returned object for use by methods.
-Usage requires that \code{data_parameters} is a
+Usage requires that \code{data_windows} is a
 \link[=data.frame]{data frame}.
 The default (\code{\link{NULL}}) is to preserve nothing.
 A dot \samp{.} is to preserve all variables not occurring
 in \code{formula_parameters}.
 Outside of these two special cases, expressions are evaluated
-similarly to the \code{select} argument of \code{\link{subset}}.}
+similarly to argument \code{select} of function \code{\link{subset}}.}
 }
 \value{
 If \code{fit = TRUE}, then a \link{list} inheriting from \link{class}
