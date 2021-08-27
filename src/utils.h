@@ -31,7 +31,131 @@ Type rnbinom_robust(Type log_mu, Type log_size)
     return rnbinom(exp(log_size), exp(log_prob));
     /* usage: rnbinom(size, prob) */
 }
-  
+
+/* Log multivariate gamma function */
+template<class Type>
+Type mvlgamma(Type x, int n)
+{
+    Type res = lgamma(x);
+    if (n == 1)
+    {
+        return res;
+    }
+    for (int i = 1; i < n; ++i)
+    {
+        res += lgamma(x - Type(0.5 * i));
+    }
+    res += Type(0.25 * n * (n - 1)) * log(M_PI);
+    return res;
+}
+
+/* Compute `log(diag(L %*% t(L)))` for n-by-n unit diagonal matrix `L`
+   given elements of `lower.tri(L)` in row-major order 
+*/
+template<class>
+vector<Type> log_diag_LLT(const vector<Type> &x)
+{
+    int len = x.size();
+    int n = 0.5 * (1.0 + sqrt(1.0 + 8.0 * len));
+    vector<Type> res(n);
+    res(0) = Type(0.0);
+    for (int i = 1, k = 0; i < n; ++i)
+    { /* loop over rows of L */
+        /* Compute log inner product of row with itself */
+        res(i) = logspace_add(Type(0.0), Type(2.0) * log(x(k)));
+	++k;
+	for (int j = 1; j < i; ++j, ++k)
+	{
+	    res(i) = logspace_add(res(i), Type(2.0) * log(x(k)));
+	}
+    } /* loop over rows of L */
+    return res;
+}
+
+/* Lewandowski-Kurowicka-Joe (LKJ) density (non-normalized),
+   where `x` parametrizes an n-by-n SPD correlation matrix `X`. 
+   `x` should contain the `n*(n-1)/2` lower triangular elements 
+   of the unit diagonal Cholesky factor `L` of `X` in row-major order.
+*/
+template<class Type>
+Type dlkj(const vector<Type> &x, Type eta, int give_log = 0)
+{
+    int len = x.size();
+    if (len == 0)
+    {
+        return ( give_log ? Type(0.0) : Type(1.0) );
+    }
+    Type log_det_X = -log_diag_LLT(x).sum();
+    Type log_res = (eta - Type(1.0)) * log_det_X;
+    return ( give_log ? log_res : exp(log_res) );
+}
+
+/* Inverse Wishart density,
+   where `x` and `scale` parametrize corresponding n-by-n SPD 
+   covariance matrices `X` and `S`.
+   `x` should contain the `n` log standard deviations associated
+   with `X` followed by the `n*(n-1)/2` lower triangular elements 
+   of the unit diagonal Cholesky factor `L` of `X` in row-major order
+   (ditto for `scale` and `S`).
+*/
+template<class Type>
+Type dinvwishart(const vector<Type> &x, const vector<Type> &scale, Type df, int give_log = 0)
+{
+    int len = x.size();
+    int n = 0.5 * (-1.0 + sqrt(1.0 + 8.0 * len));
+
+    vector<Type> log_diag_LLT_X = log_diag_LLT((vector<Type>) x.tail(len - n));
+    vector<Type> log_diag_LLT_S = log_diag_LLT((vector<Type>) scale.tail(len - n));
+
+    Type log_det_X = Type(2.0) * x.head(n).sum() - log_diag_LLT_X.sum();
+    Type log_det_S = Type(2.0) * scale.head(n).sum() - log_diag_LLT_S.sum();
+
+    /* Remains to compute `tr(S * invX)` ... */
+    
+    matrix<Type> L_S(n, n);
+    L_S.setIdentity();
+    for (int i = 0, k = n; i < n; ++i)
+    {
+        for (int j = 0; j < i; ++j, ++k)
+	{
+	    L_S(i, j) = x(k);
+	}
+    }
+
+    matrix<Type> L_X(n, n);
+    L_X.setIdentity();
+    for (int i = 0, k = n; i < n; ++i)
+    {
+        for (int j = 0; j < i; ++j, ++k)
+	{
+	    L_X(i, j) = scale(k);
+	}
+    }
+    
+    Type log_det_L_X; /* gets 0, hopefully */
+    matrix<Type> invL_X = atomic::matinvpd(L_X, log_det_L_X);
+    
+    matrix<Type> A = (L_S * L_S.transpose()).array() * (invL_X.transpose() * invL_X).array();
+    vector<Type> log_diag_D = scale.head(n) - x.head(n) - Type(0.5) * (log_diag_LLT_S - log_diag_LLT_X);
+    for (int i = 0; i < n; ++i)
+    {
+        for (int j = 0; j < n; ++j)
+	{
+	    A(i, j) *= exp(log_diag_D(i) + log_diag_D(j));
+	}
+    }
+
+    Type log_res = Type(0.5) *
+        (
+	 df * log_det_S -
+	 Type(n) * df * log(Type(2.0)) -
+	 Type(2.0) * mvlgamma(Type(0.5) * df, n) -
+	 (Type(1 + n) + df) * log_det_X -
+	 A.sum() // this term is `tr(S * invX)`
+	);
+    return ( give_log ? log_res : exp(log_res) ); 
+}
+
 /* Compute `log(diff(x))` given `log(x)` */
 template<class Type>
 void logspace_diff(vector<Type> &log_x)
