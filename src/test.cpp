@@ -1,15 +1,112 @@
 #include <TMB.hpp>
 #include "structs.h"
 #include "utils.h"
+#include "distributions.h"
 #include "curve.h"
 
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-    DATA_INTEGER(test);
+    DATA_INTEGER(flag_test);
 
-    switch (test)
+    switch (flag_test)
     {
+    /* structs.h */
+    case list_of_vectors_t:
+        DATA_STRUCT(x, egf::list_of_vectors_t);
+	REPORT(x);
+	break;
+    /* utils.h */
+    case is_na:
+        DATA_VECTOR(x);
+	int n = x.size();
+	vector<bool> res(n);
+	for (int i = 0; i < n; ++i)
+	{
+	    res(i) = egf::is_na(x(i));
+	}
+	REPORT(res);
+        break;
+    case is_finite:
+        DATA_VECTOR(x);
+	int n = x.size();
+	vector<bool> res(n);
+	for (int i = 0; i < n; ++i)
+	{
+	    res(i) = egf::is_finite(x(i));
+	}
+	REPORT(res);
+        break;
+    case logspace_diff:
+        DATA_VECTOR(log_x);
+	egf::logspace_diff(log_x);
+	vector<Type> res = log_x;
+	REPORT(res);
+        break;
+    case mvlgamma:
+        DATA_VECTOR(x);
+	DATA_IVECTOR(p);
+	int n = x.size();
+	vector<Type> res(n);
+	for (int i = 0; i < n; ++i)
+	{
+	    res(i) = egf::mvlgamma(x(i), p(i));
+	}
+	REPORT(res);
+        break;
+    case log_diag_LLT:
+        DATA_VECTOR(x);
+	vector<Type> res = egf::log_diag_LLT(x);
+	REPORT(res);
+        break;
+    /* distributions.h */
+    case dlkj:
+        DATA_VECTOR(x);
+	DATA_SCALAR(eta);
+	DATA_INTEGER(give_log);
+	Type res = egf::dlkj(x, eta, give_log);
+	REPORT(res);
+        break;
+    case dwishart:
+        DATA_VECTOR(x);
+	DATA_SCALAR(df);
+	DATA_VECTOR(scale)
+	DATA_INTEGER(give_log);
+	Type res = egf::dwishart(x, df, scale, give_log);
+	REPORT(res);
+        break;
+    case dinvwishart:
+        DATA_VECTOR(x);
+	DATA_SCALAR(df);
+	DATA_VECTOR(scale)
+	DATA_INTEGER(give_log);
+	Type res = egf::dinvwishart(x, df, scale, give_log);
+	REPORT(res);
+        break;
+    case dpois_robust:
+        DATA_VECTOR(x);
+        DATA_VECTOR(log_lambda);
+        DATA_INTEGER(give_log);
+	int n = x.size();
+	vector<Type> res(n);
+	for (int i = 0; i < n; ++i)
+	{
+	    res(i) = egf::dpois_robust(x(i), log_lambda(i), give_log);
+	}
+	REPORT(res);
+        break;
+    case rnbinom_robust:
+        DATA_SCALAR(log_mu);
+        DATA_SCALAR(log_size);
+	DATA_INTEGER(n);
+	vector<Type> res(n);
+	for (int i = 0; i < n; ++i)
+	{
+	    res(i) = egf::rnbinom_robust(log_mu, log_size);
+	}
+	REPORT(res);
+        break;
+    /* curve.h */
     case eval_log_curve_exponential:
         DATA_VECTOR(time);
 	DATA_SCALAR(log_r);
@@ -105,89 +202,6 @@ Type objective_function<Type>::operator() ()
 	DATA_SCALAR(log_a);
 	egf::eval_log_rt_richards(log_curve, log_r, log_K, log_a);
 	vector<Type> res = log_curve;
-	REPORT(res);
-        break;
-    case is_na:
-        DATA_VECTOR(x);
-	vector<bool> res(x.size());
-	for (int i = 0; i < res.size(); ++i)
-	{
-	    res(i) = egf::is_na(x(i));
-	}
-	REPORT(res);
-        break;
-    case is_finite:
-        DATA_VECTOR(x);
-	vector<bool> res(x.size());
-	for (int i = 0; i < res.size(); ++i)
-	{
-	    res(i) = egf::is_finite(x(i));
-	}
-	REPORT(res);
-        break;
-    case logspace_diff:
-        DATA_VECTOR(log_x);
-	egf::logspace_diff(log_x);
-	vector<Type> res = log_x;
-	REPORT(res);
-        break;
-    case mvlgamma:
-        DATA_VECTOR(x);
-	DATA_IVECTOR(n);
-	vector<Type> res(x.size());
-	for (int i = 0; i < res.size(); ++i)
-	{
-	    res(i) = egf::mvlgamma(x(i), n(i));
-	}
-	REPORT(res);
-        break;
-    case log_diag_LLT:
-        DATA_VECTOR(x);
-	vector<Type> res = egf::log_diag_LLT(x);
-	REPORT(res);
-        break;
-    case dlkj:
-        DATA_VECTOR(x);
-	DATA_SCALAR(eta);
-	DATA_INTEGER(give_log);
-	Type res = egf::dlkj(x, eta, give_log);
-	REPORT(res);
-        break;
-    case dwishart:
-        DATA_VECTOR(x);
-	DATA_SCALAR(df);
-	DATA_VECTOR(scale)
-	DATA_INTEGER(give_log);
-	Type res = egf::dwishart(x, df, scale, give_log);
-	REPORT(res);
-        break;
-    case dinvwishart:
-        DATA_VECTOR(x);
-	DATA_SCALAR(df);
-	DATA_VECTOR(scale)
-	DATA_INTEGER(give_log);
-	Type res = egf::dinvwishart(x, df, scale, give_log);
-	REPORT(res);
-        break;
-    case dpois_robust:
-        DATA_VECTOR(x);
-        DATA_VECTOR(log_lambda);
-        DATA_INTEGER(give_log);
-	vector<Type> res(x.size());
-	for (int i = 0; i < res.size(); ++i)
-	{
-	    res(i) = egf::dpois_robust(x(i), log_lambda(i), give_log);
-	}
-	REPORT(res);
-        break;
-    case rnbinom_robust:
-        DATA_VECTOR(log_mu);
-        DATA_VECTOR(log_size);
-        vector<Type> res(log_mu.size());
-	for (int i = 0; i < res.size(); ++i)
-	{
-	    res(i) = egf::rnbinom_robust(log_mu(i), log_size(i));
-	}
 	REPORT(res);
         break;
     }

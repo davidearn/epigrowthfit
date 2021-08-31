@@ -128,11 +128,11 @@ Type nll_obs(objective_function<Type> *obj,
 		switch(flags.flag_family)
 		{
 		case pois:
-		    printf("-log(dpois(x = %d, lambda = %.6e))\n",
+		    printf("-dpois(x = %d, lambda = %.6e, give_log = true)\n",
 			   (int) asDouble(x(i)), exp(asDouble(log_lambda)));
 		    break;
 		case nbinom:
-		    printf("-log(dnbinom(x = %d, mu = %.6e, size = %.6e))\n",
+		    printf("-dnbinom(x = %d, mu = %.6e, size = %.6e, give_log = true)\n",
 			   (int) asDouble(x(i)), exp(asDouble(log_mu)), exp(asDouble(log_size)));
 		    break;
 		}
@@ -232,7 +232,7 @@ Type nll_top(objective_function<Type> *obj,
 			switch (flags.flag_regularize_top(j))
 			{
 			case norm:
-			    printf("-log(dnorm(x = %.6e, mean = %.6e, sd = %.6e))\n",
+			    printf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
 				   asDouble(Y(i, j)), asDouble(mu), asDouble(sigma));
 			    break;
 			}
@@ -256,8 +256,8 @@ Type nll_bot(objective_function<Type> *obj,
 {
     Type res = Type(0.0);
     Type nll_term;
-
     vector<Type> hp;
+    
     Type mu;
     Type sigma;
 
@@ -284,7 +284,7 @@ Type nll_bot(objective_function<Type> *obj,
 		switch (flags.flag_regularize_bottom(i))
 		{
 		case norm:
-		    printf("-log(dnorm(x = %.6e, mean = %.6e, sd = %.6e))\n",
+		    printf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
 			   asDouble(beta(j)), asDouble(mu), asDouble(sigma));
 		    break;
 		}
@@ -319,7 +319,7 @@ Type nll_bot(objective_function<Type> *obj,
 		switch (flags.flag_regularize_bottom(i))
 		{
 		case norm:
-		    printf("-log(dnorm(x = %.6e, mean = %.6e, sd = %.6e))\n",
+		    printf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
 			   asDouble(theta(j)), asDouble(mu), asDouble(sigma));
 		    break;
 		}
@@ -327,35 +327,60 @@ Type nll_bot(objective_function<Type> *obj,
 	}
     } /* loop over `theta` elements */
 
+    vector<Type> x;
     Type eta;
+    Type df;
+    vector<Type> scale;
 
     for (int j = 0; j < list_of_chol.size(); ++i, ++j)
-    { /* loop over covariance matrices */
+    { /* loop over correlation/covariance matrices */
 	if (obj->parallel_region() && flags.flag_regularize_bottom(i) >= 0)
 	{
 	    hp = hyperparameters_bottom(i);
 	    switch (flags.flag_regularize_bottom(i))
 	    {
 	    case lkj:
+	        x = list_of_chol(j);
 		eta = hp(0);
-		nll_term = -dlkj(list_of_chol(j), eta, true);
+		nll_term = -dlkj(x, eta, true);
+		break;
+	    default:
+	        x.resize(list_of_sd(j).size() + list_of_chol(j).size());
+		x << log(list_of_sd(j)),list_of_chol(j);
+	        df = hp(0);
+		scale = hp.tail(x.size());
+		switch (flags.flag_regularize_bottom(i))
+		{
+		case wishart:
+		    nll_term = -dwishart(x, df, scale, true);
+		    break;
+		case invwishart:
+		    nll_term = -dinvwishart(x, df, scale, true);
+		    break;
+		}
 		break;
 	    }
 	    res += nll_term;
 
 	    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 	    {
-		printf("covariance matrix %d: nll term is %.6e\n",
+		printf("correlation/covariance matrix %d: nll term is %.6e\n",
 		       j, asDouble(nll_term));
 		switch (flags.flag_regularize_bottom(i))
 		{
 		case lkj:
-		    std::cout << "-log(dlkj(chol = " << list_of_chol(j) ", eta = " << eta << "))\n";
+		    std::cout << "-dlkj(x = " << x ", eta = " << eta << ", give_log = true)\n";
+		    break;
+		case wishart:
+		    std::cout << "-dwishart(x = " << x << ", df = " << df << ", scale = " << scale << ", give_log = true)\n";
+		    break;
+		case invwishart:
+		    std::cout << "-dinvwishart(x = " << x << ", df = " << df << ", scale = " << scale << ", give_log = true)\n";
 		    break;
 		}
 	    }
 	}
-    } /* loop over covariance matrices */
+    } /* loop over correlation/covariance matrices */
 
     return res;
 }

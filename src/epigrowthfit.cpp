@@ -3,6 +3,7 @@
 #include "enums.h"
 #include "structs.h"
 #include "utils.h"
+#include "distributions.h"
 #include "curve.h"
 #include "nll.h"
 
@@ -310,12 +311,12 @@ Type objective_function<Type>::operator() ()
 
 	if (flags.do_trace)
 	{
-	    std::cout << "commencing loop over regularized top level parameters\n";
+	    std::cout << "commencing loop over top level parameters\n";
 	}
         res += nll_top(this, Y, hyperparameters_top, flags);
         if (flags.do_trace)
 	{
-	    std::cout << "loop over regularized top level parameters complete\n";
+	    std::cout << "loop over top level parameters complete\n";
 	    printf("nll is %.6e\n", asDouble(res));
 	}
     }
@@ -332,13 +333,13 @@ Type objective_function<Type>::operator() ()
 
 	if (flags.do_trace)
 	{
-	    std::cout << "commencing loop over regularized bottom level parameters\n";
+	    std::cout << "commencing loop over bottom level parameters\n";
 	}
         res += nll_bot(this, beta, theta, list_of_sd, list_of_chol,
 		       hyperparameters_bottom, flags);
         if (flags.do_trace)
 	{
-	    std::cout << "loop over regularized bottom level parameters complete\n";
+	    std::cout << "loop over bottom level parameters complete\n";
 	    printf("nll is %.6e\n", asDouble(res));
 	}
     }
