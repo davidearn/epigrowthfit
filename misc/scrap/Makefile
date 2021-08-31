@@ -1,4 +1,4 @@
-all: gi.pdf models.pdf ll.pdf
+all: gi.pdf models.pdf density_cov.pdf
 
 %.pdf: %.tex
 	pdflatex -interaction=batchmode $<

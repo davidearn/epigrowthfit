@@ -249,6 +249,8 @@ template<class Type>
 Type nll_bot(objective_function<Type> *obj,
 	     const vector<Type> &beta,
 	     const vector<Type> &theta,
+	     const vector< vector<Type> > &list_of_sd,
+	     const vector< vector<Type> > &list_of_chol,
 	     const vector< vector<Type> > &hyperparameters_bottom,
 	     const egf::flags_t<Type> &flags)
 {
@@ -324,6 +326,36 @@ Type nll_bot(objective_function<Type> *obj,
 	    }
 	}
     } /* loop over `theta` elements */
+
+    Type eta;
+
+    for (int j = 0; j < list_of_chol.size(); ++i, ++j)
+    { /* loop over covariance matrices */
+	if (obj->parallel_region() && flags.flag_regularize_bottom(i) >= 0)
+	{
+	    hp = hyperparameters_bottom(i);
+	    switch (flags.flag_regularize_bottom(i))
+	    {
+	    case lkj:
+		eta = hp(0);
+		nll_term = -dlkj(list_of_chol(j), eta, true);
+		break;
+	    }
+	    res += nll_term;
+
+	    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
+	    {
+		printf("covariance matrix %d: nll term is %.6e\n",
+		       j, asDouble(nll_term));
+		switch (flags.flag_regularize_bottom(i))
+		{
+		case lkj:
+		    std::cout << "-log(dlkj(chol = " << list_of_chol(j) ", eta = " << eta << "))\n";
+		    break;
+		}
+	    }
+	}
+    } /* loop over covariance matrices */
 
     return res;
 }

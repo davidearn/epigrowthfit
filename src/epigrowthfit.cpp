@@ -334,7 +334,8 @@ Type objective_function<Type>::operator() ()
 	{
 	    std::cout << "commencing loop over regularized bottom level parameters\n";
 	}
-        res += nll_bot(this, beta, theta, hyperparameters_bottom, flags);
+        res += nll_bot(this, beta, theta, list_of_sd, list_of_chol,
+		       hyperparameters_bottom, flags);
         if (flags.do_trace)
 	{
 	    std::cout << "loop over regularized bottom level parameters complete\n";

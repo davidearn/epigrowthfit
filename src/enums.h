@@ -15,5 +15,6 @@ enum family
 
 enum prior
 {
-    norm
+    norm,
+    lkj
 };

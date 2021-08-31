@@ -285,42 +285,4 @@ void eval_log_rt_exact(vector<Type> &log_curve,
     }
 }
 
-template<class Type>
-void eval_log_rt_approx(vector<Type> &log_diff_curve)
-{
-    /* Local linear regression, n = 7
-       t
-       = -3:3
-       tbar
-       = mean(t)
-       = 0
-       beta_hat
-       = sum((t - tbar) * (x - xbar)) / sum((t - tbar)^2)
-       = sum(t * (x - xbar)) / sum(t^2)
-       = sum((-3:3) * (x - xbar)) / 28
-       log(beta_hat)
-       = log(sum((-3:3) * (x - xbar))) - log(28)
-
-       NB: 6 elements lost due to edge effects
-    */
-  
-    vector<Type> time(7);
-    for (int i = 0; i < 7; ++i)
-    {
-	time(i) = Type(i - 3);
-    }
-    vector<Type> x(7);
-    vector<Type> xbar(7);
-    Type log_28 = log(28.0);
-
-    int n = log_diff_curve.size();
-    for (int i = 0; i < n - 6; ++i)
-    {
-	x = log_diff_curve.segment(i, 7);
-	xbar.fill(x.sum() / Type(7));
-	log_diff_curve(i) = log((time * (x - xbar)).sum()) - log_28;
-    }
-    log_diff_curve.conservativeResize(n - 6);
-}
-
 } // namespace egf
