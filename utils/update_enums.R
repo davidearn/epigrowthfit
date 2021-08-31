@@ -13,7 +13,7 @@ cc <- vapply(a, f, "")
 y <- paste(readLines(r), collapse = "\n")
 for (s in names(cc)) {
   y <- sub(
-    pattern = sprintf("^(.*%s_names[ ]*<-[ ]*)c\\(.*?\\)(.*)$", s),
+    pattern = sprintf("^(.*%s[ ]*=[ ]*)c\\(.*?\\)(.*)$", s),
     replacement = sprintf("\\1%s\\2", cc[[s]]),
     y
   )
