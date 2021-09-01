@@ -14,5 +14,10 @@ test_that("get_flag", {
   expect_length(flag_prior, 2L)
   expect_equal(flag_prior[[2L]], NA_integer_)
 
+  flag_test <- get_flag("test", c("logspace_diff", "invalid name"))
+  expect_type(flag_prior, "integer")
+  expect_length(flag_prior, 2L)
+  expect_equal(flag_prior[[2L]], NA_integer_)
+
   expect_error(get_flag("invalid name", c("foo", "bar")))
 })

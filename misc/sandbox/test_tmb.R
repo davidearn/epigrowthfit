@@ -1,11 +1,15 @@
 library("TMB")
-compile("test_tmb.cpp")
-dyn.load(dynlib("test_tmb"))
-set.seed(123)
-m <- MakeADFun(data=list(x=1:10, y=1:10 + rnorm(10)),
-               parameters=list(a=0, b=0, log_sigma=0),
-               DLL="test_tmb",
-               silent=TRUE)
+packageVersion("TMB")
+R.version.string
 
-r <- m$report(m$par)
-r
+dll <- "test_tmb"
+compile(paste0(dll, ".cpp"))
+dyn.load(dynlib(dll))
+
+res <- MakeADFun(
+  data = list(),
+  parameters = list(),
+  type = "Fun",
+  checkParameterOrder = FALSE,
+  DLL = dll
+)$report()

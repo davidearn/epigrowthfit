@@ -1,73 +1,83 @@
 #include <TMB.hpp>
-#include "structs.h"
-#include "utils.h"
-#include "distributions.h"
-#include "curve.h"
+#include "../../src/enums.h"
+#include "../../src/structs.h"
+#include "../../src/utils.h"
+#include "../../src/distributions.h"
+#include "../../src/curve.h"
 
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
     DATA_INTEGER(flag_test);
-
+  
     switch (flag_test)
     {
     /* structs.h */
     case list_of_vectors_t:
+    {
         DATA_STRUCT(x, egf::list_of_vectors_t);
-	REPORT(x);
+	vector< vector<Type> > res = x;
+	REPORT(res);
 	break;
+    }
     /* utils.h */
-    case is_na:
+    case is_NA_real_:
+    {
         DATA_VECTOR(x);
 	int n = x.size();
-	vector<bool> res(n);
+	vector<int> res(n);
 	for (int i = 0; i < n; ++i)
 	{
-	    res(i) = egf::is_na(x(i));
+	    res(i) = egf::is_NA_real_(x(i));
 	}
 	REPORT(res);
         break;
+    }
     case is_finite:
+    {
         DATA_VECTOR(x);
 	int n = x.size();
-	vector<bool> res(n);
+	vector<int> res(n);
 	for (int i = 0; i < n; ++i)
 	{
 	    res(i) = egf::is_finite(x(i));
 	}
 	REPORT(res);
         break;
+    }
     case logspace_diff:
+    {
         DATA_VECTOR(log_x);
 	egf::logspace_diff(log_x);
 	vector<Type> res = log_x;
 	REPORT(res);
         break;
+    }
+    /* distributions.h */
     case mvlgamma:
+    {
         DATA_VECTOR(x);
-	DATA_IVECTOR(p);
+	DATA_INTEGER(p);
 	int n = x.size();
 	vector<Type> res(n);
 	for (int i = 0; i < n; ++i)
 	{
-	    res(i) = egf::mvlgamma(x(i), p(i));
+	    res(i) = egf::mvlgamma(x(i), p);
 	}
 	REPORT(res);
         break;
-    case log_diag_LLT:
-        DATA_VECTOR(x);
-	vector<Type> res = egf::log_diag_LLT(x);
-	REPORT(res);
-        break;
-    /* distributions.h */
+    }
     case dlkj:
+    {
         DATA_VECTOR(x);
 	DATA_SCALAR(eta);
 	DATA_INTEGER(give_log);
 	Type res = egf::dlkj(x, eta, give_log);
 	REPORT(res);
         break;
+    }
     case dwishart:
+    {
         DATA_VECTOR(x);
 	DATA_SCALAR(df);
 	DATA_VECTOR(scale)
@@ -75,7 +85,9 @@ Type objective_function<Type>::operator() ()
 	Type res = egf::dwishart(x, df, scale, give_log);
 	REPORT(res);
         break;
+    }
     case dinvwishart:
+    {
         DATA_VECTOR(x);
 	DATA_SCALAR(df);
 	DATA_VECTOR(scale)
@@ -83,7 +95,9 @@ Type objective_function<Type>::operator() ()
 	Type res = egf::dinvwishart(x, df, scale, give_log);
 	REPORT(res);
         break;
+    }
     case dpois_robust:
+    {
         DATA_VECTOR(x);
         DATA_VECTOR(log_lambda);
         DATA_INTEGER(give_log);
@@ -95,7 +109,9 @@ Type objective_function<Type>::operator() ()
 	}
 	REPORT(res);
         break;
+    }
     case rnbinom_robust:
+    {
         DATA_SCALAR(log_mu);
         DATA_SCALAR(log_size);
 	DATA_INTEGER(n);
@@ -106,8 +122,10 @@ Type objective_function<Type>::operator() ()
 	}
 	REPORT(res);
         break;
+    }
     /* curve.h */
     case eval_log_curve_exponential:
+    {
         DATA_VECTOR(time);
 	DATA_SCALAR(log_r);
 	DATA_SCALAR(log_c0);
@@ -115,7 +133,9 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = time;
 	REPORT(res);
         break;
+    }
     case eval_log_curve_subexponential:
+    {
         DATA_VECTOR(time);
 	DATA_SCALAR(log_alpha);
 	DATA_SCALAR(log_c0);
@@ -124,7 +144,9 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = time;
 	REPORT(res);
         break;
+    }
     case eval_log_curve_gompertz:
+    {
         DATA_VECTOR(time);
 	DATA_SCALAR(log_alpha);
 	DATA_SCALAR(log_tinfl);
@@ -133,7 +155,9 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = time;
 	REPORT(res);
         break;
+    }
     case eval_log_curve_logistic:
+    {
         DATA_VECTOR(time);
 	DATA_SCALAR(log_r);
 	DATA_SCALAR(log_tinfl);
@@ -142,7 +166,9 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = time;
 	REPORT(res);
         break;
+    }
     case eval_log_curve_richards:
+    {
         DATA_VECTOR(time);
 	DATA_SCALAR(log_r);
 	DATA_SCALAR(log_tinfl);
@@ -152,15 +178,19 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = time;
 	REPORT(res);
         break;
+    }
     case logspace_add_baseline:
+    {
         DATA_VECTOR(log_curve);
-	DATA_VECTOR(log_time);
+	DATA_VECTOR(time);
 	DATA_SCALAR(log_b);
-	egf::logspace_add_baseline(log_curve, log_time, log_b);
+	egf::logspace_add_baseline(log_curve, time, log_b);
 	vector<Type> res = log_curve;
 	REPORT(res);
         break;
+    }
     case logspace_add_offsets:
+    {
         DATA_VECTOR(log_diff_curve);
         DATA_VECTOR(log_w);
         DATA_INTEGER(from);
@@ -171,7 +201,9 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = log_diff_curve;
 	REPORT(res);
         break;
+    }
     case eval_log_rt_subexponential:
+    {
         DATA_VECTOR(log_curve);
         DATA_SCALAR(log_alpha);
 	DATA_SCALAR(logit_p);
@@ -179,7 +211,9 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = log_curve;
 	REPORT(res);
         break;
+    }
     case eval_log_rt_gompertz:
+    {
         DATA_VECTOR(log_curve);
         DATA_SCALAR(log_alpha);
 	DATA_SCALAR(log_K);
@@ -187,7 +221,9 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = log_curve;
 	REPORT(res);
         break;
+    }
     case eval_log_rt_logistic:
+    {
         DATA_VECTOR(log_curve);
         DATA_SCALAR(log_r);
 	DATA_SCALAR(log_K);
@@ -195,7 +231,9 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = log_curve;
 	REPORT(res);
         break;
+    }
     case eval_log_rt_richards:
+    {
         DATA_VECTOR(log_curve);
         DATA_SCALAR(log_r);
 	DATA_SCALAR(log_K);
@@ -204,6 +242,7 @@ Type objective_function<Type>::operator() ()
 	vector<Type> res = log_curve;
 	REPORT(res);
         break;
+    }
     }
     
     return Type(0.0);

@@ -24,11 +24,10 @@ enum prior
 enum test
 {
     list_of_vectors_t,
-    is_na,
+    is_NA_real_,
     is_finite,
     logspace_diff,
     mvlgamma,
-    log_diag_LLT,
     dlkj,
     dwishart,
     dinvwishart,

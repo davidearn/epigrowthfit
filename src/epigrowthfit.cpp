@@ -162,7 +162,7 @@ Type objective_function<Type>::operator() ()
 	    nt = nr * (nr - 1) / 2;
 	    
 	    /* Vector of standard deviations */
-	    list_of_sd(m) = exp(theta.segment(i1, nr));
+	    list_of_sd(m) = theta.segment(i1, nr).exp();
 	    i1 += nr;
 	    
 	    if (nr == 1)

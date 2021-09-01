@@ -85,7 +85,7 @@ Type nll_obs(objective_function<Type> *obj,
 
     for (int i = ix, k = 0; k < n; ++i, ++k)
     { /* loop over observations */
-        if (obj->parallel_region() && !egf::is_na(x(i)))
+        if (obj->parallel_region() && !egf::is_NA_real_(x(i)))
 	{
 	    switch (flags.flag_family)
 	    {
