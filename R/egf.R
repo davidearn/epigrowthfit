@@ -46,21 +46,22 @@
 #'   The default for parameters not assigned a formula is \code{~1}.
 #' @param formula_priors_top,formula_priors_bottom
 #'   \link[=list]{List}s of \link{formula}e of the form \code{parameter ~ prior}
-#'   defining priors on top level nonlinear model parameters or bottom level
-#'   mixed effects model parameters, i.e., elements of segments \code{beta}
-#'   and \code{theta} of the full parameter vector \code{c(beta, theta, b)}.
-#'   \code{prior} must be a \link{call}
-#'   to a valid \link[=egf_prior]{prior function}
-#'   with arguments specifying suitable hyperparameters
-#'   (e.g., \code{\link{Normal}(mu = 0, sigma = 1)}).
+#'   defining priors on top level nonlinear model parameters and bottom level
+#'   mixed effects model parameters (elements of segments \code{beta} and
+#'   \code{theta} of the full parameter vector \code{c(beta, theta, b)} or
+#'   elements of the \link{list} \code{Sigma} of random effect covariance
+#'   matrices).
+#'   \code{prior} must be a \link{call} to a \link[=egf_prior]{prior function}
+#'   with arguments specifying suitable hyperparameters.
 #'   In the top level case, \code{deparse(parameter)} must be an element
 #'   of \code{\link{egf_get_names_top}(model, link = TRUE)},
 #'   and hyperparameters supplied on the right hand side must have length 1.
-#'   In the bottom level case, \code{parameter} must be \code{beta}
-#'   or \code{theta} or a call to \code{\link{[}} or \code{\link{[[}}
-#'   subsetting \code{beta} or \code{theta} (e.g., \code{beta[index]},
-#'   where \code{index} is any valid index vector for \code{beta}),
-#'   and hyperparameters are recycled to the length of the indicated subset.
+#'   In the bottom level case, \code{parameter} must be \code{beta},
+#'   \code{theta}, or \code{Sigma}, or a call to \code{\link{[}} or
+#'   \code{\link{[[}} subsetting \code{beta}, \code{theta}, or \code{Sigma}
+#'   (e.g., \code{beta[index]}, where \code{index} is any valid index vector
+#'   for \code{beta}), and hyperparameters are recycled to the length of the
+#'   indicated subset.
 #'   All expressions \code{prior} and \code{index} are evaluated in the
 #'   corresponding formula environment.
 #' @param data,data_windows
@@ -163,8 +164,7 @@
 #' time points capture a single day of week.
 #'
 #' @return
-#' If \code{fit = TRUE}, then a \link{list} inheriting from \link{class}
-#' \code{"egf"}, with elements:
+#' A \link{list} inheriting from \link{class} \code{"egf"}, with elements:
 #' \item{model}{
 #'   A copy of the so-named argument.
 #' }
@@ -205,23 +205,26 @@
 #'   Named \link{list}s of \code{"\link{egf_prior}"} objects obtained after
 #'   processing of \code{formula_priors_top} and \code{formula_priors_bottom}.
 #'   \code{priors_top} has one element for each top level nonlinear model
-#'   parameter.
-#'   \code{priors_bottom} corresponds elementwise to \code{c(beta, theta)}.
+#'   parameter. \code{priors_bottom} corresponds elementwise (recursively)
+#'   to \code{list(beta, theta, Sigma)}.
 #' }
 #' \item{control}{
 #'   A copy of the so-named argument.
 #' }
-#' \item{tmb_args}{
-#'   A \link{list} of arguments to \code{\link[TMB]{MakeADFun}},
-#'   enabling reinitialization of \code{tmb_out}.
-#' }
 #' \item{tmb_out}{
-#'   The \link{list} output of \code{\link[TMB]{MakeADFun}}
-#'   (after optimization).
+#'   The \link{list} output of \code{\link[TMB]{MakeADFun}}.
+#'   Objects in the \link{environment} \code{tmb_out$env}
+#'   are updated during optimization. They are expected to
+#'   change if \code{fit = FALSE} is updated to \code{fit = TRUE}.
 #' }
 #' \item{optimizer_out}{
 #'   The \link{list} output of the outer optimizer specified
 #'   by \code{control$optimizer}.
+#' }
+#' \item{nll}{
+#'   A \link[=double]{numeric} scalar giving the value of the negative
+#'   log Laplace approximation of the marginal likelihood function at
+#'   \code{best[nonrandom]}.
 #' }
 #' \item{init, best}{
 #'   Numeric vectors. These are the full parameter vectors
@@ -232,26 +235,32 @@
 #'   of the full parameter vector \code{c(beta, theta, b)}. These are the
 #'   elements that are \emph{not} random effects.
 #' }
+#' \item{info}{
+#'   A \link{list} of \link[=data.frame]{data frame}s \code{X} and \code{Z}
+#'   retaining useful information about segments \code{beta}, \code{theta},
+#'   and \code{b} of the full parameter vector \code{c(beta, theta, b)}.
+#'   \code{X} corresponds rowwise to elements of \code{beta} and to columns
+#'   of the fixed effects design matrix. \code{Z} corresponds rowwise to
+#'   elements of \code{b} and to columns of the random effects design matrix.
+#'   The \link{levels} of \link{factor} \code{Z$cor} correspond to segments
+#'   of \code{theta} parametrizing random effect covariance matrices.
+#' }
 #' \item{sdreport}{
 #'   If \code{se = TRUE}, then an \code{"sdreport"} object resulting
 #'   from \code{\link{sdreport}(tmb_out)}. Otherwise, \code{\link{NULL}}.
 #' }
-#' \item{nll}{
-#'   A \link[=double]{numeric} scalar giving the value of the negative
-#'   log Laplace approximation of the marginal likelihood function at
-#'   \code{best[nonrandom]}.
+#' \item{Y0}{
+#'   A \link[=double]{numeric} matrix supplying naive estimates
+#'   of each top level nonlinear model parameter, corresponding
+#'   rowwise to \code{frame_windows}.
 #' }
 #' \item{call}{
 #'   The \link{call} to \code{egf}, allowing for updates to the
 #'   \code{"egf"} object via \code{\link{update}}.
 #' }
-#' If \code{fit = FALSE}, then a \link{list} inheriting from
-#' \link{class} \code{"egf_no_fit"} containing all of the above
-#' except \code{optimizer_out}, \code{best}, \code{sdreport},
-#' and \code{nll}. It contains an additional element
-#' \code{Y_init}, a \link[=double]{numeric} \link{matrix}
-#' supplying naive estimates of each top level nonlinear model
-#' parameter, corresponding rowwise to \code{frame_windows}.
+#' If \code{fit = FALSE}, then the class is \code{"egf_no_fit"} instead
+#' of \code{"egf"}, and the list elements \code{optimizer_out}, \code{nll},
+#' \code{best}, and \code{sdreport} are always \code{\link{NULL}}.
 #'
 #' @export
 #' @useDynLib epigrowthfit
@@ -360,8 +369,9 @@ egf.egf_model <- function(model,
   )
   priors_bottom <- egf_make_priors_bottom(
     formula_priors_bottom = formula_priors_bottom,
-    beta = tmb_args$parameters$beta,
-    theta = if (egf_has_random(tmb_args$data)) tmb_args$parameters$theta else numeric(0L)
+    beta_size = length(tmb_args$parameters$beta),
+    theta_size = if (ncol(tmb_args$data$Z) > 0L) length(tmb_args$parameters$theta) else 0L,
+    block_rows = tmb_args$data$block_rows
   )
   tmb_args <- egf_update_tmb_args(
     tmb_args = tmb_args,
@@ -382,18 +392,27 @@ egf.egf_model <- function(model,
   if (!is.null(tmb_out$env$random)) {
     nonrandom <- nonrandom[-tmb_out$env$random]
   }
+  info <- lapply(tmb_args$data[c("X", "Z")], attr, "info")
+  Y0 <- attr(tmb_args$parameters, "Y0")
+
+  res <- list(
+    priors_top = priors_top,
+    priors_bottom = priors_bottom,
+    control = control,
+    tmb_out = tmb_out,
+    optimizer_out = NULL,
+    nll = NULL,
+    init = init,
+    best = NULL,
+    nonrandom = nonrandom,
+    info = info,
+    sdreport = NULL,
+    Y0 = Y0,
+    call = match.call()
+  )
+  res <- c(list(model = model), frames, res)
 
   if (!fit) {
-    res <- frames[c("frame", "frame_windows", "frame_parameters")]
-    res <- c(res, list(
-      model = model,
-      tmb_args = tmb_args,
-      tmb_out = tmb_out,
-      init = init,
-      nonrandom = nonrandom,
-      Y_init = attr(tmb_args$parameters, "Y_init"),
-      call = match.call()
-    ))
     class(res) <- c("egf_no_fit", "list")
     return(res)
   }
@@ -404,26 +423,13 @@ egf.egf_model <- function(model,
     control$optimizer["control"],
     control$optimizer[["args"]]
   )
-  optimizer_out <- do.call(optimizer, optimizer_args)
-  best <- enum_dupl_names(tmb_out$env$last.par.best)
-  nll <- as.numeric(optimizer_out$value)
-  sdreport <- if (se) try(TMB::sdreport(tmb_out))
+  res$optimizer_out <- do.call(optimizer, optimizer_args)
+  res$nll <- as.numeric(res$optimizer_out$value)
+  res$best <- enum_dupl_names(tmb_out$env$last.par.best)
+  if (se) {
+    res$sdreport <- try(TMB::sdreport(tmb_out))
+  }
 
-  res <- c(frames, list(
-    model = model,
-    priors_top = priors_top,
-    priors_bottom = priors_bottom,
-    control = control,
-    tmb_args = tmb_args,
-    tmb_out = tmb_out,
-    optimizer_out = optimizer_out,
-    nonrandom = nonrandom,
-    init = init,
-    best = best,
-    nll = nll,
-    sdreport = sdreport,
-    call = match.call()
-  ))
   class(res) <- c("egf", "list")
   res
 }

@@ -2,15 +2,12 @@
 % Please edit documentation in R/egf_misc.R
 \name{egf_has_random}
 \alias{egf_has_random}
-\alias{egf_has_random.egf}
 \title{Check for random effects}
 \usage{
 egf_has_random(object)
-
-\method{egf_has_random}{egf}(object)
 }
 \arguments{
-\item{object}{An \R object.}
+\item{object}{An \code{"\link{egf}"} object.}
 }
 \value{
 \code{TRUE} or \code{FALSE}.

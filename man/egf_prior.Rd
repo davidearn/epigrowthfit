@@ -3,14 +3,42 @@
 \name{egf_prior}
 \alias{egf_prior}
 \alias{Normal}
+\alias{LKJ}
+\alias{Wishart}
+\alias{InverseWishart}
 \title{Prior distributions}
 \usage{
 Normal(mu = 0, sigma = 1)
+
+LKJ(eta = 1)
+
+Wishart(df, scale, tol = 1e-06)
+
+InverseWishart(df, scale, tol = 1e-06)
 }
 \arguments{
 \item{mu}{A \link{numeric} vector listing means.}
 
 \item{sigma}{A positive \link{numeric} vector listing standard deviations.}
+
+\item{eta}{A positive \link{numeric} vector listing values for the shape
+parameter, with \code{1} corresponding to a uniform distribution
+over the space of symmetric positive definite matrices with
+unit diagonal elements. Lesser (greater) values concentrate the
+probability density around such matrices whose determinant is
+nearer to 0 (1).}
+
+\item{df}{A \link{numeric} vector listing degrees of freedom.
+\code{df} must be greater than \code{\link{nrow}(scale) - 1}.
+(If either \code{df} or \code{scale} has length greater than 1,
+then this condition is checked pairwise after recycling.)}
+
+\item{scale}{A \link{list} of symmetric positive definite \link{numeric} matrices,
+or a \link{matrix} to be coerced to a list of length 1.}
+
+\item{tol}{A positive number specifying a tolerance for non-positive definiteness
+of \code{scale}. All eigenvalues must exceed \code{-tol * rho},
+where \code{rho} is the spectral radius of \code{scale}.}
 }
 \value{
 A \link{list} inheriting from \link{class} \code{"egf_prior"},
@@ -19,7 +47,7 @@ with elements:
   A \link{character} string naming a family of distributions.
 }
 \item{parameters}{
-  A named \link{list} of \link{numeric} vectors listing parameter values.
+  A named \link{list} of \link{numeric} vectors specifying parameter values.
 }
 }
 \description{

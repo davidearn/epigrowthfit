@@ -425,49 +425,61 @@ egf_make_frames <- function(model,
 
 egf_make_priors_top <- function(formula_priors_top, model) {
   names_top <- egf_get_names_top(model, link = TRUE)
+  family_allowed <- "norm"
+
   res <- vector(length(names_top), mode = "list")
   names(res) <- names_top
   if (length(formula_priors_top) == 0L) {
     return(res)
   }
+
   names(formula_priors_top) <- vapply(formula_priors_top, function(x) deparse(x[[2L]]), "")
   if (!all(names(formula_priors_top) %in% names_top)) {
     stop(wrap(
       "'deparse(formula_priors_top[[i]][[2L]])' must be an element of ",
-      sprintf("c(%s).", paste(dQuote(names_top, FALSE), collapse = ", "))
+      sprintf("'c(%s)'.", paste(dQuote(names_top, FALSE), collapse = ", "))
     ))
   }
   if (anyDuplicated(names(formula_priors_top)) > 0L) {
     stop(wrap(
-      "At least one top level parameter has a multiply defined prior. ",
-      "Priors should be specified exactly once (or not at all)."
+      "Multiply defined prior on top level parameter in 'formula_priors_top'. ",
+      "Priors must be specified exactly once (or not at all)."
     ))
   }
+
   priors <- lapply(formula_priors_top, function(x) eval(x[[3L]], environment(x)))
-  if (!all(vapply(priors, inherits, FALSE, "egf_prior"))) {
-    stop("'formula_priors_top[[i]][[3L]])' must evaluate to an \"egf_prior\" object.")
-  }
-  f <- function(x) {
-    x$parameters <- lapply(x$parameters, `[[`, 1L)
-    x
+  f <- function(prior) {
+    if (!inherits(prior, "egf_prior")) {
+      stop("'formula_priors_top[[i]][[3L]])' must evaluate to an \"egf_prior\" object.")
+    }
+    if (!prior$family %in% family_allowed) {
+      stop(wrap(
+        "Priors on top level parameters are restricted to 'family' in ",
+        sprintf("'c(%s)'.", paste(dQuote(family_allowed), collapse = ", "))
+      ))
+    }
+    prior$parameters <- lapply(prior$parameters, `[[`, 1L)
+    prior
   }
   res[names(priors)] <- lapply(priors, f)
   res
 }
 
-egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
-  len <- c(beta = length(beta), theta = length(theta))
-  initialize <- function(s) {
-    x <- vector(len[[s]], mode = "list")
-    names(x) <- enum_dupl_string(rep_len(s, len[[s]]))
+egf_make_priors_bottom <- function(formula_priors_bottom,
+                                   beta_size,
+                                   theta_size,
+                                   block_rows) {
+  len <- c(beta = beta_size, theta = theta_size, Sigma = length(block_rows))
+  family_allowed <- list(beta = "norm", theta = "norm", Sigma = c("lkj", "wishart", "invwishart"))
+
+  initialize <- function(name, length.out) {
+    x <- vector(length.out, mode = "list")
+    names(x) <- enum_dupl_string(rep_len(name, length.out))
     x
   }
-  res <- sapply(names(len)[len > 0L], initialize, simplify = FALSE)
-  finalize <- function(x) {
-    unlist(unname(x), FALSE, TRUE)
-  }
+  res <- Map(initialize, name = names(len), length.out = len)
   if (length(formula_priors_bottom) == 0L || sum(len) == 0L) {
-    return(finalize(res))
+    return(res)
   }
 
   lhs <- lapply(formula_priors_bottom, `[[`, 2L)
@@ -481,26 +493,25 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
   classify <- sapply(names(res), f, simplify = FALSE)
   lhs_parameter <- rep_len(factor(NA, levels = names(res)), length(lhs))
   for (i in seq_along(lhs)) {
-    for (parameter in names(res)) {
+    for (parameter in names(res)[len > 0L]) {
       if (classify[[parameter]](lhs[[i]])) {
         lhs_parameter[i] <- parameter
         break
       }
     }
     if (is.na(lhs_parameter[i])) {
-      s <- Reduce(function(x, y) paste(x, "or", y), sQuote(names(res)))
+      s <- Reduce(function(x, y) paste(x, "or", y), sQuote(names(res)[len > 0L]))
       stop(wrap(
         "'formula_priors_bottom[[i]][[2L]]' must be ", s, " or a call ",
         "to `[` or `[[` subsetting ", s, "."
       ))
     }
   }
-
-  e <- lapply(res, seq_along)
-  eval_lhs <- function(x, formula) eval(x, e, environment(formula))
+  l <- lapply(res, seq_along)
+  eval_lhs <- function(x, formula) eval(x, l, environment(formula))
   indices <- Map(eval_lhs, x = lhs, formula = formula_priors_bottom)
   if (sum(lengths(indices)) == 0L) {
-    return(finalize(res))
+    return(res)
   }
 
   rhs <- lapply(formula_priors_bottom, `[[`, 3L)
@@ -508,18 +519,6 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
   priors <- Map(eval_rhs, x = rhs, formula = formula_priors_bottom)
   if (!all(vapply(priors, inherits, FALSE, "egf_prior"))) {
     stop("'formula_priors_bottom[[i]][[3L]]' must evaluate to an \"egf_prior\" object.")
-  }
-  for (l in split(indices, lhs_parameter)) {
-    i <- unlist(l, FALSE, FALSE)
-    if (anyNA(i)) {
-      stop("Invalid index vector in 'formula_priors_bottom'.")
-    }
-    if (anyDuplicated(i) > 0L) {
-      stop(wrap(
-        "At least one bottom level parameter has a multiply defined prior. ",
-        "Priors should be specified exactly once (or not at all)."
-      ))
-    }
   }
   decompose <- function(prior, length.out) {
     if (length.out == 0L) {
@@ -534,14 +533,48 @@ egf_make_priors_bottom <- function(formula_priors_bottom, beta, theta) {
   }
   priors <- Map(decompose, prior = priors, length.out = lengths(indices))
 
-  for (parameter in names(res)) {
-    if (any(m <- lhs_parameter == parameter)) {
-      i <- unlist(indices[m], FALSE, FALSE)
-      value <- unlist(priors[m], FALSE, FALSE)
-      res[[parameter]][i] <- value
+  for (parameter in names(res)[len > 0L]) {
+    if (!any(m <- (lhs_parameter == parameter))) {
+      next
     }
+    i <- unlist(indices[m], FALSE, FALSE)
+    if (length(i) == 0L) {
+      next
+    }
+    if (anyNA(i)) {
+      stop(wrap(
+        "Invalid index vector for ", sQuote(parameter), " in 'formula_priors_bottom'."
+      ))
+    }
+    if (anyDuplicated(i) > 0L) {
+      stop(wrap(
+        "Multiply defined prior on bottom level parameter ",
+        sQuote(paste0(parameter, "[[i]]")), " in 'formula_priors_bottom'. ",
+        "Priors must be specified exactly once (or not at all)."
+      ))
+    }
+    value <- unlist(priors[m], FALSE, FALSE)
+    family <- vapply(value, `[[`, "", "family")
+    if (!all(family %in% family_allowed[[parameter]])) {
+      stop(wrap(
+        "Priors on bottom level parameters ",
+        sQuote(paste0(parameter, "[[i]]")), " are restricted to 'family' in ",
+        sprintf("'c(%s)'.", paste(dQuote(family_allowed[[parameter]]), collapse = ", "))
+      ))
+    }
+    if (parameter == "Sigma" && any(mm <- grepl("^(inv)?wishart$", family))) {
+      n <- block_rows[i][mm]
+      scale_size <- vapply(value[mm], function(prior) length(prior$parameters$scale), 0L)
+      if (!all(scale_size == n * (n + 1L) / 2)) {
+        stop(wrap(
+          "Dimensions of matrix 'scale' in \"(inv)?wishart\" prior must match ",
+          "dimensions of corresponding covariance matrix."
+        ))
+      }
+    }
+    res[[parameter]][i] <- value
   }
-  finalize(res)
+  res
 }
 
 #' Construct design matrices
@@ -681,6 +714,16 @@ egf_make_Z <- function(random, data) {
 #' a \link[=data.frame]{data frame} with one row per column of
 #' the returned matrix, storing details about the corresponding
 #' linear coefficients:
+#' \item{cor}{
+#'   (\code{egf_combine_Z} only.)
+#'   Correlation matrix.
+#'   This is the interaction of \code{term} and \code{group}.
+#' }
+#' \item{vec}{
+#'   (\code{egf_combine_Z} only.)
+#'   Random vector.
+#'   This is the interaction of \code{term}, \code{group}, and \code{level}.
+#' }
 #' \item{bottom}{
 #'   Bottom level mixed effects model parameter.
 #' }
@@ -702,16 +745,6 @@ egf_make_Z <- function(random, data) {
 #' }
 #' \item{colname}{
 #'   Column name in design matrix.
-#' }
-#' \item{cor}{
-#'   (\code{egf_combine_Z} only.)
-#'   Correlation matrix.
-#'   This is the interaction of \code{term} and \code{group}.
-#' }
-#' \item{vec}{
-#'   (\code{egf_combine_Z} only.)
-#'   Random vector.
-#'   This is the interaction of \code{term}, \code{group}, and \code{level}.
 #' }
 #'
 #' @noRd
@@ -769,13 +802,17 @@ egf_combine_Z <- function(random, Z) {
   term <- factor(unlist(term, FALSE, FALSE))
   group <- factor(rep.int(vapply(random_group, deparse, ""), nc))
   level <- unlist(lapply(Z, attr, "index"), FALSE, FALSE)
+  cor <- interaction(term, group, drop = TRUE, lex.order = TRUE)
+  levels(cor) <- enum_dupl_string(rep_len("Sigma", nlevels(cor)))
+  vec <- interaction(term, group, level, drop = TRUE, lex.order = TRUE)
+  levels(vec) <- enum_dupl_string(rep_len("u", nlevels(vec)))
 
   res <- do.call(cbind, Z)
-  info <- data.frame(top, term, group, level, colname = colnames(res), row.names = NULL, stringsAsFactors = FALSE)
+  info <- data.frame(cor, vec, top, term, group, level, colname = colnames(res), row.names = NULL, stringsAsFactors = FALSE)
 
-  o <- do.call(order, unname(info[c("term", "group", "level", "top")]))
+  o <- do.call(order, unname(info[c("cor", "vec", "top")]))
   res <- res[, o, drop = FALSE]
   info <- info[o, , drop = FALSE]
-  attr(res, "info") <- data.frame(bottom, info, row.names = NULL, stringsAsFactors = FALSE)
+  attr(res, "info") <- data.frame(info[c("cor", "vec")], bottom, info[c("top", "term", "group", "level", "colname")], row.names = NULL, stringsAsFactors = FALSE)
   res
 }

@@ -1,8 +1,9 @@
 #include <TMB.hpp>
-#include "../../src/enums.h"
+#include "enums.h"
 #include "../../src/structs.h"
 #include "../../src/utils.h"
 #include "../../src/distributions.h"
+#include "../../src/enums.h"
 #include "../../src/curve.h"
 
 template<class Type>

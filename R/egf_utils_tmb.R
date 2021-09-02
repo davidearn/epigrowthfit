@@ -156,17 +156,15 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, control, fit, init
     Z_info <- attr(Z, "info")
     b_index <- as.integer(Z_info$top) - 1L
     b_index_tab <- c(table(Z_info$top))
-    cor <- interaction(Z_info[c("term", "group")], drop = TRUE, lex.order = TRUE)
-    vec <- interaction(Z_info[c("term", "group", "level")], drop = TRUE, lex.order = TRUE)
-    block_rows <- as.integer(colSums(table(Z_info$top, cor) > 0L))
-    block_cols <- as.integer(colSums(table(vec, cor) > 0L))
+    block_rows <- as.integer(colSums(table(Z_info$top, Z_info$cor) > 0L))
+    block_cols <- as.integer(colSums(table(Z_info$vec, Z_info$cor) > 0L))
   }
 
   ## Flags
   flags <- list(
-    flag_curve = get_flag("curve", model$curve),
+    flag_curve = egf_get_flag("curve", model$curve),
     flag_excess = as.integer(model$excess),
-    flag_family = get_flag("family", model$family),
+    flag_family = egf_get_flag("family", model$family),
     flag_day_of_week = as.integer(model$day_of_week > 0L),
     flag_trace = control$trace,
     flag_sparse_X = as.integer(control$sparse_X),
@@ -294,8 +292,7 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, control, fit, init
 #'
 #' @noRd
 #' @importFrom stats coef lm na.omit qlogis terms
-egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
-                                    fit, init) {
+egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters, init) {
   ## Lengths of parameter objects
   f <- function(n) as.integer(n * (n + 1) / 2)
   len <- c(
@@ -307,7 +304,7 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
   ## If user does not specify a full parameter vector
   if (is.null(init)) {
     ## Initialize each parameter object to a vector of zeros
-    init_split <- lapply(len, numeric)
+    res <- lapply(len, numeric)
 
     ## Identify top level nonlinear model parameters
     ## whose mixed effects formulae have an intercept
@@ -325,67 +322,63 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters,
       tx_split <- split(frame[c("time", "x")], frame$window)
 
       ## Functions computing naive estimates given time series segments
-      get_r_c0 <- function(d) {
+      get_naive_r_c0 <- function(d) {
         n <- max(2, trunc(nrow(d) / 2))
         ab <- try(coef(lm(log1p(cumsum(x)) ~ time, data = d, subset = seq_len(n), na.action = na.omit)), silent = TRUE)
         if (inherits(ab, "try-error") || !all(is.finite(ab))) {
-          return(c(0.04, 1))
+          return(c(r = 0.04, c0 = 1))
         }
-        c(ab[[2L]], exp(ab[[1L]]))
+        c(r = ab[[2L]], c0 = exp(ab[[1L]]))
       }
-      get_tinfl <- function(d) {
+      get_naive_tinfl <- function(d) {
         max(d$t)
       }
-      get_K <- function(d) {
+      get_naive_K <- function(d) {
         2 * sum(d$x, na.rm = TRUE)
       }
 
-      ## Naive estimates for each fitting window
-      r_c0 <- vapply(tx_split, get_r_c0, c(0, 0))
-      r  <- r_c0[1L, ]
-      c0 <- r_c0[2L, ]
-      tinfl <- vapply(tx_split, get_tinfl, 0)
-      K <- vapply(tx_split, get_K, 0)
-      p <- 0.95
-      alpha <- switch(model$curve,
-        subexponential = r * c0^(1 - p),
-        gompertz = r / (log(K) - log(c0)),
+      ## Naive estimates for each time series segment
+      naive <- data.frame(
+        t(vapply(tx_split, get_naive_r_c0, c(0, 0))),
+        tinfl = vapply(tx_split, get_naive_tinfl, 0),
+        K = vapply(tx_split, get_naive_K, 0)
+      )
+      naive["p"] <- list(0.95)
+      naive[c("a", "b", "disp", paste0("w", 1:6))] <- list(1)
+      naive$alpha <- switch(model$curve,
+        subexponential = naive$r * naive$c0^(1 - naive$p),
+        gompertz = naive$r / (log(naive$K) - log(naive$c0)),
         NA_real_
       )
-      Y_init <- data.frame(r, alpha, c0, tinfl, K, p)
-      Y_init[c("a", "b", "disp", paste0("w", 1:6))] <- 1
 
       ## Link transform
-      Y_init[] <- Map(function(x, s) egf_link_match(s)(x),
-        x = Y_init,
-        s = egf_link_get(names(Y_init))
-      )
-      names(Y_init) <- egf_link_add(names(Y_init))
+      link <- lapply(egf_link_get(names(naive)), egf_link_match)
+      naive[] <- Map(function(f, x) f(x), link, naive)
+      names(naive) <- egf_link_add(names(naive))
 
       ## Identify elements of 'beta' corresponding to "(Intercept)"
-      ## and assign means over fitting windows
+      ## and assign means over time series segments
       nfp <- names(frame_parameters)[i1]
       index <- match(nfp, attr(tmb_data$X, "info")$top, 0L)
-      init_split$beta[index] <- colMeans(Y_init[nfp])
+      res$beta[index] <- colMeans(naive[nfp])
     }
   } else {
     ## Validate and split full parameter vector,
-    ## producing 'list(beta, b, theta)'
+    ## producing 'list(beta, theta, b)'
     stop_if_not(
       is.numeric(init),
       length(init) == sum(len),
       is.finite(init),
       m = sprintf("'init' must be a finite numeric vector of length %d.", sum(len))
     )
-    names(init) <- NULL
-    init_split <- split(init, rep.int(gl(3L, 1L, labels = names(len)), len))
+    res <- split(as.numeric(init), rep.int(gl(3L, 1L, labels = names(len)), len))
   }
 
   ## Retain all naive estimates if debugging
-  if (is.null(init) && !fit) {
-    attr(init_split, "Y_init") <- as.matrix(Y_init[names(frame_parameters)])
+  if (is.null(init)) {
+    attr(res, "Y0") <- as.matrix(naive[names(frame_parameters)])
   }
-  init_split
+  res
 }
 
 egf_make_tmb_args <- function(model, frame, frame_parameters, control, fit, init, map) {
@@ -400,7 +393,6 @@ egf_make_tmb_args <- function(model, frame, frame_parameters, control, fit, init
     model = model,
     frame = frame,
     frame_parameters = frame_parameters,
-    fit = fit,
     init = init
   )
   if (is.null(map)) {
@@ -415,7 +407,7 @@ egf_make_tmb_args <- function(model, frame, frame_parameters, control, fit, init
     tmb_map <- split(map, rep.int(gl(3L, 1L, labels = names(len)), len))
     tmb_map <- lapply(tmb_map, factor)
   }
-  if (egf_has_random(tmb_data)) {
+  if (ncol(tmb_data$Z) > 0L) {
     ## Declare that 'b' contains random effects
     tmb_random <- "b"
   } else {
@@ -437,21 +429,21 @@ egf_make_tmb_args <- function(model, frame, frame_parameters, control, fit, init
 }
 
 egf_update_tmb_args <- function(tmb_args, priors_top, priors_bottom) {
-  f <- function(priors) {
+  priors_top <- unname(priors_top)
+  priors_bottom <- unlist(priors_bottom[c("beta", "theta", "Sigma")], FALSE, FALSE)
+  for (s in c("top", "bottom")) {
+    priors <- get(paste0("priors_", s))
     n <- length(priors)
     has_prior <- !vapply(priors, is.null, FALSE)
+
     flag_regularize <- rep_len(-1L, n)
-    flag_regularize[has_prior] <- get_flag("prior", vapply(priors[has_prior], `[[`, "", "family"))
+    flag_regularize[has_prior] <- egf_get_flag("prior", vapply(priors[has_prior], `[[`, "", "family"))
+    tmb_args$data$flags[[paste0("flag_regularize_", s)]] <- flag_regularize
+
     hyperparameters <- rep_len(list(numeric(0L)), n)
     hyperparameters[has_prior] <- lapply(priors[has_prior], function(x) unlist(x$parameters, FALSE, FALSE))
-    list(flag_regularize = flag_regularize, hyperparameters = hyperparameters)
+    tmb_args$data[[paste0("hyperparameters_", s)]] <- hyperparameters
   }
-  l1 <- f(priors_top)
-  tmb_args$data$flags$flag_regularize_top <- l1$flag_regularize
-  tmb_args$data$hyperparameters_top <- l1$hyperparameters
-  l2 <- f(priors_bottom)
-  tmb_args$data$flags$flag_regularize_bottom <- l2$flag_regularize
-  tmb_args$data$hyperparameters_bottom <- l2$hyperparameters
   tmb_args
 }
 

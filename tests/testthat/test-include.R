@@ -1,5 +1,3 @@
-library("TMB")
-
 dll <- "test_include"
 compile(paste0(dll, ".cpp"))
 dyn.load(dynlib(dll))
@@ -7,7 +5,7 @@ dyn.load(dynlib(dll))
 l <- local({
   get_res <- function(test, ...) {
     data <- list(...)
-    data$flag_test <- get_flag("test", test)
+    data$flag_test <- egf_get_flag("test", test)
     MakeADFun(
       data = data,
       parameters = list(),
@@ -19,8 +17,6 @@ l <- local({
   list(get_res = get_res)
 })
 attach(l, name = "testdata")
-
-library("testthat")
 
 test_that("list_of_vectors_t", {
   x <- list(rnorm(10L), seq_len(5L), TRUE, numeric(0L))

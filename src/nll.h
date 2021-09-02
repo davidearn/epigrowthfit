@@ -342,7 +342,7 @@ Type nll_bot(objective_function<Type> *obj,
 	    case lkj:
 	        x = list_of_chol(j);
 		eta = hp(0);
-		nll_term = -dlkj(x, eta, true);
+		nll_term = -egf::dlkj(x, eta, true);
 		break;
 	    default:
 	        x.resize(list_of_sd(j).size() + list_of_chol(j).size());
@@ -352,10 +352,10 @@ Type nll_bot(objective_function<Type> *obj,
 		switch (flags.flag_regularize_bottom(i))
 		{
 		case wishart:
-		    nll_term = -dwishart(x, df, scale, true);
+		    nll_term = -egf::dwishart(x, df, scale, true);
 		    break;
 		case invwishart:
-		    nll_term = -dinvwishart(x, df, scale, true);
+		    nll_term = -egf::dinvwishart(x, df, scale, true);
 		    break;
 		}
 		break;
@@ -369,7 +369,7 @@ Type nll_bot(objective_function<Type> *obj,
 		switch (flags.flag_regularize_bottom(i))
 		{
 		case lkj:
-		    std::cout << "-dlkj(x = " << x ", eta = " << eta << ", give_log = true)\n";
+		    std::cout << "-dlkj(x = " << x << ", eta = " << eta << ", give_log = true)\n";
 		    break;
 		case wishart:
 		    std::cout << "-dwishart(x = " << x << ", df = " << df << ", scale = " << scale << ", give_log = true)\n";

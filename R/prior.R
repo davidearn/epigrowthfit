@@ -34,7 +34,7 @@
 #'   A \link{character} string naming a family of distributions.
 #' }
 #' \item{parameters}{
-#'   A named \link{list} of vectors specifying parameter values.
+#'   A named \link{list} of \link{numeric} vectors specifying parameter values.
 #' }
 #'
 #' @name egf_prior
@@ -93,6 +93,7 @@ Wishart <- function(df, scale, tol = 1e-06) {
     scale <- list(scale)
   } else {
     stopifnot(is.list(scale))
+
   }
   for (i in seq_along(scale)) {
     stopifnot(
@@ -108,9 +109,16 @@ Wishart <- function(df, scale, tol = 1e-06) {
     is.finite(df),
     rep.int(df, length(scale)) > rep.int(vapply(scale, nrow, 0L), length(df)) - 1L
   )
+  scale <- lapply(scale, function(S) {
+    log_sd <- 0.5 * log(diag(S))
+    R <- chol(S)
+    R[] <- R * rep(1 / diag(R), each = nrow(R))
+    chol <- R[upper.tri(R)]
+    c(log_sd, chol)
+  })
   res <- list(
     family = "wishart",
-    parameters = list(df = as.numeric(df), scale = as.list(scale))
+    parameters = list(df = as.numeric(df), scale = unname(scale))
   )
   class(res) <- c("egf_prior", "list")
   res
@@ -119,7 +127,5 @@ Wishart <- function(df, scale, tol = 1e-06) {
 #' @rdname egf_prior
 #' @export
 InverseWishart <- function(df, scale, tol = 1e-06) {
-  res <- Wishart(df = df, scale = scale, tol = tol)
-  res$family <- "invwishart"
-  res
+  replace(Wishart(df = df, scale = scale, tol = tol), "family", list("invwishart"))
 }

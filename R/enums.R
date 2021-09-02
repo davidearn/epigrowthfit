@@ -9,20 +9,20 @@
 #'   A \link{character} string. The name of an enumerator of type \code{type}.
 #'
 #' @details
-#' The source file defining \code{get_flag} is kept synchronized with
+#' The source file defining \code{egf_get_flag} is kept synchronized with
 #' the package's C++ template using R script \file{utils/update_enums.R}.
 #'
 #' @return
 #' An \link{integer}.
 #'
 #' @examples
-#' get_flag("curve", "exponential")
-#' get_flag("family", "pois")
-#' get_flag("prior", "norm")
-#' get_flag("test", "logspace_diff")
+#' egf_get_flag("curve", "exponential")
+#' egf_get_flag("family", "pois")
+#' egf_get_flag("prior", "norm")
+#' egf_get_flag("test", "logspace_diff")
 #'
 #' @noRd
-get_flag <- function(type = c("curve", "family", "prior", "test"), enum) {
+egf_get_flag <- function(type = c("curve", "family", "prior", "test"), enum) {
   type <- match.arg(type)
   enum_all <- switch(type,
     curve = c("exponential", "subexponential", "gompertz", "logistic", "richards"),

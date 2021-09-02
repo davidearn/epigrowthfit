@@ -12,11 +12,16 @@ test_that("exponential", {
     Sigma = diag(rep_len(0.2^2, 3L)),
     cstart = 10
   )
-  mm <- egf(zz)
+  mm <- egf(zz,
+    formula_priors_bottom = list(
+      Sigma ~ LKJ(eta = 2)
+    )
+  )
+  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
-              sub("\\[[0-9]+\\]$", "", names(zz$actual)))
-  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 1e-1)
-  expect_equal(pp$theta$fitted[1:3], pp$theta$actual[1:3], tolerance = 1e-1)
+              sub("\\[[0-9]+\\]$", "", names(mm$best)))
+  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 2e-2)
+  expect_equal(pp$theta$fitted[1:3], pp$theta$actual[1:3], tolerance = 2e-2)
   expect_equal(pp$theta$fitted[-(1:3)], pp$theta$actual[-(1:3)], tolerance = 5e-1)
 })
 
@@ -33,12 +38,19 @@ test_that("subexponential", {
     Sigma = diag(rep_len(0.2^2, 4L)),
     cstart = 10
   )
-  mm <- egf(zz)
+  mm <- egf(zz,
+    formula_priors_bottom = list(
+      beta[3L] ~ Normal(mu = qlogis(p), sigma = 0.02),
+      theta[3L] ~ Normal(mu = log(0.2), sigma = 0.125),
+      Sigma ~ LKJ(eta = 2)
+    )
+  )
+  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
-  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 1e-1)
-  expect_equal(pp$theta$fitted[1:4], pp$theta$actual[1:4], tolerance = 5e-1)
-  expect_equal(pp$theta$fitted[-(1:4)], pp$theta$actual[-(1:4)], tolerance = 1)
+  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 2e-2)
+  expect_equal(pp$theta$fitted[1:4], pp$theta$actual[1:4], tolerance = 1e-1)
+  expect_equal(pp$theta$fitted[-(1:4)], pp$theta$actual[-(1:4)], tolerance = 1e-1)
 })
 
 test_that("gompertz", {
@@ -54,12 +66,17 @@ test_that("gompertz", {
     Sigma = diag(rep_len(0.2^2, 4L)),
     cstart = 10
   )
-  mm <- egf(zz)
+  mm <- egf(zz,
+    formula_priors_bottom = list(
+      Sigma ~ LKJ(eta = 2)
+    )
+  )
+  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-1)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
-  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 1e-1)
-  expect_equal(pp$theta$fitted[1:4], pp$theta$actual[1:4], tolerance = 1e-1)
-  expect_equal(pp$theta$fitted[-(1:4)], pp$theta$actual[-(1:4)], tolerance = 2)
+  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-2)
+  expect_equal(pp$theta$fitted[1:4], pp$theta$actual[1:4], tolerance = 2e-2)
+  expect_equal(pp$theta$fitted[-(1:4)], pp$theta$actual[-(1:4)], tolerance = 1)
 })
 
 test_that("logistic", {
@@ -75,10 +92,15 @@ test_that("logistic", {
     Sigma = diag(rep_len(0.2^2, 4L)),
     cstart = 10
   )
-  mm <- egf(zz)
+  mm <- egf(zz,
+    formula_priors_bottom = list(
+      Sigma ~ LKJ(eta = 2)
+    )
+  )
+  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
-  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 1e-1)
+  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-3)
   expect_equal(pp$theta$fitted[1:4], pp$theta$actual[1:4], tolerance = 1e-1)
   expect_equal(pp$theta$fitted[-(1:4)], pp$theta$actual[-(1:4)], tolerance = 2e-1)
 })
@@ -92,17 +114,24 @@ test_that("richards", {
 
   zz <- simulate(egf_model(curve = "richards", family = "nbinom"),
     nsim = 100L,
-    model = 949642L,
+    seed = 949642L,
     mu = log(c(r, tinfl, K, a, disp)),
     Sigma = diag(rep_len(0.2^2, 5L)),
     cstart = 10
   )
-  mm <- egf(zz)
+  mm <- egf(zz,
+    formula_priors_bottom = list(
+      beta[4L] ~ Normal(mu = log(a), sigma = 0.02),
+      theta[4L] ~ Normal(mu = log(0.2), sigma = 0.005),
+      Sigma ~ LKJ(eta = 2)
+    )
+  )
+  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
-  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 1e-1)
-  expect_equal(pp$theta$fitted[1:5], pp$theta$actual[1:5], tolerance = 5e-1)
-  expect_equal(pp$theta$fitted[-(1:5)], pp$theta$actual[-(1:5)], tolerance = 1)
+  expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-3)
+  expect_equal(pp$theta$fitted[1:5], pp$theta$actual[1:5], tolerance = 1e-1)
+  expect_equal(pp$theta$fitted[-(1:5)], pp$theta$actual[-(1:5)], tolerance = 5e-1)
 })
 
 options(oo)

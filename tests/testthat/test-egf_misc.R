@@ -131,17 +131,14 @@ test_that("egf_get_names_top", {
 
 test_that("egf_has_random", {
   f <- function(Z) {
-    object <- list(tmb_args = list(data = list(Z = Z)))
+    e <- new.env()
+    e$data <- list(Z = Z)
+    object <- list(tmb_out = list(env = e))
     class(object) <- "egf"
-    class(object$tmb_args$data) <- "tmb_data"
     object
   }
-  object0 <- f(matrix(numeric(0L), 6L, 0L))
-  object1 <- f(matrix(numeric(6L), 6L, 1L))
-  expect_false(egf_has_random(object0))
-  expect_false(egf_has_random(object0$tmb_args$data))
-  expect_true(egf_has_random(object1))
-  expect_true(egf_has_random(object1$tmb_args$data))
+  expect_false(egf_has_random(f(matrix(numeric(0L), 6L, 0L))))
+  expect_true(egf_has_random(f(matrix(numeric(6L), 6L, 1L))))
 })
 
 test_that("egf_combine_frames", {
@@ -149,7 +146,6 @@ test_that("egf_combine_frames", {
     frame_parameters = list(a = data.frame(x = 1:6), b = data.frame(y = letters[1:6])),
     frame_append = data.frame(x = rnorm(1:6), z = TRUE)
   )
-  expect_error(egf_combine_frames(object))
   class(object) <- "egf"
   expect_identical(egf_combine_frames(object), data.frame(x = 1:6, y = letters[1:6], z = TRUE))
 })

@@ -479,25 +479,15 @@ egf_get_names_top.tmb_data <- function(object, link = TRUE, ...) {
 #'
 #' Determines whether an object specifies a random effects model.
 #'
-#' @param object An \R object.
+#' @param object An \code{"\link{egf}"} object.
 #'
 #' @return
 #' \code{TRUE} or \code{FALSE}.
 #'
 #' @export
 egf_has_random <- function(object) {
-  UseMethod("egf_has_random", object)
-}
-
-#' @rdname egf_has_random
-#' @export
-egf_has_random.egf <- function(object) {
-  egf_has_random(object$tmb_args$data)
-}
-
-#' @export
-egf_has_random.tmb_data <- function(object) {
-  ncol(object$Z) > 0L
+  stopifnot(inherits(object, "egf"))
+  ncol(object$tmb_out$env$data$Z) > 0L
 }
 
 #' Construct the combined model frame

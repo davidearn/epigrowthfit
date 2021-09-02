@@ -1,9 +1,9 @@
 #define TMB_LIB_INIT R_init_epigrowthfit
 #include <TMB.hpp>
-#include "enums.h"
 #include "structs.h"
 #include "utils.h"
 #include "distributions.h"
+#include "enums.h"
 #include "curve.h"
 #include "nll.h"
 

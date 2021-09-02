@@ -157,7 +157,6 @@ test_that("egf_make_frames", {
   expect_identical(o6, droplevels(data_windows[3:5, names(o6), drop = FALSE]), ignore_attr = c("row.names", "terms"))
 })
 
-devtools::load_all(".")
 test_that("egf_make_priors_top", {
   model <- egf_model()
   names_top <- egf_get_names_top(model, link = TRUE)
@@ -180,27 +179,42 @@ test_that("egf_make_priors_top", {
 })
 
 test_that("egf_make_priors_bottom", {
-  beta <- numeric(4L)
-  theta <- numeric(10L)
-  prior <- Normal(mu = 0, sigma = 1)
+  p1 <- Normal(mu = 0, sigma = 1)
+  p2 <- LKJ(eta = 1)
   formula_priors_bottom <- list(
-    beta ~ prior,
-    theta[[1L]] ~ prior,
-    theta[2:3] ~ prior,
-    theta[-c(1:3, 8:10)] ~ prior,
-    theta[rep.int(c(FALSE, TRUE, FALSE), c(7L, 2L, 1L))] ~ prior
+    beta ~ p1,
+    theta[[1L]] ~ p1,
+    theta[2:3] ~ p1,
+    theta[-c(1:3, 8:10)] ~ p1,
+    theta[rep.int(c(FALSE, TRUE, FALSE), c(7L, 2L, 1L))] ~ p1,
+    Sigma ~ p2
   )
   priors_bottom <- egf_make_priors_bottom(
     formula_priors_bottom = formula_priors_bottom,
-    beta = beta,
-    theta = theta
+    beta_size = 4L,
+    theta_size = 10L,
+    block_rows = 4L
   )
 
   expect_type(priors_bottom, "list")
-  expect_length(priors_bottom, 14L)
-  expect_named(priors_bottom, enum_dupl_string(rep.int(c("beta", "theta"), c(4L, 10L))))
-  expect_identical(unname(priors_bottom[-14L]), rep_len(list(prior), 13L))
-  expect_null(priors_bottom[[14L]])
+  expect_length(priors_bottom, 3L)
+  expect_named(priors_bottom, c("beta", "theta", "Sigma"))
+
+  expect_type(priors_bottom$beta, "list")
+  expect_length(priors_bottom$beta, 4L)
+  expect_named(priors_bottom$beta, enum_dupl_string(rep_len("beta", 4L)))
+  expect_identical(unname(priors_bottom$beta), rep_len(list(p1), 4L))
+
+  expect_type(priors_bottom$theta, "list")
+  expect_length(priors_bottom$theta, 10L)
+  expect_named(priors_bottom$theta, enum_dupl_string(rep_len("theta", 10L)))
+  expect_identical(unname(priors_bottom$theta)[-10L], rep_len(list(p1), 9L))
+  expect_null(priors_bottom$theta[[10L]])
+
+  expect_type(priors_bottom$Sigma, "list")
+  expect_length(priors_bottom$Sigma, 1L)
+  expect_named(priors_bottom$Sigma, enum_dupl_string("Sigma"))
+  expect_identical(unname(priors_bottom$Sigma), list(p2))
 })
 
 test_that("egf_make_X", {
@@ -294,14 +308,16 @@ test_that("egf_combine_Z", {
   info <- attr(Z, "info")
   expect_type(info, "list")
   expect_s3_class(info, "data.frame")
-  expect_length(info, 6L)
+  expect_length(info, 8L)
   expect_equal(row.names(info), as.character(seq_len(10L)))
-  expect_named(info, c("bottom", "top", "term", "group", "level", "colname"))
+  expect_named(info, c("cor", "vec", "bottom", "top", "term", "group", "level", "colname"))
+  expect_equal(info$cor, `levels<-`(interaction(info[c("term", "group")], drop = TRUE, lex.order = TRUE), enum_dupl_string(rep_len("Sigma", 4L))))
+  expect_equal(info$vec, `levels<-`(interaction(info[c("term", "group", "level")], drop = TRUE, lex.order = TRUE), enum_dupl_string(rep_len("u", 10L))))
   expect_equal(info$bottom, enum_dupl_string(rep_len("b", 10L)))
   expect_equal(info$top, rep.int(factor(rep.int(c("a", "b"), c(2L, 3L))), 2L))
   expect_equal(info$term, factor(rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L))))
   expect_equal(info$group, rep.int(factor(rep.int(c("f", "g"), c(2L, 3L))), 2L))
   expect_equal(info$level, rep.int(factor(c(seq_len(2L), seq_len(3L))), 2L))
   expect_equal(info$colname, colnames(Z))
-  expect_equal(do.call(order, unname(info[c("term", "group", "level", "top")])), seq_len(10L))
+  expect_equal(do.call(order, unname(info[c("cor", "vec", "top")])), seq_len(10L))
 })

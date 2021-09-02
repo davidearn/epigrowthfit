@@ -1,7 +1,7 @@
-h <- "../src/enums.h"
+h <- c("../src/enums.h", "../tests/testthat/enums.h")
 r <- "../R/enums.R"
 
-x <- paste(readLines(h), collapse = "\n")
+x <- paste(unlist(lapply(h, readLines)), collapse = "\n")
 x <- strsplit(gsub("[ \t\n]", "", x), "enum")[[1L]][-1L]
 
 a <- vapply(x, gsub, "", pattern = "^.*\\{(.*)\\};$", replacement = "\\1")

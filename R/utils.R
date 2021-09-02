@@ -14,61 +14,29 @@
 #' \code{\link{names}(x)} replaced by \code{enum_dupl_string(\link{names}(x))}.
 #'
 #' @examples
-#' ## x <- sample(letters[1:3], 10L, replace = TRUE)
-#' ## enum_dupl_string(x)
-#' ##
-#' ## y <- seq_along(x)
-#' ## names(y) <- x
-#' ## enum_dupl_names(y)
+#' x <- sample(letters[1:3], 10L, replace = TRUE)
+#' enum_dupl_string(x)
+#'
+#' y <- seq_along(x)
+#' names(y) <- x
+#' enum_dupl_names(y)
 #'
 #' @name enum_dupl_string
 #' @noRd
 NULL
 
-enum_dupl_string <- function(x) {
+enum_dupl_string <- function(x, format = "%s[%d]") {
   f <- factor(x)
   n <- tabulate(f)
   i <- unsplit(lapply(n, seq_len), f)
-  sprintf("%s[%d]", x, i)
+  sprintf(format, x, i)
 }
 
-enum_dupl_names <- function(x) {
+enum_dupl_names <- function(x, format = "%s[%d]") {
   if (!is.null(names(x))) {
-    names(x) <- enum_dupl_string(names(x))
+    names(x) <- enum_dupl_string(names(x), format = format)
   }
   x
-}
-
-#' Correlation to covariance matrix conversion
-#'
-#' Perform the inverse of \code{\link{cov2cor}}.
-#'
-#' @param cor
-#'   A \link{numeric} \link{matrix}, typically (but not necessarily)
-#'   symmetric positive definite.
-#' @param sd
-#'   A \link{numeric} vector of length \code{\link{nrow}(cor)}.
-#'
-#' @return
-#' The result of
-#' \code{\link{sweep}(\link{sweep}(cor, 1L, sd, `*`), 2L, sd, `*`)},
-#' obtained slightly more efficiently, following \code{\link{cov2cor}}.
-#'
-#' @examples
-#' X <- replicate(6L, rnorm(10L))
-#' V <- cov(X, X)
-#' all.equal(V, cor2cov(cov2cor(V), sqrt(diag(V))))
-#'
-#' @noRd
-cor2cov <- function(cor, sd) {
-  stopifnot(
-    is.matrix(cor),
-    is.numeric(cor),
-    is.numeric(sd),
-    length(sd) == nrow(cor)
-  )
-  cor[] <- sd * cor * rep(sd, each = length(sd))
-  cor
 }
 
 #' Concatenate, wrap, collapse

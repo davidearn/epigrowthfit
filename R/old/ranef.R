@@ -65,7 +65,7 @@ ranef.egf <- function(object, ...) {
     R <- diag(rep_len(1, length(sd)))
     R[upper.tri(R, diag = FALSE)] <- chol
     RTR <- t(R) %*% R
-    cor2cov(RTR, sd * sqrt(diag(RTR)))
+    cor2cov(RTR, sd / sqrt(diag(RTR)))
   }
   cov <- Map(chol2cov, chol = r$list_of_chol, sd = r$list_of_sd)
   names(cov) <- levels(Z_info$cor)

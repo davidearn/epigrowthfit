@@ -10,12 +10,6 @@ test_that("enum_dupl_string", {
   expect_equal(enum_dupl_names(x), y)
 })
 
-test_that("cor2cov", {
-  X <- replicate(6L, rnorm(10L))
-  V <- cov(X, X)
-  expect_equal(cor2cov(cov2cor(V), sqrt(diag(V))), V)
-})
-
 test_that("literal_rle", {
   x <- c(0, NA, NaN, Inf, 1)
   times <- 1:5

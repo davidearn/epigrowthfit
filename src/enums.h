@@ -20,28 +20,3 @@ enum prior
     wishart,
     invwishart
 };
-
-enum test
-{
-    list_of_vectors_t,
-    is_NA_real_,
-    is_finite,
-    logspace_diff,
-    mvlgamma,
-    dlkj,
-    dwishart,
-    dinvwishart,
-    dpois_robust,
-    rnbinom_robust,
-    eval_log_curve_exponential,
-    eval_log_curve_subexponential,
-    eval_log_curve_gompertz,
-    eval_log_curve_logistic,
-    eval_log_curve_richards,
-    logspace_add_baseline,
-    logspace_add_offsets,
-    eval_log_rt_subexponential,
-    eval_log_rt_gompertz,
-    eval_log_rt_logistic,
-    eval_log_rt_richards
-};
