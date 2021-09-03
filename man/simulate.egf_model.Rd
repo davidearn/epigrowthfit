@@ -40,11 +40,11 @@ The default (\code{\link{NULL}}) is equivalent (conceptually)
 to a zero matrix and is handled specially.}
 
 \item{tol}{A non-negative number indicating a tolerance for lack of positive
-definiteness of \code{Sigma}. Negative eigenvalues of \code{Sigma}
-must not be less than \code{-tol * rho}, where \code{rho} is the
-spectral radius of \code{Sigma}. (However, regardless of \code{tol},
-\code{\link{diag}(Sigma)} must be positive, as standard deviations
-are processed on the log scale.)}
+definiteness of \code{Sigma}. All eigenvalues of \code{Sigma}
+must exceed \code{-tol * rho}, where \code{rho} is the spectral
+radius of \code{Sigma}.
+(However, regardless of \code{tol}, \code{\link{diag}(Sigma)} must
+be positive, as standard deviations are processed on the log scale.)}
 
 \item{tmax}{A positive number. Simulated time series run from 0 days to 1 day
 after the inflection time of the expected cumulative incidence
@@ -116,10 +116,10 @@ with elements:
 }
 }
 \description{
-Simulates incidence time series with daily observations according to
-a specified nonlinear model. Top level nonlinear model parameters vary
-between time series according to a fixed intercept model \code{~ts} or
-random intercept model \code{~(1 | ts)}.
+Simulates incidence time series with a unit observation interval according
+to a specified nonlinear model. Top level nonlinear model parameters
+vary between time series according to a fixed intercept model \code{~ts}
+or random intercept model \code{~(1 | ts)}.
 }
 \examples{
 model <- egf_model(curve = "logistic", family = "nbinom")
@@ -132,7 +132,7 @@ disp <- 50
 mu <- log(c(r, tinfl, K, disp))
 Sigma <- diag(rep_len(0.5^2, length(mu)))
 
-sim <- simulate(model,
+zz <- simulate(model,
   nsim = 20L,
   seed = 202737L,
   mu = mu,

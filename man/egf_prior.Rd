@@ -36,9 +36,11 @@ then this condition is checked pairwise after recycling.)}
 \item{scale}{A \link{list} of symmetric positive definite \link{numeric} matrices,
 or a \link{matrix} to be coerced to a list of length 1.}
 
-\item{tol}{A positive number specifying a tolerance for non-positive definiteness
-of \code{scale}. All eigenvalues must exceed \code{-tol * rho},
-where \code{rho} is the spectral radius of \code{scale}.}
+\item{tol}{A non-negative number specifying a tolerance for non-positive definiteness
+of \code{scale}. All eigenvalues of \code{scale} must exceed
+\code{-tol * rho}, where \code{rho} is the spectral radius of \code{scale}.
+(However, regardless of \code{tol}, \code{\link{diag}(scale)} must
+be positive, as standard deviations are processed on the log scale.)}
 }
 \value{
 A \link{list} inheriting from \link{class} \code{"egf_prior"},

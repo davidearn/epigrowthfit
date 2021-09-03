@@ -122,9 +122,9 @@ in \code{formula_windows} and \code{formula_parameters} variables.
 \item{fit}{A \link{logical} flag. If \code{TRUE}, then \code{egf} returns early
 with a \link{list} of optimization inputs.}
 
-\item{se}{A \link{logical} flag. If \code{TRUE}, then standard errors on mixed
-effects model coefficients are computed and stored for later reuse
-by methods.}
+\item{se}{A \link{logical} flag. If \code{TRUE}, then delta method standard errors
+on mixed effects model coefficients are computed and stored for later
+reuse by methods.}
 
 \item{init}{A \link{numeric} vector to be used as the full parameter vector
 \code{c(beta, theta, b)} for the first likelihood evaluation.

@@ -1,25 +1,28 @@
 #' Parametric bootstrap
 #'
-#' Sample from the conditional distribution of the full parameter vector
-#' given its fitted value.
+#' Sample from the conditional distribution of segments \code{beta} and
+#' \code{theta} of the full parameter vector \code{c(beta, theta, b)},
+#' given their fitted values.
 #'
 #' @param object
 #'   An \code{"\link{egf}"} object.
 #' @param n
 #'   A positive integer. The desired number of samples.
 #' @param parallel
-#'   An \code{"\link{egf_parallel}"} object defining parallelization options.
+#'   An \code{"\link{egf_parallel}"} object defining parallelization
+#'   options.
 #' @param trace
-#'   A \link{logical} flag. If \code{TRUE}, then basic tracing messages
-#'   indicating progress are printed. Depending on \code{object$control$trace},
-#'   these may be mixed with optimization output.
+#'   A \link{logical} flag.
+#'   If \code{TRUE}, then basic tracing messages indicating progress
+#'   are printed. Depending on \code{object$control$trace}, these may
+#'   be mixed with optimization output.
 #' @param ...
 #'   Unused optional arguments.
 #'
 #' @return
 #' A \link{numeric} \link{matrix} inheriting from \link{class}
-#' \code{"egf_boot"}, with \code{\link{length}(object$best)} rows
-#' and \code{n} columns.
+#' \code{"egf_boot"},
+#' with \code{\link{length}(object$best)} rows and \code{n} columns.
 #'
 #' @export
 #' @importFrom TMB MakeADFun
@@ -37,12 +40,10 @@ boot_par <- function(object,
   stop_if_not_integer(n, "positive")
   stop_if_not_true_false(trace)
 
-  ## Make sure that bootstrap optimizations start from fitted model
-  object$tmb_args$parameters <- egf_make_tmb_parameters(
-    tmb_data = object$tmb_args$data,
-    fit = TRUE,
-    init = object$best
-  )
+  tmb_args <- egf_remake_tmb_args(object)
+  tmb_out <- object$tmb_out
+  best <- object$best
+  control <- object$control
 
   do_sim <- function(i) {
     if (trace) {
@@ -50,37 +51,37 @@ boot_par <- function(object,
     }
     on <- openmp(n = NULL)
     if (on > 0L) {
-      openmp(n = object$control$omp_num_threads)
+      openmp(n = control$omp_num_threads)
       on.exit(openmp(n = on))
     }
-    ## Simulate data from fitted model
-    object$tmb_args$data$x <- object$tmb_out$simulate(object$best)$x
-    ## Define objective function and gradient conditional on simulated data
-    tmb_out_sim <- do.call(MakeADFun, object$tmb_args)
+    ## Update
+    tmb_args$data$x <- tmb_out$simulate(best)$x
+    ## Retape
+    tmb_out_retape <- do.call(MakeADFun, tmb_args)
     ## Patch
-    tmb_out_sim$fn <- egf_patch_fn(tmb_out_sim$fn, inner_optimizer = object$control$inner_optimizer)
-    tmb_out_sim$gr <- egf_patch_gr(tmb_out_sim$gr, inner_optimizer = object$control$inner_optimizer)
+    tmb_out_retape$fn <- egf_patch_fn(tmb_out_retape$fn, inner_optimizer = control$inner_optimizer)
+    tmb_out_retape$gr <- egf_patch_gr(tmb_out_retape$gr, inner_optimizer = control$inner_optimizer)
     ## Optimize
-    optimizer <- object$control$optimizer$f
+    optimizer <- control$optimizer$f
     optimizer_args <- c(
-      tmb_out_sim[c("par", "fn", "gr")],
-      object$control$optimizer["control"],
-      object$control$optimizer[["args"]]
+      tmb_out[c("par", "fn", "gr")],
+      control$optimizer["control"],
+      control$optimizer[["args"]]
     )
     tryCatch(
       expr = {
         do.call(optimizer, optimizer_args)
-        tmb_out_sim$env$last.par.best
+        tmb_out_retape$env$last.par.best
       },
       error = function(cond) {
         cat(sprintf("Error in bootstrap simulation %d of %d:\n %s", i, n, conditionMessage(cond)))
-        rep_len(NaN, length(object$best))
+        rep_len(NaN, length(best))
       }
     )
   }
 
   if (parallel$method == "snow") {
-    ## Doing this to avoid duplication of `clusterExport`
+    ## Doing this to avoid duplication of 'clusterExport'
     ## (i.e., unnecessary serialization of function environment):
     ## https://stackoverflow.com/questions/17402077/how-to-clusterexport-a-function-without-its-evaluation-environment
     ## https://stackoverflow.com/questions/18035711/environment-and-scope-when-using-parallel-functions
@@ -93,10 +94,15 @@ boot_par <- function(object,
       cl <- parallel$cl
     }
     clusterEvalQ(cl, library("TMB"))
-    ## Need to make internal functions `egf_patch_fn` and `egf_patch_gr`
-    ## available in global environment of worker processes
     clusterExport(cl,
-      varlist = c("object", "n", "trace", "egf_patch_fn", "egf_patch_gr"),
+      varlist = c(
+        "tmb_args", "trace", "n",
+        ## Could simply serialize 'object' but trying to minimize overhead
+        "tmb_out", "best", "control",
+        ## 'egf_patch_fn' and 'egf_patch_gr' are internal functions, so they
+        ## must be made available in global environment of worker processes
+        "egf_patch_fn", "egf_patch_gr"
+      ),
       envir = environment()
     )
     clusterSetRNGStream(cl)
@@ -109,16 +115,14 @@ boot_par <- function(object,
     }
     res <- switch(parallel$method,
       multicore = simplify2array(do.call(mclapply, c(list(X = seq_len(n), FUN = do_sim), parallel$args))),
-      serial = vapply(seq_len(n), do_sim, unname(object$best))
+      serial = vapply(seq_len(n), do_sim, unname(best))
     )
     if (nzchar(parallel$outfile)) {
       sink(type = "output")
       sink(type = "message")
     }
   }
-  rownames(res) <- names(object$best)
+  rownames(res) <- names(best)
   class(res) <- c("egf_boot", "matrix", "array")
   res
 }
-
-

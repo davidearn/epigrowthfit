@@ -1,7 +1,8 @@
 #' Extract fitted values
 #'
 #' Computes fitted values of top level nonlinear model parameters.
-#' The fitted value for a given fitting window is obtained by adding
+#' The fitted value of a given parameter for a given fitting window
+#' is obtained by adding
 #' (i) the population fitted value computed as a linear combination
 #' of fixed effects coefficients and
 #' (ii) all applicable random effects, with random effects coefficients
@@ -9,51 +10,47 @@
 #'
 #' @param object
 #'   An \code{"\link{egf}"} object.
-#' @param par
-#'   A subset of \code{\link{get_names_top}(object, link = TRUE)}
-#'   naming top level nonlinear model parameters for which fitted values
-#'   should be retrieved.
+#' @param top
+#'   A subset of \code{\link{egf_get_names_top}(object, link = TRUE)}
+#'   naming top level nonlinear model parameters for which fitted
+#'   values should be retrieved.
 #' @param subset
 #'   An expression to be evaluated in the combined model frame
-#'   (see \code{\link{egf_make_combined}}). Must evaluate to
-#'   a \link{logical} vector indexing rows of the data frame,
-#'   and thus fitting windows. Fitted values are retrieved
-#'   only for indexed windows. The default (\code{\link{NULL}})
-#'   is to consider all windows.
+#'   (see \code{\link{egf_combine_frames}}). It must evaluate
+#'   to a valid index vector for the rows of the data frame
+#'   (see \code{\link{[.data.frame}}), and thus fitting windows.
+#'   Fitted values are retrieved only for indexed windows.
+#'   The default (\code{\link{NULL}}) is to consider all windows.
 #' @param append
 #'   An expression indicating variables in the combined model frame
-#'   (see \code{\link{egf_make_combined}}) to be included with the
+#'   (see \code{\link{egf_combine_frames}}) to be included with the
 #'   result. The default (\code{\link{NULL}}) is to append nothing.
 #' @param link
-#'   A \link{logical} flag. If \code{FALSE},
-#'   then fitted values are inverse link-transformed.
+#'   A \link{logical} flag. If \code{FALSE}, then fitted values are
+#'   inverse link-transformed.
 #' @param se
 #'   A \link{logical} flag. If \code{link = TRUE} and \code{se = TRUE},
-#'   then approximate (delta method) standard errors on fitted values
+#'   then approximate delta method standard errors on fitted values
 #'   are reported. Standard errors are required for subsequent use of
 #'   \code{\link{confint.egf_fitted}}.
-#' @param .subset
-#'   A \link{logical} vector to be used (if non-\code{\link{NULL}})
-#'   in place of the result of evaluating \code{subset}.
-#' @param .append
-#'   A \link{character} vector listing variable names to be used
-#'   (if non-\code{\link{NULL}}) in place of the result of evaluating
-#'   \code{append}.
+#' @param .subset,.append
+#'   Index vectors to be used (if non-\code{\link{NULL}}) in place of
+#'   the result of evaluating \code{subset} and \code{append}.
 #' @param ...
 #'   Unused optional arguments.
 #'
 #' @details
 #' \code{coef.egf} is currently an alias for \code{fitted.egf}.
 #'
-#' See topic \code{\link{nse}} for details on nonstandard evaluation
+#' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 #' of \code{subset} and \code{append}.
 #'
 #' @return
 #' A \link[=data.frame]{data frame} inheriting from \link{class}
 #' \code{"egf_fitted"}, with variables:
-#' \item{par}{
+#' \item{top}{
 #'   Top level nonlinear model parameter,
-#'   from \code{\link{get_names_top}(object, link = link)}.
+#'   from \code{\link{egf_get_names_top}(object, link = link)}.
 #' }
 #' \item{ts}{
 #'   Time series, from \code{\link{levels}(object$frame_windows$ts)}.
@@ -62,17 +59,18 @@
 #'   Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
 #' }
 #' \item{estimate}{
-#'   Fitted value of parameter \code{par} in fitting window \code{window}.
+#'   Fitted value of parameter \code{top} in fitting window \code{window}.
 #' }
 #' \item{se}{
 #'   (If \code{link = TRUE} and \code{se = TRUE}.)
-#'   Approximate (delta method) standard error on \code{estimate}.
+#'   Approximate delta method standard error on \code{estimate}.
 #' }
 #'
+#' @family coefficient extractors
 #' @seealso \code{\link{confint.egf_fitted}}
 #' @export
 fitted.egf <- function(object,
-                       par = get_names_top(object, link = TRUE),
+                       top = egf_get_names_top(object, link = TRUE),
                        subset = NULL,
                        append = NULL,
                        link = TRUE,
@@ -82,26 +80,30 @@ fitted.egf <- function(object,
                        ...) {
   stop_if_not_true_false(link)
   stop_if_not_true_false(se)
-  names_top <- get_names_top(object, link = TRUE)
-  par <- unique(match.arg(par, names_top, several.ok = TRUE))
-  combined <- egf_make_combined(object)
-  subset <- eval_subset(substitute(subset), combined, parent.frame(), .subset = .subset)
-  append <- eval_append(substitute(append), combined, baseenv(), .append = .append)
+  names_top <- egf_get_names_top(object, link = TRUE)
+  top <- unique(match.arg(top, names_top, several.ok = TRUE))
+
+  combined <- egf_combine_frames(object)
+  subset <- if (is.null(.subset)) substitute(subset) else .subset
+  subset <- egf_eval_subset(subset, combined, parent.frame())
+  append <- if (is.null(.append)) substitute(append) else .append
+  append <- egf_eval_append(append, combined, baseenv())
 
   if (link && se) {
     if (is.null(object$sdreport)) {
-      if (has_random(object)) {
+      if (egf_has_random(object)) {
         warning(wrap(
           "Computing a Hessian matrix for a model with random effects, ",
           "which might take a while. To avoid needless recomputation, ",
-          "do `object$sdreport <- try(TMB::sdreport(object$tmb_out))`."
+          "do 'object$sdreport <- try(TMB::sdreport(object$tmb_out))' ",
+          "before trying 'fitted'."
         ))
       }
       object$sdreport <- try(TMB::sdreport(object$tmb_out), silent = TRUE)
     }
     if (inherits(object$sdreport, "try-error")) {
       stop(wrap(
-        "Unable to proceed because `TMB::sdreport(object$tmb_out)` ",
+        "Unable to proceed because 'TMB::sdreport(object$tmb_out)' ",
         "throws the following error:\n\n",
         conditionMessage(attr(object$sdreport, "condition")), "\n\n",
         "Retry after diagnosing and refitting."
@@ -116,26 +118,26 @@ fitted.egf <- function(object,
     Y <- object$tmb_out$report(object$best)$Y
   }
 
-  ## `Y[i, j]` is the fitted value of top level nonlinear model parameter `j`
-  ## (link scale) in fitting window `i`
+  ## 'Y[i, j]' is the fitted value of top level nonlinear model parameter 'j'
+  ## (link scale) in fitting window 'i'
   colnames(Y) <- names_top
-  Y <- Y[subset, par, drop = FALSE]
+  Y <- Y[subset, top, drop = FALSE]
 
   res <- data.frame(
-    par = rep(factor(par, levels = names_top), each = sum(subset)),
+    top = rep(factor(top, levels = names_top), each = length(subset)),
     object$frame_windows[subset, c("ts", "window"), drop = FALSE],
     estimate = as.numeric(Y)
   )
   if (link && se) {
     colnames(Y_se) <- names_top
-    Y_se <- Y_se[subset, par, drop = FALSE]
+    Y_se <- Y_se[subset, top, drop = FALSE]
     res$se <- as.numeric(Y_se)
   }
   if (!link) {
-    res$estimate <- in_place_ragged_apply(res$estimate, res$par,
-      f = lapply(string_extract_link(levels(res$par)), match_link, inverse = TRUE)
+    res$estimate <- in_place_ragged_apply(res$estimate, res$top,
+      f = lapply(egf_link_extract(levels(res$top)), egf_link_match, inverse = TRUE)
     )
-    levels(res$par) <- string_remove_link(levels(res$par))
+    levels(res$top) <- egf_link_remove(levels(res$top))
   }
   res <- data.frame(
     res,
@@ -183,7 +185,7 @@ coef.egf <- fitted.egf
 #'
 #' Otherwise, the same result but with variables \code{estimate},
 #' \code{lower}, and \code{upper} inverse link-transformed and
-#' \code{\link{levels}(par)} modified accordingly.
+#' the \link{levels} of variable \code{top} modified accordingly.
 #'
 #' \code{level} is retained as an \link[=attributes]{attribute}.
 #'
@@ -191,15 +193,15 @@ coef.egf <- fitted.egf
 confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
   if (!isTRUE(attr(object, "se"))) {
     stop(wrap(
-      "`object` must supply link scale fitted values ",
+      "'object' must supply link scale fitted values ",
       "and corresponding standard errors. ",
-      "Retry with `object = fitted(., link = TRUE, se = TRUE)`."
+      "Retry with 'object = fitted(., link = TRUE, se = TRUE)'."
     ))
   }
   stop_if_not_number_in_interval(level, 0, 1, "()")
   stop_if_not_true_false(link)
 
-  s <- c("par", "ts", "window", "estimate", "se")
+  s <- c("top", "ts", "window", "estimate", "se")
   res <- data.frame(
     object[s[1:4]],
     do_wald(estimate = object$estimate, se = object$se, level = level),
@@ -210,10 +212,10 @@ confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
   )
   if (link) {
     elu <- c("estimate", "lower", "upper")
-    res[elu] <- in_place_ragged_apply(res[elu], res$par,
-      f = lapply(string_extract_link(levels(res$par)), match_link, inverse = TRUE)
+    res[elu] <- in_place_ragged_apply(res[elu], res$top,
+      f = lapply(egf_link_extract(levels(res$top)), egf_link_match, inverse = TRUE)
     )
-    levels(res$par) <- string_remove_link(levels(res$par))
+    levels(res$top) <- egf_link_remove(levels(res$top))
   }
   attr(res, "level") <- level
   res

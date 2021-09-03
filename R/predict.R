@@ -18,24 +18,23 @@
 #' @param window
 #'   A \link{factor} of length \code{\link{length}(time)} grouping
 #'   the elements of \code{time} by fitting window. Levels not
-#'   belonging to \code{\link{levels}(object$frame$window)} are ignored.
+#'   found in \code{\link{levels}(object$frame$window)} are ignored.
 #'   \code{window} is ignored altogether if \code{time} is missing.
 #' @param append
 #'   An expression indicating variables in the combined model frame
-#'   (see \code{\link{egf_make_combined}}) to be included with the
+#'   (see \code{\link{egf_combine_frames}}) to be included with the
 #'   result. The default (\code{\link{NULL}}) is to append nothing.
 #' @param log
 #'   A \link{logical} flag. If \code{FALSE},
 #'   then inverse log-transformed predicted values are returned.
 #' @param se
 #'   A \link{logical} flag. If \code{log = TRUE} and \code{se = TRUE},
-#'   then approximate (delta method) standard errors on predicted values
+#'   then approximate delta method standard errors on predicted values
 #'   are reported. Standard errors are required for subsequent use of
 #'   \code{\link{confint.egf_predict}}.
 #' @param .append
-#'   A \link{character} vector listing variable names to be used
-#'   (if non-\code{\link{NULL}}) in place of the result of evaluating
-#'   \code{append}.
+#'   An index vector to be used (if non-\code{\link{NULL}}) in place
+#'   of the result of evaluating \code{append}.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -57,7 +56,8 @@
 #'   associated with \code{object$model$curve}.
 #' }
 #' }
-#' See topic \code{\link{nse}} for details on nonstandard evaluation
+#'
+#' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 #' of \code{append}.
 #'
 #' @return
@@ -82,7 +82,7 @@
 #' }
 #' \item{se}{
 #'   (If \code{log = TRUE} and \code{se = TRUE}.)
-#'   Approximate (delta method) standard error on \code{estimate}.
+#'   Approximate delta method standard error on \code{estimate}.
 #' }
 #'
 #' @export
@@ -100,19 +100,20 @@ predict.egf <- function(object,
   stop_if_not_true_false(log)
   stop_if_not_true_false(se)
 
-  combined <- egf_make_combined(object)
-  append <- eval_append(substitute(append), combined, baseenv(), .append = .append)
+  combined <- egf_combine_frames(object)
+  append <- if (is.null(.append)) substitute(append) else .append
+  append <- egf_eval_append(append, combined, baseenv())
   do_day_of_week <- object$model$day_of_week > 0L
 
   start <- object$frame_windows$start
-  end <- object$frame_windows$end
-  day1 <- object$tmb_args$data$day1
+  end   <- object$frame_windows$end
+  day1  <- object$tmb_args$data$day1
 
   if (missing_time <- missing(time)) {
-    len <- object$tmb_args$data$time_seg_len
-    time <- object$tmb_args$data$time + rep.int(start, len)
-    time_split <- split(time, rep.int(seq_along(len), len))
-    subset <- rep_len(TRUE, length(len))
+    len  <- object$tmb_out$env$data$time_seg_len
+    subset <- seq_along(len)
+    time <- object$tmb_out$env$data$time + rep.int(start, len)
+    time_split <- split(time, rep.int(subset, len))
   } else {
     if (inherits(time, c("Date", "POSIXt"))) {
       time <- julian(time)
@@ -132,45 +133,41 @@ predict.egf <- function(object,
       length(window) == length(time)
     )
 
-    subset <- levels(object$frame$window) %in% levels(factor(window))
+    subset <- which(levels(object$frame$window) %in% levels(factor(window)))
     window <- factor(window, levels = levels(object$frame$window)[subset])
 
-    stop_if_not(
-      nlevels(window) > 0L,
-      m = "`window` must have at least one valid level."
-    )
+    if (nlevels(window) == 0L) {
+      stop("'window' must have at least one valid level.")
+    }
     len <- c(table(window))
     min_len <- 1L + as.integer("interval" %in% what)
-    stop_if_not(
-      len >= min_len,
-      m = sprintf("`time` must have length %d or greater in each level of `window`.", min_len)
-    )
+    if (any(len < min_len)) {
+      stop(sprintf("'time' must have length %d or greater in each level of 'window'.", min_len))
+    }
 
     time_split <- split(time, window)
     t0 <- vapply(time_split, min, 0)
     t1 <- vapply(time_split, max, 0)
+
     start <- start[subset]
     end <- end[subset]
     day1 <- day1[subset]
 
-    stop_if_not(
-      t0 >= start,
-      t1 <= end,
-      m = "`time[i]` must not occur before (after) the start (end) of `window[i]`."
-    )
+    if (any(t0 < start | t1 > end)) {
+      stop("'time[i]' must not occur before (after) the start (end) of 'window[i]'.")
+    }
     if (do_day_of_week) {
       check_ok_diff_time <- function(x) all(diff(x) == 1)
     } else {
       check_ok_diff_time <- function(x) all(diff(x) > 0)
     }
-    stop_if_not(
-      vapply(time_split, check_ok_diff_time, FALSE),
-      m = wrap(
-        "`time` must be increasing ",
+    if (!all(vapply(time_split, check_ok_diff_time, FALSE))) {
+      stop(wrap(
+        "'time' must be increasing ",
         if (do_day_of_week) "with one day spacing " else "",
-        "in each level of `window`."
-      )
-    )
+        "in each level of 'window'."
+      ))
+    }
 
     time <- unlist(time_split, FALSE, FALSE)
     if (do_day_of_week) {
@@ -178,22 +175,23 @@ predict.egf <- function(object,
     }
   }
 
-  object$tmb_args$data$flags$flag_predict <- 1L
-  object$tmb_args$data$flag_what <- as.integer(eval(formals(predict.egf)$what) %in% what)
-  object$tmb_args$data$subset <- which(subset) - 1L
-  object$tmb_args$data$new_time <- time - rep.int(start, len)
-  object$tmb_args$data$new_time_seg_len <- len
-  object$tmb_args$data$new_day1 <- day1
-  tmb_out <- do.call(MakeADFun, object$tmb_args)
+  tmb_args <- egf_remake_tmb_args(object)
+  tmb_args$data$flags$flag_predict <- 1L
+  tmb_args$data$flag_what <- as.integer(eval(formals(predict.egf)$what) %in% what)
+  tmb_args$data$subset <- subset - 1L
+  tmb_args$data$new_time <- time - rep.int(start, len)
+  tmb_args$data$new_time_seg_len <- len
+  tmb_args$data$new_day1 <- day1
+  tmb_out_retape <- do.call(MakeADFun, tmb_args)
 
   if (log && se) {
-    tmb_out$fn(object$best[object$nonrandom])
-    ssdr <- summary(sdreport(tmb_out), select = "report")
+    tmb_out_retape$fn(object$best[object$nonrandom])
+    ssdr <- summary(sdreport(tmb_out_retape), select = "report")
     index <- factor(rownames(ssdr), levels = sprintf("log_%s", what), labels = sprintf("log(%s)", what))
     report <- split(unname(ssdr[, "Estimate"]), index)
     report_se <- split(unname(ssdr[, "Std. Error"]), index)
   } else {
-    report <- tmb_out$report(object$best)[sprintf("log_%s", what)]
+    report <- tmb_out_retape$report(object$best)[sprintf("log_%s", what)]
     names(report) <- sprintf("log(%s)", what)
   }
 
@@ -222,7 +220,7 @@ predict.egf <- function(object,
   }
   res <- data.frame(
     res,
-    combined[rep.int(which(subset), len), append, drop = FALSE],
+    combined[rep.int(subset, len), append, drop = FALSE],
     row.names = NULL,
     check.names = FALSE,
     stringsAsFactors = FALSE
@@ -263,7 +261,7 @@ predict.egf <- function(object,
 #'
 #' Otherwise, the same result but with variables \code{estimate},
 #' \code{lower}, and \code{upper} inverse log-transformed and
-#' \code{\link{levels}(var)} modified accordingly.
+#' the \link{levels} of variable \code{var} modified accordingly.
 #'
 #' \code{level} is retained as an \link[=attributes]{attribute}.
 #'
@@ -271,9 +269,9 @@ predict.egf <- function(object,
 confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
   if (!isTRUE(attr(object, "se"))) {
     stop(wrap(
-      "`object` must supply log scale predicted values ",
+      "'object' must supply log scale predicted values ",
       "and corresponding standard errors. ",
-      "Retry with `object = predict(., link = TRUE, log = TRUE)`."
+      "Retry with 'object = predict(., link = TRUE, log = TRUE)'."
     ))
   }
   stop_if_not_number_in_interval(level, 0, 1, "()")

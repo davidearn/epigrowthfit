@@ -23,9 +23,11 @@
 #'   A \link{list} of symmetric positive definite \link{numeric} matrices,
 #'   or a \link{matrix} to be coerced to a list of length 1.
 #' @param tol
-#'   A positive number specifying a tolerance for non-positive definiteness
-#'   of \code{scale}. All eigenvalues must exceed \code{-tol * rho},
-#'   where \code{rho} is the spectral radius of \code{scale}.
+#'   A non-negative number specifying a tolerance for non-positive definiteness
+#'   of \code{scale}. All eigenvalues of \code{scale} must exceed
+#'   \code{-tol * rho}, where \code{rho} is the spectral radius of \code{scale}.
+#'   (However, regardless of \code{tol}, \code{\link{diag}(scale)} must
+#'   be positive, as standard deviations are processed on the log scale.)
 #'
 #' @return
 #' A \link{list} inheriting from \link{class} \code{"egf_prior"},
@@ -87,20 +89,21 @@ Wishart <- function(df, scale, tol = 1e-06) {
     is.numeric(tol),
     length(tol) == 1L,
     is.finite(tol),
-    tol > 0
+    tol >= 0
   )
   if (is.matrix(scale)) {
     scale <- list(scale)
   } else {
     stopifnot(is.list(scale))
-
   }
   for (i in seq_along(scale)) {
     stopifnot(
       is.numeric(scale[[i]]),
       length(scale[[i]]) > 0L,
+      is.finite(scale[[i]]),
       isSymmetric.matrix(scale[[i]]),
-      (e <- eigen(scale[[i]], symmetric = TRUE, only.values = TRUE)$values) > -tol * max(abs(e))
+      (e <- eigen(scale[[i]], symmetric = TRUE, only.values = TRUE)$values) > -tol * abs(e[1L]),
+      diag(scale[[i]]) > 0
     )
   }
   stopifnot(

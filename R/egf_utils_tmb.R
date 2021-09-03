@@ -153,11 +153,11 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, control, fit, init
     block_cols <- integer(0L)
   } else {
     attr(Z, "info")$top <- factor(attr(Z, "info")$top, levels = names_top)
-    Z_info <- attr(Z, "info")
-    b_index <- as.integer(Z_info$top) - 1L
-    b_index_tab <- c(table(Z_info$top))
-    block_rows <- as.integer(colSums(table(Z_info$top, Z_info$cor) > 0L))
-    block_cols <- as.integer(colSums(table(Z_info$vec, Z_info$cor) > 0L))
+    info <- attr(Z, "info")
+    b_index <- as.integer(info$top) - 1L
+    b_index_tab <- c(table(info$top))
+    block_rows <- as.integer(colSums(table(info$top, info$cov) > 0L))
+    block_cols <- as.integer(colSums(table(info$vec, info$cov) > 0L))
   }
 
   ## Flags
@@ -428,6 +428,24 @@ egf_make_tmb_args <- function(model, frame, frame_parameters, control, fit, init
   )
 }
 
+egf_remake_tmb_args <- function(object) {
+  stopifnot(inherits(object, "egf"))
+  tmb_args <- mget(c("data", "parameters", "map", "random", "profile", "DLL", "silent"), envir = object$tmb_out$env)
+  if (egf_has_random(object)) {
+    tmb_args$parameters <- split(unname(object$best), sub("\\[[0-9]+\\]$", "", names(object$best)))
+    tmb_args$random <- "b"
+  } else {
+    tmb_args$parameters$beta <- unname(object$best)
+    tmb_args$random <- NULL
+  }
+  if (object$control$profile) {
+    tmb_args$profile <- "beta"
+  } else {
+    tmb_args$profile <- NULL
+  }
+  tmb_args
+}
+
 egf_update_tmb_args <- function(tmb_args, priors_top, priors_bottom) {
   priors_top <- unname(priors_top)
   priors_bottom <- unlist(priors_bottom[c("beta", "theta", "Sigma")], FALSE, FALSE)
@@ -523,7 +541,7 @@ egf_patch_gr <- function(gr, inner_optimizer) {
       }
     }
     warning("Unable to evaluate 'gr(x)', returning NaN.")
-    NaN # warning because scalar result is unexpected
+    NaN # warning because length 1 result is unexpected
   }
   environment(pgr) <- e
   pgr

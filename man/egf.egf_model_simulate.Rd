@@ -20,8 +20,8 @@ incidence time series.
 }
 \examples{
 example("simulate.egf_model", "epigrowthfit")
-fit <- egf(sim)
-pp <- data.frame(actual = sim$actual, fitted = fit$best)
-pp[fit$nonrandom, , drop = FALSE]
+mm <- egf(zz, se = TRUE)
+pp <- data.frame(actual = zz$actual, fitted = mm$best)
+pp[mm$nonrandom, , drop = FALSE]
 
 }

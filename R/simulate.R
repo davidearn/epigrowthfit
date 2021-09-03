@@ -45,7 +45,7 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL, ...) {
   }
 
   frame <- object$frame[!is.na(object$frame$window), c("ts", "window", "time"), drop = FALSE]
-  nx <- sprintf("x%0*d", as.integer(log10(nsim)) + 1L, seq_len(nsim))
+  nx <- sprintf("x%d", seq_len(nsim))
   frame[nx] <- replicate(nsim, object$tmb_out$simulate()$x)
   attr(frame, "RNGstate") <- RNGstate
   class(frame) <- c("egf_simulate", "data.frame")
@@ -54,10 +54,10 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL, ...) {
 
 #' Simulate incidence time series
 #'
-#' Simulates incidence time series with daily observations according to
-#' a specified nonlinear model. Top level nonlinear model parameters vary
-#' between time series according to a fixed intercept model \code{~ts} or
-#' random intercept model \code{~(1 | ts)}.
+#' Simulates incidence time series with a unit observation interval according
+#' to a specified nonlinear model. Top level nonlinear model parameters
+#' vary between time series according to a fixed intercept model \code{~ts}
+#' or random intercept model \code{~(1 | ts)}.
 #'
 #' @param object
 #'   An \code{"\link{egf_model}"} specifying a top level nonlinear model
@@ -83,11 +83,11 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL, ...) {
 #'   to a zero matrix and is handled specially.
 #' @param tol
 #'   A non-negative number indicating a tolerance for lack of positive
-#'   definiteness of \code{Sigma}. Negative eigenvalues of \code{Sigma}
-#'   must not be less than \code{-tol * rho}, where \code{rho} is the
-#'   spectral radius of \code{Sigma}. (However, regardless of \code{tol},
-#'   \code{\link{diag}(Sigma)} must be positive, as standard deviations
-#'   are processed on the log scale.)
+#'   definiteness of \code{Sigma}. All eigenvalues of \code{Sigma}
+#'   must exceed \code{-tol * rho}, where \code{rho} is the spectral
+#'   radius of \code{Sigma}.
+#'   (However, regardless of \code{tol}, \code{\link{diag}(Sigma)} must
+#'   be positive, as standard deviations are processed on the log scale.)
 #' @param tmax
 #'   A positive number. Simulated time series run from 0 days to 1 day
 #'   after the inflection time of the expected cumulative incidence
@@ -169,7 +169,7 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL, ...) {
 #' mu <- log(c(r, tinfl, K, disp))
 #' Sigma <- diag(rep_len(0.5^2, length(mu)))
 #'
-#' sim <- simulate(model,
+#' zz <- simulate(model,
 #'   nsim = 20L,
 #'   seed = 202737L,
 #'   mu = mu,
@@ -213,18 +213,13 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   )
   names(mu) <- names_top
   if (!is.null(Sigma)) {
+    stop_if_not_number(tol, "nonnegative")
     stopifnot(
-      is.matrix(Sigma),
       is.numeric(Sigma),
       dim(Sigma) == length(mu),
       is.finite(Sigma),
-      isSymmetric(Sigma)
-    )
-    stop_if_not_number(tol, "nonnegative")
-    e <- eigen(Sigma, symmetric = TRUE)$values
-    stop_if_not(
-      e >= -tol * abs(e[1L]),
-      m = "'Sigma' must be positive definite."
+      isSymmetric(Sigma),
+      (e <- eigen(Sigma, symmetric = TRUE, only.values = TRUE)$values) > -tol * abs(e[1L])
     )
     dimnames(Sigma) <- rep_len(list(names_top), 2L)
   }
@@ -291,7 +286,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     environment(formula_parameters) <- .GlobalEnv
 
   ## Create TMB object without optimizing
-  zz <- egf(object,
+  mm <- egf(object,
     formula = formula,
     formula_windows = formula_windows,
     formula_parameters = formula_parameters,
@@ -305,7 +300,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     ## Second pass with 'data' of appropriate length,
     ## determined by simulated inflection times
     set_RNGstate()
-    Y <- zz$tmb_out$simulate(init)$Y
+    Y <- mm$tmb_out$simulate(init)$Y
     colnames(Y) <- names_top
     tmax <- ceiling(exp(Y[, "log(tinfl)"])) + 1
     time <- lapply(tmax, function(x) seq.int(0, x, by = 1))
@@ -315,12 +310,13 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
       x = 0L # arbitrary non-negative integer to pass checks
     )
     data_windows <- data.frame(ts = gl(nsim, 1L), start = 0, end = tmax)
-    zz <- update(zz, data = data, data_windows = data_windows)
+    mm <- update(mm, data = data, data_windows = data_windows)
   }
 
   ## Simulate
   set_RNGstate()
-  sim <- zz$tmb_out$simulate(init)
+  sim <- mm$tmb_out$simulate(init)
+  colnames(sim$Y) <- names_top
 
   ## Replace dummy observations in 'data' with simulated ones
   data$x[] <- NA
@@ -346,7 +342,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     model = object,
     mu = mu,
     Sigma = Sigma,
-    Y = `colnames<-`(sim$Y, names_top),
+    Y = sim$Y,
     formula = formula,
     formula_windows = formula_windows,
     formula_parameters = formula_parameters,
@@ -376,9 +372,9 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
 #'
 #' @examples
 #' example("simulate.egf_model", "epigrowthfit")
-#' fit <- egf(sim)
-#' pp <- data.frame(actual = sim$actual, fitted = fit$best)
-#' pp[fit$nonrandom, , drop = FALSE]
+#' mm <- egf(zz, se = TRUE)
+#' pp <- data.frame(actual = zz$actual, fitted = mm$best)
+#' pp[mm$nonrandom, , drop = FALSE]
 #'
 #' @export
 egf.egf_model_simulate <- function(model, ...) {

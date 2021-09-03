@@ -195,10 +195,6 @@ Type objective_function<Type>::operator() ()
 		}
 	    } /* loop over group levels */
 	} /* loop over random effects terms */
-
-	REPORT(list_of_blocks);
-	REPORT(list_of_sd);
-	REPORT(list_of_chol);
     }
 
 

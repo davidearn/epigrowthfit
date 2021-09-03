@@ -186,11 +186,11 @@ egf_make_frames <- function(model,
   ### Appended stuff
 
   if (!is.null(append) && is.data.frame(data_windows)) {
-    i <- eval_subset(subset_windows, data_windows, environment(formula_windows))
+    i <- egf_eval_subset(subset_windows, data_windows, environment(formula_windows))
     if (append == ".") {
       j <- setdiff(names(data_windows), unlist(lapply(frame_parameters, names), FALSE, FALSE))
     } else {
-      j <- eval_append(append, data_windows, baseenv())
+      j <- egf_eval_append(append, data_windows, baseenv())
     }
     frame_append <- data_windows[i, j]
   } else {
@@ -714,22 +714,22 @@ egf_make_Z <- function(random, data) {
 #' a \link[=data.frame]{data frame} with one row per column of
 #' the returned matrix, storing details about the corresponding
 #' linear coefficients:
-#' \item{cor}{
+#' \item{cov}{
 #'   (\code{egf_combine_Z} only.)
-#'   Correlation matrix.
+#'   Name of a covariance matrix.
 #'   This is the interaction of \code{term} and \code{group}.
 #' }
 #' \item{vec}{
 #'   (\code{egf_combine_Z} only.)
-#'   Random vector.
+#'   Name of a random vector.
 #'   This is the interaction of \code{term}, \code{group}, and \code{level}.
 #' }
 #' \item{bottom}{
-#'   Bottom level mixed effects model parameter.
+#'   Name of a bottom level mixed effects model parameter.
 #' }
 #' \item{top}{
-#'   Top level nonlinear model parameter whose fitted value is a function
-#'   of \code{bottom}.
+#'   Name of the top level nonlinear model parameter whose fitted value
+#'   is a function of \code{bottom}.
 #' }
 #' \item{term}{
 #'   \link[=deparse]{Deparse}d term from \code{tt}, or \code{"(Intercept)"}.
@@ -740,8 +740,8 @@ egf_make_Z <- function(random, data) {
 #' }
 #' \item{level}{
 #'   (\code{egf_combine_Z} only.)
-#'   \link[=levels]{Level} of \link{factor} or interaction indicated by
-#'   \code{group}.
+#'   \link[=levels]{Level} of \link{factor} or interaction indicated
+#'   by \code{group}.
 #' }
 #' \item{colname}{
 #'   Column name in design matrix.
@@ -802,17 +802,17 @@ egf_combine_Z <- function(random, Z) {
   term <- factor(unlist(term, FALSE, FALSE))
   group <- factor(rep.int(vapply(random_group, deparse, ""), nc))
   level <- unlist(lapply(Z, attr, "index"), FALSE, FALSE)
-  cor <- interaction(term, group, drop = TRUE, lex.order = TRUE)
-  levels(cor) <- enum_dupl_string(rep_len("Sigma", nlevels(cor)))
+  cov <- interaction(term, group, drop = TRUE, lex.order = TRUE)
+  levels(cov) <- enum_dupl_string(rep_len("Sigma", nlevels(cov)))
   vec <- interaction(term, group, level, drop = TRUE, lex.order = TRUE)
   levels(vec) <- enum_dupl_string(rep_len("u", nlevels(vec)))
 
   res <- do.call(cbind, Z)
-  info <- data.frame(cor, vec, top, term, group, level, colname = colnames(res), row.names = NULL, stringsAsFactors = FALSE)
+  info <- data.frame(cov, vec, top, term, group, level, colname = colnames(res), row.names = NULL, stringsAsFactors = FALSE)
 
-  o <- do.call(order, unname(info[c("cor", "vec", "top")]))
+  o <- do.call(order, unname(info[c("cov", "vec", "top")]))
   res <- res[, o, drop = FALSE]
   info <- info[o, , drop = FALSE]
-  attr(res, "info") <- data.frame(info[c("cor", "vec")], bottom, info[c("top", "term", "group", "level", "colname")], row.names = NULL, stringsAsFactors = FALSE)
+  attr(res, "info") <- data.frame(info[c("cov", "vec")], bottom, info[c("top", "term", "group", "level", "colname")], row.names = NULL, stringsAsFactors = FALSE)
   res
 }
