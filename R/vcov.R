@@ -34,6 +34,12 @@
 #' \code{beta} of the full parameter vector \code{c(beta, theta, b)} plus
 #' (if \code{full = TRUE}) the length of segment \code{theta}.
 #'
+#' @examples
+#' example("egf", "epigrowthfit")
+#' vcov(object, full = FALSE, cor = FALSE)
+#' vcov(object, full = TRUE,  cor = FALSE)
+#' vcov(object, full = TRUE,  cor = TRUE)
+#'
 #' @export
 #' @importFrom stats cov2cor
 #' @importFrom TMB sdreport

@@ -22,10 +22,19 @@ indicated by \code{\link{egf}} argument \code{append}.
 }
 \details{
 If a variable name occurs in multiple mixed effects model frames,
-then only one instance is retained. Except in unusual cases
+then only the first instance is retained. Except in unusual cases
 (possible only if model formulae have different formula environments),
 all instances of a variable name are identical, and no information is lost.
 
 Since the data frames being combined each correspond rowwise
 to \code{object$frame_windows}, so does the result.
+}
+\examples{
+object <- list(
+  frame_parameters = list(a = data.frame(x = seq_len(9L)), b = data.frame(y = rnorm(9L))),
+  frame_append = data.frame(x = rnorm(9L), z = 0)
+)
+class(object) <- "egf"
+egf_combine_frames(object)
+
 }

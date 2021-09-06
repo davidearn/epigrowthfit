@@ -6,7 +6,7 @@
 \usage{
 egf_parallel(
   method = c("serial", "multicore", "snow"),
-  outfile = nullfile(),
+  outfile = "",
   cores = getOption("egf.cores", 1L),
   args = list(),
   cl = NULL
@@ -50,6 +50,11 @@ Defines instructions for parallelization by linking a method with options.
 \details{
 For general information about parallelism in \R,
 see \code{\link{vignette}("parallel", "parallel")}.
+}
+\examples{
+parallel <- egf_parallel()
+str(parallel)
+
 }
 \seealso{
 Other behaviour-defining functions: 

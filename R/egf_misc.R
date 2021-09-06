@@ -90,6 +90,18 @@ egf_get_names_top.tmb_data <- function(object, link = TRUE, ...) {
 #' @return
 #' \code{TRUE} or \code{FALSE}.
 #'
+#' @examples
+#' e <- new.env()
+#' e$data <- list()
+#' object <- list(tmb_out = list(env = e))
+#' class(object) <- "egf"
+#'
+#' e$data$Z <- matrix(numeric(9L), 3L, 3L) # at least one column
+#' egf_has_random(object)
+#'
+#' e$data$Z <- matrix(numeric(0L), 3L, 0L) # zero columns
+#' egf_has_random(object)
+#'
 #' @export
 egf_has_random <- function(object) {
   stopifnot(inherits(object, "egf"))
@@ -106,7 +118,7 @@ egf_has_random <- function(object) {
 #'
 #' @details
 #' If a variable name occurs in multiple mixed effects model frames,
-#' then only one instance is retained. Except in unusual cases
+#' then only the first instance is retained. Except in unusual cases
 #' (possible only if model formulae have different formula environments),
 #' all instances of a variable name are identical, and no information is lost.
 #'
@@ -118,6 +130,14 @@ egf_has_random <- function(object) {
 #' (in the sense of \code{\link{cbind}})
 #' all data frames in \link{list} \code{object$frame_parameters}
 #' and data frame \code{object$frame_append}.
+#'
+#' @examples
+#' object <- list(
+#'   frame_parameters = list(a = data.frame(x = seq_len(9L)), b = data.frame(y = rnorm(9L))),
+#'   frame_append = data.frame(x = rnorm(9L), z = 0)
+#' )
+#' class(object) <- "egf"
+#' egf_combine_frames(object)
 #'
 #' @export
 egf_combine_frames <- function(object) {

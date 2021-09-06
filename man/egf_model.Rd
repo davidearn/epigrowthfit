@@ -36,6 +36,11 @@ containing the arguments (after possible matching and coercion).
 Sets flags defining the top level nonlinear model of epidemic growth
 to be estimated by \code{\link{egf}}.
 }
+\examples{
+model <- egf_model()
+str(model)
+
+}
 \seealso{
 Other behaviour-defining functions: 
 \code{\link{egf_control}()},

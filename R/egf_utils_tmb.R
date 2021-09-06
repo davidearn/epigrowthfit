@@ -90,7 +90,7 @@
 #' @noRd
 #' @importFrom stats formula terms model.offset
 #' @importFrom Matrix sparseMatrix
-egf_make_tmb_data <- function(model, frame, frame_parameters, control, fit, init) {
+egf_make_tmb_data <- function(model, frame, frame_parameters, control) {
   ## Indices of time points associated with fitting windows
   first <- attr(frame, "first")
   last <- attr(frame, "last")

@@ -43,3 +43,10 @@ it returns fitted values of top level nonlinear model parameters,
 not fixed effects coefficients.
 }
 
+\examples{
+example("egf", "epigrowthfit")
+vcov(object, full = FALSE, cor = FALSE)
+vcov(object, full = TRUE,  cor = FALSE)
+vcov(object, full = TRUE,  cor = TRUE)
+
+}

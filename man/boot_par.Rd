@@ -22,12 +22,22 @@ be mixed with optimization output.}
 \item{...}{Unused optional arguments.}
 }
 \value{
-A \link{numeric} \link{matrix} inheriting from \link{class}
-\code{"egf_boot"},
-with \code{\link{length}(object$best)} rows and \code{n} columns.
+A \link[=double]{numeric} \link{matrix} inheriting from \link{class}
+\code{"egf_boot"}, with \code{\link{length}(object$best)} rows and
+\code{n} columns.
 }
 \description{
 Sample from the conditional distribution of segments \code{beta} and
-\code{theta} of the full parameter vector \code{c(beta, theta, b)},
+\code{theta} of the full parameter vector \code{c(beta, theta, b)}
 given their fitted values.
+}
+\examples{
+example("egf", "epigrowthfit")
+set.seed(181952L)
+bb <- boot_par(object, n = 6L)
+matplot(t(bb[object$nonrandom, ]), type = "o", las = 1,
+  xlab = "simulation",
+  ylab = "parameter value"
+)
+
 }

@@ -1,4 +1,4 @@
-#' Simulate incidence from a fitted model
+#' Simulate incidence data from a fitted model
 #'
 #' Simulates new incidence data conditional on a fitted nonlinear
 #' mixed effects model of epidemic growth. Only observations within

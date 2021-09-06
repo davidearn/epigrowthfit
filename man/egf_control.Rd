@@ -72,6 +72,11 @@ evaluation; and
 \item trace flags set by \code{\link[TMB]{config}} are turned on.
 }
 }
+\examples{
+control <- egf_control()
+str(control)
+
+}
 \seealso{
 Other behaviour-defining functions: 
 \code{\link{egf_model}()},

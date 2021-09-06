@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate.R
 \name{simulate.egf}
 \alias{simulate.egf}
-\title{Simulate incidence from a fitted model}
+\title{Simulate incidence data from a fitted model}
 \usage{
 \method{simulate}{egf}(object, nsim = 1L, seed = NULL, ...)
 }

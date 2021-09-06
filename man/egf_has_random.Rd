@@ -15,3 +15,16 @@ egf_has_random(object)
 \description{
 Determines whether an object specifies a random effects model.
 }
+\examples{
+e <- new.env()
+e$data <- list()
+object <- list(tmb_out = list(env = e))
+class(object) <- "egf"
+
+e$data$Z <- matrix(numeric(9L), 3L, 3L) # at least one column
+egf_has_random(object)
+
+e$data$Z <- matrix(numeric(0L), 3L, 0L) # zero columns
+egf_has_random(object)
+
+}

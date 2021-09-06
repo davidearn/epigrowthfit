@@ -258,9 +258,43 @@
 #'   The \link{call} to \code{egf}, allowing for updates to the
 #'   \code{"egf"} object via \code{\link{update}}.
 #' }
-#' If \code{fit = FALSE}, then the class is \code{"egf_no_fit"} instead
-#' of \code{"egf"}, and the list elements \code{optimizer_out}, \code{nll},
-#' \code{best}, and \code{sdreport} are always \code{\link{NULL}}.
+#' If \code{fit = FALSE}, then the class is \code{"egf_no_fit"}
+#' instead of \code{"egf"}, and the list elements \code{optimizer_out},
+#' \code{nll}, \code{best}, and \code{sdreport} are \code{\link{NULL}}.
+#'
+#' @examples
+#' ## Simulate 'N' incidence time series exhibiting exponential growth
+#' set.seed(180149L)
+#' N <- 20L
+#' time <- seq(0, 40, 1)
+#' r <- rlnorm(N, -3.2, 0.2)
+#' c0 <- rlnorm(N, 6, 0.2)
+#' f <- function(time, r, c0) {
+#'   lambda <- diff(exp(log(c0) + r * time))
+#'   c(NA, rpois(lambda, lambda))
+#' }
+#' data <- data.frame(
+#'   ts = gl(N, length(time)),
+#'   time = rep.int(time, N),
+#'   x = unlist(Map(f, time = list(time), r = r, c0 = c0))
+#' )
+#' data_windows <- data.frame(
+#'   ts = gl(N, 1L),
+#'   start = sample(head(time, 10L), size = N, replace = TRUE),
+#'   end = sample(tail(time, 10L), size = N, replace = TRUE)
+#' )
+#'
+#' ## Estimate the generative model
+#' object <- egf(
+#'   model = egf_model(curve = "exponential", family = "pois"),
+#'   formula = cbind(time, x) ~ ts,
+#'   formula_windows = cbind(start, end) ~ ts,
+#'   formula_parameters = ~(1 | ts),
+#'   formula_priors_bottom = list(Sigma ~ LKJ(eta = 2)),
+#'   data = data,
+#'   data_windows = data_windows,
+#'   se = TRUE
+#' )
 #'
 #' @export
 #' @useDynLib epigrowthfit

@@ -66,6 +66,14 @@ control parameters to define an optimization method for use by
 \code{\link{egf}}. "Outer" and "inner" optimization methods are
 defined separately by \code{egf_optimizer} and \code{egf_inner_optimizer}.
 }
+\examples{
+optimizer <- egf_optimizer()
+str(optimizer)
+
+inner_optimizer <- egf_inner_optimizer()
+str(inner_optimizer)
+
+}
 \seealso{
 \code{\link[TMB]{MakeADFun}} for some details about outer and inner
 optimizations

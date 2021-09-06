@@ -24,6 +24,10 @@
 #' A \link{list} inheriting from \link{class} \code{"egf_model"}
 #' containing the arguments (after possible matching and coercion).
 #'
+#' @examples
+#' model <- egf_model()
+#' str(model)
+#'
 #' @family behaviour-defining functions
 #' @export
 egf_model <- function(curve = c("logistic", "exponential", "subexponential", "gompertz", "richards"),
@@ -106,6 +110,10 @@ egf_model <- function(curve = c("logistic", "exponential", "subexponential", "go
 #' @return
 #' A \link{list} inheriting from \link{class} \code{"egf_control"}
 #' containing the arguments (after possible coercion).
+#'
+#' @examples
+#' control <- egf_control()
+#' str(control)
 #'
 #' @family behaviour-defining functions
 #' @export
@@ -202,11 +210,17 @@ egf_control <- function(optimizer = egf_optimizer(),
 #'   \code{trace = 0L} is set if not specified in \code{args}.
 #' }
 #'
+#' @examples
+#' optimizer <- egf_optimizer()
+#' str(optimizer)
+#'
+#' inner_optimizer <- egf_inner_optimizer()
+#' str(inner_optimizer)
+#'
+#' @name egf_optimizer
 #' @seealso
 #' \code{\link[TMB]{MakeADFun}} for some details about outer and inner
 #' optimizations
-#'
-#' @name egf_optimizer
 NULL
 
 #' @rdname egf_optimizer
@@ -356,11 +370,15 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
 #' A \link{list} inheriting from \link{class} \code{"egf_parallel"}
 #' containing the arguments (after possible matching and coercion).
 #'
+#' @examples
+#' parallel <- egf_parallel()
+#' str(parallel)
+#'
 #' @family behaviour-defining functions
 #' @export
 #' @importFrom TMB openmp
 egf_parallel <- function(method = c("serial", "multicore", "snow"),
-                         outfile = nullfile(),
+                         outfile = "",
                          cores = getOption("egf.cores", 1L),
                          args = list(),
                          cl = NULL) {
