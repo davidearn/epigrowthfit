@@ -1,11 +1,23 @@
 namespace egf
 {
 
-/* Lewandowski-Kurowicka-Joe (LKJ) density function (non-normalized),
-   where `x` parametrizes an n-by-n SPD correlation matrix `X`. 
-   `x` should contain the `n*(n-1)/2` lower triangular elements 
-   of the unit diagonal Cholesky factor `L` of `X` in row-major order.
-*/
+// https://github.com/jaganmn/misc/tree/master/tmb_distributions
+template<class Type>
+Type mvlgamma(Type x, int p = 1)
+{
+    Type res = lgamma(x);
+    if (p == 1)
+    {
+        return res;
+    }
+    for (int i = 1; i < p; ++i)
+    {
+        res += lgamma(x - Type(0.5 * i));
+    }
+    res += Type(0.25 * p * (p - 1) * log(M_PI));
+    return res;
+}
+
 template<class Type>
 Type dlkj(const vector<Type> &x, Type eta, int give_log = 0)
 {
@@ -29,30 +41,6 @@ Type dlkj(const vector<Type> &x, Type eta, int give_log = 0)
     return ( give_log ? log_res : exp(log_res) );
 }
 
-/* Log multivariate gamma function, requiring `x > 0.5 * (p - 1)` */
-template<class Type>
-Type mvlgamma(Type x, int p)
-{
-    Type res = lgamma(x);
-    if (p == 1)
-    {
-        return res;
-    }
-    for (int i = 1; i < p; ++i)
-    {
-        res += lgamma(x - Type(0.5 * i));
-    }
-    res += Type(0.25 * p * (p - 1) * log(M_PI));
-    return res;
-}
-
-/* Wishart density function, where `x` and `scale` 
-   parametrize corresponding n-by-n SPD covariance matrices `X` and `S`.
-   `x` should contain the `n` log standard deviations associated
-   with `X` followed by the `n*(n-1)/2` lower triangular elements 
-   of the unit diagonal Cholesky factor `L` of `X` in row-major order
-   (ditto for `scale` and `S`).
-*/
 template<class Type>
 Type dwishart(const vector<Type> &x, Type df, const vector<Type> &scale, int give_log = 0)
 {
@@ -101,18 +89,11 @@ Type dwishart(const vector<Type> &x, Type df, const vector<Type> &scale, int giv
 	 (-df + Type(n + 1)) * log_det_X +
 	 df * Type(n * M_LN2) +
 	 Type(2.0) * mvlgamma(Type(0.5) * df, n) +
-	 A.sum() /* this term is `tr(invS * X)` */
+	 A.sum() /* this term is 'tr(invS * X)' */
 	);
     return ( give_log ? log_res : exp(log_res) ); 
 }
 
-/* Inverse Wishart density, where `x` and `scale` 
-   parametrize corresponding n-by-n SPD covariance matrices `X` and `S`.
-   `x` should contain the `n` log standard deviations associated
-   with `X` followed by the `n*(n-1)/2` lower triangular elements 
-   of the unit diagonal Cholesky factor `L` of `X` in row-major order
-   (ditto for `scale` and `S`).
-*/
 template<class Type>
 Type dinvwishart(const vector<Type> &x, Type df, const vector<Type> &scale, int give_log = 0)
 {
@@ -161,7 +142,7 @@ Type dinvwishart(const vector<Type> &x, Type df, const vector<Type> &scale, int 
 	 (df + Type(n + 1)) * log_det_X +
 	 df * Type(n * M_LN2) +
 	 Type(2.0) * mvlgamma(Type(0.5) * df, n) +
-	 A.sum() /* this term is `tr(S * invX)` */
+	 A.sum() /* this term is 'tr(S * invX)' */
 	);
     return ( give_log ? log_res : exp(log_res) ); 
 }

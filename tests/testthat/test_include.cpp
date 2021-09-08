@@ -1,17 +1,41 @@
 #include <TMB.hpp>
-#include "enums.h"
 #include "../../src/structs.h"
 #include "../../src/utils.h"
 #include "../../src/distributions.h"
 #include "../../src/enums.h"
 #include "../../src/curve.h"
 
+enum test
+{
+    list_of_vectors_t,
+    is_NA_real_,
+    is_finite,
+    logspace_diff,
+    mvlgamma,
+    dlkj,
+    dwishart,
+    dinvwishart,
+    dpois_robust,
+    rnbinom_robust,
+    eval_log_curve_exponential,
+    eval_log_curve_subexponential,
+    eval_log_curve_gompertz,
+    eval_log_curve_logistic,
+    eval_log_curve_richards,
+    logspace_add_baseline,
+    logspace_add_offsets,
+    eval_log_rt_subexponential,
+    eval_log_rt_gompertz,
+    eval_log_rt_logistic,
+    eval_log_rt_richards
+};
+
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-    DATA_INTEGER(flag_test);
+    DATA_INTEGER(test_flag);
   
-    switch (flag_test)
+    switch (test_flag)
     {
     /* structs.h */
     case list_of_vectors_t:
@@ -81,7 +105,7 @@ Type objective_function<Type>::operator() ()
     {
         DATA_VECTOR(x);
 	DATA_SCALAR(df);
-	DATA_VECTOR(scale)
+	DATA_VECTOR(scale);
 	DATA_INTEGER(give_log);
 	Type res = egf::dwishart(x, df, scale, give_log);
 	REPORT(res);
@@ -91,7 +115,7 @@ Type objective_function<Type>::operator() ()
     {
         DATA_VECTOR(x);
 	DATA_SCALAR(df);
-	DATA_VECTOR(scale)
+	DATA_VECTOR(scale);
 	DATA_INTEGER(give_log);
 	Type res = egf::dinvwishart(x, df, scale, give_log);
 	REPORT(res);
