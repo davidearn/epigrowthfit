@@ -285,9 +285,9 @@ confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
   stop_if_not_number_in_interval(level, 0, 1, "()")
   stop_if_not_true_false(log)
 
-  s <- c("var", "ts", "window", "estimate", "se")
+  s <- c("var", "ts", "window", "time", "estimate", "se")
   res <- data.frame(
-    object[s[1:4]],
+    object[s[1:5]],
     do_wald(estimate = object$estimate, se = object$se, level = level),
     object[-match(s, names(object), 0L)],
     row.names = NULL,
