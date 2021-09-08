@@ -112,7 +112,7 @@ Computation of likelihood profiles is expensive as it requires estimation
 of many restricted models. It is parallelized at the C++ level when there
 is OpenMP support and \code{fitted$control$omp_num_threads} is set to
 an integer greater than 1. If there is no OpenMP support, then computation
-may still be parallelized at the \R level with appropriate setting of
+can still be parallelized at the \R level with appropriate setting of
 \code{parallel}.
 
 \code{which} is mapped to an \code{A} matrix composed of unit row vectors,

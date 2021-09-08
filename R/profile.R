@@ -61,7 +61,7 @@
 #' of many restricted models. It is parallelized at the C++ level when there
 #' is OpenMP support and \code{fitted$control$omp_num_threads} is set to
 #' an integer greater than 1. If there is no OpenMP support, then computation
-#' may still be parallelized at the \R level with appropriate setting of
+#' can still be parallelized at the \R level with appropriate setting of
 #' \code{parallel}.
 #'
 #' \code{which} is mapped to an \code{A} matrix composed of unit row vectors,
@@ -246,7 +246,7 @@ profile.egf <- function(fitted,
 
     ## Reconstruct list of arguments to 'MakeADFun' from object internals
     ## for retaping
-    tmb_args <- egf_remake_tmb_args(fitted)
+    tmb_args <- egf_tmb_remake_args(fitted)
 
     if (is.null(parallel$cl)) {
       cl <- do.call(makePSOCKcluster, parallel$args)

@@ -261,6 +261,7 @@ void eval_log_rt_exact(vector<Type> &log_curve,
     {
     case exponential:
         log_curve.fill(Y_row(indices.index_log_r));
+	break;
     case subexponential:
         eval_log_rt_subexponential(log_curve,
 				   Y_row(indices.index_log_alpha),

@@ -348,24 +348,24 @@ Type objective_function<Type>::operator() ()
         /* Flags ------------------------------------------------------------ */
         
         /* What should be predicted? */
-	DATA_IVECTOR(flag_what);
+	DATA_IVECTOR(what);
 
 	/* Let c(t) be cumulative incidence since time -Inf. Then:
 	   0. Log interval incidence
 	      
 	      = log(diff(c(t)))
 	*/
-	bool do_predict_log_interval = (flag_what(0) == 1);
+	bool do_predict_log_interval = (what(0) == 1);
 	/* 1. Log cumulative incidence since time -Inf
 	      
 	      = log(c(t))
 	*/
-        bool do_predict_log_cumulative = (flag_what(1) == 1);
+        bool do_predict_log_cumulative = (what(1) == 1);
 	/* 2. Log per capita growth rate
 	      
 	      = log(c'(t) / c(t))
 	*/
-	bool do_predict_log_rt = (flag_what(2) == 1);
+	bool do_predict_log_rt = (what(2) == 1);
 
       
         /* Data ------------------------------------------------------------- */
@@ -398,9 +398,9 @@ Type objective_function<Type>::operator() ()
 
 	/* Log cumulative incidence since time -Inf, no day of week effects - */
 
-	int n;
-	vector<Type> Y_row;
 	vector< vector<Type> > list_of_predict(N);
+	int n;
+	
 	for (int s = 0, i = 0; s < N; ++s)
 	{
 	    n = new_time_seg_len(s);
@@ -413,17 +413,18 @@ Type objective_function<Type>::operator() ()
 				flags.flag_curve);
 	    i += n;
 	}
-
+	
 
 	/* Prediction variables --------------------------------------------- */
-
+	
+	vector<Type> Y_row;
 	if (do_predict_log_rt)
 	{
 	    vector<Type> log_rt(new_time.size());
 	    vector<Type> tmp;
 	    for (int s = 0, i = 0; s < N; ++s)
 	    {
-		n = new_time_seg_len(s);
+	        n = new_time_seg_len(s);
 		Y_row = Y.row(subset(s));
 		/* log(c(t)) <- log(c'(t) / c(t)) */
 		if (do_predict_log_interval || do_predict_log_cumulative)

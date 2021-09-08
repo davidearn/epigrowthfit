@@ -13,13 +13,12 @@
 #'   A \link{numeric} vector supplying time points at which predicted
 #'   values are sought. \link{Date} and \link{POSIXt} vectors are
 #'   tolerated and coerced to numeric with \code{\link{julian}(time)}.
-#'   When \link{time} is missing, the original time points stored in
-#'   \code{object} are used.
+#'   When \link{time} is missing, time points stored in \code{object}
+#'   are reused, and \code{window} is ignored.
 #' @param window
 #'   A \link{factor} of length \code{\link{length}(time)} grouping
 #'   the elements of \code{time} by fitting window. Levels not
 #'   found in \code{\link{levels}(object$frame$window)} are ignored.
-#'   \code{window} is ignored altogether if \code{time} is missing.
 #' @param append
 #'   An expression indicating variables in the combined model frame
 #'   (see \code{\link{egf_combine_frames}}) to be included with the
@@ -85,6 +84,11 @@
 #'   Approximate delta method standard error on \code{estimate}.
 #' }
 #'
+#' @examples
+#' example("egf", "epigrowthfit")
+#' zz <- predict(object, se = TRUE)
+#' str(zz)
+#'
 #' @export
 #' @importFrom TMB MakeADFun sdreport
 predict.egf <- function(object,
@@ -107,7 +111,7 @@ predict.egf <- function(object,
 
   start <- object$frame_windows$start
   end   <- object$frame_windows$end
-  day1  <- object$tmb_args$data$day1
+  day1  <- object$tmb_out$env$data$day1
 
   if (missing_time <- missing(time)) {
     len  <- object$tmb_out$env$data$time_seg_len
@@ -175,9 +179,9 @@ predict.egf <- function(object,
     }
   }
 
-  tmb_args <- egf_remake_tmb_args(object)
+  tmb_args <- egf_tmb_remake_args(object)
   tmb_args$data$flags$flag_predict <- 1L
-  tmb_args$data$flag_what <- as.integer(eval(formals(predict.egf)$what) %in% what)
+  tmb_args$data$what <- as.integer(eval(formals(predict.egf)$what) %in% what)
   tmb_args$data$subset <- subset - 1L
   tmb_args$data$new_time <- time - rep.int(start, len)
   tmb_args$data$new_time_seg_len <- len
@@ -185,7 +189,6 @@ predict.egf <- function(object,
   tmb_out_retape <- do.call(MakeADFun, tmb_args)
 
   if (log && se) {
-    tmb_out_retape$fn(object$best[object$nonrandom])
     ssdr <- summary(sdreport(tmb_out_retape), select = "report")
     index <- factor(rownames(ssdr), levels = sprintf("log_%s", what), labels = sprintf("log(%s)", what))
     report <- split(unname(ssdr[, "Estimate"]), index)
@@ -264,6 +267,11 @@ predict.egf <- function(object,
 #' the \link{levels} of variable \code{var} modified accordingly.
 #'
 #' \code{level} is retained as an \link[=attributes]{attribute}.
+#'
+#' @examples
+#' example("predict.egf", "epigrowthfit")
+#' confint(zz, log = TRUE)
+#' confint(zz, log = FALSE)
 #'
 #' @export
 confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {

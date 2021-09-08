@@ -40,3 +40,9 @@ as \code{estimate + c(-1, 1) * sqrt(q) * se},
 with \code{estimate} and \code{se} as in \code{object} and
 \code{q = \link{qchisq}(level, df = 1)}.
 }
+\examples{
+example("predict.egf", "epigrowthfit")
+confint(zz, log = TRUE)
+confint(zz, log = FALSE)
+
+}

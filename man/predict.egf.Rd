@@ -25,13 +25,12 @@ predicted values are sought.}
 \item{time}{A \link{numeric} vector supplying time points at which predicted
 values are sought. \link{Date} and \link{POSIXt} vectors are
 tolerated and coerced to numeric with \code{\link{julian}(time)}.
-When \link{time} is missing, the original time points stored in
-\code{object} are used.}
+When \link{time} is missing, time points stored in \code{object}
+are reused, and \code{window} is ignored.}
 
 \item{window}{A \link{factor} of length \code{\link{length}(time)} grouping
 the elements of \code{time} by fitting window. Levels not
-found in \code{\link{levels}(object$frame$window)} are ignored.
-\code{window} is ignored altogether if \code{time} is missing.}
+found in \code{\link{levels}(object$frame$window)} are ignored.}
 
 \item{append}{An expression indicating variables in the combined model frame
 (see \code{\link{egf_combine_frames}}) to be included with the
@@ -101,4 +100,10 @@ assuming \code{log = FALSE}:
 
 See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{append}.
+}
+\examples{
+example("egf", "epigrowthfit")
+zz <- predict(object, se = TRUE)
+str(zz)
+
 }

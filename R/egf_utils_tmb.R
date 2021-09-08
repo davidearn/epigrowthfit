@@ -90,7 +90,7 @@
 #' @noRd
 #' @importFrom stats formula terms model.offset
 #' @importFrom Matrix sparseMatrix
-egf_make_tmb_data <- function(model, frame, frame_parameters, control) {
+egf_tmb_make_data <- function(model, frame, frame_parameters, control) {
   ## Indices of time points associated with fitting windows
   first <- attr(frame, "first")
   last <- attr(frame, "last")
@@ -218,7 +218,7 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, control) {
 #'
 #' @inheritParams egf
 #' @param tmb_data
-#'   A \code{"\link[=egf_make_tmb_data]{tmb_data}"} object.
+#'   A \code{"\link[=egf_tmb_make_data]{tmb_data}"} object.
 #' @param
 #'   Model frames obtained from the list output of \code{egf_make_frames}.
 #'
@@ -292,7 +292,7 @@ egf_make_tmb_data <- function(model, frame, frame_parameters, control) {
 #'
 #' @noRd
 #' @importFrom stats coef lm na.omit qlogis terms
-egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters, init) {
+egf_tmb_make_parameters <- function(tmb_data, model, frame, frame_parameters, init) {
   ## Lengths of parameter objects
   f <- function(n) as.integer(n * (n + 1) / 2)
   len <- c(
@@ -381,14 +381,14 @@ egf_make_tmb_parameters <- function(tmb_data, model, frame, frame_parameters, in
   res
 }
 
-egf_make_tmb_args <- function(model, frame, frame_parameters, control, fit, init, map) {
-  tmb_data <- egf_make_tmb_data(
+egf_tmb_make_args <- function(model, frame, frame_parameters, control, fit, init, map) {
+  tmb_data <- egf_tmb_make_data(
     model = model,
     frame = frame,
     frame_parameters = frame_parameters,
     control = control
   )
-  tmb_parameters <- egf_make_tmb_parameters(
+  tmb_parameters <- egf_tmb_make_parameters(
     tmb_data = tmb_data,
     model = model,
     frame = frame,
@@ -428,9 +428,11 @@ egf_make_tmb_args <- function(model, frame, frame_parameters, control, fit, init
   )
 }
 
-egf_remake_tmb_args <- function(object) {
+egf_tmb_remake_args <- function(object) {
   stopifnot(inherits(object, "egf"))
   tmb_args <- mget(c("data", "parameters", "map", "random", "profile", "DLL", "silent"), envir = object$tmb_out$env)
+  attr(tmb_args$data, "check.passed") <- NULL
+  attr(tmb_args$parameters, "check.passed") <- NULL
   if (egf_has_random(object)) {
     tmb_args$parameters <- split(unname(object$best), sub("\\[[0-9]+\\]$", "", names(object$best)))
     tmb_args$random <- "b"
@@ -446,7 +448,7 @@ egf_remake_tmb_args <- function(object) {
   tmb_args
 }
 
-egf_update_tmb_args <- function(tmb_args, priors_top, priors_bottom) {
+egf_tmb_update_args <- function(tmb_args, priors_top, priors_bottom) {
   priors_top <- unname(priors_top)
   priors_bottom <- unlist(priors_bottom[c("beta", "theta", "Sigma")], FALSE, FALSE)
   for (s in c("top", "bottom")) {
@@ -485,7 +487,7 @@ egf_update_tmb_args <- function(tmb_args, priors_top, priors_bottom) {
 #' @noRd
 NULL
 
-egf_patch_fn <- function(fn, inner_optimizer) {
+egf_tmb_patch_fn <- function(fn, inner_optimizer) {
   e <- environment(fn)
   if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
     e$.egf_env <- new.env(parent = emptyenv())
@@ -515,7 +517,7 @@ egf_patch_fn <- function(fn, inner_optimizer) {
   pfn
 }
 
-egf_patch_gr <- function(gr, inner_optimizer) {
+egf_tmb_patch_gr <- function(gr, inner_optimizer) {
   e <- environment(gr)
   if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
     e$.egf_env <- new.env(parent = emptyenv())

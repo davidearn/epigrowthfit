@@ -75,7 +75,7 @@ from the conditional distribution of the full parameter vector
 Bootstrap optimizations are typically expensive for nontrivial models.
 They are parallelized at the C++ level when there is OpenMP support and
 \code{object$control$omp_num_threads} is set to an integer greater than 1.
-If there is no OpenMP support, then bootstrap optimizations may still be
+If there is no OpenMP support, then bootstrap optimizations can still be
 parallelized at the \R level with appropriate setting of \code{parallel}.
 
 Arguments \code{trace}, \code{control}, and \code{parallel} are unused

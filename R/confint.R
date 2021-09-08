@@ -43,7 +43,7 @@
 #'   are printed.
 #'   Depending on \code{object$control$trace}, these may be mixed with
 #'   optimizer output.
-#' @param parallel (For \code{method = "profile"}.)
+#' @param parallel (For \code{method != "wald"}.)
 #'   An \code{"\link{egf_parallel}"} object defining options for \R level
 #'   parallelization.
 #' @param max_width (For \code{method = "uniroot"}.)
@@ -76,16 +76,17 @@
 #' }
 #' For top level parameters following random effects models,
 #' \code{"wald"} returns confidence intervals on individual fitted values,
-#' whereas \code{"profile"} and \code{"uniroot"} return confidence intervals
-#' population fitted values, which are the fixed effects components
-#' of individual fitted values.
+#' while \code{"profile"} and \code{"uniroot"} return confidence intervals
+#' on population fitted values, which are the fixed effects components of
+#' individual fitted values.
 #'
-#' \code{"wald"} requires minimal computation time but assumes,
-#' e.g., asymptotic normality of the maximum likelihood estimator.
-#' A further limitation of \code{"wald"} is functional non-invariance.
-#' \code{"profile"} and \code{"uniroot"} avoid these issues but
-#' are expensive, requiring estimation of many restricted models.
-#' Of the two, \code{"profile"} is more robust.
+#' \code{"wald"} assumes e.g., asymptotic normality of the maximum likelihood
+#' estimator. \code{"profile"} and \code{"uniroot"} avoid these issues but are
+#' typically more expensive, requiring estimation of many restricted models.
+#' They are parallelized at the C++ level when there is OpenMP support and
+#' \code{object$control$omp_num_threads} is set to an integer greater than 1.
+#' If there is no OpenMP support, then computation can still be parallelized
+#' at the \R level with appropriate setting of \code{parallel}.
 #'
 #' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 #' of \code{subset} and \code{append}.
@@ -225,7 +226,7 @@ confint.egf <- function(object,
 
       ## Reconstruct list of arguments to 'MakeADFun' from object internals
       ## for retaping
-      tmb_args <- egf_remake_tmb_args(object)
+      tmb_args <- egf_tmb_remake_args(object)
 
       if (is.null(parallel$cl)) {
         cl <- do.call(makePSOCKcluster, parallel$args)

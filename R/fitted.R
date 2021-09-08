@@ -1,4 +1,4 @@
-#' Extract fitted values
+#' Compute fitted values
 #'
 #' Computes fitted values of top level nonlinear model parameters.
 #' The fitted value of a given parameter for a given fitting window

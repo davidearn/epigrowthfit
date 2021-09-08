@@ -3,7 +3,7 @@
 \name{fitted.egf}
 \alias{fitted.egf}
 \alias{coef.egf}
-\title{Extract fitted values}
+\title{Compute fitted values}
 \usage{
 \method{fitted}{egf}(
   object,

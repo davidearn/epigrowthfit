@@ -404,7 +404,7 @@ egf.egf_model <- function(model,
     na_action_windows = na_action_windows,
     append = append
   )
-  tmb_args <- egf_make_tmb_args(
+  tmb_args <- egf_tmb_make_args(
     model = model,
     frame = frames$frame,
     frame_parameters = frames$frame_parameters,
@@ -423,7 +423,7 @@ egf.egf_model <- function(model,
     theta_size = if (ncol(tmb_args$data$Z) > 0L) length(tmb_args$parameters$theta) else 0L,
     block_rows = tmb_args$data$block_rows
   )
-  tmb_args <- egf_update_tmb_args(
+  tmb_args <- egf_tmb_update_args(
     tmb_args = tmb_args,
     priors_top = priors_top,
     priors_bottom = priors_bottom
@@ -435,8 +435,8 @@ egf.egf_model <- function(model,
     on.exit(openmp(n = on))
   }
   tmb_out <- do.call(MakeADFun, tmb_args)
-  tmb_out$fn <- egf_patch_fn(tmb_out$fn, inner_optimizer = control$inner_optimizer)
-  tmb_out$gr <- egf_patch_gr(tmb_out$gr, inner_optimizer = control$inner_optimizer)
+  tmb_out$fn <- egf_tmb_patch_fn(tmb_out$fn, inner_optimizer = control$inner_optimizer)
+  tmb_out$gr <- egf_tmb_patch_gr(tmb_out$gr, inner_optimizer = control$inner_optimizer)
   init <- enum_dupl_names(tmb_out$env$par)
   nonrandom <- seq_along(init)
   if (!is.null(tmb_out$env$random)) {
