@@ -11,10 +11,10 @@
   top = egf_get_names_top(fitted, link = TRUE),
   subset = NULL,
   append = NULL,
-  max_level = 0.99,
+  max_level = 0.95,
   grid_len = 12,
-  parallel = egf_parallel(),
   trace = TRUE,
+  parallel = egf_parallel(),
   .subset = NULL,
   .append = NULL,
   ...
@@ -58,13 +58,13 @@ of \code{\link{qchisq}(max_level, df = 1)}.}
 \code{\link[TMB]{tmbprofile}} will generate approximately
 this many points on each side of a profile's minimum point.}
 
-\item{parallel}{An \code{"\link{egf_parallel}"} object defining parallelization
-options.}
-
 \item{trace}{A \link{logical} flag.
 If \code{TRUE}, then basic tracing messages indicating progress
 are printed. Depending on \code{fitted$control$trace}, these may
 be mixed with optimization output.}
+
+\item{parallel}{An \code{"\link{egf_parallel}"} object defining options for \R level
+parallelization.}
 
 \item{.subset, .append}{Index vectors to be used (if non-\code{\link{NULL}}) in place of
 the result of evaluating \code{subset} and \code{append}.}
@@ -107,6 +107,13 @@ coefficients, random effects covariance parameters, and
 linear combinations thereof.
 }
 \details{
+Computation of likelihood profiles is expensive as it requires estimation
+of many restricted models. It is parallelized at the C++ level when there
+is OpenMP support and \code{fitted$control$omp_num_threads} is set to
+an integer greater than 1. If there is no OpenMP support, then computation
+may still be parallelized at the \R level with appropriate setting of
+\code{parallel}.
+
 \code{which} is mapped to an \code{A} matrix composed of unit row vectors,
 with 1 at array index \code{[i, which[i]]} for all \code{i}, such that
 \code{A \link[=matmult]{\%*\%} fitted$best[fitted$nonrandom]} is precisely
@@ -122,6 +129,12 @@ named in \code{top}, for each fitting window indexed by \code{subset}.
 
 See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset} and \code{append}.
+}
+\examples{
+example("egf", "epigrowthfit")
+zz <- profile(object, subset = (country == "A" & wave == 1))
+str(zz)
+
 }
 \seealso{
 \code{\link{confint.egf_profile}}, \code{plot.egf_profile}

@@ -40,6 +40,12 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
 Retrieve the coefficients of the fixed effects component
 of a mixed effects model.
 }
+\examples{
+example("egf", "epigrowthfit")
+zz <- fixef(object)
+str(zz)
+
+}
 \seealso{
 Other coefficient extractors: 
 \code{\link{fitted.egf}()},

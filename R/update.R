@@ -1,15 +1,17 @@
-#' Update an object returned by an S3 method
+#' Retrieve calls from objects returned by S3 methods
 #'
-#' When \code{\link{match.call}} is called from an S3 method for a generic
-#' function, a \link{call} to the method is returned, rather than a call
-#' to the generic function. Typically, the method is not exported,
-#' so the call cannot be evaluated by \code{\link{update.default}}.
-#' These methods for \code{\link{getCall}} ensure that
-#' \code{\link{update.default}} obtains a call to the generic function
-#' that it \emph{can} evaluate.
+#' When \code{\link{match.call}} is called from an S3 method for a
+#' generic function, a \link{call} to the method is returned, rather
+#' than a call to the generic function.
+#' Typically, the generic function is exported, but the method is not,
+#' so the call cannot be evaluated outside of the namespace environment
+#' defining the method.
+#' These methods for \code{\link{getCall}} make sure that
+#' \code{\link{update.default}} obtains a call to the generic function,
+#' rather than the method, when it passes an object to \code{getCall}.
 #'
 #' @param x
-#'   A \link{list} with an element \code{call}, which should be a \link{call}.
+#'   A named \link{list} containing a \link{call} named \code{call}.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -18,13 +20,15 @@
 #' is the \link{name} of a generic function, not an S3 method.
 #'
 #' @examples
-#' object <- list(call = call("generic.method"))
-#' class(object) <- "egf"
-#' getCall(object)
-#' class(object) <- "egf_no_fit"
-#' getCall(object)
-#' class(object) <- "egf_model_simulate"
-#' getCall(object)
+#' o1 <- list(call = call("egf.method"))
+#' class(o1) <- "egf"
+#' getCall(o1)
+#' class(o1) <- "egf_no_fit"
+#' getCall(o1)
+#'
+#' o2 <- list(call = call("simulate.method"))
+#' class(o2) <- "egf_model_simulate"
+#' getCall(o2)
 #'
 #' @noRd
 NULL

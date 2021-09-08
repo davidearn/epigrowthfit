@@ -47,6 +47,11 @@
 #' Attribute \code{Sigma} lists estimated unstructured random effect
 #' covariance matrices, corresponding to the \link{levels} of \code{cov}.
 #'
+#' @examples
+#' example("egf", "epigrowthfit")
+#' zz <- ranef(object)
+#' str(zz)
+#'
 #' @family coefficient extractors
 #' @aliases ranef
 #' @export

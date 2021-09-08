@@ -2,9 +2,18 @@
 % Please edit documentation in R/simulate.R
 \name{simulate.egf}
 \alias{simulate.egf}
-\title{Simulate incidence data from a fitted model}
+\title{Simulation and parametric bootstrapping}
 \usage{
-\method{simulate}{egf}(object, nsim = 1L, seed = NULL, ...)
+\method{simulate}{egf}(
+  object,
+  nsim = 1L,
+  seed = NULL,
+  boot = FALSE,
+  control = list(),
+  trace = FALSE,
+  parallel = egf_parallel(),
+  ...
+)
 }
 \arguments{
 \item{object}{An \code{"\link{egf}"} object specifying a fitted nonlinear
@@ -19,17 +28,65 @@ time of the function call. The RNG state
 or a value of \code{\link{.Random.seed}}) is preserved as an
 \link[=attributes]{attribute} of the result.}
 
+\item{boot}{A \link{logical} flag. If \code{TRUE}, then a bootstrapping
+step is performed.}
+
+\item{control}{A \link{list} of control parameters passed to \code{\link{nlminb}}.}
+
+\item{trace}{A \link{logical} flag.
+If \code{TRUE}, then basic tracing messages indicating progress
+are printed. Depending on \code{object$control$trace}, these may
+be mixed with optimizer output.}
+
+\item{parallel}{An \code{"\link{egf_parallel}"} object defining options for \R level
+parallelization.}
+
 \item{...}{Unused optional arguments.}
 }
 \value{
-A \link[=data.frame]{data frame} inheriting from \link{class}
-\code{"egf_simulate"}, with variables \code{ts}, \code{window},
-and \code{time}, and \code{nsim} further variables with names
-of the form \code{x[0-9]+}.
-It corresponds rowwise to \code{object$frame[!is.na(object$frame$window), ]}.
+A \link{list} inheriting from \link{class} \code{"egf_simulate"},
+with elements:
+\item{simulations}{
+  A \link[=data.frame]{data frame} containing simulated incidence data.
+  It has variables \code{ts}, \code{window}, and \code{time},
+  and \code{nsim} further variables with names of the form \code{x[0-9]+}.
+  It corresponds rowwise to
+  \code{object$frame[!is.na(object$frame$window), ]}.
+}
+\item{boot}{
+  If \code{boot = TRUE}, then a \link[=double]{numeric} \link{matrix}
+  containing \code{nsim} bootstrap samples of the full parameter vector
+  \code{c(beta, theta, b)}, with \code{\link{length}(object$best)} rows
+  and \code{nsim} columns. Otherwise, \code{\link{NULL}}.
+}
+\link[=attributes]{Attribute} \code{RNGstate} preserves the RNG state
+prior to simulation, making the result reproducible.
 }
 \description{
-Simulates new incidence data conditional on a fitted nonlinear
-mixed effects model of epidemic growth. Only observations within
-fitting windows are simulated.
+Simulates incidence data conditional on a fitted nonlinear
+mixed effects model of epidemic growth. (Only observations
+within fitting windows are simulated.) Optionally re-estimates
+the model given the simulated data, thus generating samples
+from the conditional distribution of the full parameter vector
+\code{c(beta, theta, b)}.
+}
+\details{
+Bootstrap optimizations are typically expensive for nontrivial models.
+They are parallelized at the C++ level when there is OpenMP support and
+\code{object$control$omp_num_threads} is set to an integer greater than 1.
+If there is no OpenMP support, then bootstrap optimizations may still be
+parallelized at the \R level with appropriate setting of \code{parallel}.
+
+Arguments \code{trace}, \code{control}, and \code{parallel} are unused
+when \code{boot = FALSE}.
+}
+\examples{
+example("egf", "epigrowthfit")
+zz <- simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
+str(zz)
+matplot(t(zz$boot[object$nonrandom, ]), type = "o", las = 1,
+  xlab = "simulation",
+  ylab = "parameter value"
+)
+
 }

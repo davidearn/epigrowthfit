@@ -66,6 +66,11 @@
 #'   Approximate delta method standard error on \code{estimate}.
 #' }
 #'
+#' @examples
+#' example("egf", "epigrowthfit")
+#' zz <- fitted(object, se = TRUE)
+#' str(zz)
+#'
 #' @family coefficient extractors
 #' @seealso \code{\link{confint.egf_fitted}}
 #' @export
@@ -126,7 +131,9 @@ fitted.egf <- function(object,
   res <- data.frame(
     top = rep(factor(top, levels = names_top), each = length(subset)),
     object$frame_windows[subset, c("ts", "window"), drop = FALSE],
-    estimate = as.numeric(Y)
+    estimate = as.numeric(Y),
+    row.names = NULL,
+    check.names = FALSE
   )
   if (link && se) {
     colnames(Y_se) <- names_top

@@ -41,14 +41,14 @@
 #'   A positive integer. Step sizes chosen adaptively by
 #'   \code{\link[TMB]{tmbprofile}} will generate approximately
 #'   this many points on each side of a profile's minimum point.
-#' @param parallel
-#'   An \code{"\link{egf_parallel}"} object defining parallelization
-#'   options.
 #' @param trace
 #'   A \link{logical} flag.
 #'   If \code{TRUE}, then basic tracing messages indicating progress
 #'   are printed. Depending on \code{fitted$control$trace}, these may
 #'   be mixed with optimization output.
+#' @param parallel
+#'   An \code{"\link{egf_parallel}"} object defining options for \R level
+#'   parallelization.
 #' @param .subset,.append
 #'   Index vectors to be used (if non-\code{\link{NULL}}) in place of
 #'   the result of evaluating \code{subset} and \code{append}.
@@ -56,6 +56,13 @@
 #'   Unused optional arguments.
 #'
 #' @details
+#' Computation of likelihood profiles is expensive as it requires estimation
+#' of many restricted models. It is parallelized at the C++ level when there
+#' is OpenMP support and \code{fitted$control$omp_num_threads} is set to
+#' an integer greater than 1. If there is no OpenMP support, then computation
+#' may still be parallelized at the \R level with appropriate setting of
+#' \code{parallel}.
+#'
 #' \code{which} is mapped to an \code{A} matrix composed of unit row vectors,
 #' with 1 at array index \code{[i, which[i]]} for all \code{i}, such that
 #' \code{A \link[=matmult]{\%*\%} fitted$best[fitted$nonrandom]} is precisely
@@ -102,13 +109,17 @@
 #' \code{A}, \code{x = fitted$best[fitted$nonrandom]}, and \code{max_level}
 #' are retained as \link{attributes}.
 #'
+#' @examples
+#' example("egf", "epigrowthfit")
+#' zz <- profile(object, subset = (country == "A" & wave == 1))
+#' str(zz)
+#'
 #' @seealso \code{\link{confint.egf_profile}}, \code{plot.egf_profile}
 #' @export
 #' @importFrom Matrix sparseMatrix KhatriRao
 #' @importMethodsFrom Matrix diag
 #' @importFrom methods as is
 #' @importFrom stats vcov
-#' @importFrom TMB tmbprofile openmp
 #' @import parallel
 profile.egf <- function(fitted,
                         which = NULL,
@@ -116,20 +127,30 @@ profile.egf <- function(fitted,
                         top = egf_get_names_top(fitted, link = TRUE),
                         subset = NULL,
                         append = NULL,
-                        max_level = 0.99,
+                        max_level = 0.95,
                         grid_len = 12,
-                        parallel = egf_parallel(),
                         trace = TRUE,
+                        parallel = egf_parallel(),
                         .subset = NULL,
                         .append = NULL,
                         ...) {
-  stopifnot(inherits(parallel, "egf_parallel"))
   stop_if_not_number_in_interval(max_level, 0, 1, "()")
   stop_if_not_number_in_interval(grid_len, 1, Inf, "[)")
   stop_if_not_true_false(trace)
+  stopifnot(inherits(parallel, "egf_parallel"))
   n <- length(fitted$nonrandom)
 
-  ## If profiling user-specified elements of `c(beta, theta)`
+  nomp <- fitted$control$omp_num_threads
+  set_omp_num_threads <- quote({
+    onomp <- TMB::openmp(n = NULL)
+    if (onomp > 0L) {
+      TMB::openmp(n = nomp)
+      on.exit(TMB::openmp(n = onomp), add = TRUE)
+    }
+  })
+  eval(set_omp_num_threads)
+
+  ## If profiling user-specified elements of 'c(beta, theta)'
   if (!is.null(which)) {
     method <- "which"
     stopifnot(
@@ -141,7 +162,7 @@ profile.egf <- function(fitted,
     A <- sparseMatrix(i = seq_len(m), j = which, x = 1, dims = c(m, n))
 
   ## If profiling user-specified linear combinations
-  ## of elements of `c(beta, theta)`
+  ## of elements of 'c(beta, theta)'
   } else if (!is.null(A)) {
     method <- "A"
     stopifnot(is.numeric(A))
@@ -170,7 +191,7 @@ profile.egf <- function(fitted,
     append <- egf_eval_append(append, combined, baseenv())
 
     p <- length(top)
-    N <- sum(subset)
+    N <- length(subset)
     m <- p * N
 
     f <- factor(fitted$info$X$top, levels = top)
@@ -195,69 +216,67 @@ profile.egf <- function(fitted,
     r <- which
     h <- sqrt(diag(V)[which]) / 4
   } else {
-    r <- lapply(seq_len(nrow(A)), function(i) A[i, ])
-    ## Covariance matrix of `A %*% c(beta, theta)`
+    ## Covariance matrix of 'A %*% c(beta, theta)'
     V <- A %*% unclass(V) %*% t(A)
+    r <- lapply(seq_len(nrow(A)), function(i) A[i, ])
     h <- sqrt(diag(V)) / 4
   }
   ytol <- qchisq(max_level, df = 1) / 2 # y := diff(nll) = deviance / 2
   ystep <- ytol / grid_len
+  obj <- fitted$tmb_out
 
-  tmbprofile_args <- list(
-    obj = fitted$tmb_out,
-    ytol = ytol,
-    ystep = ystep,
-    trace = FALSE
-  )
-  omp_num_threads <- fitted$control$omp_num_threads
-
-  do_profile <- function(r, h, i) {
+  do_profile <- function(i, r, h) {
     if (trace) {
       cat(sprintf("Computing likelihood profile %d of %d...\n", i, m))
     }
-    on <- openmp(n = NULL)
-    if (on > 0L) {
-      openmp(n = omp_num_threads)
-      on.exit(openmp(n = on))
+    if (method == "which") {
+      res <- TMB::tmbprofile(obj, name = r,    h = h, ytol = ytol, ystep = ystep, trace = FALSE)
+    } else {
+      res <- TMB::tmbprofile(obj, lincomb = r, h = h, ytol = ytol, ystep = ystep, trace = FALSE)
     }
-    tmbprofile_args[[switch(method, which = "name", "lincomb")]] <- r
-    tmbprofile_args$h <- h
-    res <- do.call(tmbprofile, tmbprofile_args)
     i_min <- which.min(res[[2L]])
     res[[2L]] <- 2 * (res[[2L]] - res[i_min, 2L]) # deviance = 2 * diff(nll)
     names(res) <- c("value", "deviance")
-    res[-i_min, , drop = FALSE] # `tmbprofile` duplicates this row
+    res[-i_min, , drop = FALSE] # 'tmbprofile' duplicates this row
   }
 
   if (parallel$method == "snow") {
-    environment(do_profile) <- .GlobalEnv # see comment in R/boot.R
+    environment(do_profile) <- .GlobalEnv # see comment in R/simulate.R
+
+    ## Reconstruct list of arguments to 'MakeADFun' from object internals
+    ## for retaping
+    tmb_args <- egf_remake_tmb_args(fitted)
+
     if (is.null(parallel$cl)) {
-      cl <- do.call(makePSOCKcluster, parallel$options)
-      on.exit(stopCluster(cl))
+      cl <- do.call(makePSOCKcluster, parallel$args)
+      on.exit(stopCluster(cl), add = TRUE)
     } else {
       cl <- parallel$cl
     }
-    clusterEvalQ(cl, library("TMB"))
     clusterExport(cl,
-      varlist = c("tmbprofile_args", "trace", "m", "method", "omp_num_threads"),
+      varlist = c("set_omp_num_threads", "nomp", "tmb_args", "trace", "m", "method", "ytol", "ystep"),
       envir = environment()
     )
-    res <- clusterMap(cl, do_profile, r = r, h = h, i = seq_len(m))
+    clusterEvalQ(cl, {
+      loadNamespace("epigrowthfit")
+      eval(set_omp_num_threads)
+      obj <- do.call(TMB::MakeADFun, tmb_args)
+    })
+    res <- clusterMap(cl, do_profile, i = seq_len(m), r = r, h = h)
   } else {
     if (nzchar(parallel$outfile)) {
       outfile <- file(parallel$outfile, open = "wt")
       sink(outfile, type = "output")
       sink(outfile, type = "message")
-    } else {
-      res <- switch(parallel$method,
-        multicore = do.call(mcMap, c(list(f = do_profile, r = r, h = h, i = seq_len(m)), parallel$options)),
-        serial = Map(do_profile, r = r, h = h, i = seq_len(m))
-      )
+      on.exit(add = TRUE, {
+        sink(type = "output")
+        sink(type = "message")
+      })
     }
-    if (nzchar(parallel$outfile)) {
-      sink(type = "output")
-      sink(type = "message")
-    }
+    res <- switch(parallel$method,
+      multicore = do.call(mcMap, c(list(f = do_profile, i = seq_len(m), r = r, h = h), parallel$args)),
+      serial = Map(do_profile, i = seq_len(m), r = r, h = h)
+    )
   }
 
   nrow_res <- vapply(res, nrow, 0L)
@@ -278,12 +297,12 @@ profile.egf <- function(fitted,
       stringsAsFactors = FALSE
     )
   }
-  attr(out, "A") <- A
-  attr(out, "x") <- fitted$best[fitted$nonrandom]
-  attr(out, "max_level") <- max_level
-  attr(out, "method") <- method
-  class(out) <- c("egf_profile", "data.frame")
-  out
+  attr(res, "A") <- A
+  attr(res, "x") <- fitted$best[fitted$nonrandom]
+  attr(res, "max_level") <- max_level
+  attr(res, "method") <- method
+  class(res) <- c("egf_profile", "data.frame")
+  res
 }
 
 #' Confidence intervals from likelihood profiles
@@ -309,7 +328,7 @@ profile.egf <- function(fitted,
 #'
 #' @details
 #' Each supplied likelihood profile
-#' (level of \code{object$linear_combination}),
+#' (level of \link{factor} \code{object$linear_combination}),
 #' is linearly interpolated to approximate the two solutions
 #' of \code{deviance(value) = \link{qchisq}(level, df = 1)}.
 #' These provide the lower and upper confidence limits of interest
@@ -330,12 +349,17 @@ profile.egf <- function(fitted,
 #' \code{level} is retained as an \link[=attributes]{attribute} of the result.
 #' So are attributes \code{A} and \code{x} of \code{object}.
 #'
+#' @examples
+#' example("profile.egf", "epigrowthfit")
+#' confint(zz, link = TRUE)
+#' confint(zz, link = FALSE)
+#'
 #' @export
 #' @importFrom stats qchisq approx
-confint.egf_profile <- function(object, parm, level = 0.95, link = TRUE, ...) {
+confint.egf_profile <- function(object, parm, level = attr(object, "max_level"), link = TRUE, ...) {
   stop_if_not_true_false(link)
   stop_if_not_number_in_interval(level, 0, 1, "()")
-  stopifnot(attr(object, "max_level") > level)
+  stopifnot(level <= attr(object, "max_level"))
   q <- qchisq(level, df = 1)
   method <- attr(object, "method")
 
@@ -401,11 +425,12 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = TRUE, ...) {
 #'   A \link{numeric} vector with elements in (0,1). If \code{sqrt = FALSE},
 #'   then line segments are drawn to show the intersection of the profile
 #'   with lines at \code{deviance = \link{qchisq}(level, df = 1)}.
+#' @param .segments,.text
+#'   \link[=list]{List}s of optional graphical parameters passed to
+#'   \code{\link{segments}} and \code{\link{text}} when line segments
+#'   are drawn.
 #' @param ...
-#'   Optional graphical parameters passed to \code{\link{plot}},
-#'   such as \code{type = "o"}. Note that \code{axes = FALSE} and
-#'   \code{ann = FALSE} are hard-coded, so axes and axis titles
-#'   may not be modifiable.
+#'   Optional graphical parameters passed to \code{\link{plot}}.
 #'
 #' @details
 #' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
@@ -414,96 +439,108 @@ confint.egf_profile <- function(object, parm, level = 0.95, link = TRUE, ...) {
 #' @return
 #' \code{\link{NULL}} (invisibly).
 #'
+#' @examples
+#' example("profile.egf", "epigrowthfit")
+#' plot(zz, type = "o", bty = "u", las = 1, main = "", .segments = list(lty = 3))
+#'
 #' @export
 #' @import graphics
 #' @importFrom stats confint
-plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE, level = NULL, ...) {
+plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
+                             level = attr(x, "max_level"),
+                             .segments = list(), .text = list(), ...) {
   subset <- egf_eval_subset(substitute(subset), x, parent.frame())
-  m <- match(levels(factor(x$linear_combination[subset])), levels(x$linear_combination))
+  subset <- match(levels(factor(x$linear_combination[subset])), levels(x$linear_combination))
 
   stop_if_not_true_false(sqrt)
   f <- if (sqrt) base::sqrt else identity
-  ymax <- f(max(x$deviance, na.rm = TRUE))
-  ylab <- if (sqrt) expression(sqrt("deviance")) else "deviance"
-
-  method <- attr(x, "method")
-  do_ann_with_top <- (method == "top")
-
   do_segments <-
     !sqrt &&
     is.numeric(level) &&
     length(level) > 0L &&
-    any(ok <- !is.na(level) & level > 0 & level < 1)
+    !all(is.na(level))
   if (do_segments) {
-    level <- level[ok]
-    ## Line segments at heights `h` in all plots
+    level <- level[!is.na(level)]
+    stopifnot(
+      level > 0,
+      level <= attr(x, "max_level"),
+      is.list(.segments),
+      is.list(.text)
+    )
+    ## Line segments at heights 'h' in all plots
     h <- qchisq(level, df = 1)
-    ## Line segment `j` to start at `v_lower[[i]][j]`
-    ## and end at `v_upper[[i]][j]` in plot `i`
+    ## Line segment 'j' to start at 'v_lower[[i]][j]'
+    ## and end at 'v_upper[[i]][j]' in plot 'i'
     ci <- lapply(level, function(p) confint(x, level = p))
-    v_lower <- lapply(m, function(i) vapply(ci, `[`, 0, i, "lower"))
-    v_upper <- lapply(m, function(i) vapply(ci, `[`, 0, i, "upper"))
+    v_lower <- lapply(subset, function(i) vapply(ci, `[`, 0, i, "lower"))
+    v_upper <- lapply(subset, function(i) vapply(ci, `[`, 0, i, "upper"))
   }
 
-  op <- par(
-    mar = c(3.5, 4, 1, 1),
-    tcl = -0.4,
-    cex.axis = 0.8,
-    cex.lab = 0.9
-  )
-  on.exit(par(op))
+  dots <- list(...)
+  method <- attr(x, "method")
+  if (is.null(dots[["main"]])) {
+    if (method == "top") {
+      main <- c(tapply(as.character(x$window), x$linear_combination, `[[`, 1L))[subset]
+    } else {
+      main <- rep_len("", length(subset))
+    }
+  } else {
+    main <- rep_len(dots$main, length(subset))
+  }
+  if (is.null(dots[["xlab"]])) {
+    if (method == "top") {
+      xlab <- c(tapply(as.character(x$top), x$linear_combination, `[[`, 1L))[subset]
+    } else {
+      xlab <- paste("linear combination", levels(x$linear_combination)[subset])
+    }
+  } else {
+    xlab <- rep_len(dots$xlab, length(subset))
+  }
+  dots$main <- dots$xlab <- NULL
+  if (is.null(dots[["ylab"]])) {
+    dots$ylab <- "deviance"
+    if (sqrt) {
+      dots$ylab <- as.expression(bquote(sqrt(.(dots$ylab))))
+    }
+  }
+  if (is.null(dots[["ylim"]])) {
+    dots$ylim <- c(0, f(max(x$deviance, na.rm = TRUE)))
+  }
 
-  for (i in m) {
-    r <- which(as.integer(x$linear_combination) == i)
-    plot(
-      f(deviance) ~ value,
+  for (i in seq_along(subset)) {
+    args <- list(
+      formula = f(deviance) ~ value,
       data = x,
-      subset = r,
-      ylim = c(0, ymax),
-      ann = FALSE,
-      axes = FALSE,
-      ...
+      subset = (unclass(x$linear_combination) == subset[i]),
+      main = main[i],
+      xlab = xlab[i]
     )
-    usr <- par("usr")
+    do.call(plot, c(args, dots))
     if (do_segments) {
-      v_lower <- vapply(ci, `[`, 0, i, "lower")
-      v_upper <- vapply(ci, `[`, 0, i, "upper")
-      segments(
-        x0 = v_lower,
-        x1 = v_upper,
+      usr <- par("usr")
+      args <- list(
+        x0 = v_lower[[i]],
+        x1 = v_upper[[i]],
         y0 = h,
-        y1 = h,
-        lty = 3
+        y1 = h
       )
-      segments(
-        x0 = c(v_lower, v_upper),
-        x1 = c(v_lower, v_upper),
+      do.call(segments, c(args, .segments))
+      args <- list(
+        x0 = c(v_lower[[i]], v_upper[[i]]),
+        x1 = c(v_lower[[i]], v_upper[[i]]),
         y0 = usr[3L],
-        y1 = rep.int(h, 2L),
-        lty = 3
+        y1 = rep.int(h, 2L)
       )
-      text(
+      do.call(segments, c(args, .segments))
+      args <- list(
         x = mean(usr[1:2]),
         y = h,
         labels = sprintf("%.3g%%", 100 * level),
         pos = 3,
-        offset = 0.1,
-        cex = 0.8
+        offset = 0.1
       )
+      do.call(text, c(args, .text))
     }
-    box()
-    axis(side = 1, mgp = c(3, 0.5, 0))
-    axis(side = 2, mgp = c(3, 0.7, 0), las = 1)
-    if (do_ann_with_top) {
-      xlab <- as.character(x$top[r[1L]])
-      main <- sprintf("window = %s", x$window[r[1L]])
-      title(main = main, line = 2)
-    } else {
-      xlab <- sprintf("linear combination %d", i)
-    }
-    title(xlab = xlab, line = 2)
-    title(ylab = ylab, line = 2.25)
   }
-
   invisible(NULL)
 }

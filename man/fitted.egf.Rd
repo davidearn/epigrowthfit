@@ -96,6 +96,12 @@ set equal to their conditional modes.
 See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset} and \code{append}.
 }
+\examples{
+example("egf", "epigrowthfit")
+zz <- fitted(object, se = TRUE)
+str(zz)
+
+}
 \seealso{
 \code{\link{confint.egf_fitted}}
 

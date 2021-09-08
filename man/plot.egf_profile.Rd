@@ -4,7 +4,15 @@
 \alias{plot.egf_profile}
 \title{Plot likelihood profiles}
 \usage{
-\method{plot}{egf_profile}(x, subset = NULL, sqrt = FALSE, level = NULL, ...)
+\method{plot}{egf_profile}(
+  x,
+  subset = NULL,
+  sqrt = FALSE,
+  level = attr(x, "max_level"),
+  .segments = list(),
+  .text = list(),
+  ...
+)
 }
 \arguments{
 \item{x}{An \code{"\link[=profile.egf]{egf_profile}"} object.}
@@ -22,10 +30,11 @@ If \code{TRUE}, then square root-transformed deviance is plotted.}
 then line segments are drawn to show the intersection of the profile
 with lines at \code{deviance = \link{qchisq}(level, df = 1)}.}
 
-\item{...}{Optional graphical parameters passed to \code{\link{plot}},
-such as \code{type = "o"}. Note that \code{axes = FALSE} and
-\code{ann = FALSE} are hard-coded, so axes and axis titles
-may not be modifiable.}
+\item{.segments, .text}{\link[=list]{List}s of optional graphical parameters passed to
+\code{\link{segments}} and \code{\link{text}} when line segments
+are drawn.}
+
+\item{...}{Optional graphical parameters passed to \code{\link{plot}}.}
 }
 \value{
 \code{\link{NULL}} (invisibly).
@@ -36,4 +45,9 @@ A method for plotting likelihood profiles.
 \details{
 See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset}.
+}
+\examples{
+example("profile.egf", "epigrowthfit")
+plot(zz, type = "o", bty = "u", las = 1, main = "", .segments = list(lty = 3))
+
 }

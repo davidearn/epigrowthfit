@@ -107,6 +107,11 @@
 #' \code{level} and \code{object$frame_windows} are retained
 #' as \link{attributes}.
 #'
+#' @examples
+#' example("egf", "epigrowthfit")
+#' zz <- confint(object)
+#' str(zz)
+#'
 #' @seealso \code{plot.egf_confint}
 #' @export
 #' @importFrom Matrix KhatriRao

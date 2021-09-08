@@ -1,8 +1,11 @@
-#' Simulate incidence data from a fitted model
+#' Simulation and parametric bootstrapping
 #'
-#' Simulates new incidence data conditional on a fitted nonlinear
-#' mixed effects model of epidemic growth. Only observations within
-#' fitting windows are simulated.
+#' Simulates incidence data conditional on a fitted nonlinear
+#' mixed effects model of epidemic growth. (Only observations
+#' within fitting windows are simulated.) Optionally re-estimates
+#' the model given the simulated data, thus generating samples
+#' from the conditional distribution of the full parameter vector
+#' \code{c(beta, theta, b)}.
 #'
 #' @param object
 #'   An \code{"\link{egf}"} object specifying a fitted nonlinear
@@ -16,21 +19,73 @@
 #'   (either a \link{list} of arguments to \code{\link{set.seed}}
 #'   or a value of \code{\link{.Random.seed}}) is preserved as an
 #'   \link[=attributes]{attribute} of the result.
+#' @param boot
+#'   A \link{logical} flag. If \code{TRUE}, then a bootstrapping
+#'   step is performed.
+#' @param control
+#'   A \link{list} of control parameters passed to \code{\link{nlminb}}.
+#' @param trace
+#'   A \link{logical} flag.
+#'   If \code{TRUE}, then basic tracing messages indicating progress
+#'   are printed. Depending on \code{object$control$trace}, these may
+#'   be mixed with optimizer output.
+#' @param parallel
+#'   An \code{"\link{egf_parallel}"} object defining options for \R level
+#'   parallelization.
 #' @param ...
 #'   Unused optional arguments.
 #'
+#' @details
+#' Bootstrap optimizations are typically expensive for nontrivial models.
+#' They are parallelized at the C++ level when there is OpenMP support and
+#' \code{object$control$omp_num_threads} is set to an integer greater than 1.
+#' If there is no OpenMP support, then bootstrap optimizations may still be
+#' parallelized at the \R level with appropriate setting of \code{parallel}.
+#'
+#' Arguments \code{trace}, \code{control}, and \code{parallel} are unused
+#' when \code{boot = FALSE}.
+#'
 #' @return
-#' A \link[=data.frame]{data frame} inheriting from \link{class}
-#' \code{"egf_simulate"}, with variables \code{ts}, \code{window},
-#' and \code{time}, and \code{nsim} further variables with names
-#' of the form \code{x[0-9]+}.
-#' It corresponds rowwise to \code{object$frame[!is.na(object$frame$window), ]}.
+#' A \link{list} inheriting from \link{class} \code{"egf_simulate"},
+#' with elements:
+#' \item{simulations}{
+#'   A \link[=data.frame]{data frame} containing simulated incidence data.
+#'   It has variables \code{ts}, \code{window}, and \code{time},
+#'   and \code{nsim} further variables with names of the form \code{x[0-9]+}.
+#'   It corresponds rowwise to
+#'   \code{object$frame[!is.na(object$frame$window), ]}.
+#' }
+#' \item{boot}{
+#'   If \code{boot = TRUE}, then a \link[=double]{numeric} \link{matrix}
+#'   containing \code{nsim} bootstrap samples of the full parameter vector
+#'   \code{c(beta, theta, b)}, with \code{\link{length}(object$best)} rows
+#'   and \code{nsim} columns. Otherwise, \code{\link{NULL}}.
+#' }
+#' \link[=attributes]{Attribute} \code{RNGstate} preserves the RNG state
+#' prior to simulation, making the result reproducible.
+#'
+#' @examples
+#' example("egf", "epigrowthfit")
+#' zz <- simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
+#' str(zz)
+#' matplot(t(zz$boot[object$nonrandom, ]), type = "o", las = 1,
+#'   xlab = "simulation",
+#'   ylab = "parameter value"
+#' )
 #'
 #' @export
 #' @importFrom stats simulate
-simulate.egf <- function(object, nsim = 1L, seed = NULL, ...) {
+simulate.egf <- function(object, nsim = 1L, seed = NULL,
+                         boot = FALSE,
+                         control = list(),
+                         trace = FALSE,
+                         parallel = egf_parallel(),
+                         ...) {
+  stop_if_not_true_false(boot)
   stop_if_not_integer(nsim, "positive")
   nsim <- as.integer(nsim)
+
+  ## Set and preserve RNG state (modified from 'stats:::simulate.lm')
   if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
     runif(1L)
   }
@@ -44,20 +99,111 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL, ...) {
     do.call(set.seed, RNGstate)
   }
 
+  ## Configure OpenMP
+  nomp <- object$control$omp_num_threads
+  set_omp_num_threads <- quote({
+    onomp <- TMB::openmp(n = NULL)
+    if (onomp > 0L) {
+      TMB::openmp(n = nomp)
+      on.exit(TMB::openmp(n = onomp), add = TRUE)
+    }
+  })
+  eval(set_omp_num_threads)
+
+  ## Simulations are fast and can be done in the master process.
+  ## To simulate in the worker processes would require serializing
+  ## or reconstructing the TMB object---adding nontrivial overhead.
+  ## Serializing isn't obviously a safe thing to do, anyway.
   frame <- object$frame[!is.na(object$frame$window), c("ts", "window", "time"), drop = FALSE]
   nx <- sprintf("x%d", seq_len(nsim))
-  frame[nx] <- replicate(nsim, object$tmb_out$simulate()$x)
-  attr(frame, "RNGstate") <- RNGstate
-  class(frame) <- c("egf_simulate", "data.frame")
-  frame
+  frame[nx] <- replicate(nsim, object$tmb_out$simulate(object$best)$x)
+  res <- list(simulations = frame, boot = NULL)
+
+  if (boot) {
+    stopifnot(is.list(control))
+    stop_if_not_true_false(trace)
+    stopifnot(inherits(parallel, "egf_parallel"))
+
+    ## Reconstruct list of arguments to 'MakeADFun' from object internals
+    ## for retaping
+    tmb_args <- egf_remake_tmb_args(object)
+
+    do_boot <- function(i, x) {
+      if (trace) {
+        cat(sprintf("Commencing bootstrap optimization %d of %d...\n", i, nsim))
+      }
+      ## Update
+      tmb_args$data$x <- x
+      ## Retape
+      tmb_out_retape <- do.call(TMB::MakeADFun, tmb_args)
+      ## Optimize
+      tryCatch(
+        expr = {
+          nlminb(tmb_out_retape$par, tmb_out_retape$fn, tmb_out_retape$gr, control = control)
+          tmb_out_retape$env$last.par.best
+        },
+        error = function(cond) {
+          cat(sprintf("Error in bootstrap optimization %d of %d:\n %s", i, nsim, conditionMessage(cond)))
+          rep_len(NaN, length(tmb_out_retape$env$last.par.best))
+        }
+      )
+    }
+
+    if (parallel$method == "snow") {
+      ## We use 'clusterExport' to export necessary objects to the
+      ## global environments of all worker processes. As a result,
+      ## function environments are unused and need not be serialized.
+      ## By replacing them with the global environment,
+      ## which is never serialized, we avoid unnecessary overhead.
+      ## https://stackoverflow.com/questions/17402077/how-to-clusterexport-a-function-without-its-evaluation-environment
+      ## https://stackoverflow.com/questions/18035711/environment-and-scope-when-using-parallel-functions
+      environment(do_boot) <- .GlobalEnv
+
+      if (is.null(parallel$cl)) {
+        cl <- do.call(makePSOCKcluster, parallel$args)
+        on.exit(stopCluster(cl), add = TRUE)
+      } else {
+        cl <- parallel$cl
+      }
+      clusterExport(cl,
+        varlist = c("set_omp_num_threads", "nomp", "trace", "nsim", "tmb_args", "control"),
+        envir = environment()
+      )
+      clusterEvalQ(cl, {
+        loadNamespace("epigrowthfit")
+        eval(set_omp_num_threads)
+      })
+      clusterSetRNGStream(cl)
+      res$boot <- clusterMap(cl, do_boot, i = seq_len(nsim), x = frame[nx], simplify = TRUE)
+    } else {
+      if (nzchar(parallel$outfile)) {
+        outfile <- file(parallel$outfile, open = "wt")
+        sink(outfile, type = "output")
+        sink(outfile, type = "message")
+        on.exit(add = TRUE, {
+          sink(type = "output")
+          sink(type = "message")
+        })
+      }
+      res$boot <- switch(parallel$method,
+        multicore = do.call(mcmapply, c(list(FUN = do_boot, i = seq_len(nsim), x = frame[nx]), parallel$args)),
+        serial = mapply(do_boot, i = seq_len(nsim), x = frame[nx])
+      )
+    }
+    rownames(res$boot) <- names(object$best)
+  }
+
+  attr(res, "RNGstate") <- RNGstate
+  class(res) <- c("egf_simulate", "data.frame")
+  res
 }
 
 #' Simulate incidence time series
 #'
-#' Simulates incidence time series with a unit observation interval according
-#' to a specified nonlinear model. Top level nonlinear model parameters
-#' vary between time series according to a fixed intercept model \code{~ts}
-#' or random intercept model \code{~(1 | ts)}.
+#' Simulates incidence time series with a unit observation interval
+#' according to a specified nonlinear model. Top level nonlinear model
+#' parameters vary between time series according to a fixed intercept
+#' model \code{~ts} or random intercept model \code{~(1 | ts)}.
 #'
 #' @param object
 #'   An \code{"\link{egf_model}"} specifying a top level nonlinear model
@@ -157,6 +303,8 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL, ...) {
 #'   The \link{call} to \code{simulate.egf_model}, allowing for updates
 #'   to the \code{"egf_model_simulate"} object via \code{\link{update}}.
 #' }
+#' \link[=attributes]{Attribute} \code{RNGstate} preserves the RNG state
+#' prior to simulation, making the result reproducible.
 #'
 #' @examples
 #' model <- egf_model(curve = "logistic", family = "nbinom")
@@ -190,6 +338,8 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
                                tmax = 100, cstart = 0, ...) {
   stop_if_not_integer(nsim, "positive")
   nsim <- as.integer(nsim)
+
+  ## Set and preserve RNG state (modified from 'stats:::simulate.lm')
   if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
     runif(1L)
   }
@@ -202,6 +352,13 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     RNGstate <- c(list(as.numeric(seed)), as.list(RNGkind()))
     names(RNGstate) <- names(formals(set.seed))
     set_RNGstate <- function() do.call(set.seed, RNGstate)
+  }
+
+  ## Configure OpenMP
+  onomp <- openmp(n = NULL)
+  if (onomp > 0L) {
+    openmp(n = object$control$omp_num_threads)
+    on.exit(openmp(n = onomp), add = TRUE)
   }
 
   names_top <- egf_get_names_top(object, link = TRUE)
@@ -226,7 +383,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
 
   has_inflection <- object$curve %in% c("gompertz", "logistic", "richards")
   if (has_inflection) {
-    ## Time: daily from 0 days to (inflection time)+1 days
+    ## Time: daily from 0 days to '<inflection time>+1' days
     if (is.null(Sigma)) {
       ## Fixed intercept model: inflection time is known up front.
       tmax <- ceiling(exp(mu[["log(tinfl)"]])) + 1
@@ -239,7 +396,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
       tmax <- 1
     }
   } else {
-    ## Time: daily from 0 days to user-specified 'tmax' days
+    ## Time: daily from 0 days to 'tmax' days
     stop_if_not_number(tmax, "positive")
     tmax <- max(1, trunc(tmax))
   }
@@ -250,7 +407,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   formula_windows <- cbind(start, end) ~ ts
   data <- data.frame(
     ts = gl(nsim, 1L + as.integer(tmax)),
-    time = seq.int(0, tmax, by = 1),
+    time = seq.int(0, tmax, 1),
     x = 0L # arbitrary non-negative integer to pass checks
   )
   data_windows <- data.frame(
@@ -303,7 +460,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     Y <- mm$tmb_out$simulate(init)$Y
     colnames(Y) <- names_top
     tmax <- ceiling(exp(Y[, "log(tinfl)"])) + 1
-    time <- lapply(tmax, function(x) seq.int(0, x, by = 1))
+    time <- lapply(tmax, function(x) seq.int(0, x, 1))
     data <- data.frame(
       ts = rep.int(gl(nsim, 1L), lengths(time)),
       time = unlist(time, FALSE, FALSE),

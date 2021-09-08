@@ -58,6 +58,12 @@ Retrieve the modes of the coefficients (unit variance scale)
 of the random effects component of a mixed effects model,
 conditional on data and parameter estimates.
 }
+\examples{
+example("egf", "epigrowthfit")
+zz <- ranef(object)
+str(zz)
+
+}
 \seealso{
 Other coefficient extractors: 
 \code{\link{fitted.egf}()},

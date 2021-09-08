@@ -114,12 +114,14 @@ with elements:
   The \link{call} to \code{simulate.egf_model}, allowing for updates
   to the \code{"egf_model_simulate"} object via \code{\link{update}}.
 }
+\link[=attributes]{Attribute} \code{RNGstate} preserves the RNG state
+prior to simulation, making the result reproducible.
 }
 \description{
-Simulates incidence time series with a unit observation interval according
-to a specified nonlinear model. Top level nonlinear model parameters
-vary between time series according to a fixed intercept model \code{~ts}
-or random intercept model \code{~(1 | ts)}.
+Simulates incidence time series with a unit observation interval
+according to a specified nonlinear model. Top level nonlinear model
+parameters vary between time series according to a fixed intercept
+model \code{~ts} or random intercept model \code{~(1 | ts)}.
 }
 \examples{
 model <- egf_model(curve = "logistic", family = "nbinom")

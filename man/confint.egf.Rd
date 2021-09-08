@@ -137,6 +137,12 @@ much slower, requiring estimation of restricted models. Of the two,
 See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset} and \code{append}.
 }
+\examples{
+example("egf", "epigrowthfit")
+zz <- confint(object)
+str(zz)
+
+}
 \seealso{
 \code{plot.egf_confint}
 }

@@ -4,7 +4,7 @@
 \alias{confint.egf_profile}
 \title{Confidence intervals from likelihood profiles}
 \usage{
-\method{confint}{egf_profile}(object, parm, level = 0.95, link = TRUE, ...)
+\method{confint}{egf_profile}(object, parm, level = attr(object, "max_level"), link = TRUE, ...)
 }
 \arguments{
 \item{object}{An \code{"\link[=profile.egf]{egf_profile}"} object.}
@@ -43,9 +43,15 @@ thereof from their univariate likelihood profiles.
 }
 \details{
 Each supplied likelihood profile
-(level of \code{object$linear_combination}),
+(level of \link{factor} \code{object$linear_combination}),
 is linearly interpolated to approximate the two solutions
 of \code{deviance(value) = \link{qchisq}(level, df = 1)}.
 These provide the lower and upper confidence limits of interest
 (see \href{https://en.wikipedia.org/wiki/Wilks'_theorem}{Wilks' theorem}).
+}
+\examples{
+example("profile.egf", "epigrowthfit")
+confint(zz, link = TRUE)
+confint(zz, link = FALSE)
+
 }

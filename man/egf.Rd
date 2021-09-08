@@ -294,8 +294,8 @@ time points capture a single day of week.
 \examples{
 ## Simulate 'N' incidence time series exhibiting exponential growth
 set.seed(180149L)
-N <- 20L
-time <- seq(0, 40, 1)
+N <- 10L
+time <- seq.int(0, 40, 1)
 r <- rlnorm(N, -3.2, 0.2)
 c0 <- rlnorm(N, 6, 0.2)
 f <- function(time, r, c0) {
@@ -303,26 +303,43 @@ f <- function(time, r, c0) {
   c(NA, rpois(lambda, lambda))
 }
 data <- data.frame(
-  ts = gl(N, length(time)),
+  country = gl(N, length(time), labels = LETTERS[seq_len(N)]),
   time = rep.int(time, N),
   x = unlist(Map(f, time = list(time), r = r, c0 = c0))
 )
+
+## Define fitting windows (here, two per time series)
 data_windows <- data.frame(
-  ts = gl(N, 1L),
-  start = sample(head(time, 10L), size = N, replace = TRUE),
-  end = sample(tail(time, 10L), size = N, replace = TRUE)
+  country = gl(N, 1L, 2L * N, labels = LETTERS[seq_len(N)]),
+  wave = gl(2L, 10L),
+  start = c(
+    sample(seq.int(0, 5, 1), size = N, replace = TRUE),
+    sample(seq.int(20, 25, 1), size = N, replace = TRUE)
+  ),
+  end = c(
+    sample(seq.int(15, 20, 1), size = N, replace = TRUE),
+    sample(seq.int(35, 40, 1), size = N, replace = TRUE)
+  )
 )
 
 ## Estimate the generative model
 object <- egf(
   model = egf_model(curve = "exponential", family = "pois"),
-  formula = cbind(time, x) ~ ts,
-  formula_windows = cbind(start, end) ~ ts,
-  formula_parameters = ~(1 | ts),
+  formula = cbind(time, x) ~ country,
+  formula_windows = cbind(start, end) ~ country,
+  formula_parameters = ~(1 | country:wave),
   formula_priors_bottom = list(Sigma ~ LKJ(eta = 2)),
   data = data,
   data_windows = data_windows,
   se = TRUE
 )
 
+}
+\seealso{
+\code{\link{vcov.egf}} for extracting covariance matrices,
+  \code{\link{fixef.egf}} and \code{\link{ranef.egf}} for extracting fixed and random effect coefficients,
+  \code{\link{fitted.egf}} and \code{\link{confint.egf}} for extracting and computing confidence intervals on fitted values,
+  \code{\link{profile.egf}} for computing likelihood profiles,
+  \code{\link{predict.egf}} for computing predicted values,
+  \code{\link{simulate.egf}} for simulating data
 }

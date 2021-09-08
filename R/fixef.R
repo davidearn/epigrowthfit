@@ -30,6 +30,11 @@
 #'   Coefficient estimate.
 #' }
 #'
+#' @examples
+#' example("egf", "epigrowthfit")
+#' zz <- fixef(object)
+#' str(zz)
+#'
 #' @family coefficient extractors
 #' @aliases fixef
 #' @export
