@@ -19,7 +19,6 @@
 #' egf_get_flag("curve", "exponential")
 #' egf_get_flag("family", "pois")
 #' egf_get_flag("prior", "norm")
-#' egf_get_flag("test", "logspace_diff")
 #'
 #' @noRd
 egf_get_flag <- function(type = c("curve", "family", "prior", "test"), enum) {
@@ -27,8 +26,7 @@ egf_get_flag <- function(type = c("curve", "family", "prior", "test"), enum) {
   enum_all <- switch(type,
     curve = c("exponential", "subexponential", "gompertz", "logistic", "richards"),
     family = c("pois", "nbinom"),
-    prior = c("norm", "lkj", "wishart", "invwishart"),
-    test = c("list_of_vectors_t", "is_NA_real_", "is_finite", "logspace_diff", "mvlgamma", "dlkj", "dwishart", "dinvwishart", "dpois_robust", "rnbinom_robust", "eval_log_curve_exponential", "eval_log_curve_subexponential", "eval_log_curve_gompertz", "eval_log_curve_logistic", "eval_log_curve_richards", "logspace_add_baseline", "logspace_add_offsets", "eval_log_rt_subexponential", "eval_log_rt_gompertz", "eval_log_rt_logistic", "eval_log_rt_richards")
+    prior = c("norm", "lkj", "wishart", "invwishart")
   )
   match(enum, enum_all, 0L) - 1L
 }

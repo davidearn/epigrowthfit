@@ -1,5 +1,3 @@
-library("TMB")
-library("testthat")
 dll <- "test_include"
 cpp <- paste0(dll, ".cpp")
 compile(cpp)
