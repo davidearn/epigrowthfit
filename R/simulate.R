@@ -354,13 +354,6 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     set_RNGstate <- function() do.call(set.seed, RNGstate)
   }
 
-  ## Configure OpenMP
-  onomp <- openmp(n = NULL)
-  if (onomp > 0L) {
-    openmp(n = object$control$omp_num_threads)
-    on.exit(openmp(n = onomp), add = TRUE)
-  }
-
   names_top <- egf_get_names_top(object, link = TRUE)
   p <- length(names_top)
   stopifnot(
