@@ -60,8 +60,9 @@ this many points on each side of a profile's minimum point.}
 
 \item{trace}{A \link{logical} flag.
 If \code{TRUE}, then basic tracing messages indicating progress
-are printed. Depending on \code{fitted$control$trace}, these may
-be mixed with optimization output.}
+are printed.
+Depending on \code{fitted$control$trace}, these may be mixed with
+optimizer output.}
 
 \item{parallel}{An \code{"\link{egf_parallel}"} object defining options for \R level
 parallelization.}
@@ -137,5 +138,5 @@ str(zz)
 
 }
 \seealso{
-\code{\link{confint.egf_profile}}, \code{plot.egf_profile}
+\code{\link{confint.egf_profile}}, \code{\link{plot.egf_profile}}
 }

@@ -14,8 +14,8 @@
   link = TRUE,
   method = c("wald", "profile", "uniroot"),
   grid_len = 12,
-  parallel = egf_parallel(),
   trace = TRUE,
+  parallel = egf_parallel(),
   max_width = 7,
   breaks = NULL,
   probs = NULL,
@@ -59,14 +59,16 @@ A positive integer. Step sizes chosen adaptively by
 \code{\link[TMB]{tmbprofile}} will generate approximately
 this many points on each side of a profile's minimum point.}
 
-\item{parallel}{(For \code{method = "profile"}.)
-An \code{"\link{egf_parallel}"} object defining parallelization
-options.}
-
 \item{trace}{(For \code{method != "wald"}.)
 A \link{logical} flag.
 If \code{TRUE}, then basic tracing messages indicating progress
-are printed.}
+are printed.
+Depending on \code{object$control$trace}, these may be mixed with
+optimizer output.}
+
+\item{parallel}{(For \code{method = "profile"}.)
+An \code{"\link{egf_parallel}"} object defining options for \R level
+parallelization.}
 
 \item{max_width}{(For \code{method = "uniroot"}.)
 A positive number. \code{\link[TMB]{tmbroot}} will search for roots
@@ -130,9 +132,9 @@ of individual fitted values.
 \code{"wald"} requires minimal computation time but assumes,
 e.g., asymptotic normality of the maximum likelihood estimator.
 A further limitation of \code{"wald"} is functional non-invariance.
-\code{"profile"} and \code{"uniroot"} avoid these issues but are
-much slower, requiring estimation of restricted models. Of the two,
-\code{"profile"} is more robust.
+\code{"profile"} and \code{"uniroot"} avoid these issues but
+are expensive, requiring estimation of many restricted models.
+Of the two, \code{"profile"} is more robust.
 
 See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset} and \code{append}.

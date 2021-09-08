@@ -44,8 +44,9 @@
 #' @param trace
 #'   A \link{logical} flag.
 #'   If \code{TRUE}, then basic tracing messages indicating progress
-#'   are printed. Depending on \code{fitted$control$trace}, these may
-#'   be mixed with optimization output.
+#'   are printed.
+#'   Depending on \code{fitted$control$trace}, these may be mixed with
+#'   optimizer output.
 #' @param parallel
 #'   An \code{"\link{egf_parallel}"} object defining options for \R level
 #'   parallelization.
@@ -114,7 +115,7 @@
 #' zz <- profile(object, subset = (country == "A" & wave == 1))
 #' str(zz)
 #'
-#' @seealso \code{\link{confint.egf_profile}}, \code{plot.egf_profile}
+#' @seealso \code{\link{confint.egf_profile}}, \code{\link{plot.egf_profile}}
 #' @export
 #' @importFrom Matrix sparseMatrix KhatriRao
 #' @importMethodsFrom Matrix diag
@@ -213,26 +214,26 @@ profile.egf <- function(fitted,
   ## Covariance matrix of 'c(beta, theta)'
   V <- vcov(fitted, full = TRUE)
   if (method == "which") {
-    r <- which
+    a <- which
     h <- sqrt(diag(V)[which]) / 4
   } else {
     ## Covariance matrix of 'A %*% c(beta, theta)'
     V <- A %*% unclass(V) %*% t(A)
-    r <- lapply(seq_len(nrow(A)), function(i) A[i, ])
+    a <- lapply(seq_len(nrow(A)), function(i) A[i, ])
     h <- sqrt(diag(V)) / 4
   }
   ytol <- qchisq(max_level, df = 1) / 2 # y := diff(nll) = deviance / 2
   ystep <- ytol / grid_len
   obj <- fitted$tmb_out
 
-  do_profile <- function(i, r, h) {
+  do_profile <- function(i, a, h) {
     if (trace) {
       cat(sprintf("Computing likelihood profile %d of %d...\n", i, m))
     }
     if (method == "which") {
-      res <- TMB::tmbprofile(obj, name = r,    h = h, ytol = ytol, ystep = ystep, trace = FALSE)
+      res <- TMB::tmbprofile(obj, name = a,    h = h, ytol = ytol, ystep = ystep, trace = FALSE)
     } else {
-      res <- TMB::tmbprofile(obj, lincomb = r, h = h, ytol = ytol, ystep = ystep, trace = FALSE)
+      res <- TMB::tmbprofile(obj, lincomb = a, h = h, ytol = ytol, ystep = ystep, trace = FALSE)
     }
     i_min <- which.min(res[[2L]])
     res[[2L]] <- 2 * (res[[2L]] - res[i_min, 2L]) # deviance = 2 * diff(nll)
@@ -262,21 +263,24 @@ profile.egf <- function(fitted,
       eval(set_omp_num_threads)
       obj <- do.call(TMB::MakeADFun, tmb_args)
     })
-    res <- clusterMap(cl, do_profile, i = seq_len(m), r = r, h = h)
+    res <- clusterMap(cl, do_profile, i = seq_len(m), a = a, h = h)
   } else {
-    if (nzchar(parallel$outfile)) {
-      outfile <- file(parallel$outfile, open = "wt")
-      sink(outfile, type = "output")
-      sink(outfile, type = "message")
-      on.exit(add = TRUE, {
-        sink(type = "output")
-        sink(type = "message")
-      })
+    f <- function() {
+      if (nzchar(parallel$outfile)) {
+        outfile <- file(parallel$outfile, open = "wt")
+        sink(outfile, type = "output")
+        sink(outfile, type = "message")
+        on.exit({
+          sink(type = "output")
+          sink(type = "message")
+        })
+      }
+      switch(parallel$method,
+        multicore = do.call(mcMap, c(list(f = do_profile, i = seq_len(m), a = a, h = h), parallel$args)),
+        serial = Map(do_profile, i = seq_len(m), a = a, h = h)
+      )
     }
-    res <- switch(parallel$method,
-      multicore = do.call(mcMap, c(list(f = do_profile, i = seq_len(m), r = r, h = h), parallel$args)),
-      serial = Map(do_profile, i = seq_len(m), r = r, h = h)
-    )
+    res <- f()
   }
 
   nrow_res <- vapply(res, nrow, 0L)

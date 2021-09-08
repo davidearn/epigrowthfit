@@ -37,13 +37,15 @@
 #'   A positive integer. Step sizes chosen adaptively by
 #'   \code{\link[TMB]{tmbprofile}} will generate approximately
 #'   this many points on each side of a profile's minimum point.
-#' @param parallel (For \code{method = "profile"}.)
-#'   An \code{"\link{egf_parallel}"} object defining parallelization
-#'   options.
 #' @param trace (For \code{method != "wald"}.)
 #'   A \link{logical} flag.
 #'   If \code{TRUE}, then basic tracing messages indicating progress
 #'   are printed.
+#'   Depending on \code{object$control$trace}, these may be mixed with
+#'   optimizer output.
+#' @param parallel (For \code{method = "profile"}.)
+#'   An \code{"\link{egf_parallel}"} object defining options for \R level
+#'   parallelization.
 #' @param max_width (For \code{method = "uniroot"}.)
 #'   A positive number. \code{\link[TMB]{tmbroot}} will search for roots
 #'   in the interval from \code{x-max_width} to \code{x+max_width}, where
@@ -81,9 +83,9 @@
 #' \code{"wald"} requires minimal computation time but assumes,
 #' e.g., asymptotic normality of the maximum likelihood estimator.
 #' A further limitation of \code{"wald"} is functional non-invariance.
-#' \code{"profile"} and \code{"uniroot"} avoid these issues but are
-#' much slower, requiring estimation of restricted models. Of the two,
-#' \code{"profile"} is more robust.
+#' \code{"profile"} and \code{"uniroot"} avoid these issues but
+#' are expensive, requiring estimation of many restricted models.
+#' Of the two, \code{"profile"} is more robust.
 #'
 #' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 #' of \code{subset} and \code{append}.
@@ -117,7 +119,6 @@
 #' @importFrom Matrix KhatriRao
 #' @importFrom methods as
 #' @importFrom stats qchisq fitted profile confint
-#' @importFrom TMB tmbroot openmp
 #' @import parallel
 confint.egf <- function(object,
                         parm,
@@ -128,8 +129,8 @@ confint.egf <- function(object,
                         link = TRUE,
                         method = c("wald", "profile", "uniroot"),
                         grid_len = 12,
-                        parallel = egf_parallel(),
                         trace = TRUE,
+                        parallel = egf_parallel(),
                         max_width = 7,
                         breaks = NULL,
                         probs = NULL,
@@ -171,19 +172,31 @@ confint.egf <- function(object,
     pf <- profile(object, top = top, .subset = subset, .append = append,
       max_level = level + min(0.01, 0.1 * (1 - level)),
       grid_len = grid_len,
-      parallel = parallel,
-      trace = trace
+      trace = trace,
+      parallel = parallel
     )
     res <- confint(pf, level = level, link = link)
     res$linear_combination <- NULL
 
   } else { "uniroot"
     stop_if_not_number(max_width, "positive")
+    stop_if_not_true_false(trace)
+    stopifnot(inherits(parallel, "egf_parallel"))
+    n <- length(object$nonrandom)
+
+    nomp <- object$control$omp_num_threads
+    set_omp_num_threads <- quote({
+      onomp <- TMB::openmp(n = NULL)
+      if (onomp > 0L) {
+        TMB::openmp(n = nomp)
+        on.exit(TMB::openmp(n = onomp), add = TRUE)
+      }
+    })
+    eval(set_omp_num_threads)
 
     p <- length(top)
-    N <- sum(subset)
+    N <- length(subset)
     m <- p * N
-    n <- length(object$nonrandom)
 
     f <- factor(object$info$X$top, levels = top)
     J <- as(f, "sparseMatrix")
@@ -195,58 +208,58 @@ confint.egf <- function(object,
       A@p <- locf(A@p)
       A@Dim <- c(m, n)
     }
-    A_rows <- lapply(seq_len(m), function(i) A[i, ])
+    a <- lapply(seq_len(m), function(i) A[i, ])
+    target <- qchisq(level, df = 1) / 2 # y := diff(nll) = deviance / 2
+    sd.range <- max_width
+    obj <- object$tmb_out
 
-    tmbroot_args <- list(
-      obj = object$tmb_out,
-      target = qchisq(level, df = 1) / 2, # y := diff(nll) = deviance / 2
-      sd.range = max_width,
-      trace = FALSE
-    )
-    omp_num_threads <- object$control$omp_num_threads
-
-    do_uniroot <- function(r, i) {
+    do_uniroot <- function(i, a) {
       if (trace) {
         cat(sprintf("Computing confidence interval %d of %d...\n", i, m))
       }
-      on <- openmp(n = NULL)
-      if (on > 0L) {
-        openmp(n = omp_num_threads)
-        on.exit(openmp(n = on))
-      }
-      tmbroot_args$lincomb <- r
-      do.call(tmbroot, tmbroot_args)
+      TMB::tmbroot(obj, lincomb = a, target = target, sd.range = sd.range, trace = FALSE)
     }
 
-    if (parallel == "snow") {
-      environment(do_uniroot) <- .GlobalEnv # see comment in R/boot.R
+    if (parallel$method == "snow") {
+      environment(do_uniroot) <- .GlobalEnv # see comment in R/simulate.R
+
+      ## Reconstruct list of arguments to 'MakeADFun' from object internals
+      ## for retaping
+      tmb_args <- egf_remake_tmb_args(object)
+
       if (is.null(parallel$cl)) {
-        cl <- do.call(makePSOCKcluster, parallel$options)
-        on.exit(stopCluster(cl))
+        cl <- do.call(makePSOCKcluster, parallel$args)
+        on.exit(stopCluster(cl), add = TRUE)
       } else {
         cl <- parallel$cl
       }
-      clusterEvalQ(cl, library("TMB"))
       clusterExport(cl,
-        varlist = c("tmbroot_args", "trace", "m", "omp_num_threads"),
+        varlist = c("set_omp_num_threads", "nomp", "tmb_args", "trace", "m", "target", "sd.range"),
         envir = environment()
       )
-      vl <- clusterMap(cl, do_uniroot, r = A_rows, i = seq_len(m))
-
+      clusterEvalQ(cl, {
+        loadNamespace("epigrowthfit")
+        eval(set_omp_num_threads)
+        obj <- do.call(TMB::MakeADFun, tmb_args)
+      })
+      res <- clusterMap(cl, do_uniroot, i = seq_len(m), a = a)
     } else {
-      if (nzchar(parallel$outfile)) {
-        outfile <- file(parallel$outfile, open = "wt")
-        sink(outfile, type = "output")
-        sink(outfile, type = "message")
+      f <- function() {
+        if (nzchar(parallel$outfile)) {
+          outfile <- file(parallel$outfile, open = "wt")
+          sink(outfile, type = "output")
+          sink(outfile, type = "message")
+          on.exit({
+            sink(type = "output")
+            sink(type = "message")
+          })
+        }
+        switch(parallel$method,
+          multicore = do.call(mcMap, c(list(f = do_uniroot, i = seq_len(m), a = a), parallel$args)),
+          serial = Map(do_uniroot, i = seq_len(m), a = a)
+        )
       }
-      vl <- switch(parallel$method,
-        multicore = do.call(mcMap, c(list(f = do_uniroot, r = A_rows, i = seq_len(m)), parallel$options)),
-        serial = Map(do_uniroot, r = A_rows, i = seq_len(m))
-      )
-      if (nzchar(parallel$outfile)) {
-        sink(type = "output")
-        sink(type = "message")
-      }
+      res <- f()
     }
 
     res <- data.frame(
@@ -254,13 +267,12 @@ confint.egf <- function(object,
       ts = object$frame_windows$ts[subset],
       window = object$frame_windows$window[subset],
       estimate = as.numeric(A %*% object$best[object$nonrandom]),
-      do.call(rbind, vl), # "lower" "upper"
+      `colnames<-`(do.call(rbind, res), c("lower", "upper")),
       combined[subset, append, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
-
     if (!link) {
       res[elu] <- in_place_ragged_apply(res[elu], res$top,
         f = lapply(egf_link_extract(levels(res$top)), egf_link_match, inverse = TRUE)

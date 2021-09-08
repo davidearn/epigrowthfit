@@ -39,6 +39,18 @@
 #'   A named \link{list} of \link{numeric} vectors specifying parameter values.
 #' }
 #'
+#' @examples
+#' Normal(mu = 0, sigma = 1)
+#' Normal(mu = -5:5, sigma = c(0.1, 1))
+#'
+#' LKJ(eta = 2)
+#'
+#' U <- matrix(rnorm(9L), 3L, 3L)
+#' UTU <- t(U) %*% U
+#' UUT <- U %*% t(U)
+#' Wishart(df = 6, scale = UTU)
+#' InverseWishart(df = 6, scale = list(UTU, UUT))
+#'
 #' @name egf_prior
 NULL
 
@@ -116,8 +128,8 @@ Wishart <- function(df, scale, tol = 1e-06) {
     log_sd <- 0.5 * log(diag(S))
     R <- chol(S)
     R[] <- R * rep(1 / diag(R), each = nrow(R))
-    chol <- R[upper.tri(R)]
-    c(log_sd, chol)
+    theta <- R[upper.tri(R)]
+    c(log_sd, theta)
   })
   res <- list(
     family = "wishart",

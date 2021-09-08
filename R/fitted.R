@@ -196,6 +196,11 @@ coef.egf <- fitted.egf
 #'
 #' \code{level} is retained as an \link[=attributes]{attribute}.
 #'
+#' @examples
+#' example("fitted.egf", "epigrowthfit")
+#' confint(zz, link = TRUE)
+#' confint(zz, link = FALSE)
+#'
 #' @export
 confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
   if (!isTRUE(attr(object, "se"))) {
@@ -217,7 +222,7 @@ confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
     check.names = FALSE,
     stringsAsFactors = FALSE
   )
-  if (link) {
+  if (!link) {
     elu <- c("estimate", "lower", "upper")
     res[elu] <- in_place_ragged_apply(res[elu], res$top,
       f = lapply(egf_link_extract(levels(res$top)), egf_link_match, inverse = TRUE)

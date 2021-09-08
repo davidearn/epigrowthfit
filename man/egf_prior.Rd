@@ -56,3 +56,16 @@ with elements:
 Functions used by \code{\link{egf}} to specify prior distributions
 of bottom level mixed effects model parameters.
 }
+\examples{
+Normal(mu = 0, sigma = 1)
+Normal(mu = -5:5, sigma = c(0.1, 1))
+
+LKJ(eta = 2)
+
+U <- matrix(rnorm(9L), 3L, 3L)
+UTU <- t(U) \%*\% U
+UUT <- U \%*\% t(U)
+Wishart(df = 6, scale = UTU)
+InverseWishart(df = 6, scale = list(UTU, UUT))
+
+}

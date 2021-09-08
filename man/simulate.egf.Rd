@@ -35,8 +35,9 @@ step is performed.}
 
 \item{trace}{A \link{logical} flag.
 If \code{TRUE}, then basic tracing messages indicating progress
-are printed. Depending on \code{object$control$trace}, these may
-be mixed with optimizer output.}
+are printed.
+Depending on \code{object$control$trace}, these may be mixed with
+optimizer output.}
 
 \item{parallel}{An \code{"\link{egf_parallel}"} object defining options for \R level
 parallelization.}

@@ -27,8 +27,9 @@
 #' @param trace
 #'   A \link{logical} flag.
 #'   If \code{TRUE}, then basic tracing messages indicating progress
-#'   are printed. Depending on \code{object$control$trace}, these may
-#'   be mixed with optimizer output.
+#'   are printed.
+#'   Depending on \code{object$control$trace}, these may be mixed with
+#'   optimizer output.
 #' @param parallel
 #'   An \code{"\link{egf_parallel}"} object defining options for \R level
 #'   parallelization.
@@ -176,19 +177,22 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
       clusterSetRNGStream(cl)
       res$boot <- clusterMap(cl, do_boot, i = seq_len(nsim), x = frame[nx], simplify = TRUE)
     } else {
-      if (nzchar(parallel$outfile)) {
-        outfile <- file(parallel$outfile, open = "wt")
-        sink(outfile, type = "output")
-        sink(outfile, type = "message")
-        on.exit(add = TRUE, {
-          sink(type = "output")
-          sink(type = "message")
-        })
+      f <- function() {
+        if (nzchar(parallel$outfile)) {
+          outfile <- file(parallel$outfile, open = "wt")
+          sink(outfile, type = "output")
+          sink(outfile, type = "message")
+          on.exit({
+            sink(type = "output")
+            sink(type = "message")
+          })
+        }
+        switch(parallel$method,
+          multicore = do.call(mcmapply, c(list(FUN = do_boot, i = seq_len(nsim), x = frame[nx]), parallel$args)),
+          serial = mapply(do_boot, i = seq_len(nsim), x = frame[nx])
+        )
       }
-      res$boot <- switch(parallel$method,
-        multicore = do.call(mcmapply, c(list(FUN = do_boot, i = seq_len(nsim), x = frame[nx]), parallel$args)),
-        serial = mapply(do_boot, i = seq_len(nsim), x = frame[nx])
-      )
+      res$boot <- f()
     }
     rownames(res$boot) <- names(object$best)
   }
