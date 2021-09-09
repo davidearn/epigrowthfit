@@ -2,7 +2,7 @@
 #' @importFrom utils str capture.output
 print.egf <- function(x, width = 0.9 * getOption("width"), exdent = 2L, ...) {
   width <- as.integer(width)
-  extent <- strrep(" ", exdent)
+  exdent <- strrep(" ", exdent)
 
   ## Sort out details of top level nonlinear model
   mean <- "f(t) - f(s)"
