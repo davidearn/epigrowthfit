@@ -1,3 +1,31 @@
+#' Concatenate, wrap, collapse
+#'
+#' Concatenates \R objects, formats the resulting string in paragraphs
+#' using \code{\link{strwrap}}, and collapses paragraph lines with newlines.
+#' Under default settings, the result is a string that prints in the console
+#' as one or more nicely wrapped paragraphs.
+#'
+#' @param ...
+#'   Zero or more \R objects (typically \link{atomic} vectors of length 1),
+#'   to be coerced to \link{character} and concatenated with no separator.
+#' @param width
+#'   A positive integer passed to \code{\link{strwrap}},
+#'   indicating a target column width.
+#'
+#' @return
+#' A \link{character} vector of length 1.
+#'
+#' @noRd
+wrap <- function(..., width = 0.9 * getOption("width")) {
+  dots <- unname(list(...))
+  x <- vapply(dots, paste0, "", collapse = "")
+  x1 <- paste0(x, collapse = "")
+  y <- unlist(strsplit(x1, "\n[ \t\n]*\n"), FALSE, FALSE)
+  y1 <- paste0(y, collapse = "\n\n")
+  z <- strwrap(y1, width = width)
+  paste0(z, collapse = "\n")
+}
+
 #' Enumerate duplicated strings
 #'
 #' Replaces the \code{i}th instance of string \code{s} in a
@@ -37,34 +65,6 @@ enum_dupl_names <- function(x, format = "%s[%d]") {
     names(x) <- enum_dupl_string(names(x), format = format)
   }
   x
-}
-
-#' Concatenate, wrap, collapse
-#'
-#' Concatenates \R objects, formats the resulting string in paragraphs
-#' using \code{\link{strwrap}}, and collapses paragraph lines with newlines.
-#' Under default settings, the result is a string that prints in the console
-#' as one or more nicely wrapped paragraphs.
-#'
-#' @param ...
-#'   Zero or more \R objects (typically \link{atomic} vectors of length 1),
-#'   to be coerced to \link{character} and concatenated with no separator.
-#' @param width
-#'   A positive integer passed to \code{\link{strwrap}},
-#'   indicating a target column width.
-#'
-#' @return
-#' A \link{character} vector of length 1.
-#'
-#' @noRd
-wrap <- function(..., width = 0.9 * getOption("width")) {
-  dots <- unname(list(...))
-  x <- vapply(dots, paste0, "", collapse = "")
-  x1 <- paste0(x, collapse = "")
-  y <- unlist(strsplit(x1, "\n[ \t\n]*\n"), FALSE, FALSE)
-  y1 <- paste0(y, collapse = "\n\n")
-  z <- strwrap(y1, width = width)
-  paste0(z, collapse = "\n")
 }
 
 #' Literal run length encoding

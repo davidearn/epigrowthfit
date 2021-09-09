@@ -33,6 +33,7 @@ Imports:
     methods,
     graphics,
     grDevices,
+    utils,
     nlme
 Suggests:
     knitr,

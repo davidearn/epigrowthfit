@@ -6,7 +6,7 @@ test_that("egf_get_names_top", {
   expect_named(names_top_all, NULL)
 
   model <- egf_model(
-    curve = "richards",
+    curve = "logistic",
     excess = TRUE,
     family = "nbinom",
     day_of_week = TRUE
@@ -18,21 +18,22 @@ test_that("egf_get_names_top", {
 })
 
 test_that("egf_has_random", {
-  f <- function(Z) {
-    e <- new.env()
-    e$data <- list(Z = Z)
-    object <- list(tmb_out = list(env = e))
-    class(object) <- "egf"
-    object
-  }
-  expect_false(egf_has_random(f(matrix(numeric(0L), 6L, 0L))))
-  expect_true(egf_has_random(f(matrix(numeric(6L), 6L, 1L))))
+  e <- new.env()
+  e$data <- list()
+  object <- list(tmb_out = list(env = e))
+  class(object) <- "egf"
+
+  e$data$Z <- matrix(numeric(9L), 3L, 3L)
+  expect_true(egf_has_random(object))
+
+  e$data$Z <- matrix(numeric(0L), 3L, 0L)
+  expect_false(egf_has_random(object))
 })
 
 test_that("egf_combine_frames", {
   object <- list(
     frame_parameters = list(a = data.frame(x = 1:6), b = data.frame(y = letters[1:6])),
-    frame_append = data.frame(x = rnorm(1:6), z = TRUE)
+    frame_append = data.frame(x = rnorm(6L), z = TRUE)
   )
   class(object) <- "egf"
   expect_identical(egf_combine_frames(object), data.frame(x = 1:6, y = letters[1:6], z = TRUE))

@@ -17,7 +17,7 @@ test_that("exponential", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-2)
+  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 5e-3)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(mm$best)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 2e-2)
@@ -40,12 +40,12 @@ test_that("subexponential", {
   )
   mm <- egf(zz,
     formula_priors_bottom = list(
-      beta[3L] ~ Normal(mu = qlogis(p), sigma = 0.02),
-      theta[3L] ~ Normal(mu = log(0.2), sigma = 0.125),
+      beta[3L] ~ Normal(mu = qlogis(p), sigma = 0.05),
+      theta[3L] ~ Normal(mu = log(0.2), sigma = 0.25),
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-2)
+  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 2e-3)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 2e-2)
@@ -61,7 +61,7 @@ test_that("gompertz", {
 
   zz <- simulate(egf_model(curve = "gompertz", family = "nbinom"),
     nsim = 100L,
-    seed = 685398L,
+    seed = 685399L,
     mu = log(c(alpha, tinfl, K, disp)),
     Sigma = diag(rep_len(0.2^2, 4L)),
     cstart = 10
@@ -71,12 +71,12 @@ test_that("gompertz", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-1)
+  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 5e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-2)
   expect_equal(pp$theta$fitted[1:4], pp$theta$actual[1:4], tolerance = 2e-2)
-  expect_equal(pp$theta$fitted[-(1:4)], pp$theta$actual[-(1:4)], tolerance = 1)
+  expect_equal(pp$theta$fitted[-(1:4)], pp$theta$actual[-(1:4)], tolerance = 2)
 })
 
 test_that("logistic", {
@@ -121,12 +121,12 @@ test_that("richards", {
   )
   mm <- egf(zz,
     formula_priors_bottom = list(
-      beta[4L] ~ Normal(mu = log(a), sigma = 0.02),
-      theta[4L] ~ Normal(mu = log(0.2), sigma = 0.005),
+      beta[4L] ~ Normal(mu = log(a), sigma = 0.005),
+      theta[4L] ~ Normal(mu = log(0.2), sigma = 0.25),
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-2)
+  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 5e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-3)

@@ -1,8 +1,8 @@
 test_that("egf_get_flag", {
   f <- function(type, enum) egf_get_flag(type, c(enum, "invalid name"))
   flag <- Map(f,
-    type = c("curve", "family", "prior", "test"),
-    enum = c("exponential", "pois", "norm", "logspace_diff")
+    type = c("curve", "family", "prior"),
+    enum = c("exponential", "pois", "norm")
   )
   for (s in names(flag)) {
     eval(bquote({

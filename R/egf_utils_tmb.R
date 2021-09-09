@@ -5,7 +5,7 @@
 #'
 #' @inheritParams egf
 #' @param frame,frame_parameters
-#'   Model frames obtained from the list output of \code{egf_make_frames}.
+#'   So-named elements of a \link{list} returned by \code{egf_make_frames}.
 #'
 #' @return
 #' [Below,
@@ -16,8 +16,7 @@
 #' \code{p = \link{length}(frame_parameters)}
 #' is the number of top level nonlinear model parameters.]
 #'
-#' A \link{list} inheriting from \link{class} \code{"tmb_data"},
-#' with elements:
+#' A \link{list} with elements:
 #' \item{time}{
 #'   A \link[=double]{numeric} vector of length \code{n} giving
 #'   times since the left endpoint of the current fitting window.
@@ -86,7 +85,6 @@
 #'   of each block of random effects.
 #' }
 #'
-#' @seealso \code{\link[TMB]{MakeADFun}}
 #' @noRd
 #' @importFrom stats formula terms model.offset
 #' @importFrom Matrix sparseMatrix
@@ -205,7 +203,6 @@ egf_tmb_make_data <- function(model, frame, frame_parameters, control) {
     block_rows = block_rows,
     block_cols = block_cols
   )
-  class(res) <- c("tmb_data", "list")
   res
 }
 
@@ -218,9 +215,9 @@ egf_tmb_make_data <- function(model, frame, frame_parameters, control) {
 #'
 #' @inheritParams egf
 #' @param tmb_data
-#'   A \code{"\link[=egf_tmb_make_data]{tmb_data}"} object.
-#' @param
-#'   Model frames obtained from the list output of \code{egf_make_frames}.
+#'   A \link{list} returned by \code{egf_tmb_make_data}.
+#' @param frame,frame_parameters
+#'   So-named elements of a \link{list} returned by \code{egf_make_frames}.
 #'
 #' @details
 #' When \code{init = NULL}, naive estimates of top level nonlinear

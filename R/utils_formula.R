@@ -36,11 +36,12 @@ negate <- function(x) {
 #'   A \link{list} of \link{call}s, \link{name}s, and \link{atomic} scalars.
 #'
 #' @details
-#' Semantically extraneous \code{`(`} \link{call}s, as in the
-#' expression \code{(x) + (y)} are stripped when splitting
-#' and not replaced when unsplitting. In these cases,
+#' Semantically extraneous calls to \code{`(`},
+#' as in the expression \code{(x) + (y)} are stripped when splitting.
+#' Calls to \code{`|`} are wrapped in \code{`(`} when unsplitting.
+#' For these reasons, it is possible for
 #' \code{\link{identical}(x, unsplit_terms(split_terms(x)))}
-#' may return \code{FALSE}.
+#' to return \code{FALSE}.
 #'
 #' If \code{x} is a formula, then the right hand side is split.
 #' In this case, \code{unsplit_terms(split_terms(x))} reproduces
@@ -54,7 +55,7 @@ negate <- function(x) {
 #' l <- split_terms(x)
 #' y <- unsplit_terms(l)
 #' identical(x, y)
-#' ## [1] FALSE
+#' ## [1] TRUE
 #'
 #' @noRd
 NULL
@@ -95,12 +96,22 @@ unsplit_terms <- function(l) {
   is_pm <- function(x) {
     is.call(x) && (x[[1L]] == "+" || x[[1L]] == "-") && length(x) == 2L
   }
+  is_bar <- function(x) {
+    is.call(x) && x[[1L]] == "|"
+  }
   x <- l[[1L]]
+  if (is_bar(x)) {
+    x <- call("(", x)
+  }
   for (i in seq_along(l)[-1L]) {
-    if (is_pm(l[[i]])) {
-      x <- as.call(list(l[[i]][[1L]], x, l[[i]][[2L]]))
+    y <- l[[i]]
+    if (is_pm(y)) {
+      x <- as.call(list(y[[1L]], x, y[[2L]]))
     } else {
-      x <- call("+", x, l[[i]])
+      if (is_bar(y)) {
+        y <- call("(", y)
+      }
+      x <- call("+", x, y)
     }
   }
   x

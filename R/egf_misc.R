@@ -72,15 +72,6 @@ egf_get_names_top.egf <- function(object, link = TRUE, ...) {
   egf_get_names_top(object$model, link = link)
 }
 
-#' @export
-egf_get_names_top.tmb_data <- function(object, link = TRUE, ...) {
-  names_top <- levels(object$X_info$par)
-  if (link) {
-    return(names_top)
-  }
-  egf_link_remove(names_top)
-}
-
 #' Check for random effects
 #'
 #' Determines whether an object specifies a random effects model.
