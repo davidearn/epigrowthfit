@@ -17,7 +17,7 @@ test_that("exponential", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 5e-3)
+  expect_lt(max(abs(mm$gradient)), 5e-3)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(mm$best)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 2e-2)
@@ -45,7 +45,7 @@ test_that("subexponential", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 2e-3)
+  expect_lt(max(abs(mm$gradient)), 2e-3)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 2e-2)
@@ -71,7 +71,7 @@ test_that("gompertz", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 5e-2)
+  expect_lt(max(abs(mm$gradient)), 5e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-2)
@@ -97,7 +97,7 @@ test_that("logistic", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 1e-2)
+  expect_lt(max(abs(mm$gradient)), 1e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-3)
@@ -126,7 +126,7 @@ test_that("richards", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(with(mm, max(abs(tmb_out$gr(best[nonrandom])))), 5e-2)
+  expect_lt(max(abs(mm$gradient)), 5e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-3)
