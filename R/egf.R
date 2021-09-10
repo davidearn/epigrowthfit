@@ -164,7 +164,8 @@
 #' time points capture a single day of week.
 #'
 #' @return
-#' A \link{list} inheriting from \link{class} \code{"egf"}, with elements:
+#' If \code{fit = TRUE}, then a \link{list} inheriting from \link{class}
+#' \code{"egf"}, with elements:
 #' \item{model}{
 #'   A copy of the so-named argument.
 #' }
@@ -221,11 +222,6 @@
 #'   The \link{list} output of the outer optimizer specified
 #'   by \code{control$optimizer}.
 #' }
-#' \item{nll}{
-#'   A \link[=double]{numeric} scalar giving the value of the negative
-#'   log Laplace approximation of the marginal likelihood function at
-#'   \code{best[nonrandom]}.
-#' }
 #' \item{init, best}{
 #'   Numeric vectors. These are the full parameter vectors
 #'   \code{c(beta, theta, b)} of the first and best likelihood evaluations.
@@ -234,6 +230,14 @@
 #'   An \link{integer} vector indexing segments \code{beta} and \code{theta}
 #'   of the full parameter vector \code{c(beta, theta, b)}. These are the
 #'   elements that are \emph{not} random effects.
+#' }
+#' \item{value, gradient}{
+#'   \link[=double]{Numeric} vectors giving the value and gradient
+#'   of the negative log likelihood function at \code{best[nonrandom]}.
+#' }
+#' \item{sdreport}{
+#'   If \code{se = TRUE}, then an \code{"sdreport"} object resulting
+#'   from \code{\link{sdreport}(tmb_out)}. Otherwise, \code{\link{NULL}}.
 #' }
 #' \item{info}{
 #'   A \link{list} of \link[=data.frame]{data frame}s \code{X} and \code{Z}
@@ -245,10 +249,6 @@
 #'   The \link{levels} of \link{factor} \code{Z$cor} correspond to segments
 #'   of \code{theta} parametrizing random effect covariance matrices.
 #' }
-#' \item{sdreport}{
-#'   If \code{se = TRUE}, then an \code{"sdreport"} object resulting
-#'   from \code{\link{sdreport}(tmb_out)}. Otherwise, \code{\link{NULL}}.
-#' }
 #' \item{Y0}{
 #'   A \link[=double]{numeric} matrix supplying naive estimates
 #'   of each top level nonlinear model parameter, corresponding
@@ -259,8 +259,9 @@
 #'   \code{"egf"} object via \code{\link{update}}.
 #' }
 #' If \code{fit = FALSE}, then the class is \code{"egf_no_fit"}
-#' instead of \code{"egf"}, and the list elements \code{optimizer_out},
-#' \code{nll}, \code{best}, and \code{sdreport} are \code{\link{NULL}}.
+#' instead of \code{"egf"}, and the elements \code{optimizer_out},
+#' \code{best}, \code{value}, \code{gradient}, and \code{sdreport}
+#' are \code{\link{NULL}}.
 #'
 #' @examples
 #' ## Simulate 'N' incidence time series exhibiting exponential growth
@@ -451,12 +452,13 @@ egf.egf_model <- function(model,
     control = control,
     tmb_out = tmb_out,
     optimizer_out = NULL,
-    nll = NULL,
     init = init,
     best = NULL,
     nonrandom = nonrandom,
-    info = info,
+    value = NULL,
+    gradient = NULL,
     sdreport = NULL,
+    info = info,
     Y0 = Y0,
     call = match.call()
   )
@@ -474,8 +476,9 @@ egf.egf_model <- function(model,
     control$optimizer[["args"]]
   )
   res$optimizer_out <- do.call(optimizer, optimizer_args)
-  res$nll <- as.numeric(res$optimizer_out$value)
   res$best <- enum_dupl_names(tmb_out$env$last.par.best)
+  res$value <- as.numeric(tmb_out$fn(res$best[res$nonrandom]))
+  res$gradient <- as.numeric(tmb_out$gr(res$best[res$nonrandom]))
   if (se) {
     res$sdreport <- try(TMB::sdreport(tmb_out))
   }

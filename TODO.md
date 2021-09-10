@@ -1,6 +1,4 @@
 ## Code
-* Write
-  - `summary.egf`
 * Refactor
   - `plot.egf`
   - `plot.egf_confint`

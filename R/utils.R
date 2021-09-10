@@ -25,6 +25,15 @@ wrap <- function(..., width = 0.9 * getOption("width")) {
   z <- strwrap(y1, width = width)
   paste0(z, collapse = "\n")
 }
+cat0 <- function(...) {
+  cat(..., sep = "")
+}
+heading <- function(text, width = 0.9 * getOption("width"), symbol = ".") {
+  cat(text, " ", strrep(symbol, max(0L, width - 1L - nchar(text))), "\n", sep = "")
+}
+pluralize <- function(word, n) {
+  if (n > 1L) paste0(word, "s") else word
+}
 
 #' Enumerate duplicated strings
 #'
