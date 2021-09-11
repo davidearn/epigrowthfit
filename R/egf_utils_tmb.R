@@ -430,11 +430,14 @@ egf_tmb_remake_args <- function(object) {
   tmb_args <- mget(c("data", "parameters", "map", "random", "profile", "DLL", "silent"), envir = object$tmb_out$env)
   attr(tmb_args$data, "check.passed") <- NULL
   attr(tmb_args$parameters, "check.passed") <- NULL
+  best <- object$tmb_out$env$last.par.best
+  best[] <- object$best
   if (egf_has_random(object)) {
-    tmb_args$parameters <- split(unname(object$best), sub("\\[[0-9]+\\]$", "", names(object$best)))
+    u <- unique(names(best))
+    tmb_args$parameters <- split(unname(best), factor(names(best), levels = u))
     tmb_args$random <- "b"
   } else {
-    tmb_args$parameters$beta <- unname(object$best)
+    tmb_args$parameters$beta <- unname(best)
     tmb_args$random <- NULL
   }
   if (object$control$profile) {

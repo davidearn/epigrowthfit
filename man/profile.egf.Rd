@@ -11,7 +11,7 @@
   top = egf_get_names_top(fitted, link = TRUE),
   subset = NULL,
   append = NULL,
-  max_level = 0.95,
+  level_max = 0.95,
   grid_len = 12,
   trace = TRUE,
   parallel = egf_parallel(),
@@ -50,9 +50,9 @@ Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.}
 result. The default (\code{\link{NULL}}) is to append nothing.
 Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.}
 
-\item{max_level}{A number in the interval (0,1) indicating a confidence level.
+\item{level_max}{A number in the interval (0,1) indicating a confidence level.
 Profiles will be computed up to a deviance
-of \code{\link{qchisq}(max_level, df = 1)}.}
+of \code{\link{qchisq}(level_max, df = 1)}.}
 
 \item{grid_len}{A positive integer. Step sizes chosen adaptively by
 \code{\link[TMB]{tmbprofile}} will generate approximately
@@ -99,7 +99,7 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
   Deviance of the restricted model that assumes \code{value}
   for the linear combination being profiled.
 }
-\code{A}, \code{x = fitted$best[fitted$nonrandom]}, and \code{max_level}
+\code{A}, \code{x = fitted$best[fitted$nonrandom]}, and \code{level_max}
 are retained as \link{attributes}.
 }
 \description{

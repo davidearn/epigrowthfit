@@ -18,3 +18,5 @@
 
 shiny/toplevel/rsconnect/
 shiny/windowselect/rsconnect/
+
+inst/build_versions

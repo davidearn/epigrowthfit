@@ -115,7 +115,7 @@
 #' zz <- confint(object)
 #' str(zz)
 #'
-#' @seealso \code{plot.egf_confint}
+#' @seealso \code{\link{plot.egf_confint}}
 #' @export
 #' @importFrom Matrix KhatriRao
 #' @importFrom methods as
@@ -166,34 +166,24 @@ confint.egf <- function(object,
   append <- egf_eval_append(append, combined, baseenv())
 
   if (method == "wald") {
-    ft <- fitted(object, top = top, se = TRUE, .subset = subset, .append = append)
-    res <- confint(ft, level = level, link = link)
+    fo <- fitted(object, top = top, se = TRUE, .subset = subset, .append = append)
+    res <- confint(fo, level = level, link = link)
 
   } else if (method == "profile") {
-    pf <- profile(object, top = top, .subset = subset, .append = append,
-      max_level = level + min(0.01, 0.1 * (1 - level)),
+    po <- profile(object, top = top, .subset = subset, .append = append,
+      level_max = level + min(0.01, 0.1 * (1 - level)),
       grid_len = grid_len,
       trace = trace,
       parallel = parallel
     )
-    res <- confint(pf, level = level, link = link)
+    res <- confint(po, level = level, link = link)
     res$linear_combination <- NULL
 
-  } else { "uniroot"
+  } else { # "uniroot"
     stop_if_not_number(max_width, "positive")
     stop_if_not_true_false(trace)
     stopifnot(inherits(parallel, "egf_parallel"))
     n <- length(object$nonrandom)
-
-    nomp <- object$control$omp_num_threads
-    set_omp_num_threads <- quote({
-      onomp <- TMB::openmp(n = NULL)
-      if (onomp > 0L) {
-        TMB::openmp(n = nomp)
-        on.exit(TMB::openmp(n = onomp), add = TRUE)
-      }
-    })
-    eval(set_omp_num_threads)
 
     p <- length(top)
     N <- length(subset)
@@ -209,10 +199,11 @@ confint.egf <- function(object,
       A@p <- locf(A@p)
       A@Dim <- c(m, n)
     }
+
     a <- lapply(seq_len(m), function(i) A[i, ])
-    target <- qchisq(level, df = 1) / 2 # y := diff(nll) = deviance / 2
+    target <- 0.5 * qchisq(level, df = 1) # y := diff(nll) = 0.5 * deviance
     sd.range <- max_width
-    obj <- object$tmb_out
+    nomp <- object$control$omp_num_threads
 
     do_uniroot <- function(i, a) {
       if (trace) {
@@ -222,11 +213,14 @@ confint.egf <- function(object,
     }
 
     if (parallel$method == "snow") {
-      environment(do_uniroot) <- .GlobalEnv # see comment in R/simulate.R
+      environment(do_uniroot) <- .GlobalEnv
 
       ## Reconstruct list of arguments to 'MakeADFun' from object internals
       ## for retaping
-      tmb_args <- egf_tmb_remake_args(object)
+      args <- egf_tmb_remake_args(object)
+
+      ## Retrieve path to shared object for loading
+      dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit")
 
       if (is.null(parallel$cl)) {
         cl <- do.call(makePSOCKcluster, parallel$args)
@@ -235,32 +229,41 @@ confint.egf <- function(object,
         cl <- parallel$cl
       }
       clusterExport(cl,
-        varlist = c("set_omp_num_threads", "nomp", "tmb_args", "trace", "m", "target", "sd.range"),
+        varlist = c("nomp", "args", "trace", "m", "target", "sd.range"),
         envir = environment()
       )
       clusterEvalQ(cl, {
-        loadNamespace("epigrowthfit")
-        eval(set_omp_num_threads)
-        obj <- do.call(TMB::MakeADFun, tmb_args)
+        dyn.load(dll)
+        if (TMB::openmp(n = NULL) > 0L) {
+          TMB::openmp(n = nomp)
+        }
+        obj <- do.call(TMB::MakeADFun, args)
       })
       res <- clusterMap(cl, do_uniroot, i = seq_len(m), a = a)
     } else {
-      f <- function() {
-        if (nzchar(parallel$outfile)) {
-          outfile <- file(parallel$outfile, open = "wt")
-          sink(outfile, type = "output")
-          sink(outfile, type = "message")
-          on.exit({
-            sink(type = "output")
-            sink(type = "message")
-          })
-        }
+      obj <- object$tmb_out
+      if ((onomp <- TMB::openmp(n = NULL)) > 0L) {
+        TMB::openmp(n = nomp)
+        on.exit(TMB::openmp(n = onomp), add = TRUE)
+      }
+      if (given_outfile <- nzchar(parallel$outfile)) {
+        outfile <- file(parallel$outfile, open = "wt")
+        sink(outfile, type = "output")
+        sink(outfile, type = "message")
+      }
+      res <- tryCatch(
         switch(parallel$method,
           multicore = do.call(mcMap, c(list(f = do_uniroot, i = seq_len(m), a = a), parallel$args)),
           serial = Map(do_uniroot, i = seq_len(m), a = a)
-        )
-      }
-      res <- f()
+        ),
+        error = function(cond) {
+          if (given_outfile) {
+            sink(type = "message")
+            sink(type = "output")
+          }
+          stop(cond)
+        }
+      )
     }
 
     res <- data.frame(
@@ -316,124 +319,122 @@ confint.egf <- function(object,
   res
 }
 
-# #' Plot confidence intervals
-# #'
-# #' A method for graphically comparing confidence intervals
-# #' on fitted values of nonlinear model parameters across
-# #' fitting windows.
-# #'
-# #' @param x
-# #'   An `"egf_confint"` object returned by [confint.egf()].
-# #' @param type
-# #'   A character string determining how confidence intervals
-# #'   are displayed (see Details).
-# #' @param subset
-# #'   An expression to be evaluated in `x`. Must evaluate to
-# #'   a logical vector indexing rows of `x`. Only indexed
-# #'   confidence intervals are plotted. The default (`NULL`)
-# #'   is to plot all confidence intervals.
-# #' @param order
-# #'   An expression to be evaluated in `x`, typically a call
-# #'   to [order()], determining the order in which confidence
-# #'   intervals or time series (depending on `type`) are plotted.
-# #'   Must evaluate to a permutation of `seq_len(nrow(x))`.
-# #'   The default (`NULL`) is equivalent to `seq_len(nrow(x))`.
-# #' @param per_plot
-# #'   A positive integer. One plot will display at most this many
-# #'   confidence intervals or time series (depending on `type`).
-# #' @param main
-# #'   An expression or character string indicating a plot title,
-# #'   to be recycled for all plots.
-# #' @param label
-# #'   An expression to be evaluated in `x`, typically a factor,
-# #'   interaction of factor, or call to [sprintf()]. Used to
-# #'   create appropriate _y_-axis labels for confidence intervals
-# #'   when `type = "bars"` and approprate panel labels for
-# #'   time series when `type = "boxes"`. The default (`NULL`)
-# #'   is to take labels from `x$window` and `x$ts`, respectively.
-# #' @param ...
-# #'   Unused optional arguments.
-# #'
-# #' @details
-# #' `type = "bars"` creates a one-dimensional plot with
-# #' confidence intervals drawn as stacked horizontal line segments.
-# #'
-# #' `type = "boxes"` creates a two-dimensional plot for each
-# #' time series (level of `x$ts`), each containing shaded boxes.
-# #' Projection of boxes onto the horizontal and vertical axes
-# #' yields fitting windows and corresponding confidence intervals,
-# #' respectively.
-# #'
-# #' If an endpoint of a confidence interval is `NA`, then dashed
-# #' lines are drawn from the point estimate to the boundary of the
-# #' plotting region to indicate missingness.
-# #'
-# #' @return
-# #' `NULL` (invisibly).
-# #'
-# #' @export
-# plot.egf_confint <- function(x,
-#                              type = c("bars", "boxes"),
-#                              subset = NULL,
-#                              order = NULL,
-#                              per_plot = switch(type, bars = 12L, 4L),
-#                              main = NULL,
-#                              label = NULL,
-#                              ...) {
-#   type <- match.arg(type)
-#   stop_if_not_integer(per_plot, kind = "positive")
-#
-#   subset <- subset_to_index(substitute(subset), x, parent.frame())
-#   order <- order_to_index(substitute(order), x, parent.frame())
-#
-#   a <- attributes(x)
-#   x <- x[order[order %in% subset], , drop = FALSE]
-#
-#   if (is.null(main)) {
-#     s <- switch(type, bars = "fitting window", "time series")
-#     main <- sprintf("%.3g%% CI by %s", 100 * a$level, s)
-#   }
-#
-#   label <- label_to_character(substitute(label), x, parent.frame())
-#   if (is.null(label)) {
-#     s <- switch(type, bars = "window", "ts")
-#     label <- as.character(x[[s]])
-#   }
-#
-#   nx <- c("par", "ts", "window", "estimate", "lower", "upper")
-#   x <- data.frame(x[nx], label, stringsAsFactors = FALSE)
-#
-#   if (type == "bars") {
-#     do_bars_plot(x, per_plot = per_plot, main = main)
-#   } else {
-#     shift <- min(a$endpoints$start)
-#     origin <- attr(a$endpoints, "origin") + shift
-#     iep <- match(x$window, a$endpoints$window, 0L)
-#     endpoints <- a$endpoints[iep, c("start", "end"), drop = FALSE] - shift
-#     x <- data.frame(x, endpoints)
-#
-#     do_boxes_plot(x, origin = origin, per_plot = per_plot, main = main)
-#   }
-#   invisible(NULL)
-# }
-#
-# #' @keywords internal
+#' Plot confidence intervals
+#'
+#' A method for graphically comparing confidence intervals
+#' on fitted values of top level nonlinear model parameters.
+#'
+#' @param x
+#'   An \code{"\link[=confint.egf]{egf_confint}"} object.
+#' @param type
+#'   A character string determining how confidence intervals
+#'   are displayed (see Details).
+#' @param subset
+#'   An expression to be evaluated in \code{x}.
+#'   It must evaluate to a valid index vector for the rows of \code{x}
+#'   (see \code{\link{[.data.frame}}).
+#'   Only indexed confidence intervals are plotted.
+#'   The default (`NULL`) is to plot all confidence intervals.
+#' @param order
+#'   An expression to be evaluated in \code{x},
+#'   typically a call to \code{\link{order}},
+#'   determining the order in which confidence intervals
+#'   or time series (depending on \code{type}) are plotted.
+#'   It must evaluate to a permutation of \code{\link{seq_len}(\link{nrow}(x))}.
+#'   The default (\code{\link{NULL}}) is equivalent to \code{seq_len(nrow(x))}.
+#' @param per_plot
+#'   A positive integer. One plot will display at most this many
+#'   confidence intervals or time series (depending on \code{type}).
+#' @param main
+#'   An expression or character string indicating a plot title,
+#'   to be recycled for all plots.
+#' @param label
+#'   An expression to be evaluated in \code{x}, typically a \link{factor},
+#'   \link{interaction} of factors, or \link{call} to \code{\link{sprintf}}.
+#'   It is used to create appropriate \eqn{y}-axis labels
+#'   for confidence intervals when \code{type = "bars"} and
+#'   appropriate panel labels for time series when \code{type = "boxes"}.
+#'   The default (\code{\link{NULL}}) is to take labels from
+#'   \code{x$window} and \code{x$ts}, respectively.
+#' @param ...
+#'   Unused optional arguments.
+#'
+#' @details
+#' \code{type = "bars"} creates a one-dimensional plot with
+#' confidence intervals drawn as stacked horizontal line segments.
+#'
+#' \code{type = "boxes"} creates a two-dimensional plot for each
+#' time series (level of \code{x$ts}), each containing shaded boxes.
+#' Projection of boxes onto the horizontal and vertical axes yields
+#' fitting windows and corresponding confidence intervals, respectively.
+#'
+#' If an endpoint of a confidence interval is \code{\link{NA}},
+#' then dashed lines are drawn from the point estimate to
+#' the boundary of the plotting region to indicate missingness.
+#'
+#' @return
+#' \code{\link{NULL}} (invisibly).
+#'
+#' @export
+plot.egf_confint <- function(x,
+                             type = c("bars", "boxes"),
+                             subset = NULL,
+                             order = NULL,
+                             per_plot = switch(type, bars = 12L, boxes = 4L),
+                             main = NULL,
+                             label = NULL,
+                             ...) {
+  type <- match.arg(type)
+  stop_if_not_integer(per_plot, "positive")
+
+  subset <- egf_eval_subset(substitute(subset), x, parent.frame())
+  if (length(subset) == 0L) {
+    stop("'subset' indexes zero rows of 'x', so there is nothing to plot.")
+  }
+  label <- egf_eval_label(substitute(label), x, parent.frame())
+  order <- egf_eval_order(substitute(order), x, parent.frame())
+  subset <- order[order %in% subset]
+
+  a <- attributes(x)
+  if (is.null(main)) {
+    s <- switch(type, bars = "fitting window", boxes = "time series")
+    main <- sprintf("%.3g%% confidence intervals by %s", 100 * a$level, s)
+  }
+  if (is.null(label)) {
+    s <- switch(type, bars = "window", boxes = "ts")
+    label <- as.character(x[[s]])
+  }
+
+  nx <- c("top", "estimate", "lower", "upper")
+  x <- x[nx]
+  x$label <- label
+  x <- x[subset, , drop = FALSE]
+  x$top <- factor(x$top)
+
+  if (type == "bars") {
+    NULL
+    #.plot.egf_confint_bars(x, per_plot = per_plot, main = main)
+  } else {
+    i <- match(x$window, a$frame_windows$window, 0L)
+    frame_windows <- a$frame_windows[i, c("start", "end"), drop = FALSE]
+    x <- data.frame(x, frame_windows)
+    NULL
+    #.plot.egf_confint_boxes(x, per_plot = per_plot, main = main)
+  }
+}
+
 # #' @import graphics
-# do_bars_plot <- function(x, per_plot, main) {
-#   mar <- c(3.5, 5, 1.5, 1)
-#   csi <- par("csi")
-#   op <- par(mar = mar)
-#   on.exit(par(op))
-#
-#   x_split <- split(x, factor(x$par, levels = unique(x$par)))
-#   nxs <- names(x_split)
+# .plot.egf_confint_bars <- function(x, per_plot, main) {
+#   #mar <- c(3.5, 5, 1.5, 1)
+#   #csi <- par("csi")
+#   #op <- par(mar = mar)
+#   #on.exit(par(op))
 #
 #   yax_cex <- get_yax_cex(x$label, mex = 0.92 * mar[2L], cex = 0.8, font = 1, csi = csi)
 #   yax_cex <- min(0.8, yax_cex)
 #
-#   for (i in seq_along(x_split)) { # loop over nonlinear model parameters
-#     xi <- x_split[[i]]
-#     xlab <- nxs[i]
+#   for (xlab in levels(x$top)) { # loop over parameters
+#     xi <- x[x$top == xlab, , drop = FALSE]
 #     xlim <- range(xi[c("estimate", "lower", "upper")], na.rm = TRUE)
 #     lna <- is.na(xi$lower)
 #     una <- is.na(xi$upper)

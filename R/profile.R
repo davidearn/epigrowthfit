@@ -33,10 +33,10 @@
 #'   (see \code{\link{egf_combine_frames}}) to be included with the
 #'   result. The default (\code{\link{NULL}}) is to append nothing.
 #'   Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.
-#' @param max_level
+#' @param level_max
 #'   A number in the interval (0,1) indicating a confidence level.
 #'   Profiles will be computed up to a deviance
-#'   of \code{\link{qchisq}(max_level, df = 1)}.
+#'   of \code{\link{qchisq}(level_max, df = 1)}.
 #' @param grid_len
 #'   A positive integer. Step sizes chosen adaptively by
 #'   \code{\link[TMB]{tmbprofile}} will generate approximately
@@ -107,7 +107,7 @@
 #'   Deviance of the restricted model that assumes \code{value}
 #'   for the linear combination being profiled.
 #' }
-#' \code{A}, \code{x = fitted$best[fitted$nonrandom]}, and \code{max_level}
+#' \code{A}, \code{x = fitted$best[fitted$nonrandom]}, and \code{level_max}
 #' are retained as \link{attributes}.
 #'
 #' @examples
@@ -128,28 +128,18 @@ profile.egf <- function(fitted,
                         top = egf_get_names_top(fitted, link = TRUE),
                         subset = NULL,
                         append = NULL,
-                        max_level = 0.95,
+                        level_max = 0.95,
                         grid_len = 12,
                         trace = TRUE,
                         parallel = egf_parallel(),
                         .subset = NULL,
                         .append = NULL,
                         ...) {
-  stop_if_not_number_in_interval(max_level, 0, 1, "()")
+  stop_if_not_number_in_interval(level_max, 0, 1, "()")
   stop_if_not_number_in_interval(grid_len, 1, Inf, "[)")
   stop_if_not_true_false(trace)
   stopifnot(inherits(parallel, "egf_parallel"))
   n <- length(fitted$nonrandom)
-
-  nomp <- fitted$control$omp_num_threads
-  set_omp_num_threads <- quote({
-    onomp <- TMB::openmp(n = NULL)
-    if (onomp > 0L) {
-      TMB::openmp(n = nomp)
-      on.exit(TMB::openmp(n = onomp), add = TRUE)
-    }
-  })
-  eval(set_omp_num_threads)
 
   ## If profiling user-specified elements of 'c(beta, theta)'
   if (!is.null(which)) {
@@ -216,37 +206,41 @@ profile.egf <- function(fitted,
   if (method == "which") {
     a <- which
     h <- sqrt(diag(V)[which]) / 4
+    s <- "name"
   } else {
     ## Covariance matrix of 'A %*% c(beta, theta)'
     V <- A %*% unclass(V) %*% t(A)
     a <- lapply(seq_len(nrow(A)), function(i) A[i, ])
     h <- sqrt(diag(V)) / 4
+    s <- "lincomb"
   }
-  ytol <- qchisq(max_level, df = 1) / 2 # y := diff(nll) = deviance / 2
+
+  ytol <- 0.5 * qchisq(level_max, df = 1) # y := nll_restricted - nll_minimum = 0.5 * deviance
   ystep <- ytol / grid_len
-  obj <- fitted$tmb_out
+  nomp <- fitted$control$omp_num_threads
 
   do_profile <- function(i, a, h) {
     if (trace) {
       cat(sprintf("Computing likelihood profile %d of %d...\n", i, m))
     }
-    if (method == "which") {
-      res <- TMB::tmbprofile(obj, name = a,    h = h, ytol = ytol, ystep = ystep, trace = FALSE)
-    } else {
-      res <- TMB::tmbprofile(obj, lincomb = a, h = h, ytol = ytol, ystep = ystep, trace = FALSE)
-    }
+    args <- list(obj = obj, h = h, ytol = ytol, ystep = ystep)
+    args[[s]] <- a
+    res <- do.call(TMB::tmbprofile, args)
     i_min <- which.min(res[[2L]])
-    res[[2L]] <- 2 * (res[[2L]] - res[i_min, 2L]) # deviance = 2 * diff(nll)
+    res[[2L]] <- 2 * (res[[2L]] - res[i_min, 2L]) # deviance = 2 * (nll_restricted - nll_minimum)
     names(res) <- c("value", "deviance")
     res[-i_min, , drop = FALSE] # 'tmbprofile' duplicates this row
   }
 
   if (parallel$method == "snow") {
-    environment(do_profile) <- .GlobalEnv # see comment in R/simulate.R
+    environment(do_profile) <- .GlobalEnv
 
     ## Reconstruct list of arguments to 'MakeADFun' from object internals
     ## for retaping
-    tmb_args <- egf_tmb_remake_args(fitted)
+    args <- egf_tmb_remake_args(fitted)
+
+    ## Retrieve path to shared object for loading
+    dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit")
 
     if (is.null(parallel$cl)) {
       cl <- do.call(makePSOCKcluster, parallel$args)
@@ -255,44 +249,53 @@ profile.egf <- function(fitted,
       cl <- parallel$cl
     }
     clusterExport(cl,
-      varlist = c("set_omp_num_threads", "nomp", "tmb_args", "trace", "m", "method", "ytol", "ystep"),
+      varlist = c("dll", "nomp", "args", "trace", "m", "s", "ytol", "ystep"),
       envir = environment()
     )
     clusterEvalQ(cl, {
-      loadNamespace("epigrowthfit")
-      eval(set_omp_num_threads)
-      obj <- do.call(TMB::MakeADFun, tmb_args)
+      dyn.load(dll)
+      if (TMB::openmp(n = NULL) > 0L) {
+        TMB::openmp(n = nomp)
+      }
+      obj <- do.call(TMB::MakeADFun, args)
     })
     res <- clusterMap(cl, do_profile, i = seq_len(m), a = a, h = h)
   } else {
-    f <- function() {
-      if (nzchar(parallel$outfile)) {
-        outfile <- file(parallel$outfile, open = "wt")
-        sink(outfile, type = "output")
-        sink(outfile, type = "message")
-        on.exit({
-          sink(type = "output")
-          sink(type = "message")
-        })
-      }
+    obj <- fitted$tmb_out
+    if ((onomp <- TMB::openmp(n = NULL)) > 0L) {
+      TMB::openmp(n = nomp)
+      on.exit(TMB::openmp(n = onomp), add = TRUE)
+    }
+    if (given_outfile <- nzchar(parallel$outfile)) {
+      outfile <- file(parallel$outfile, open = "wt")
+      sink(outfile, type = "output")
+      sink(outfile, type = "message")
+    }
+    res <- tryCatch(
       switch(parallel$method,
         multicore = do.call(mcMap, c(list(f = do_profile, i = seq_len(m), a = a, h = h), parallel$args)),
         serial = Map(do_profile, i = seq_len(m), a = a, h = h)
-      )
-    }
-    res <- f()
+      ),
+      error = function(cond) {
+        if (given_outfile) {
+          sink(type = "message")
+          sink(type = "output")
+        }
+        stop(cond)
+      }
+    )
   }
 
-  nrow_res <- vapply(res, nrow, 0L)
+  nr <- vapply(res, nrow, 0L)
   res <- data.frame(
-    linear_combination = rep.int(gl(m, 1L), nrow_res),
+    linear_combination = rep.int(gl(m, 1L), nr),
     do.call(rbind, res),
     row.names = NULL
   )
   if (method == "top") {
-    i <- rep.int(rep.int(subset, p), nrow_res)
+    i <- rep.int(rep.int(subset, p), nr)
     res <- data.frame(
-      top = rep.int(rep.int(factor(top, levels = names_top), N), nrow_res),
+      top = rep.int(rep.int(factor(top, levels = names_top), N), nr),
       fitted$frame_windows[i, c("ts", "window"), drop = FALSE],
       res,
       combined[i, append, drop = FALSE],
@@ -303,7 +306,7 @@ profile.egf <- function(fitted,
   }
   attr(res, "A") <- A
   attr(res, "x") <- fitted$best[fitted$nonrandom]
-  attr(res, "max_level") <- max_level
+  attr(res, "level_max") <- level_max
   attr(res, "method") <- method
   class(res) <- c("egf_profile", "data.frame")
   res
@@ -360,10 +363,10 @@ profile.egf <- function(fitted,
 #'
 #' @export
 #' @importFrom stats qchisq approx
-confint.egf_profile <- function(object, parm, level = attr(object, "max_level"), link = TRUE, ...) {
+confint.egf_profile <- function(object, parm, level = attr(object, "level_max"), link = TRUE, ...) {
   stop_if_not_true_false(link)
   stop_if_not_number_in_interval(level, 0, 1, "()")
-  stopifnot(level <= attr(object, "max_level"))
+  stopifnot(level <= attr(object, "level_max"))
   q <- qchisq(level, df = 1)
   method <- attr(object, "method")
 
@@ -451,7 +454,7 @@ confint.egf_profile <- function(object, parm, level = attr(object, "max_level"),
 #' @import graphics
 #' @importFrom stats confint
 plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
-                             level = attr(x, "max_level"),
+                             level = attr(x, "level_max"),
                              .segments = list(), .text = list(), ...) {
   subset <- egf_eval_subset(substitute(subset), x, parent.frame())
   subset <- match(levels(factor(x$linear_combination[subset])), levels(x$linear_combination))
@@ -467,7 +470,7 @@ plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
     level <- level[!is.na(level)]
     stopifnot(
       level > 0,
-      level <= attr(x, "max_level"),
+      level <= attr(x, "level_max"),
       is.list(.segments),
       is.list(.text)
     )

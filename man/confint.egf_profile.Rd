@@ -4,7 +4,7 @@
 \alias{confint.egf_profile}
 \title{Confidence intervals from likelihood profiles}
 \usage{
-\method{confint}{egf_profile}(object, parm, level = attr(object, "max_level"), link = TRUE, ...)
+\method{confint}{egf_profile}(object, parm, level = attr(object, "level_max"), link = TRUE, ...)
 }
 \arguments{
 \item{object}{An \code{"\link[=profile.egf]{egf_profile}"} object.}

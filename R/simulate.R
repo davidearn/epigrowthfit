@@ -94,7 +94,7 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
     RNGstate <- get(".Random.seed", envir = .GlobalEnv)
   } else {
     oRNGstate <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", oRNGstate, envir = .GlobalEnv))
+    on.exit(assign(".Random.seed", oRNGstate, envir = .GlobalEnv), add = TRUE)
     RNGstate <- c(list(seed), as.list(RNGkind()))
     names(RNGstate) <- names(formals(set.seed))
     do.call(set.seed, RNGstate)
@@ -102,19 +102,14 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
 
   ## Configure OpenMP
   nomp <- object$control$omp_num_threads
-  set_omp_num_threads <- quote({
-    onomp <- TMB::openmp(n = NULL)
-    if (onomp > 0L) {
-      TMB::openmp(n = nomp)
-      on.exit(TMB::openmp(n = onomp), add = TRUE)
-    }
-  })
-  eval(set_omp_num_threads)
+  if ((onomp <- TMB::openmp(n = NULL)) > 0L) {
+    TMB::openmp(n = nomp)
+    on.exit(TMB::openmp(n = onomp), add = TRUE)
+  }
 
   ## Simulations are fast and can be done in the master process.
   ## To simulate in the worker processes would require serializing
-  ## or reconstructing the TMB object---adding nontrivial overhead.
-  ## Serializing isn't obviously a safe thing to do, anyway.
+  ## or reconstructing the TMB object, adding nontrivial overhead.
   frame <- object$frame[!is.na(object$frame$window), c("ts", "window", "time"), drop = FALSE]
   nx <- sprintf("x%d", seq_len(nsim))
   frame[nx] <- replicate(nsim, object$tmb_out$simulate(object$best)$x)
@@ -127,16 +122,16 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
 
     ## Reconstruct list of arguments to 'MakeADFun' from object internals
     ## for retaping
-    tmb_args <- egf_tmb_remake_args(object)
+    args <- egf_tmb_remake_args(object)
 
     do_boot <- function(i, x) {
       if (trace) {
         cat(sprintf("Commencing bootstrap optimization %d of %d...\n", i, nsim))
       }
       ## Update
-      tmb_args$data$x <- x
+      args$data$x <- x
       ## Retape
-      tmb_out_retape <- do.call(TMB::MakeADFun, tmb_args)
+      tmb_out_retape <- do.call(TMB::MakeADFun, args)
       ## Optimize
       tryCatch(
         expr = {
@@ -144,7 +139,7 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
           tmb_out_retape$env$last.par.best
         },
         error = function(cond) {
-          cat(sprintf("Error in bootstrap optimization %d of %d:\n %s", i, nsim, conditionMessage(cond)))
+          cat(sprintf("Error in bootstrap optimization %d of %d:\n%s\n", i, nsim, conditionMessage(cond)))
           rep_len(NaN, length(tmb_out_retape$env$last.par.best))
         }
       )
@@ -160,6 +155,9 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
       ## https://stackoverflow.com/questions/18035711/environment-and-scope-when-using-parallel-functions
       environment(do_boot) <- .GlobalEnv
 
+      ## Retrieve path to shared object for loading
+      dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit")
+
       if (is.null(parallel$cl)) {
         cl <- do.call(makePSOCKcluster, parallel$args)
         on.exit(stopCluster(cl), add = TRUE)
@@ -167,32 +165,36 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
         cl <- parallel$cl
       }
       clusterExport(cl,
-        varlist = c("set_omp_num_threads", "nomp", "trace", "nsim", "tmb_args", "control"),
+        varlist = c("dll", "nomp", "trace", "nsim", "args", "control"),
         envir = environment()
       )
       clusterEvalQ(cl, {
-        loadNamespace("epigrowthfit")
-        eval(set_omp_num_threads)
+        dyn.load(dll)
+        if (TMB::openmp(n = NULL) > 0L) {
+          TMB::openmp(n = nomp)
+        }
       })
       clusterSetRNGStream(cl)
       res$boot <- clusterMap(cl, do_boot, i = seq_len(nsim), x = frame[nx], simplify = TRUE)
     } else {
-      f <- function() {
-        if (nzchar(parallel$outfile)) {
-          outfile <- file(parallel$outfile, open = "wt")
-          sink(outfile, type = "output")
-          sink(outfile, type = "message")
-          on.exit({
-            sink(type = "output")
-            sink(type = "message")
-          })
-        }
+      if (given_outfile <- nzchar(parallel$outfile)) {
+        outfile <- file(parallel$outfile, open = "wt")
+        sink(outfile, type = "output")
+        sink(outfile, type = "message")
+      }
+      res$boot <- tryCatch(
         switch(parallel$method,
           multicore = do.call(mcmapply, c(list(FUN = do_boot, i = seq_len(nsim), x = frame[nx]), parallel$args)),
           serial = mapply(do_boot, i = seq_len(nsim), x = frame[nx])
-        )
-      }
-      res$boot <- f()
+        ),
+        error = function(cond) {
+          if (given_outfile) {
+            sink(type = "message")
+            sink(type = "output")
+          }
+          stop(cond)
+        }
+      )
     }
     rownames(res$boot) <- names(object$best)
   }
@@ -352,7 +354,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     set_RNGstate <- function() assign(".Random.seed", RNGstate, .GlobalEnv)
   } else {
     oRNGstate <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", oRNGstate, envir = .GlobalEnv))
+    on.exit(assign(".Random.seed", oRNGstate, envir = .GlobalEnv), add = TRUE)
     RNGstate <- c(list(as.numeric(seed)), as.list(RNGkind()))
     names(RNGstate) <- names(formals(set.seed))
     set_RNGstate <- function() do.call(set.seed, RNGstate)

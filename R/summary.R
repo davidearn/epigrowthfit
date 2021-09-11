@@ -19,15 +19,32 @@ print.egf_summary <- function(x, width = 0.9 * getOption("width"), indent = 2L, 
   indent <- strrep(" ", indent)
 
   vrag <- sprintf("%.6e", c(x$value, range(abs(x$gradient))))
-  nll <- c(sprintf("%d", x$convergence), vrag[1L], paste(vrag[2L], vrag[3L]))
-  dim(nll) <- c(3L, 1L)
-  dimnames(nll) <- list(c("convergence", "value", "range(abs(gradient))"), "")
+  dd <- data.frame(
+    c(
+      "convergence",
+      "value",
+      "range(abs(gradient))"
+    ),
+    c(
+      sprintf("%d", x$convergence),
+      vrag[1L],
+      paste(vrag[2L], vrag[3L])
+    ),
+    fix.empty.names = FALSE,
+    stringsAsFactors = FALSE
+  )
 
   heading("Negative log likelihood", width = width)
-  cat0(paste0(indent, capture.output(print(nll, right = FALSE, quote = FALSE, max = 3L)), "\n"))
-  cat0("\n")
+  lines <- capture.output(print(dd, right = FALSE, quote = FALSE, row.names = FALSE, max = 6L))
+  lines <- paste0(indent, sub("^.", "", lines))
+  writeLines(lines)
+  cat("\n")
+
   heading("Fitted values", width = width)
   cat("\n")
-  cat0(paste0(indent, capture.output(print(x$fitted)), "\n"))
+  lines <- capture.output(print(x$fitted))
+  lines <- paste0(indent, lines)
+  writeLines(lines)
+
   invisible(x)
 }

@@ -8,7 +8,7 @@
   x,
   subset = NULL,
   sqrt = FALSE,
-  level = attr(x, "max_level"),
+  level = attr(x, "level_max"),
   .segments = list(),
   .text = list(),
   ...

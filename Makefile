@@ -1,20 +1,20 @@
 MAKE := make
 R := R
 PACKAGE := epigrowthfit
-VERSION := $(shell sed -n '/^Version: /s/Version: // p' DESCRIPTION)
+VERSION := $(shell sed -n "/^Version: /s/Version: // p" DESCRIPTION)
 TARBALL := $(PACKAGE)_$(VERSION).tar.gz
 MANUAL := $(PACKAGE)-manual.pdf
 CHECKDIR := $(PACKAGE).Rcheck
 
 all: clean install
-.PHONY = deps 
+.PHONY = clean install-deps test release
 
 install: install-deps build
 	export NOT_CRAN=true
 	$(R) CMD INSTALL $(TARBALL)
 
 install-deps:
-	$(R) --quiet -e 'devtools::install_deps(".")'
+	$(R) --quiet -e "devtools::install_deps(\".\")"
 
 build: $(TARBALL)
 
@@ -25,7 +25,7 @@ enums: utils/update_enums.R src/enums.h
 	cd $(dir $<) && $(R) --quiet -f $(notdir $<)
 
 docs: R/*.R
-	$(R) --quiet -e 'devtools::document(".")'
+	$(R) --quiet -e "devtools::document(\".\")"
 
 manual: $(MANUAL)
 
@@ -36,10 +36,10 @@ check: build
 	$(R) CMD check --no-tests $(TARBALL)
 
 test:
-	$(R) --quiet -e 'devtools::test(".")'
+	$(R) --quiet -e "devtools::test(\".\")"
 
 release:
-	$(R) --quiet -e 'codemetar::write_codemeta(".")'
+	$(R) --quiet -e "codemetar::write_codemeta(\".\")"
 
 clean:
 	rm -fr $(TARBALL) $(PACKAGE)-manual.pdf $(CHECKDIR)

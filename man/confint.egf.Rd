@@ -147,5 +147,5 @@ str(zz)
 
 }
 \seealso{
-\code{plot.egf_confint}
+\code{\link{plot.egf_confint}}
 }
