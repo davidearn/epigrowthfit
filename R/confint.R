@@ -327,8 +327,14 @@ confint.egf <- function(object,
 #' @param x
 #'   An \code{"\link[=confint.egf]{egf_confint}"} object.
 #' @param type
-#'   A character string determining how confidence intervals
+#'   A \link{character} string determining how confidence intervals
 #'   are displayed (see Details).
+#' @param time_as (For \code{type = "boxes"}.)
+#'   A \link{character} string indicating how time is displayed
+#'   on the bottom axis. The options are: as is (\code{"numeric"})
+#'   and with a calendar (\code{"Date"}). In the latter case,
+#'   numeric times are interpreted as numbers of days since
+#'   \code{1970-01-01 00:00:00}.
 #' @param subset
 #'   An expression to be evaluated in \code{x}.
 #'   It must evaluate to a valid index vector for the rows of \code{x}
@@ -356,8 +362,11 @@ confint.egf <- function(object,
 #'   appropriate panel labels for time series when \code{type = "boxes"}.
 #'   The default (\code{\link{NULL}}) is to take labels from
 #'   \code{x$window} and \code{x$ts}, respectively.
+#' @param prefer_global_par
+#'   Write something here!
 #' @param ...
 #'   Unused optional arguments.
+#'   (Graphical parameters can still be set using \code{\link{par}}.)
 #'
 #' @details
 #' \code{type = "bars"} creates a one-dimensional plot with
@@ -375,17 +384,26 @@ confint.egf <- function(object,
 #' @return
 #' \code{\link{NULL}} (invisibly).
 #'
+#' @examples
+#' example("confint.egf", "epigrowthfit")
+#' plot(zz, type = "bars")
+#' plot(zz, type = "boxes")
+#'
 #' @export
 plot.egf_confint <- function(x,
                              type = c("bars", "boxes"),
+                             time_as = c("Date", "numeric"),
                              subset = NULL,
                              order = NULL,
                              per_plot = switch(type, bars = 12L, boxes = 4L),
                              main = NULL,
                              label = NULL,
+                             prefer_global_par = FALSE,
                              ...) {
   type <- match.arg(type)
+  time_as <- match.arg(time_as)
   stop_if_not_integer(per_plot, "positive")
+  stop_if_not_true_false(prefer_global_par)
 
   subset <- egf_eval_subset(substitute(subset), x, parent.frame())
   if (length(subset) == 0L) {
@@ -405,207 +423,187 @@ plot.egf_confint <- function(x,
     label <- as.character(x[[s]])
   }
 
-  nx <- c("top", "estimate", "lower", "upper")
+  nx <- c("top", "ts", "window", "estimate", "lower", "upper")
   x <- x[nx]
   x$label <- label
   x <- x[subset, , drop = FALSE]
   x$top <- factor(x$top)
 
   if (type == "bars") {
-    NULL
-    #.plot.egf_confint_bars(x, per_plot = per_plot, main = main)
+    plot.egf_confint_bars(x, per_plot = per_plot, main = main)
   } else {
     i <- match(x$window, a$frame_windows$window, 0L)
     frame_windows <- a$frame_windows[i, c("start", "end"), drop = FALSE]
     x <- data.frame(x, frame_windows)
-    NULL
-    #.plot.egf_confint_boxes(x, per_plot = per_plot, main = main)
+    plot.egf_confint_boxes(x, per_plot = per_plot, main = main, time_as = time_as, prefer_global_par = prefer_global_par)
   }
 }
 
-# #' @import graphics
-# .plot.egf_confint_bars <- function(x, per_plot, main) {
-#   #mar <- c(3.5, 5, 1.5, 1)
-#   #csi <- par("csi")
-#   #op <- par(mar = mar)
-#   #on.exit(par(op))
-#
-#   yax_cex <- get_yax_cex(x$label, mex = 0.92 * mar[2L], cex = 0.8, font = 1, csi = csi)
-#   yax_cex <- min(0.8, yax_cex)
-#
-#   for (xlab in levels(x$top)) { # loop over parameters
-#     xi <- x[x$top == xlab, , drop = FALSE]
-#     xlim <- range(xi[c("estimate", "lower", "upper")], na.rm = TRUE)
-#     lna <- is.na(xi$lower)
-#     una <- is.na(xi$upper)
-#
-#     K <- 0L
-#     while (K < nrow(xi)) { # loop over plots
-#       k <- K + seq_len(min(per_plot, nrow(xi) - K))
-#       plot.new()
-#       plot.window(xlim = xlim, ylim = c(per_plot + 1, 0), xaxs = "r", yaxs = "i")
-#       usr <- par("usr")
-#       abline(v = axTicks(side = 1), lty = 3, col = "grey75")
-#       segments(
-#         x0  = replace(xi$lower[k], lna[k], usr[1L]),
-#         x1  = xi$estimate[k],
-#         y0  = seq_along(k),
-#         y1  = seq_along(k),
-#         lty = c(1, 2)[1L + lna[k]],
-#         lwd = c(2, 1)[1L + lna[k]]
-#       )
-#       segments(
-#         x0  = xi$estimate[k],
-#         x1  = replace(xi$upper[k], una[k], usr[2L]),
-#         y0  = seq_along(k),
-#         y1  = seq_along(k),
-#         lty = c(1, 2)[1L + una[k]],
-#         lwd = c(2, 1)[1L + una[k]]
-#       )
-#       points(
-#         x   = xi$estimate[k],
-#         y   = seq_along(k),
-#         pch = 21,
-#         bg  = "grey75"
-#       )
-#       box()
-#       axis(
-#         side = 1,
-#         tcl = -0.4,
-#         mgp = c(3, 0.3, 0),
-#         cex.axis = yax_cex
-#       )
-#       axis(
-#         side = 2,
-#         at = seq_along(k),
-#         labels = xi$label[k],
-#         tick = FALSE,
-#         las = 1,
-#         mgp = c(3, 0.2, 0),
-#         cex.axis = 0.8
-#       )
-#       title(xlab = xlab, line = 2, cex.lab = 0.9)
-#       title(main, line = 0.25, adj = 0, cex.main = 0.9)
-#       K <- K + per_plot
-#     } # loop over plots
-#   } # loop over nonlinear model parameters
-#
-#   invisible(NULL)
-# }
-#
-# #' @keywords internal
-# #' @import graphics
-# do_boxes_plot <- function(x, origin, per_plot, main) {
-#   op <- par(
-#     mfrow = c(per_plot, 1),
-#     mar = c(0, 3, 0.25, 0.5),
-#     oma = c(2.5, 1.5, 1.5, 0)
-#   )
-#   on.exit(par(op))
-#
-#   x_split <- split(x, factor(x$par, levels = unique(x$par)))
-#   nxs <- names(x_split)
-#
-#   xlim <- c(0, max(x$end))
-#   xax_at <- daxis(origin = origin + 1, plot = FALSE)
-#
-#   for (i in seq_along(x_split)) { # loop over nonlinear model parameters
-#     xi <- x_split[[i]]
-#     xi_split <- split(xi, factor(xi$ts, levels = unique(xi$ts)))
-#     ylab <- nxs[i]
-#     ylim <- range(xi[c("estimate", "lower", "upper")], na.rm = TRUE)
-#
-#     K <- 0L
-#     while (K < length(xi_split)) { # loop over plots
-#       for (k in K + seq_len(min(per_plot, length(xi_split) - K))) { # loop over panels
-#         xik <- xi_split[[k]]
-#
-#         plot.new()
-#         plot.window(xlim = xlim, ylim = ylim, xaxs = "i", yaxs = "r")
-#         gp <- par(c("usr", "cex", "mai", "omi", "pin", "din"))
-#         abline(v = xax_at, lty = 3, col = "grey75")
-#
-#         xik$lower[lna <- is.na(xik$lower)] <- gp$usr[3L]
-#         xik$upper[una <- is.na(xik$upper)] <- gp$usr[4L]
-#
-#         for (l in seq_len(nrow(xik))) { # loop over boxes
-#           rect(
-#             xleft   = xik$start[l],
-#             xright  = xik$end[l],
-#             ybottom = xik$lower[l],
-#             ytop    = xik$estimate[l],
-#             col     = if (lna[l]) NA else "grey75",
-#             border  = "grey50",
-#             lty     = if (lna[l]) 2 else 1
-#           )
-#           rect(
-#             xleft   = xik$start[l],
-#             xright  = xik$end[l],
-#             ybottom = xik$estimate[l],
-#             ytop    = xik$upper[l],
-#             col     = if (una[l]) NA else "grey75",
-#             border  = "grey50",
-#             lty     = if (una[l]) 2 else 1
-#           )
-#           segments(
-#             x0  = xik$start[l],
-#             x1  = xik$end[l],
-#             y0  = xik$estimate[l],
-#             y1  = xik$estimate[l],
-#             col = "grey50",
-#             lwd = 2
-#           )
-#         } # loop over boxes
-#
-#         box()
-#         axis(
-#           side = 2,
-#           las = 1,
-#           mgp = c(3, 0.7, 0),
-#           cex.axis = 0.8
-#         )
-#         text(
-#           x = gp$usr[1L] + 0.075 * (gp$usr[2L] - gp$usr[1L]) * (gp$pin[2L] / gp$pin[1L]),
-#           y = gp$usr[4L] - 0.075 * (gp$usr[4L] - gp$usr[3L]),
-#           labels = xik$label[1L],
-#           adj = c(0, 1),
-#           cex = 0.8
-#         )
-#       } # loop over panels
-#
-#       mtext(main,
-#         side = 3,
-#         line = 0,
-#         outer = TRUE,
-#         at = gp$mai[2L] / (gp$din[1L] - sum(gp$omi[c(2L, 4L)])),
-#         adj = 0,
-#         cex = 0.9,
-#         font = 2
-#       )
-#       mtext(ylab,
-#         side = 2,
-#         line = 0,
-#         outer = TRUE,
-#         at = 0.5,
-#         adj = 0.5,
-#         cex = 0.9
-#       )
-#       daxis(
-#         origin = origin + 1,
-#         minor = list(
-#           mgp = c(3, 0.25, 0), xpd = TRUE,
-#           lwd = 0, lwd.ticks = 1, tcl = -0.2,
-#           gap.axis = 0, cex.axis = 0.8 / gp$cex
-#         ),
-#         major = list(
-#           mgp = c(3, 1.25, 0), xpd = TRUE,
-#           lwd = 0, lwd.ticks = 0, tcl = 0,
-#           gap.axis = 0, cex.axis = 0.9 / gp$cex
-#         )
-#       )
-#       K <- K + per_plot
-#     } # loop over plots
-#   } # loop over nonlinear model parameters
-#
-#   invisible(NULL)
-# }
+#' @import graphics
+plot.egf_confint_bars <- function(x, per_plot, main) {
+  gp <- par(c("cex.axis", "mar", "mgp"))
+  cex.axis <- get_fill_cex(x$label, target = 0.92 * max(0, gp$mar[2L] - gp$mgp[2L]), units = "lines")
+  cex.axis <- min(cex.axis, gp$cex.axis)
+
+  for (top in levels(x$top)) { # loop over parameters
+    data <- x[x$top == top, , drop = FALSE]
+    argna <- lapply(data[c("lower", "upper")], is.na)
+    n <- nrow(data)
+    xlab <- top
+    xlim <- range(data[c("estimate", "lower", "upper")], na.rm = TRUE)
+
+    i <- 0L
+    while (i < n) { # loop over plots
+      k <- i + seq_len(min(per_plot, n - i))
+      plot.new()
+      plot.window(xlim = xlim, ylim = c(per_plot + 1, 0), xaxs = "r", yaxs = "i")
+      gp$usr <- par("usr")
+      abline(v = axTicks(side = 1), lty = 3, col = "grey75")
+      segments(
+        x0  = replace(data$lower[k], argna$lower[k], gp$usr[1L]),
+        x1  = data$estimate[k],
+        y0  = seq_along(k),
+        y1  = seq_along(k),
+        lty = 1 + as.numeric(argna$lower[k]),
+        lwd = 2 - as.numeric(argna$lower[k])
+      )
+      segments(
+        x0  = data$estimate[k],
+        x1  = replace(data$upper[k], argna$upper[k], gp$usr[2L]),
+        y0  = seq_along(k),
+        y1  = seq_along(k),
+        lty = 1 + as.numeric(argna$upper[k]),
+        lwd = 2 - as.numeric(argna$upper[k])
+      )
+      points(
+        x   = data$estimate[k],
+        y   = seq_along(k),
+        pch = 21,
+        bg  = "grey75"
+      )
+      box()
+      axis(side = 1)
+      axis(
+        side = 2,
+        at = seq_along(k),
+        labels = data$label[k],
+        tick = FALSE,
+        las = 1,
+        cex.axis = cex.axis
+      )
+      title(xlab = xlab)
+      title(main, line = 0.3, adj = 0)
+      i <- i + per_plot
+    } # loop over plots
+  } # loop over parameters
+
+  invisible(NULL)
+}
+
+#' @import graphics
+plot.egf_confint_boxes <- function(x, per_plot, main, time_as, prefer_global_par) {
+  gp <- list(mfrow = c(per_plot, 1))
+  if (prefer_global_par) {
+    op <- par(mfrow = gp$mfrow)
+  } else {
+    op <- par(
+      mfrow = gp$mfrow,
+      mar = c(0, 4, 0.5, 1),
+      oma = c(4, 2, 2, 0),
+      mgp = c(3, 0.7, 0),
+      las = 1
+    )
+  }
+  on.exit(par(op))
+
+  gp <- c(gp, par(c("mai", "omi", "mgp", "cex", "cex.axis", "cex.lab")))
+  xlim <- range(x[c("start", "end")])
+
+  for (top in levels(x$top)) { # loop over parameters
+    data <- x[x$top == top, , drop = FALSE]
+    ylim <- range(data[c("estimate", "lower", "upper")], na.rm = TRUE)
+    ylab <- top
+
+    data <- split(data, factor(data$ts, levels = as.character(unique(data$ts))))
+    n <- length(data)
+
+    i <- 0L
+    while (i < n) { # loop over plots
+      for (k in i + seq_len(min(per_plot, n - i))) { # loop over panels
+        plot.new()
+        plot.window(xlim = xlim, ylim = ylim)
+        v <- Daxis(show_major = FALSE, show_minor = FALSE)$minor
+        abline(v = v, lty = 3, col = "grey75")
+
+        gp$usr <- par("usr")
+        argna <- lapply(data[[k]][c("lower", "upper")], is.na)
+        data[[k]]$lower[argna$lower] <- gp$usr[3L]
+        data[[k]]$upper[argna$upper] <- gp$usr[4L]
+
+        for (l in seq_len(nrow(data[[k]]))) { # loop over confidence intervals
+          rect(
+            xleft   = data[[k]]$start[l],
+            xright  = data[[k]]$end[l],
+            ybottom = data[[k]]$lower[l],
+            ytop    = data[[k]]$estimate[l],
+            col     = if (argna$lower[l]) NA else "grey75",
+            border  = "grey50",
+            lty     = if (argna$lower[l]) 2 else 1
+          )
+          rect(
+            xleft   = data[[k]]$start[l],
+            xright  = data[[k]]$end[l],
+            ybottom = data[[k]]$estimate[l],
+            ytop    = data[[k]]$upper[l],
+            col     = if (argna$upper[l]) NA else "grey75",
+            border  = "grey50",
+            lty     = if (argna$upper[l]) 2 else 1
+          )
+          segments(
+            x0  = data[[k]]$start[l],
+            x1  = data[[k]]$end[l],
+            y0  = data[[k]]$estimate[l],
+            y1  = data[[k]]$estimate[l],
+            col = "grey50",
+            lwd = 2
+          )
+        } # loop over confidence intervals
+
+        p <- diff(grconvertY(c(0, 0.08), "npc", "inches"))
+        px <- diff(grconvertX(c(0, p), "inches", "user"))
+        py <- diff(grconvertY(c(0, p), "inches", "user"))
+        plab <- data[[k]]$label[1L]
+        text(
+          x = gp$usr[1L] + px,
+          y = gp$usr[4L] - py,
+          labels = plab,
+          adj = c(0, 1),
+          cex = gp$cex.lab / gp$cex
+        )
+        box()
+        axis(side = 2)
+      } # loop over panels
+
+      if (time_as == "numeric") {
+        axis(side = 1)
+      } else {
+        Daxis(
+          major = list(mgp = gp$mgp + c(0, 2, 0), cex.axis = gp$cex.axis / gp$cex, tick = FALSE),
+          minor = list(mgp = gp$mgp, cex.axis = 0.7 * gp$cex.axis / gp$cex, tick = TRUE)
+        )
+      }
+
+      ## Horrible
+      par(new = TRUE, mfrow = c(1, 1), mai = gp$mai + gp$omi, omi = c(0, 0, 0, 0))
+      plot.new()
+      plot.window(xlim = xlim, ylim = c(0, 1))
+      title(main = main, adj = 0)
+      title(ylab = ylab, adj = 0.5)
+      par(new = FALSE, mfrow = gp$mfrow, mai = gp$mai, omi = gp$omi)
+
+      i <- i + per_plot
+    } # loop over plots
+  } # loop over parameters
+
+  invisible(NULL)
+}

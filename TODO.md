@@ -1,7 +1,6 @@
 ## Code
 * Refactor
   - `plot.egf`
-  - `plot.egf_confint`
 * Test
   - `test-egf_utils_tmb.R`
   - `test-methods.R`

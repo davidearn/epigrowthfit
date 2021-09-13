@@ -432,12 +432,8 @@ confint.egf_profile <- function(object, parm, level = attr(object, "level_max"),
 #'   A \link{numeric} vector with elements in (0,1). If \code{sqrt = FALSE},
 #'   then line segments are drawn to show the intersection of the profile
 #'   with lines at \code{deviance = \link{qchisq}(level, df = 1)}.
-#' @param .segments,.text
-#'   \link[=list]{List}s of optional graphical parameters passed to
-#'   \code{\link{segments}} and \code{\link{text}} when line segments
-#'   are drawn.
 #' @param ...
-#'   Optional graphical parameters passed to \code{\link{plot}}.
+#'   Graphical parameters passed to \code{\link{plot}}.
 #'
 #' @details
 #' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
@@ -448,14 +444,13 @@ confint.egf_profile <- function(object, parm, level = attr(object, "level_max"),
 #'
 #' @examples
 #' example("profile.egf", "epigrowthfit")
-#' plot(zz, type = "o", bty = "u", las = 1, main = "", .segments = list(lty = 3))
+#' plot(zz, type = "o", bty = "u", las = 1, main = "")
 #'
 #' @export
 #' @import graphics
 #' @importFrom stats confint
 plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
-                             level = attr(x, "level_max"),
-                             .segments = list(), .text = list(), ...) {
+                             level = attr(x, "level_max"), ...) {
   subset <- egf_eval_subset(substitute(subset), x, parent.frame())
   subset <- match(levels(factor(x$linear_combination[subset])), levels(x$linear_combination))
 
@@ -468,12 +463,7 @@ plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
     !all(is.na(level))
   if (do_segments) {
     level <- level[!is.na(level)]
-    stopifnot(
-      level > 0,
-      level <= attr(x, "level_max"),
-      is.list(.segments),
-      is.list(.text)
-    )
+    stopifnot(level > 0, level <= attr(x, "level_max"))
     ## Line segments at heights 'h' in all plots
     h <- qchisq(level, df = 1)
     ## Line segment 'j' to start at 'v_lower[[i]][j]'
@@ -525,29 +515,29 @@ plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
     do.call(plot, c(args, dots))
     if (do_segments) {
       usr <- par("usr")
-      args <- list(
+      segments(
         x0 = v_lower[[i]],
         x1 = v_upper[[i]],
         y0 = h,
-        y1 = h
+        y1 = h,
+        lty = 3
       )
-      do.call(segments, c(args, .segments))
-      args <- list(
+      segments(
         x0 = c(v_lower[[i]], v_upper[[i]]),
         x1 = c(v_lower[[i]], v_upper[[i]]),
         y0 = usr[3L],
-        y1 = rep.int(h, 2L)
+        y1 = rep.int(h, 2L),
+        lty = 3
       )
-      do.call(segments, c(args, .segments))
-      args <- list(
+      text(
         x = mean(usr[1:2]),
         y = h,
         labels = sprintf("%.3g%%", 100 * level),
         pos = 3,
         offset = 0.1
       )
-      do.call(text, c(args, .text))
     }
   }
+
   invisible(NULL)
 }

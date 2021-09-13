@@ -7,19 +7,28 @@
 \method{plot}{egf_confint}(
   x,
   type = c("bars", "boxes"),
+  time_as = c("Date", "numeric"),
   subset = NULL,
   order = NULL,
   per_plot = switch(type, bars = 12L, boxes = 4L),
   main = NULL,
   label = NULL,
+  prefer_global_par = FALSE,
   ...
 )
 }
 \arguments{
 \item{x}{An \code{"\link[=confint.egf]{egf_confint}"} object.}
 
-\item{type}{A character string determining how confidence intervals
+\item{type}{A \link{character} string determining how confidence intervals
 are displayed (see Details).}
+
+\item{time_as}{(For \code{type = "boxes"}.)
+A \link{character} string indicating how time is displayed
+on the bottom axis. The options are: as is (\code{"numeric"})
+and with a calendar (\code{"Date"}). In the latter case,
+numeric times are interpreted as numbers of days since
+\code{1970-01-01 00:00:00}.}
 
 \item{subset}{An expression to be evaluated in \code{x}.
 It must evaluate to a valid index vector for the rows of \code{x}
@@ -48,7 +57,10 @@ appropriate panel labels for time series when \code{type = "boxes"}.
 The default (\code{\link{NULL}}) is to take labels from
 \code{x$window} and \code{x$ts}, respectively.}
 
-\item{...}{Unused optional arguments.}
+\item{prefer_global_par}{Write something here!}
+
+\item{...}{Unused optional arguments.
+(Graphical parameters can still be set using \code{\link{par}}.)}
 }
 \value{
 \code{\link{NULL}} (invisibly).
@@ -69,4 +81,10 @@ fitting windows and corresponding confidence intervals, respectively.
 If an endpoint of a confidence interval is \code{\link{NA}},
 then dashed lines are drawn from the point estimate to
 the boundary of the plotting region to indicate missingness.
+}
+\examples{
+example("confint.egf", "epigrowthfit")
+plot(zz, type = "bars")
+plot(zz, type = "boxes")
+
 }

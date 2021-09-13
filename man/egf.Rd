@@ -270,7 +270,8 @@ on the same scale. To be precise, numeric times should have
 a common unit of measure and, at least within time series,
 represent displacements from a common reference time.
 These conditions will always hold if \code{time}, \code{start},
-and \code{end} all evaluate to \link{Date} or \link{POSIXt} vectors.
+and \code{end} all evaluate to \link{Date} or \link{POSIXt}
+vectors.
 
 Plot methods asked to display time on a Date axis rather than
 a numeric axis will interpret numeric times as numbers of days
@@ -290,7 +291,7 @@ and
 \code{\link{all}(\link{diff}(\link{round}(time)) == 1)}
 must return \code{TRUE} in each level of \code{ts}.
 These conditions ensure that intervals between adjacent
-time points capture a single day of week.
+time points each represent one full day of week.
 }
 \examples{
 ## Simulate 'N' incidence time series exhibiting exponential growth
