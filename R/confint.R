@@ -329,6 +329,9 @@ confint.egf <- function(object,
 #' @param type
 #'   A \link{character} string determining how confidence intervals
 #'   are displayed (see Details).
+#' @param per_plot
+#'   A positive integer. One plot will display at most this many
+#'   confidence intervals or time series (depending on \code{type}).
 #' @param time_as (For \code{type = "boxes"}.)
 #'   A \link{character} string indicating how time is displayed
 #'   on the bottom axis. The options are: as is (\code{"numeric"})
@@ -348,9 +351,6 @@ confint.egf <- function(object,
 #'   or time series (depending on \code{type}) are plotted.
 #'   It must evaluate to a permutation of \code{\link{seq_len}(\link{nrow}(x))}.
 #'   The default (\code{\link{NULL}}) is equivalent to \code{seq_len(nrow(x))}.
-#' @param per_plot
-#'   A positive integer. One plot will display at most this many
-#'   confidence intervals or time series (depending on \code{type}).
 #' @param main
 #'   An expression or character string indicating a plot title,
 #'   to be recycled for all plots.
@@ -363,7 +363,11 @@ confint.egf <- function(object,
 #'   The default (\code{\link{NULL}}) is to take labels from
 #'   \code{x$window} and \code{x$ts}, respectively.
 #' @param prefer_global_par
-#'   Write something here!
+#'   A \link{logical} flag. If \code{TRUE}, then the global values of
+#'   most graphical parameters, set via \code{\link{par}}, are preserved.
+#'   If \code{FALSE}, then certain global values are ignored in favour
+#'   of ones known to produce reasonably nice results most of the time.
+#'
 #' @param ...
 #'   Unused optional arguments.
 #'   (Graphical parameters can still be set using \code{\link{par}}.)
@@ -430,17 +434,29 @@ plot.egf_confint <- function(x,
   x$top <- factor(x$top)
 
   if (type == "bars") {
-    plot.egf_confint_bars(x, per_plot = per_plot, main = main)
+    plot.egf_confint_bars(x, per_plot = per_plot, main = main, prefer_global_par = prefer_global_par)
   } else {
     i <- match(x$window, a$frame_windows$window, 0L)
     frame_windows <- a$frame_windows[i, c("start", "end"), drop = FALSE]
     x <- data.frame(x, frame_windows)
-    plot.egf_confint_boxes(x, per_plot = per_plot, main = main, time_as = time_as, prefer_global_par = prefer_global_par)
+    plot.egf_confint_boxes(x, per_plot = per_plot, main = main, prefer_global_par = prefer_global_par, time_as = time_as)
   }
 }
 
 #' @import graphics
-plot.egf_confint_bars <- function(x, per_plot, main) {
+plot.egf_confint_bars <- function(x, per_plot, main, prefer_global_par) {
+  if (!prefer_global_par) {
+    op <- par(
+      mar = c(3.25, 5, 1.25, 1),
+      oma = c(0, 0, 0, 0),
+      mgp = c(2, 0.4, 0),
+      tcl = -0.25,
+      las = 1,
+      pch = 21
+    )
+    on.exit(par(op))
+  }
+
   gp <- par(c("cex.axis", "mar", "mgp"))
   cex.axis <- get_fill_cex(x$label, target = 0.92 * max(0, gp$mar[2L] - gp$mgp[2L]), units = "lines")
   cex.axis <- min(cex.axis, gp$cex.axis)
@@ -478,8 +494,7 @@ plot.egf_confint_bars <- function(x, per_plot, main) {
       points(
         x   = data$estimate[k],
         y   = seq_along(k),
-        pch = 21,
-        bg  = "grey75"
+        bg  = "grey80"
       )
       box()
       axis(side = 1)
@@ -488,11 +503,10 @@ plot.egf_confint_bars <- function(x, per_plot, main) {
         at = seq_along(k),
         labels = data$label[k],
         tick = FALSE,
-        las = 1,
         cex.axis = cex.axis
       )
       title(xlab = xlab)
-      title(main, line = 0.3, adj = 0)
+      title(main, line = 0.25, adj = 0)
       i <- i + per_plot
     } # loop over plots
   } # loop over parameters
@@ -510,7 +524,8 @@ plot.egf_confint_boxes <- function(x, per_plot, main, time_as, prefer_global_par
       mfrow = gp$mfrow,
       mar = c(0, 4, 0.5, 1),
       oma = c(4, 2, 2, 0),
-      mgp = c(3, 0.7, 0),
+      mgp = c(3, 0.4, 0),
+      tcl = -0.25,
       las = 1
     )
   }
@@ -546,7 +561,7 @@ plot.egf_confint_boxes <- function(x, per_plot, main, time_as, prefer_global_par
             xright  = data[[k]]$end[l],
             ybottom = data[[k]]$lower[l],
             ytop    = data[[k]]$estimate[l],
-            col     = if (argna$lower[l]) NA else "grey75",
+            col     = if (argna$lower[l]) NA else "grey80",
             border  = "grey50",
             lty     = if (argna$lower[l]) 2 else 1
           )
@@ -555,7 +570,7 @@ plot.egf_confint_boxes <- function(x, per_plot, main, time_as, prefer_global_par
             xright  = data[[k]]$end[l],
             ybottom = data[[k]]$estimate[l],
             ytop    = data[[k]]$upper[l],
-            col     = if (argna$upper[l]) NA else "grey75",
+            col     = if (argna$upper[l]) NA else "grey80",
             border  = "grey50",
             lty     = if (argna$upper[l]) 2 else 1
           )
@@ -588,12 +603,15 @@ plot.egf_confint_boxes <- function(x, per_plot, main, time_as, prefer_global_par
         axis(side = 1)
       } else {
         Daxis(
-          major = list(mgp = gp$mgp + c(0, 2, 0), cex.axis = gp$cex.axis / gp$cex, tick = FALSE),
-          minor = list(mgp = gp$mgp, cex.axis = 0.7 * gp$cex.axis / gp$cex, tick = TRUE)
+          major = list(
+            mgp = gp$mgp + c(0, 2, 0),
+            cex.axis = gp$cex.axis / gp$cex,
+            tick = FALSE
+          )
         )
       }
 
-      ## Horrible
+      ## Hack to avoid dealing with normalized figure coordinates
       par(new = TRUE, mfrow = c(1, 1), mai = gp$mai + gp$omi, omi = c(0, 0, 0, 0))
       plot.new()
       plot.window(xlim = xlim, ylim = c(0, 1))

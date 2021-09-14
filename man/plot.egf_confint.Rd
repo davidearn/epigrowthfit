@@ -57,7 +57,10 @@ appropriate panel labels for time series when \code{type = "boxes"}.
 The default (\code{\link{NULL}}) is to take labels from
 \code{x$window} and \code{x$ts}, respectively.}
 
-\item{prefer_global_par}{Write something here!}
+\item{prefer_global_par}{A \link{logical} flag. If \code{TRUE}, then the global values of
+most graphical parameters, set via \code{\link{par}}, are preserved.
+If \code{FALSE}, then certain global values are ignored in favour
+of ones known to produce reasonably nice results most of the time.}
 
 \item{...}{Unused optional arguments.
 (Graphical parameters can still be set using \code{\link{par}}.)}
