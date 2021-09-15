@@ -3,12 +3,12 @@
 #' A replacement for \code{\link{axis}} allowing the user to define
 #' the extent of the axis line.
 #'
+#' @param side,at,labels,...
+#'   Arguments to \code{\link{axis}}.
 #' @param a,b
 #'   Lower and upper limits of the axis line in user coordinates.
 #'   The default (\code{\link{NULL}}) is to take the limit from
 #'   \code{\link{par}("usr")}.
-#' @param side,at,labels,...
-#'   Arguments to \code{\link{axis}}.
 #'
 #' @return
 #' A \link{numeric} vector identical to that returned by
@@ -49,13 +49,16 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 
 #' Date axis
 #'
-#' Adds an axis to the bottom of the current plot and labels
-#' it with day, month, and year, taking care to ensure that
-#' labels are nicely spaced.
+#' Adds an axis to the current plot and labels it with day, month, and year,
+#' taking care to ensure that labels are nicely spaced.
 #'
+#' @param side
+#'   An integer indicating a side of the plot on which to draw the axis,
+#'   passed to \code{\link{axis}}.
 #' @param origin
-#'   A number. Horizontal user coordinates measure time as a number
-#'   of days since the time \code{origin} days after 1970-01-01 00:00:00.
+#'   A \link{Date}. Horizontal user coordinates measure time
+#'   as a number of days since \code{\link{julian}(origin)} days
+#'   after 1970-01-01 00:00:00.
 #' @param minor,major
 #'   Named \link{list}s of arguments to \code{\link{axis}}, affecting
 #'   the appearance of the minor (day or month) and major (month or year)
@@ -92,9 +95,11 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 #'
 #' @noRd
 #' @importFrom graphics axis par
-Daxis <- function(origin = .Date(0), minor = NULL, major = NULL,
+Daxis <- function(side, origin = .Date(0),
+                  minor = NULL, major = NULL,
                   show_minor = TRUE, show_major = TRUE) {
-  usr <- par("usr")[1:2]
+  stopifnot((side <- as.integer(side)) %in% 1:4)
+  usr <- par("usr")[if (side %% 2L == 1L) 1:2 else 3:4]
   Dusr <- origin + usr
   D0 <- min(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]))
   D1 <- max(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]), D0 + 1)
@@ -160,7 +165,7 @@ Daxis <- function(origin = .Date(0), minor = NULL, major = NULL,
   ## Minor axis
   if (show_minor) {
     args <- list(
-      side = 1,
+      side = side,
       at = t0 + minor_at,
       labels = minor_labels
     )
@@ -169,7 +174,7 @@ Daxis <- function(origin = .Date(0), minor = NULL, major = NULL,
   ## Major axis
   if (show_major) {
     args <- list(
-      side = 1,
+      side = side,
       at = t0 + major_at,
       labels = major_labels
     )
@@ -192,7 +197,7 @@ Daxis <- function(origin = .Date(0), minor = NULL, major = NULL,
 #' listing tick labels.
 #'
 #' @noRd
-get_yax_labels <- function(at) {
+get_scientific_labels <- function(at) {
   ## Exponential notation split into mantissa and power
   mp <- matrix(unlist(strsplit(sprintf("%.6e", at), "e")), ncol = 2L, byrow = TRUE)
 

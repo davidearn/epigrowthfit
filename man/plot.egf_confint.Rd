@@ -8,9 +8,9 @@
   x,
   type = c("bars", "boxes"),
   time_as = c("Date", "numeric"),
+  per_plot = switch(type, bars = 12L, boxes = 4L),
   subset = NULL,
   order = NULL,
-  per_plot = switch(type, bars = 12L, boxes = 4L),
   main = NULL,
   label = NULL,
   prefer_global_par = FALSE,
@@ -23,12 +23,14 @@
 \item{type}{A \link{character} string determining how confidence intervals
 are displayed (see Details).}
 
-\item{time_as}{(For \code{type = "boxes"}.)
-A \link{character} string indicating how time is displayed
+\item{time_as}{A \link{character} string indicating how time is displayed
 on the bottom axis. The options are: as is (\code{"numeric"})
 and with a calendar (\code{"Date"}). In the latter case,
 numeric times are interpreted as numbers of days since
-\code{1970-01-01 00:00:00}.}
+\code{1970-01-01 00:00:00}. [\code{type = "boxes"} only.]}
+
+\item{per_plot}{A positive integer. One plot will display at most this many
+confidence intervals or time series (depending on \code{type}).}
 
 \item{subset}{An expression to be evaluated in \code{x}.
 It must evaluate to a valid index vector for the rows of \code{x}
@@ -43,27 +45,22 @@ or time series (depending on \code{type}) are plotted.
 It must evaluate to a permutation of \code{\link{seq_len}(\link{nrow}(x))}.
 The default (\code{\link{NULL}}) is equivalent to \code{seq_len(nrow(x))}.}
 
-\item{per_plot}{A positive integer. One plot will display at most this many
-confidence intervals or time series (depending on \code{type}).}
-
 \item{main}{An expression or character string indicating a plot title,
 to be recycled for all plots.}
 
 \item{label}{An expression to be evaluated in \code{x}, typically a \link{factor},
 \link{interaction} of factors, or \link{call} to \code{\link{sprintf}}.
-It is used to create appropriate \eqn{y}-axis labels
-for confidence intervals when \code{type = "bars"} and
-appropriate panel labels for time series when \code{type = "boxes"}.
-The default (\code{\link{NULL}}) is to take labels from
-\code{x$window} and \code{x$ts}, respectively.}
+It is used to create appropriate \eqn{y}-axis labels for confidence
+intervals when \code{type = "bars"} and appropriate panel labels for
+time series when \code{type = "boxes"}. The default (\code{\link{NULL}})
+is to take labels from \code{x$window} and \code{x$ts}, respectively.}
 
 \item{prefer_global_par}{A \link{logical} flag. If \code{TRUE}, then the global values of
-most graphical parameters, set via \code{\link{par}}, are preserved.
+most graphical parameters, set via \code{\link{par}}, are respected.
 If \code{FALSE}, then certain global values are ignored in favour
 of ones known to produce reasonably nice results most of the time.}
 
-\item{...}{Unused optional arguments.
-(Graphical parameters can still be set using \code{\link{par}}.)}
+\item{...}{Unused optional arguments.}
 }
 \value{
 \code{\link{NULL}} (invisibly).
@@ -81,9 +78,12 @@ time series (level of \code{x$ts}), each containing shaded boxes.
 Projection of boxes onto the horizontal and vertical axes yields
 fitting windows and corresponding confidence intervals, respectively.
 
-If an endpoint of a confidence interval is \code{\link{NA}},
+If an endpoint of a confidence interval is \code{\link{NaN}},
 then dashed lines are drawn from the point estimate to
 the boundary of the plotting region to indicate missingness.
+
+See topic \code{\link{egf_eval}} for details on nonstandard evaluation
+of \code{subset}, \code{order}, and \code{label}.
 }
 \examples{
 example("confint.egf", "epigrowthfit")

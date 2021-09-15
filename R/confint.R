@@ -329,15 +329,15 @@ confint.egf <- function(object,
 #' @param type
 #'   A \link{character} string determining how confidence intervals
 #'   are displayed (see Details).
-#' @param per_plot
-#'   A positive integer. One plot will display at most this many
-#'   confidence intervals or time series (depending on \code{type}).
-#' @param time_as (For \code{type = "boxes"}.)
+#' @param time_as
 #'   A \link{character} string indicating how time is displayed
 #'   on the bottom axis. The options are: as is (\code{"numeric"})
 #'   and with a calendar (\code{"Date"}). In the latter case,
 #'   numeric times are interpreted as numbers of days since
-#'   \code{1970-01-01 00:00:00}.
+#'   \code{1970-01-01 00:00:00}. [\code{type = "boxes"} only.]
+#' @param per_plot
+#'   A positive integer. One plot will display at most this many
+#'   confidence intervals or time series (depending on \code{type}).
 #' @param subset
 #'   An expression to be evaluated in \code{x}.
 #'   It must evaluate to a valid index vector for the rows of \code{x}
@@ -351,26 +351,24 @@ confint.egf <- function(object,
 #'   or time series (depending on \code{type}) are plotted.
 #'   It must evaluate to a permutation of \code{\link{seq_len}(\link{nrow}(x))}.
 #'   The default (\code{\link{NULL}}) is equivalent to \code{seq_len(nrow(x))}.
-#' @param main
-#'   An expression or character string indicating a plot title,
-#'   to be recycled for all plots.
 #' @param label
 #'   An expression to be evaluated in \code{x}, typically a \link{factor},
 #'   \link{interaction} of factors, or \link{call} to \code{\link{sprintf}}.
-#'   It is used to create appropriate \eqn{y}-axis labels
-#'   for confidence intervals when \code{type = "bars"} and
-#'   appropriate panel labels for time series when \code{type = "boxes"}.
-#'   The default (\code{\link{NULL}}) is to take labels from
-#'   \code{x$window} and \code{x$ts}, respectively.
+#'   It is used to create appropriate \eqn{y}-axis labels for confidence
+#'   intervals when \code{type = "bars"} and appropriate panel labels for
+#'   time series when \code{type = "boxes"}. The default (\code{\link{NULL}})
+#'   is to take labels from \code{x$window} and \code{x$ts}, respectively.
+#' @param main
+#'   An expression or character string indicating a plot title,
+#'   to be recycled for all plots.
 #' @param prefer_global_par
 #'   A \link{logical} flag. If \code{TRUE}, then the global values of
-#'   most graphical parameters, set via \code{\link{par}}, are preserved.
+#'   most graphical parameters, set via \code{\link{par}}, are respected.
 #'   If \code{FALSE}, then certain global values are ignored in favour
 #'   of ones known to produce reasonably nice results most of the time.
 #'
 #' @param ...
 #'   Unused optional arguments.
-#'   (Graphical parameters can still be set using \code{\link{par}}.)
 #'
 #' @details
 #' \code{type = "bars"} creates a one-dimensional plot with
@@ -381,9 +379,12 @@ confint.egf <- function(object,
 #' Projection of boxes onto the horizontal and vertical axes yields
 #' fitting windows and corresponding confidence intervals, respectively.
 #'
-#' If an endpoint of a confidence interval is \code{\link{NA}},
+#' If an endpoint of a confidence interval is \code{\link{NaN}},
 #' then dashed lines are drawn from the point estimate to
 #' the boundary of the plotting region to indicate missingness.
+#'
+#' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
+#' of \code{subset}, \code{order}, and \code{label}.
 #'
 #' @return
 #' \code{\link{NULL}} (invisibly).
@@ -397,9 +398,9 @@ confint.egf <- function(object,
 plot.egf_confint <- function(x,
                              type = c("bars", "boxes"),
                              time_as = c("Date", "numeric"),
+                             per_plot = switch(type, bars = 12L, boxes = 4L),
                              subset = NULL,
                              order = NULL,
-                             per_plot = switch(type, bars = 12L, boxes = 4L),
                              main = NULL,
                              label = NULL,
                              prefer_global_par = FALSE,
@@ -411,7 +412,7 @@ plot.egf_confint <- function(x,
 
   subset <- egf_eval_subset(substitute(subset), x, parent.frame())
   if (length(subset) == 0L) {
-    stop("'subset' indexes zero rows of 'x', so there is nothing to plot.")
+    stop("'subset' indexes zero confidence intervals, so there is nothing to plot.")
   }
   label <- egf_eval_label(substitute(label), x, parent.frame())
   order <- egf_eval_order(substitute(order), x, parent.frame())
@@ -434,17 +435,17 @@ plot.egf_confint <- function(x,
   x$top <- factor(x$top)
 
   if (type == "bars") {
-    plot.egf_confint_bars(x, per_plot = per_plot, main = main, prefer_global_par = prefer_global_par)
+    plot.egf_confint.bars(x, per_plot = per_plot, main = main, prefer_global_par = prefer_global_par)
   } else {
     i <- match(x$window, a$frame_windows$window, 0L)
     frame_windows <- a$frame_windows[i, c("start", "end"), drop = FALSE]
     x <- data.frame(x, frame_windows)
-    plot.egf_confint_boxes(x, per_plot = per_plot, main = main, prefer_global_par = prefer_global_par, time_as = time_as)
+    plot.egf_confint.boxes(x, time_as = time_as, per_plot = per_plot, main = main, prefer_global_par = prefer_global_par)
   }
 }
 
 #' @import graphics
-plot.egf_confint_bars <- function(x, per_plot, main, prefer_global_par) {
+plot.egf_confint.bars <- function(x, per_plot, main, prefer_global_par) {
   if (!prefer_global_par) {
     op <- par(
       mar = c(3.25, 5, 1.25, 1),
@@ -515,7 +516,7 @@ plot.egf_confint_bars <- function(x, per_plot, main, prefer_global_par) {
 }
 
 #' @import graphics
-plot.egf_confint_boxes <- function(x, per_plot, main, time_as, prefer_global_par) {
+plot.egf_confint.boxes <- function(x, time_as, per_plot, main, prefer_global_par) {
   gp <- list(mfrow = c(per_plot, 1))
   if (prefer_global_par) {
     op <- par(mfrow = gp$mfrow)
@@ -547,7 +548,7 @@ plot.egf_confint_boxes <- function(x, per_plot, main, time_as, prefer_global_par
       for (k in i + seq_len(min(per_plot, n - i))) { # loop over panels
         plot.new()
         plot.window(xlim = xlim, ylim = ylim)
-        v <- Daxis(show_major = FALSE, show_minor = FALSE)$minor
+        v <- Daxis(side = 1, show_major = FALSE, show_minor = FALSE)$minor
         abline(v = v, lty = 3, col = "grey75")
 
         gp$usr <- par("usr")
@@ -603,6 +604,7 @@ plot.egf_confint_boxes <- function(x, per_plot, main, time_as, prefer_global_par
         axis(side = 1)
       } else {
         Daxis(
+          side = 1,
           major = list(
             mgp = gp$mgp + c(0, 2, 0),
             cex.axis = gp$cex.axis / gp$cex,
