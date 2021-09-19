@@ -17,7 +17,7 @@
 #' @noRd
 #' @importFrom graphics axis
 baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
-  side <- 1L + (as.integer(side) - 1L) %% 4L
+  stopifnot((side <- as.integer(side)) %in% 1:4)
   dots <- list(...)
 
   if (is.null(a) || is.null(b)) {
@@ -62,10 +62,8 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 #' @param minor,major
 #'   Named \link{list}s of arguments to \code{\link{axis}}, affecting
 #'   the appearance of the minor (day or month) and major (month or year)
-#'   axes, respectively.
-#' @param show_minor,show_major
-#'   \link[=logical]{Logical} flags.
-#'   If \code{FALSE}, then the corresponding axis is not drawn.
+#'   axes, respectively. Passing \code{\link{NULL}} suppresses the
+#'   corresponding axis.
 #'
 #' @return
 #' A \link{list} of \link{numeric} vectors \code{minor} and \code{major}
@@ -95,10 +93,15 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 #'
 #' @noRd
 #' @importFrom graphics axis par
-Daxis <- function(side, origin = .Date(0),
-                  minor = NULL, major = NULL,
-                  show_minor = TRUE, show_major = TRUE) {
-  stopifnot((side <- as.integer(side)) %in% 1:4)
+Daxis <- function(side, origin = .Date(0), minor = list(), major = list()) {
+  stopifnot(
+    (side <- as.integer(side)) %in% 1:4,
+    inherits(origin, "Date"),
+    length(origin) == 1L,
+    is.finite(origin),
+    is.list(minor) || is.null(minor),
+    is.list(major) || is.null(major)
+  )
   usr <- par("usr")[if (side %% 2L == 1L) 1:2 else 3:4]
   Dusr <- origin + usr
   D0 <- min(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]))
@@ -159,11 +162,11 @@ Daxis <- function(side, origin = .Date(0),
     length(minor_labels) <- length(minor_at)
 
     major_at <- numeric(0L)
-    show_major <- FALSE
+    major <- NULL
   }
 
   ## Minor axis
-  if (show_minor) {
+  if (!is.null(minor)) {
     args <- list(
       side = side,
       at = t0 + minor_at,
@@ -172,7 +175,7 @@ Daxis <- function(side, origin = .Date(0),
     do.call(baxis, c(args, minor))
   }
   ## Major axis
-  if (show_major) {
+  if (!is.null(major)) {
     args <- list(
       side = side,
       at = t0 + major_at,
@@ -264,4 +267,10 @@ get_fill_cex <- function(text, target, units = c("lines", "inches", "user"),
   convert <- if (horizontal) grconvertX else grconvertY
   inches_target <- target * diff(convert(c(0, 1), match.arg(units), "inches"))
   inches_target / inches_current
+}
+
+#' @importFrom grDevices col2rgb rgb
+add_alpha <- function(col, alpha) {
+  m <- t(col2rgb(col, alpha = TRUE))
+  rgb(m[, 1:3, drop = FALSE], alpha = ceiling(alpha * m[, 4L]), maxColorValue = 255)
 }

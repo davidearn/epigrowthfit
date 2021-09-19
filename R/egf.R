@@ -308,6 +308,7 @@
 #' )
 #'
 #' @seealso
+#'   \code{\link{plot.egf}} for plotting time series data and predicted values,
 #'   \code{\link{vcov.egf}} for extracting covariance matrices,
 #'   \code{\link{fixef.egf}} and \code{\link{ranef.egf}} for extracting fixed and random effect coefficients,
 #'   \code{\link{fitted.egf}} and \code{\link{confint.egf}} for extracting and computing confidence intervals on fitted values,

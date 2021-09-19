@@ -458,7 +458,7 @@ plot.egf_confint.bars <- function(x, per_plot, main, prefer_global_par) {
     on.exit(par(op))
   }
 
-  gp <- par(c("cex.axis", "mar", "mgp"))
+  gp <- par(c("mar", "mgp", "cex.axis"))
   cex.axis <- get_fill_cex(x$label, target = 0.92 * max(0, gp$mar[2L] - gp$mgp[2L]), units = "lines")
   cex.axis <- min(cex.axis, gp$cex.axis)
 
@@ -517,22 +517,21 @@ plot.egf_confint.bars <- function(x, per_plot, main, prefer_global_par) {
 
 #' @import graphics
 plot.egf_confint.boxes <- function(x, time_as, per_plot, main, prefer_global_par) {
-  gp <- list(mfrow = c(per_plot, 1))
   if (prefer_global_par) {
-    op <- par(mfrow = gp$mfrow)
+    op <- par(mfrow = c(per_plot, 1))
   } else {
     op <- par(
-      mfrow = gp$mfrow,
-      mar = c(0, 4, 0.5, 1),
+      mfrow = c(per_plot, 1),
+      mar = c(0.25, 4, 0.25, 1),
       oma = c(4, 2, 2, 0),
-      mgp = c(3, 0.4, 0),
-      tcl = -0.25,
+      mgp = c(3, 0.7, 0),
+      tcl = -0.4,
       las = 1
     )
   }
   on.exit(par(op))
+  gp <- par()
 
-  gp <- c(gp, par(c("mai", "omi", "mgp", "cex", "cex.axis", "cex.lab")))
   xlim <- range(x[c("start", "end")])
 
   for (top in levels(x$top)) { # loop over parameters
@@ -548,7 +547,8 @@ plot.egf_confint.boxes <- function(x, time_as, per_plot, main, prefer_global_par
       for (k in i + seq_len(min(per_plot, n - i))) { # loop over panels
         plot.new()
         plot.window(xlim = xlim, ylim = ylim)
-        v <- Daxis(side = 1, show_major = FALSE, show_minor = FALSE)$minor
+
+        v <- Daxis(side = 1, major = NULL, minor = NULL)$minor
         abline(v = v, lty = 3, col = "grey75")
 
         gp$usr <- par("usr")
@@ -588,34 +588,35 @@ plot.egf_confint.boxes <- function(x, time_as, per_plot, main, prefer_global_par
         p <- diff(grconvertY(c(0, 0.08), "npc", "inches"))
         px <- diff(grconvertX(c(0, p), "inches", "user"))
         py <- diff(grconvertY(c(0, p), "inches", "user"))
-        plab <- data[[k]]$label[1L]
+
+        ocex <- par(cex = 1)
         text(
           x = gp$usr[1L] + px,
           y = gp$usr[4L] - py,
-          labels = plab,
+          labels = data[[k]]$label[1L],
           adj = c(0, 1),
-          cex = gp$cex.lab / gp$cex
+          cex = gp$cex.lab
         )
+        par(ocex)
+
         box()
         axis(side = 2)
       } # loop over panels
 
+      ocex <- par(cex = 1)
       if (time_as == "numeric") {
         axis(side = 1)
       } else {
         Daxis(
           side = 1,
-          major = list(
-            mgp = gp$mgp + c(0, 2, 0),
-            cex.axis = gp$cex.axis / gp$cex,
-            tick = FALSE
-          )
+          minor = list(cex.axis = gp$cex.axis),
+          major = list(cex.axis = 1.2 * gp$cex.axis, mgp = gp$mgp + c(0, 1.5, 0), tick = FALSE)
         )
       }
+      par(ocex)
 
       ## Hack to avoid dealing with normalized figure coordinates
       par(new = TRUE, mfrow = c(1, 1), mai = gp$mai + gp$omi, omi = c(0, 0, 0, 0))
-      plot.new()
       plot.window(xlim = xlim, ylim = c(0, 1))
       title(main = main, adj = 0)
       title(ylab = ylab, adj = 0.5)

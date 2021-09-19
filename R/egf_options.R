@@ -414,3 +414,205 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
   class(res) <- c("egf_parallel", "list")
   res
 }
+
+#' Define plot options
+#'
+#' Sets parameters controlling the graphical output of \code{\link{plot.egf}}.
+#' Supplied values override package defaults (retrievable from the result of
+#' evaluating an empty call \code{egf_plot_control()}), which in turn override
+#' global defaults set via \code{\link{par}}.\cr
+#' Here, \code{x}, \code{type}, \code{time_as}, and \code{dt}
+#' refer to the so-named arguments of \code{\link{plot.egf}}.
+#'
+#' @param window
+#'   A named list of arguments to \code{\link{rect}}
+#'   affecting the appearance of fitting windows.
+#' @param data
+#'   A named list of the form \code{\link{list}(main, short, long)}.
+#'   \code{main} is a named list of arguments to \code{\link{points}}
+#'   affecting the appearance of observed data.
+#'   \code{short} and \code{long} are alternatives to \code{main}
+#'   used for counts over intervals shorter or longer than \code{dt}
+#'   when \code{type = "interval"}.
+#'   \code{short} and \code{long} default to \code{main} (elementwise).
+#' @param predict
+#'   A named list of the form \code{\link{list}(estimate, ci)}.
+#'   \code{estimate} and \code{ci} are named lists of arguments
+#'   to \code{\link{lines}} and \code{\link{polygon}},
+#'   affecting the appearance of predicted curves and corresponding
+#'   confidence bands.
+#'   \code{ci$col} defaults to \code{estimate$col} with added transparency.
+#' @param asymptote
+#'   A named list of arguments to \code{\link{segments}}
+#'   affecting appearance of line segments drawn at
+#'   \code{y = <initial exponential growth rate>}
+#'   when \code{type = "rt"} and
+#'   \code{x$model$curve = "logistic"} or \code{"richards"}.
+#' @param box
+#'   A named list of arguments to \code{\link{box}}
+#'   affecting the appearance of the box drawn around the plot region
+#'   on the device.
+#' @param axis
+#'   A named list of the form \code{\link{list}(x, y)}.
+#'   \code{x} and \code{y} are named lists of arguments to \code{\link{axis}}
+#'   affecting the appearance of the bottom and left axes.
+#'   When \code{time_as = "Date"}, there are minor and major bottom axes.
+#'   In this case, the major axis uses a modified version of \code{x}
+#'   that tries to ensure that it is displayed below the minor axis in
+#'   a slightly larger font.
+#' @param title
+#'   A named list of the form \code{\link{list}(main, sub, xlab, ylab, plab)}.
+#'   The elements are named lists of arguments to \code{\link{title}}
+#'   affecting the appearance of plot (sub)titles and axis and panel labels.
+#'   \code{sub$adj} defaults to \code{main$adj}.
+#' @param tdoubling
+#'   A named list of the form \code{\link{list}(legend, estimate, ci)}.
+#'   The elements are named lists of arguments to \code{\link{mtext}}
+#'   affecting the appearance of initial doubling times printed in the
+#'   top margin.
+#' @param heat
+#'   A named list of the form \code{\link{list}(pal, bg, ul, ips)}.
+#'   \code{pal} is a named list of arguments to \code{\link{colorRamp}}
+#'   defining a colour palette for heat maps.
+#'   \code{bg} and \code{ul} are named lists of arguments to \code{\link{rect}}
+#'   affecting the appearance of panel backgrounds and panel label underlays.
+#'
+#' @details
+#' Setting an argument (or an element thereof, in the case of nested lists)
+#' to \code{\link{NULL}} has the effect of suppressing the corresponding
+#' plot element.
+#'
+#' For \code{type = "rt_heat"}, the only useful arguments are \code{axis},
+#' \code{title}, and \code{heat}.
+#'
+#' @return
+#' A named \link{list}.
+#'
+#' @export
+egf_plot_control <- function(window, data, predict, asymptote,
+                             box, axis, title, tdoubling, heat) {
+  res <- list(
+    window = list(
+      col = add_alpha("#DDCC77", 0.25),
+      border = NA
+    ),
+    data = list(
+      main = list(
+        pch = 21,
+        col = "#BBBBBB",
+        bg = "#DDDDDD"
+      ),
+      short = list(),
+      long = list()
+    ),
+    predict = list(
+      estimate = list(
+        col = "#44AA99",
+        lwd = 2
+      ),
+      ci = list(
+        border = NA
+      )
+    ),
+    asymptote = list(
+      lty = "dotted",
+      lwd = 2
+    ),
+    box = list(
+      bty = "l"
+    ),
+    axis = list(
+      x = list(
+        gap.axis = 0
+      ),
+      y = list()
+    ),
+    title = list(
+      main = list(adj = 0, xpd = NA),
+      sub = list(mgp = c(0, 0, 0), xpd = NA),
+      xlab = list(xpd = NA),
+      ylab = list(xpd = NA),
+      plab = list(col.lab = "white")
+    ),
+    tdoubling = list(
+      legend = list(),
+      estimate = list(),
+      ci = list()
+    ),
+    heat = list(
+      pal = list(
+        colors = c(
+          "#364B9A", "#4A7BB7", "#6EA6CD", "#98CAE1",
+          "#C2E4EF", "#EAECCC", "#FEDA8B", "#FDB366",
+          "#F67E4B", "#DD3D2D", "#A50026"
+        ),
+        bias = 1,
+        space = "rgb",
+        interpolate = "linear"
+      ),
+      bg = list(
+        col = "black",
+        border = NA
+      ),
+      ul = list(
+        col = add_alpha("black", 0.5),
+        border = NA
+      )
+    )
+  )
+
+  ## Multi-assign from 'value' into 'default',
+  ## recursively up to one level of nesting
+  rmerge <- function(from, into, recursive = FALSE) {
+    if (is.null(from)) {
+      if (recursive) {
+        into[] <- list(NULL)
+        return(into)
+      }
+      return(NULL)
+    }
+    if (!is.list(from) || length(from) == 0L || is.null(names(from))) {
+      return(into)
+    }
+    nel <- unique(names(from))
+    if (recursive) {
+      into[nel] <- Map(rmerge, from = from[nel], into = into[nel], recursive = FALSE)
+    } else {
+      into[nel] <- from[nel]
+    }
+    into
+  }
+
+  recursive <- c("data", "predict", "axis", "title", "tdoubling", "heat")
+  nel <- names(match.call()[-1L])
+  if (length(nel) > 0L) {
+    res[nel] <- Map(rmerge,
+      from = mget(nel, mode = "list", ifnotfound = list(list()), inherits = FALSE),
+      into = res[nel],
+      recursive = nel %in% recursive
+    )
+  }
+
+  ## Some default values are conditional on supplied values
+  for (s in c("short", "long")) {
+    if (is.list(res$data[[s]])) {
+      nel <- setdiff(names(res$data$main), names(res$data[[s]]))
+      res$data[[s]][nel] <- res$data$main[nel]
+    }
+  }
+  if (is.list(res$predict$ci) && is.null(res$predict$ci$col)) {
+    res$predict$ci$col <- add_alpha(res$predict$estimate$col, 0.4)
+  }
+  adj <- res$title$main$adj
+  if (is.numeric(adj) && length(adj) == 1L && is.finite(adj)) {
+    if (is.list(res$title$sub) && is.null(res$title$sub$adj)) {
+      res$title$sub$adj <- adj
+    }
+    if (is.list(res$tdoubling$legend) && is.null(res$tdoubling$legend$adj)) {
+      res$tdoubling$legend$adj <- if (adj > 0.5) 0 else 1
+    }
+  }
+
+  class(res) <- c("egf_plot_control", "list")
+  res
+}
