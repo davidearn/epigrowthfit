@@ -385,14 +385,20 @@ confint.egf <- function(object,
 #'
 #' @examples
 #' example("confint.egf", "epigrowthfit")
+#'
+#' op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
 #' plot(zz, type = "bars")
+#' par(op)
+#'
+#' op <- par(mar = c(0.2, 0, 0.2, 0), oma = c(4.5, 6, 2, 1), las = 1)
 #' plot(zz, type = "boxes")
+#' par(op)
 #'
 #' @export
 plot.egf_confint <- function(x,
                              type = c("bars", "boxes"),
                              time_as = c("Date", "numeric"),
-                             per_plot = switch(type, bars = 12L, boxes = 4L),
+                             per_plot = switch(type, bars = 12L, boxes = 3L),
                              subset = NULL,
                              order = NULL,
                              main = NULL,
@@ -474,6 +480,7 @@ plot.egf_confint.bars <- function(x, per_plot, main) {
       points(
         x   = data$estimate[k],
         y   = seq_along(k),
+        pch = 21,
         bg  = "grey80"
       )
       box()

@@ -166,15 +166,18 @@ of \code{subset}, \code{order}, \code{main}, \code{sub}, and \code{plab}.
 \examples{
 example("egf", "epigrowthfit")
 
-par(mar = c(3.5, 5, 5, 1))
+op <- par(mar = c(3.5, 5, 5, 1))
 control <- egf_plot_control(tdoubling = list(legend = list(cex = 0.8), estimate = list(cex = 0.8, font = 2), ci = list(cex = 0.8)))
 plot(object, type = "interval", show_predict = 2L, show_tdoubling = 2L, control = control)
 plot(object, type = "cumulative", main = "Fitted exponential model", sub = paste("Country", country))
+par(op)
 
-par(mar = c(3.5, 9.5, 5, 1))
+op <- par(mar = c(3.5, 9.5, 5, 1))
 plot(object, type = "rt", subset = country \%in\% LETTERS[4:6])
+par(op)
 
-par(mar = c(0.1, 1, 0.1, 1), oma = c(3.5, 0, 0.5, 9.5))
+op <- par(mar = c(0.1, 1, 0.1, 1), oma = c(3.5, 0, 0.5, 9.5))
 plot(object, type = "rt_heat", per_plot = 10L)
+par(op)
 
 }
