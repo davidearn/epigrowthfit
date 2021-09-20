@@ -12,7 +12,7 @@
   log = TRUE,
   zero = NA,
   show_predict = TRUE,
-  show_tdoubling = TRUE,
+  show_tdoubling = FALSE,
   level = 0.95,
   per_plot = min(6L, nlevels(x$frame$ts)),
   control = egf_plot_control(),
@@ -150,11 +150,9 @@ Methods for plotting \code{"\link{egf}"} objects.
 Computation of fitted and predicted values and standard errors
 is performed before any plots are created. To avoid waste of
 computation time, cached computations are returned \emph{even if}
-an error is thrown during plotting. Hence the cache will be
-available temporarily via \code{\link{.Last.value}}. To ensure
-that the cache is available permanently, assign the result of
-the call to \code{\link{plot}} to a name:
-\code{cache <- plot(x, \dots)}.
+an error is thrown during plotting. To ensure that the cache is
+preserved, assign the result of the call to \code{\link{plot}}
+to a name: \code{cache <- plot(x, \dots)}.
 
 Caching functionality must be used with care, as mismatch between
 \code{x} and \code{cache} will not be detected. Constructions such
@@ -164,4 +162,19 @@ correct results.
 
 See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset}, \code{order}, \code{main}, \code{sub}, and \code{plab}.
+}
+\examples{
+example("egf", "epigrowthfit")
+
+par(mar = c(3.5, 5, 5, 1))
+control <- egf_plot_control(tdoubling = list(legend = list(cex = 0.8), estimate = list(cex = 0.8, font = 2), ci = list(cex = 0.8)))
+plot(object, type = "interval", show_predict = 2L, show_tdoubling = 2L, control = control)
+plot(object, type = "cumulative", main = "Fitted exponential model", sub = paste("Country", country))
+
+par(mar = c(3.5, 9.5, 5, 1))
+plot(object, type = "rt", subset = country \%in\% LETTERS[4:6])
+
+par(mar = c(0.1, 1, 0.1, 1), oma = c(3.5, 0, 0.5, 9.5))
+plot(object, type = "rt_heat", per_plot = 10L)
+
 }

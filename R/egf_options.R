@@ -418,9 +418,9 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #' Define plot options
 #'
 #' Sets parameters controlling the graphical output of \code{\link{plot.egf}}.
-#' Supplied values override package defaults (retrievable from the result of
-#' evaluating an empty call \code{egf_plot_control()}), which in turn override
-#' global defaults set via \code{\link{par}}.\cr
+#' Supplied values override package defaults
+#' (retrievable as \code{defaults <- egf_plot_control()}),
+#' which in turn override global defaults set via \code{\link{par}}.\cr
 #' Here, \code{x}, \code{type}, \code{time_as}, and \code{dt}
 #' refer to the so-named arguments of \code{\link{plot.egf}}.
 #'
@@ -493,7 +493,7 @@ egf_plot_control <- function(window, data, predict, asymptote,
                              box, axis, title, tdoubling, heat) {
   res <- list(
     window = list(
-      col = add_alpha("#DDCC77", 0.25),
+      col = alpha("#DDCC77", 0.25),
       border = NA
     ),
     data = list(
@@ -555,7 +555,7 @@ egf_plot_control <- function(window, data, predict, asymptote,
         border = NA
       ),
       ul = list(
-        col = add_alpha("black", 0.5),
+        col = alpha("black", 0.5),
         border = NA
       )
     )
@@ -601,7 +601,7 @@ egf_plot_control <- function(window, data, predict, asymptote,
     }
   }
   if (is.list(res$predict$ci) && is.null(res$predict$ci$col)) {
-    res$predict$ci$col <- add_alpha(res$predict$estimate$col, 0.4)
+    res$predict$ci$col <- alpha(res$predict$estimate$col, 0.4)
   }
   adj <- res$title$main$adj
   if (is.numeric(adj) && length(adj) == 1L && is.finite(adj)) {

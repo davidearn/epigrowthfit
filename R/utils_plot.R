@@ -254,7 +254,7 @@ get_scientific_labels <- function(at) {
 #'
 #' @noRd
 #' @importFrom graphics strwidth strheight grconvertX grconvertY
-get_fill_cex <- function(text, target, units = c("lines", "inches", "user"),
+get_space_filling_cex <- function(text, target, units = c("lines", "inches", "user"),
                          horizontal = TRUE, ...) {
   if (length(text) == 0L) {
     return(1)
@@ -269,8 +269,23 @@ get_fill_cex <- function(text, target, units = c("lines", "inches", "user"),
   inches_target / inches_current
 }
 
+#' Modify colour transparency
+#'
+#' A drop-in replacement for \code{\link[scales]{alpha}}.
+#'
+#' @param colour
+#'   A \link{numeric} or \link{character} vector listing colours;
+#'   see \code{\link{col2rgb}}.
+#' @param alpha
+#'   A \link{numeric} vector with elements in the interval [0,1]
+#'   listing alpha channel values.
+#'
+#' @return
+#' A \link{character} vector listing colours with indicated transparency.
+#'
+#' @noRd
 #' @importFrom grDevices col2rgb rgb
-add_alpha <- function(col, alpha) {
-  m <- t(col2rgb(col, alpha = TRUE))
-  rgb(m[, 1:3, drop = FALSE], alpha = ceiling(alpha * m[, 4L]), maxColorValue = 255)
+alpha <- function(colour, alpha) {
+  m <- t(col2rgb(colour, alpha = FALSE))
+  rgb(m[, 1:3, drop = FALSE], alpha = 255 * alpha, maxColorValue = 255)
 }

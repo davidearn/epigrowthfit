@@ -74,9 +74,9 @@ A named \link{list}.
 }
 \description{
 Sets parameters controlling the graphical output of \code{\link{plot.egf}}.
-Supplied values override package defaults (retrievable from the result of
-evaluating an empty call \code{egf_plot_control()}), which in turn override
-global defaults set via \code{\link{par}}.\cr
+Supplied values override package defaults
+(retrievable as \code{defaults <- egf_plot_control()}),
+which in turn override global defaults set via \code{\link{par}}.\cr
 Here, \code{x}, \code{type}, \code{time_as}, and \code{dt}
 refer to the so-named arguments of \code{\link{plot.egf}}.
 }

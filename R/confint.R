@@ -361,12 +361,6 @@ confint.egf <- function(object,
 #' @param main
 #'   An expression or character string indicating a plot title,
 #'   to be recycled for all plots.
-#' @param prefer_global_par
-#'   A \link{logical} flag. If \code{TRUE}, then the global values of
-#'   most graphical parameters, set via \code{\link{par}}, are respected.
-#'   If \code{FALSE}, then certain global values are ignored in favour
-#'   of ones known to produce reasonably nice results most of the time.
-#'
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -403,12 +397,10 @@ plot.egf_confint <- function(x,
                              order = NULL,
                              main = NULL,
                              label = NULL,
-                             prefer_global_par = FALSE,
                              ...) {
   type <- match.arg(type)
   time_as <- match.arg(time_as)
   stop_if_not_integer(per_plot, "positive")
-  stop_if_not_true_false(prefer_global_par)
 
   subset <- egf_eval_subset(substitute(subset), x, parent.frame())
   if (length(subset) == 0L) {
@@ -435,32 +427,19 @@ plot.egf_confint <- function(x,
   x$top <- factor(x$top)
 
   if (type == "bars") {
-    plot.egf_confint.bars(x, per_plot = per_plot, main = main, prefer_global_par = prefer_global_par)
+    plot.egf_confint.bars(x, per_plot = per_plot, main = main)
   } else {
     i <- match(x$window, a$frame_windows$window, 0L)
     frame_windows <- a$frame_windows[i, c("start", "end"), drop = FALSE]
     x <- data.frame(x, frame_windows)
-    plot.egf_confint.boxes(x, time_as = time_as, per_plot = per_plot, main = main, prefer_global_par = prefer_global_par)
+    plot.egf_confint.boxes(x, time_as = time_as, per_plot = per_plot, main = main)
   }
 }
 
 #' @import graphics
-plot.egf_confint.bars <- function(x, per_plot, main, prefer_global_par) {
-  if (!prefer_global_par) {
-    op <- par(
-      mar = c(3.25, 5, 1.25, 1),
-      oma = c(0, 0, 0, 0),
-      mgp = c(2, 0.4, 0),
-      tcl = -0.25,
-      las = 1,
-      pch = 21
-    )
-    on.exit(par(op))
-  }
-
-  gp <- par(c("mar", "mgp", "cex.axis"))
-  cex.axis <- get_fill_cex(x$label, target = 0.92 * max(0, gp$mar[2L] - gp$mgp[2L]), units = "lines")
-  cex.axis <- min(cex.axis, gp$cex.axis)
+plot.egf_confint.bars <- function(x, per_plot, main) {
+  gp <- par()
+  sfcex <- get_space_filling_cex(x$label, target = 0.95 * max(0, gp$mar[2L] - 0.25), units = "lines")
 
   for (top in levels(x$top)) { # loop over parameters
     data <- x[x$top == top, , drop = FALSE]
@@ -499,15 +478,18 @@ plot.egf_confint.bars <- function(x, per_plot, main, prefer_global_par) {
       )
       box()
       axis(side = 1)
-      axis(
+      mtext(
+        text = data$label[k],
         side = 2,
+        line = 0.25,
         at = seq_along(k),
-        labels = data$label[k],
-        tick = FALSE,
-        cex.axis = cex.axis
+        las = 1,
+        adj = 1,
+        padj = 0.5,
+        cex = gp$cex * sfcex
       )
       title(xlab = xlab)
-      title(main, line = 0.25, adj = 0)
+      title(main, adj = 0)
       i <- i + per_plot
     } # loop over plots
   } # loop over parameters
@@ -516,22 +498,10 @@ plot.egf_confint.bars <- function(x, per_plot, main, prefer_global_par) {
 }
 
 #' @import graphics
-plot.egf_confint.boxes <- function(x, time_as, per_plot, main, prefer_global_par) {
-  if (prefer_global_par) {
-    op <- par(mfrow = c(per_plot, 1))
-  } else {
-    op <- par(
-      mfrow = c(per_plot, 1),
-      mar = c(0.25, 4, 0.25, 1),
-      oma = c(4, 2, 2, 0),
-      mgp = c(3, 0.7, 0),
-      tcl = -0.4,
-      las = 1
-    )
-  }
+plot.egf_confint.boxes <- function(x, time_as, per_plot, main) {
+  op <- par(mfrow = c(per_plot, 1))
   on.exit(par(op))
   gp <- par()
-
   xlim <- range(x[c("start", "end")])
 
   for (top in levels(x$top)) { # loop over parameters
@@ -543,8 +513,8 @@ plot.egf_confint.boxes <- function(x, time_as, per_plot, main, prefer_global_par
     n <- length(data)
 
     i <- 0L
-    while (i < n) { # loop over plots
-      for (k in i + seq_len(min(per_plot, n - i))) { # loop over panels
+    while (i < n) { # loop over pages
+      for (k in i + seq_len(min(per_plot, n - i))) { # loop over plots
         plot.new()
         plot.window(xlim = xlim, ylim = ylim)
 
@@ -601,7 +571,7 @@ plot.egf_confint.boxes <- function(x, time_as, per_plot, main, prefer_global_par
 
         box()
         axis(side = 2)
-      } # loop over panels
+      } # loop over plots
 
       ocex <- par(cex = 1)
       if (time_as == "numeric") {
@@ -609,7 +579,6 @@ plot.egf_confint.boxes <- function(x, time_as, per_plot, main, prefer_global_par
       } else {
         Daxis(
           side = 1,
-          minor = list(cex.axis = gp$cex.axis),
           major = list(cex.axis = 1.2 * gp$cex.axis, mgp = gp$mgp + c(0, 1.5, 0), tick = FALSE)
         )
       }
@@ -623,7 +592,7 @@ plot.egf_confint.boxes <- function(x, time_as, per_plot, main, prefer_global_par
       par(new = FALSE, mfrow = gp$mfrow, mai = gp$mai, omi = gp$omi)
 
       i <- i + per_plot
-    } # loop over plots
+    } # loop over pages
   } # loop over parameters
 
   invisible(NULL)
