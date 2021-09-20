@@ -153,10 +153,10 @@
 #' When day of week effects are estimated (model$day_of_week > 0),
 #' numeric times \emph{must} be interpretable as numbers of days
 #' since \code{1970-01-01 00:00:00}, so that time points can be
-#' mapped unambiguously to days of week. Furthermore, in this case,
-#' \link{time} (after possible coercion to \link{numeric}) is required
-#' to be integer-valued with one day spacing in all time series.
-#' This means that
+#' mapped unambiguously to days of week. Furthermore, in this
+#' case, \link{time} (after possible coercion to \link{numeric})
+#' is required to be integer-valued with one day spacing in all
+#' time series. This means that
 #' \code{\link{all.equal}(time, \link{round}(time))}
 #' and
 #' \code{\link{all}(\link{diff}(\link{round}(time)) == 1)}
@@ -308,6 +308,7 @@
 #' )
 #'
 #' @seealso
+#'   \code{\link{egf_shiny}} for an interface to accompanying Shiny applications,
 #'   \code{\link{plot.egf}} for plotting time series data and predicted values,
 #'   \code{\link{vcov.egf}} for extracting covariance matrices,
 #'   \code{\link{fixef.egf}} and \code{\link{ranef.egf}} for extracting fixed and random effect coefficients,

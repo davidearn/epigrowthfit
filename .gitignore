@@ -16,7 +16,4 @@
 !data/*.RData
 !data-raw/*.RData
 
-shiny/toplevel/rsconnect/
-shiny/windowselect/rsconnect/
-
 inst/build_versions

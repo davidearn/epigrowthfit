@@ -156,7 +156,7 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
       environment(do_boot) <- .GlobalEnv
 
       ## Retrieve path to shared object for loading
-      dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit")
+      dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit", mustWork = TRUE)
 
       if (is.null(parallel$cl)) {
         cl <- do.call(makePSOCKcluster, parallel$args)

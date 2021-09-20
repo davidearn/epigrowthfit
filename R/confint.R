@@ -220,7 +220,7 @@ confint.egf <- function(object,
       args <- egf_tmb_remake_args(object)
 
       ## Retrieve path to shared object for loading
-      dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit")
+      dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit", mustWork = TRUE)
 
       if (is.null(parallel$cl)) {
         cl <- do.call(makePSOCKcluster, parallel$args)

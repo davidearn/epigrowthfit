@@ -1,107 +1,4 @@
-library("shiny")
 source("utils.R")
-
-ui <- fluidPage(
-  shinyFeedback::useShinyFeedback(),
-  titlePanel(
-    title = div(HTML("<b>epigrowthfit</b>: Fitting window selection tool")),
-    windowTitle = "epigrowthfit: Fitting window selection tool"
-  ),
-  tabsetPanel(
-    id = "download_tabset",
-    type = "hidden",
-    tabPanelBody(
-      value = "download_tab_null"
-    ),
-    tabPanelBody(
-      value = "download_tab_button",
-      downloadButton(
-        outputId = "download",
-        label = HTML("Download session results as <tt>.rds</tt>")
-      ),
-      br(),
-      br()
-    )
-  ),
-  sidebarLayout(
-    sidebarPanel(
-      tabsetPanel(
-        id = "side_tabset",
-        type = "tabs",
-        tabPanel(
-          title = "Upload",
-          value = "side_tab_upload",
-          br(),
-          h4("Time series"),
-          h6(HTML("<i>required</i>")),
-          textInput(
-            inputId = "formula",
-            label = "formula",
-            placeholder = "e.g., cbind(time, x) ~ ts"
-            #value = "cbind(time, x) ~ ts"
-          ),
-          fileInput(
-            inputId = "data",
-            label = HTML("data frame [<tt>.rds</tt>]"),
-            multiple = FALSE,
-            accept = ".rds"
-          ),
-          h4("Existing fitting windows"),
-          h6(HTML("<i>optional</i>")),
-          textInput(
-            inputId = "formula_windows",
-            label = "formula",
-            placeholder = "e.g., cbind(start, end) ~ ts"
-            #value = "cbind(start, end) ~ ts"
-          ),
-          fileInput(
-            inputId = "data_windows",
-            label = HTML("data frame [<tt>.rds</tt>]"),
-            multiple = FALSE,
-            accept = ".rds"
-          )
-        ),
-        tabPanel(
-          title = "Display",
-          value = "side_tab_display",
-          br(),
-          tabsetPanel(
-            id = "ts_tabset",
-            type = "hidden",
-            tabPanelBody(
-              value = "ts_tab_null"
-            ),
-            tabPanelBody(
-              value = "ts_tab_select",
-              uiOutput(
-                outputId = "ui_ts_tab_select"
-              )
-            )
-          ),
-          selectInput(
-            inputId = "timeas",
-            label = "Displayed time format",
-            choices = c("Date", "numeric")
-          ),
-          uiOutput(
-            outputId = "ui_xlim_tabset"
-          ),
-          uiOutput(
-            outputId = "ui_logylim_tabset"
-          ),
-          uiOutput(
-            outputId = "ui_spar_tabset"
-          )
-        )
-      )
-    ),
-    mainPanel(
-      uiOutput(
-        outputId = "ui_main_tabset"
-      )
-    )
-  )
-)
 
 server <- function(input, output, session) {
   make_formula <- function(input, id) {
@@ -620,6 +517,7 @@ server <- function(input, output, session) {
         box()
         if (input$timeas == "Date") {
           Daxis(
+            side = 1,
             minor = list(mgp = c(3, 0.25, 0), tcl = -0.2, lwd.ticks = 1, gap.axis = 0, cex.axis = 1),
             major = list(mgp = c(3, 1.5, 0), tcl = 0, lwd.ticks = 0, gap.axis = 0, cex.axis = 1.2)
           )
@@ -721,5 +619,3 @@ server <- function(input, output, session) {
     }
   )
 }
-
-shinyApp(ui = ui, server = server)

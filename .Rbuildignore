@@ -1,6 +1,5 @@
 ^data-raw$
 ^misc$
-^shiny$
 ^utils$
 ^Makefile$
 ^TODO\.md$
@@ -8,3 +7,5 @@
 ^.*\.tar\.gz$
 ^.*\.Rcheck$
 ^codemeta\.json$
+^inst/shiny/windowselect/world\.rds$
+^inst/shiny/windowselect/world_windows\.rds$
