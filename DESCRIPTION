@@ -38,6 +38,7 @@ Imports:
 Suggests:
     knitr,
     shiny,
+    shinyFeedback,
     testthat (>= 3.0.0),
     emdbook (>= 1.3.12)
 LinkingTo:
@@ -47,5 +48,5 @@ SystemRequirements: GNU make
 VignetteBuilder: knitr
 NeedsCompilation: yes
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Config/testthat/edition: 3
