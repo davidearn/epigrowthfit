@@ -31,9 +31,9 @@ Imports:
     Matrix,
     stats,
     methods,
+    utils,
     graphics,
     grDevices,
-    utils,
     nlme
 Suggests:
     knitr,

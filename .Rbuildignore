@@ -9,3 +9,4 @@
 ^codemeta\.json$
 ^inst/shiny/windowselect/world\.rds$
 ^inst/shiny/windowselect/world_windows\.rds$
+^\.github$
