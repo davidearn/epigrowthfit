@@ -1,6 +1,4 @@
 ## Code
-* Refactor
-  - `plot.egf`
 * Test
   - `test-egf_utils_tmb.R`
   - `test-methods.R`
