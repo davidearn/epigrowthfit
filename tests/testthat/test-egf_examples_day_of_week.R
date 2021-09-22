@@ -16,5 +16,5 @@ test_that("day_of_week", {
       beta[4:9] ~ Normal(mu = log(w), sigma = 0.2)
     )
   )
-  expect_equal(mm$best, zz$actual, tolerance = 5e-2)
+  expect_equal(mm$best, zz$actual, tolerance = 2e-1)
 })
