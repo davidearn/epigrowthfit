@@ -143,7 +143,7 @@ confint.egf <- function(object,
   method <- match.arg(method)
   elu <- c("estimate", "lower", "upper")
 
-  names_top <- names_top_bak <- egf_get_names_top(object, link = TRUE)
+  names_top <- egf_get_names_top(object, link = TRUE)
   spec <- c("tdoubling", "R0")
   if (object$model$curve %in% c("exponential", "logistic", "richards")) {
     names_top <- c(names_top, spec)

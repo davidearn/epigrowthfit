@@ -134,7 +134,6 @@ pgi <- function(q, latent, infectious) {
 
   p <- q
   p[] <- NA
-  is_na_q <- is.na(q)
   p[q <= 1] <- 0
   p[q >= m + n] <- 1
   l <- !is.na(q) & q > 1 & q < m + n

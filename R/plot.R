@@ -543,7 +543,6 @@ plot.egf.curve <- function(frame, frame_windows, cache,
   formula <- as.formula(call("~", as.name(type), quote(time)))
   xlim_bak <- xlim
   ylim_bak <- ylim
-  xlab_bak <- xlab
   elu <- c("estimate", "lower", "upper")
 
   ## Graphical parameters
