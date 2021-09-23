@@ -5,16 +5,16 @@ test_that("egf_get_names_top", {
   expect_false(anyNA(names_top_all))
   expect_named(names_top_all, NULL)
 
-  model <- egf_model(
-    curve = "logistic",
-    excess = TRUE,
-    family = "nbinom",
-    day_of_week = TRUE
-  )
-  names_top <- egf_get_names_top(egf_model(), link = FALSE)
+  model <- egf_model()
+  names_top <- egf_get_names_top(model, link = FALSE)
   expect_type(names_top, "character")
   expect_gt(length(names_top), 0L)
   expect_true(all(names_top %in% names_top_all))
+
+  object <- list(model = model)
+  class(object) <- "egf"
+  names_top_again <- egf_get_names_top(object, link = FALSE)
+  expect_identical(names_top_again, names_top)
 })
 
 test_that("egf_has_random", {

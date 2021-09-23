@@ -17,8 +17,11 @@ test_that("negate", {
 })
 
 test_that("(un)?split_terms", {
+  expect_identical(split_terms(quote(+1)), list(quote(1)))
+  expect_identical(split_terms(quote(-1)), list(quote(-1)))
+
   x <- quote(1 + a * b - b)
-  l <- list(1, quote(a * b), quote(-b))
+  l <- list(call("-", 1), quote(a * b), quote(-b))
   expect_identical(split_terms(x), l)
   expect_identical(unsplit_terms(l), x)
 
@@ -26,6 +29,8 @@ test_that("(un)?split_terms", {
   l <- list(quote(w), quote(x | f/g), quote(y + z | h))
   expect_identical(split_terms(x), l)
   expect_identical(unsplit_terms(l), x)
+
+  expect_null(unsplit_terms(list()))
 })
 
 test_that("split_effects", {
@@ -38,6 +43,7 @@ test_that("split_interaction", {
   x <- quote(a:b:I(f:g):log(h))
   l <- list(quote(a), quote(b), quote(I(f:g)), quote(log(h)))
   expect_identical(split_interaction(x), l)
+  expect_error(split_interaction(list()))
 })
 
 test_that("gsub_bar_plus", {

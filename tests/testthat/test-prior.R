@@ -53,5 +53,6 @@ test_that("(Inverse)?Wishart", {
   expect_error(Wishart(df = df, scale = A)) # 'scale' not symmetric
   expect_error(Wishart(df = df, scale = diag(0:3))) # 'scale' not positive definite
 
+  expect_identical(Wishart(df = df, scale = list(scale)), prior)
   expect_identical(InverseWishart(df = df, scale = scale), replace(prior, "family", list("invwishart")))
 })
