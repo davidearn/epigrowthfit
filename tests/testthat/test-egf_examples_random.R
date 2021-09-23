@@ -45,7 +45,7 @@ test_that("subexponential", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(max(abs(mm$gradient)), 2e-3)
+  expect_lt(max(abs(mm$gradient)), 5e-3)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 2e-2)
@@ -97,7 +97,7 @@ test_that("logistic", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(max(abs(mm$gradient)), 1e-2)
+  expect_lt(max(abs(mm$gradient)), 2e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-3)
@@ -126,7 +126,7 @@ test_that("richards", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(max(abs(mm$gradient)), 5e-2)
+  expect_lt(max(abs(mm$gradient)), 1e-1)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-3)

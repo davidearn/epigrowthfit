@@ -20,12 +20,12 @@ test_that("dgi", {
 
 test_that("rgi", {
   set.seed(411422L)
-  x <- rgi(1e+8L, latent = latent, infectious = infectious)
+  x <- rgi(1e+6L, latent = latent, infectious = infectious)
   xbin <- .bincode(x, breaks = seq_len(m + n), right = FALSE)
   expect_false(anyNA(xbin))
   freqs <- unname(c(table(xbin))) / length(xbin)
   probs <- dgi(seq_len(m + n - 1L), latent = latent, infectious = infectious)
-  expect_equal(freqs, probs, tolerance = 1e-3)
+  expect_equal(freqs, probs, tolerance = 1e-2)
 })
 
 detach("testdata")
