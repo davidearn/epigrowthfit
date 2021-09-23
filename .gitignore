@@ -18,4 +18,3 @@
 !data-raw/*.RData
 
 inst/build_versions
-inst/testsrc/*.h
