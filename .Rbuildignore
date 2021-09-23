@@ -3,6 +3,7 @@
 ^utils$
 ^Makefile$
 ^TODO\.md$
+^.*\.bak$
 ^.*\.pdf$
 ^.*\.tar\.gz$
 ^.*\.Rcheck$

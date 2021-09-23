@@ -21,7 +21,7 @@ test_that("(un)?split_terms", {
   expect_identical(split_terms(quote(-1)), list(quote(-1)))
 
   x <- quote(1 + a * b - b)
-  l <- list(call("-", 1), quote(a * b), quote(-b))
+  l <- list(1, quote(a * b), quote(-b))
   expect_identical(split_terms(x), l)
   expect_identical(unsplit_terms(l), x)
 

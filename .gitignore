@@ -1,4 +1,5 @@
 *.aux
+*.bak
 *.csv
 *.gz
 *.log
@@ -17,3 +18,4 @@
 !data-raw/*.RData
 
 inst/build_versions
+inst/testsrc/*.h

@@ -97,7 +97,7 @@ test_that("logistic", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-  expect_lt(max(abs(mm$gradient)), 2e-2)
+  expect_lt(max(abs(mm$gradient)), 5e-2)
   pp <- split(data.frame(actual = zz$actual, fitted = mm$best),
               sub("\\[[0-9]+\\]$", "", names(zz$actual)))
   expect_equal(pp$beta$fitted, pp$beta$actual, tolerance = 5e-3)
