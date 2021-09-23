@@ -6,7 +6,7 @@ MANUAL := $(PACKAGE)-manual.pdf
 CHECKDIR := $(PACKAGE).Rcheck
 
 all: clean install
-.PHONY = clean test install-deps
+.PHONY = clean install-deps
 
 build: $(TARBALL)
 
@@ -17,30 +17,33 @@ install: $(TARBALL)
 install-deps:
 	$(R) --quiet -e "devtools::install_deps(\".\")"
 
-$(TARBALL): enums docs src/*.cpp src/*.h DESCRIPTION NAMESPACE
+$(TARBALL): update-enums update-docs test-setup src/*.cpp DESCRIPTION NAMESPACE
 	$(R) CMD build --no-manual .
 
-manual: $(MANUAL)
+pdf: $(MANUAL)
 
-$(MANUAL): enums docs
+$(MANUAL): update-enums update-docs
 	$(R) CMD Rd2pdf -o $@ --force --no-preview .
 
-enums: utils/update_enums.R src/enums.h
+update-enums: utils/update_enums.R src/enums.h
 	cd $(dir $<) && $(R) --quiet -f $(notdir $<)
 
-docs: R/*.R
+update-docs: R/*.R
 	$(R) --quiet -e "devtools::document(\".\")"
+
+test: test-setup
+	$(R) --quiet -e "devtools::test(\".\")"
+
+test-setup: src/*.h
+	cp $^ inst/testsrc
 
 check: $(TARBALL)
 	$(R) CMD check --no-tests $<
 
-check-as-cran: $(TARBALL)
-	$(R) CMD check --as-cran --no-tests $<
-
-test:
-	$(R) --quiet -e "devtools::test(\".\")"
+check-as-cran: $(TARBALL) test-setup
+	$(R) CMD check --as-cran $<
 
 clean:
 	rm -fr $(TARBALL) $(MANUAL) $(CHECKDIR)
 	find . \( -name "#*" -o -name "*~" \) -exec rm {} +
-	rm -f src/*.{o,so,tmp} tests/testthat/*.{o,so,tmp}
+	rm -f src/*.{o,so,tmp} tests/testthat/*.{o,so,tmp} inst/testsrc/*.h

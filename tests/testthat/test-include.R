@@ -1,4 +1,6 @@
-dll <- "test_include"
+cwd <- getwd()
+setwd(system.file("testsrc", package = "epigrowthfit", mustWork = TRUE))
+dll <- "test"
 cpp <- paste0(dll, ".cpp")
 compile(cpp)
 dyn.load(dynlib(dll))
@@ -206,3 +208,4 @@ test_that("logspace_add_(baseline|offsets)", {
 
 detach("testdata")
 dyn.unload(dynlib(dll))
+setwd(cwd)

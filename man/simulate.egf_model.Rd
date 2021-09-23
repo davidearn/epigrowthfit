@@ -124,17 +124,14 @@ parameters vary between time series according to a fixed intercept
 model \code{~ts} or random intercept model \code{~(1 | ts)}.
 }
 \examples{
-model <- egf_model(curve = "logistic", family = "nbinom")
+r <- 0.04
+c0 <- 400
 
-r <- log(2) / 20
-tinfl <- 160
-K <- 25000
-disp <- 50
+mu <- log(c(r, c0))
+Sigma <- diag(rep_len(0.2^2, length(mu)))
 
-mu <- log(c(r, tinfl, K, disp))
-Sigma <- diag(rep_len(0.5^2, length(mu)))
-
-zz <- simulate(model,
+zz <- simulate(
+  object = egf_model(curve = "exponential", family = "pois"),
   nsim = 20L,
   seed = 202737L,
   mu = mu,

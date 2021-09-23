@@ -1,9 +1,9 @@
 #include <TMB.hpp>
-#include "../../src/structs.h"
-#include "../../src/utils.h"
-#include "../../src/distributions.h"
-#include "../../src/enums.h"
-#include "../../src/curve.h"
+#include "structs.h"
+#include "utils.h"
+#include "distributions.h"
+#include "enums.h"
+#include "curve.h"
 
 enum test
 {
