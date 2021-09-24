@@ -44,7 +44,8 @@ which can be browsed using `help.start()`).
 
 **epigrowthfit** supports low level parallelism via 
 [OpenMP](https://en.wikipedia.org/wiki/OpenMP).
-Whether OpenMP is supported on a given system depends on: 
+Whether OpenMP is supported on a given system depends on:
+
 1. the platform;
 2. the compiler and compiler flags used to build R from sources
    (these settings are preserved in `R_HOME/etc/Makeconf`, 
@@ -53,6 +54,7 @@ Whether OpenMP is supported on a given system depends on:
    from sources (these settings are taken from `HOME/.R/Makevars`
    [`HOME/.R/Makevars.win` on Windows] and `R_HOME/etc/Makeconf`, 
    in that order).
+
 On modern Linux and Windows (with Rtools), if one installs
 a current version of R from a binary prebuilt by CRAN, then
 OpenMP support is often automatic.
@@ -133,9 +135,9 @@ LDFLAGS="-L${LLVM_HOME}/lib -L${R_HOME}/lib"
 ```
 
 These steps, gathered from different sections of `R-admin`, 
-should ensure that the version of **epigrowthfit** installed 
-from source supports OpenMP parallelism. If this is not the
-case, then please comment on 
+should ensure that building **epigrowthfit** from source 
+results in an installation that supports OpenMP parallelism. 
+If this is not the case, then please comment on 
 [#1](https://github.com/davidearn/epigrowthfit/issues/1)
 with your system details so that these instructions can be 
 updated.
@@ -151,8 +153,10 @@ built from source. Similarly, the version of **Matrix** currently
 installed should match the version that was installed when 
 **TMB** was built from source. Thus, version mismatch can occur
 when a user:
+
 * updates **TMB** without rebuilding **epigrowthfit** from source, or
 * updates **Matrix** without rebuilding **TMB** from source.
+
 **epigrowthfit** and **TMB** perform checks when loaded 
 (e.g., via `library`) and issue warnings if they detect a mismatch. 
 If you are warned about a **Matrix**-**TMB** mismatch, then run:
