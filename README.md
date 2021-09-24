@@ -3,7 +3,6 @@
 <!-- badges: start -->
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![R-CMD-check](https://github.com/davidearn/epigrowthfit/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/davidearn/epigrowthfit/actions/workflows/R-CMD-check.yaml)
-[![test-coverage](https://github.com/davidearn/epigrowthfit/actions/workflows/test-coverage.yaml/badge.svg)](https://github.com/davidearn/epigrowthfit/actions/workflows/test-coverage.yaml)
 <!-- badges: end -->
 
 **epigrowthfit** is an R package for fitting nonlinear mixed effects
@@ -20,7 +19,7 @@ is built on [Template Model Builder](https://github.com/kaskr/adcomp).
 It can be installed from its sources on GitHub.
 
 ```r
-remotes::install_github("davidearn/epigrowthfit")
+remotes::install_github("davidearn/epigrowthfit", build_vignettes = TRUE)
 ```
 
 Since the package contains compiled code, installation from source 
@@ -38,7 +37,16 @@ to build their R binary.
 General information about installing R packages, 
 including extensive platform-specific notes, can be found in `R-admin`
 (i.e., the R manual called _R Installation and Administration_,
-which can be browsed using `help.start()`).
+accessible with `help.start()`).
+
+Vignette builds depend on a 
+[LaTeX](https://www.latex-project.org/get/) distribution.
+Specifically, `PATH` must include a path to the directory 
+containing `pdflatex`. A minimal distribution can be 
+installed and managed via the R package **tinytex**.
+Should errors during vignette builds persist, 
+one can always install **epigrowthfit** without vignettes 
+by setting `build_vignettes = FALSE`.
 
 ### OpenMP support
 
