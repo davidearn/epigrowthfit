@@ -107,6 +107,13 @@ egf_model <- function(curve = c("logistic", "exponential", "subexponential", "go
 #' \item trace flags set by \code{\link[TMB]{config}} are turned on.
 #' }
 #'
+#' @section Warning:
+#' Setting \code{trace > 0L} and \code{omp_num_threads > 0L}
+#' simultaneously should be considered dangerous on builds of
+#' \pkg{epigrowthfit} obtained from CRAN. These builds print
+#' using R API that is not thread-safe. R API is avoided on
+#' builds from source.
+#'
 #' @return
 #' A \link{list} inheriting from \link{class} \code{"egf_control"}
 #' containing the arguments (after possible coercion).
