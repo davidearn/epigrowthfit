@@ -63,4 +63,4 @@ check: build
 clean:
 	rm -fr $(TARBALL) $(MANUAL) $(CHECKDIR)
 	find . \( -name "#*" -o -name "*~" \) -exec rm {} +
-	rm -f src/*.{o,so,tmp} tests/testthat/*.{o,so,tmp} inst/testsrc/*.h
+	rm -f src/*.{o,so,tmp} tests/testthat/*.{o,so,tmp}
