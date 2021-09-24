@@ -86,7 +86,7 @@ rm clang+llvm-11.0.0-x86_64-apple-darwin.tar.xz
 
 Finally, add these lines to `HOME/.R/Makevars` (creating the 
 file if necessary and deleting those lines not indicated for 
-your macOS version and Mac architecture):
+your system):
 
 ```make
 #### Intel-based Macs only ####
