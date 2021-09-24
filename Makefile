@@ -1,3 +1,4 @@
+MAKE := make
 R := R
 PACKAGE := epigrowthfit
 VERSION := $(shell sed -n "/^Version: /s/Version: // p" DESCRIPTION)
@@ -27,6 +28,7 @@ update-docs: R/*.R
 	$(R) --quiet -e "devtools::document(\".\")"
 
 build-cran: replace-cout-rcout build replace-rcout-cout
+	$(MAKE) copy-headers
 
 build: copy-headers update-enums update-docs $(TARBALL)
 
