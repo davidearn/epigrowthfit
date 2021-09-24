@@ -37,7 +37,7 @@
 #' @param formula_parameters
 #'   A \link{list} of \link{formula}e of the form \code{parameter ~ terms}
 #'   specifying mixed effects models for top level nonlinear model parameters,
-#'   using \code{\link[lme4:lmer]{lme4}}-like syntax.
+#'   using \pkg{lme4}-like syntax (see \code{?lme4::lmer}).
 #'   Alternatively, a formula of the form \code{~terms} to be recycled for
 #'   all parameters. A list of parameters for which formulae may be specified
 #'   can be retrieved with \code{\link{egf_get_names_top}}.
