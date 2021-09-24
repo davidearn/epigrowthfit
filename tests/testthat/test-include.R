@@ -1,3 +1,5 @@
+skip_on_os("windows")
+
 cwd <- getwd()
 setwd(system.file("testsrc", package = "epigrowthfit", mustWork = TRUE))
 dll <- "test"
