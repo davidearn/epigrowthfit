@@ -1,4 +1,3 @@
-MAKE := make
 R := R
 PACKAGE := epigrowthfit
 VERSION := $(shell sed -n "/^Version: /s/Version: // p" DESCRIPTION)
