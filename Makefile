@@ -5,11 +5,11 @@ TARBALL := $(PACKAGE)_$(VERSION).tar.gz
 MANUAL := $(PACKAGE)-manual.pdf
 CHECKDIR := $(PACKAGE).Rcheck
 
-all: clean install
+all: clean install-github
 
 replace-cout-rcout:
 	sed -i.bak "s/std::cout/Rcout/" src/*.{cpp,h}
-	sed -i.bak "s/printf/Rprintf/" src/*.{cpp,h}
+	sed -i.bak "s/\([^R]\)printf/\1Rprintf/" src/*.{cpp,h}
 	rm -f src/*.bak
 
 replace-rcout-cout:
