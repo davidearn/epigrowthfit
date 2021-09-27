@@ -41,7 +41,9 @@ Retrieve the coefficients of the fixed effects component
 of a mixed effects model.
 }
 \examples{
-example("egf", "epigrowthfit")
+example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+object <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
+
 zz <- fixef(object)
 str(zz)
 

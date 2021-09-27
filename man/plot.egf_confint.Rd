@@ -80,14 +80,15 @@ See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset}, \code{order}, and \code{label}.
 }
 \examples{
-example("confint.egf", "epigrowthfit")
+example("confint.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+x <- readRDS(system.file("exdata", "egf_confint.rds", package = "epigrowthfit", mustWork = TRUE))
 
 op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
-plot(zz, type = "bars")
+plot(x, type = "bars")
 par(op)
 
 op <- par(mar = c(0.2, 0, 0.2, 0), oma = c(4.5, 6, 2, 1), las = 1)
-plot(zz, type = "boxes")
+plot(x, type = "boxes")
 par(op)
 
 }

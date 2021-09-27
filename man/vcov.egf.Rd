@@ -44,7 +44,9 @@ not fixed effects coefficients.
 }
 
 \examples{
-example("egf", "epigrowthfit")
+example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+object <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
+
 vcov(object, full = FALSE, cor = FALSE)
 vcov(object, full = TRUE,  cor = FALSE)
 vcov(object, full = TRUE,  cor = TRUE)

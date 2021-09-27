@@ -325,25 +325,33 @@ data_windows <- data.frame(
 )
 
 ## Estimate the generative model
-object <- egf(
-  model = egf_model(curve = "exponential", family = "pois"),
-  formula = cbind(time, x) ~ country,
-  formula_windows = cbind(start, end) ~ country,
-  formula_parameters = ~(1 | country:wave),
-  formula_priors_bottom = list(Sigma ~ LKJ(eta = 2)),
-  data = data,
-  data_windows = data_windows,
-  se = TRUE
-)
+root <- system.file(package = "epigrowthfit", mustWork = TRUE)
+path_to_cache <- file.path(root, "exdata", "egf.rds")
+if (file.exists(path_to_cache)) {
+  zz <- readRDS(path_to_cache)
+} else {
+  dir.create(dirname(path_to_cache), showWarnings = FALSE, recursive = TRUE)
+  zz <- egf(
+    model = egf_model(curve = "exponential", family = "pois"),
+    formula = cbind(time, x) ~ country,
+    formula_windows = cbind(start, end) ~ country,
+    formula_parameters = ~(1 | country:wave),
+    formula_priors_bottom = list(Sigma ~ LKJ(eta = 2)),
+    data = data,
+    data_windows = data_windows,
+    se = TRUE
+  )
+  saveRDS(zz, file = path_to_cache)
+}
 
 }
 \seealso{
-\code{\link{egf_shiny}} for an interface to accompanying Shiny applications,
-  \code{\link{plot.egf}} for plotting time series data and predicted values,
-  \code{\link{vcov.egf}} for extracting covariance matrices,
-  \code{\link{fixef.egf}} and \code{\link{ranef.egf}} for extracting fixed and random effect coefficients,
-  \code{\link{fitted.egf}} and \code{\link{confint.egf}} for extracting and computing confidence intervals on fitted values,
-  \code{\link{profile.egf}} for computing likelihood profiles,
-  \code{\link{predict.egf}} for computing predicted values,
+\code{\link{egf_shiny}} for an interface to accompanying Shiny applications,\cr
+  \code{\link{plot.egf}} for plotting time series data and predicted values,\cr
+  \code{\link{vcov.egf}} for extracting covariance matrices,\cr
+  \code{\link{fixef.egf}} and \code{\link{ranef.egf}} for extracting fixed and random effect coefficients,\cr
+  \code{\link{fitted.egf}} and \code{\link{confint.egf}} for extracting and computing confidence intervals on fitted values,\cr
+  \code{\link{profile.egf}} for computing likelihood profiles,\cr
+  \code{\link{predict.egf}} for computing predicted values,\cr
   \code{\link{simulate.egf}} for simulating data
 }

@@ -111,8 +111,17 @@
 #' as \link{attributes}.
 #'
 #' @examples
-#' example("egf", "epigrowthfit")
-#' zz <- confint(object)
+#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+#' object <- readRDS(file.path(exdata, "egf.rds"))
+#'
+#' path_to_cache <- file.path(exdata, "egf_confint.rds")
+#' if (file.exists(path_to_cache)) {
+#'   zz <- readRDS(path_to_cache)
+#' } else {
+#'   zz <- confint(object)
+#'   saveRDS(zz, file = path_to_cache)
+#' }
 #' str(zz)
 #'
 #' @seealso \code{\link{plot.egf_confint}}
@@ -384,14 +393,15 @@ confint.egf <- function(object,
 #' \code{\link{NULL}} (invisibly).
 #'
 #' @examples
-#' example("confint.egf", "epigrowthfit")
+#' example("confint.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' x <- readRDS(system.file("exdata", "egf_confint.rds", package = "epigrowthfit", mustWork = TRUE))
 #'
 #' op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
-#' plot(zz, type = "bars")
+#' plot(x, type = "bars")
 #' par(op)
 #'
 #' op <- par(mar = c(0.2, 0, 0.2, 0), oma = c(4.5, 6, 2, 1), las = 1)
-#' plot(zz, type = "boxes")
+#' plot(x, type = "boxes")
 #' par(op)
 #'
 #' @export

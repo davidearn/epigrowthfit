@@ -164,7 +164,8 @@ See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset}, \code{order}, \code{main}, \code{sub}, and \code{plab}.
 }
 \examples{
-example("egf", "epigrowthfit")
+example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+x <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
 
 op <- par(mar = c(3.5, 5, 5, 1))
 control <- egf_plot_control(
@@ -174,13 +175,13 @@ control <- egf_plot_control(
     ci = list(cex = 0.8)
   )
 )
-plot(object,
+plot(x,
   type = "interval",
   show_predict = 2L,
   show_tdoubling = 2L,
   control = control
 )
-plot(object,
+plot(x,
   type = "cumulative",
   main = "Fitted exponential model",
   sub = paste("Country", country)
@@ -188,11 +189,11 @@ plot(object,
 par(op)
 
 op <- par(mar = c(3.5, 9.5, 5, 1))
-plot(object, type = "rt", subset = country \%in\% LETTERS[4:6])
+plot(x, type = "rt", subset = country \%in\% LETTERS[4:6])
 par(op)
 
 op <- par(mar = c(0.1, 1, 0.1, 1), oma = c(3.5, 0, 0.5, 9.5))
-plot(object, type = "rt_heat", per_plot = 10L)
+plot(x, type = "rt_heat", per_plot = 10L)
 par(op)
 
 }

@@ -31,7 +31,9 @@
 #' }
 #'
 #' @examples
-#' example("egf", "epigrowthfit")
+#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' object <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
+#'
 #' zz <- fixef(object)
 #' str(zz)
 #'

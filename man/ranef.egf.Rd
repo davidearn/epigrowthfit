@@ -59,7 +59,9 @@ of the random effects component of a mixed effects model,
 conditional on data and parameter estimates.
 }
 \examples{
-example("egf", "epigrowthfit")
+example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+object <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
+
 zz <- ranef(object)
 str(zz)
 

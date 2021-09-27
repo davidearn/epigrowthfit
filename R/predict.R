@@ -85,8 +85,17 @@
 #' }
 #'
 #' @examples
-#' example("egf", "epigrowthfit")
-#' zz <- predict(object, se = TRUE)
+#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+#' object <- readRDS(file.path(exdata, "egf.rds"))
+#'
+#' path_to_cache <- file.path(exdata, "egf_predict.rds")
+#' if (file.exists(path_to_cache)) {
+#'   zz <- readRDS(path_to_cache)
+#' } else {
+#'   zz <- predict(object, se = TRUE)
+#'   saveRDS(zz, file = path_to_cache)
+#' }
 #' str(zz)
 #'
 #' @export
@@ -269,9 +278,12 @@ predict.egf <- function(object,
 #' \code{level} is retained as an \link[=attributes]{attribute}.
 #'
 #' @examples
-#' example("predict.egf", "epigrowthfit")
-#' confint(zz, log = TRUE)
-#' confint(zz, log = FALSE)
+#' example("predict.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' object <- readRDS(system.file("exdata", "egf_predict.rds",
+#'                               package = "epigrowthfit", mustWork = TRUE))
+#'
+#' confint(object, log = TRUE)
+#' confint(object, log = FALSE)
 #'
 #' @export
 confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {

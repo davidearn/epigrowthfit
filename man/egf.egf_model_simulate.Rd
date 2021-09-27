@@ -11,17 +11,19 @@
 supplying simulated time series and details about the generative model
 to be estimated.}
 
-\item{...}{Optional arguments passed to \code{\link{egf.egf_model}},
-such as \code{priors} and \code{control}.}
+\item{...}{Optional arguments passed to \code{\link{egf.egf_model}}.}
 }
 \description{
 Estimates the generative model underlying a set of simulated
 incidence time series.
 }
 \examples{
-example("simulate.egf_model", "epigrowthfit")
-mm <- egf(zz, se = TRUE)
-pp <- data.frame(actual = zz$actual, fitted = mm$best)
-pp[mm$nonrandom, , drop = FALSE]
+example("simulate.egf_model", package = "epigrowthfit", local = TRUE, echo = FALSE)
+model <- readRDS(system.file("exdata", "egf_model_simulate.rds",
+                             package = "epigrowthfit", mustWork = TRUE))
+
+zz <- egf(model)
+pp <- data.frame(actual = model$actual, fitted = zz$best)
+pp[zz$nonrandom, , drop = FALSE]
 
 }

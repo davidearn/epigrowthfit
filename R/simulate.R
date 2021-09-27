@@ -66,8 +66,17 @@
 #' prior to simulation, making the result reproducible.
 #'
 #' @examples
-#' example("egf", "epigrowthfit")
-#' zz <- simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
+#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+#' object <- readRDS(file.path(exdata, "egf.rds"))
+#'
+#' path_to_cache <- file.path(exdata, "egf_simulate.rds")
+#' if (file.exists(path_to_cache)) {
+#'   zz <- readRDS(path_to_cache)
+#' } else {
+#'   zz <- simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
+#'   saveRDS(zz, file = path_to_cache)
+#' }
 #' str(zz)
 #' matplot(t(zz$boot[object$nonrandom, ]), type = "o", las = 1,
 #'   xlab = "simulation",
@@ -319,18 +328,26 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
 #' mu <- log(c(r, c0))
 #' Sigma <- diag(rep_len(0.2^2, length(mu)))
 #'
-#' zz <- simulate(
-#'   object = egf_model(curve = "exponential", family = "pois"),
-#'   nsim = 20L,
-#'   seed = 202737L,
-#'   mu = mu,
-#'   Sigma = Sigma,
-#'   cstart = 10
-#' )
+#' root <- system.file(package = "epigrowthfit", mustWork = TRUE)
+#' path_to_cache <- file.path(root, "exdata", "egf_model_simulate.rds")
+#' if (file.exists(path_to_cache)) {
+#'   zz <- readRDS(path_to_cache)
+#' } else {
+#'   dir.create(dirname(path_to_cache), showWarnings = FALSE, recursive = TRUE)
+#'   zz <- simulate(
+#'     object = egf_model(curve = "exponential", family = "pois"),
+#'     nsim = 20L,
+#'     seed = 202737L,
+#'     mu = mu,
+#'     Sigma = Sigma,
+#'     cstart = 10
+#'   )
+#'   saveRDS(zz, file = path_to_cache)
+#' }
 #'
 #' @seealso
 #' \code{\link{egf.egf_model_simulate}} for estimating the generative model
-#' from simulated time series,
+#' from simulated time series,\cr
 #' \code{\link{simulate.egf}} for simulating time series from \emph{fitted}
 #' models
 #'
@@ -520,14 +537,16 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
 #'   supplying simulated time series and details about the generative model
 #'   to be estimated.
 #' @param ...
-#'   Optional arguments passed to \code{\link{egf.egf_model}},
-#'   such as \code{priors} and \code{control}.
+#'   Optional arguments passed to \code{\link{egf.egf_model}}.
 #'
 #' @examples
-#' example("simulate.egf_model", "epigrowthfit")
-#' mm <- egf(zz, se = TRUE)
-#' pp <- data.frame(actual = zz$actual, fitted = mm$best)
-#' pp[mm$nonrandom, , drop = FALSE]
+#' example("simulate.egf_model", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' model <- readRDS(system.file("exdata", "egf_model_simulate.rds",
+#'                              package = "epigrowthfit", mustWork = TRUE))
+#'
+#' zz <- egf(model)
+#' pp <- data.frame(actual = model$actual, fitted = zz$best)
+#' pp[zz$nonrandom, , drop = FALSE]
 #'
 #' @export
 egf.egf_model_simulate <- function(model, ...) {

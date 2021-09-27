@@ -48,7 +48,9 @@
 #' covariance matrices, corresponding to the \link{levels} of \code{cov}.
 #'
 #' @examples
-#' example("egf", "epigrowthfit")
+#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' object <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
+#'
 #' zz <- ranef(object)
 #' str(zz)
 #'

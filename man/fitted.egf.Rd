@@ -97,8 +97,17 @@ See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset} and \code{append}.
 }
 \examples{
-example("egf", "epigrowthfit")
-zz <- fitted(object, se = TRUE)
+example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+object <- readRDS(file.path(exdata, "egf.rds"))
+
+path_to_cache <- file.path(exdata, "egf_fitted.rds")
+if (file.exists(path_to_cache)) {
+  zz <- readRDS(path_to_cache)
+} else {
+  zz <- fitted(object, se = TRUE)
+  saveRDS(zz, file = path_to_cache)
+}
 str(zz)
 
 }

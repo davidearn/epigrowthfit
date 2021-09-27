@@ -102,8 +102,17 @@ See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{append}.
 }
 \examples{
-example("egf", "epigrowthfit")
-zz <- predict(object, se = TRUE)
+example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+object <- readRDS(file.path(exdata, "egf.rds"))
+
+path_to_cache <- file.path(exdata, "egf_predict.rds")
+if (file.exists(path_to_cache)) {
+  zz <- readRDS(path_to_cache)
+} else {
+  zz <- predict(object, se = TRUE)
+  saveRDS(zz, file = path_to_cache)
+}
 str(zz)
 
 }

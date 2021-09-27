@@ -35,7 +35,10 @@ See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset}.
 }
 \examples{
-example("profile.egf", "epigrowthfit")
-plot(zz, type = "o", bty = "u", las = 1, main = "")
+example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+x <- readRDS(system.file("exdata", "egf_profile.rds",
+                         package = "epigrowthfit", mustWork = TRUE))
+
+plot(x, type = "o", bty = "u", las = 1, main = "")
 
 }

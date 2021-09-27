@@ -141,8 +141,17 @@ See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset} and \code{append}.
 }
 \examples{
-example("egf", "epigrowthfit")
-zz <- confint(object)
+example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+object <- readRDS(file.path(exdata, "egf.rds"))
+
+path_to_cache <- file.path(exdata, "egf_confint.rds")
+if (file.exists(path_to_cache)) {
+  zz <- readRDS(path_to_cache)
+} else {
+  zz <- confint(object)
+  saveRDS(zz, file = path_to_cache)
+}
 str(zz)
 
 }

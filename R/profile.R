@@ -111,8 +111,17 @@
 #' are retained as \link{attributes}.
 #'
 #' @examples
-#' example("egf", "epigrowthfit")
-#' zz <- profile(object, subset = (country == "A" & wave == 1))
+#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+#' fitted <- readRDS(file.path(exdata, "egf.rds"))
+#'
+#' path_to_cache <- file.path(exdata, "egf_profile.rds")
+#' if (file.exists(path_to_cache)) {
+#'   zz <- readRDS(path_to_cache)
+#' } else {
+#'   zz <- profile(fitted, subset = (country == "A" & wave == 1))
+#'   saveRDS(zz, file = path_to_cache)
+#' }
 #' str(zz)
 #'
 #' @seealso \code{\link{confint.egf_profile}}, \code{\link{plot.egf_profile}}
@@ -357,9 +366,11 @@ profile.egf <- function(fitted,
 #' So are attributes \code{A} and \code{x} of \code{object}.
 #'
 #' @examples
-#' example("profile.egf", "epigrowthfit")
-#' confint(zz, link = TRUE)
-#' confint(zz, link = FALSE)
+#' example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' object <- readRDS(system.file("exdata", "egf_profile.rds", package = "epigrowthfit", mustWork = TRUE))
+#'
+#' confint(object, link = TRUE)
+#' confint(object, link = FALSE)
 #'
 #' @export
 #' @importFrom stats qchisq approx
@@ -443,8 +454,11 @@ confint.egf_profile <- function(object, parm, level = attr(object, "level_max"),
 #' \code{\link{NULL}} (invisibly).
 #'
 #' @examples
-#' example("profile.egf", "epigrowthfit")
-#' plot(zz, type = "o", bty = "u", las = 1, main = "")
+#' example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' x <- readRDS(system.file("exdata", "egf_profile.rds",
+#'                          package = "epigrowthfit", mustWork = TRUE))
+#'
+#' plot(x, type = "o", bty = "u", las = 1, main = "")
 #'
 #' @export
 #' @import graphics

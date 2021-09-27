@@ -32,7 +32,7 @@ print.egf <- function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
   cat("\n")
   writeLines(paste0(indent, c(distribution, "where", cumulative)))
   cat("\n")
-  str(x$model, no.list = TRUE, indent.str = indent)
+  str(x$model, no.list = TRUE, indent.str = indent, give.head = FALSE)
   cat("\n")
 
   heading("Bottom level mixed effects model", width = width)
@@ -51,23 +51,20 @@ print.egf <- function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
   cat("\n")
 
   heading("Data", width = width)
-  dd <- data.frame(
-    c(
-      n <- sum(!is.na(x$frame$window)),
-      N <- nlevels(x$frame$window),
-      nlevels(x$frame$ts)
-    ),
-    c(
-      sprintf("top level %s (%s)", pluralize("observation", n), pluralize("count", n)),
-      sprintf("bottom level %s (fitting %s)", pluralize("observation", N), pluralize("window", N)),
-      "time series"
-    ),
-    fix.empty.names = FALSE,
-    stringsAsFactors = FALSE
+  cat("\n")
+  counts <- c(
+    n <- sum(!is.na(x$frame$window)),
+    N <- nlevels(x$frame$window),
+    nlevels(x$frame$ts)
   )
-  lines <- capture.output(print(dd, right = FALSE, quote = FALSE, row.names = FALSE, max = 6L))
-  lines <- paste0(indent, sub("^.", "", lines))
-  writeLines(lines)
+  left <- sprintf("%d", counts)
+  right <- c(
+    sprintf("top level %s (%s)", pluralize("observation", n), pluralize("count", n)),
+    sprintf("bottom level %s (fitting %s)", pluralize("observation", N), pluralize("window", N)),
+    "time series"
+  )
+  w <- nchar(left)
+  writeLines(paste0(indent, strrep(" ", max(w) - w), left, " ", right))
 
   invisible(x)
 }

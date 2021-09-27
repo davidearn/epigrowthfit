@@ -67,8 +67,17 @@
 #' }
 #'
 #' @examples
-#' example("egf", "epigrowthfit")
-#' zz <- fitted(object, se = TRUE)
+#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+#' object <- readRDS(file.path(exdata, "egf.rds"))
+#'
+#' path_to_cache <- file.path(exdata, "egf_fitted.rds")
+#' if (file.exists(path_to_cache)) {
+#'   zz <- readRDS(path_to_cache)
+#' } else {
+#'   zz <- fitted(object, se = TRUE)
+#'   saveRDS(zz, file = path_to_cache)
+#' }
 #' str(zz)
 #'
 #' @family coefficient extractors
@@ -197,9 +206,12 @@ coef.egf <- fitted.egf
 #' \code{level} is retained as an \link[=attributes]{attribute}.
 #'
 #' @examples
-#' example("fitted.egf", "epigrowthfit")
-#' confint(zz, link = TRUE)
-#' confint(zz, link = FALSE)
+#' example("fitted.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' object <- readRDS(system.file("exdata", "egf_fitted.rds",
+#'                               package = "epigrowthfit", mustWork = TRUE))
+#'
+#' confint(object, link = TRUE)
+#' confint(object, link = FALSE)
 #'
 #' @export
 confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
