@@ -367,7 +367,8 @@ profile.egf <- function(fitted,
 #'
 #' @examples
 #' example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' object <- readRDS(system.file("exdata", "egf_profile.rds", package = "epigrowthfit", mustWork = TRUE))
+#' object <- readRDS(system.file("exdata", "egf_profile.rds",
+#'                               package = "epigrowthfit", mustWork = TRUE))
 #'
 #' confint(object, link = TRUE)
 #' confint(object, link = FALSE)
