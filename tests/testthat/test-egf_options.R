@@ -109,3 +109,29 @@ test_that("egf_parallel", {
     expect_s3_class(x$cl, "SOCKcluster")
   }
 })
+
+test_that("egf_plot_control", {
+  x <- egf_plot_control()
+  expect_type(x, "list")
+  expect_length(x, 9L)
+  names_ <- c("window", "data", "predict", "asymptote",
+              "box", "axis", "title", "tdoubling", "heat")
+  expect_named(x, names_, ignore.order = TRUE)
+  expect_s3_class(x, "egf_plot_control")
+
+  nest <- list(
+    data = c("main", "short", "long"),
+    predict = c("estimate", "ci"),
+    axis = c("x", "y"),
+    title = c("main", "sub", "xlab", "ylab", "plab"),
+    tdoubling = c("legend", "estimate", "ci"),
+    heat = c("pal", "bg", "ul")
+  )
+  for (s in names(x)) {
+    eval(bquote(expect_type(x[[.(s)]], "list")))
+  }
+  for (s in names(nest)) {
+    eval(bquote(expect_length(x[[.(s)]], .(length(nest[[s]])))))
+    eval(bquote(expect_named(x[[.(s)]], .(nest[[s]]), ignore.order = TRUE)))
+  }
+})
