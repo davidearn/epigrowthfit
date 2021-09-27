@@ -1,7 +1,7 @@
 #' @importFrom utils packageVersion
 .onLoad <- function(libname, pkgname) {
-  bv <- system.file("build_versions", package = pkgname, mustWork = TRUE)
-  for (l in strsplit(readLines(bv), " ")) {
+  build_versions <- system.file("build_versions", package = pkgname, mustWork = TRUE)
+  for (l in strsplit(readLines(build_versions), " ")) {
     depname <- l[[1L]]
     buildver <- l[[2L]]
     currentver <- as.character(packageVersion(depname))
