@@ -1,7 +1,6 @@
 ## Code
 * Tests
   - `test-egf_utils_tmb.R`
-  - `test-methods.R`
   - `test-egf.R`
   
 ## Ideas
