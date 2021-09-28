@@ -3,11 +3,11 @@ test_that("enum_dupl_string", {
          "a", "b", "c", "c", "c")
   y <- c("c[1]", "b[1]", "a[1]", "b[2]", "a[2]",
          "a[3]", "b[3]", "c[2]", "c[3]", "c[4]")
-  expect_equal(enum_dupl_string(x), y)
+  expect_identical(enum_dupl_string(x), y)
 
   x <- `names<-`(seq_along(x), x)
   y <- `names<-`(seq_along(x), y)
-  expect_equal(enum_dupl_names(x), y)
+  expect_identical(enum_dupl_names(x), y)
 })
 
 test_that("literal_rle", {
@@ -16,13 +16,13 @@ test_that("literal_rle", {
   y <- rep.int(x, times)
   rle_y <- literal_rle(y)
   expect_identical(rle_y, list(lengths = times, values = x))
-  expect_equal(y, inverse.rle(rle_y))
+  expect_identical(y, inverse.rle(rle_y))
 })
 
 test_that("locf", {
   x <- c(NA, NA, 1, NA, 2, 2, 3, NA)
-  expect_equal(locf(x), c(NA, NA, 1, 1, 2, 2, 3, 3))
-  expect_equal(locf(x, x0 = 0), c(0, 0, 1, 1, 2, 2, 3, 3))
+  expect_identical(locf(x), c(NA, NA, 1, 1, 2, 2, 3, 3))
+  expect_identical(locf(x, x0 = 0), c(0, 0, 1, 1, 2, 2, 3, 3))
 })
 
 test_that("in_place_ragged_apply", {
@@ -47,7 +47,7 @@ test_that("do_wald", {
   W <- do_wald(estimate = estimate, se = se, level = level)
   expect_type(W, "double")
   expect_true(is.matrix(W))
-  expect_equal(dim(W), c(6L, 2L))
+  expect_identical(dim(W), c(6L, 2L))
   expect_identical(dimnames(W), list(NULL, c("lower", "upper")))
   expect_equal(W[, "lower"], estimate - sqrt(q) * se)
   expect_equal(W[, "upper"], estimate + sqrt(q) * se)

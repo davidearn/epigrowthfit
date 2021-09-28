@@ -9,7 +9,7 @@ test_that("egf_get_flag", {
       expect_type(flag[[.(s)]], "integer")
       expect_length(flag[[.(s)]], 2L)
       expect_gte(flag[[.(s)]][1L], 0L)
-      expect_equal(flag[[.(s)]][2L], -1L)
+      expect_identical(flag[[.(s)]][2L], -1L)
     }))
   }
   expect_error(egf_get_flag("invalid name", c("foo", "bar")))

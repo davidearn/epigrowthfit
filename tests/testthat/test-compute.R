@@ -38,9 +38,12 @@ test_that("compute_tdoubling", {
 
   expect_equal(as.numeric(tdoubling), log(2) / r)
   expect_s3_class(tdoubling, "tdoubling")
-  expect_equal(attr(tdoubling, "per"), per)
+  expect_identical(attr(tdoubling, "per"), per)
   expect_warning(compute_tdoubling(-1), "NA")
 
-  expect_equal(print(tdoubling), as.numeric(tdoubling))
-  expect_invisible(print(tdoubling))
+  capture.output({
+    expect_condition(print(tdoubling), regexp = NA)
+    expect_identical(print(tdoubling), tdoubling)
+    expect_invisible(print(tdoubling))
+  })
 })

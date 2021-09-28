@@ -6,58 +6,55 @@ cpp <- paste0(dll, ".cpp")
 compile(cpp)
 dyn.load(dynlib(dll))
 
-l <- local({
-  tt <- paste(readLines(cpp), collapse = "\n")
-  tt <- sub("^.*?enum[ \t\n]+test[ \t\n]*\\{(.*?)\\};.*$", "\\1", tt)
-  tt <- gsub("[ \t\n]", "", tt)
-  test_enums <- strsplit(tt, ",")[[1L]]
-  get_test_res <- function(test_enum, ...) {
-    data <- list(test_flag = match(test_enum, test_enums, 0L) - 1L, ...)
-    obj <- MakeADFun(
-      data = data,
-      parameters = list(),
-      type = "Fun",
-      checkParameterOrder = FALSE,
-      DLL = dll
-    )
-    obj$report()$res
-  }
-  make_Sigma <- function(x) {
-    n <- 0.5 * (-1 + sqrt(1 + 8 * length(x)))
-    R <- diag(n)
-    R[upper.tri(R)] <- x[-seq_len(n)]
-    Sigma <- t(R) %*% R
-    diag_D <- exp(x[seq_len(n)] - 0.5 * log(diag(Sigma)))
-    Sigma[] <- diag_D * Sigma * rep(diag_D, each = n)
-    Sigma
-  }
-  mvlgamma <- function(x, p) {
-    0.25 * p * (p - 1) * log(pi) + rowSums(lgamma(outer(x, seq.int(0, p - 1, by = 1) / 2, `-`)))
-  }
-  dlkj <- function(x, eta, give_log = FALSE) {
-    n <- 0.5 * (1 + sqrt(1 + 8 * length(x)))
-    R <- diag(n)
-    R[upper.tri(R)] <- x
-    log_res <- (eta - 1) * (-sum(log(colSums(R * R))))
-    if (give_log) log_res else exp(log_res)
-  }
-  dwishart <- function(x, df, scale, give_log = FALSE) {
-    n <- 0.5 * (-1 + sqrt(1 + 8 * length(x)))
-    X <- make_Sigma(x)
-    S <- make_Sigma(scale)
-    log_res <- -0.5 * (df * log(det(S)) + (-df + n + 1) * log(det(X)) + n * df * log(2) + 2 * mvlgamma(df / 2, n) + sum(diag(solve(S, X))))
-    if (give_log) log_res else exp(log_res)
-  }
-  dinvwishart <- function(x, df, scale, give_log = FALSE) {
-    n <- 0.5 * (-1 + sqrt(1 + 8 * length(x)))
-    X <- make_Sigma(x)
-    S <- make_Sigma(scale)
-    log_res <- -0.5 * (-df * log(det(S)) + (df + n + 1) * log(det(X)) + n * df * log(2) + 2 * mvlgamma(df / 2, n) + sum(diag(solve(X, S))))
-    if (give_log) log_res else exp(log_res)
-  }
-  mget(c("get_test_res", "mvlgamma", "dlkj", "dwishart", "dinvwishart"))
-})
-attach(l, name = "testdata")
+tt <- paste(readLines(cpp), collapse = "\n")
+tt <- sub("^.*?enum[ \t\n]+test[ \t\n]*\\{(.*?)\\};.*$", "\\1", tt)
+tt <- gsub("[ \t\n]", "", tt)
+test_enums <- strsplit(tt, ",")[[1L]]
+get_test_res <- function(test_enum, ...) {
+  data <- list(test_flag = match(test_enum, test_enums, 0L) - 1L, ...)
+  obj <- MakeADFun(
+    data = data,
+    parameters = list(),
+    type = "Fun",
+    checkParameterOrder = FALSE,
+    DLL = dll
+  )
+  obj$report()$res
+}
+
+make_Sigma <- function(x) {
+  n <- 0.5 * (-1 + sqrt(1 + 8 * length(x)))
+  R <- diag(n)
+  R[upper.tri(R)] <- x[-seq_len(n)]
+  Sigma <- t(R) %*% R
+  diag_D <- exp(x[seq_len(n)] - 0.5 * log(diag(Sigma)))
+  Sigma[] <- diag_D * Sigma * rep(diag_D, each = n)
+  Sigma
+}
+mvlgamma <- function(x, p) {
+  0.25 * p * (p - 1) * log(pi) + rowSums(lgamma(outer(x, seq.int(0, p - 1, by = 1) / 2, `-`)))
+}
+dlkj <- function(x, eta, give_log = FALSE) {
+  n <- 0.5 * (1 + sqrt(1 + 8 * length(x)))
+  R <- diag(n)
+  R[upper.tri(R)] <- x
+  log_res <- (eta - 1) * (-sum(log(colSums(R * R))))
+  if (give_log) log_res else exp(log_res)
+}
+dwishart <- function(x, df, scale, give_log = FALSE) {
+  n <- 0.5 * (-1 + sqrt(1 + 8 * length(x)))
+  X <- make_Sigma(x)
+  S <- make_Sigma(scale)
+  log_res <- -0.5 * (df * log(det(S)) + (-df + n + 1) * log(det(X)) + n * df * log(2) + 2 * mvlgamma(df / 2, n) + sum(diag(solve(S, X))))
+  if (give_log) log_res else exp(log_res)
+}
+dinvwishart <- function(x, df, scale, give_log = FALSE) {
+  n <- 0.5 * (-1 + sqrt(1 + 8 * length(x)))
+  X <- make_Sigma(x)
+  S <- make_Sigma(scale)
+  log_res <- -0.5 * (-df * log(det(S)) + (df + n + 1) * log(det(X)) + n * df * log(2) + 2 * mvlgamma(df / 2, n) + sum(diag(solve(X, S))))
+  if (give_log) log_res else exp(log_res)
+}
 
 test_that("list_of_vectors_t", {
   x <- list(rnorm(10L), seq_len(5L), TRUE, numeric(0L))
@@ -68,13 +65,13 @@ test_that("list_of_vectors_t", {
 test_that("is_NA_real_", {
   x <- c(0, NA, NaN, Inf)
   res <- get_test_res(test_enum = "is_NA_real_", x = x)
-  expect_equal(res, c(0, 1, 0, 0))
+  expect_identical(res, c(0, 1, 0, 0))
 })
 
 test_that("is_finite", {
   x <- c(0, NA, NaN, Inf)
   res <- get_test_res(test_enum = "is_finite", x = x)
-  expect_equal(res, c(1, 0, 0, 0))
+  expect_identical(res, c(1, 0, 0, 0))
 })
 
 test_that("logspace_diff", {
@@ -207,7 +204,6 @@ test_that("logspace_add_(baseline|offsets)", {
   expect_equal(res2, log_diff_curve + rep_len(c(log_w[-seq_len(from)], log_w[seq_len(from)]), length(log_diff_curve)))
 })
 
-detach("testdata")
 dyn.unload(dynlib(dll))
 setwd("..")
 unlink("testsrc", recursive = TRUE)

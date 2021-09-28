@@ -48,9 +48,8 @@ test_that("split_interaction", {
 
 test_that("gsub_bar_plus", {
   x1 <- ~x + (1 | f) + (a + b | g)
-  x2 <- ~x
-  ## Expected result does not use `(` explicitly
-  x2[[2L]] <- call("+", call("+", x2[[2L]], quote(1 + f)), quote(a + b + g))
+  x2 <- call("+", call("+", quote(x), quote(1 + f)), quote(a + b + g))
+  x2 <- as.formula(call("~", x2))
   expect_identical(gsub_bar_plus(x1), x2)
 })
 

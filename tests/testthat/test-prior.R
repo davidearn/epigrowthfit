@@ -47,7 +47,7 @@ test_that("(Inverse)?Wishart", {
 
   expect_type(prior, "list")
   expect_s3_class(prior, "egf_prior")
-  expect_identical(unclass(prior), list(family = "wishart", parameters = list(df = df, scale = list(c(log_sd, chol)))))
+  expect_equal(unclass(prior), list(family = "wishart", parameters = list(df = df, scale = list(c(log_sd, chol)))))
 
   expect_error(Wishart(df = 3, scale = scale)) # 'df' not greater than 'n - 1'
   expect_error(Wishart(df = df, scale = A)) # 'scale' not symmetric
