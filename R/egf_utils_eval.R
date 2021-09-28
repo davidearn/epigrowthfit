@@ -100,6 +100,7 @@ egf_eval_order <- function(expr, data, enclos = parent.frame()) {
   }
   stopifnot(
     is.numeric(order),
+    length(order) == n,
     sort(order) == seq_len(n)
   )
   as.integer(order)
