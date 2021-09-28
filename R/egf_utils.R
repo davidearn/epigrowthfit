@@ -218,16 +218,12 @@ egf_make_frames <- function(model,
 
   nfw <- as.list(attr(frame_windows, "names_original"))
   names(nfw) <- names(frame_windows)
-
-  if (inherits(frame_windows$start, c("Date", "POSIXt"))) {
-    frame_windows$start <- julian(frame_windows$start)
-  } else if (!is.numeric(frame_windows$start)) {
-    stop(sQuote(nfw$start), " must be a numeric, Date, or POSIXt vector.")
-  }
-  if (inherits(frame_windows$end, c("Date", "POSIXt"))) {
-    frame_windows$end <- julian(frame_windows$end)
-  } else if (!is.numeric(frame_windows$start)) {
-    stop(sQuote(nfw$end), " must be a numeric, Date, or POSIXt vector.")
+  for (s in c("start", "end")) {
+    if (inherits(frame_windows[[s]], c("Date", "POSIXt"))) {
+      frame_windows[[s]] <- julian(frame_windows[[s]])
+    } else if (!is.numeric(frame_windows[[s]])) {
+      stop(sQuote(nfw[[s]]), " must be a numeric, Date, or POSIXt vector.")
+    }
   }
 
   ### Mixed effects stuff
