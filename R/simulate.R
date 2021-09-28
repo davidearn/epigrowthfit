@@ -333,7 +333,6 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
 #' if (file.exists(path_to_cache)) {
 #'   zz <- readRDS(path_to_cache)
 #' } else {
-#'   dir.create(dirname(path_to_cache), showWarnings = FALSE, recursive = TRUE)
 #'   zz <- simulate(
 #'     object = egf_model(curve = "exponential", family = "pois"),
 #'     nsim = 20L,
@@ -342,6 +341,7 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
 #'     Sigma = Sigma,
 #'     cstart = 10
 #'   )
+#'   dir.create(dirname(path_to_cache), showWarnings = FALSE)
 #'   saveRDS(zz, file = path_to_cache)
 #' }
 #'
@@ -544,9 +544,9 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
 #' model <- readRDS(system.file("exdata", "egf_model_simulate.rds",
 #'                              package = "epigrowthfit", mustWork = TRUE))
 #'
-#' zz <- egf(model)
-#' pp <- data.frame(actual = model$actual, fitted = zz$best)
-#' pp[zz$nonrandom, , drop = FALSE]
+#' object <- egf(model)
+#' pp <- data.frame(actual = model$actual, fitted = object$best)
+#' pp[object$nonrandom, , drop = FALSE]
 #'
 #' @export
 egf.egf_model_simulate <- function(model, ...) {

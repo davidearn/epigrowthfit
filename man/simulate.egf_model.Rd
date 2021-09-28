@@ -135,7 +135,6 @@ path_to_cache <- file.path(root, "exdata", "egf_model_simulate.rds")
 if (file.exists(path_to_cache)) {
   zz <- readRDS(path_to_cache)
 } else {
-  dir.create(dirname(path_to_cache), showWarnings = FALSE, recursive = TRUE)
   zz <- simulate(
     object = egf_model(curve = "exponential", family = "pois"),
     nsim = 20L,
@@ -144,6 +143,7 @@ if (file.exists(path_to_cache)) {
     Sigma = Sigma,
     cstart = 10
   )
+  dir.create(dirname(path_to_cache), showWarnings = FALSE)
   saveRDS(zz, file = path_to_cache)
 }
 

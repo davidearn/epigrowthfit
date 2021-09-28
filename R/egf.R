@@ -299,10 +299,9 @@
 #' root <- system.file(package = "epigrowthfit", mustWork = TRUE)
 #' path_to_cache <- file.path(root, "exdata", "egf.rds")
 #' if (file.exists(path_to_cache)) {
-#'   zz <- readRDS(path_to_cache)
+#'   object <- readRDS(path_to_cache)
 #' } else {
-#'   dir.create(dirname(path_to_cache), showWarnings = FALSE, recursive = TRUE)
-#'   zz <- egf(
+#'   object <- egf(
 #'     model = egf_model(curve = "exponential", family = "pois"),
 #'     formula = cbind(time, x) ~ country,
 #'     formula_windows = cbind(start, end) ~ country,
@@ -312,18 +311,19 @@
 #'     data_windows = data_windows,
 #'     se = TRUE
 #'   )
-#'   saveRDS(zz, file = path_to_cache)
+#'   dir.create(dirname(path_to_cache), showWarnings = FALSE)
+#'   saveRDS(object, file = path_to_cache)
 #' }
 #'
 #' @seealso
-#'   \code{\link{egf_shiny}} for an interface to accompanying Shiny applications,\cr
 #'   \code{\link{plot.egf}} for plotting time series data and predicted values,\cr
 #'   \code{\link{vcov.egf}} for extracting covariance matrices,\cr
 #'   \code{\link{fixef.egf}} and \code{\link{ranef.egf}} for extracting fixed and random effect coefficients,\cr
 #'   \code{\link{fitted.egf}} and \code{\link{confint.egf}} for extracting and computing confidence intervals on fitted values,\cr
 #'   \code{\link{profile.egf}} for computing likelihood profiles,\cr
 #'   \code{\link{predict.egf}} for computing predicted values,\cr
-#'   \code{\link{simulate.egf}} for simulating data
+#'   \code{\link{simulate.egf}} for simulating data,\cr
+#'   \code{\link{egf_shiny}} for an interface to accompanying Shiny applications
 #' @export
 #' @useDynLib epigrowthfit
 egf <- function(model, ...) {

@@ -22,8 +22,8 @@ example("simulate.egf_model", package = "epigrowthfit", local = TRUE, echo = FAL
 model <- readRDS(system.file("exdata", "egf_model_simulate.rds",
                              package = "epigrowthfit", mustWork = TRUE))
 
-zz <- egf(model)
-pp <- data.frame(actual = model$actual, fitted = zz$best)
-pp[zz$nonrandom, , drop = FALSE]
+object <- egf(model)
+pp <- data.frame(actual = model$actual, fitted = object$best)
+pp[object$nonrandom, , drop = FALSE]
 
 }
