@@ -252,7 +252,6 @@ print.tdoubling <- function(x, ...) {
     )
     cat("doubling times in ", units, ":\n\n", sep = "")
   }
-  class(x) <- setdiff(class(x), "tdoubling")
-  attr(x, "per") <- NULL
-  NextMethod("print")
+  print(as.numeric(x))
+  invisible(x)
 }
