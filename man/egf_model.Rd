@@ -12,25 +12,24 @@ egf_model(
 )
 }
 \arguments{
-\item{curve}{A \link{character} string specifying a model for expected cumulative
+\item{curve}{A character string specifying a model for expected cumulative
 disease incidence as a function of time.}
 
-\item{excess}{A \link{logical} flag. If \code{TRUE}, then a constant baseline
-mortality rate is estimated. Set to \code{TRUE} if what is
-observed is multiple causes mortality rather than disease mortality
-or disease incidence.}
+\item{excess}{A logical flag. If \code{TRUE}, then a constant baseline mortality rate
+is estimated. Set to \code{TRUE} if what is observed is multiple causes
+mortality rather than disease mortality or disease incidence.}
 
-\item{family}{A \link{character} string specifying a family of discrete probability
+\item{family}{A character string specifying a family of discrete probability
 distributions assigned to observations of disease incidence.}
 
 \item{day_of_week}{An integer flag. If positive, then day of week effects are estimated
 as offsets relative to the indicated day of week
 (Sunday if \code{day_of_week = 1}, Monday if \code{day_of_week = 2},
-and so on). \link[=logical]{Logical} values are coerced to integer.}
+and so on). Logical values are coerced to integer.}
 }
 \value{
-A \link{list} inheriting from \link{class} \code{"egf_model"}
-containing the arguments (after possible matching and coercion).
+A list inheriting from class \code{"egf_model"} containing the arguments
+(after possible matching and coercion).
 }
 \description{
 Sets flags defining the top level nonlinear model of epidemic growth

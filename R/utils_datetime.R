@@ -5,7 +5,7 @@
 #' @param x
 #'   A \link{Date} vector.
 #' @param which
-#'   A \link{character} string composed of the letters \samp{y m d},
+#'   A character string composed of the letters \samp{y m d},
 #'   indicating which of (and in what order) year, month, and day
 #'   should be returned.
 #' @param drop
@@ -37,7 +37,7 @@ ymd <- function(x, which = "ymd", drop = TRUE) {
   X <- matrix(NA_integer_, nrow = length(x), ncol = 3L, dimnames = list(names(x), c("y", "m", "d")))
   if (length(x) > 0L) {
     ok <- is.finite(x)
-    i <- as.integer(unlist(strsplit(as.character(x[ok]), "-"), FALSE, FALSE))
+    i <- as.integer(unlist1(strsplit(as.character(x[ok]), "-")))
     X[ok, ] <- matrix(i, nrow = sum(ok), ncol = 3L, byrow = TRUE)
   }
   j <- match(strsplit(which, "")[[1L]], colnames(X), 0L)

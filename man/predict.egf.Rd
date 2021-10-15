@@ -9,69 +9,67 @@
   what = c("interval", "cumulative", "rt"),
   time,
   window,
-  append = NULL,
   log = TRUE,
   se = FALSE,
-  .append = NULL,
   ...
 )
 }
 \arguments{
 \item{object}{An \code{"\link{egf}"} object.}
 
-\item{what}{A \link{character} vector listing one or more variables for which
+\item{what}{A character vector listing one or more variables for which
 predicted values are sought.}
 
-\item{time}{A \link{numeric} vector supplying time points at which predicted
+\item{time}{A numeric vector supplying time points at which predicted
 values are sought. \link{Date} and \link{POSIXt} vectors are
 tolerated and coerced to numeric with \code{\link{julian}(time)}.
-When \link{time} is missing, time points stored in \code{object}
-are reused, and \code{window} is ignored.}
+When \link{time} is missing, time points stored in
+\code{\link[=model.frame.egf]{model.frame}(object)} are reused,
+and \code{window} is ignored.}
 
-\item{window}{A \link{factor} of length \code{\link{length}(time)} grouping
-the elements of \code{time} by fitting window. Levels not
-found in \code{\link{levels}(object$frame$window)} are ignored.}
+\item{window}{A factor of length \code{length(time)} grouping the elements
+of \code{time} by fitting window.
+Levels not found in
+\code{levels(\link[=model.frame.egf]{model.frame}(object)$window)}
+are ignored.}
 
-\item{append}{An expression indicating variables in the combined model frame
-(see \code{\link{egf_combine_frames}}) to be included with the
-result. The default (\code{\link{NULL}}) is to append nothing.}
-
-\item{log}{A \link{logical} flag. If \code{FALSE},
+\item{log}{A logical flag. If \code{FALSE},
 then inverse log-transformed predicted values are returned.}
 
-\item{se}{A \link{logical} flag. If \code{log = TRUE} and \code{se = TRUE},
+\item{se}{A logical flag. If \code{se = TRUE} and \code{log = TRUE},
 then approximate delta method standard errors on predicted values
-are reported. Standard errors are required for subsequent use of
-\code{\link{confint.egf_predict}}.}
-
-\item{.append}{An index vector to be used (if non-\code{\link{NULL}}) in place
-of the result of evaluating \code{append}.}
+are reported.
+Standard errors are required for subsequent use
+of \code{\link{confint.egf_predict}}.
+Setting \code{se = TRUE} and \code{log = FALSE} is an error,
+as standard errors are not available for inverse log-transformed
+predicted values.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-A \link[=data.frame]{data frame} inheriting from \link{class}
-\code{"egf_predict"}, with variables:
+A data frame inheriting from class \code{"egf_predict"}, with variables:
 \item{var}{
   Predicted variable, from \code{what}.
 }
 \item{ts}{
-  Time series, from \code{\link{levels}(object$frame_windows$ts)}.
+  Time series, from
+  \code{levels(\link[=model.frame.egf]{model.frame}(object)$ts)}.
 }
 \item{window}{
-  Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
+  Fitting window, from
+  \code{levels(\link[=model.frame.egf]{model.frame}(object)$window)}.
 }
 \item{time}{
-  Time, after possible coercion to \link{numeric}.
+  Time, after possible coercion to numeric.
 }
 \item{estimate}{
   Predicted value of \code{var} at \code{time} in \code{window},
-  conditional on the mixed effects data \code{object$frame_parameters}
-  and the fitted model \code{object$best}.
+  conditional on the mixed effects data and fitted model.
 }
 \item{se}{
-  (If \code{log = TRUE} and \code{se = TRUE}.)
   Approximate delta method standard error on \code{estimate}.
+  Absent except for calls matching \code{predict(log = TRUE, se = TRUE)}.
 }
 }
 \description{
@@ -80,8 +78,8 @@ and the per capita growth rate, conditional on observed data and a fitted
 nonlinear mixed effects model of epidemic growth.
 }
 \details{
-In the result, \code{estimate[i]} can be interpreted as follows
-assuming \code{log = FALSE}:
+In the result, \code{estimate[i]} can be interpreted as follows,
+for \code{log = FALSE}:
 \describe{
 \item{\code{interval}}{
   The expected number of cases observed from \code{time[i-1]}
@@ -97,16 +95,13 @@ assuming \code{log = FALSE}:
   associated with \code{object$model$curve}.
 }
 }
-
-See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-of \code{append}.
 }
 \examples{
 example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
 exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
 object <- readRDS(file.path(exdata, "egf.rds"))
 
-path_to_cache <- file.path(exdata, "egf_predict.rds")
+path_to_cache <- file.path(exdata, "predict-egf.rds")
 if (file.exists(path_to_cache)) {
   zz <- readRDS(path_to_cache)
 } else {

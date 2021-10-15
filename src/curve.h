@@ -116,39 +116,39 @@ template<class Type>
 void eval_log_curve(vector<Type> &time,
 		    const vector<Type> &Y_row,
 		    const indices_t<Type> &indices,
-		    int flag_curve)
+		    int flag)
 {
-    switch (flag_curve)
+    switch (flag)
     {
     case exponential:
 	eval_log_curve_exponential(time,
-				   Y_row(indices.index_log_r),
-				   Y_row(indices.index_log_c0));
+				   Y_row(indices.log_r),
+				   Y_row(indices.log_c0));
 	break;
     case subexponential:
 	eval_log_curve_subexponential(time,
-				      Y_row(indices.index_log_alpha),
-				      Y_row(indices.index_log_c0),
-				      Y_row(indices.index_logit_p));
+				      Y_row(indices.log_alpha),
+				      Y_row(indices.log_c0),
+				      Y_row(indices.logit_p));
 	break;
     case gompertz:
 	eval_log_curve_gompertz(time,
-				Y_row(indices.index_log_alpha),
-				Y_row(indices.index_log_tinfl),
-				Y_row(indices.index_log_K));
+				Y_row(indices.log_alpha),
+				Y_row(indices.log_tinfl),
+				Y_row(indices.log_K));
 	break;
     case logistic:
 	eval_log_curve_logistic(time,
-				Y_row(indices.index_log_r),
-				Y_row(indices.index_log_tinfl),
-				Y_row(indices.index_log_K));
+				Y_row(indices.log_r),
+				Y_row(indices.log_tinfl),
+				Y_row(indices.log_K));
 	break;
     case richards:
 	eval_log_curve_richards(time,
-				Y_row(indices.index_log_r),
-				Y_row(indices.index_log_tinfl),
-				Y_row(indices.index_log_K),
-				Y_row(indices.index_log_a));
+				Y_row(indices.log_r),
+				Y_row(indices.log_tinfl),
+				Y_row(indices.log_K),
+				Y_row(indices.log_a));
 	break;
     }
 }
@@ -255,33 +255,33 @@ template<class Type>
 void eval_log_rt_exact(vector<Type> &log_curve,
 		       const vector<Type> &Y_row,
 		       const indices_t<Type> &indices,
-		       int flag_curve)
+		       int flag)
 {
-    switch (flag_curve)
+    switch (flag)
     {
     case exponential:
-        log_curve.fill(Y_row(indices.index_log_r));
+        log_curve.fill(Y_row(indices.log_r));
 	break;
     case subexponential:
         eval_log_rt_subexponential(log_curve,
-				   Y_row(indices.index_log_alpha),
-				   Y_row(indices.index_logit_p));
+				   Y_row(indices.log_alpha),
+				   Y_row(indices.logit_p));
 	break;
     case gompertz:
 	eval_log_rt_gompertz(log_curve,
-			     Y_row(indices.index_log_alpha),
-			     Y_row(indices.index_log_K));
+			     Y_row(indices.log_alpha),
+			     Y_row(indices.log_K));
 	break;
     case logistic:
 	eval_log_rt_logistic(log_curve,
-			     Y_row(indices.index_log_r),
-			     Y_row(indices.index_log_K));
+			     Y_row(indices.log_r),
+			     Y_row(indices.log_K));
 	break;
     case richards:
 	eval_log_rt_richards(log_curve,
-			     Y_row(indices.index_log_r),
-			     Y_row(indices.index_log_K),
-			     Y_row(indices.index_log_a));
+			     Y_row(indices.log_r),
+			     Y_row(indices.log_K),
+			     Y_row(indices.log_a));
 	break;
     }
 }

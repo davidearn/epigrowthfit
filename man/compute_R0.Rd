@@ -7,21 +7,20 @@
 compute_R0(r, breaks, probs)
 }
 \arguments{
-\item{r}{A non-negative \link{numeric} vector listing initial exponential
-growth rates.}
+\item{r}{A non-negative numeric vector listing initial exponential growth rates.}
 
-\item{breaks}{An increasing \link{numeric} vector of length 2 or greater listing
+\item{breaks}{An increasing numeric vector of length 2 or greater listing
 break points in the support of the generation interval distribution,
 in reciprocal units of \code{r}.}
 
-\item{probs}{A \link{numeric} vector of length \code{\link{length}(breaks)-1}.
+\item{probs}{A numeric vector of length \code{length(breaks)-1}.
 \code{probs[i]} is the probability that the generation interval
 is between \code{breaks[i]} and \code{breaks[i+1]}.
-If \code{\link{sum}(probs) != 1}, then \code{probs} is replaced
-with \code{probs / \link{sum}(probs)}.}
+If \code{sum(probs) != 1}, then \code{probs} is replaced
+with \code{probs / sum(probs)}.}
 }
 \value{
-A numeric vector of length \code{\link{length}(r)} listing
+A numeric vector of length \code{length(r)} listing
 basic reproduction numbers.
 }
 \description{
@@ -36,7 +35,7 @@ the basic reproduction number \code{R0} is computed as
 
 \code{R0(r) = r / sum(probs * (exp(-r * breaks[-n]) - exp(-r * breaks[-1L])) / (breaks[-1L] - breaks[-n]))},
 
-where \code{n = \link{length}(breaks)}.
+where \code{n = length(breaks)}.
 }
 
 \examples{

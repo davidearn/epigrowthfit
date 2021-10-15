@@ -152,7 +152,7 @@ split_effects <- function(x) {
 #'
 #' Recursively constructs a \link{list} of arguments to binary operator
 #' \code{`:`} from a nested \link{call} to \code{`:`}, excluding arguments
-#' that are themselves calls to \code{`:`}.
+#' that are themselves \link{call}s to \code{`:`}.
 #'
 #' @param x A \link{call}, \link{name}, or \link{atomic} scalar.
 #'
@@ -201,7 +201,7 @@ gsub_bar_plus <- function(x) {
     return(x)
   }
   m <- length(x)
-  l$random <- lapply(l$random, `[[<-`, 1L, as.name("+"))
+  l$random[] <- lapply(l$random, `[[<-`, 1L, as.name("+"))
   x[[m]] <- unsplit_terms(c(l$fixed[[m]], l$random))
   x
 }
@@ -285,7 +285,7 @@ simplify_terms <- function(x) {
     lapply(rhs, function(x) call("|", lhs, x))
   }
   bar <- do.call(c, lapply(l[l_is_bar], expand_bar))
-  rhs_deparsed <- vapply(bar, function(x) deparse(x[[3L]]), "")
+  rhs_deparsed <- vapply(bar, function(x) deparse1(x[[3L]]), "")
   merge_bars <- function(l) {
     lhs <- lapply(l, `[[`, 2L)
     rhs <- l[[1L]][[3L]]

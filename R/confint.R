@@ -1,8 +1,8 @@
 #' Confidence intervals on fitted values
 #'
-#' Computes confidence intervals on \link[=fitted.egf]{fitted values}
-#' of top level nonlinear model parameters and, where appropriate,
-#' initial doubling times and basic reproduction numbers.
+#' Computes confidence intervals on fitted values of top level nonlinear
+#' model parameters and, where appropriate, initial doubling times and
+#' basic reproduction numbers.
 #'
 #' @param object
 #'   An \code{"\link{egf}"} object.
@@ -16,44 +16,47 @@
 #'   intervals should be computed. If \code{object$model$curve} is
 #'   \code{"exponential"}, \code{"logistic"}, or \code{"richards"},
 #'   then \code{top} may also contain \code{"tdoubling"} and \code{"R0"}.
-#' @param subset
-#'   An expression to be evaluated in the combined model frame
-#'   (see \code{\link{egf_combine_frames}}). It must evaluate
-#'   to a valid index vector for the rows of the data frame
-#'   (see \code{\link{[.data.frame}}), and thus fitting windows.
-#'   Confidence intervals are computed only for indexed windows.
-#'   The default (\code{\link{NULL}}) is to consider all windows.
-#' @param append
-#'   An expression indicating variables in the combined model frame
-#'   (see \code{\link{egf_combine_frames}}) to be included with the
-#'   result. The default (\code{\link{NULL}}) is to append nothing.
 #' @param link
-#'   A \link{logical} flag. If \code{FALSE}, then confidence intervals
+#'   A logical flag. If \code{FALSE}, then confidence intervals
 #'   on inverse link-transformed fitted values are computed.
 #' @param method
 #'   A \link{character} string indicating how confidence intervals
 #'   should be computed.
-#' @param grid_len (For \code{method = "profile"}.)
-#'   A positive integer. Step sizes chosen adaptively by
-#'   \code{\link[TMB]{tmbprofile}} will generate approximately
-#'   this many points on each side of a profile's minimum point.
-#' @param trace (For \code{method != "wald"}.)
-#'   A \link{logical} flag.
+#' @param parallel (For \code{method = "profile"} or \code{"uniroot"}.)
+#'   An \code{"\link{egf_parallel}"} object defining options for \R level
+#'   parallelization.
+#' @param trace (For \code{method = "profile"} or \code{"uniroot"}.)
+#'   A logical flag.
 #'   If \code{TRUE}, then basic tracing messages indicating progress
 #'   are printed.
 #'   Depending on \code{object$control$trace}, these may be mixed with
 #'   optimizer output.
-#' @param parallel (For \code{method != "wald"}.)
-#'   An \code{"\link{egf_parallel}"} object defining options for \R level
-#'   parallelization.
-#' @param max_width (For \code{method = "uniroot"}.)
-#'   A positive number. \code{\link[TMB]{tmbroot}} will search for roots
-#'   in the interval from \code{x-max_width} to \code{x+max_width}, where
-#'   \code{x} is the fitted value (link scale).
+#' @param grid_len (For \code{method = "profile"}.)
+#'   A positive integer. Step sizes chosen adaptively by
+#'   \code{\link[TMB]{tmbprofile}} will generate approximately
+#'   this many points on each side of a profile's minimum point.
+#' @param interval_scale (For \code{method = "uniroot"}.)
+#'   A positive number.
+#'   \code{\link[TMB]{tmbroot}} will search for roots in the interval
+#'   of width \code{interval_scale * se} centered at \code{estimate},
+#'   where \code{estimate} is the fitted value (link scale)
+#'   and \code{se} is the corresponding standard error.
 #' @param breaks,probs (For \code{top = "R0"}.)
 #'   Arguments to \code{\link{compute_R0}}.
+#' @param subset
+#'   An expression to be evaluated in
+#'   \code{\link[=model.frame.egf]{model.frame}(object, "combined")}.
+#'   It must evaluate to a valid index vector for the rows of
+#'   the data frame and, in turn, fitting windows.
+#'   Confidence intervals are computed only for indexed windows.
+#'   The default (\code{NULL}) is to consider all windows.
+#' @param append
+#'   An expression indicating variables in
+#'   \code{\link[=model.frame.egf]{model.frame}(object, "combined")}
+#'   to be included with the result.
+#'   The default (\code{NULL}) is to append nothing.
 #' @param .subset,.append
-#'   Index vectors to be used (if non-\code{\link{NULL}}) in place of
+#'   Index vectors to be used (if non-\code{NULL}) in place of
 #'   the result of evaluating \code{subset} and \code{append}.
 #' @param ...
 #'   Unused optional arguments.
@@ -80,7 +83,7 @@
 #' on population fitted values, which are the fixed effects components of
 #' individual fitted values.
 #'
-#' \code{"wald"} assumes e.g., asymptotic normality of the maximum likelihood
+#' \code{"wald"} assumes, e.g., asymptotic normality of the maximum likelihood
 #' estimator. \code{"profile"} and \code{"uniroot"} avoid these issues but are
 #' typically more expensive, requiring estimation of many restricted models.
 #' They are parallelized at the C++ level when there is OpenMP support and
@@ -92,30 +95,32 @@
 #' of \code{subset} and \code{append}.
 #'
 #' @return
-#' A \link[=data.frame]{data frame} inheriting from \link{class}
-#' \code{"egf_confint"}, with variables:
+#' A data frame inheriting from class \code{"egf_confint"}, with variables:
 #' \item{top}{
 #'   Top level nonlinear model parameter,
 #'   from \code{\link{egf_get_names_top}(object, link = TRUE)}.
 #' }
 #' \item{ts}{
-#'   Time series, from \code{\link{levels}(object$frame_windows$ts)}.
+#'   Time series, from
+#'   \code{\link{levels}(\link[=model.frame.egf]{model.frame}(object)$ts)}.
 #' }
 #' \item{window}{
-#'   Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
+#'   Fitting window, from
+#'   \code{\link{levels}(\link[=model.frame.egf]{model.frame}(object)$window)}.
 #' }
 #' \item{estimate, lower, upper}{
 #'   Fitted value and approximate lower and upper confidence limits.
 #' }
-#' \code{level} and \code{object$frame_windows} are retained
-#' as \link{attributes}.
+#' \code{level} and
+#' \code{frame_windows = \link[=model.frame.egf]{model.frame}(object, "windows")}
+#' are retained as attributes.
 #'
 #' @examples
 #' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
 #' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
 #' object <- readRDS(file.path(exdata, "egf.rds"))
 #'
-#' path_to_cache <- file.path(exdata, "egf_confint.rds")
+#' path_to_cache <- file.path(exdata, "confint-egf.rds")
 #' if (file.exists(path_to_cache)) {
 #'   zz <- readRDS(path_to_cache)
 #' } else {
@@ -126,24 +131,22 @@
 #'
 #' @seealso \code{\link{plot.egf_confint}}
 #' @export
-#' @importFrom Matrix KhatriRao
-#' @importFrom methods as
-#' @importFrom stats qchisq fitted profile confint
+#' @importFrom stats qchisq fitted profile confint model.frame
 #' @import parallel
 confint.egf <- function(object,
                         parm,
                         level = 0.95,
                         top = egf_get_names_top(object, link = TRUE),
-                        subset = NULL,
-                        append = NULL,
                         link = TRUE,
                         method = c("wald", "profile", "uniroot"),
-                        grid_len = 12,
-                        trace = TRUE,
                         parallel = egf_parallel(),
-                        max_width = 7,
+                        trace = FALSE,
+                        grid_len = 12,
+                        interval_scale = 7,
                         breaks = NULL,
                         probs = NULL,
+                        subset = NULL,
+                        append = NULL,
                         .subset = NULL,
                         .append = NULL,
                         ...) {
@@ -160,65 +163,58 @@ confint.egf <- function(object,
 
   top <- top_bak <- unique(match.arg(top, names_top, several.ok = TRUE))
   if ("R0" %in% top) {
-    stopifnot(
-      !is.null(breaks),
-      !is.null(probs)
-    )
+    stopifnot(!is.null(breaks), !is.null(probs))
   }
   top[top %in% spec] <- "log(r)"
   top <- unique(top)
 
-  combined <- egf_combine_frames(object)
+  frame_windows <- model.frame(object, "windows")
+  frame_combined <- model.frame(object, "combined")
   subset <- if (is.null(.subset)) substitute(subset) else .subset
-  subset <- egf_eval_subset(subset, combined, parent.frame())
+  subset <- egf_eval_subset(subset, frame_combined, parent.frame())
   append <- if (is.null(.append)) substitute(append) else .append
-  append <- egf_eval_append(append, combined, baseenv())
+  append <- egf_eval_append(append, frame_combined, baseenv())
 
   if (method == "wald") {
     fo <- fitted(object, top = top, se = TRUE, .subset = subset, .append = append)
     res <- confint(fo, level = level, link = link)
 
   } else if (method == "profile") {
-    po <- profile(object, top = top, .subset = subset, .append = append,
-      level_max = level + min(0.01, 0.1 * (1 - level)),
-      grid_len = grid_len,
+    po <- profile(object,
+      level = level + min(0.01, 0.1 * (1 - level)),
+      top = top,
+      parallel = parallel,
       trace = trace,
-      parallel = parallel
+      grid_len = grid_len,
+      .subset = subset,
+      .append = append
     )
     res <- confint(po, level = level, link = link)
     res$linear_combination <- NULL
 
   } else { # "uniroot"
-    stop_if_not_number(max_width, "positive")
-    stop_if_not_true_false(trace)
     stopifnot(inherits(parallel, "egf_parallel"))
-    n <- length(object$nonrandom)
+    stop_if_not_true_false(trace)
+    stop_if_not_number(interval_scale, "positive")
+    n <- sum(!object$random)
 
-    p <- length(top)
-    N <- length(subset)
-    m <- p * N
+    l <- egf_preprofile(object, subset = subset, top = top)
+    Y <- l$Y
+    A <- l$A
 
-    f <- factor(object$info$X$top, levels = top)
-    J <- as(f, "sparseMatrix")
-    X <- object$tmb_out$env$data$X[subset, , drop = FALSE]
-    A <- KhatriRao(J, X)
-    if (egf_has_random(object)) {
-      index <- grepl("^beta\\[", names(object$best)[object$nonrandom])
-      A@p <- c(0L, replace(rep_len(NA_integer_, n), index, A@p[-1L]))
-      A@p <- locf(A@p)
-      A@Dim <- c(m, n)
-    }
-
+    m <- nrow(A)
     a <- lapply(seq_len(m), function(i) A[i, ])
-    target <- 0.5 * qchisq(level, df = 1) # y := diff(nll) = 0.5 * deviance
-    sd.range <- max_width
+    target <- 0.5 * qchisq(level, df = 1) # y := nll_restricted - nll_minimum = 0.5 * deviance
+    sd.range <- interval_scale
     nomp <- object$control$omp_num_threads
 
     do_uniroot <- function(i, a) {
       if (trace) {
         cat(sprintf("Computing confidence interval %d of %d...\n", i, m))
       }
-      TMB::tmbroot(obj, lincomb = a, target = target, sd.range = sd.range, trace = FALSE)
+      res <- TMB::tmbroot(obj, lincomb = a, target = target, sd.range = sd.range, trace = FALSE)
+      names(res) <- c("lower", "upper")
+      res
     }
 
     if (parallel$method == "snow") {
@@ -226,19 +222,18 @@ confint.egf <- function(object,
 
       ## Reconstruct list of arguments to 'MakeADFun' from object internals
       ## for retaping
-      args <- egf_tmb_remake_args(object)
+      args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
 
       ## Retrieve path to shared object for loading
       dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit", mustWork = TRUE)
 
-      if (is.null(parallel$cl)) {
+      cl <- parallel$cl
+      if (is.null(cl)) {
         cl <- do.call(makePSOCKcluster, parallel$args)
         on.exit(stopCluster(cl), add = TRUE)
-      } else {
-        cl <- parallel$cl
       }
       clusterExport(cl,
-        varlist = c("nomp", "args", "trace", "m", "target", "sd.range"),
+        varlist = c("dll", "nomp", "args", "trace", "m", "target", "sd.range"),
         envir = environment()
       )
       clusterEvalQ(cl, {
@@ -250,49 +245,46 @@ confint.egf <- function(object,
       })
       res <- clusterMap(cl, do_uniroot, i = seq_len(m), a = a)
     } else {
-      obj <- object$tmb_out
-      if ((onomp <- TMB::openmp(n = NULL)) > 0L) {
-        TMB::openmp(n = nomp)
-        on.exit(TMB::openmp(n = onomp), add = TRUE)
-      }
       if (given_outfile <- nzchar(parallel$outfile)) {
         outfile <- file(parallel$outfile, open = "wt")
         sink(outfile, type = "output")
         sink(outfile, type = "message")
+        on.exit(add = TRUE, {
+          sink(type = "message")
+          sink(type = "output")
+        })
       }
-      res <- tryCatch(
-        switch(parallel$method,
-          multicore = do.call(mcMap, c(list(f = do_uniroot, i = seq_len(m), a = a), parallel$args)),
-          serial = Map(do_uniroot, i = seq_len(m), a = a)
-        ),
-        error = function(cond) {
-          if (given_outfile) {
-            sink(type = "message")
-            sink(type = "output")
-          }
-          stop(cond)
-        }
+      if ((onomp <- TMB::openmp(n = NULL)) > 0L) {
+        TMB::openmp(n = nomp)
+        on.exit(TMB::openmp(n = onomp), add = TRUE)
+      }
+      obj <- object$tmb_out
+      res <- switch(parallel$method,
+        multicore = do.call(mcMap, c(list(f = do_uniroot, i = seq_len(m), a = a), parallel$args)),
+        serial = Map(do_uniroot, i = seq_len(m), a = a)
       )
     }
 
     res <- data.frame(
-      top = rep(factor(top, levels = names_top), each = N),
-      ts = object$frame_windows$ts[subset],
-      window = object$frame_windows$window[subset],
-      estimate = as.numeric(A %*% object$best[object$nonrandom]),
-      `colnames<-`(do.call(rbind, res), c("lower", "upper")),
-      combined[subset, append, drop = FALSE],
+      top = rep(factor(top, levels = names_top), each = length(subset)),
+      ts = frame_windows$ts[subset],
+      window = frame_windows$window[subset],
+      estimate = as.numeric(A %*% object$best[!object$random]),
+      do.call(rbind, res),
+      frame_combined[subset, append, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
+    res[elu] <- res[elu] + as.numeric(Y)
+
     if (!link) {
       res[elu] <- in_place_ragged_apply(res[elu], res$top,
         f = lapply(egf_link_extract(levels(res$top)), egf_link_match, inverse = TRUE)
       )
       levels(res$top) <- egf_link_remove(levels(res$top))
     }
-  }
+  } # "uniroot"
 
   if (any(top_bak %in% spec)) {
     s <- if (link) "log(r)" else "r"
@@ -323,8 +315,8 @@ confint.egf <- function(object,
 
   row.names(res) <- NULL
   attr(res, "level") <- level
-  attr(res, "frame_windows") <- object$frame_windows # for 'plot.egf_confint'
-  class(res) <- c("egf_confint", "data.frame")
+  attr(res, "frame_windows") <- frame_windows # for 'plot.egf_confint'
+  class(res) <- c("egf_confint", oldClass(res))
   res
 }
 
@@ -336,36 +328,35 @@ confint.egf <- function(object,
 #' @param x
 #'   An \code{"\link[=confint.egf]{egf_confint}"} object.
 #' @param type
-#'   A \link{character} string determining how confidence intervals
-#'   are displayed (see Details).
+#'   A character string determining how confidence intervals are displayed
+#'   (see Details).
 #' @param time_as
-#'   A \link{character} string indicating how time is displayed
-#'   on the bottom axis. The options are: as is (\code{"numeric"})
-#'   and with a calendar (\code{"Date"}). In the latter case,
-#'   numeric times are interpreted as numbers of days since
-#'   \code{1970-01-01 00:00:00}. [\code{type = "boxes"} only.]
+#'   A character string indicating how time is displayed on the bottom axis.
+#'   The options are:
+#'   as is (\code{"numeric"}) and with a calendar (\code{"Date"}).
+#'   In the latter case, numeric times are interpreted as numbers of days
+#'   since \code{1970-01-01 00:00:00}. [\code{type = "boxes"} only.]
 #' @param per_plot
 #'   A positive integer. One plot will display at most this many
 #'   confidence intervals or time series (depending on \code{type}).
 #' @param subset
 #'   An expression to be evaluated in \code{x}.
-#'   It must evaluate to a valid index vector for the rows of \code{x}
-#'   (see \code{\link{[.data.frame}}).
+#'   It must evaluate to a valid index vector for the rows of \code{x}.
 #'   Only indexed confidence intervals are plotted.
-#'   The default (`NULL`) is to plot all confidence intervals.
+#'   The default (\code{NULL}) is to plot all confidence intervals.
 #' @param order
 #'   An expression to be evaluated in \code{x},
 #'   typically a call to \code{\link{order}},
 #'   determining the order in which confidence intervals
 #'   or time series (depending on \code{type}) are plotted.
-#'   It must evaluate to a permutation of \code{\link{seq_len}(\link{nrow}(x))}.
-#'   The default (\code{\link{NULL}}) is equivalent to \code{seq_len(nrow(x))}.
+#'   It must evaluate to a permutation of \code{seq_len(nrow(x))}.
+#'   The default (\code{NULL}) is equivalent to \code{seq_len(nrow(x))}.
 #' @param label
-#'   An expression to be evaluated in \code{x}, typically a \link{factor},
-#'   \link{interaction} of factors, or \link{call} to \code{\link{sprintf}}.
+#'   An expression to be evaluated in \code{x}, typically a factor,
+#'   an interaction of factors, or a call to \code{\link{sprintf}}.
 #'   It is used to create appropriate \eqn{y}-axis labels for confidence
 #'   intervals when \code{type = "bars"} and appropriate panel labels for
-#'   time series when \code{type = "boxes"}. The default (\code{\link{NULL}})
+#'   time series when \code{type = "boxes"}. The default (\code{NULL})
 #'   is to take labels from \code{x$window} and \code{x$ts}, respectively.
 #' @param main
 #'   An expression or character string indicating a plot title,
@@ -382,7 +373,7 @@ confint.egf <- function(object,
 #' Projection of boxes onto the horizontal and vertical axes yields
 #' fitting windows and corresponding confidence intervals, respectively.
 #'
-#' If an endpoint of a confidence interval is \code{\link{NaN}},
+#' If an endpoint of a confidence interval is \code{NaN},
 #' then dashed lines are drawn from the point estimate to
 #' the boundary of the plotting region to indicate missingness.
 #'
@@ -390,11 +381,11 @@ confint.egf <- function(object,
 #' of \code{subset}, \code{order}, and \code{label}.
 #'
 #' @return
-#' \code{\link{NULL}} (invisibly).
+#' \code{NULL} (invisibly).
 #'
 #' @examples
 #' example("confint.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' x <- readRDS(system.file("exdata", "egf_confint.rds", package = "epigrowthfit", mustWork = TRUE))
+#' x <- readRDS(system.file("exdata", "confint-egf.rds", package = "epigrowthfit", mustWork = TRUE))
 #'
 #' op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
 #' plot(x, type = "bars")

@@ -19,11 +19,17 @@ incidence time series.
 }
 \examples{
 example("simulate.egf_model", package = "epigrowthfit", local = TRUE, echo = FALSE)
-model <- readRDS(system.file("exdata", "egf_model_simulate.rds",
-                             package = "epigrowthfit", mustWork = TRUE))
+exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+model <- readRDS(file.path(exdata, "simulate-egf_model.rds"))
 
-object <- egf(model)
-pp <- data.frame(actual = model$actual, fitted = object$best)
-pp[object$nonrandom, , drop = FALSE]
+path_to_cache <- file.path(exdata, "egf-egf_model_simulate.rds")
+if (file.exists(path_to_cache)) {
+  object <- readRDS(path_to_cache)
+} else {
+  object <- egf(model)
+  saveRDS(object, file = path_to_cache)
+}
+pp <- data.frame(actual = model$actual, fitted = coef(object, full = FALSE))
+pp[!object$random, , drop = FALSE]
 
 }

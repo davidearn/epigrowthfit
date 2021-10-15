@@ -7,17 +7,16 @@
 compute_tdoubling(r, per = NULL)
 }
 \arguments{
-\item{r}{A non-negative \link{numeric} vector.}
+\item{r}{A non-negative numeric vector listing exponential growth rates.}
 
 \item{per}{A positive integer indicating that \code{r} is a rate per
 \code{per} days, in which case the result is printed with units.
-Use the default (\code{\link{NULL}}) if \code{r} is unitless.}
+Use the default (\code{NULL}) if \code{r} is unitless.}
 }
 \value{
-\code{\link{log}(2) / r} with \code{"tdoubling"} prepended
-to its \link{class}.
-\code{per} is retained as an \link[=attributes]{attribute}
-for use by \code{print.tdoubling}.
+\code{log(2) / r} with \code{"tdoubling"} prepended to its \code{class}
+attribute.
+\code{per} is retained as an attribute for use by \code{print.tdoubling}.
 }
 \description{
 Computes doubling times corresponding to exponential growth rates.

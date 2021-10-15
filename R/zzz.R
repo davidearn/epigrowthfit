@@ -15,7 +15,7 @@
       ))
     }
   }
-  ## library.dynam("epigrowthfit", pkgname, libname)
+  ## library.dynam("epigrowthfit", pkgname, libname) # FIXME: can this replace 'useDynLib' directive in NAMESPACE?
   invisible(NULL)
 }
 

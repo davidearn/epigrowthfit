@@ -28,13 +28,13 @@ Type nll_obs(objective_function<Type> *obj,
 	/* t */
 	predict = time.segment(i, n);
 	/* t <- log(c(t)) */
-	egf::eval_log_curve(predict, Y_row, indices, flags.flag_curve);
+	egf::eval_log_curve(predict, Y_row, indices, flags.curve);
 	if (flags.do_excess)
 	{
 	    /* log(c(t)) <- log(b * t + c(t)) */ 
 	    egf::logspace_add_baseline(predict,
 				       (vector<Type>) time.segment(i, n),
-				       Y_row(indices.index_log_b));
+				       Y_row(indices.log_b));
 	}
 	/* log(c(t)) <- log(diff(c(t))) */
 	egf::logspace_diff(predict);
@@ -42,12 +42,12 @@ Type nll_obs(objective_function<Type> *obj,
 	{
 	    /* log(diff(c(t))) <- log(diff(c(t)) * w(t[-n], t[-1])) */
 	    egf::logspace_add_offsets(predict,
-				      Y_row(indices.index_log_w1),
-				      Y_row(indices.index_log_w2),
-				      Y_row(indices.index_log_w3),
-				      Y_row(indices.index_log_w4),
-				      Y_row(indices.index_log_w5),
-				      Y_row(indices.index_log_w6),
+				      Y_row(indices.log_w1),
+				      Y_row(indices.log_w2),
+				      Y_row(indices.log_w3),
+				      Y_row(indices.log_w4),
+				      Y_row(indices.log_w5),
+				      Y_row(indices.log_w6),
 				      day1(s));
 	}
 	res += nll_obs(obj, x, predict, Y_row, indices, flags, i - s, s);
@@ -78,16 +78,16 @@ Type nll_obs(objective_function<Type> *obj,
     Type log_mu;
     Type log_size;
     Type log_var_minus_mu;
-    if (flags.flag_family == nbinom)
+    if (flags.family == nbinom)
     {
-        log_size = Y_row(indices.index_log_disp);
+        log_size = Y_row(indices.log_disp);
     }
 
     for (int i = ix, k = 0; k < n; ++i, ++k)
     { /* loop over observations */
         if (obj->parallel_region() && !egf::is_NA_real_(x(i)))
 	{
-	    switch (flags.flag_family)
+	    switch (flags.family)
 	    {
 	    case pois:
 		log_lambda = log_diff_curve(k);
@@ -99,7 +99,7 @@ Type nll_obs(objective_function<Type> *obj,
 	    }
 	    if (flags.do_simulate)
 	    {
-	        switch(flags.flag_family)
+	        switch(flags.family)
 		{
 		case pois:
 		    x(i) = rpois(exp(log_lambda));
@@ -110,7 +110,7 @@ Type nll_obs(objective_function<Type> *obj,
 		}
 		continue;
 	    }
-	    switch(flags.flag_family)
+	    switch(flags.family)
 	    {
 	    case pois:
 		nll_term = -egf::dpois_robust(x(i), log_lambda, true);
@@ -125,7 +125,7 @@ Type nll_obs(objective_function<Type> *obj,
 	    {
 		printf("at index %d of segment %d: nll term is %.6e\n",
 		       k, sx, asDouble(nll_term));
-		switch(flags.flag_family)
+		switch(flags.family)
 		{
 		case pois:
 		    printf("-dpois(x = %d, lambda = %.6e, give_log = true)\n",
@@ -202,10 +202,10 @@ Type nll_top(objective_function<Type> *obj,
 
     for (int j = 0; j < nc; ++j)
     { /* loop over parameters */
-	if (flags.flag_regularize_top(j) >= 0)
+	if (flags.regularize_top(j) >= 0)
 	{
 	    hp = hyperparameters_top(j);
-	    switch (flags.flag_regularize_top(j))
+	    switch (flags.regularize_top(j))
 	    {
 	    case norm:
 		mu = hp(0);
@@ -217,7 +217,7 @@ Type nll_top(objective_function<Type> *obj,
 	    { /* loop over values */
 	        if (obj->parallel_region())
 		{
-		    switch (flags.flag_regularize_top(j))
+		    switch (flags.regularize_top(j))
 		    {
 		    case norm:
 			nll_term = -dnorm(Y(i, j), mu, sigma, true);
@@ -229,7 +229,7 @@ Type nll_top(objective_function<Type> *obj,
 		    {
 			printf("parameter %d in segment %d: nll term is %.6e\n",
 			       j, i, asDouble(nll_term));
-			switch (flags.flag_regularize_top(j))
+			switch (flags.regularize_top(j))
 			{
 			case norm:
 			    printf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
@@ -264,10 +264,10 @@ Type nll_bot(objective_function<Type> *obj,
     int i = 0;
     for (int j = 0; j < beta.size(); ++i, ++j)
     { /* loop over `beta` elements */
-	if (obj->parallel_region() && flags.flag_regularize_bottom(i) >= 0)
+	if (obj->parallel_region() && flags.regularize_bottom(i) >= 0)
 	{
 	    hp = hyperparameters_bottom(i);
-	    switch (flags.flag_regularize_bottom(i))
+	    switch (flags.regularize_bottom(i))
 	    {
 	    case norm:
 		mu = hp(0);
@@ -281,7 +281,7 @@ Type nll_bot(objective_function<Type> *obj,
 	    {
 		printf("beta element %d: nll term is %.6e\n",
 		       j, asDouble(nll_term));
-		switch (flags.flag_regularize_bottom(i))
+		switch (flags.regularize_bottom(i))
 		{
 		case norm:
 		    printf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
@@ -299,10 +299,10 @@ Type nll_bot(objective_function<Type> *obj,
     
     for (int j = 0; j < theta.size(); ++i, ++j)
     { /* loop over `theta` elements */
-	if (obj->parallel_region() && flags.flag_regularize_bottom(i) >= 0)
+	if (obj->parallel_region() && flags.regularize_bottom(i) >= 0)
 	{
 	    hp = hyperparameters_bottom(i);
-	    switch (flags.flag_regularize_bottom(i))
+	    switch (flags.regularize_bottom(i))
 	    {
 	    case norm:
 		mu = hp(0);
@@ -316,7 +316,7 @@ Type nll_bot(objective_function<Type> *obj,
 	    {
 		printf("theta element %d: nll term is %.6e\n",
 		       j, asDouble(nll_term));
-		switch (flags.flag_regularize_bottom(i))
+		switch (flags.regularize_bottom(i))
 		{
 		case norm:
 		    printf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
@@ -334,10 +334,10 @@ Type nll_bot(objective_function<Type> *obj,
 
     for (int j = 0; j < list_of_chol.size(); ++i, ++j)
     { /* loop over correlation/covariance matrices */
-	if (obj->parallel_region() && flags.flag_regularize_bottom(i) >= 0)
+	if (obj->parallel_region() && flags.regularize_bottom(i) >= 0)
 	{
 	    hp = hyperparameters_bottom(i);
-	    switch (flags.flag_regularize_bottom(i))
+	    switch (flags.regularize_bottom(i))
 	    {
 	    case lkj:
 	        x = list_of_chol(j);
@@ -349,7 +349,7 @@ Type nll_bot(objective_function<Type> *obj,
 		x << log(list_of_sd(j)),list_of_chol(j);
 	        df = hp(0);
 		scale = hp.tail(x.size());
-		switch (flags.flag_regularize_bottom(i))
+		switch (flags.regularize_bottom(i))
 		{
 		case wishart:
 		    nll_term = -egf::dwishart(x, df, scale, true);
@@ -366,7 +366,7 @@ Type nll_bot(objective_function<Type> *obj,
 	    {
 		printf("correlation/covariance matrix %d: nll term is %.6e\n",
 		       j, asDouble(nll_term));
-		switch (flags.flag_regularize_bottom(i))
+		switch (flags.regularize_bottom(i))
 		{
 		case lkj:
 		    std::cout << "-dlkj(x = " << x << ", eta = " << eta << ", give_log = true)\n";

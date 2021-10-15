@@ -19,29 +19,28 @@ egf_eval_label(expr, data, enclos = parent.frame())
 \arguments{
 \item{expr}{A \link{language} object to be evaluated in \code{data} or,
 in the case of \code{egf_eval_append},
-in \code{`\link{names<-}`(\link{as.list}(\link{seq_along}(data)), \link{names}(data))}.
+in \code{`names<-`(as.list(seq_along(data)), names(data))}.
 Alternatively, a non-language object to be used in place of
 the hypothetical result of evaluation.}
 
-\item{data}{A \link[=data.frame]{data frame}.}
+\item{data}{A data frame.}
 
-\item{enclos}{An \link{environment} to enclose \code{data}.}
+\item{enclos}{An environment to enclose \code{data}.}
 }
 \value{
 Let \code{res} be the result of evaluating \code{expr}.
 
-\code{egf_eval_subset} returns an increasing \link{integer} vector
-indexing rows of \code{data}, obtained after some processing of
-\code{res}.
+\code{egf_eval_subset} returns an increasing integer vector indexing
+rows of \code{data}, obtained after some processing of \code{res}.
 
-\code{egf_eval_order} returns \code{\link{as.integer}(res)}.
+\code{egf_eval_order} returns \code{as.integer(res)}.
 
 \code{egf_eval_append} returns
-\code{\link{match}(\link{names}(data[res]), \link{names}(data), 0L)},
+\code{match(names(data[res]), names(data), 0L)},
 with zeros (if any) deleted.
 
-\code{egf_eval_label} returns \code{\link{as.character}(res)},
-repeated to length \code{\link{nrow}(data)}.
+\code{egf_eval_label} returns \code{as.character(res)},
+repeated to length \code{nrow(data)}.
 }
 \description{
 Utilities for obtaining index vectors from unevaluated \code{subset},
@@ -52,15 +51,13 @@ unevaluated \code{label} expressions.
 \code{subset} must evaluate to a valid index vector
 for the rows of \code{data} (see \code{\link{[.data.frame}}).
 
-\code{order} must evaluate to a permutation
-of \code{\link{seq_len}(\link{nrow}(data))}.
+\code{order} must evaluate to a permutation of \code{seq_len(nrow(data))}.
 
 \code{append} must evaluate to a valid index vector
 for the variables in \code{data} (see \code{\link{[.data.frame}}).
 
-\code{label} must evaluate to an \R object coercible
-via \code{\link{as.character}} to a \link{character}
-vector of length 1 or length \code{\link{nrow}(data)}.
+\code{label} must evaluate to an \R object coercible via \code{as.character}
+to a character vector of length 1 or length \code{nrow(data)}.
 }
 \examples{
 ## year <- 2021L

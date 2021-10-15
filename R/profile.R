@@ -1,55 +1,55 @@
 #' Compute likelihood profiles
 #'
 #' Computes univariate likelihood profiles of fixed effects
-#' coefficients, random effects covariance parameters, and
+#' coefficients, random effect covariance parameters, and
 #' linear combinations thereof.
 #'
 #' @param fitted
 #'   An \code{"\link{egf}"} object.
+#' @param level
+#'   A number in the interval (0,1) indicating a confidence level.
+#'   Profiles will be computed up to a deviance
+#'   of \code{\link{qchisq}(level, df = 1)}.
 #' @param which
-#'   An integer vector indexing coefficients in \code{fitted$best}
-#'   to be profiled. Must be a subset of \code{fitted$nonrandom}.
+#'   An integer vector indexing \code{fitted$best[!fitted$random]}.
+#'   Only indexed parameters are profiled.
 #' @param A
-#'   A \link{numeric} \link{matrix} with
-#'   \code{\link{length}(fitted$nonrandom)} columns.
+#'   A numeric matrix with \code{sum(!fitted$random)} columns,
 #'   Each row specifies a linear combination of the elements
-#'   of \code{fitted$best[fitted$nonrandom]} to be profiled.
-#'   Ignored if \code{which} is non-\code{\link{NULL}}.
+#'   of \code{fitted$best[!fitted$random]} to be profiled.
+#'   Ignored if \code{which} is non-\code{NULL}.
 #' @param top
 #'   A subset of \code{\link{egf_get_names_top}(fitted, link = TRUE)}
 #'   naming top level nonlinear model parameters whose population
-#'   fitted values (see \code{\link{fitted.egf}}) should be profiled.
-#'   Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.
-#' @param subset
-#'   An expression to be evaluated in the combined model frame
-#'   (see \code{\link{egf_combine_frames}}). It must evaluate to
-#'   to a valid index vector for the rows of the data frame
-#'   (see \code{\link{[.data.frame}}), and thus fitting windows.
-#'   Only population fitted values for indexed windows are profiled.
-#'   The default (\code{\link{NULL}}) is to consider all windows.
-#'   Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.
-#' @param append
-#'   An expression indicating variables in the combined model frame
-#'   (see \code{\link{egf_combine_frames}}) to be included with the
-#'   result. The default (\code{\link{NULL}}) is to append nothing.
-#'   Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.
-#' @param level_max
-#'   A number in the interval (0,1) indicating a confidence level.
-#'   Profiles will be computed up to a deviance
-#'   of \code{\link{qchisq}(level_max, df = 1)}.
-#' @param grid_len
-#'   A positive integer. Step sizes chosen adaptively by
-#'   \code{\link[TMB]{tmbprofile}} will generate approximately
-#'   this many points on each side of a profile's minimum point.
+#'   fitted values (see \code{\link[=fitted.egf]{fitted}}) should be
+#'   profiled.
+#'   Ignored if \code{which} or \code{A} is non-\code{NULL}.
+#' @param parallel
+#'   An \code{"\link{egf_parallel}"} object defining options for \R level
+#'   parallelization.
 #' @param trace
-#'   A \link{logical} flag.
+#'   A logical flag.
 #'   If \code{TRUE}, then basic tracing messages indicating progress
 #'   are printed.
 #'   Depending on \code{fitted$control$trace}, these may be mixed with
 #'   optimizer output.
-#' @param parallel
-#'   An \code{"\link{egf_parallel}"} object defining options for \R level
-#'   parallelization.
+#' @param grid_len
+#'   A positive integer. Step sizes chosen adaptively by
+#'   \code{\link[TMB]{tmbprofile}} will generate approximately
+#'   this many points on each side of a profile's minimum point.
+#' @param subset
+#'   An expression to be evaluated in
+#'   \code{\link[=model.frame.egf]{model.frame}(fitted, "combined")}
+#'   It must evaluate to to a valid index vector for the rows of the
+#'   data frame and, in turn, fitting windows.
+#'   Only population fitted values for indexed windows are profiled.
+#'   The default (\code{NULL}) is to consider all windows.
+#'   Ignored if \code{which} or \code{A} is non-\code{NULL}.
+#' @param append
+#'   An expression indicating variables in
+#'   \code{\link[=model.frame.egf]{model.frame}(object, "combined")}
+#'   to be included with the result.
+#'   The default (\code{NULL}) is to append nothing.
 #' @param .subset,.append
 #'   Index vectors to be used (if non-\code{\link{NULL}}) in place of
 #'   the result of evaluating \code{subset} and \code{append}.
@@ -64,25 +64,11 @@
 #' can still be parallelized at the \R level with appropriate setting of
 #' \code{parallel}.
 #'
-#' \code{which} is mapped to an \code{A} matrix composed of unit row vectors,
-#' with 1 at array index \code{[i, which[i]]} for all \code{i}, such that
-#' \code{A \link[=matmult]{\%*\%} fitted$best[fitted$nonrandom]} is precisely
-#' \code{fitted$best[which]}.
-#'
-#' \code{top} and \code{subset} are mapped to a block \code{A} matrix.
-#' Block \code{k} (from the top) is composed of rows (those indexed
-#' by \code{subset}) of the fixed effects design matrix for parameter
-#' \code{top[k]} .
-#' \code{A \link[=matmult]{\%*\%} fitted$best[fitted$nonrandom]}
-#' is a vector listing the population fitted values for each parameter
-#' named in \code{top}, for each fitting window indexed by \code{subset}.
-#'
 #' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 #' of \code{subset} and \code{append}.
 #'
 #' @return
-#' A \link[=data.frame]{data frame} inheriting from \link{class}
-#' \code{"egf_profile"}, with variables:
+#' A data frame inheriting from class \code{"egf_profile"}, with variables:
 #' \item{top}{
 #'   (\code{top}-based calls only.)
 #'   Top level nonlinear model parameter,
@@ -90,15 +76,16 @@
 #' }
 #' \item{ts}{
 #'   (\code{top}-based calls only.)
-#'   Time series, from \code{\link{levels}(fitted$frame_windows$ts)}.
+#'   Time series, from
+#'   \code{levels(\link[=model.frame.egf]{model.frame}(fitted)$ts)}.
 #' }
 #' \item{window}{
 #'   (\code{top}-based calls only.)
-#'   Fitting window, from \code{\link{levels}(fitted$frame_windows$window)}.
+#'   Fitting window, from
+#'   \code{levels(\link[=model.frame.egf]{model.frame}(fitted)$window)}.
 #' }
 #' \item{linear_combination}{
-#'   Row index of linear combination,
-#'   from \code{\link{seq_len}(\link{nrow}(A))}.
+#'   Row index of linear combination, from \code{seq_len(nrow(A))}.
 #' }
 #' \item{value}{
 #'   Value of linear combination being profiled.
@@ -107,7 +94,7 @@
 #'   Deviance of the restricted model that assumes \code{value}
 #'   for the linear combination being profiled.
 #' }
-#' \code{A}, \code{x = fitted$best[fitted$nonrandom]}, and \code{level_max}
+#' \code{A}, \code{x = fitted$best[!fitted$random]}, and \code{level}
 #' are retained as \link{attributes}.
 #'
 #' @examples
@@ -115,7 +102,7 @@
 #' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
 #' fitted <- readRDS(file.path(exdata, "egf.rds"))
 #'
-#' path_to_cache <- file.path(exdata, "egf_profile.rds")
+#' path_to_cache <- file.path(exdata, "profile-egf.rds")
 #' if (file.exists(path_to_cache)) {
 #'   zz <- readRDS(path_to_cache)
 #' } else {
@@ -126,105 +113,99 @@
 #'
 #' @seealso \code{\link{confint.egf_profile}}, \code{\link{plot.egf_profile}}
 #' @export
-#' @importFrom Matrix sparseMatrix KhatriRao
-#' @importMethodsFrom Matrix diag
-#' @importFrom methods as is
-#' @importFrom stats vcov
+#' @importFrom Matrix sparseMatrix
+#' @importMethodsFrom Matrix t tcrossprod rowSums diag
+#' @importFrom methods is
+#' @importFrom stats vcov model.frame
 #' @import parallel
 profile.egf <- function(fitted,
+                        level = 0.95,
                         which = NULL,
                         A = NULL,
                         top = egf_get_names_top(fitted, link = TRUE),
+                        parallel = egf_parallel(),
+                        trace = FALSE,
+                        grid_len = 12,
                         subset = NULL,
                         append = NULL,
-                        level_max = 0.95,
-                        grid_len = 12,
-                        trace = TRUE,
-                        parallel = egf_parallel(),
                         .subset = NULL,
                         .append = NULL,
                         ...) {
-  stop_if_not_number_in_interval(level_max, 0, 1, "()")
-  stop_if_not_number_in_interval(grid_len, 1, Inf, "[)")
-  stop_if_not_true_false(trace)
+  stop_if_not_number_in_interval(level, 0, 1, "()")
   stopifnot(inherits(parallel, "egf_parallel"))
-  n <- length(fitted$nonrandom)
+  stop_if_not_true_false(trace)
+  stop_if_not_number_in_interval(grid_len, 1, Inf, "[)")
+  n <- sum(!fitted$random)
 
   ## If profiling user-specified elements of 'c(beta, theta)'
   if (!is.null(which)) {
     method <- "which"
-    stopifnot(
+    eval(bquote(stopifnot(
       is.numeric(which),
-      which %in% fitted$nonrandom
-    )
+      which %in% seq_len(.(n))
+    )))
     which <- unique(which)
-    m <- length(which)
-    A <- sparseMatrix(i = seq_len(m), j = which, x = 1, dims = c(m, n))
+    A <- sparseMatrix(i = seq_len(m), j = which, x = 1, dims = c(length(which), n))
 
   ## If profiling user-specified linear combinations
   ## of elements of 'c(beta, theta)'
   } else if (!is.null(A)) {
     method <- "A"
-    stopifnot(is.numeric(A))
-    if (is.null(dim(A))) {
-      dim(A) <- c(1L, length(A))
-    } else {
-      stopifnot(is.matrix(A) || is(A, "dMatrix"))
+    if (!is(A, "dMatrix")) {
+      stopifnot(is.numeric(A))
+      if (is.null(dim(A))) {
+        dim(A) <- c(1L, length(A))
+      } else {
+        stopifnot(is.matrix(A))
+      }
     }
-    stopifnot(
-      ncol(A) == length(fitted$nonrandom),
+    eval(bquote(stopifnot(
+      nrow(A) > 0L,
+      ncol(A) == .(n),
       is.finite(A),
       rowSums(abs(A)) > 0
-    )
-    m <- nrow(A)
+    )))
 
   ## If profiling population fitted values
-  ## of nonlinear and dispersions model parameters
+  ## of top level nonlinear model parameters
   } else if (!is.null(top)) {
     method <- "top"
+
     names_top <- egf_get_names_top(fitted, link = TRUE)
     top <- unique(match.arg(top, names_top, several.ok = TRUE))
-    combined <- egf_combine_frames(fitted)
+
+    frame_windows <- model.frame(fitted, "windows")
+    frame_combined <- model.frame(fitted, "combined")
     subset <- if (is.null(.subset)) substitute(subset) else .subset
-    subset <- egf_eval_subset(subset, combined, parent.frame())
+    subset <- egf_eval_subset(subset, frame_combined, parent.frame())
     append <- if (is.null(.append)) substitute(append) else .append
-    append <- egf_eval_append(append, combined, baseenv())
+    append <- egf_eval_append(append, frame_combined, baseenv())
 
-    p <- length(top)
-    N <- length(subset)
-    m <- p * N
-
-    f <- factor(fitted$info$X$top, levels = top)
-    J <- as(f, "sparseMatrix")
-    X <- fitted$tmb_out$env$data$X[subset, , drop = FALSE]
-    A <- KhatriRao(J, X)
-    if (egf_has_random(fitted)) {
-      index <- grepl("^beta\\[", names(fitted$best)[fitted$nonrandom])
-      A@p <- c(0L, replace(rep_len(NA_integer_, n), index, A@p[-1L]))
-      A@p <- locf(A@p)
-      A@Dim <- c(m, n)
-    }
+    l <- egf_preprofile(fitted, subset = subset, top = top)
+    Y <- l$Y
+    A <- l$A
 
   ## Otherwise
   } else {
-    stop("One of 'A', 'which', and 'top' must be non-NULL.")
+    stop("One of 'which', 'A', and 'top' must be non-NULL.")
   }
 
   ## Covariance matrix of 'c(beta, theta)'
-  V <- vcov(fitted, full = TRUE)
+  V <- unclass(vcov(fitted))
+  m <- nrow(A)
   if (method == "which") {
     a <- which
-    h <- sqrt(diag(V)[which]) / 4
+    h <- 0.25 * sqrt(diag(V)[which])
     s <- "name"
   } else {
     ## Covariance matrix of 'A %*% c(beta, theta)'
-    V <- A %*% unclass(V) %*% t(A)
-    a <- lapply(seq_len(nrow(A)), function(i) A[i, ])
-    h <- sqrt(diag(V)) / 4
+    V <- A %*% tcrossprod(V, A)
+    a <- lapply(seq_len(m), function(i) A[i, ])
+    h <- 0.25 * sqrt(diag(V))
     s <- "lincomb"
   }
 
-  ytol <- 0.5 * qchisq(level_max, df = 1) # y := nll_restricted - nll_minimum = 0.5 * deviance
+  ytol <- 0.5 * qchisq(level, df = 1) # y := nll_restricted - nll_minimum = 0.5 * deviance
   ystep <- ytol / grid_len
   nomp <- fitted$control$omp_num_threads
 
@@ -246,16 +227,15 @@ profile.egf <- function(fitted,
 
     ## Reconstruct list of arguments to 'MakeADFun' from object internals
     ## for retaping
-    args <- egf_tmb_remake_args(fitted)
+    args <- egf_tmb_remake_args(fitted$tmb_out, par = fitted$best)
 
     ## Retrieve path to shared object for loading
     dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit", mustWork = TRUE)
 
-    if (is.null(parallel$cl)) {
+    cl <- parallel$cl
+    if (is.null(cl)) {
       cl <- do.call(makePSOCKcluster, parallel$args)
       on.exit(stopCluster(cl), add = TRUE)
-    } else {
-      cl <- parallel$cl
     }
     clusterExport(cl,
       varlist = c("dll", "nomp", "args", "trace", "m", "s", "ytol", "ystep"),
@@ -270,28 +250,23 @@ profile.egf <- function(fitted,
     })
     res <- clusterMap(cl, do_profile, i = seq_len(m), a = a, h = h)
   } else {
-    obj <- fitted$tmb_out
-    if ((onomp <- TMB::openmp(n = NULL)) > 0L) {
-      TMB::openmp(n = nomp)
-      on.exit(TMB::openmp(n = onomp), add = TRUE)
-    }
     if (given_outfile <- nzchar(parallel$outfile)) {
       outfile <- file(parallel$outfile, open = "wt")
       sink(outfile, type = "output")
       sink(outfile, type = "message")
+      on.exit(add = TRUE, {
+        sink(type = "message")
+        sink(type = "output")
+      })
     }
-    res <- tryCatch(
-      switch(parallel$method,
-        multicore = do.call(mcMap, c(list(f = do_profile, i = seq_len(m), a = a, h = h), parallel$args)),
-        serial = Map(do_profile, i = seq_len(m), a = a, h = h)
-      ),
-      error = function(cond) {
-        if (given_outfile) {
-          sink(type = "message")
-          sink(type = "output")
-        }
-        stop(cond)
-      }
+    if ((onomp <- TMB::openmp(n = NULL)) > 0L) {
+      TMB::openmp(n = nomp)
+      on.exit(TMB::openmp(n = onomp), add = TRUE)
+    }
+    obj <- fitted$tmb_out
+    res <- switch(parallel$method,
+      multicore = do.call(mcMap, c(list(f = do_profile, i = seq_len(m), a = a, h = h), parallel$args)),
+      serial = Map(do_profile, i = seq_len(m), a = a, h = h)
     )
   }
 
@@ -302,22 +277,23 @@ profile.egf <- function(fitted,
     row.names = NULL
   )
   if (method == "top") {
-    i <- rep.int(rep.int(subset, p), nr)
+    i <- rep.int(rep.int(subset, length(top)), nr)
     res <- data.frame(
-      top = rep.int(rep.int(factor(top, levels = names_top), N), nr),
-      fitted$frame_windows[i, c("ts", "window"), drop = FALSE],
+      top = rep.int(rep(factor(top, levels = names_top), each = length(subset)), nr),
+      frame_windows[i, c("ts", "window"), drop = FALSE],
       res,
-      combined[i, append, drop = FALSE],
+      frame_combined[i, append, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
+    res$value[] <- res$value + rep.int(as.numeric(Y), nr)
   }
   attr(res, "A") <- A
-  attr(res, "x") <- fitted$best[fitted$nonrandom]
-  attr(res, "level_max") <- level_max
+  attr(res, "x") <- fitted$best[!fitted$random]
+  attr(res, "level") <- level
   attr(res, "method") <- method
-  class(res) <- c("egf_profile", "data.frame")
+  class(res) <- c("egf_profile", oldClass(res))
   res
 }
 
@@ -334,40 +310,38 @@ profile.egf <- function(fitted,
 #' @param level
 #'   A number in the interval (0,1) indicating a confidence level.
 #' @param link
-#'   A \link{logical} flag. If \code{FALSE} and \code{object}
-#'   supplies likelihood profiles of population fitted values
-#'   of top level nonlinear model parameters, then confidence
-#'   intervals on inverse link-transformed fitted values are
-#'   returned.
+#'   A logical flag. If \code{FALSE} and \code{object} supplies
+#'   likelihood profiles of population fitted values of top level
+#'   nonlinear model parameters, then confidence intervals
+#'   on inverse link-transformed fitted values are returned.
 #' @param ...
 #'   Unused optional arguments.
 #'
 #' @details
 #' Each supplied likelihood profile
-#' (level of \link{factor} \code{object$linear_combination}),
+#' (level of factor \code{object$linear_combination}),
 #' is linearly interpolated to approximate the two solutions
 #' of \code{deviance(value) = \link{qchisq}(level, df = 1)}.
 #' These provide the lower and upper confidence limits of interest
 #' (see \href{https://en.wikipedia.org/wiki/Wilks'_theorem}{Wilks' theorem}).
 #'
 #' @return
-#' A \link[=data.frame]{data frame} with one row per supplied profile,
-#' and variables:
+#' A data frame with one row per supplied profile, and variables:
 #' \item{linear_combination}{
 #'   Row index of linear combination that was profiled,
-#'   from \code{\link{seq_len}(\link{nrow}(\link{attr}(object, "A")))}.
+#'   from \code{seq_len(nrow(attr(object, "A")))}.
 #' }
 #' \item{estimate, lower, upper}{
 #'   Estimate of linear combination and approximate lower
 #'   and upper confidence limits, inverse-link transformed
 #'   if \code{link = FALSE}.
 #' }
-#' \code{level} is retained as an \link[=attributes]{attribute} of the result.
+#' \code{level} is retained as an attribute of the result.
 #' So are attributes \code{A} and \code{x} of \code{object}.
 #'
 #' @examples
 #' example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' object <- readRDS(system.file("exdata", "egf_profile.rds",
+#' object <- readRDS(system.file("exdata", "profile-egf.rds",
 #'                               package = "epigrowthfit", mustWork = TRUE))
 #'
 #' confint(object, link = TRUE)
@@ -375,21 +349,13 @@ profile.egf <- function(fitted,
 #'
 #' @export
 #' @importFrom stats qchisq approx
-confint.egf_profile <- function(object, parm, level = attr(object, "level_max"), link = TRUE, ...) {
+confint.egf_profile <- function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
   stop_if_not_true_false(link)
   stop_if_not_number_in_interval(level, 0, 1, "()")
-  stopifnot(level <= attr(object, "level_max"))
+  stopifnot(level <= attr(object, "level"))
   q <- qchisq(level, df = 1)
   method <- attr(object, "method")
 
-  s <- c("top", "ts", "window", "linear_combination", "value", "deviance")
-  if (method == "top") {
-    j1 <- 1:4
-    j2 <- -match(s, names(object), 0L)
-  } else {
-    j1 <- 4L
-    j2 <- -match(s[4:6], names(object), 0L)
-  }
   do_solve <- function(d) {
     i_min <- which.min(d$deviance)
     i_left <- seq_len(i_min)
@@ -397,13 +363,15 @@ confint.egf_profile <- function(object, parm, level = attr(object, "level_max"),
     estimate <- d$value[i_min]
     lower <- approx(x = d$deviance[i_left],  y = d$value[i_left],  xout = q)$y
     upper <- approx(x = d$deviance[i_right], y = d$value[i_right], xout = q)$y
+    d1 <- d[1L, , drop = FALSE]
+    m <- match(c("value", "deviance"), names(d1), 0L)
     data.frame(
-      d[1L, j1, drop = FALSE],
+      d1[seq_len(m[1L] - 1L)],
       estimate,
       lower,
       upper,
-      d[1L, j2, drop = FALSE],
-      row.names = NULL,
+      d1[-seq_len(m[2L])],
+      row.names = FALSE,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
@@ -431,19 +399,18 @@ confint.egf_profile <- function(object, parm, level = attr(object, "level_max"),
 #'
 #' @param x
 #'   An \code{"\link[=profile.egf]{egf_profile}"} object.
-#' @param subset
-#'   An expression to be evaluated in \code{x}.
-#'   It must evaluate to a valid index vector for the rows of \code{x}
-#'   (see \code{\link{[.data.frame}}).
-#'   Only indexed profiles are plotted.
-#'   The default (\code{\link{NULL}}) is to plot all profiles.
-#' @param sqrt
-#'   A \link{logical} flag.
-#'   If \code{TRUE}, then square root-transformed deviance is plotted.
 #' @param level
-#'   A \link{numeric} vector with elements in (0,1). If \code{sqrt = FALSE},
+#'   A numeric vector with elements in (0,1). If \code{sqrt = FALSE},
 #'   then line segments are drawn to show the intersection of the profile
 #'   with lines at \code{deviance = \link{qchisq}(level, df = 1)}.
+#' @param sqrt
+#'   A logical flag.
+#'   If \code{TRUE}, then square root-transformed deviance is plotted.
+#' @param subset
+#'   An expression to be evaluated in \code{x}.
+#'   It must evaluate to a valid index vector for the rows of \code{x}.
+#'   Only indexed profiles are plotted.
+#'   The default (\code{NULL}) is to plot all profiles.
 #' @param ...
 #'   Graphical parameters passed to \code{\link{plot}}.
 #'
@@ -452,11 +419,11 @@ confint.egf_profile <- function(object, parm, level = attr(object, "level_max"),
 #' of \code{subset}.
 #'
 #' @return
-#' \code{\link{NULL}} (invisibly).
+#' \code{NULL} (invisibly).
 #'
 #' @examples
 #' example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' x <- readRDS(system.file("exdata", "egf_profile.rds",
+#' x <- readRDS(system.file("exdata", "profile-egf.rds",
 #'                          package = "epigrowthfit", mustWork = TRUE))
 #'
 #' plot(x, type = "o", bty = "u", las = 1, main = "")
@@ -464,8 +431,7 @@ confint.egf_profile <- function(object, parm, level = attr(object, "level_max"),
 #' @export
 #' @import graphics
 #' @importFrom stats confint
-plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
-                             level = attr(x, "level_max"), ...) {
+plot.egf_profile <- function(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...) {
   subset <- egf_eval_subset(substitute(subset), x, parent.frame())
   subset <- match(levels(factor(x$linear_combination[subset])), levels(x$linear_combination))
 
@@ -478,7 +444,7 @@ plot.egf_profile <- function(x, subset = NULL, sqrt = FALSE,
     !all(is.na(level))
   if (do_segments) {
     level <- level[!is.na(level)]
-    stopifnot(level > 0, level <= attr(x, "level_max"))
+    stopifnot(level > 0, level <= attr(x, "level"))
     ## Line segments at heights 'h' in all plots
     h <- qchisq(level, df = 1)
     ## Line segment 'j' to start at 'v_lower[[i]][j]'

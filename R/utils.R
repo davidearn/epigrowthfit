@@ -1,23 +1,21 @@
-#' Concatenate, wrap, collapse
-#'
-#' Concatenates \R objects, formats the resulting string in paragraphs
-#' using \code{\link{strwrap}}, and collapses paragraph lines with newlines.
-#' Under default settings, the result is a string that prints in the console
-#' as one or more nicely wrapped paragraphs.
-#'
-#' @param ...
-#'   Zero or more \R objects (typically \link{atomic} vectors of length 1),
-#'   to be coerced to \link{character} and concatenated with no separator.
-#' @param width
-#'   A positive integer passed to \code{\link{strwrap}},
-#'   indicating a target column width.
-#'
-#' @return
-#' A \link{character} vector of length 1.
-#'
-#' @noRd
+## A frequent case of 'unlist' usage
+unlist1 <- function(x) {
+  unlist(x, recursive = FALSE, use.names = FALSE)
+}
+
+## For backwards compatibility
+if (getRversion() < "4.0.0") {
+  deparse1 <- function (expr, collapse = " ", width.cutoff = 500L, ...) {
+    paste(deparse(expr, width.cutoff, ...), collapse = collapse)
+  }
+}
+
+## Coerces a sequence of R objects to character, concatenates them with
+## no separator, and formats the resulting string so that, when printed,
+## the user sees nicely wrapped paragraphs. Used inside of 'stop', etc.
+## so that condition messages print nicely.
 wrap <- function(..., width = 0.9 * getOption("width")) {
-  dots <- unname(list(...))
+  dots <- list(...)
   x <- vapply(dots, paste0, "", collapse = "")
   x1 <- paste0(x, collapse = "")
   y <- unlist(strsplit(x1, "\n[ \t\n]*\n"), FALSE, FALSE)
@@ -25,82 +23,48 @@ wrap <- function(..., width = 0.9 * getOption("width")) {
   z <- strwrap(y1, width = width)
   paste0(z, collapse = "\n")
 }
+
+## Creates and prints headings. Used to section 'print' method output.
 heading <- function(text, width = 0.9 * getOption("width"), symbol = ".") {
   cat(text, " ", strrep(symbol, max(0L, width - 1L - nchar(text))), "\n", sep = "")
 }
+
+## Conditionally pluralizes most singular English nouns.
+## Used to make sure 'print' and 'plot' method output is grammatical.
 pluralize <- function(word, n) {
-  if (n > 1L) paste0(word, "s") else word
+  plural <- (n > 1L)
+  word[plural] <- paste0(word[plural], "s")
+  word
 }
 
-#' Enumerate duplicated strings
-#'
-#' Replaces the \code{i}th instance of string \code{s} in a
-#' \link{character} vector with \code{\link{sprintf}("\%s[\%d]", s, i)}.
-#'
-#' @param x
-#'   For \code{enum_dupl_string}, a \link{character} vector.
-#'   For \code{enum_dupl_names}, an \R object with a \code{\link{names}}
-#'   \link[=attributes]{attribute}.
-#'
-#' @return
-#' \code{enum_dupl_string(x)} returns an enumerated copy of \code{x}.
-#' \code{enum_dupl_names(x)} returns a copy of \code{x} with
-#' \code{\link{names}(x)} replaced by \code{enum_dupl_string(\link{names}(x))}.
-#'
-#' @examples
-#' x <- sample(letters[1:3], 10L, replace = TRUE)
-#' enum_dupl_string(x)
-#'
-#' y <- seq_along(x)
-#' names(y) <- x
-#' enum_dupl_names(y)
-#'
-#' @name enum_dupl_string
-#' @noRd
-NULL
+## Formats tables of text.
+## Used by 'print' methods instead of hacking 'print.default'.
+align <- function(..., justify = "right", gap = 1L) {
+  dots <- list(...) # list of column vectors
+  dots <- Map(format, x = dots, justify = justify, USE.NAMES = FALSE)
+  dots$sep <- strrep(" ", gap)
+  do.call(paste, dots)
+}
 
-enum_dupl_string <- function(x, format = "%s[%d]") {
+## Disambiguates duplicated strings (or names)
+disambiguate <- function(x, nms = FALSE, fmt = "%s[%d]") {
+  if (nms) {
+    nx <- names(x)
+    if (is.null(nx)) {
+      return(x)
+    }
+    names(x) <- disambiguate(nx, nms = FALSE, fmt = fmt)
+    return(x)
+  }
+  x <- as.character(x)
   f <- factor(x)
   n <- tabulate(f)
   i <- unsplit(lapply(n, seq_len), f)
-  sprintf(format, x, i)
+  sprintf(fmt, x, i)
 }
 
-enum_dupl_names <- function(x, format = "%s[%d]") {
-  if (!is.null(names(x))) {
-    names(x) <- enum_dupl_string(names(x), format = format)
-  }
-  x
-}
-
-#' Literal run length encoding
-#'
-#' A replacement for \code{\link{rle}} that regards \code{\link{NA}}
-#' as equal to previous \code{NA}. For \link{double} vectors,
-#' it regards \code{\link{NaN}} as equal to previous \code{NaN}
-#' but unequal to previous \code{NA}.
-#'
-#' @param x An \link{atomic} vector.
-#'
-#' @details
-#' The result is compatible with \code{\link{inverse.rle}}.
-#' More precisely,
-#' \code{function(x) inverse.rle(literal_rle(x))}
-#' is an identity function for atomic \code{x}, and
-#' \code{function(x) literal_rle(inverse.rle(x))}
-#' is an identity function for lists \code{x} generated
-#' by \code{literal_rle}.
-#'
-#' @return
-#' A \link{list} similar to \code{\link{rle}(x)},
-#' though not inheriting from \link{class} \code{"rle"}.
-#'
-#' @examples
-#' x <- rep.int(c(0, NA, NaN, 1), 1:4)
-#' rle_x <- literal_rle(x)
-#' identical(x, inverse.rle(rle_x))
-#'
-#' @noRd
+## A drop-in replacement for 'rle' that regards NA as equal to previous NA
+## and (in double vectors) NaN as equal to previous NaN
 literal_rle <- function(x) {
   n <- length(x)
   if (n == 0L) {
@@ -120,27 +84,7 @@ literal_rle <- function(x) {
   list(lengths = diff(c(0L, i)), values = x[i])
 }
 
-#' Last observation carried forward
-#'
-#' Replaces missing values (\code{\link{NA}} and, in \link{double}
-#' vectors, \code{\link{NaN}}) with most recent earlier observations.
-#'
-#' @param x
-#'   An \link{atomic} vector.
-#' @param x0
-#'   An \link{atomic} scalar to replace leading missing values,
-#'   for which there are no earlier observations. The default
-#'   (\code{\link{NULL}}) is to preserve these missing values.
-#'
-#' @return
-#' \code{x} with missing values replaced.
-#'
-#' @examples
-#' x <- c(NA, NA, 1, NA, 2, 2, 3, NA)
-#' locf(x)
-#' locf(x, x0 = 0)
-#'
-#' @noRd
+## Last observation carried forward, with optional replacement of leading NA
 locf <- function(x, x0 = NULL) {
   if (!anyNA(x)) {
     return(x)
@@ -158,6 +102,67 @@ locf <- function(x, x0 = NULL) {
   inverse.rle(rle_x)
 }
 
+## Computes Wald confidence intervals from estimates and standard errors
+#' @importFrom stats qchisq
+wald <- function(estimate, se, level) {
+  q <- qchisq(level, df = 1)
+  n <- length(estimate)
+  lu <- estimate + rep.int(sqrt(q) * c(-1, 1), c(n, n)) * se
+  dim(lu) <- c(n, 2L)
+  colnames(lu) <- c("lower", "upper")
+  lu
+}
+
+#' Convert between covariance matrix and parameters
+#'
+#' \pkg{TMB} uses \code{choose(n + 1, 2)}-vectors \code{theta}
+#' to parametrize \code{n}-by-\code{n} symmetric positive definite
+#' matrices \code{S}.
+#' The specific parametrization is given by
+#' \code{theta = c(log(sqrt(diag(S))), R1[upper.tri(R1)])},
+#' where
+#' \code{R1 = R \%*\% diag(1 / diag(R))},
+#' \code{R = chol(S)}.
+#' \code{cov2theta} converts from matrix to vector;
+#' \code{theta2cov} performs the inverse operation.
+#' Neither performs any checks on the supplied argument.
+#'
+#' @param S
+#'   A symmetric positive definite numeric matrix.
+#' @param theta
+#'   A numeric vector parametrizing a symmetric positive definite
+#'   numeric matrix.
+#'
+#' @return
+#' \code{cov2theta(S)} returns a numeric vector of length
+#' \code{choose(nrow(S) + 1, 2)}.
+#' \code{theta2cov(theta)} returns a symmetric positive definite
+#' numeric matrix with dimensions \code{c(n, n)},
+#' where \code{n} is the positive solution of
+#' \code{length(theta) = choose(n + 1, 2)}.
+#'
+#' @noRd
+NULL
+
+cov2theta <- function(S) {
+  n <- dim(S)[1L]
+  log_sd <- 0.5 * log(diag(S, names = FALSE))
+  S <- chol(S)
+  S[] <- S * rep.int(1 / diag(S), rep.int(n, n))
+  c(log_sd, S[upper.tri(S)])
+}
+
+theta2cov <- function(theta) {
+  n <- round(0.5 * (-1 + sqrt(1 + 8 * length(theta))))
+  i <- seq_len(n)
+  R1 <- diag(n)
+  R1[upper.tri(R1)] <- theta[-i]
+  R1[] <- crossprod(R1)
+  scale <- exp(theta[i] - 0.5 * log(diag(R1)))
+  R1[] <- scale * R1 * rep.int(scale, rep.int(n, n))
+  R1
+}
+
 #' Apply length-preserving functions to ragged vectors
 #'
 #' Modifies ragged vectors in place by replacing each group of elements
@@ -165,33 +170,33 @@ locf <- function(x, x0 = NULL) {
 #' of elements.
 #'
 #' @param x
-#'   A \link{vector} or \link[=data.frame]{data frame}.
+#'   A vector or data frame.
 #' @param index
-#'   A \link{factor} (insofar that \code{\link{as.factor}(index)} is a factor)
+#'   A factor (insofar as \code{as.factor(index)} is a factor)
 #'   defining a grouping of the elements or rows of \code{x}.
 #' @param f
-#'   A \link{function} or \link{list} of one or more functions to be applied
-#'   to the subsets of \code{x} defined by \code{index}. Functions are recycled
-#'   to the number of levels of \code{index} (unused levels are not dropped).
-#'   Each function must accept an initial \link{vector} argument matching
-#'   \code{\link{typeof}(x)} (or \code{typeof(x[[j]])} for all \code{j}
-#'   if \code{x} is a \link[=data.frame]{data frame}) and return a vector
-#'   of the same length (though not necessarily of the same type). It is
-#'   expected that returned vectors have compatible \link{mode}s so that
-#'   they can be concatenated in a sensible way.
+#'   A function or list of one or more functions to be applied to the subsets
+#'   of \code{x} defined by \code{index}.
+#'   Functions are recycled to the number of levels of \code{index}
+#'   (unused levels are not dropped).
+#'   Each function must accept an initial vector argument matching
+#'   \code{typeof(x)} (or \code{typeof(x[[j]])} for all \code{j}
+#'   if \code{x} is a data frame) and return a vector of the same length
+#'   (though not necessarily of the same type).
+#'   It is expected that returned vectors have compatible modes,
+#'   so that they can be concatenated in a sensible way.
 #'
 #' @details
-#' Let \code{f} be a list of \code{\link{nlevels}(index)} functions,
-#' and let \code{k = \link{split}(\link{seq_along}(index), index)}.
+#' Let \code{f} be a list of \code{nlevels(index)} functions,
+#' and let \code{k = split(seq_along(index), index)}.
 #' For vectors \code{x}, function \code{f[[i]]} is applied to
 #' \code{x[k[[i]]]}.
 #' For data frames \code{x}, function \code{f[[i]]} is applied to
 #' \code{x[[j]][k[[i]]]} for all \code{j}.
 #'
 #' @return
-#' If \code{x} is a \link{vector}, then a vector of the same length.
-#' If \code{x} is a \link[=data.frame]{data frame}, then a data frame
-#' with the same dimensions.
+#' If \code{x} is a vector, then a vector of the same length.
+#' If \code{x} is a data frame, then a data frame with the same dimensions.
 #'
 #' @examples
 #' x <- 1:10
@@ -213,43 +218,3 @@ in_place_ragged_apply <- function(x, index, f) {
   split(x, index) <- Map(do_call, y = split(x, index), g = f)
   x
 }
-
-#' Compute Wald confidence intervals
-#'
-#' Computes approximate confidence intervals around a maximum likelihood
-#' estimate (assuming that the estimator is approximately normally distributed).
-#'
-#' @param estimate,se
-#'   \link[=numeric]{Numeric} vectors of equal length supplying maximum
-#'   likelihood estimates of parameters and corresponding approximate
-#'   standard errors.
-#' @param level
-#'   A number in the interval (0,1) indicating a confidence level.
-#'
-#' @details
-#' Confidence limits are computed as
-#' \code{estimate[i] + c(-1, 1) * sqrt(q) * se[i]},
-#' where \code{q = \link{qchisq}(level, df = 1)}.
-#' See the \href{https://en.wikipedia.org/wiki/Wald_test}{Wald test}.
-#'
-#' @return
-#' A \link{numeric} \link{matrix} with \code{\link{length}(estimate)} rows
-#' and 2 columns \code{lower} and \code{upper} giving approximate confidence
-#' limits.
-#'
-#' @examples
-#' estimate <- rnorm(6L, 0, 1)
-#' se <- rlnorm(6L, 0, 0.1)
-#' do_wald(estimate = estimate, se = se, level = 0.95)
-#'
-#' @noRd
-#' @importFrom stats qchisq
-do_wald <- function(estimate, se, level) {
-  q <- qchisq(level, df = 1)
-  n <- length(estimate)
-  lu <- estimate + rep.int(sqrt(q) * c(-1, 1), c(n, n)) * se
-  dim(lu) <- c(n, 2L)
-  colnames(lu) <- c("lower", "upper")
-  lu
-}
-

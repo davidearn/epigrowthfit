@@ -10,66 +10,62 @@
   seed = NULL,
   boot = FALSE,
   control = list(),
-  trace = FALSE,
   parallel = egf_parallel(),
+  trace = FALSE,
   ...
 )
 }
 \arguments{
-\item{object}{An \code{"\link{egf}"} object specifying a fitted nonlinear
-mixed effects model.}
+\item{object}{An \code{"\link{egf}"} object.}
 
 \item{nsim}{A positive integer indicating a number of replications.}
 
 \item{seed}{An integer used to set the \link{RNG} state before simulation.
-The default (\code{\link{NULL}}) is to use the state at the
-time of the function call. The RNG state
-(either a \link{list} of arguments to \code{\link{set.seed}}
-or a value of \code{\link{.Random.seed}}) is preserved as an
-\link[=attributes]{attribute} of the result.}
+The default (\code{NULL}) is to use the state at the time of
+the function call. The RNG state (either a list of arguments to
+\code{\link{set.seed}} or a value of \code{\link{.Random.seed}})
+is preserved as an attribute of the result.}
 
 \item{boot}{A \link{logical} flag. If \code{TRUE}, then a bootstrapping
 step is performed.}
 
-\item{control}{A \link{list} of control parameters passed to \code{\link{nlminb}}.}
+\item{control}{A list of control parameters passed to \code{\link{nlminb}}.}
 
-\item{trace}{A \link{logical} flag.
+\item{parallel}{An \code{"\link{egf_parallel}"} object defining options for \R level
+parallelization.}
+
+\item{trace}{A logical flag.
 If \code{TRUE}, then basic tracing messages indicating progress
 are printed.
 Depending on \code{object$control$trace}, these may be mixed with
 optimizer output.}
 
-\item{parallel}{An \code{"\link{egf_parallel}"} object defining options for \R level
-parallelization.}
-
 \item{...}{Unused optional arguments.}
 }
 \value{
-A \link{list} inheriting from \link{class} \code{"egf_simulate"},
-with elements:
+A list inheriting from class \code{"egf_simulate"}, with elements:
 \item{simulations}{
-  A \link[=data.frame]{data frame} containing simulated incidence data.
-  It has variables \code{ts}, \code{window}, and \code{time},
-  and \code{nsim} further variables with names of the form \code{x[0-9]+}.
-  It corresponds rowwise to
-  \code{object$frame[!is.na(object$frame$window), ]}.
+  A data frame containing simulated incidence data. It has variables
+  \code{ts}, \code{window}, and \code{time}, and \code{nsim} further
+  variables with names of the form \code{x[0-9]+}. It corresponds
+  rowwise to \code{\link[=model.frame.egf]{model.frame}(object)}.
 }
 \item{boot}{
-  If \code{boot = TRUE}, then a \link[=double]{numeric} \link{matrix}
-  containing \code{nsim} bootstrap samples of the full parameter vector
-  \code{c(beta, theta, b)}, with \code{\link{length}(object$best)} rows
-  and \code{nsim} columns. Otherwise, \code{\link{NULL}}.
+  If \code{boot = TRUE}, then a numeric matrix with \code{nsim} columns,
+  each a sample from the conditional distribution of the parameter vector
+  \code{unlist(\link[=coef.egf]{coef}(object, full = FALSE))}.
+  Otherwise, \code{NULL}.
 }
-\link[=attributes]{Attribute} \code{RNGstate} preserves the RNG state
-prior to simulation, making the result reproducible.
+Attribute \code{RNGstate} preserves the RNG state prior to simulation,
+making the result reproducible.
 }
 \description{
 Simulates incidence data conditional on a fitted nonlinear
-mixed effects model of epidemic growth. (Only observations
-within fitting windows are simulated.) Optionally re-estimates
-the model given the simulated data, thus generating samples
-from the conditional distribution of the full parameter vector
-\code{c(beta, theta, b)}.
+mixed effects model of epidemic growth.
+(Only observations within fitting windows are simulated.)
+Optionally re-estimates the model given the simulated data,
+thus generating samples from the conditional distribution
+of the bottom level parameter vector.
 }
 \details{
 Bootstrap optimizations are typically expensive for nontrivial models.
@@ -78,7 +74,7 @@ They are parallelized at the C++ level when there is OpenMP support and
 If there is no OpenMP support, then bootstrap optimizations can still be
 parallelized at the \R level with appropriate setting of \code{parallel}.
 
-Arguments \code{trace}, \code{control}, and \code{parallel} are unused
+Arguments \code{control}, \code{parallel}, and \code{trace} are unused
 when \code{boot = FALSE}.
 }
 \examples{
@@ -86,7 +82,7 @@ example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
 exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
 object <- readRDS(file.path(exdata, "egf.rds"))
 
-path_to_cache <- file.path(exdata, "egf_simulate.rds")
+path_to_cache <- file.path(exdata, "simulate-egf.rds")
 if (file.exists(path_to_cache)) {
   zz <- readRDS(path_to_cache)
 } else {

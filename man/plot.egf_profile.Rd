@@ -4,28 +4,27 @@
 \alias{plot.egf_profile}
 \title{Plot likelihood profiles}
 \usage{
-\method{plot}{egf_profile}(x, subset = NULL, sqrt = FALSE, level = attr(x, "level_max"), ...)
+\method{plot}{egf_profile}(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...)
 }
 \arguments{
 \item{x}{An \code{"\link[=profile.egf]{egf_profile}"} object.}
 
-\item{subset}{An expression to be evaluated in \code{x}.
-It must evaluate to a valid index vector for the rows of \code{x}
-(see \code{\link{[.data.frame}}).
-Only indexed profiles are plotted.
-The default (\code{\link{NULL}}) is to plot all profiles.}
-
-\item{sqrt}{A \link{logical} flag.
-If \code{TRUE}, then square root-transformed deviance is plotted.}
-
-\item{level}{A \link{numeric} vector with elements in (0,1). If \code{sqrt = FALSE},
+\item{level}{A numeric vector with elements in (0,1). If \code{sqrt = FALSE},
 then line segments are drawn to show the intersection of the profile
 with lines at \code{deviance = \link{qchisq}(level, df = 1)}.}
+
+\item{sqrt}{A logical flag.
+If \code{TRUE}, then square root-transformed deviance is plotted.}
+
+\item{subset}{An expression to be evaluated in \code{x}.
+It must evaluate to a valid index vector for the rows of \code{x}.
+Only indexed profiles are plotted.
+The default (\code{NULL}) is to plot all profiles.}
 
 \item{...}{Graphical parameters passed to \code{\link{plot}}.}
 }
 \value{
-\code{\link{NULL}} (invisibly).
+\code{NULL} (invisibly).
 }
 \description{
 A method for plotting likelihood profiles.
@@ -36,7 +35,7 @@ of \code{subset}.
 }
 \examples{
 example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-x <- readRDS(system.file("exdata", "egf_profile.rds",
+x <- readRDS(system.file("exdata", "profile-egf.rds",
                          package = "epigrowthfit", mustWork = TRUE))
 
 plot(x, type = "o", bty = "u", las = 1, main = "")

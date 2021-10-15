@@ -42,7 +42,6 @@ install-cran: build-cran install
 install-github: build install
 
 install:
-	export NOT_CRAN=true
 	$(R) CMD INSTALL --preclean $(TARBALL)
 
 pdf: $(MANUAL)
@@ -53,10 +52,10 @@ $(MANUAL): update-docs
 test: copy-headers
 	$(R) --quiet -e "devtools::test(\".\")"
 
-check-cran: build-cran
+check-cran: clean build-cran
 	$(R) CMD check --as-cran $(TARBALL)
 
-check: build
+check: clean build
 	$(R) CMD check --no-tests $(TARBALL)
 
 clean:

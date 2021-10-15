@@ -19,45 +19,44 @@
 \arguments{
 \item{x}{An \code{"\link[=confint.egf]{egf_confint}"} object.}
 
-\item{type}{A \link{character} string determining how confidence intervals
-are displayed (see Details).}
+\item{type}{A character string determining how confidence intervals are displayed
+(see Details).}
 
-\item{time_as}{A \link{character} string indicating how time is displayed
-on the bottom axis. The options are: as is (\code{"numeric"})
-and with a calendar (\code{"Date"}). In the latter case,
-numeric times are interpreted as numbers of days since
-\code{1970-01-01 00:00:00}. [\code{type = "boxes"} only.]}
+\item{time_as}{A character string indicating how time is displayed on the bottom axis.
+The options are:
+as is (\code{"numeric"}) and with a calendar (\code{"Date"}).
+In the latter case, numeric times are interpreted as numbers of days
+since \code{1970-01-01 00:00:00}. [\code{type = "boxes"} only.]}
 
 \item{per_plot}{A positive integer. One plot will display at most this many
 confidence intervals or time series (depending on \code{type}).}
 
 \item{subset}{An expression to be evaluated in \code{x}.
-It must evaluate to a valid index vector for the rows of \code{x}
-(see \code{\link{[.data.frame}}).
+It must evaluate to a valid index vector for the rows of \code{x}.
 Only indexed confidence intervals are plotted.
-The default (`NULL`) is to plot all confidence intervals.}
+The default (\code{NULL}) is to plot all confidence intervals.}
 
 \item{order}{An expression to be evaluated in \code{x},
 typically a call to \code{\link{order}},
 determining the order in which confidence intervals
 or time series (depending on \code{type}) are plotted.
-It must evaluate to a permutation of \code{\link{seq_len}(\link{nrow}(x))}.
-The default (\code{\link{NULL}}) is equivalent to \code{seq_len(nrow(x))}.}
+It must evaluate to a permutation of \code{seq_len(nrow(x))}.
+The default (\code{NULL}) is equivalent to \code{seq_len(nrow(x))}.}
 
 \item{main}{An expression or character string indicating a plot title,
 to be recycled for all plots.}
 
-\item{label}{An expression to be evaluated in \code{x}, typically a \link{factor},
-\link{interaction} of factors, or \link{call} to \code{\link{sprintf}}.
+\item{label}{An expression to be evaluated in \code{x}, typically a factor,
+an interaction of factors, or a call to \code{\link{sprintf}}.
 It is used to create appropriate \eqn{y}-axis labels for confidence
 intervals when \code{type = "bars"} and appropriate panel labels for
-time series when \code{type = "boxes"}. The default (\code{\link{NULL}})
+time series when \code{type = "boxes"}. The default (\code{NULL})
 is to take labels from \code{x$window} and \code{x$ts}, respectively.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-\code{\link{NULL}} (invisibly).
+\code{NULL} (invisibly).
 }
 \description{
 A method for graphically comparing confidence intervals
@@ -72,7 +71,7 @@ time series (level of \code{x$ts}), each containing shaded boxes.
 Projection of boxes onto the horizontal and vertical axes yields
 fitting windows and corresponding confidence intervals, respectively.
 
-If an endpoint of a confidence interval is \code{\link{NaN}},
+If an endpoint of a confidence interval is \code{NaN},
 then dashed lines are drawn from the point estimate to
 the boundary of the plotting region to indicate missingness.
 
@@ -81,7 +80,7 @@ of \code{subset}, \code{order}, and \code{label}.
 }
 \examples{
 example("confint.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-x <- readRDS(system.file("exdata", "egf_confint.rds", package = "epigrowthfit", mustWork = TRUE))
+x <- readRDS(system.file("exdata", "confint-egf.rds", package = "epigrowthfit", mustWork = TRUE))
 
 op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
 plot(x, type = "bars")

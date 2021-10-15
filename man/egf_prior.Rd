@@ -17,24 +17,23 @@ Wishart(df, scale, tol = 1e-06)
 InverseWishart(df, scale, tol = 1e-06)
 }
 \arguments{
-\item{mu}{A \link{numeric} vector listing means.}
+\item{mu}{A numeric vector listing means.}
 
-\item{sigma}{A positive \link{numeric} vector listing standard deviations.}
+\item{sigma}{A positive numeric vector listing standard deviations.}
 
-\item{eta}{A positive \link{numeric} vector listing values for the shape
-parameter, with \code{1} corresponding to a uniform distribution
-over the space of symmetric positive definite matrices with
-unit diagonal elements. Lesser (greater) values concentrate the
-probability density around such matrices whose determinant is
-nearer to 0 (1).}
+\item{eta}{A positive numeric vector listing values for the shape parameter,
+with 1 corresponding to a uniform distribution over the space of
+symmetric positive definite matrices with unit diagonal elements.
+Lesser (greater) values concentrate the probability density around
+such matrices whose determinant is nearer to 0 (1).}
 
-\item{df}{A \link{numeric} vector listing degrees of freedom.
-\code{df} must be greater than \code{\link{nrow}(scale) - 1}.
+\item{df}{A numeric vector listing degrees of freedom.
+\code{df} must be greater than \code{nrow(scale) - 1}.
 (If either \code{df} or \code{scale} has length greater than 1,
 then this condition is checked pairwise after recycling.)}
 
-\item{scale}{A \link{list} of symmetric positive definite \link{numeric} matrices,
-or a \link{matrix} to be coerced to a list of length 1.}
+\item{scale}{A list of symmetric positive definite \link{numeric} matrices,
+or a matrix to be placed in a list of length 1.}
 
 \item{tol}{A non-negative number specifying a tolerance for non-positive definiteness
 of \code{scale}. All eigenvalues of \code{scale} must exceed
@@ -43,13 +42,12 @@ of \code{scale}. All eigenvalues of \code{scale} must exceed
 be positive, as standard deviations are processed on the log scale.)}
 }
 \value{
-A \link{list} inheriting from \link{class} \code{"egf_prior"},
-with elements:
+A list inheriting from class \code{"egf_prior"}, with elements:
 \item{family}{
-  A \link{character} string naming a family of distributions.
+  A character string naming a family of distributions.
 }
 \item{parameters}{
-  A named \link{list} of \link{numeric} vectors specifying parameter values.
+  A named list of numeric vectors specifying parameter values.
 }
 }
 \description{

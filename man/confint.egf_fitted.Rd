@@ -42,7 +42,7 @@ with \code{estimate} and \code{se} as in \code{object} and
 }
 \examples{
 example("fitted.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-object <- readRDS(system.file("exdata", "egf_fitted.rds",
+object <- readRDS(system.file("exdata", "fitted-egf.rds",
                               package = "epigrowthfit", mustWork = TRUE))
 
 confint(object, link = TRUE)

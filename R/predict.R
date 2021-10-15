@@ -7,39 +7,39 @@
 #' @param object
 #'   An \code{"\link{egf}"} object.
 #' @param what
-#'   A \link{character} vector listing one or more variables for which
+#'   A character vector listing one or more variables for which
 #'   predicted values are sought.
 #' @param time
-#'   A \link{numeric} vector supplying time points at which predicted
+#'   A numeric vector supplying time points at which predicted
 #'   values are sought. \link{Date} and \link{POSIXt} vectors are
 #'   tolerated and coerced to numeric with \code{\link{julian}(time)}.
-#'   When \link{time} is missing, time points stored in \code{object}
-#'   are reused, and \code{window} is ignored.
+#'   When \link{time} is missing, time points stored in
+#'   \code{\link[=model.frame.egf]{model.frame}(object)} are reused,
+#'   and \code{window} is ignored.
 #' @param window
-#'   A \link{factor} of length \code{\link{length}(time)} grouping
-#'   the elements of \code{time} by fitting window. Levels not
-#'   found in \code{\link{levels}(object$frame$window)} are ignored.
-#' @param append
-#'   An expression indicating variables in the combined model frame
-#'   (see \code{\link{egf_combine_frames}}) to be included with the
-#'   result. The default (\code{\link{NULL}}) is to append nothing.
+#'   A factor of length \code{length(time)} grouping the elements
+#'   of \code{time} by fitting window.
+#'   Levels not found in
+#'   \code{levels(\link[=model.frame.egf]{model.frame}(object)$window)}
+#'   are ignored.
 #' @param log
-#'   A \link{logical} flag. If \code{FALSE},
+#'   A logical flag. If \code{FALSE},
 #'   then inverse log-transformed predicted values are returned.
 #' @param se
-#'   A \link{logical} flag. If \code{log = TRUE} and \code{se = TRUE},
+#'   A logical flag. If \code{se = TRUE} and \code{log = TRUE},
 #'   then approximate delta method standard errors on predicted values
-#'   are reported. Standard errors are required for subsequent use of
-#'   \code{\link{confint.egf_predict}}.
-#' @param .append
-#'   An index vector to be used (if non-\code{\link{NULL}}) in place
-#'   of the result of evaluating \code{append}.
+#'   are reported.
+#'   Standard errors are required for subsequent use
+#'   of \code{\link{confint.egf_predict}}.
+#'   Setting \code{se = TRUE} and \code{log = FALSE} is an error,
+#'   as standard errors are not available for inverse log-transformed
+#'   predicted values.
 #' @param ...
 #'   Unused optional arguments.
 #'
 #' @details
-#' In the result, \code{estimate[i]} can be interpreted as follows
-#' assuming \code{log = FALSE}:
+#' In the result, \code{estimate[i]} can be interpreted as follows,
+#' for \code{log = FALSE}:
 #' \describe{
 #' \item{\code{interval}}{
 #'   The expected number of cases observed from \code{time[i-1]}
@@ -56,32 +56,29 @@
 #' }
 #' }
 #'
-#' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-#' of \code{append}.
-#'
 #' @return
-#' A \link[=data.frame]{data frame} inheriting from \link{class}
-#' \code{"egf_predict"}, with variables:
+#' A data frame inheriting from class \code{"egf_predict"}, with variables:
 #' \item{var}{
 #'   Predicted variable, from \code{what}.
 #' }
 #' \item{ts}{
-#'   Time series, from \code{\link{levels}(object$frame_windows$ts)}.
+#'   Time series, from
+#'   \code{levels(\link[=model.frame.egf]{model.frame}(object)$ts)}.
 #' }
 #' \item{window}{
-#'   Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
+#'   Fitting window, from
+#'   \code{levels(\link[=model.frame.egf]{model.frame}(object)$window)}.
 #' }
 #' \item{time}{
-#'   Time, after possible coercion to \link{numeric}.
+#'   Time, after possible coercion to numeric.
 #' }
 #' \item{estimate}{
 #'   Predicted value of \code{var} at \code{time} in \code{window},
-#'   conditional on the mixed effects data \code{object$frame_parameters}
-#'   and the fitted model \code{object$best}.
+#'   conditional on the mixed effects data and fitted model.
 #' }
 #' \item{se}{
-#'   (If \code{log = TRUE} and \code{se = TRUE}.)
 #'   Approximate delta method standard error on \code{estimate}.
+#'   Absent except for calls matching \code{predict(log = TRUE, se = TRUE)}.
 #' }
 #'
 #' @examples
@@ -89,7 +86,7 @@
 #' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
 #' object <- readRDS(file.path(exdata, "egf.rds"))
 #'
-#' path_to_cache <- file.path(exdata, "egf_predict.rds")
+#' path_to_cache <- file.path(exdata, "predict-egf.rds")
 #' if (file.exists(path_to_cache)) {
 #'   zz <- readRDS(path_to_cache)
 #' } else {
@@ -100,27 +97,29 @@
 #'
 #' @export
 #' @importFrom TMB MakeADFun sdreport
+#' @importFrom stats model.frame
 predict.egf <- function(object,
                         what = c("interval", "cumulative", "rt"),
                         time,
                         window,
-                        append = NULL,
                         log = TRUE,
                         se = FALSE,
-                        .append = NULL,
                         ...) {
   what <- unique(match.arg(what, several.ok = TRUE))
   stop_if_not_true_false(log)
   stop_if_not_true_false(se)
+  if (se && !log) {
+    stop(wrap(
+      "Standard errors are not available for inverse log-transformed ",
+      "predicted values."
+    ))
+  }
 
-  combined <- egf_combine_frames(object)
-  append <- if (is.null(.append)) substitute(append) else .append
-  append <- egf_eval_append(append, combined, baseenv())
-  do_day_of_week <- object$model$day_of_week > 0L
-
-  start <- object$frame_windows$start
-  end   <- object$frame_windows$end
+  frame_windows <- model.frame(object, "windows")
+  start <- frame_windows$start
+  end   <- frame_windows$end
   day1  <- object$tmb_out$env$data$day1
+  do_day_of_week <- object$model$day_of_week > 0L
 
   if (missing_time <- missing(time)) {
     len  <- object$tmb_out$env$data$time_seg_len
@@ -146,8 +145,8 @@ predict.egf <- function(object,
       length(window) == length(time)
     )
 
-    subset <- which(levels(object$frame$window) %in% levels(factor(window)))
-    window <- factor(window, levels = levels(object$frame$window)[subset])
+    subset <- which(levels(frame_windows$window) %in% levels(factor(window)))
+    window <- factor(window, levels = levels(frame_windows$window)[subset])
 
     if (nlevels(window) == 0L) {
       stop("'window' must have at least one valid level.")
@@ -182,14 +181,14 @@ predict.egf <- function(object,
       ))
     }
 
-    time <- unlist(time_split, FALSE, FALSE)
+    time <- unlist1(time_split)
     if (do_day_of_week) {
       day1 <- as.integer((day1 + (t0 - start)) %% 7)
     }
   }
 
-  tmb_args <- egf_tmb_remake_args(object)
-  tmb_args$data$flags$flag_predict <- 1L
+  tmb_args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
+  tmb_args$data$flags$predict <- 1L
   tmb_args$data$what <- as.integer(eval(formals(predict.egf)$what) %in% what)
   tmb_args$data$subset <- subset - 1L
   tmb_args$data$new_time <- time - rep.int(start, len)
@@ -197,8 +196,9 @@ predict.egf <- function(object,
   tmb_args$data$new_day1 <- day1
   tmb_out_retape <- do.call(MakeADFun, tmb_args)
 
-  if (log && se) {
-    ssdr <- summary(sdreport(tmb_out_retape), select = "report")
+  if (se) {
+    sdr <- sdreport(tmb_out_retape, par.fixed = object$best[!object$random], getReportCovariance = FALSE)
+    ssdr <- summary(sdr, select = "report")
     index <- factor(rownames(ssdr), levels = sprintf("log_%s", what), labels = sprintf("log(%s)", what))
     report <- split(unname(ssdr[, "Estimate"]), index)
     report_se <- split(unname(ssdr[, "Std. Error"]), index)
@@ -218,26 +218,19 @@ predict.egf <- function(object,
 
   res <- data.frame(
     var = gl(length(report), length(time), labels = names(report)),
-    ts = rep.int(object$frame_windows$ts[subset], len),
-    window = rep.int(object$frame_windows$window[subset], len),
+    ts = rep.int(frame_windows$ts[subset], len),
+    window = rep.int(frame_windows$window[subset], len),
     time = time,
-    estimate = unlist(Map(replace, list(x), ix[what], report), FALSE, FALSE)
+    estimate = unlist1(Map(replace, list(x), ix[what], report))
   )
-  if (log && se) {
-    res$se <- unlist(Map(replace, list(x), ix[what], report_se), FALSE, FALSE)
+  if (se) {
+    res$se <- unlist(Map(replace, list(x), ix[what], report_se))
   }
   if (!log) {
     res$estimate <- exp(res$estimate)
     levels(res$var) <- what
   }
-  res <- data.frame(
-    res,
-    combined[rep.int(subset, len), append, drop = FALSE],
-    row.names = NULL,
-    check.names = FALSE,
-    stringsAsFactors = FALSE
-  )
-  attr(res, "se") <- log && se
+  attr(res, "se") <- se
   class(res) <- c("egf_predict", "data.frame")
   res
 }
@@ -255,7 +248,7 @@ predict.egf <- function(object,
 #' @param level
 #'   A number in the interval (0,1) indicating a confidence level.
 #' @param log
-#'   A \link{logical} flag. If \code{FALSE}, then confidence intervals
+#'   A logical flag. If \code{FALSE}, then confidence intervals
 #'   on inverse log-transformed predicted values are returned.
 #' @param ...
 #'   Unused optional arguments.
@@ -275,11 +268,11 @@ predict.egf <- function(object,
 #' \code{lower}, and \code{upper} inverse log-transformed and
 #' the \link{levels} of variable \code{var} modified accordingly.
 #'
-#' \code{level} is retained as an \link[=attributes]{attribute}.
+#' \code{level} is retained as an attribute.
 #'
 #' @examples
 #' example("predict.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' object <- readRDS(system.file("exdata", "egf_predict.rds",
+#' object <- readRDS(system.file("exdata", "predict-egf.rds",
 #'                               package = "epigrowthfit", mustWork = TRUE))
 #'
 #' confint(object, log = TRUE)
@@ -291,20 +284,15 @@ confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
     stop(wrap(
       "'object' must supply log scale predicted values ",
       "and corresponding standard errors. ",
-      "Retry with 'object = predict(., link = TRUE, log = TRUE)'."
+      "Retry with 'object = predict(<\"egf\" object>, log = TRUE, se = TRUE)'."
     ))
   }
   stop_if_not_number_in_interval(level, 0, 1, "()")
   stop_if_not_true_false(log)
 
-  s <- c("var", "ts", "window", "time", "estimate", "se")
   res <- data.frame(
-    object[s[1:5]],
-    do_wald(estimate = object$estimate, se = object$se, level = level),
-    object[-match(s, names(object), 0L)],
-    row.names = NULL,
-    check.names = FALSE,
-    stringsAsFactors = FALSE
+    object[-match("se", names(object), 0L)],
+    wald(estimate = object$estimate, se = object$se, level = level)
   )
   attr(res, "level") <- level
   if (log) {

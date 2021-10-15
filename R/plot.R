@@ -5,7 +5,7 @@
 #' @param x
 #'   An \code{"\link{egf}"} object.
 #' @param type
-#'   A \link{character} string indicating a type of plot. The options are:
+#'   A character string indicating a type of plot. The options are:
 #'   interval incidence (\code{"interval"}),
 #'   cumulative incidence (\code{"cumulative"}),
 #'   per capita growth rate (\code{"rt"}), and
@@ -13,7 +13,7 @@
 #'   \code{"rt_heat"} displays \code{per_plot} time series in each plot.
 #'   The rest display one time series in each plot.
 #' @param time_as
-#'   A \link{character} string indicating how numeric times are displayed
+#'   A character string indicating how numeric times are displayed
 #'   on the bottom axis. The options are:
 #'   as is (\code{"numeric"})
 #'   and with a calendar (\code{"Date"}).
@@ -30,23 +30,29 @@
 #'   (\code{x$model$day_of_week > 0}), then setting \code{dt}
 #'   has no effect as it is set to 1 internally.
 #' @param log
-#'   A \link{logical} flag. If \code{TRUE}, then the dependent variable
+#'   A logical flag. If \code{TRUE}, then the dependent variable
 #'   is plotted on a logarithmic scale.
 #' @param zero
 #'   A positive number indicating a line on which to plot zeros
-#'   when \code{log = TRUE}. \code{\link{NA}} is to place zeros
-#'   on the bottom axis. \code{\link{NULL}} is to suppress zeros.
+#'   when \code{log = TRUE}.
+#'   \code{NA} is to place zeros on the bottom axis.
+#'   \code{NULL} is to suppress zeros.
 #'   [\code{type = "interval"} and \code{"cumulative"} only].
 #' @param show_predict
-#'   An integer flag: 2 is to draw predicted curves with confidence bands,
-#'   1 is draw predicted curves only, 0 is to draw neither.
-#'   \link[=logical]{Logical} values are coerced to integer.
+#'   An integer flag:
+#'   2 is to draw predicted curves with confidence bands,
+#'   1 is draw predicted curves only,
+#'   0 is to draw neither.
+#'   Logical values are coerced to integer.
 #'   [\code{type != "rt_heat"} only.]
 #' @param show_tdoubling
-#'   An integer flag: 2 is to print initial doubling time estimates in
-#'   the top margin with confidence intervals, 1 is to print estimates
-#'   only, 0 is to print neither. \link[=logical]{Logical} values are
-#'   coerced to integer. Supported only if \code{x$model$curve} is
+#'   An integer flag:
+#'   2 is to print initial doubling time estimates in the top margin
+#'   with confidence intervals,
+#'   1 is to print estimates only,
+#'   0 is to print neither.
+#'   Logical values are coerced to integer.
+#'   Supported only if \code{x$model$curve} is
 #'   \code{"exponential"}, \code{"logistic"}, or \code{"richards"}.
 #'   [\code{type != "rt_heat"} only.]
 #' @param level
@@ -68,59 +74,63 @@
 #'   A \link{logical} flag. If \code{FALSE}, then nothing is plotted.
 #'   Useful when only the returned \code{"egf_plot_cache"} object is desired.
 #' @param subset
-#'   An expression to be evaluated in the combined model frame
-#'   (see \code{\link{egf_combine_frames}}). It must evaluate
-#'   to a valid index vector for the rows of the data frame
-#'   (see \code{\link{[.data.frame}}), and thus fitting windows.
+#'   An expression to be evaluated in
+#'   in \code{\link[=model.frame.egf]{model.frame}(x, "combined")}.
+#'   It must evaluate to a valid index vector for the rows of
+#'   the data frame and, in turn, fitting windows.
 #'   Only time series with indexed fitting windows are plotted.
 #'   Only indexed fitting windows are highlighted in plots.
-#'   The default (\code{\link{NULL}}) is to plot all time series
+#'   The default (\code{NULL}) is to plot all time series
 #'   and display all fitting windows in each time series.
 #' @param order
-#'   An expression to be evaluated in the combined model frame
-#'   (see \code{\link{egf_combine_frames}}), typically a
-#'   call to \code{\link{order}}, determining the order in which
-#'   time series are plotted. It must evaluate to a permutation
-#'   of \code{\link{seq_len}(\link{nrow}(combined))}.
-#'   The default (\code{\link{NULL}}) is the original ordering.
+#'   An expression to be evaluated in
+#'   \code{\link[=model.frame.egf]{model.frame}(x, "combined")},
+#'   typically a call to \code{\link{order}},
+#'   determining the order in which time series are plotted.
+#'   It must evaluate to a permutation of \code{seq_len(n)},
+#'   where \code{n} is the number of rows of the data frame.
+#'   The default (\code{NULL}) is to respect the original ordering.
 #' @param xlim,ylim
-#'   \link[=numeric]{Numeric} vectors of length 2 specifying axis limits,
-#'   which are recycled for all plots. If \code{time_as = "Date"},
-#'   then \code{xlim} can instead be a \link{Date} vector or any vector
-#'   coercible to Date via \code{\link{as.Date}(xlim)}.
+#'   Numeric vectors of length 2 specifying axis limits,
+#'   which are recycled for all plots.
+#'   If \code{time_as = "Date"}, then \code{xlim} can instead
+#'   be a \link{Date} vector or any vector coercible to Date
+#'   via \code{\link{as.Date}(xlim)}.
 #'   \code{ylim} is unused by \code{type = "rt_heat"}.
 #' @param main,sub,xlab,ylab,ylab_outer,plab
-#'   \link[=character]{Character} strings or expressions used
-#'   to generate plot (\code{main}, \code{sub}), axis (\code{xlab},
-#'   \code{ylab}, \code{ylab_outer}), and panel (\code{plab}) titles.
-#'   \code{main}, \code{sub}, \code{xlab}, and \code{ylab} are supported
-#'   for all values of \code{type}.
+#'   Character strings or expressions used to generate
+#'   plot (\code{main}, \code{sub}),
+#'   axis (\code{xlab}, \code{ylab}, \code{ylab_outer}), and
+#'   panel (\code{plab}) titles.
+#'   \code{main}, \code{sub}, \code{xlab}, and \code{ylab}
+#'   are supported for all values of \code{type}.
 #'   \code{plab} is used by \code{type = "rt_heat"} only.
 #'   \code{ylab_outer} is used by \code{type = "rt"} and \code{"rt_heat"} only.
-#'   When \code{type != "rt_heat"}, \code{main} and \code{sub} are
-#'   evaluated in the combined model frame
-#'   (see \code{\link{egf_combine_frames}})
+#'   When \code{type != "rt_heat"},
+#'   \code{main} and \code{sub} are evaluated in
+#'   \code{\link[=model.frame.egf]{model.frame}(x, "combined")}
 #'   in order to generate unique (sub)titles for each plot.
-#'   When \code{type = "rt_heat"}, \code{plab} is evaluated
-#'   similarly in order to generate unique titles for each panel.
-#'   \code{\link{plotmath}} expressions are not supported
-#'   for \code{main}, \code{sub}, and \code{plab} in these cases.
+#'   When \code{type = "rt_heat"},
+#'   \code{plab} is evaluated similarly in order to generate
+#'   unique titles for each panel.
+#'   \code{\link{plotmath}} expressions are not supported for
+#'   \code{main}, \code{sub}, and \code{plab} in these cases.
 #' @param ...
 #'   Unused optional arguments.
 #'
 #' @return
-#' A \link[=data.frame]{data.frame} inheriting from \link{class}
-#' \code{"egf_plot_cache"}. If argument \code{cache} was supplied
-#' in the function call, then this data frame is the result of
-#' augmenting \code{cache} with new computations.
+#' A data.frame inheriting from class \code{"egf_plot_cache"}.
+#' If argument \code{cache} was supplied in the function call,
+#' then this data frame is the result of augmenting \code{cache}
+#' with new computations.
 #'
 #' @details
 #' Computation of fitted and predicted values and standard errors
 #' is performed before any plots are created. To avoid waste of
 #' computation time, cached computations are returned \emph{even if}
 #' an error is thrown during plotting. To ensure that the cache is
-#' preserved, assign the result of the call to \code{\link{plot}}
-#' to a name: \code{cache <- plot(x, \dots)}.
+#' preserved, assign the result of the function call to a name:
+#' \code{cache <- plot(x, \dots)}.
 #'
 #' Caching functionality must be used with care, as mismatch between
 #' \code{x} and \code{cache} will not be detected. Constructions such
@@ -165,7 +175,7 @@
 #' par(op)
 #'
 #' @export
-#' @importFrom stats fitted predict complete.cases
+#' @importFrom stats fitted predict complete.cases model.frame
 plot.egf <- function(x,
                      type = c("interval", "cumulative", "rt", "rt_heat"),
                      time_as = c("Date", "numeric"),
@@ -175,7 +185,7 @@ plot.egf <- function(x,
                      show_predict = TRUE,
                      show_tdoubling = FALSE,
                      level = 0.95,
-                     per_plot = min(6L, nlevels(x$frame$ts)),
+                     per_plot = min(6L, nlevels(model.frame(x)$ts)),
                      control = egf_plot_control(),
                      cache = NULL,
                      plot = TRUE,
@@ -263,14 +273,17 @@ plot.egf <- function(x,
 
   ## Subset and order time series, fitting windows -----------------------------
 
-  combined <- egf_combine_frames(x)
-  subset <- egf_eval_subset(substitute(subset), combined, parent.frame())
+  frame_ts <- model.frame(x, full = TRUE)
+  frame_windows <- frame_windows_bak <- model.frame(x, "windows")
+  frame_combined <- model.frame(x, "combined")
+
+  subset <- egf_eval_subset(substitute(subset), frame_combined, parent.frame())
   if (length(subset) == 0L) {
     stop("'subset' indexes zero fitting windows, so there is nothing to plot.")
   }
-  order <- egf_eval_order(substitute(order), combined, parent.frame())
+  order <- egf_eval_order(substitute(order), frame_combined, parent.frame())
   subset <- order[order %in% subset]
-  frame_windows <- x$frame_windows[subset, , drop = FALSE]
+  frame_windows <- frame_windows[subset, , drop = FALSE]
 
   lts <- as.character(unique(frame_windows$ts))
   frame_windows$ts <- factor(frame_windows$ts, levels = lts)
@@ -282,16 +295,15 @@ plot.egf <- function(x,
   lw <- as.character(frame_windows$window)
   frame_windows$window <- factor(frame_windows$window, levels = lw)
 
-  frame <- x$frame
-  frame$ts <- factor(frame$ts, levels = lts)
-  frame$window <- factor(frame$window, levels = lw)
-  frame <- frame[!is.na(frame$ts), , drop = FALSE]
+  frame_ts$ts <- factor(frame_ts$ts, levels = lts)
+  frame_ts$window <- factor(frame_ts$window, levels = lw)
+  frame_ts <- frame_ts[!is.na(frame_ts$ts), , drop = FALSE]
 
 
   ## Finalize annotation -------------------------------------------------------
 
   if (plot) {
-    n <- nlevels(frame$ts)
+    n <- nlevels(frame_ts$ts)
     subset1 <- subset[match(lts, frame_windows$ts, 0L)]
     if (type == "rt_heat") {
       nplot <- as.integer(ceiling(n / per_plot))
@@ -301,18 +313,18 @@ plot.egf <- function(x,
       if (is.null(sub)) {
         sub <- ""
       }
-      plab <- egf_eval_label(substitute(plab), combined, parent.frame())[subset1]
+      plab <- egf_eval_label(substitute(plab), frame_combined, parent.frame())[subset1]
       if (is.null(plab)) {
-        plab <- levels(frame$ts)
+        plab <- levels(frame_ts$ts)
       }
       plab <- rep_len(plab, n)
     } else {
       nplot <- n
-      main <- egf_eval_label(substitute(main), combined, parent.frame())[subset1]
+      main <- egf_eval_label(substitute(main), frame_combined, parent.frame())[subset1]
       if (is.null(main)) {
-        main <- levels(frame$ts)
+        main <- levels(frame_ts$ts)
       }
-      sub <- egf_eval_label(substitute(sub), combined, parent.frame())[subset1]
+      sub <- egf_eval_label(substitute(sub), frame_combined, parent.frame())[subset1]
       if (is.null(sub)) {
         sub <- ""
       }
@@ -362,16 +374,16 @@ plot.egf <- function(x,
     ok <- cache$var == sprintf("log(%s)", what) & !(show_predict == 2L & is.na(cache$se))
     required <- setdiff(lw, cache$window[ok])
     if (length(required) > 0L) {
-      m <- match(required, x$frame_windows$window, 0L)
+      m <- match(required, frame_windows_bak$window, 0L)
       time_split <- Map(seq.int,
-        from = x$frame_windows$start[m],
-        to = x$frame_windows$end[m],
+        from = frame_windows_bak$start[m],
+        to = frame_windows_bak$end[m],
         by = dt
       )
       px <- predict(x,
         what = what,
-        time = unlist(time_split, FALSE, FALSE),
-        window = rep.int(x$frame_windows$window[m], lengths(time_split)),
+        time = unlist1(time_split),
+        window = rep.int(frame_windows_bak$window[m], lengths(time_split)),
         log = TRUE,
         se = (show_predict == 2L)
       )
@@ -392,7 +404,7 @@ plot.egf <- function(x,
         top = "log(r)",
         link = TRUE,
         se = (show_tdoubling == 2L),
-        .subset = (x$frame_windows$window %in% required)
+        .subset = (frame_windows_bak$window %in% required)
       )
       if (show_tdoubling != 2L) {
         fx$se <- NA_real_
@@ -409,7 +421,7 @@ plot.egf <- function(x,
   i <- !duplicated(cache[1:4])
   cache <- cache[i, , drop = FALSE]
   row.names(cache) <- NULL
-  class(cache) <- c("egf_plot_cache", "data.frame")
+  class(cache) <- c("egf_plot_cache", oldClass(cache))
 
   ## If not plotting, then return
   if (!plot) {
@@ -435,7 +447,7 @@ plot.egf <- function(x,
   cache[c("lower", "upper")] <- list(NA_real_)
   i <- (show_predict == 2L & cache$var == sprintf("log(%s)", what)) | (show_tdoubling == 2L & cache$var == "log(r)")
   if (any(i)) {
-    cache[i, c("lower", "upper")] <- do.call(do_wald, c(cache[i, c("estimate", "se"), drop = FALSE], list(level = level)))
+    cache[i, c("lower", "upper")] <- do.call(wald, c(cache[i, c("estimate", "se"), drop = FALSE], list(level = level)))
   }
 
 
@@ -521,7 +533,7 @@ plot.egf <- function(x,
     )
   } else {
     plot.egf.curve(
-      frame = frame,
+      frame_ts = frame_ts,
       frame_windows = frame_windows,
       cache = cache,
       type = type,
@@ -550,12 +562,12 @@ plot.egf <- function(x,
 }
 
 #' @import graphics
-plot.egf.curve <- function(frame, frame_windows, cache,
+plot.egf.curve <- function(frame_ts, frame_windows, cache,
                            type, time_as, dt, log, zero,
                            show_predict, show_tdoubling, show_asymptote,
                            level, control, xlim, ylim,
                            main, sub, xlab, ylab, ylab_outer) {
-  n <- nlevels(frame$ts)
+  n <- nlevels(frame_ts$ts)
   formula <- as.formula(call("~", as.name(type), quote(time)))
   xlim_bak <- xlim
   ylim_bak <- ylim
@@ -567,7 +579,7 @@ plot.egf.curve <- function(frame, frame_windows, cache,
   gp <- par()
 
   for (i in seq_len(n)) { # loop over plots
-    data <- frame[unclass(frame$ts) == i, , drop = FALSE]
+    data <- frame_ts[unclass(frame_ts$ts) == i, , drop = FALSE]
     data_windows <- frame_windows[unclass(frame_windows$ts) == i, , drop = FALSE]
     if (show_tdoubling > 0L) {
       cache_r <- cache[unclass(cache$ts) == i & cache$var == "log(r)", , drop = FALSE]
@@ -613,7 +625,7 @@ plot.egf.curve <- function(frame, frame_windows, cache,
     if (is.null(ylim)) {
       y <- data[[type]]
       if (type == "rt" && show_predict > 0L) {
-        y <- c(y, unlist(cache_predict[elu], FALSE, FALSE))
+        y <- c(y, unlist1(cache_predict[elu]))
       }
       y <- y[!is.na(y)]
       if (length(y) == 0L || all(y == 0)) {

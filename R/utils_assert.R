@@ -6,7 +6,7 @@
 #' instead of an error.
 #'
 #' @param ...
-#'   \link[=logical]{Logical} vectors.
+#'   Logical vectors.
 #' @param m
 #'   A \link{character} string used as an error or warning message.
 #' @param n
@@ -16,7 +16,7 @@
 #'   (\code{n = 1}) corresponds to the call from the parent frame.
 #'
 #' @return
-#' \code{\link{NULL}} (invisibly).
+#' \code{NULL} (invisibly).
 #'
 #' @examples
 #' x <- 1.1
@@ -56,7 +56,7 @@ warn_if_not <- function(..., m = "", n = 1L) {
 }
 
 stop_if_not_true_false <- function(x, allow_numeric = FALSE, n = 1L) {
-  s <- deparse(substitute(x))
+  s <- deparse1(substitute(x))
   a <- if (allow_numeric) " or a number" else ""
   stop_if_not(
     is.logical(x) || (allow_numeric && is.numeric(x)),
@@ -68,7 +68,7 @@ stop_if_not_true_false <- function(x, allow_numeric = FALSE, n = 1L) {
 }
 
 stop_if_not_integer <- function(x, kind = c("any", "positive", "nonnegative", "negative", "nonpositive"), n = 1L) {
-  s <- deparse(substitute(x))
+  s <- deparse1(substitute(x))
   kind <- match.arg(kind)
   a <- switch(kind, any = "an", paste("a", kind))
   f <- switch(kind,
@@ -89,7 +89,7 @@ stop_if_not_integer <- function(x, kind = c("any", "positive", "nonnegative", "n
 }
 
 stop_if_not_number <- function(x, kind = c("any", "positive", "nonnegative", "negative", "nonpositive"), n = 1L) {
-  s <- deparse(substitute(x))
+  s <- deparse1(substitute(x))
   kind <- match.arg(kind)
   a <- switch(kind, any = "a", paste("a", kind))
   f <- switch(kind,
@@ -109,11 +109,11 @@ stop_if_not_number <- function(x, kind = c("any", "positive", "nonnegative", "ne
 }
 
 stop_if_not_number_in_interval <- function(x, a = -Inf, b = Inf, include = c("()", "(]", "[)", "[]"), n = 1L) {
-  s <- deparse(substitute(x))
+  s <- deparse1(substitute(x))
   include <- match.arg(include)
   d1 <- substr(include, 1L, 1L)
   d2 <- substr(include, 2L, 2L)
-  interval <- paste0(d1, deparse(substitute(a)), ",", deparse(substitute(b)), d2)
+  interval <- paste0(d1, deparse1(substitute(a)), ",", deparse1(substitute(b)), d2)
   f1 <- switch(d1, `(` = `>`, `[` = `>=`)
   f2 <- switch(d2, `)` = `<`, `]` = `<=`)
   stop_if_not(
@@ -127,7 +127,7 @@ stop_if_not_number_in_interval <- function(x, a = -Inf, b = Inf, include = c("()
 }
 
 stop_if_not_string <- function(x, n = 1L) {
-  s <- deparse(substitute(x))
+  s <- deparse1(substitute(x))
   stop_if_not(
     is.character(x),
     length(x) == 1L,

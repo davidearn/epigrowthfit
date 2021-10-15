@@ -2,97 +2,108 @@
 % Please edit documentation in R/fitted.R
 \name{fitted.egf}
 \alias{fitted.egf}
-\alias{coef.egf}
-\title{Compute fitted values}
+\alias{fitted.egf_no_fit}
+\title{Extract fitted values}
 \usage{
 \method{fitted}{egf}(
   object,
   top = egf_get_names_top(object, link = TRUE),
-  subset = NULL,
-  append = NULL,
   link = TRUE,
   se = FALSE,
+  subset = NULL,
+  append = NULL,
   .subset = NULL,
   .append = NULL,
   ...
 )
 
-\method{coef}{egf}(
+\method{fitted}{egf_no_fit}(
   object,
   top = egf_get_names_top(object, link = TRUE),
-  subset = NULL,
-  append = NULL,
   link = TRUE,
   se = FALSE,
+  subset = NULL,
+  append = NULL,
   .subset = NULL,
   .append = NULL,
   ...
 )
 }
 \arguments{
-\item{object}{An \code{"\link{egf}"} object.}
+\item{object}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}
 
 \item{top}{A subset of \code{\link{egf_get_names_top}(object, link = TRUE)}
 naming top level nonlinear model parameters for which fitted
 values should be retrieved.}
 
-\item{subset}{An expression to be evaluated in the combined model frame
-(see \code{\link{egf_combine_frames}}). It must evaluate
-to a valid index vector for the rows of the data frame
-(see \code{\link{[.data.frame}}), and thus fitting windows.
-Fitted values are retrieved only for indexed windows.
-The default (\code{\link{NULL}}) is to consider all windows.}
+\item{link}{A logical flag.
+If \code{FALSE}, then fitted values are inverse link-transformed.}
 
-\item{append}{An expression indicating variables in the combined model frame
-(see \code{\link{egf_combine_frames}}) to be included with the
-result. The default (\code{\link{NULL}}) is to append nothing.}
-
-\item{link}{A \link{logical} flag. If \code{FALSE}, then fitted values are
-inverse link-transformed.}
-
-\item{se}{A \link{logical} flag. If \code{link = TRUE} and \code{se = TRUE},
+\item{se}{A logical flag. If \code{se = TRUE} and \code{link = TRUE},
 then approximate delta method standard errors on fitted values
-are reported. Standard errors are required for subsequent use of
-\code{\link{confint.egf_fitted}}.}
+are reported.
+Standard errors are required for subsequent use
+of \code{\link{confint.egf_fitted}}.
+Setting \code{se = TRUE} and \code{link = FALSE} is an error,
+as standard errors are not available for inverse link-transformed
+fitted values.
+Setting \code{se = TRUE} when \code{object} inherits from class
+\code{"egf_no_fit"} is likewise an error.}
 
-\item{.subset, .append}{Index vectors to be used (if non-\code{\link{NULL}}) in place of
+\item{subset}{An expression to be evaluated in
+\code{\link[=model.frame.egf]{model.frame}(object, "combined")}.
+It must evaluate to a valid index vector for the rows of
+the data frame and, in turn, fitting windows.
+Fitted values are retrieved only for indexed windows.
+The default (\code{NULL}) is to consider all windows.}
+
+\item{append}{An expression indicating variables in
+\code{\link[=model.frame.egf]{model.frame}(object, "combined")}
+to be included with the result.
+The default (\code{NULL}) is to append nothing.}
+
+\item{.subset, .append}{Index vectors to be used (if non-\code{NULL}) in place of
 the result of evaluating \code{subset} and \code{append}.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-A \link[=data.frame]{data frame} inheriting from \link{class}
-\code{"egf_fitted"}, with variables:
+A data frame inheriting from class \code{"egf_fitted"}, with variables:
 \item{top}{
   Top level nonlinear model parameter,
   from \code{\link{egf_get_names_top}(object, link = link)}.
 }
 \item{ts}{
-  Time series, from \code{\link{levels}(object$frame_windows$ts)}.
+  Time series, from
+  \code{levels(\link[=model.frame.egf]{model.frame}(object)$ts)}.
 }
 \item{window}{
-  Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
+  Fitting window, from
+  \code{levels(\link[=model.frame.egf]{model.frame}(object)$window)}.
 }
 \item{estimate}{
   Fitted value of parameter \code{top} in fitting window \code{window}.
+  If \code{object} inherits from class \code{"egf"},
+  then this is conditioned on the estimated mixed effects model.
+  If \code{object} inherits from class \code{"egf_no_fit"},
+  then this is conditioned on the \emph{initial} values
+  of mixed effects model parameters.
 }
 \item{se}{
-  (If \code{link = TRUE} and \code{se = TRUE}.)
   Approximate delta method standard error on \code{estimate}.
+  Absent except for calls matching \code{fitted(link = TRUE, se = TRUE)}.
 }
 }
 \description{
-Computes fitted values of top level nonlinear model parameters.
+Retrieves fitted values of top level nonlinear model parameters.
 The fitted value of a given parameter for a given fitting window
 is obtained by adding
 (i) the population fitted value computed as a linear combination
 of fixed effects coefficients and
-(ii) all applicable random effects, with random effects coefficients
-set equal to their conditional modes.
+(ii) all applicable random effects, with random effects set equal
+to their conditional modes.
 }
 \details{
-\code{coef.egf} is currently an alias for \code{fitted.egf}.
-
 See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset} and \code{append}.
 }
@@ -101,7 +112,7 @@ example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
 exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
 object <- readRDS(file.path(exdata, "egf.rds"))
 
-path_to_cache <- file.path(exdata, "egf_fitted.rds")
+path_to_cache <- file.path(exdata, "fitted-egf.rds")
 if (file.exists(path_to_cache)) {
   zz <- readRDS(path_to_cache)
 } else {
@@ -114,8 +125,18 @@ str(zz)
 \seealso{
 \code{\link{confint.egf_fitted}}
 
-Other coefficient extractors: 
+Other extractors: 
+\code{\link{coef.egf}()},
+\code{\link{df.residual.egf}()},
 \code{\link{fixef.egf}()},
-\code{\link{ranef.egf}()}
+\code{\link{formula.egf}()},
+\code{\link{getCall.egf}()},
+\code{\link{logLik.egf}()},
+\code{\link{model.frame.egf}()},
+\code{\link{model.matrix.egf}()},
+\code{\link{nobs.egf}()},
+\code{\link{ranef.egf}()},
+\code{\link{terms.egf}()},
+\code{\link{vcov.egf}()}
 }
-\concept{coefficient extractors}
+\concept{extractors}

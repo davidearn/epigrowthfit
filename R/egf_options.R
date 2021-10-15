@@ -4,25 +4,24 @@
 #' to be estimated by \code{\link{egf}}.
 #'
 #' @param curve
-#'   A \link{character} string specifying a model for expected cumulative
+#'   A character string specifying a model for expected cumulative
 #'   disease incidence as a function of time.
 #' @param excess
-#'   A \link{logical} flag. If \code{TRUE}, then a constant baseline
-#'   mortality rate is estimated. Set to \code{TRUE} if what is
-#'   observed is multiple causes mortality rather than disease mortality
-#'   or disease incidence.
+#'   A logical flag. If \code{TRUE}, then a constant baseline mortality rate
+#'   is estimated. Set to \code{TRUE} if what is observed is multiple causes
+#'   mortality rather than disease mortality or disease incidence.
 #' @param family
-#'   A \link{character} string specifying a family of discrete probability
+#'   A character string specifying a family of discrete probability
 #'   distributions assigned to observations of disease incidence.
 #' @param day_of_week
 #'   An integer flag. If positive, then day of week effects are estimated
 #'   as offsets relative to the indicated day of week
 #'   (Sunday if \code{day_of_week = 1}, Monday if \code{day_of_week = 2},
-#'   and so on). \link[=logical]{Logical} values are coerced to integer.
+#'   and so on). Logical values are coerced to integer.
 #'
 #' @return
-#' A \link{list} inheriting from \link{class} \code{"egf_model"}
-#' containing the arguments (after possible matching and coercion).
+#' A list inheriting from class \code{"egf_model"} containing the arguments
+#' (after possible matching and coercion).
 #'
 #' @examples
 #' model <- egf_model()
@@ -47,7 +46,7 @@ egf_model <- function(curve = c("logistic", "exponential", "subexponential", "go
     family = family,
     day_of_week = day_of_week
   )
-  class(res) <- c("egf_model", "list")
+  class(res) <- "egf_model"
   res
 }
 
@@ -60,22 +59,22 @@ egf_model <- function(curve = c("logistic", "exponential", "subexponential", "go
 #'   optimization method.
 #' @param inner_optimizer
 #'   An \code{"\link{egf_inner_optimizer}"} object, specifying an "inner"
-#'   optimization method, or a \link{list} of such objects, in which case
-#'   the listed methods are tried in order until one succeeds. (If none
-#'   succeed, then a warning is issued.)
+#'   optimization method, or a list of such objects, in which case the
+#'   listed methods are tried in order until one succeeds. (If none succeed,
+#'   then a warning is issued.)
 #' @param trace
 #'   An integer flag determining the amount of tracing performed
-#'   (see Details). \link[=logical]{Logical} values are coerced to integer.
+#'   (see Details). Logical values are coerced to integer.
 #' @param profile
-#'   A \link{logical} flag. If \code{TRUE}, then fixed effect parameters
-#'   are profiled out of the likelihood, which may stabilize optimization
-#'   for models with many fixed effects. This feature is experimental,
-#'   and in fact may \emph{de}stabilize optimization, as it relies on
+#'   A logical flag. If \code{TRUE}, then fixed effect parameters are profiled
+#'   out of the likelihood, which may stabilize optimization for models
+#'   with many fixed effects. This feature should be considered experimental,
+#'   and in fact may \emph{de}stabilize optimization, as it may rely on
 #'   assumptions about the optimization problem that are not necessarily
 #'   satisfied by the nonlinear mixed effects models fit by \code{\link{egf}}.
 #' @param sparse_X
-#'   A \link{logical} flag. If \code{TRUE}, then the fixed effects
-#'   \link[=model.matrix]{design matrix} is constructed in
+#'   A logical flag. If \code{TRUE}, then the fixed effects
+#'   \link[=model.matrix]{design} matrix is constructed in
 #'   \link[Matrix:sparseMatrix]{sparse} format.
 #' @param omp_num_threads
 #'   An integer specifying a number of OpenMP threads to be used
@@ -115,8 +114,8 @@ egf_model <- function(curve = c("logistic", "exponential", "subexponential", "go
 #' builds from source.
 #'
 #' @return
-#' A \link{list} inheriting from \link{class} \code{"egf_control"}
-#' containing the arguments (after possible coercion).
+#' A list inheriting from class \code{"egf_control"} containing the arguments
+#' (after possible coercion).
 #'
 #' @examples
 #' control <- egf_control()
@@ -155,7 +154,7 @@ egf_control <- function(optimizer = egf_optimizer(),
     sparse_X = sparse_X,
     omp_num_threads = omp_num_threads
   )
-  class(res) <- c("egf_control", "list")
+  class(res) <- "egf_control"
   res
 }
 
@@ -167,54 +166,53 @@ egf_control <- function(optimizer = egf_optimizer(),
 #' defined separately by \code{egf_optimizer} and \code{egf_inner_optimizer}.
 #'
 #' @param f
-#'   A \link{function} performing optimization. The outer optimization
-#'   permits \code{\link{optim}}, \code{\link{nlminb}}, and \code{\link{nlm}}
-#'   and any \code{\link{optim}}-like function. An \code{\link{optim}}-like
-#'   function is a function \code{f} such that:
+#'   A function performing optimization. The outer optimization permits
+#'   \code{\link{optim}}, \code{\link{nlminb}}, and \code{\link{nlm}}
+#'   and any \code{optim}-like function. An \code{optim}-like function
+#'   is a function \code{f} such that:
 #'   (i) the first three arguments of \code{f} specify an initial parameter
 #'   vector, an objective function, and a gradient function, respectively;
 #'   (ii) \code{f} accepts \code{control} as a fourth (or later) argument;
 #'   and
-#'   (iii) \code{f} returns a \link{list} with elements \code{par},
-#'   \code{value}, \code{convergence}, and \code{message}.
-#'   The inner optimization permits \code{\link{optim}}
-#'   and \code{\link[TMB]{newton}} only.
+#'   (iii) \code{f} returns a list with elements \code{par}, \code{value},
+#'   \code{convergence}, and \code{message}.
+#'   The inner optimization permits \code{optim} and \code{\link[TMB]{newton}}
+#'   only.
 #' @param args
-#'   A \link{list} of arguments to \code{f} other than \code{control}.
+#'   A list of arguments to \code{f} other than \code{control}.
 #'   If \code{f = \link{optim}} and \code{args} does not have \code{method}
 #'   as an element, then \code{method = "BFGS"} is appended.
 #' @param control
-#'   A \link{list} of control parameters to be assigned to argument
-#'   \code{control} of \code{f}.
+#'   A list of control parameters to be assigned to argument \code{control}
+#'   of \code{f}.
 #'
 #' @return
-#' \code{egf_optimizer} returns a \link{list} inheriting from \link{class}
+#' \code{egf_optimizer} returns a list inheriting from class
 #' \code{"egf_optimizer"}, with elements:
 #' \item{f}{
 #'   An \code{\link{optim}}-like \link{function}, typically the result
-#'   of wrapping the supplied optimizer to make it \code{\link{optim}}-like.
+#'   of wrapping the supplied optimizer to make it \code{optim}-like.
 #' }
 #' \item{args}{
-#'   The supplied \link{list} of arguments
+#'   The supplied list of arguments
 #'   (after possible deletion of elements with reserved names).
 #' }
 #' \item{control}{
-#'   The supplied \link{list} of control parameters.
+#'   The supplied list of control parameters.
 #' }
 #'
-#' \code{egf_inner_optimizer} returns a \link{list} inheriting
-#' from \link{class} \code{"egf_inner_optimizer"}, with elements:
+#' \code{egf_inner_optimizer} returns a list inheriting from class
+#' \code{"egf_inner_optimizer"}, with elements:
 #' \item{method}{
-#'   A \link{character} string. This is
-#'   \code{args$method} if \code{f = \link{optim}} and
-#'   \code{"newton"} if \code{f = \link[TMB]{newton}}.
+#'   A character string. This is \code{args$method} if \code{f = \link{optim}}
+#'   and \code{"newton"} if \code{f = \link[TMB]{newton}}.
 #' }
 #' \item{control}{
-#'   A \link{list}. This is \code{control} if \code{f = \link{optim}} and
-#'   \code{args} (after possible deletion of elements with reserved names)
+#'   A list. This is \code{control} if \code{f = \link{optim}} and \code{args}
+#'   (after possible deletion of elements with reserved names)
 #'   if \code{f = \link[TMB]{newton}}.
 #'   To align the default behaviour of \code{newton} with that of \code{optim},
-#'   \code{trace = 0L} is set if not specified in \code{args}.
+#'   \code{trace = 0} is set if not specified in \code{args}.
 #' }
 #'
 #' @examples
@@ -271,20 +269,21 @@ egf_optimizer <- function(f = nlminb, args = list(), control = list()) {
       "control" %in% nf[-(1:3)]
     )
     e <- quote(f(c(1, 1), function(x) sum(x^2), function(x) 2 * x))
-    f_out <- tryCatch(eval(e),
-                      error = function(cond) {
-                        stop(wrap(
-                          "Unable to validate 'f' due to following error in test ", sQuote(deparse(e)), ":\n\n",
-                          conditionMessage(cond)
-                        ))
-                      }
+    f_out <- tryCatch(
+      eval(e),
+      error = function(cond) {
+        stop(wrap(
+          "Unable to validate 'f' due to following error in test ", sQuote(deparse1(e)), ":\n\n",
+          conditionMessage(cond)
+        ))
+      }
     )
     required <- c("par", "value", "convergence", "message")
     if (!(is.list(f_out) && all(required %in% names(f_out)))) {
       stop(wrap(
         "'f' must return a list with elements ",
         paste(sQuote(required), collapse = ", "),
-        " but _does not_ for test ", sQuote(deparse(e)), "."
+        " but _does not_ for test ", sQuote(deparse1(e)), "."
       ))
     }
     f <- function(par, fn, gr, control, ...) {
@@ -293,11 +292,11 @@ egf_optimizer <- function(f = nlminb, args = list(), control = list()) {
   }
   if (!is.null(names(args))) {
     reserved <- c("par", "fn", "gr", "control", "...", names(formals(optimizer))[1:3])
-    args <- args[setdiff(names(args), reserved)]
+    args[reserved] <- NULL
   }
 
   res <- list(f = f, args = args, control = control)
-  class(res) <- c("egf_optimizer", "list")
+  class(res) <- "egf_optimizer"
   res
 }
 
@@ -333,7 +332,7 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
   }
 
   res <- list(method = method, control = control)
-  class(res) <- c("egf_inner_optimizer", "list")
+  class(res) <- "egf_inner_optimizer"
   res
 }
 
@@ -342,15 +341,15 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
 #' Defines instructions for parallelization by linking a method with options.
 #'
 #' @param method
-#'   A \link{character} string indicating a method of parallelization.
+#'   A character string indicating a method of parallelization.
 #'   \code{"\link[=lapply]{serial}"} indicates no parallelization.
-#'   \code{"\link[parallel:mclapply]{multicore}"} indicates \R level
-#'   forking. It is intended for use from a terminal rather than a GUI.
+#'   \code{"\link[parallel:mclapply]{multicore}"} indicates \R level forking.
+#'   It is intended for use from a terminal rather than a GUI.
 #'   On Windows, \code{"multicore"} is equivalent to \code{"serial"}.
 #'   \code{"\link[parallel:parLapply]{snow}"} indicates socket clusters.
 #'   \code{"snow"} is supported on both Unix-alikes and Windows.
 #' @param outfile
-#'   A \link{character} string indicating a file path where console output
+#'   A character string indicating a file path where console output
 #'   should be diverted. An empty string indicates no diversion.
 #'   If \code{method = "snow"}, then diversion may be necessary to view output.
 #' @param cores
@@ -358,23 +357,23 @@ egf_inner_optimizer <- function(f = newton, args = list(), control = list()) {
 #'   to fork/spawn when \code{parallel != "serial"}. The maximum
 #'   is typically \code{\link[parallel]{detectCores}(TRUE, FALSE)}.
 #' @param args
-#'   A \link{list} of optional arguments to
+#'   A list of optional arguments to
 #'   \code{\link[parallel]{mclapply}} (\code{method = "multicore"}) or
 #'   \code{\link[parallel]{makePSOCKcluster}} (\code{method = "snow"}).
 #' @param cl
 #'   An existing \link[parallel:makePSOCKcluster]{socket cluster}
 #'   (\code{method = "snow"}).
-#'   The default (\code{\link{NULL}}) is to create a new clusters
-#'   as necessary and terminate them upon job completion.
-#'   (If non-\code{\link{NULL}}, then \code{outfile}, \code{cores},
-#'   and \code{options} are ignored.)
+#'   The default (\code{NULL}) is to create a new clusters as necessary
+#'   and terminate them upon job completion.
+#'   (If non-\code{NULL}, then \code{outfile}, \code{cores}, and \code{args}
+#'   are ignored.)
 #'
 #' @details
 #' For general information about parallelism in \R,
 #' see \code{\link{vignette}("parallel", "parallel")}.
 #'
 #' @return
-#' A \link{list} inheriting from \link{class} \code{"egf_parallel"}
+#' A list inheriting from class \code{"egf_parallel"}
 #' containing the arguments (after possible matching and coercion).
 #'
 #' @examples
@@ -418,7 +417,7 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
     args = args,
     cl = cl
   )
-  class(res) <- c("egf_parallel", "list")
+  class(res) <- "egf_parallel"
   res
 }
 
@@ -427,15 +426,15 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #' Sets parameters controlling the graphical output of \code{\link{plot.egf}}.
 #' Supplied values override package defaults
 #' (retrievable as \code{defaults <- egf_plot_control()}),
-#' which in turn override global defaults set via \code{\link{par}}.\cr
+#' which in turn override global defaults set via \code{\link{par}}.\cr\cr
 #' Here, \code{x}, \code{type}, \code{time_as}, and \code{dt}
-#' refer to the so-named arguments of \code{\link{plot.egf}}.
+#' refer to the so-named arguments of \code{plot.egf}.
 #'
 #' @param window
 #'   A named list of arguments to \code{\link{rect}}
 #'   affecting the appearance of fitting windows.
 #' @param data
-#'   A named list of the form \code{\link{list}(main, short, long)}.
+#'   A named list of the form \code{list(main, short, long)}.
 #'   \code{main} is a named list of arguments to \code{\link{points}}
 #'   affecting the appearance of observed data.
 #'   \code{short} and \code{long} are alternatives to \code{main}
@@ -443,7 +442,7 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #'   when \code{type = "interval"}.
 #'   \code{short} and \code{long} default to \code{main} (elementwise).
 #' @param predict
-#'   A named list of the form \code{\link{list}(estimate, ci)}.
+#'   A named list of the form \code{list(estimate, ci)}.
 #'   \code{estimate} and \code{ci} are named lists of arguments
 #'   to \code{\link{lines}} and \code{\link{polygon}},
 #'   affecting the appearance of predicted curves and corresponding
@@ -468,17 +467,17 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #'   that tries to ensure that it is displayed below the minor axis in
 #'   a slightly larger font.
 #' @param title
-#'   A named list of the form \code{\link{list}(main, sub, xlab, ylab, plab)}.
+#'   A named list of the form \code{list(main, sub, xlab, ylab, plab)}.
 #'   The elements are named lists of arguments to \code{\link{title}}
 #'   affecting the appearance of plot (sub)titles and axis and panel labels.
 #'   \code{sub$adj} defaults to \code{main$adj}.
 #' @param tdoubling
-#'   A named list of the form \code{\link{list}(legend, estimate, ci)}.
+#'   A named list of the form \code{list(legend, estimate, ci)}.
 #'   The elements are named lists of arguments to \code{\link{mtext}}
 #'   affecting the appearance of initial doubling times printed in the
 #'   top margin.
 #' @param heat
-#'   A named list of the form \code{\link{list}(pal, bg, ul, ips)}.
+#'   A named list of the form \code{list(pal, bg, ul, ips)}.
 #'   \code{pal} is a named list of arguments to \code{\link{colorRamp}}
 #'   defining a colour palette for heat maps.
 #'   \code{bg} and \code{ul} are named lists of arguments to \code{\link{rect}}
@@ -493,7 +492,7 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
 #' \code{title}, and \code{heat}.
 #'
 #' @return
-#' A named \link{list}.
+#' A named list.
 #'
 #' @export
 egf_plot_control <- function(window, data, predict, asymptote,
@@ -620,6 +619,6 @@ egf_plot_control <- function(window, data, predict, asymptote,
     }
   }
 
-  class(res) <- c("egf_plot_control", "list")
+  class(res) <- "egf_plot_control"
   res
 }

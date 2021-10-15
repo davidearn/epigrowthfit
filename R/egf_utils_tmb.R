@@ -1,190 +1,195 @@
 #' Construct data objects for C++ template
 #'
-#' Gathers in a \link{list} data objects to be passed to
-#' the package's C++ template via \pkg{TMB}'s \code{DATA_*} macros.
+#' Gathers in a list data objects to be passed to
+#' \code{\link[TMB]{MakeADFun}}.
+#' These are retrieved inside of \pkg{epigrowthfit}'s C++ template
+#' via \pkg{TMB}'s \code{DATA_*} macros.
 #'
-#' @inheritParams egf
-#' @param frame,frame_parameters
-#'   So-named elements of a \link{list} returned by \code{egf_make_frames}.
+#' @param model
+#'   An \code{"\link{egf_model}"} object.
+#' @param frame
+#'   A list returned by \code{egf_make_frame}.
+#' @param control
+#'   An \code{"\link{egf_control}"} object.
+#' @param env
+#'   An environment for storing intermediate objects that are not ultimately
+#'   passed to \code{\link[TMB]{MakeADFun}}, but must nonetheless be preserved
+#'   somewhere.
 #'
 #' @return
 #' [Below,
-#' \code{N = \link{nlevels}(frame$window)}
+#' \code{N = nlevels(frame$ts$window)}
 #' is the number of fitting windows,
-#' \code{n = N + \link{sum}(!\link{is.na}(frame$window))}
+#' \code{n = N + sum(!is.na(frame$ts$window))}
 #' is the total number of time points associated with a fitting window, and
-#' \code{p = \link{length}(frame_parameters)}
+#' \code{p = length(frame$parameters)}
 #' is the number of top level nonlinear model parameters.]
 #'
-#' A \link{list} with elements:
+#' A list with elements:
 #' \item{time}{
-#'   A \link[=double]{numeric} vector of length \code{n} giving
-#'   times since the left endpoint of the current fitting window.
+#'   A numeric vector of length \code{n} giving times since the left endpoint
+#'   of the current fitting window.
 #' }
 #' \item{time_seg_len}{
-#'   An \link{integer} vector of length \code{N} specifying the
-#'   length of each fitting window as a number of time points.
+#'   An integer vector of length \code{N} specifying the length of each
+#'   fitting window as a number of time points.
 #' }
 #' \item{x}{
-#'   A \link[=double]{numeric} vector of length \code{n-N} giving incidence
-#'   in each fitting window. \code{x[i]} in window \code{k} is the number
+#'   A numeric vector of length \code{n-N} giving incidence in each
+#'   fitting window. \code{x[i]} in window \code{k} is the number
 #'   of cases observed from \code{time[k+i-1]} to \code{time[k+i]}.
 #' }
 #' \item{day1}{
-#'   If \code{model$day_of_week > 0}, then an \link{integer} vector
-#'   of length \code{N} indicating the first day of week in each
-#'   fitting window, with value \code{i} in \code{0:6} mapping to
-#'   the day of week \code{i} days after the reference day specified
-#'   by \code{model$day_of_week}. Otherwise, an integer vector of
-#'   the same length filled with \code{-1}.
+#'   An integer vector of length \code{N}.
+#'   If \code{model$day_of_week > 0}, then it indicates the first day
+#'   of week in each fitting window, with value \code{i} in \code{0:6}
+#'   mapping to the day of week \code{i} days after the reference day
+#'   specified by \code{model$day_of_week}.
+#'   Otherwise, it is filled with \code{-1}.
 #' }
 #' \item{flags}{
-#'   A \link{list} with \link{integer} elements, used as flags to
-#'   specify the model being estimated and to indicate what blocks
-#'   of template code should be run.
+#'   A list with integer elements, used as flags to specify the model
+#'   being estimated and to indicate what blocks of template code should
+#'   be run.
 #' }
 #' \item{indices}{
-#'   A \link{list} with \link{integer} elements and \link{names} of the
-#'   form \code{"index_link_parameter"} (e.g., \code{"index_log_r"}),
+#'   A list with integer elements and names of the form
+#'   \code{"<link>_<parameter>"} (e.g., \code{"log_r"}),
 #'   giving the column 0-index of top level nonlinear model parameters
-#'   (e.g., \code{log(r)}) in the response matrix. Value \code{-1}
-#'   is used for parameters not belonging to the model being estimated.
+#'   (e.g., \code{log(r)}) in the response matrix.
+#'   Value \code{-1} is used for parameters not belonging to the model
+#'   being estimated.
 #' }
 #' \item{Y}{
 #'   The \link[=model.offset]{offset} component of the response matrix
 #'   in dense format, with \code{N} rows and \code{p} columns.
 #' }
-#' \item{X}{
-#'   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
-#'   or \link[=matrix]{dense} format (depending on \code{control$sparse_X}),
-#'   with \code{N} rows.
-#' }
 #' \item{Xs, Xd}{
-#'   If \code{control$sparse_X = TRUE}, then \code{Xs = X} and \code{Xd}
-#'   is an empty dense matrix. Otherwise, \code{Xd = X} and \code{Xs} is
-#'   an empty sparse matrix.
+#'   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
+#'   or \link[=matrix]{dense} format, with \code{N} rows.
+#'   If \code{control$sparse_X = TRUE}, then \code{Xs} is the sparse
+#'   design matrix and \code{Xd} is an empty dense matrix.
+#'   Otherwise, \code{Xs} is an empty sparse matrix and \code{Xd} is
+#'   the dense design matrix.
 #' }
 #' \item{Z}{
 #'   The random effects design matrix in \link[Matrix:sparseMatrix]{sparse}
-#'   format, with \code{N} rows. If there are no random effects, then \code{Z}
-#'   is an empty sparse matrix.
+#'   format, with \code{N} rows.
+#'   If there are no random effects, then \code{Z} is an empty sparse matrix.
 #' }
 #' \item{beta_index, b_index}{
-#'   \link[=integer]{Integer} vectors of length \code{\link{ncol}(X)}
-#'   and \code{\link{ncol}(Z)}, respectively, with values in \code{0:(p-1)}.
-#'   These split the columns of \code{X} and \code{Z} by relation to
-#'   a common top level nonlinear model parameter.
+#'   Integer vectors of length \code{ncol(X)} and \code{ncol(Z)}, respectively,
+#'   with values in \code{0:(p-1)}.
+#'   These split the columns of \code{X} and \code{Z} by relation to a common
+#'   top level nonlinear model parameter.
 #' }
 #' \item{beta_index_tab, b_index_tab}{
-#'   \link[=integer]{Integer} vectors of length \code{p} counting the
-#'   columns of \code{X} and \code{Z}, respectively, that relate to
-#'   a common top level nonlinear model parameter.
+#'   Integer vectors of length \code{p} counting the columns of \code{X} and
+#'   \code{Z}, respectively, that relate to a common top level nonlinear model
+#'   parameter.
 #' }
 #' \item{block_rows, block_cols}{
-#'   \link[=integer]{Integer} vectors together giving the dimensions
-#'   of each block of random effects.
+#'   Integer vectors together giving the dimensions of each block of random
+#'   effects coefficients.
 #' }
 #'
 #' @noRd
 #' @importFrom stats formula terms model.offset
-#' @importFrom Matrix sparseMatrix
-egf_tmb_make_data <- function(model, frame, frame_parameters, control) {
+#' @importFrom Matrix Matrix
+egf_tmb_make_data <- function(model, frame, control, env) {
   ## Indices of time points associated with fitting windows
-  first <- attr(frame, "first")
-  last <- attr(frame, "last")
+  first <- attr(frame$ts, "first")
+  last <- attr(frame$ts, "last")
   index <- Map(seq.int, first, last)
+  ulindex <- unlist1(index)
 
   ## Fitting window lengths as numbers of time points
-  time_seg_len <- lengths(index)
+  time_seg_len <- lengths(index, use.names = FALSE)
+
+  ## Number of fitting windows
   N <- length(index)
 
   ## Time since earliest time point
-  ulindex <- unlist(index, FALSE, FALSE)
-  time <- frame$time[ulindex] - rep.int(frame$time[first], time_seg_len)
+  time <- frame$ts$time[ulindex] - rep.int(frame$ts$time[first], time_seg_len)
 
   ## Incidence
-  x <- frame$x[!is.na(frame$window)]
+  x <- frame$ts$x[!is.na(frame$ts$window)]
 
   if (model$day_of_week > 0L) {
     ## Date during 24 hours starting at earliest time point
-    Date1 <- .Date(frame$time[first])
+    Date1 <- .Date(frame$ts$time[first])
 
     ## Day of week on that Date coded as an integer 'i' in '0:6'.
     ## Integer 'i' maps to the day of week 'i' days after a reference day,
-    ## which is the day 'model$day_of_week' days after Saturday
-    ## NB: weekdays(.Date(2L)) == "Saturday"
+    ## which is the day 'model$day_of_week' days after Saturday.
+    ## Less verbosely: i -> weekdays(.Date(2) + model$day_of_week + i),
+    ## noting that weekdays(.Date(2)) == "Saturday" ...
     day1 <- as.integer(julian(Date1, origin = .Date(2L + model$day_of_week)) %% 7)
   } else {
     day1 <- rep_len(-1L, N)
   }
 
   ## Response matrix, offset component only
-  offsets <- lapply(frame_parameters, model.offset)
+  offsets <- lapply(frame$parameters, model.offset)
   offsets[vapply(offsets, is.null, FALSE)] <- list(rep_len(0, N))
   Y <- do.call(cbind, offsets)
 
-  ## Top level nonlinear model parameter names
-  names_top <- names(frame_parameters)
+  ## Names of top level nonlinear model parameters
+  names_top <- names(frame$parameters)
 
   ## List of fixed effects formulae and list of lists of random effects terms
-  formula_parameters <- lapply(frame_parameters, function(x) formula(terms(x)))
-  effects <- lapply(formula_parameters, split_effects)
-  fixed <- lapply(effects, `[[`, "fixed")
-  random <- lapply(effects, `[[`, "random")
+  l <- lapply(frame$parameters, function(x) split_effects(formula(terms(x))))
+  fixed <- lapply(l, `[[`, "fixed")
+  random <- lapply(l, `[[`, "random")
 
   ## Fixed effects infrastructure
-  X <- Map(egf_make_X, fixed = fixed, data = frame_parameters, sparse = control$sparse_X)
-  X <- egf_combine_X(fixed = fixed, X = X)
-  X_info <- attr(X, "info")
-  beta_index <- as.integer(X_info$top) - 1L
-  beta_index_tab <- c(table(X_info$top))
+  X <- Map(egf_make_X, fixed = fixed, data = frame$parameters, sparse = control$sparse_X)
+  Xc <- egf_combine_X(fixed = fixed, X = X)
+  beta_index <- as.integer(Xc$effects$top) - 1L
+  beta_index_tab <- c(table(Xc$effects$top))
 
   ## Random effects infrastructure
-  random1 <- do.call(c, unname(random))
+  random1 <- unlist1(random)
   names(random1) <- rep.int(names(random), lengths(random))
-  Z <- Map(egf_make_Z, random = random1, data = rep.int(frame_parameters, lengths(random)))
-  Z <- egf_combine_Z(random = random1, Z = Z)
-  if (is.null(Z)) {
+  Z <- Map(egf_make_Z, random = random1, data = rep.int(frame$parameters, lengths(random)))
+  Zc <- egf_combine_Z(random = random1, Z = Z)
+  if (is.null(Zc)) {
     b_index <- integer(0L)
     b_index_tab <- rep_len(0L, length(names_top))
     block_rows <- integer(0L)
     block_cols <- integer(0L)
   } else {
-    attr(Z, "info")$top <- factor(attr(Z, "info")$top, levels = names_top)
-    info <- attr(Z, "info")
-    b_index <- as.integer(info$top) - 1L
-    b_index_tab <- c(table(info$top))
-    block_rows <- as.integer(colSums(table(info$top, info$cov) > 0L))
-    block_cols <- as.integer(colSums(table(info$vec, info$cov) > 0L))
+    Zc$effects$top <- factor(Zc$effects$top, levels = names_top)
+    b_index <- as.integer(Zc$effects$top) - 1L
+    b_index_tab <- c(table(Zc$effects$top))
+    block_rows <- as.integer(colSums(table(Zc$effects$top, Zc$effects$cov) > 0L))
+    block_cols <- as.integer(colSums(table(Zc$effects$vec, Zc$effects$cov) > 0L))
   }
 
   ## Flags
   flags <- list(
-    flag_curve = egf_get_flag("curve", model$curve),
-    flag_excess = as.integer(model$excess),
-    flag_family = egf_get_flag("family", model$family),
-    flag_day_of_week = as.integer(model$day_of_week > 0L),
-    flag_trace = control$trace,
-    flag_sparse_X = as.integer(control$sparse_X),
-    flag_predict = 0L
+    curve = egf_get_flag("curve", model$curve),
+    excess = as.integer(model$excess),
+    family = egf_get_flag("family", model$family),
+    day_of_week = as.integer(model$day_of_week > 0L),
+    trace = control$trace,
+    sparse_X = as.integer(control$sparse_X),
+    predict = 0L
   )
 
   ## Column indices of top level nonlinear model parameters
   ## in response matrix
   names_top_all <- egf_get_names_top(NULL, link = TRUE)
   indices <- as.list(match(names_top_all, names_top, 0L) - 1L)
-  names(indices) <- sub("^(log|logit)\\((.*)\\)$", "index_\\1_\\2", names_top_all)
+  names(indices) <- sub("^(log|logit)\\((.*)\\)$", "\\1_\\2", names_top_all)
 
-  ## Empty design matrices
-  empty_dense_matrix <- `dim<-`(integer(0L), c(N, 0L))
-  empty_sparse_matrix <- sparseMatrix(
-    i = integer(0L),
-    j = integer(0L),
-    x = integer(0L),
-    dims = c(N, 0L)
-  )
+  ## Stuff to preserve but not return
+  for (name in c("effects", "contrasts")) {
+    env[[name]] <- list(X = Xc[[name]], Z = Zc[[name]])
+  }
+  env[["len"]] <- c(beta = ncol(Xc$X), theta = sum(as.integer(choose(block_rows + 1L, 2L))), b = sum(block_rows * block_cols))
 
-  res <- list(
+  list(
     time = time,
     time_seg_len = time_seg_len,
     x = x,
@@ -192,10 +197,9 @@ egf_tmb_make_data <- function(model, frame, frame_parameters, control) {
     flags = flags,
     indices = indices,
     Y = Y,
-    X = X,
-    Xd = if (control$sparse_X) empty_dense_matrix else X,
-    Xs = if (control$sparse_X) X else empty_sparse_matrix,
-    Z = if (is.null(Z)) empty_sparse_matrix else Z,
+    Xd = if (control$sparse_X) matrix(numeric(0L), N, 0L) else Xc$X,
+    Xs = if (control$sparse_X) Xc$X else Matrix(numeric(0L), N, 0L, sparse = TRUE),
+    Z = if (is.null(Zc)) Matrix(numeric(0L), N, 0L, sparse = TRUE) else Zc$Z,
     beta_index = beta_index,
     b_index = b_index,
     beta_index_tab = beta_index_tab,
@@ -203,29 +207,47 @@ egf_tmb_make_data <- function(model, frame, frame_parameters, control) {
     block_rows = block_rows,
     block_cols = block_cols
   )
-  res
 }
 
 #' Construct parameter objects for C++ template
 #'
-#' Gathers in a \link{list} parameter objects \code{beta}, \code{theta},
-#' and \code{b} to be passed to the package's C++ template via \pkg{TMB}'s
-#' \code{PARAMETER_*} macros during the first likelihood evaluation.
-#' See also \code{\link[TMB]{MakeADFun}}.
+#' Gathers in a list parameter objects to be passed to
+#' \code{\link[TMB]{MakeADFun}}
+#' and used during the first likelihood evaluation.
+#' These are retrieved inside of \pkg{epigrowthfit}'s C++ template
+#' via \pkg{TMB}'s \code{PARAMETER_*} macros.
 #'
-#' @inheritParams egf
-#' @param tmb_data
-#'   A \link{list} returned by \code{egf_tmb_make_data}.
-#' @param frame,frame_parameters
-#'   So-named elements of a \link{list} returned by \code{egf_make_frames}.
+#' @param model
+#'   An \code{"\link{egf_model}"} object.
+#' @param frame
+#'   A list returned by \code{egf_make_frame}.
+#' @param env
+#'   An environment for storing intermediate objects that are not ultimately
+#'   passed to \code{\link[TMB]{MakeADFun}}, but must nonetheless be preserved
+#'   somewhere.
 #'
 #' @details
-#' When \code{init = NULL}, naive estimates of top level nonlinear
-#' model parameters are obtained for each fitting window as follows:
+#' Naive estimates of top level nonlinear model parameters are obtained
+#' for each fitting window as follows:
 #' \describe{
 #' \item{\code{r}}{
-#'   The slope of a linear model fit to \code{\link{log1p}(\link{cumsum}(x)))}.
+#'   The slope of a linear model fit to \code{log1p(cumsum(x)))}.
 #' }
+#' \item{\code{c0}}{
+#'   \code{exp(log_c0)}, where \code{log_c0} is the intercept of
+#'   a linear model fit to \code{log1p(cumsum(x))}.
+#' }
+#' \item{\code{tinfl}}{
+#'   \code{max(time)}. This assumes that the fitting window ends
+#'   near the time of a peak in incidence.
+#' }
+#' \item{\code{K}}{
+#'   \code{2*sum(x)}. This assumes that the fitting window ends
+#'   near the time of a peak in incidence _and_ that incidence
+#'   is roughly symmetric about the peak.
+#' }
+#' \item{\code{p}}{0.95}
+#' \item{\code{a, b, disp, w[123456]}}{1}
 #' \item{\code{alpha}}{
 #'   \code{r*c0^(1-p)} if \code{curve = "subexponential"},
 #'   \code{r/log(K/c0)} if \code{curve = "gompertz"}.
@@ -234,317 +256,156 @@ egf_tmb_make_data <- function(model, frame, frame_parameters, control) {
 #'   to \code{r}, substituting the naive estimates of \code{r},
 #'   \code{c0}, \code{K}, and \code{p}, and solving for \code{alpha}.
 #' }
-#' \item{\code{c0}}{
-#'   \code{\link{exp}(log_c0)}, where \code{log_c0} is the intercept
-#'   of a linear model fit to \code{\link{log1p}(\link{cumsum}(x))}.
 #' }
-#' \item{\code{tinfl}}{
-#'   \code{\link{max}(time)}. This assumes that the fitting window
-#'   ends near the time of a peak in incidence.
-#' }
-#' \item{\code{K}}{
-#'   \code{2*\link{sum}(x)}. This assumes that the fitting window
-#'   ends near the time of a peak in incidence _and_ that incidence
-#'   is roughly symmetric about the peak.
-#' }
-#' \item{\code{p}}{0.95}
-#' \item{\code{a, b, disp, w[123456]}}{1}
-#' }
-#' The naive estimates are log- or logit-transformed (all but \code{p}
-#' use a log link), and the initial value of the \code{"(Intercept)"}
-#' coefficient in a top level parameter's fixed effects model
-#' (if that coefficient exists) is taken to be the mean of the link scale
-#' estimates across fitting windows. The remaining elements of \code{beta}
-#' take initial value 0. All elements of \code{theta} and \code{b}
-#' take initial value 0, so that, initially, all random vectors follow
-#' a standard normal distribution.
+#' The naive estimates are link-transformed, and the means of the
+#' link scale estimates across fitting windows are used as initial
+#' values for corresponding \code{"(Intercept)"} coefficients in
+#' \code{beta}.
 #'
 #' @return
-#' A \link{list} with elements:
-#' \item{beta}{
-#'   A \link[=double]{numeric} vector of length
-#'   \code{\link{length}(tmb_data$beta_index)} listing
-#'   initial values for fixed effects coefficients.
-#' }
-#' \item{theta}{
-#'   A \link[=double]{numeric} vector of length
-#'   \code{\link{sum}(f(tmb_data$block_rows))}, where \code{f(n) = n*(n+1)/2},
-#'   specifying initial covariance matrices for all random vectors.
-#'   Let \code{x} be a segment of \code{theta} of length \code{f(n)},
-#'   corresponding to a random vector \code{u} of length \code{n}.
-#'   Then \code{x[1:n]} lists log standard deviations of the elements
-#'   of \code{u}, and \code{x[-(1:n)]} lists (in row-major order)
-#'   the subdiagonal elements of the unit lower triangular matrix
-#'   \code{L} in the Cholesky factorization of the correlation matrix
-#'   \code{S} of \code{u}:\cr
-#'   \code{S = A \link[=matmult]{\%*\%} \link{t}(A)}\cr
-#'   \code{A = D^-0.5 \link[=matmult]{\%*\%} L}\cr
-#'   \code{D = \link{diag}(diag(L \link[=matmult]{\%*\%} \link{t}(L)))}
-#' }
-#' \item{b}{
-#'   A \link[=double]{numeric} vector of length
-#'   \code{\link{length}(tmb_data$b_index)} listing initial values
-#'   for random effects coefficients (unit variance scale).
-#' }
+#' A list with elements \code{beta}, \code{theta}, and \code{b},
+#' each numeric vectors. \code{theta} and \code{b} are zero vectors,
+#' while \code{beta} is a zero vector except for \code{"(Intercept)"}
+#' coefficients; see Details.
 #'
 #' @noRd
 #' @importFrom stats coef lm na.omit qlogis terms
-egf_tmb_make_parameters <- function(tmb_data, model, frame, frame_parameters, init) {
-  ## Lengths of parameter objects
-  f <- function(n) as.integer(n * (n + 1) / 2)
-  len <- c(
-    beta  = length(tmb_data$beta_index),
-    theta = sum(f(tmb_data$block_rows)),
-    b     = length(tmb_data$b_index)
+egf_tmb_make_parameters <- function(model, frame, env) {
+  ## Initialize each parameter object to a vector of zeros
+  res <- lapply(env$len, numeric)
+
+  ## Identify top level nonlinear model parameters
+  ## whose mixed effects formula has an intercept
+  has1 <- vapply(frame$parameters, function(x) attr(terms(x), "intercept") == 1L, FALSE)
+  if (!any(has1)) {
+    return(res)
+  }
+
+  ## Record naive estimates of top level nonlinear model parameters
+  ## (one per time series segment)
+  tx <- split(frame$ts[c("time", "x")], frame$ts$window)
+  compute_naive <- function(d) {
+    n <- max(2, trunc(nrow(d) / 2))
+    ab <- try(coef(lm(log1p(cumsum(x)) ~ time, data = d, subset = seq_len(n), na.action = na.omit)), silent = TRUE)
+    if (inherits(ab, "try-error") || !all(is.finite(ab))) {
+      r <- 0.04
+      c0 <- 1
+    } else {
+      r <- ab[[2L]]
+      c0 <- exp(ab[[1L]])
+    }
+    tinfl <- max(d$t)
+    K <- 2 * sum(d$x, na.rm = TRUE)
+    c(r = r, c0 = c0, tinfl = tinfl, K = K)
+  }
+  naive <- as.data.frame(t(vapply(tx, compute_naive, numeric(4L))))
+  naive["p"] <- list(0.95)
+  naive[c("a", "b", "disp", paste0("w", 1:6))] <- list(1)
+  naive$alpha <- switch(model$curve,
+    subexponential = naive$r * naive$c0^(1 - naive$p),
+    gompertz = naive$r / (log(naive$K) - log(naive$c0))
   )
 
-  ## If user does not specify a full parameter vector
-  if (is.null(init)) {
-    ## Initialize each parameter object to a vector of zeros
-    res <- lapply(len, numeric)
+  ## Link transform
+  link <- lapply(egf_link_get(names(naive)), egf_link_match)
+  naive[] <- Map(function(f, x) f(x), link, naive)
+  names(naive) <- egf_link_add(names(naive))
 
-    ## Identify top level nonlinear model parameters
-    ## whose mixed effects formulae have an intercept
-    has_intercept <- function(frame) {
-      attr(terms(frame), "intercept") == 1L
-    }
-    i1 <- vapply(frame_parameters, has_intercept, FALSE)
+  ## Identify elements of 'beta' corresponding to "(Intercept)"
+  ## and assign means of naive estimates over time series segments
+  names_top <- names(frame$parameters)
+  m <- match(names_top[has1], env$effects$X$top, 0L)
+  res$beta[m] <- colMeans(naive[names_top[has1]])
 
-    ## For each of these top level nonlinear model parameters,
-    ## compute the mean over all fitting windows of the naive estimate,
-    ## and assign the result to the coefficient of 'beta' corresponding
-    ## to "(Intercept)"
-    if (any(i1)) {
-      ## Time series segments
-      tx_split <- split(frame[c("time", "x")], frame$window)
+  ## Stuff to preserve but not return
+  env$Y0 <- as.matrix(naive[names_top])
 
-      ## Functions computing naive estimates given time series segments
-      get_naive_r_c0 <- function(d) {
-        n <- max(2, trunc(nrow(d) / 2))
-        ab <- try(coef(lm(log1p(cumsum(x)) ~ time, data = d, subset = seq_len(n), na.action = na.omit)), silent = TRUE)
-        if (inherits(ab, "try-error") || !all(is.finite(ab))) {
-          return(c(r = 0.04, c0 = 1))
-        }
-        c(r = ab[[2L]], c0 = exp(ab[[1L]]))
-      }
-      get_naive_tinfl <- function(d) {
-        max(d$t)
-      }
-      get_naive_K <- function(d) {
-        2 * sum(d$x, na.rm = TRUE)
-      }
-
-      ## Naive estimates for each time series segment
-      naive <- data.frame(
-        t(vapply(tx_split, get_naive_r_c0, c(0, 0))),
-        tinfl = vapply(tx_split, get_naive_tinfl, 0),
-        K = vapply(tx_split, get_naive_K, 0)
-      )
-      naive["p"] <- list(0.95)
-      naive[c("a", "b", "disp", paste0("w", 1:6))] <- list(1)
-      naive$alpha <- switch(model$curve,
-        subexponential = naive$r * naive$c0^(1 - naive$p),
-        gompertz = naive$r / (log(naive$K) - log(naive$c0)),
-        NA_real_
-      )
-
-      ## Link transform
-      link <- lapply(egf_link_get(names(naive)), egf_link_match)
-      naive[] <- Map(function(f, x) f(x), link, naive)
-      names(naive) <- egf_link_add(names(naive))
-
-      ## Identify elements of 'beta' corresponding to "(Intercept)"
-      ## and assign means over time series segments
-      nfp <- names(frame_parameters)[i1]
-      index <- match(nfp, attr(tmb_data$X, "info")$top, 0L)
-      res$beta[index] <- colMeans(naive[nfp])
-    }
-  } else {
-    ## Validate and split full parameter vector,
-    ## producing 'list(beta, theta, b)'
-    stop_if_not(
-      is.numeric(init),
-      length(init) == sum(len),
-      is.finite(init),
-      m = sprintf("'init' must be a finite numeric vector of length %d.", sum(len))
-    )
-    res <- split(as.numeric(init), rep.int(gl(3L, 1L, labels = names(len)), len))
-  }
-
-  ## Retain all naive estimates if debugging
-  if (is.null(init)) {
-    attr(res, "Y0") <- as.matrix(naive[names(frame_parameters)])
-  }
   res
 }
 
-egf_tmb_make_args <- function(model, frame, frame_parameters, control, fit, init, map) {
-  tmb_data <- egf_tmb_make_data(
+egf_tmb_make_args <- function(model, frame, control, init, map, env) {
+  res <- list()
+  res$data <- egf_tmb_make_data(
     model = model,
     frame = frame,
-    frame_parameters = frame_parameters,
-    control = control
+    control = control,
+    env = env
   )
-  tmb_parameters <- egf_tmb_make_parameters(
-    tmb_data = tmb_data,
-    model = model,
-    frame = frame,
-    frame_parameters = frame_parameters,
-    init = init
-  )
-  if (is.null(map)) {
-    tmb_map <- list()
-  } else {
-    len <- lengths(tmb_parameters)
-    stop_if_not(
-      is.factor(map),
-      length(map) == sum(len),
-      m = sprintf("'map' must be a factor of length %d.", sum(len))
+  len <- env$len
+  n <- sum(len)
+
+  if (is.null(init)) {
+    res$parameters <- egf_tmb_make_parameters(
+      model = model,
+      frame = frame,
+      env = env
     )
-    tmb_map <- split(map, rep.int(gl(3L, 1L, labels = names(len)), len))
-    tmb_map <- lapply(tmb_map, factor)
+  } else {
+    eval(bquote(stopifnot(is.numeric(init), length(init) == .(n), is.finite(init))))
+    res$parameters <- split(as.numeric(init), rep.int(gl(3L, 1L, labels = names(len)), len))
   }
-  if (ncol(tmb_data$Z) > 0L) {
+
+  if (is.null(map)) {
+    res$map <- list()
+  } else {
+    if (is.factor(map)) {
+      eval(bquote(stopifnot(length(map) == .(n))))
+    } else {
+      map <- try(seq_len(n)[map])
+      if (!is.integer(map) || anyNA(map)) {
+        stop(sprintf("'map' must index 'seq_len(%d)'.", n))
+      }
+      map <- replace(gl(n, 1L), map, NA)
+    }
+    res$map <- split(map, rep.int(gl(3L, 1L, labels = names(len)), len))
+    res$map[] <- lapply(res$map, factor)
+  }
+
+  if (ncol(res$data$Z) > 0L) {
     ## Declare that 'b' contains random effects
-    tmb_random <- "b"
+    res$random <- "b"
   } else {
     ## Declare that there are no random effects
-    tmb_random <- NULL
+    res$random <- NULL
     ## Fix 'theta' and 'b' to NA_real_ since only 'beta' is used
-    tmb_parameters$theta <- tmb_parameters$b <- NA_real_
-    tmb_map$theta <- tmb_map$b <- factor(NA)
+    res$parameters$theta <- res$parameters$b <- NA_real_
+    res$map$theta <- res$map$b <- factor(NA)
   }
-  list(
-    data = tmb_data,
-    parameters = tmb_parameters,
-    map = tmb_map,
-    random = tmb_random,
-    profile = if (control$profile) "beta" else NULL,
-    DLL = "epigrowthfit",
-    silent = (control$trace == 0L)
-  )
+
+  res$profile <- if (control$profile) "beta" else NULL
+  res$DLL <- "epigrowthfit"
+  res$silent <- (control$trace == 0L)
+  res
 }
 
-egf_tmb_remake_args <- function(object) {
-  stopifnot(inherits(object, "egf"))
-  tmb_args <- mget(c("data", "parameters", "map", "random", "profile", "DLL", "silent"), envir = object$tmb_out$env)
-  attr(tmb_args$data, "check.passed") <- NULL
-  attr(tmb_args$parameters, "check.passed") <- NULL
-  best <- object$tmb_out$env$last.par.best
-  best[] <- object$best
-  if (egf_has_random(object)) {
-    u <- unique(names(best))
-    tmb_args$parameters <- split(unname(best), factor(names(best), levels = u))
-    tmb_args$random <- "b"
-  } else {
-    tmb_args$parameters$beta <- unname(best)
-    tmb_args$random <- NULL
-  }
-  if (object$control$profile) {
-    tmb_args$profile <- "beta"
-  } else {
-    tmb_args$profile <- NULL
-  }
-  tmb_args
-}
-
-egf_tmb_update_args <- function(tmb_args, priors_top, priors_bottom) {
-  priors_top <- unname(priors_top)
-  priors_bottom <- unlist(priors_bottom[c("beta", "theta", "Sigma")], FALSE, FALSE)
+egf_tmb_update_data <- function(data, priors) {
+  priors$bottom <- unlist1(priors$bottom)
   for (s in c("top", "bottom")) {
-    priors <- get(paste0("priors_", s))
-    n <- length(priors)
-    has_prior <- !vapply(priors, is.null, FALSE)
+    l <- priors[[s]]
+    n <- length(l)
+    argnull <- vapply(l, is.null, FALSE)
 
-    flag_regularize <- rep_len(-1L, n)
-    flag_regularize[has_prior] <- egf_get_flag("prior", vapply(priors[has_prior], `[[`, "", "family"))
-    tmb_args$data$flags[[paste0("flag_regularize_", s)]] <- flag_regularize
+    flag <- rep_len(-1L, n)
+    flag[!argnull] <- egf_get_flag("prior", vapply(l[!argnull], `[[`, "", "family"))
+    data$flags[[paste0("regularize_", s)]] <- flag
 
-    hyperparameters <- rep_len(list(numeric(0L)), n)
-    hyperparameters[has_prior] <- lapply(priors[has_prior], function(x) unlist(x$parameters, FALSE, FALSE))
-    tmb_args$data[[paste0("hyperparameters_", s)]] <- hyperparameters
+    par <- rep_len(list(numeric(0L)), n)
+    par[!argnull] <- lapply(l[!argnull], function(x) unlist1(x$parameters))
+    data[[paste0("hyperparameters_", s)]] <- par
   }
-  tmb_args
+  data
 }
 
-#' Patch TMB-generated functions
-#'
-#' Define wrapper functions on top of \code{\link[TMB]{MakeADFun}}-generated
-#' functions \code{fn} and \code{gr}, so that function and gradient evaluations
-#' can retry inner optimization using fallback methods in the event that the
-#' default method (usually \code{\link[TMB]{newton}}) fails.
-#'
-#' @param fn,gr
-#'   \link[=function]{Function}s from a \code{\link[TMB]{MakeADFun}}-generated
-#'   \link{list} object to be patched.
-#' @param inner_optimizer
-#'   A \link{list} of \code{"\link{egf_inner_optimizer}"} objects
-#'   specifying inner optimization methods to be tried in turn.
-#'
-#' @return
-#' A patched version of \link{function} \code{fn} or \code{gr}.
-#'
-#' @noRd
-NULL
-
-egf_tmb_patch_fn <- function(fn, inner_optimizer) {
-  e <- environment(fn)
-  if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
-    e$.egf_env <- new.env(parent = emptyenv())
+egf_tmb_remake_args <- function(obj, par) {
+  res <- mget(c("data", "parameters", "map", "random", "profile", "DLL", "silent"), envir = obj$env)
+  res$parameters <- obj$env$parList(par[obj$env$lfixed()], par)
+  attr(res$data, "check.passed") <- NULL
+  attr(res$parameters, "check.passed") <- NULL
+  if (ncol(res$data$Z) > 0L) {
+    res$random <- "b"
   }
-  e$.egf_env$fn <- fn
-  e$.egf_env$inner_optimizer <- inner_optimizer
-
-  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for 'check'
-  pfn <- function(x = last.par[-random], ...) {
-    oim <- inner.method
-    oic <- inner.control
-    on.exit({
-      inner.method <<- oim
-      inner.control <<- oic
-    })
-    for (io in .egf_env$inner_optimizer) {
-      inner.method <<- io$method
-      inner.control <<- io$control
-      v <- .egf_env$fn(x, ...)
-      if (is.numeric(v) && length(v) == 1L && is.finite(v)) {
-        return(v)
-      }
-    }
-    NaN # no warning to avoid duplication of 'optim' and 'nlminb' warnings
+  if (!is.null(res$profile)) {
+    res$profile <- "beta"
   }
-  environment(pfn) <- e
-  pfn
-}
-
-egf_tmb_patch_gr <- function(gr, inner_optimizer) {
-  e <- environment(gr)
-  if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
-    e$.egf_env <- new.env(parent = emptyenv())
-  }
-  e$.egf_env$gr <- gr
-  e$.egf_env$inner_optimizer <- inner_optimizer
-
-  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for 'check'
-  pgr <- function(x = last.par[-random], ...) {
-    oim <- inner.method
-    oic <- inner.control
-    on.exit({
-      inner.method <<- oim
-      inner.control <<- oic
-    })
-    n <- length(x)
-    for (io in .egf_env$inner_optimizer) {
-      inner.method <<- io$method
-      inner.control <<- io$control
-      v <- .egf_env$gr(x, ...)
-      if (is.numeric(v) && length(v) == n && all(is.finite(v))) {
-        return(v)
-      }
-    }
-    warning("Unable to evaluate 'gr(x)', returning NaN.")
-    NaN # warning because length 1 result is unexpected
-  }
-  environment(pgr) <- e
-  pgr
+  res
 }

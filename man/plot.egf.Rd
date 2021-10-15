@@ -14,7 +14,7 @@
   show_predict = TRUE,
   show_tdoubling = FALSE,
   level = 0.95,
-  per_plot = min(6L, nlevels(x$frame$ts)),
+  per_plot = min(6L, nlevels(model.frame(x)$ts)),
   control = egf_plot_control(),
   cache = NULL,
   plot = TRUE,
@@ -34,7 +34,7 @@
 \arguments{
 \item{x}{An \code{"\link{egf}"} object.}
 
-\item{type}{A \link{character} string indicating a type of plot. The options are:
+\item{type}{A character string indicating a type of plot. The options are:
 interval incidence (\code{"interval"}),
 cumulative incidence (\code{"cumulative"}),
 per capita growth rate (\code{"rt"}), and
@@ -42,7 +42,7 @@ per capita growth rate \emph{as heat map} (\code{"rt_heat"}).
 \code{"rt_heat"} displays \code{per_plot} time series in each plot.
 The rest display one time series in each plot.}
 
-\item{time_as}{A \link{character} string indicating how numeric times are displayed
+\item{time_as}{A character string indicating how numeric times are displayed
 on the bottom axis. The options are:
 as is (\code{"numeric"})
 and with a calendar (\code{"Date"}).
@@ -59,23 +59,29 @@ If \code{x} specifies a model with day of week effects
 (\code{x$model$day_of_week > 0}), then setting \code{dt}
 has no effect as it is set to 1 internally.}
 
-\item{log}{A \link{logical} flag. If \code{TRUE}, then the dependent variable
+\item{log}{A logical flag. If \code{TRUE}, then the dependent variable
 is plotted on a logarithmic scale.}
 
 \item{zero}{A positive number indicating a line on which to plot zeros
-when \code{log = TRUE}. \code{\link{NA}} is to place zeros
-on the bottom axis. \code{\link{NULL}} is to suppress zeros.
+when \code{log = TRUE}.
+\code{NA} is to place zeros on the bottom axis.
+\code{NULL} is to suppress zeros.
 [\code{type = "interval"} and \code{"cumulative"} only].}
 
-\item{show_predict}{An integer flag: 2 is to draw predicted curves with confidence bands,
-1 is draw predicted curves only, 0 is to draw neither.
-\link[=logical]{Logical} values are coerced to integer.
+\item{show_predict}{An integer flag:
+2 is to draw predicted curves with confidence bands,
+1 is draw predicted curves only,
+0 is to draw neither.
+Logical values are coerced to integer.
 [\code{type != "rt_heat"} only.]}
 
-\item{show_tdoubling}{An integer flag: 2 is to print initial doubling time estimates in
-the top margin with confidence intervals, 1 is to print estimates
-only, 0 is to print neither. \link[=logical]{Logical} values are
-coerced to integer. Supported only if \code{x$model$curve} is
+\item{show_tdoubling}{An integer flag:
+2 is to print initial doubling time estimates in the top margin
+with confidence intervals,
+1 is to print estimates only,
+0 is to print neither.
+Logical values are coerced to integer.
+Supported only if \code{x$model$curve} is
 \code{"exponential"}, \code{"logistic"}, or \code{"richards"}.
 [\code{type != "rt_heat"} only.]}
 
@@ -97,51 +103,55 @@ stored in \code{cache} are reused if possible to avoid recomputation.}
 \item{plot}{A \link{logical} flag. If \code{FALSE}, then nothing is plotted.
 Useful when only the returned \code{"egf_plot_cache"} object is desired.}
 
-\item{subset}{An expression to be evaluated in the combined model frame
-(see \code{\link{egf_combine_frames}}). It must evaluate
-to a valid index vector for the rows of the data frame
-(see \code{\link{[.data.frame}}), and thus fitting windows.
+\item{subset}{An expression to be evaluated in
+in \code{\link[=model.frame.egf]{model.frame}(x, "combined")}.
+It must evaluate to a valid index vector for the rows of
+the data frame and, in turn, fitting windows.
 Only time series with indexed fitting windows are plotted.
 Only indexed fitting windows are highlighted in plots.
-The default (\code{\link{NULL}}) is to plot all time series
+The default (\code{NULL}) is to plot all time series
 and display all fitting windows in each time series.}
 
-\item{order}{An expression to be evaluated in the combined model frame
-(see \code{\link{egf_combine_frames}}), typically a
-call to \code{\link{order}}, determining the order in which
-time series are plotted. It must evaluate to a permutation
-of \code{\link{seq_len}(\link{nrow}(combined))}.
-The default (\code{\link{NULL}}) is the original ordering.}
+\item{order}{An expression to be evaluated in
+\code{\link[=model.frame.egf]{model.frame}(x, "combined")},
+typically a call to \code{\link{order}},
+determining the order in which time series are plotted.
+It must evaluate to a permutation of \code{seq_len(n)},
+where \code{n} is the number of rows of the data frame.
+The default (\code{NULL}) is to respect the original ordering.}
 
-\item{xlim, ylim}{\link[=numeric]{Numeric} vectors of length 2 specifying axis limits,
-which are recycled for all plots. If \code{time_as = "Date"},
-then \code{xlim} can instead be a \link{Date} vector or any vector
-coercible to Date via \code{\link{as.Date}(xlim)}.
+\item{xlim, ylim}{Numeric vectors of length 2 specifying axis limits,
+which are recycled for all plots.
+If \code{time_as = "Date"}, then \code{xlim} can instead
+be a \link{Date} vector or any vector coercible to Date
+via \code{\link{as.Date}(xlim)}.
 \code{ylim} is unused by \code{type = "rt_heat"}.}
 
-\item{main, sub, xlab, ylab, ylab_outer, plab}{\link[=character]{Character} strings or expressions used
-to generate plot (\code{main}, \code{sub}), axis (\code{xlab},
-\code{ylab}, \code{ylab_outer}), and panel (\code{plab}) titles.
-\code{main}, \code{sub}, \code{xlab}, and \code{ylab} are supported
-for all values of \code{type}.
+\item{main, sub, xlab, ylab, ylab_outer, plab}{Character strings or expressions used to generate
+plot (\code{main}, \code{sub}),
+axis (\code{xlab}, \code{ylab}, \code{ylab_outer}), and
+panel (\code{plab}) titles.
+\code{main}, \code{sub}, \code{xlab}, and \code{ylab}
+are supported for all values of \code{type}.
 \code{plab} is used by \code{type = "rt_heat"} only.
 \code{ylab_outer} is used by \code{type = "rt"} and \code{"rt_heat"} only.
-When \code{type != "rt_heat"}, \code{main} and \code{sub} are
-evaluated in the combined model frame
-(see \code{\link{egf_combine_frames}})
+When \code{type != "rt_heat"},
+\code{main} and \code{sub} are evaluated in
+\code{\link[=model.frame.egf]{model.frame}(x, "combined")}
 in order to generate unique (sub)titles for each plot.
-When \code{type = "rt_heat"}, \code{plab} is evaluated
-similarly in order to generate unique titles for each panel.
-\code{\link{plotmath}} expressions are not supported
-for \code{main}, \code{sub}, and \code{plab} in these cases.}
+When \code{type = "rt_heat"},
+\code{plab} is evaluated similarly in order to generate
+unique titles for each panel.
+\code{\link{plotmath}} expressions are not supported for
+\code{main}, \code{sub}, and \code{plab} in these cases.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-A \link[=data.frame]{data.frame} inheriting from \link{class}
-\code{"egf_plot_cache"}. If argument \code{cache} was supplied
-in the function call, then this data frame is the result of
-augmenting \code{cache} with new computations.
+A data.frame inheriting from class \code{"egf_plot_cache"}.
+If argument \code{cache} was supplied in the function call,
+then this data frame is the result of augmenting \code{cache}
+with new computations.
 }
 \description{
 Methods for plotting \code{"\link{egf}"} objects.
@@ -151,8 +161,8 @@ Computation of fitted and predicted values and standard errors
 is performed before any plots are created. To avoid waste of
 computation time, cached computations are returned \emph{even if}
 an error is thrown during plotting. To ensure that the cache is
-preserved, assign the result of the call to \code{\link{plot}}
-to a name: \code{cache <- plot(x, \dots)}.
+preserved, assign the result of the function call to a name:
+\code{cache <- plot(x, \dots)}.
 
 Caching functionality must be used with care, as mismatch between
 \code{x} and \code{cache} will not be detected. Constructions such

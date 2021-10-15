@@ -8,7 +8,7 @@
 #' (either \code{"log"} or \code{"logit"})
 #' used internally for that parameter.
 #'
-#' @param s,fs \link[=character]{Character} vectors.
+#' @param s,fs Character vectors.
 #'
 #' @return
 #' For strings \code{s}, \code{f}, and \code{fs} as described above,
@@ -17,8 +17,7 @@
 #' \code{egf_link_remove(fs)} returns \code{s}, and
 #' \code{egf_link_extract(fs)} returns \code{f}.
 #'
-#' \code{\link{NA_character_}} is returned for invalid values
-#' of the argument.
+#' \code{NA_character_} is returned for invalid values of the argument.
 #'
 #' @examples
 #' egf_link_get("r")
@@ -69,7 +68,7 @@ egf_link_extract <- function(fs) {
 #'   A \link{logical} flag. If \code{TRUE}, then the inverse is returned.
 #'
 #' @return
-#' A \link{function}.
+#' A function.
 #'
 #' @examples
 #' egf_link_match("log")

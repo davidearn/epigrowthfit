@@ -78,7 +78,7 @@ Type objective_function<Type>::operator() ()
        - dim=(N, length(b))
     */
     DATA_SPARSE_MATRIX(Z);
-    flags.do_random_effects = (Z.cols() > 0);    
+    flags.do_random_effects = (Z.cols() > 0);
 
     /* Random effects coefficient matrix, to be multiplied on the left by `Z` */
     Eigen::SparseMatrix<Type> b_matrix;
@@ -323,7 +323,7 @@ Type objective_function<Type>::operator() ()
     if (flags.do_regularize_bottom)
     {
         /* List of vectors of hyperparameters for regularization
-	   - length=length(beta)+length(theta)
+	   - length=length(beta)+length(theta)+M
 	*/
         DATA_STRUCT(hyperparameters_bottom, egf::list_of_vectors_t);
 
@@ -410,7 +410,7 @@ Type objective_function<Type>::operator() ()
 	    egf::eval_log_curve(list_of_predict(s),
 				(vector<Type>) Y.row(subset(s)),
 				indices,
-				flags.flag_curve);
+				flags.curve);
 	    i += n;
 	}
 	
@@ -436,7 +436,7 @@ Type objective_function<Type>::operator() ()
 		    egf::eval_log_rt_exact(tmp,
 					   Y_row,
 					   indices,
-					   flags.flag_curve);
+					   flags.curve);
 		    log_rt.segment(i, n) = tmp;
 		}
 		else
@@ -447,7 +447,7 @@ Type objective_function<Type>::operator() ()
 		    egf::eval_log_rt_exact(list_of_predict(s),
 					   Y_row,
 					   indices,
-					   flags.flag_curve);
+					   flags.curve);
 		    log_rt.segment(i, n) = list_of_predict(s);
 		}
 		i += n;
@@ -477,7 +477,7 @@ Type objective_function<Type>::operator() ()
 		    /* log(c(t)) <- log(b * t + c(t)) */
 		    egf::logspace_add_baseline(list_of_predict(s),
 					       (vector<Type>) new_time.segment(i, n),
-					       Y_row(indices.index_log_b));
+					       Y_row(indices.log_b));
 		}
 		if (do_predict_log_cumulative)
 		{
@@ -498,12 +498,12 @@ Type objective_function<Type>::operator() ()
 		    {
 			/* log(diff(c(t))) <- log(diff(c(t)) * w(t[-n], t[-1])) */
 			egf::logspace_add_offsets(list_of_predict(s),
-						  Y_row(indices.index_log_w1),
-						  Y_row(indices.index_log_w2),
-						  Y_row(indices.index_log_w3),
-						  Y_row(indices.index_log_w4),
-						  Y_row(indices.index_log_w5),
-						  Y_row(indices.index_log_w6),
+						  Y_row(indices.log_w1),
+						  Y_row(indices.log_w2),
+						  Y_row(indices.log_w3),
+						  Y_row(indices.log_w4),
+						  Y_row(indices.log_w5),
+						  Y_row(indices.log_w6),
 						  new_day1(s));
 		    }
 		    if (do_predict_log_interval)

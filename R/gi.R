@@ -13,23 +13,23 @@
 #' }
 #'
 #' @param x,q
-#'   A \link{numeric} vector listing generation intervals.
+#'   A numeric vector listing generation intervals.
 #' @param p
-#'   A \link{numeric} vector listing probabilities.
+#'   A numeric vector listing probabilities.
 #' @param n
 #'   A non-negative integer indicating a sample size.
-#'   If \code{\link{length}(n) > 1}, then \code{length(n)} is taken
+#'   If \code{length(n) > 1}, then \code{length(n)} is taken
 #'   to be the sample size.
 #' @param latent,infectious
-#'   \link[=numeric]{Numeric} vectors such that \code{latent[i]} and
-#'   \code{infectious[i]} are the probabilities that the latent and
-#'   infectious periods, respectively, are \code{i} units of time.
+#'   Numeric vectors such that \code{latent[i]} and \code{infectious[i]}
+#'   are the probabilities that the latent and infectious periods,
+#'   respectively, are \code{i} units of time.
 #'   It is sufficient to supply probability weights, as both vectors
 #'   are divided by their sums internally.
 #'
 #' @return
-#' A \link{numeric} vector with length equal to the that of the
-#' first argument, or length \code{n} in the case of \code{rgi}.
+#' A numeric vector with length equal to the that of the first argument,
+#' or length \code{n} in the case of \code{rgi}.
 #'
 #' @references
 #' Svensson, Å. A note on generation times in epidemic models.
@@ -94,8 +94,8 @@ dgi <- function(x, latent, infectious) {
     infectious >= 0,
     any(infectious > 0)
   )
-  latent <- latent / sum(latent)
-  infectious <- infectious / sum(infectious)
+  latent[] <- latent / sum(latent)
+  infectious[] <- infectious / sum(infectious)
 
   d <- x
   d[] <- NA
@@ -207,8 +207,8 @@ rgi <- function(n, latent, infectious) {
     infectious >= 0,
     any(infectious > 0)
   )
-  latent <- latent / sum(latent)
-  infectious <- infectious / sum(infectious)
+  latent[] <- latent / sum(latent)
+  infectious[] <- infectious / sum(infectious)
 
   ## Latent period is integer-valued,
   ## equal to 'i' with probability 'latent[i]'

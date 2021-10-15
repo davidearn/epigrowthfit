@@ -18,30 +18,30 @@ egf_control(
 optimization method.}
 
 \item{inner_optimizer}{An \code{"\link{egf_inner_optimizer}"} object, specifying an "inner"
-optimization method, or a \link{list} of such objects, in which case
-the listed methods are tried in order until one succeeds. (If none
-succeed, then a warning is issued.)}
+optimization method, or a list of such objects, in which case the
+listed methods are tried in order until one succeeds. (If none succeed,
+then a warning is issued.)}
 
 \item{trace}{An integer flag determining the amount of tracing performed
-(see Details). \link[=logical]{Logical} values are coerced to integer.}
+(see Details). Logical values are coerced to integer.}
 
-\item{profile}{A \link{logical} flag. If \code{TRUE}, then fixed effect parameters
-are profiled out of the likelihood, which may stabilize optimization
-for models with many fixed effects. This feature is experimental,
-and in fact may \emph{de}stabilize optimization, as it relies on
+\item{profile}{A logical flag. If \code{TRUE}, then fixed effect parameters are profiled
+out of the likelihood, which may stabilize optimization for models
+with many fixed effects. This feature should be considered experimental,
+and in fact may \emph{de}stabilize optimization, as it may rely on
 assumptions about the optimization problem that are not necessarily
 satisfied by the nonlinear mixed effects models fit by \code{\link{egf}}.}
 
-\item{sparse_X}{A \link{logical} flag. If \code{TRUE}, then the fixed effects
-\link[=model.matrix]{design matrix} is constructed in
+\item{sparse_X}{A logical flag. If \code{TRUE}, then the fixed effects
+\link[=model.matrix]{design} matrix is constructed in
 \link[Matrix:sparseMatrix]{sparse} format.}
 
 \item{omp_num_threads}{An integer specifying a number of OpenMP threads to be used
 (if supported) when evaluating the objective function.}
 }
 \value{
-A \link{list} inheriting from \link{class} \code{"egf_control"}
-containing the arguments (after possible coercion).
+A list inheriting from class \code{"egf_control"} containing the arguments
+(after possible coercion).
 }
 \description{
 Set parameters controlling the behaviour of \code{\link{egf}}.

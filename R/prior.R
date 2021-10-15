@@ -4,24 +4,23 @@
 #' of bottom level mixed effects model parameters.
 #'
 #' @param mu
-#'   A \link{numeric} vector listing means.
+#'   A numeric vector listing means.
 #' @param sigma
-#'   A positive \link{numeric} vector listing standard deviations.
+#'   A positive numeric vector listing standard deviations.
 #' @param eta
-#'   A positive \link{numeric} vector listing values for the shape
-#'   parameter, with \code{1} corresponding to a uniform distribution
-#'   over the space of symmetric positive definite matrices with
-#'   unit diagonal elements. Lesser (greater) values concentrate the
-#'   probability density around such matrices whose determinant is
-#'   nearer to 0 (1).
+#'   A positive numeric vector listing values for the shape parameter,
+#'   with 1 corresponding to a uniform distribution over the space of
+#'   symmetric positive definite matrices with unit diagonal elements.
+#'   Lesser (greater) values concentrate the probability density around
+#'   such matrices whose determinant is nearer to 0 (1).
 #' @param df
-#'   A \link{numeric} vector listing degrees of freedom.
-#'   \code{df} must be greater than \code{\link{nrow}(scale) - 1}.
+#'   A numeric vector listing degrees of freedom.
+#'   \code{df} must be greater than \code{nrow(scale) - 1}.
 #'   (If either \code{df} or \code{scale} has length greater than 1,
 #'   then this condition is checked pairwise after recycling.)
 #' @param scale
-#'   A \link{list} of symmetric positive definite \link{numeric} matrices,
-#'   or a \link{matrix} to be coerced to a list of length 1.
+#'   A list of symmetric positive definite \link{numeric} matrices,
+#'   or a matrix to be placed in a list of length 1.
 #' @param tol
 #'   A non-negative number specifying a tolerance for non-positive definiteness
 #'   of \code{scale}. All eigenvalues of \code{scale} must exceed
@@ -30,13 +29,12 @@
 #'   be positive, as standard deviations are processed on the log scale.)
 #'
 #' @return
-#' A \link{list} inheriting from \link{class} \code{"egf_prior"},
-#' with elements:
+#' A list inheriting from class \code{"egf_prior"}, with elements:
 #' \item{family}{
-#'   A \link{character} string naming a family of distributions.
+#'   A character string naming a family of distributions.
 #' }
 #' \item{parameters}{
-#'   A named \link{list} of \link{numeric} vectors specifying parameter values.
+#'   A named list of numeric vectors specifying parameter values.
 #' }
 #'
 #' @examples
@@ -73,7 +71,7 @@ Normal <- function(mu = 0, sigma = 1) {
       sigma = as.numeric(sigma)
     )
   )
-  class(res) <- c("egf_prior", "list")
+  class(res) <- "egf_prior"
   res
 }
 
@@ -90,7 +88,7 @@ LKJ <- function(eta = 1) {
     family = "lkj",
     parameters = list(eta = as.numeric(eta))
   )
-  class(res) <- c("egf_prior", "list")
+  class(res) <- "egf_prior"
   res
 }
 
@@ -124,23 +122,19 @@ Wishart <- function(df, scale, tol = 1e-06) {
     is.finite(df),
     rep.int(df, length(scale)) > rep.int(vapply(scale, nrow, 0L), length(df)) - 1L
   )
-  scale <- lapply(scale, function(S) {
-    log_sd <- 0.5 * log(diag(S))
-    R <- chol(S)
-    R[] <- R * rep(1 / diag(R), each = nrow(R))
-    theta <- R[upper.tri(R)]
-    c(log_sd, theta)
-  })
+  scale[] <- lapply(scale, cov2theta)
   res <- list(
     family = "wishart",
     parameters = list(df = as.numeric(df), scale = unname(scale))
   )
-  class(res) <- c("egf_prior", "list")
+  class(res) <- "egf_prior"
   res
 }
 
 #' @rdname egf_prior
 #' @export
 InverseWishart <- function(df, scale, tol = 1e-06) {
-  replace(Wishart(df = df, scale = scale, tol = tol), "family", list("invwishart"))
+  res <- Wishart(df = df, scale = scale, tol = tol)
+  res$family <- "invwishart"
+  res
 }

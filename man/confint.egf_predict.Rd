@@ -14,7 +14,7 @@ Must supply log scale predicted values and corresponding standard errors.}
 
 \item{level}{A number in the interval (0,1) indicating a confidence level.}
 
-\item{log}{A \link{logical} flag. If \code{FALSE}, then confidence intervals
+\item{log}{A logical flag. If \code{FALSE}, then confidence intervals
 on inverse log-transformed predicted values are returned.}
 
 \item{...}{Unused optional arguments.}
@@ -28,7 +28,7 @@ Otherwise, the same result but with variables \code{estimate},
 \code{lower}, and \code{upper} inverse log-transformed and
 the \link{levels} of variable \code{var} modified accordingly.
 
-\code{level} is retained as an \link[=attributes]{attribute}.
+\code{level} is retained as an attribute.
 }
 \description{
 Computes confidence intervals on predicted values of interval incidence,
@@ -42,7 +42,7 @@ with \code{estimate} and \code{se} as in \code{object} and
 }
 \examples{
 example("predict.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-object <- readRDS(system.file("exdata", "egf_predict.rds",
+object <- readRDS(system.file("exdata", "predict-egf.rds",
                               package = "epigrowthfit", mustWork = TRUE))
 
 confint(object, log = TRUE)

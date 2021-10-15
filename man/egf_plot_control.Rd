@@ -20,7 +20,7 @@ egf_plot_control(
 \item{window}{A named list of arguments to \code{\link{rect}}
 affecting the appearance of fitting windows.}
 
-\item{data}{A named list of the form \code{\link{list}(main, short, long)}.
+\item{data}{A named list of the form \code{list(main, short, long)}.
 \code{main} is a named list of arguments to \code{\link{points}}
 affecting the appearance of observed data.
 \code{short} and \code{long} are alternatives to \code{main}
@@ -28,7 +28,7 @@ used for counts over intervals shorter or longer than \code{dt}
 when \code{type = "interval"}.
 \code{short} and \code{long} default to \code{main} (elementwise).}
 
-\item{predict}{A named list of the form \code{\link{list}(estimate, ci)}.
+\item{predict}{A named list of the form \code{list(estimate, ci)}.
 \code{estimate} and \code{ci} are named lists of arguments
 to \code{\link{lines}} and \code{\link{polygon}},
 affecting the appearance of predicted curves and corresponding
@@ -53,32 +53,32 @@ In this case, the major axis uses a modified version of \code{x}
 that tries to ensure that it is displayed below the minor axis in
 a slightly larger font.}
 
-\item{title}{A named list of the form \code{\link{list}(main, sub, xlab, ylab, plab)}.
+\item{title}{A named list of the form \code{list(main, sub, xlab, ylab, plab)}.
 The elements are named lists of arguments to \code{\link{title}}
 affecting the appearance of plot (sub)titles and axis and panel labels.
 \code{sub$adj} defaults to \code{main$adj}.}
 
-\item{tdoubling}{A named list of the form \code{\link{list}(legend, estimate, ci)}.
+\item{tdoubling}{A named list of the form \code{list(legend, estimate, ci)}.
 The elements are named lists of arguments to \code{\link{mtext}}
 affecting the appearance of initial doubling times printed in the
 top margin.}
 
-\item{heat}{A named list of the form \code{\link{list}(pal, bg, ul, ips)}.
+\item{heat}{A named list of the form \code{list(pal, bg, ul, ips)}.
 \code{pal} is a named list of arguments to \code{\link{colorRamp}}
 defining a colour palette for heat maps.
 \code{bg} and \code{ul} are named lists of arguments to \code{\link{rect}}
 affecting the appearance of panel backgrounds and panel label underlays.}
 }
 \value{
-A named \link{list}.
+A named list.
 }
 \description{
 Sets parameters controlling the graphical output of \code{\link{plot.egf}}.
 Supplied values override package defaults
 (retrievable as \code{defaults <- egf_plot_control()}),
-which in turn override global defaults set via \code{\link{par}}.\cr
+which in turn override global defaults set via \code{\link{par}}.\cr\cr
 Here, \code{x}, \code{type}, \code{time_as}, and \code{dt}
-refer to the so-named arguments of \code{\link{plot.egf}}.
+refer to the so-named arguments of \code{plot.egf}.
 }
 \details{
 Setting an argument (or an element thereof, in the case of nested lists)

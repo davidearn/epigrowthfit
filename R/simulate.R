@@ -1,38 +1,36 @@
 #' Simulation and parametric bootstrapping
 #'
 #' Simulates incidence data conditional on a fitted nonlinear
-#' mixed effects model of epidemic growth. (Only observations
-#' within fitting windows are simulated.) Optionally re-estimates
-#' the model given the simulated data, thus generating samples
-#' from the conditional distribution of the full parameter vector
-#' \code{c(beta, theta, b)}.
+#' mixed effects model of epidemic growth.
+#' (Only observations within fitting windows are simulated.)
+#' Optionally re-estimates the model given the simulated data,
+#' thus generating samples from the conditional distribution
+#' of the bottom level parameter vector.
 #'
 #' @param object
-#'   An \code{"\link{egf}"} object specifying a fitted nonlinear
-#'   mixed effects model.
+#'   An \code{"\link{egf}"} object.
 #' @param nsim
 #'   A positive integer indicating a number of replications.
 #' @param seed
 #'   An integer used to set the \link{RNG} state before simulation.
-#'   The default (\code{\link{NULL}}) is to use the state at the
-#'   time of the function call. The RNG state
-#'   (either a \link{list} of arguments to \code{\link{set.seed}}
-#'   or a value of \code{\link{.Random.seed}}) is preserved as an
-#'   \link[=attributes]{attribute} of the result.
+#'   The default (\code{NULL}) is to use the state at the time of
+#'   the function call. The RNG state (either a list of arguments to
+#'   \code{\link{set.seed}} or a value of \code{\link{.Random.seed}})
+#'   is preserved as an attribute of the result.
 #' @param boot
 #'   A \link{logical} flag. If \code{TRUE}, then a bootstrapping
 #'   step is performed.
 #' @param control
-#'   A \link{list} of control parameters passed to \code{\link{nlminb}}.
+#'   A list of control parameters passed to \code{\link{nlminb}}.
+#' @param parallel
+#'   An \code{"\link{egf_parallel}"} object defining options for \R level
+#'   parallelization.
 #' @param trace
-#'   A \link{logical} flag.
+#'   A logical flag.
 #'   If \code{TRUE}, then basic tracing messages indicating progress
 #'   are printed.
 #'   Depending on \code{object$control$trace}, these may be mixed with
 #'   optimizer output.
-#' @param parallel
-#'   An \code{"\link{egf_parallel}"} object defining options for \R level
-#'   parallelization.
 #' @param ...
 #'   Unused optional arguments.
 #'
@@ -43,34 +41,32 @@
 #' If there is no OpenMP support, then bootstrap optimizations can still be
 #' parallelized at the \R level with appropriate setting of \code{parallel}.
 #'
-#' Arguments \code{trace}, \code{control}, and \code{parallel} are unused
+#' Arguments \code{control}, \code{parallel}, and \code{trace} are unused
 #' when \code{boot = FALSE}.
 #'
 #' @return
-#' A \link{list} inheriting from \link{class} \code{"egf_simulate"},
-#' with elements:
+#' A list inheriting from class \code{"egf_simulate"}, with elements:
 #' \item{simulations}{
-#'   A \link[=data.frame]{data frame} containing simulated incidence data.
-#'   It has variables \code{ts}, \code{window}, and \code{time},
-#'   and \code{nsim} further variables with names of the form \code{x[0-9]+}.
-#'   It corresponds rowwise to
-#'   \code{object$frame[!is.na(object$frame$window), ]}.
+#'   A data frame containing simulated incidence data. It has variables
+#'   \code{ts}, \code{window}, and \code{time}, and \code{nsim} further
+#'   variables with names of the form \code{x[0-9]+}. It corresponds
+#'   rowwise to \code{\link[=model.frame.egf]{model.frame}(object)}.
 #' }
 #' \item{boot}{
-#'   If \code{boot = TRUE}, then a \link[=double]{numeric} \link{matrix}
-#'   containing \code{nsim} bootstrap samples of the full parameter vector
-#'   \code{c(beta, theta, b)}, with \code{\link{length}(object$best)} rows
-#'   and \code{nsim} columns. Otherwise, \code{\link{NULL}}.
+#'   If \code{boot = TRUE}, then a numeric matrix with \code{nsim} columns,
+#'   each a sample from the conditional distribution of the parameter vector
+#'   \code{unlist(\link[=coef.egf]{coef}(object, full = FALSE))}.
+#'   Otherwise, \code{NULL}.
 #' }
-#' \link[=attributes]{Attribute} \code{RNGstate} preserves the RNG state
-#' prior to simulation, making the result reproducible.
+#' Attribute \code{RNGstate} preserves the RNG state prior to simulation,
+#' making the result reproducible.
 #'
 #' @examples
 #' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
 #' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
 #' object <- readRDS(file.path(exdata, "egf.rds"))
 #'
-#' path_to_cache <- file.path(exdata, "egf_simulate.rds")
+#' path_to_cache <- file.path(exdata, "simulate-egf.rds")
 #' if (file.exists(path_to_cache)) {
 #'   zz <- readRDS(path_to_cache)
 #' } else {
@@ -88,8 +84,8 @@
 simulate.egf <- function(object, nsim = 1L, seed = NULL,
                          boot = FALSE,
                          control = list(),
-                         trace = FALSE,
                          parallel = egf_parallel(),
+                         trace = FALSE,
                          ...) {
   stop_if_not_true_false(boot)
   stop_if_not_integer(nsim, "positive")
@@ -117,28 +113,28 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
   }
 
   ## Simulations are fast and can be done in the master process.
-  ## To simulate in the worker processes would require serializing
+  ## Simulating in the worker processes would require serializing
   ## or reconstructing the TMB object, adding nontrivial overhead.
-  frame <- object$frame[!is.na(object$frame$window), c("ts", "window", "time"), drop = FALSE]
+  frame <- model.frame(object)[c("ts", "window", "time")]
   nx <- sprintf("x%d", seq_len(nsim))
   frame[nx] <- replicate(nsim, object$tmb_out$simulate(object$best)$x)
   res <- list(simulations = frame, boot = NULL)
 
   if (boot) {
     stopifnot(is.list(control))
-    stop_if_not_true_false(trace)
     stopifnot(inherits(parallel, "egf_parallel"))
+    stop_if_not_true_false(trace)
 
     ## Reconstruct list of arguments to 'MakeADFun' from object internals
     ## for retaping
-    args <- egf_tmb_remake_args(object)
+    args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
 
     do_boot <- function(i, x) {
       if (trace) {
         cat(sprintf("Commencing bootstrap optimization %d of %d...\n", i, nsim))
       }
       ## Update
-      args$data$x <- x
+      args$data$x[] <- x
       ## Retape
       tmb_out_retape <- do.call(TMB::MakeADFun, args)
       ## Optimize
@@ -149,7 +145,9 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
         },
         error = function(cond) {
           cat(sprintf("Error in bootstrap optimization %d of %d:\n%s\n", i, nsim, conditionMessage(cond)))
-          rep_len(NaN, length(tmb_out_retape$env$last.par.best))
+          par <- tmb_out_retape$env$last.par.best
+          par[] <- NaN
+          par
         }
       )
     }
@@ -167,11 +165,10 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
       ## Retrieve path to shared object for loading
       dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit", mustWork = TRUE)
 
-      if (is.null(parallel$cl)) {
+      cl <- parallel$cl
+      if (is.null(cl)) {
         cl <- do.call(makePSOCKcluster, parallel$args)
         on.exit(stopCluster(cl), add = TRUE)
-      } else {
-        cl <- parallel$cl
       }
       clusterExport(cl,
         varlist = c("dll", "nomp", "trace", "nsim", "args", "control"),
@@ -190,27 +187,30 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
         outfile <- file(parallel$outfile, open = "wt")
         sink(outfile, type = "output")
         sink(outfile, type = "message")
+        on.exit(add = TRUE, {
+          sink(type = "message")
+          sink(type = "output")
+        })
       }
-      res$boot <- tryCatch(
-        switch(parallel$method,
-          multicore = do.call(mcmapply, c(list(FUN = do_boot, i = seq_len(nsim), x = frame[nx]), parallel$args)),
-          serial = mapply(do_boot, i = seq_len(nsim), x = frame[nx])
-        ),
-        error = function(cond) {
-          if (given_outfile) {
-            sink(type = "message")
-            sink(type = "output")
-          }
-          stop(cond)
-        }
+      res$boot <- switch(parallel$method,
+        multicore = do.call(mcmapply, c(list(FUN = do_boot, i = seq_len(nsim), x = frame[nx]), parallel$args)),
+        serial = mapply(do_boot, i = seq_len(nsim), x = frame[nx])
       )
     }
-    rownames(res$boot) <- names(object$best)
   }
 
   attr(res, "RNGstate") <- RNGstate
-  class(res) <- c("egf_simulate", "data.frame")
+  class(res) <- c("egf_simulate", oldClass(res))
   res
+}
+
+#' @export
+print.egf_simulate <- function(x, ...) {
+  y <- x
+  attr(x, "RNGstate") <- NULL
+  class(x) <- NULL
+  NextMethod("print")
+  invisible(y)
 }
 
 #' Simulate incidence time series
@@ -227,20 +227,19 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
 #'   A positive integer indicating a number of simulated time series.
 #' @param seed
 #'   An integer used to set the \link{RNG} state before simulation.
-#'   The default (\code{\link{NULL}}) is to use the state at the
-#'   time of the function call. The RNG state
-#'   (either a \link{list} of arguments to \code{\link{set.seed}}
-#'   or a value of \code{\link{.Random.seed}}) is preserved as an
-#'   \link[=attributes]{attribute} of the result.
+#'   The default (\code{NULL}) is to use the state at the time of
+#'   the function call. The RNG state (either a list of arguments to
+#'   \code{\link{set.seed}} or a value of \code{\link{.Random.seed}})
+#'   is preserved as an attribute of the result.
 #' @param mu
-#'   A \link{numeric} vector listing means across time series
+#'   A numeric vector listing means across time series
 #'   of top level nonlinear model parameters (link scale).
 #'   It is assumed that elements are ordered as in
 #'   \code{\link{egf_get_names_top}(object, link = TRUE)}.
 #' @param Sigma
-#'   A symmetric positive definite \link{numeric} \link{matrix}
-#'   to be used as the covariance matrix corresponding to \code{mu}.
-#'   The default (\code{\link{NULL}}) is equivalent (conceptually)
+#'   A symmetric positive definite numeric matrix to be used
+#'   as the covariance matrix corresponding to \code{mu}.
+#'   The default (\code{NULL}) is equivalent (conceptually)
 #'   to a zero matrix and is handled specially.
 #' @param tol
 #'   A non-negative number indicating a tolerance for lack of positive
@@ -264,62 +263,59 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
 #'   Unused optional arguments.
 #'
 #' @return
-#' A \link{list} inheriting from \link{class} \code{"egf_model_simulate"},
-#' with elements:
+#' A list inheriting from class \code{"egf_model_simulate"}, with elements:
 #' \item{model, mu, Sigma, origin}{
 #'   Copies of the so-named arguments.
 #'   (\code{model} is a copy of argument \code{object}.)
 #' }
 #' \item{Y}{
-#'   A \link[=double]{numeric} \link{matrix} with \code{nsim} rows and
-#'   \code{\link{length}(mu)} columns listing the top level nonlinear model
-#'   parameter values underlying each time series.
-#'   If \code{Sigma} is \code{\link{NULL}}, then the row vectors of \code{Y}
-#'   are all \code{mu}. Otherwise, \code{Y} is (conceptually) the result of
-#'   \code{MASS::mvrnorm(nsim, mu, Sigma, tol)}.
+#'   A numeric matrix with \code{nsim} rows and \code{length(mu)} columns
+#'   listing the top level nonlinear model parameter values underlying each
+#'   time series.
+#'   If \code{Sigma} is \code{NULL}, then the row vectors of \code{Y}
+#'   are all \code{mu}. Otherwise, \code{Y} is (conceptually) the result
+#'   of \code{MASS::mvrnorm(nsim, mu, Sigma, tol)}.
 #' }
-#' \item{formula}{
-#'   A \link{formula}, \code{cbind(time, x) ~ ts}, expressing how
-#'   simulated time series are stored in \code{data}.
+#' \item{formula_ts}{
+#'   A formula, \code{cbind(time, x) ~ ts}, expressing how simulated
+#'   time series are stored in \code{data_ts}.
 #' }
 #' \item{formula_windows}{
-#'   A \link{formula}, \code{cbind(start, end) ~ ts}, expressing how
+#'   A formula, \code{cbind(start, end) ~ ts}, expressing how
 #'   fitting window endpoints are stored in \code{data_windows}.
 #' }
 #' \item{formula_parameters}{
-#'   A \link{formula} specifying the generative model.
-#'   If \code{Sigma = \link{NULL}}, then the formula is
+#'   A formula specifying the generative model.
+#'   If \code{Sigma = NULL}, then the formula is
 #'   \code{~1} if \code{nsim = 1} and \code{~ts} if \code{nsim > 1}.
 #'   Otherwise, it is \code{~(1 | ts)}.
 #' }
-#' \item{data}{
-#'   A \link[=data.frame]{data frame} with variables \code{ts}, \code{time},
-#'   and \code{x} storing \code{nsim} simulated time series in long format.
+#' \item{data_ts}{
+#'   A data frame with variables \code{ts}, \code{time}, and \code{x}
+#'   storing \code{nsim} simulated time series in long format.
 #' }
 #' \item{data_windows}{
-#'   A \link[=data.frame]{data frame} with \code{nsim} rows and variables
-#'   \code{ts}, \code{start}, and \code{end} suggesting a fitting window
-#'   for each simulated time series. Start times are determined according
-#'   to \code{cstart}. End times are precisely the last time point in the
+#'   A data frame with \code{nsim} rows and variables \code{ts},
+#'   \code{start}, and \code{end} suggesting a fitting window for each
+#'   simulated time series. Start times are determined according to
+#'   \code{cstart}. End times are precisely the last time point in the
 #'   corresponding time series.
 #' }
 #' \item{actual}{
-#'   A \link[=double]{numeric} vector giving the full parameter vector
-#'   of the generative model. When estimating this model from \code{data},
-#'   \code{\link{egf}} output should be compared against \code{actual}.
-#'   More precisely, if \code{m} is the \code{"\link{egf}"} object,
-#'   then \code{m$best} estimates \code{actual}.
+#'   A numeric vector giving the condensed bottom level parameter vector
+#'   of the generative model, corresponding to
+#'   \code{\link[=coef.egf]{coef}(<"egf" object>, full = FALSE)}.
 #' }
-#' \item{nonrandom}{
-#'   An \link{integer} vector indexing the elements of \code{actual}
-#'   that are not random effects.
+#' \item{random}{
+#'   A logical vector indexing the elements of \code{actual} that are
+#'   random effects.
 #' }
 #' \item{call}{
 #'   The \link{call} to \code{simulate.egf_model}, allowing for updates
 #'   to the \code{"egf_model_simulate"} object via \code{\link{update}}.
 #' }
-#' \link[=attributes]{Attribute} \code{RNGstate} preserves the RNG state
-#' prior to simulation, making the result reproducible.
+#' Attribute \code{RNGstate} preserves the RNG state prior to simulation,
+#' making the result reproducible.
 #'
 #' @examples
 #' r <- 0.04
@@ -329,7 +325,7 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
 #' Sigma <- diag(rep_len(0.2^2, length(mu)))
 #'
 #' root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-#' path_to_cache <- file.path(root, "exdata", "egf_model_simulate.rds")
+#' path_to_cache <- file.path(root, "exdata", "simulate-egf_model.rds")
 #' if (file.exists(path_to_cache)) {
 #'   zz <- readRDS(path_to_cache)
 #' } else {
@@ -416,9 +412,9 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   stop_if_not_number(cstart)
 
   ## Construct arguments to 'egf' corresponding to 'nsim', 'mu', 'Sigma'
-  formula <- cbind(time, x) ~ ts
+  formula_ts <- cbind(time, x) ~ ts
   formula_windows <- cbind(start, end) ~ ts
-  data <- data.frame(
+  data_ts <- data.frame(
     ts = gl(nsim, 1L + as.integer(tmax)),
     time = seq.int(0, tmax, 1),
     x = 0L # arbitrary non-negative integer to pass checks
@@ -432,35 +428,28 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     if (nsim == 1L) {
       formula_parameters <- ~1
       init <- mu
-      names(init) <- enum_dupl_string(rep_len("beta", p))
+      names(init) <- rep_len("beta", p)
     } else {
       formula_parameters <- ~ts
       init <- rep_len(0, p * nsim)
       init[seq.int(from = 1L, by = nsim, length.out = p)] <- mu
-      names(init) <- enum_dupl_string(rep_len("beta", p * nsim))
+      names(init) <- rep_len("beta", p * nsim)
     }
   } else {
     formula_parameters <- ~(1 | ts)
-    R <- chol(cov2cor(Sigma))
-    iR <- upper.tri(R, diag = TRUE)
-    R[iR] <- R[iR] * rep.int(1 / diag(R), seq_len(p))
-    l <- list(
-      beta = mu,
-      theta = c(0.5 * log(diag(Sigma)), R[upper.tri(R, diag = FALSE)]),
-      b = rep_len(0, nsim * p)
-    )
-    init <- unlist(l, FALSE, FALSE)
-    names(init) <- enum_dupl_string(rep.int(names(l), lengths(l)))
+    l <- list(beta = mu, theta = cov2theta(Sigma), b = rep_len(0, nsim * p))
+    init <- unlist1(l)
+    names(init) <- rep.int(names(l), lengths(l, use.names = FALSE))
   }
   environment(formula) <- environment(formula_windows) <-
     environment(formula_parameters) <- .GlobalEnv
 
   ## Create TMB object without optimizing
   mm <- egf(object,
-    formula = formula,
+    formula_ts = formula_ts,
     formula_windows = formula_windows,
     formula_parameters = formula_parameters,
-    data = data,
+    data_ts = data_ts,
     data_windows = data_windows,
     init = init,
     fit = FALSE
@@ -474,13 +463,13 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     colnames(Y) <- names_top
     tmax <- ceiling(exp(Y[, "log(tinfl)"])) + 1
     time <- lapply(tmax, function(x) seq.int(0, x, 1))
-    data <- data.frame(
+    data_ts <- data.frame(
       ts = rep.int(gl(nsim, 1L), lengths(time)),
-      time = unlist(time, FALSE, FALSE),
+      time = unlist1(time),
       x = 0L # arbitrary non-negative integer to pass checks
     )
     data_windows <- data.frame(ts = gl(nsim, 1L), start = 0, end = tmax)
-    mm <- update(mm, data = data, data_windows = data_windows)
+    mm <- update(mm, data_ts = data_ts, data_windows = data_windows)
   }
 
   ## Simulate
@@ -489,21 +478,21 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   colnames(sim$Y) <- names_top
 
   ## Replace dummy observations in 'data' with simulated ones
-  data$x[] <- NA
-  data$x[duplicated(data$ts)] <- sim$x
+  data_ts$x[] <- NA
+  data_ts$x[duplicated(data_ts$ts)] <- sim$x
 
   ## Choose fitting window start times according to 'cstart' rule
   get_start <- function(d) {
     l <- c(0L, cumsum(d$x[-1L])) > cstart
     if (any(l)) d$time[which.max(l)] else NA_real_
   }
-  data_windows$start <- c(by(data, data$ts, get_start))
+  data_windows$start <- c(by(data_ts, data_ts$ts, get_start))
   if (anyNA(data_windows$start)) {
     argna <- is.na(data_windows$start)
     data_windows$start[argna] <- 0
     warning(wrap(
       "Threshold 'cstart' not exceeded in these time series:\n\n",
-      paste(sprintf("  %*d", as.integer(log10(nsim)) + 1L, which(argna)), collapse = "\n"), "\n\n",
+      paste0("  ", format(which(argna), justify = "right"), collapse = "\n"), "\n\n",
       "Corresponding fitting windows contain all observations (for better or for worse)."
     ))
   }
@@ -513,17 +502,17 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     mu = mu,
     Sigma = Sigma,
     Y = sim$Y,
-    formula = formula,
+    formula_ts = formula_ts,
     formula_windows = formula_windows,
     formula_parameters = formula_parameters,
-    data = data,
+    data_ts = data_ts,
     data_windows = data_windows,
     actual = init,
-    nonrandom = grep("^(beta|theta)\\[", names(init)),
+    random = (names(init) == "b"),
     call = match.call()
   )
   attr(res, "RNGstate") <- RNGstate
-  class(res) <- c("egf_model_simulate", "list")
+  class(res) <- "egf_model_simulate"
   res
 }
 
@@ -541,16 +530,22 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
 #'
 #' @examples
 #' example("simulate.egf_model", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' model <- readRDS(system.file("exdata", "egf_model_simulate.rds",
-#'                              package = "epigrowthfit", mustWork = TRUE))
+#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+#' model <- readRDS(file.path(exdata, "simulate-egf_model.rds"))
 #'
-#' object <- egf(model)
-#' pp <- data.frame(actual = model$actual, fitted = object$best)
-#' pp[object$nonrandom, , drop = FALSE]
+#' path_to_cache <- file.path(exdata, "egf-egf_model_simulate.rds")
+#' if (file.exists(path_to_cache)) {
+#'   object <- readRDS(path_to_cache)
+#' } else {
+#'   object <- egf(model)
+#'   saveRDS(object, file = path_to_cache)
+#' }
+#' pp <- data.frame(actual = model$actual, fitted = coef(object, full = FALSE))
+#' pp[!object$random, , drop = FALSE]
 #'
 #' @export
 egf.egf_model_simulate <- function(model, ...) {
-  nel <- c("model", "formula", "formula_windows", "formula_parameters", "data", "data_windows")
+  nel <- c("model", "formula_ts", "formula_windows", "formula_parameters", "data_ts", "data_windows")
   args <- model[nel]
   dots <- list(...)
   if (length(dots) > 0L && !is.null(nd <- names(dots))) {

@@ -9,16 +9,16 @@
   parm,
   level = 0.95,
   top = egf_get_names_top(object, link = TRUE),
-  subset = NULL,
-  append = NULL,
   link = TRUE,
   method = c("wald", "profile", "uniroot"),
-  grid_len = 12,
-  trace = TRUE,
   parallel = egf_parallel(),
-  max_width = 7,
+  trace = FALSE,
+  grid_len = 12,
+  interval_scale = 7,
   breaks = NULL,
   probs = NULL,
+  subset = NULL,
+  append = NULL,
   .subset = NULL,
   .append = NULL,
   ...
@@ -37,75 +37,80 @@ intervals should be computed. If \code{object$model$curve} is
 \code{"exponential"}, \code{"logistic"}, or \code{"richards"},
 then \code{top} may also contain \code{"tdoubling"} and \code{"R0"}.}
 
-\item{subset}{An expression to be evaluated in the combined model frame
-(see \code{\link{egf_combine_frames}}). It must evaluate
-to a valid index vector for the rows of the data frame
-(see \code{\link{[.data.frame}}), and thus fitting windows.
-Confidence intervals are computed only for indexed windows.
-The default (\code{\link{NULL}}) is to consider all windows.}
-
-\item{append}{An expression indicating variables in the combined model frame
-(see \code{\link{egf_combine_frames}}) to be included with the
-result. The default (\code{\link{NULL}}) is to append nothing.}
-
-\item{link}{A \link{logical} flag. If \code{FALSE}, then confidence intervals
+\item{link}{A logical flag. If \code{FALSE}, then confidence intervals
 on inverse link-transformed fitted values are computed.}
 
 \item{method}{A \link{character} string indicating how confidence intervals
 should be computed.}
+
+\item{parallel}{(For \code{method = "profile"} or \code{"uniroot"}.)
+An \code{"\link{egf_parallel}"} object defining options for \R level
+parallelization.}
+
+\item{trace}{(For \code{method = "profile"} or \code{"uniroot"}.)
+A logical flag.
+If \code{TRUE}, then basic tracing messages indicating progress
+are printed.
+Depending on \code{object$control$trace}, these may be mixed with
+optimizer output.}
 
 \item{grid_len}{(For \code{method = "profile"}.)
 A positive integer. Step sizes chosen adaptively by
 \code{\link[TMB]{tmbprofile}} will generate approximately
 this many points on each side of a profile's minimum point.}
 
-\item{trace}{(For \code{method != "wald"}.)
-A \link{logical} flag.
-If \code{TRUE}, then basic tracing messages indicating progress
-are printed.
-Depending on \code{object$control$trace}, these may be mixed with
-optimizer output.}
-
-\item{parallel}{(For \code{method != "wald"}.)
-An \code{"\link{egf_parallel}"} object defining options for \R level
-parallelization.}
-
-\item{max_width}{(For \code{method = "uniroot"}.)
-A positive number. \code{\link[TMB]{tmbroot}} will search for roots
-in the interval from \code{x-max_width} to \code{x+max_width}, where
-\code{x} is the fitted value (link scale).}
+\item{interval_scale}{(For \code{method = "uniroot"}.)
+A positive number.
+\code{\link[TMB]{tmbroot}} will search for roots in the interval
+of width \code{interval_scale * se} centered at \code{estimate},
+where \code{estimate} is the fitted value (link scale)
+and \code{se} is the corresponding standard error.}
 
 \item{breaks, probs}{(For \code{top = "R0"}.)
 Arguments to \code{\link{compute_R0}}.}
 
-\item{.subset, .append}{Index vectors to be used (if non-\code{\link{NULL}}) in place of
+\item{subset}{An expression to be evaluated in
+\code{\link[=model.frame.egf]{model.frame}(object, "combined")}.
+It must evaluate to a valid index vector for the rows of
+the data frame and, in turn, fitting windows.
+Confidence intervals are computed only for indexed windows.
+The default (\code{NULL}) is to consider all windows.}
+
+\item{append}{An expression indicating variables in
+\code{\link[=model.frame.egf]{model.frame}(object, "combined")}
+to be included with the result.
+The default (\code{NULL}) is to append nothing.}
+
+\item{.subset, .append}{Index vectors to be used (if non-\code{NULL}) in place of
 the result of evaluating \code{subset} and \code{append}.}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-A \link[=data.frame]{data frame} inheriting from \link{class}
-\code{"egf_confint"}, with variables:
+A data frame inheriting from class \code{"egf_confint"}, with variables:
 \item{top}{
   Top level nonlinear model parameter,
   from \code{\link{egf_get_names_top}(object, link = TRUE)}.
 }
 \item{ts}{
-  Time series, from \code{\link{levels}(object$frame_windows$ts)}.
+  Time series, from
+  \code{\link{levels}(\link[=model.frame.egf]{model.frame}(object)$ts)}.
 }
 \item{window}{
-  Fitting window, from \code{\link{levels}(object$frame_windows$window)}.
+  Fitting window, from
+  \code{\link{levels}(\link[=model.frame.egf]{model.frame}(object)$window)}.
 }
 \item{estimate, lower, upper}{
   Fitted value and approximate lower and upper confidence limits.
 }
-\code{level} and \code{object$frame_windows} are retained
-as \link{attributes}.
+\code{level} and
+\code{frame_windows = \link[=model.frame.egf]{model.frame}(object, "windows")}
+are retained as attributes.
 }
 \description{
-Computes confidence intervals on \link[=fitted.egf]{fitted values}
-of top level nonlinear model parameters and, where appropriate,
-initial doubling times and basic reproduction numbers.
+Computes confidence intervals on fitted values of top level nonlinear
+model parameters and, where appropriate, initial doubling times and
+basic reproduction numbers.
 }
 \details{
 Three methods are provided for calculating confidence intervals:
@@ -129,7 +134,7 @@ while \code{"profile"} and \code{"uniroot"} return confidence intervals
 on population fitted values, which are the fixed effects components of
 individual fitted values.
 
-\code{"wald"} assumes e.g., asymptotic normality of the maximum likelihood
+\code{"wald"} assumes, e.g., asymptotic normality of the maximum likelihood
 estimator. \code{"profile"} and \code{"uniroot"} avoid these issues but are
 typically more expensive, requiring estimation of many restricted models.
 They are parallelized at the C++ level when there is OpenMP support and
@@ -145,7 +150,7 @@ example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
 exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
 object <- readRDS(file.path(exdata, "egf.rds"))
 
-path_to_cache <- file.path(exdata, "egf_confint.rds")
+path_to_cache <- file.path(exdata, "confint-egf.rds")
 if (file.exists(path_to_cache)) {
   zz <- readRDS(path_to_cache)
 } else {

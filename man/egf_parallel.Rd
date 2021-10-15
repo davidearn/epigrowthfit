@@ -13,15 +13,15 @@ egf_parallel(
 )
 }
 \arguments{
-\item{method}{A \link{character} string indicating a method of parallelization.
+\item{method}{A character string indicating a method of parallelization.
 \code{"\link[=lapply]{serial}"} indicates no parallelization.
-\code{"\link[parallel:mclapply]{multicore}"} indicates \R level
-forking. It is intended for use from a terminal rather than a GUI.
+\code{"\link[parallel:mclapply]{multicore}"} indicates \R level forking.
+It is intended for use from a terminal rather than a GUI.
 On Windows, \code{"multicore"} is equivalent to \code{"serial"}.
 \code{"\link[parallel:parLapply]{snow}"} indicates socket clusters.
 \code{"snow"} is supported on both Unix-alikes and Windows.}
 
-\item{outfile}{A \link{character} string indicating a file path where console output
+\item{outfile}{A character string indicating a file path where console output
 should be diverted. An empty string indicates no diversion.
 If \code{method = "snow"}, then diversion may be necessary to view output.}
 
@@ -29,19 +29,19 @@ If \code{method = "snow"}, then diversion may be necessary to view output.}
 to fork/spawn when \code{parallel != "serial"}. The maximum
 is typically \code{\link[parallel]{detectCores}(TRUE, FALSE)}.}
 
-\item{args}{A \link{list} of optional arguments to
+\item{args}{A list of optional arguments to
 \code{\link[parallel]{mclapply}} (\code{method = "multicore"}) or
 \code{\link[parallel]{makePSOCKcluster}} (\code{method = "snow"}).}
 
 \item{cl}{An existing \link[parallel:makePSOCKcluster]{socket cluster}
 (\code{method = "snow"}).
-The default (\code{\link{NULL}}) is to create a new clusters
-as necessary and terminate them upon job completion.
-(If non-\code{\link{NULL}}, then \code{outfile}, \code{cores},
-and \code{options} are ignored.)}
+The default (\code{NULL}) is to create a new clusters as necessary
+and terminate them upon job completion.
+(If non-\code{NULL}, then \code{outfile}, \code{cores}, and \code{args}
+are ignored.)}
 }
 \value{
-A \link{list} inheriting from \link{class} \code{"egf_parallel"}
+A list inheriting from class \code{"egf_parallel"}
 containing the arguments (after possible matching and coercion).
 }
 \description{

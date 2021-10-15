@@ -6,15 +6,15 @@
 \usage{
 \method{profile}{egf}(
   fitted,
+  level = 0.95,
   which = NULL,
   A = NULL,
   top = egf_get_names_top(fitted, link = TRUE),
+  parallel = egf_parallel(),
+  trace = FALSE,
+  grid_len = 12,
   subset = NULL,
   append = NULL,
-  level_max = 0.95,
-  grid_len = 12,
-  trace = TRUE,
-  parallel = egf_parallel(),
   .subset = NULL,
   .append = NULL,
   ...
@@ -23,49 +23,49 @@
 \arguments{
 \item{fitted}{An \code{"\link{egf}"} object.}
 
-\item{which}{An integer vector indexing coefficients in \code{fitted$best}
-to be profiled. Must be a subset of \code{fitted$nonrandom}.}
+\item{level}{A number in the interval (0,1) indicating a confidence level.
+Profiles will be computed up to a deviance
+of \code{\link{qchisq}(level, df = 1)}.}
 
-\item{A}{A \link{numeric} \link{matrix} with
-\code{\link{length}(fitted$nonrandom)} columns.
+\item{which}{An integer vector indexing \code{fitted$best[!fitted$random]}.
+Only indexed parameters are profiled.}
+
+\item{A}{A numeric matrix with \code{sum(!fitted$random)} columns,
 Each row specifies a linear combination of the elements
-of \code{fitted$best[fitted$nonrandom]} to be profiled.
-Ignored if \code{which} is non-\code{\link{NULL}}.}
+of \code{fitted$best[!fitted$random]} to be profiled.
+Ignored if \code{which} is non-\code{NULL}.}
 
 \item{top}{A subset of \code{\link{egf_get_names_top}(fitted, link = TRUE)}
 naming top level nonlinear model parameters whose population
-fitted values (see \code{\link{fitted.egf}}) should be profiled.
-Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.}
+fitted values (see \code{\link[=fitted.egf]{fitted}}) should be
+profiled.
+Ignored if \code{which} or \code{A} is non-\code{NULL}.}
 
-\item{subset}{An expression to be evaluated in the combined model frame
-(see \code{\link{egf_combine_frames}}). It must evaluate to
-to a valid index vector for the rows of the data frame
-(see \code{\link{[.data.frame}}), and thus fitting windows.
-Only population fitted values for indexed windows are profiled.
-The default (\code{\link{NULL}}) is to consider all windows.
-Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.}
+\item{parallel}{An \code{"\link{egf_parallel}"} object defining options for \R level
+parallelization.}
 
-\item{append}{An expression indicating variables in the combined model frame
-(see \code{\link{egf_combine_frames}}) to be included with the
-result. The default (\code{\link{NULL}}) is to append nothing.
-Ignored if \code{which} or \code{A} is non-\code{\link{NULL}}.}
-
-\item{level_max}{A number in the interval (0,1) indicating a confidence level.
-Profiles will be computed up to a deviance
-of \code{\link{qchisq}(level_max, df = 1)}.}
-
-\item{grid_len}{A positive integer. Step sizes chosen adaptively by
-\code{\link[TMB]{tmbprofile}} will generate approximately
-this many points on each side of a profile's minimum point.}
-
-\item{trace}{A \link{logical} flag.
+\item{trace}{A logical flag.
 If \code{TRUE}, then basic tracing messages indicating progress
 are printed.
 Depending on \code{fitted$control$trace}, these may be mixed with
 optimizer output.}
 
-\item{parallel}{An \code{"\link{egf_parallel}"} object defining options for \R level
-parallelization.}
+\item{grid_len}{A positive integer. Step sizes chosen adaptively by
+\code{\link[TMB]{tmbprofile}} will generate approximately
+this many points on each side of a profile's minimum point.}
+
+\item{subset}{An expression to be evaluated in
+\code{\link[=model.frame.egf]{model.frame}(fitted, "combined")}
+It must evaluate to to a valid index vector for the rows of the
+data frame and, in turn, fitting windows.
+Only population fitted values for indexed windows are profiled.
+The default (\code{NULL}) is to consider all windows.
+Ignored if \code{which} or \code{A} is non-\code{NULL}.}
+
+\item{append}{An expression indicating variables in
+\code{\link[=model.frame.egf]{model.frame}(object, "combined")}
+to be included with the result.
+The default (\code{NULL}) is to append nothing.}
 
 \item{.subset, .append}{Index vectors to be used (if non-\code{\link{NULL}}) in place of
 the result of evaluating \code{subset} and \code{append}.}
@@ -73,8 +73,7 @@ the result of evaluating \code{subset} and \code{append}.}
 \item{...}{Unused optional arguments.}
 }
 \value{
-A \link[=data.frame]{data frame} inheriting from \link{class}
-\code{"egf_profile"}, with variables:
+A data frame inheriting from class \code{"egf_profile"}, with variables:
 \item{top}{
   (\code{top}-based calls only.)
   Top level nonlinear model parameter,
@@ -82,15 +81,16 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
 }
 \item{ts}{
   (\code{top}-based calls only.)
-  Time series, from \code{\link{levels}(fitted$frame_windows$ts)}.
+  Time series, from
+  \code{levels(\link[=model.frame.egf]{model.frame}(fitted)$ts)}.
 }
 \item{window}{
   (\code{top}-based calls only.)
-  Fitting window, from \code{\link{levels}(fitted$frame_windows$window)}.
+  Fitting window, from
+  \code{levels(\link[=model.frame.egf]{model.frame}(fitted)$window)}.
 }
 \item{linear_combination}{
-  Row index of linear combination,
-  from \code{\link{seq_len}(\link{nrow}(A))}.
+  Row index of linear combination, from \code{seq_len(nrow(A))}.
 }
 \item{value}{
   Value of linear combination being profiled.
@@ -99,12 +99,12 @@ A \link[=data.frame]{data frame} inheriting from \link{class}
   Deviance of the restricted model that assumes \code{value}
   for the linear combination being profiled.
 }
-\code{A}, \code{x = fitted$best[fitted$nonrandom]}, and \code{level_max}
+\code{A}, \code{x = fitted$best[!fitted$random]}, and \code{level}
 are retained as \link{attributes}.
 }
 \description{
 Computes univariate likelihood profiles of fixed effects
-coefficients, random effects covariance parameters, and
+coefficients, random effect covariance parameters, and
 linear combinations thereof.
 }
 \details{
@@ -115,19 +115,6 @@ an integer greater than 1. If there is no OpenMP support, then computation
 can still be parallelized at the \R level with appropriate setting of
 \code{parallel}.
 
-\code{which} is mapped to an \code{A} matrix composed of unit row vectors,
-with 1 at array index \code{[i, which[i]]} for all \code{i}, such that
-\code{A \link[=matmult]{\%*\%} fitted$best[fitted$nonrandom]} is precisely
-\code{fitted$best[which]}.
-
-\code{top} and \code{subset} are mapped to a block \code{A} matrix.
-Block \code{k} (from the top) is composed of rows (those indexed
-by \code{subset}) of the fixed effects design matrix for parameter
-\code{top[k]} .
-\code{A \link[=matmult]{\%*\%} fitted$best[fitted$nonrandom]}
-is a vector listing the population fitted values for each parameter
-named in \code{top}, for each fitting window indexed by \code{subset}.
-
 See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset} and \code{append}.
 }
@@ -136,7 +123,7 @@ example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
 exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
 fitted <- readRDS(file.path(exdata, "egf.rds"))
 
-path_to_cache <- file.path(exdata, "egf_profile.rds")
+path_to_cache <- file.path(exdata, "profile-egf.rds")
 if (file.exists(path_to_cache)) {
   zz <- readRDS(path_to_cache)
 } else {

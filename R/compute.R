@@ -4,21 +4,21 @@
 #' the course of an epidemic, as a function of the basic reproduction number.
 #'
 #' @param R0
-#'   A \link{numeric} vector listing non-negative values for the basic
-#'   reproduction number.
+#'   A numeric vector listing non-negative values for the basic reproduction
+#'   number.
 #' @param S0,I0
-#'   \link[=numeric]{Numeric} vectors listing values in the interval [0,1]
-#'   for the proportions of the population that are susceptible and infected,
-#'   respectively, at the start of the epidemic. (Hence \code{S0 + I0} should
-#'   be less than or equal to 1.)
+#'   Numeric vectors listing values in the interval [0,1] for the proportions
+#'   of the population that are susceptible and infected, respectively, at the
+#'   start of the epidemic.
+#'   (Hence \code{S0 + I0} should be less than or equal to 1.)
 #'
 #' @return
-#' A \link{numeric} vector listing values in the interval [0,1]
-#' for the expected epidemic final size.
+#' A numeric vector listing values in the interval [0,1] for the expected
+#' epidemic final size.
 #'
 #' @details
 #' \code{R0}, \code{S0}, and \code{I0} are recycled to length
-#' \code{\link{max}(\link{lengths}(\link{list}(R0, S0, I0)))}.
+#' \code{max(lengths(list(R0, S0, I0)))}.
 #'
 #' At least one of \code{S0} and \code{I0} must be supplied.
 #' If \code{S0} (\code{I0}) is supplied but not \code{I0} (\code{S0}),
@@ -60,18 +60,18 @@ compute_final_size <- function(R0, S0, I0) {
       "Install it by running 'install.packages(\"emdbook\")', then try again."
     ))
   }
-  stopifnot(
-    is.numeric(R0),
-    missing(S0) || is.numeric(S0),
-    missing(I0) || is.numeric(I0)
-  )
+  stopifnot(is.numeric(R0))
   if (missing(S0)) {
     if (missing(I0)) {
       stop("At least one of 'S0' and 'I0' must be supplied.")
     }
+    stopifnot(is.numeric(I0))
     S0 <- 1 - I0
-  } else if (missing(I0)) {
-    I0 <- 1 - S0
+  } else {
+    stopifnot(is.numeric(S0))
+    if (missing(I0)) {
+      I0 <- 1 - S0
+    }
   }
   len <- c(length(R0), length(S0), length(I0))
   if (min(len) == 0L) {
@@ -84,22 +84,21 @@ compute_final_size <- function(R0, S0, I0) {
   Z <- rep_len(NA_real_, n)
 
   ## Degenerate cases
-  is_bad_triple <- (is.na(R0) | is.na(S0) | is.na(I0) |
-                      R0 < 0 | S0 < 0 | I0 < 0 | S0 + I0 > 1)
-  if (any(is_bad_triple)) {
+  ok <- !(is.na(R0) | is.na(S0) | is.na(I0) | R0 < 0 | S0 < 0 | I0 < 0 | S0 + I0 > 1)
+  if (!all(ok)) {
     warning("NA returned for invalid (R0, S0, I0) triples.")
   }
 
   ## Limiting cases
-  l1 <- !is_bad_triple & R0 == 0
-  l2 <- !is_bad_triple & R0 == Inf
+  l1 <- ok & R0 == 0
+  l2 <- ok & R0 == Inf
   Z[l1] <- 0
   Z[l2] <- S0[l2]
 
   ## Usual cases
-  u <- !(is_bad_triple | l1 | l2)
-  if (any(u)) {
-    Z[u] <- S0[u] + emdbook::lambertW(-R0[u] * S0[u] * exp(-R0[u] * (S0[u] + I0[u]))) / R0[u]
+  ok[] <- ok & !(l1 | l2)
+  if (any(ok)) {
+    Z[ok] <- S0[ok] + emdbook::lambertW(-R0[ok] * S0[ok] * exp(-R0[ok] * (S0[ok] + I0[ok]))) / R0[ok]
   }
   Z
 }
@@ -111,18 +110,17 @@ compute_final_size <- function(R0, S0, I0) {
 #' generation interval distribution.
 #'
 #' @param r
-#'   A non-negative \link{numeric} vector listing initial exponential
-#'   growth rates.
+#'   A non-negative numeric vector listing initial exponential growth rates.
 #' @param breaks
-#'   An increasing \link{numeric} vector of length 2 or greater listing
+#'   An increasing numeric vector of length 2 or greater listing
 #'   break points in the support of the generation interval distribution,
 #'   in reciprocal units of \code{r}.
 #' @param probs
-#'   A \link{numeric} vector of length \code{\link{length}(breaks)-1}.
+#'   A numeric vector of length \code{length(breaks)-1}.
 #'   \code{probs[i]} is the probability that the generation interval
 #'   is between \code{breaks[i]} and \code{breaks[i+1]}.
-#'   If \code{\link{sum}(probs) != 1}, then \code{probs} is replaced
-#'   with \code{probs / \link{sum}(probs)}.
+#'   If \code{sum(probs) != 1}, then \code{probs} is replaced
+#'   with \code{probs / sum(probs)}.
 #'
 #' @section Computation:
 #' For an initial exponential growth rate \code{r},
@@ -130,10 +128,10 @@ compute_final_size <- function(R0, S0, I0) {
 #'
 #' \code{R0(r) = r / sum(probs * (exp(-r * breaks[-n]) - exp(-r * breaks[-1L])) / (breaks[-1L] - breaks[-n]))},
 #'
-#' where \code{n = \link{length}(breaks)}.
+#' where \code{n = length(breaks)}.
 #'
 #' @return
-#' A numeric vector of length \code{\link{length}(r)} listing
+#' A numeric vector of length \code{length(r)} listing
 #' basic reproduction numbers.
 #'
 #' @examples
@@ -172,8 +170,8 @@ compute_R0 <- function(r, breaks, probs) {
     probs >= 0,
     any(probs > 0)
   )
-  probs <- probs / sum(probs)
-  R0 <- rep_len(NA_real_, length(r))
+  R0 <- r
+  R0[] <- NA_real_
 
   ## Degenerate cases
   if (any(r < 0, na.rm = TRUE)) {
@@ -190,7 +188,7 @@ compute_R0 <- function(r, breaks, probs) {
     n <- length(breaks)
     e1 <- exp(tcrossprod(breaks[-n], -r[ok]))
     e2 <- exp(tcrossprod(breaks[-1L], -r[ok]))
-    R0[ok] <- r[ok] / colSums(probs * (e1 - e2) / (breaks[-1L] - breaks[-n]))
+    R0[ok] <- r[ok] / colSums((probs / sum(probs)) * (e1 - e2) / (breaks[-1L] - breaks[-n]))
   }
   R0
 }
@@ -200,17 +198,16 @@ compute_R0 <- function(r, breaks, probs) {
 #' Computes doubling times corresponding to exponential growth rates.
 #'
 #' @param r
-#'   A non-negative \link{numeric} vector.
+#'   A non-negative numeric vector listing exponential growth rates.
 #' @param per
 #'   A positive integer indicating that \code{r} is a rate per
 #'   \code{per} days, in which case the result is printed with units.
-#'   Use the default (\code{\link{NULL}}) if \code{r} is unitless.
+#'   Use the default (\code{NULL}) if \code{r} is unitless.
 #'
 #' @return
-#' \code{\link{log}(2) / r} with \code{"tdoubling"} prepended
-#' to its \link{class}.
-#' \code{per} is retained as an \link[=attributes]{attribute}
-#' for use by \code{print.tdoubling}.
+#' \code{log(2) / r} with \code{"tdoubling"} prepended to its \code{class}
+#' attribute.
+#' \code{per} is retained as an attribute for use by \code{print.tdoubling}.
 #'
 #' @examples
 #' r <- 10^(-2:0)
@@ -234,16 +231,16 @@ compute_tdoubling <- function(r, per = NULL) {
     r[r < 0] <- NA
     warning("NA returned for negative 'r'.")
   }
-  tdoubling <- log(2) / r
-  class(tdoubling) <- c("tdoubling", class(tdoubling))
-  attr(tdoubling, "per") <- per
-  tdoubling
+  r[] <- log(2) / r
+  class(r) <- c("tdoubling", oldClass(r))
+  attr(r, "per") <- per
+  r
 }
 
 #' @export
 print.tdoubling <- function(x, ...) {
-  per <- attr(x, "per")
-  if (!is.null(per)) {
+  y <- x
+  if (!is.null(per <- attr(x, "per"))) {
     units <- switch(as.character(per),
       `1`   = "days",
       `7`   = "weeks",
@@ -252,6 +249,15 @@ print.tdoubling <- function(x, ...) {
     )
     cat("doubling times in ", units, ":\n\n", sep = "")
   }
-  print(as.numeric(x))
-  invisible(x)
+  attr(x, "per") <- NULL
+  class(x) <- NULL
+  NextMethod("print")
+  invisible(y)
+}
+
+#' @method as.data.frame tdoubling
+#' @export
+as.data.frame.tdoubling <- function(x, row.names = NULL, optional = FALSE, ...) {
+  oldClass(x) <- setdiff(oldClass(x), "tdoubling")
+  as.data.frame(x)
 }

@@ -7,17 +7,17 @@
 compute_final_size(R0, S0, I0)
 }
 \arguments{
-\item{R0}{A \link{numeric} vector listing non-negative values for the basic
-reproduction number.}
+\item{R0}{A numeric vector listing non-negative values for the basic reproduction
+number.}
 
-\item{S0, I0}{\link[=numeric]{Numeric} vectors listing values in the interval [0,1]
-for the proportions of the population that are susceptible and infected,
-respectively, at the start of the epidemic. (Hence \code{S0 + I0} should
-be less than or equal to 1.)}
+\item{S0, I0}{Numeric vectors listing values in the interval [0,1] for the proportions
+of the population that are susceptible and infected, respectively, at the
+start of the epidemic.
+(Hence \code{S0 + I0} should be less than or equal to 1.)}
 }
 \value{
-A \link{numeric} vector listing values in the interval [0,1]
-for the expected epidemic final size.
+A numeric vector listing values in the interval [0,1] for the expected
+epidemic final size.
 }
 \description{
 Computes the proportion of a population expected to be infected over
@@ -25,7 +25,7 @@ the course of an epidemic, as a function of the basic reproduction number.
 }
 \details{
 \code{R0}, \code{S0}, and \code{I0} are recycled to length
-\code{\link{max}(\link{lengths}(\link{list}(R0, S0, I0)))}.
+\code{max(lengths(list(R0, S0, I0)))}.
 
 At least one of \code{S0} and \code{I0} must be supplied.
 If \code{S0} (\code{I0}) is supplied but not \code{I0} (\code{S0}),

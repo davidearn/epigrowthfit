@@ -23,20 +23,19 @@ to be simulated.}
 \item{nsim}{A positive integer indicating a number of simulated time series.}
 
 \item{seed}{An integer used to set the \link{RNG} state before simulation.
-The default (\code{\link{NULL}}) is to use the state at the
-time of the function call. The RNG state
-(either a \link{list} of arguments to \code{\link{set.seed}}
-or a value of \code{\link{.Random.seed}}) is preserved as an
-\link[=attributes]{attribute} of the result.}
+The default (\code{NULL}) is to use the state at the time of
+the function call. The RNG state (either a list of arguments to
+\code{\link{set.seed}} or a value of \code{\link{.Random.seed}})
+is preserved as an attribute of the result.}
 
-\item{mu}{A \link{numeric} vector listing means across time series
+\item{mu}{A numeric vector listing means across time series
 of top level nonlinear model parameters (link scale).
 It is assumed that elements are ordered as in
 \code{\link{egf_get_names_top}(object, link = TRUE)}.}
 
-\item{Sigma}{A symmetric positive definite \link{numeric} \link{matrix}
-to be used as the covariance matrix corresponding to \code{mu}.
-The default (\code{\link{NULL}}) is equivalent (conceptually)
+\item{Sigma}{A symmetric positive definite numeric matrix to be used
+as the covariance matrix corresponding to \code{mu}.
+The default (\code{NULL}) is equivalent (conceptually)
 to a zero matrix and is handled specially.}
 
 \item{tol}{A non-negative number indicating a tolerance for lack of positive
@@ -60,62 +59,59 @@ when cumulative incidence first exceeds this threshold.}
 \item{...}{Unused optional arguments.}
 }
 \value{
-A \link{list} inheriting from \link{class} \code{"egf_model_simulate"},
-with elements:
+A list inheriting from class \code{"egf_model_simulate"}, with elements:
 \item{model, mu, Sigma, origin}{
   Copies of the so-named arguments.
   (\code{model} is a copy of argument \code{object}.)
 }
 \item{Y}{
-  A \link[=double]{numeric} \link{matrix} with \code{nsim} rows and
-  \code{\link{length}(mu)} columns listing the top level nonlinear model
-  parameter values underlying each time series.
-  If \code{Sigma} is \code{\link{NULL}}, then the row vectors of \code{Y}
-  are all \code{mu}. Otherwise, \code{Y} is (conceptually) the result of
-  \code{MASS::mvrnorm(nsim, mu, Sigma, tol)}.
+  A numeric matrix with \code{nsim} rows and \code{length(mu)} columns
+  listing the top level nonlinear model parameter values underlying each
+  time series.
+  If \code{Sigma} is \code{NULL}, then the row vectors of \code{Y}
+  are all \code{mu}. Otherwise, \code{Y} is (conceptually) the result
+  of \code{MASS::mvrnorm(nsim, mu, Sigma, tol)}.
 }
-\item{formula}{
-  A \link{formula}, \code{cbind(time, x) ~ ts}, expressing how
-  simulated time series are stored in \code{data}.
+\item{formula_ts}{
+  A formula, \code{cbind(time, x) ~ ts}, expressing how simulated
+  time series are stored in \code{data_ts}.
 }
 \item{formula_windows}{
-  A \link{formula}, \code{cbind(start, end) ~ ts}, expressing how
+  A formula, \code{cbind(start, end) ~ ts}, expressing how
   fitting window endpoints are stored in \code{data_windows}.
 }
 \item{formula_parameters}{
-  A \link{formula} specifying the generative model.
-  If \code{Sigma = \link{NULL}}, then the formula is
+  A formula specifying the generative model.
+  If \code{Sigma = NULL}, then the formula is
   \code{~1} if \code{nsim = 1} and \code{~ts} if \code{nsim > 1}.
   Otherwise, it is \code{~(1 | ts)}.
 }
-\item{data}{
-  A \link[=data.frame]{data frame} with variables \code{ts}, \code{time},
-  and \code{x} storing \code{nsim} simulated time series in long format.
+\item{data_ts}{
+  A data frame with variables \code{ts}, \code{time}, and \code{x}
+  storing \code{nsim} simulated time series in long format.
 }
 \item{data_windows}{
-  A \link[=data.frame]{data frame} with \code{nsim} rows and variables
-  \code{ts}, \code{start}, and \code{end} suggesting a fitting window
-  for each simulated time series. Start times are determined according
-  to \code{cstart}. End times are precisely the last time point in the
+  A data frame with \code{nsim} rows and variables \code{ts},
+  \code{start}, and \code{end} suggesting a fitting window for each
+  simulated time series. Start times are determined according to
+  \code{cstart}. End times are precisely the last time point in the
   corresponding time series.
 }
 \item{actual}{
-  A \link[=double]{numeric} vector giving the full parameter vector
-  of the generative model. When estimating this model from \code{data},
-  \code{\link{egf}} output should be compared against \code{actual}.
-  More precisely, if \code{m} is the \code{"\link{egf}"} object,
-  then \code{m$best} estimates \code{actual}.
+  A numeric vector giving the condensed bottom level parameter vector
+  of the generative model, corresponding to
+  \code{\link[=coef.egf]{coef}(<"egf" object>, full = FALSE)}.
 }
-\item{nonrandom}{
-  An \link{integer} vector indexing the elements of \code{actual}
-  that are not random effects.
+\item{random}{
+  A logical vector indexing the elements of \code{actual} that are
+  random effects.
 }
 \item{call}{
   The \link{call} to \code{simulate.egf_model}, allowing for updates
   to the \code{"egf_model_simulate"} object via \code{\link{update}}.
 }
-\link[=attributes]{Attribute} \code{RNGstate} preserves the RNG state
-prior to simulation, making the result reproducible.
+Attribute \code{RNGstate} preserves the RNG state prior to simulation,
+making the result reproducible.
 }
 \description{
 Simulates incidence time series with a unit observation interval
@@ -131,7 +127,7 @@ mu <- log(c(r, c0))
 Sigma <- diag(rep_len(0.2^2, length(mu)))
 
 root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-path_to_cache <- file.path(root, "exdata", "egf_model_simulate.rds")
+path_to_cache <- file.path(root, "exdata", "simulate-egf_model.rds")
 if (file.exists(path_to_cache)) {
   zz <- readRDS(path_to_cache)
 } else {

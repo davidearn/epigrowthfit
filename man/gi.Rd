@@ -17,23 +17,23 @@ qgi(p, latent, infectious)
 rgi(n, latent, infectious)
 }
 \arguments{
-\item{x, q}{A \link{numeric} vector listing generation intervals.}
+\item{x, q}{A numeric vector listing generation intervals.}
 
-\item{latent, infectious}{\link[=numeric]{Numeric} vectors such that \code{latent[i]} and
-\code{infectious[i]} are the probabilities that the latent and
-infectious periods, respectively, are \code{i} units of time.
+\item{latent, infectious}{Numeric vectors such that \code{latent[i]} and \code{infectious[i]}
+are the probabilities that the latent and infectious periods,
+respectively, are \code{i} units of time.
 It is sufficient to supply probability weights, as both vectors
 are divided by their sums internally.}
 
-\item{p}{A \link{numeric} vector listing probabilities.}
+\item{p}{A numeric vector listing probabilities.}
 
 \item{n}{A non-negative integer indicating a sample size.
-If \code{\link{length}(n) > 1}, then \code{length(n)} is taken
+If \code{length(n) > 1}, then \code{length(n)} is taken
 to be the sample size.}
 }
 \value{
-A \link{numeric} vector with length equal to the that of the
-first argument, or length \code{n} in the case of \code{rgi}.
+A numeric vector with length equal to the that of the first argument,
+or length \code{n} in the case of \code{rgi}.
 }
 \description{
 Generation interval
