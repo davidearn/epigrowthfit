@@ -34,7 +34,10 @@ test_that("egf_sanitize_formula", {
 
 test_that("egf_sanitize_formula_parameters", {
   model <- egf_model(curve = "exponential", family = "pois")
-  sanitize <- function(x) egf_sanitize_formula_parameters(x, model = model, ignore_intercept = FALSE)
+  names_parameters <- egf_get_names_top(model, link = TRUE)
+  sanitize <- function(x) {
+    egf_sanitize_formula_parameters(x, names_parameters = names_parameters, check_intercept = TRUE)
+  }
 
   fp1 <- ~x * y + (z | g) + (zz | g/h)
   l1 <- rep_len(list(simplify_terms(fp1)), 2L)
@@ -52,15 +55,15 @@ test_that("egf_sanitize_formula_parameters", {
   expect_warning(sanitize(~0 + x))
 })
 
-test_that("egf_make_frames", {
+test_that("egf_make_frame", {
   model <- egf_model(curve = "exponential", family = "pois")
-  formula <- cbind(day, count) ~ country
+  formula_ts <- cbind(day, count) ~ country
   formula_windows <- cbind(left, right) ~ country
   formula_parameters <- list(
     `log(r)`  = ~x1 + (1 | g1) + (1 | g1:g2),
     `log(c0)` = ~(1 | g3)
   )
-  data <- data.frame(
+  data_ts <- data.frame(
     country = gl(6L, 11L),
     day = seq.int(0, 10),
     count = rpois(11L, 100 * exp(0.04 * 0:10))
@@ -76,61 +79,59 @@ test_that("egf_make_frames", {
     g2 = c("c", "d", "d", "d", "c", "c"),
     g3 = c("f", "f", "e", "e", "e", "f")
   )
-  subset <- quote(day > 0)
+  subset_ts <- quote(day > 0)
   subset_windows <-  quote(x1 < 0)
-  na_action <- "pass"
+  na_action_ts <- "pass"
   na_action_windows <- "omit"
   append <- quote(.)
 
-  res <- egf_make_frames(
+  res <- egf_make_frame(
     model = model,
-    formula = formula,
+    formula_ts = formula_ts,
     formula_windows = formula_windows,
     formula_parameters = formula_parameters,
-    data = data,
+    data_ts = data_ts,
     data_windows = data_windows,
-    subset = subset,
+    subset_ts = subset_ts,
     subset_windows = subset_windows,
-    na_action = na_action,
+    na_action_ts = na_action_ts,
     na_action_windows = na_action_windows,
     append = append
   )
   expect_type(res, "list")
   expect_length(res, 4L)
-  expect_named(res, c("frame", "frame_windows", "frame_parameters", "frame_append"), ignore.order = TRUE)
+  expect_named(res, c("ts", "windows", "parameters", "append"), ignore.order = TRUE)
 
-  o1 <- res$frame
+  o1 <- res$ts
   expect_type(o1, "list")
   expect_s3_class(o1, "data.frame")
   expect_length(o1, 4L)
   expect_named(o1, c("ts", "window", "time", "x"))
   expect_identical(row.names(o1), as.character(seq_len(20L)))
-  expect_identical(attr(o1, "formula"), formula)
   expect_identical(attr(o1, "first"), c(1L, 5L, 11L))
   expect_identical(attr(o1, "last"), c(5L, 10L, 15L))
   expect_identical(o1$ts, gl(2L, 10L, labels = 2:3))
   expect_identical(o1$window, factor(rep.int(c(NA, 1, 2, NA, 3, NA), c(1L, 4L, 5L, 1L, 4L, 5L)), labels = sprintf("window_%d", 1:3)))
   expect_equal(o1$time, rep.int(1:10, 2L))
-  expect_equal(o1$x, data$count[c(NA, 14:22, NA, 25:33)])
+  expect_equal(o1$x, data_ts$count[c(NA, 14:22, NA, 25:33)])
 
-  o2 <- res$frame_windows
+  o2 <- res$windows
   expect_type(o2, "list")
   expect_s3_class(o2, "data.frame")
   expect_length(o2, 4L)
   expect_named(o2, c("ts", "window", "start", "end"))
   expect_identical(row.names(o2), as.character(seq_len(3L)))
-  expect_identical(attr(o2, "formula"), formula_windows)
   expect_identical(o2$ts, factor(c(2, 2, 3)))
   expect_identical(o2$window, gl(3L, 1L, labels = sprintf("window_%d", 1:3)))
   expect_equal(o2$start, c(1, 5, 1))
   expect_equal(o2$end, c(5, 10, 5))
 
-  o3 <- res$frame_parameters
+  o3 <- res$parameters
   expect_type(o3, "list")
   expect_length(o3, 2L)
   expect_named(o3, c("log(r)", "log(c0)"))
 
-  o4 <- res$frame_parameters$`log(r)`
+  o4 <- o3$`log(r)`
   expect_type(o4, "list")
   expect_s3_class(o4, "data.frame")
   expect_length(o4, 3L)
@@ -139,7 +140,7 @@ test_that("egf_make_frames", {
   expect_identical(attr(o4, "terms"), terms(formula_parameters$`log(r)`))
   expect_identical(o4, droplevels(data_windows[3:5, names(o4), drop = FALSE]), ignore_attr = c("row.names", "terms"))
 
-  o5 <- res$frame_parameters$`log(c0)`
+  o5 <- o3$`log(c0)`
   expect_type(o5, "list")
   expect_s3_class(o5, "data.frame")
   expect_length(o5, 1L)
@@ -148,7 +149,7 @@ test_that("egf_make_frames", {
   expect_identical(attr(o5, "terms"), terms(formula_parameters$`log(c0)`))
   expect_identical(o5, droplevels(data_windows[3:5, names(o5), drop = FALSE]), ignore_attr = c("row.names", "terms"))
 
-  o6 <- res$frame_append
+  o6 <- res$append
   expect_type(o6, "list")
   expect_s3_class(o6, "data.frame")
   expect_length(o6, 5L)
@@ -157,64 +158,52 @@ test_that("egf_make_frames", {
   expect_identical(o6, droplevels(data_windows[3:5, names(o6), drop = FALSE]), ignore_attr = c("row.names", "terms"))
 })
 
-test_that("egf_make_priors_top", {
-  model <- egf_model()
-  names_top <- egf_get_names_top(model, link = TRUE)
-  prior <- Normal(mu = 0, sigma = 1)
-  formula_priors_top <- list(
-    log(r) ~ prior
-  )
-  priors_top <- egf_make_priors_top(
-    formula_priors_top = formula_priors_top,
-    model = model
-  )
+test_that("egf_make_priors", {
+  top <- list(names = c("foo(bar)", "baz"), family = "norm")
+  beta <- list(length = 4L, family = "norm")
+  theta <- list(length = 6L, family = "norm")
+  Sigma <- list(length = 1L, family = c("lkj", "wishart", "invwishart"), rows = 4L)
 
-  expect_type(priors_top, "list")
-  expect_length(priors_top, length(names_top))
-  expect_named(priors_top, names_top)
-  expect_identical(priors_top[["log(r)"]], prior)
-  for (s in setdiff(names(priors_top), "log(r)")) {
-    eval(bquote(expect_null(priors_top[[.(s)]])))
-  }
-})
-
-test_that("egf_make_priors_bottom", {
   p1 <- Normal(mu = 0, sigma = 1)
-  p2 <- LKJ(eta = 1)
-  formula_priors_bottom <- list(
+  p2 <- Normal(mu = 1, sigma = c(0.5, 1))
+  p3 <- Normal(mu = -1, sigma = 2)
+  p4 <- LKJ(eta = 1)
+
+  formula_priors <- list(
+    foo(bar) ~ p1,
+    baz ~ p1,
     beta ~ p1,
     theta[[1L]] ~ p1,
-    theta[2:3] ~ p1,
-    theta[-c(1:3, 8:10)] ~ p1,
-    theta[rep.int(c(FALSE, TRUE, FALSE), c(7L, 2L, 1L))] ~ p1,
-    Sigma ~ p2
+    theta[2:3] ~ p2,
+    theta[-(1:5)] ~ p3,
+    theta[replace(logical(6L), 4L, TRUE)] ~ p1,
+    Sigma ~ p4
   )
-  priors_bottom <- egf_make_priors_bottom(
-    formula_priors_bottom = formula_priors_bottom,
-    beta_size = 4L,
-    theta_size = 10L,
-    block_rows = 4L
+  priors <- egf_make_priors(
+    formula_priors = formula_priors,
+    top = top,
+    beta = beta,
+    theta = theta,
+    Sigma = Sigma
   )
 
-  expect_type(priors_bottom, "list")
-  expect_length(priors_bottom, 3L)
-  expect_named(priors_bottom, c("beta", "theta", "Sigma"))
+  expect_type(priors, "list")
+  expect_length(priors, 2L)
+  expect_named(priors, c("top", "bottom"), ignore.order = TRUE)
 
-  expect_type(priors_bottom$beta, "list")
-  expect_length(priors_bottom$beta, 4L)
-  expect_named(priors_bottom$beta, enum_dupl_string(rep_len("beta", 4L)))
-  expect_identical(unname(priors_bottom$beta), rep_len(list(p1), 4L))
+  expect_type(priors$top, "list")
+  expect_length(priors$top, 2L)
+  expect_named(priors$top, top$names)
+  expect_identical(unname(priors$top), list(p1, p1))
 
-  expect_type(priors_bottom$theta, "list")
-  expect_length(priors_bottom$theta, 10L)
-  expect_named(priors_bottom$theta, enum_dupl_string(rep_len("theta", 10L)))
-  expect_identical(unname(priors_bottom$theta)[-10L], rep_len(list(p1), 9L))
-  expect_null(priors_bottom$theta[[10L]])
+  expect_type(priors$bottom, "list")
+  expect_length(priors$bottom, 3L)
+  expect_named(priors$bottom, c("beta", "theta", "Sigma"))
 
-  expect_type(priors_bottom$Sigma, "list")
-  expect_length(priors_bottom$Sigma, 1L)
-  expect_named(priors_bottom$Sigma, enum_dupl_string("Sigma"))
-  expect_identical(unname(priors_bottom$Sigma), list(p2))
+  f <- function(i) {p2$parameters$sigma <- p2$parameters$sigma[[i]]; p2}
+  expect_identical(priors$bottom$beta, list(p1, p1, p1, p1))
+  expect_identical(priors$bottom$theta, list(p1, f(1L), f(2L), p1, NULL, p3))
+  expect_identical(priors$bottom$Sigma, list(p4))
 })
 
 test_that("egf_make_X", {
@@ -255,42 +244,52 @@ test_that("egf_make_Z", {
   expect_identical(Z@p, c(0L, cumsum(c(2L, 2L, 1L, 1L, 2L, 2L))))
   expect_identical(Z@assign, rep_len(1L, 6L))
   expect_error(Z@contrasts)
-  expect_identical(Z@index, gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5:2")))
+  expect_identical(Z@level, gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5:2")))
 })
 
 test_that("egf_combine_X", {
   fixed <- list(a = ~x, b = ~f)
   data <- data.frame(x = 1:6, f = gl(2L, 3L))
-  l <- lapply(fixed, egf_make_X, data = data, sparse = FALSE)
-  X <- egf_combine_X(fixed = fixed, X = l)
-  expect_type(X, "double")
-  expect_true(is.matrix(X))
-  expect_identical(dim(X), c(6L, 4L))
-  expect_identical(dimnames(X), list(as.character(1:6), c("(Intercept)", "x", "(Intercept)", "f2")))
-  X0 <- cbind(1, 1:6, 1, rep.int(c(0, 1), c(3L, 3L)))
-  expect_identical(unname(X), X0, ignore_attr = "info")
+  X <- lapply(fixed, egf_make_X, data = data, sparse = FALSE)
+  l <- egf_combine_X(fixed = fixed, X = X)
 
-  info <- attr(X, "info")
-  expect_type(info, "list")
-  expect_s3_class(info, "data.frame")
-  expect_length(info, 4L)
-  expect_identical(row.names(info), as.character(seq_len(4L)))
-  expect_named(info, c("bottom", "top", "term", "colname"))
-  expect_identical(info$bottom, enum_dupl_string(rep_len("beta", 4L)))
-  expect_identical(info$top, gl(2L, 2L, labels = c("a", "b")))
-  expect_identical(info$term, factor(c("(Intercept)", "x", "(Intercept)", "f")))
-  expect_identical(info$colname, colnames(X))
+  expect_type(l, "list")
+  expect_length(l, 3L)
+  expect_named(l, c("X", "effects", "contrasts"), ignore.order = TRUE)
+
+  expect_true(is.matrix(l$X))
+  expect_identical(dim(l$X), c(6L, 4L))
+  expect_identical(dimnames(l$X), list(as.character(1:6), c("(Intercept)", "x", "(Intercept)", "f2")))
+  X0 <- cbind(1, 1:6, 1, rep.int(c(0, 1), c(3L, 3L)))
+  expect_identical(unname(l$X), X0)
+
+  expect_type(l$effects, "list")
+  expect_s3_class(l$effects, "data.frame")
+  expect_length(l$effects, 4L)
+  expect_identical(row.names(l$effects), as.character(seq_len(4L)))
+  expect_named(l$effects, c("bottom", "top", "term", "colname"))
+  expect_identical(l$effects$bottom, disambiguate(rep_len("beta", 4L)))
+  expect_identical(l$effects$top, gl(2L, 2L, labels = c("a", "b")))
+  expect_identical(l$effects$term, factor(c("(Intercept)", "x", "(Intercept)", "f")))
+  expect_identical(l$effects$colname, colnames(l$X))
+
+  expect_equal(l$contrasts, list(f = getOption("contrasts")[["unordered"]]))
 })
 
 test_that("egf_combine_Z", {
   random <- list(a = quote(x | f), b = quote(y | g))
   data <- data.frame(x = 1:6, y = -1, f = gl(2L, 3L), g = gl(3L, 2L))
-  l <- lapply(random, egf_make_Z, data = data)
-  Z <- egf_combine_Z(random = random, Z = l)
-  expect_type(Z, "S4")
-  expect_s4_class(Z, "dgCMatrix")
-  expect_identical(dim(Z), c(6L, 10L))
-  expect_identical(dimnames(Z), list(NULL, sprintf("(%s | %s)", rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L)), rep.int(c("f1", "f2", "g1", "g2", "g3"), 2L))))
+  Z <- lapply(random, egf_make_Z, data = data)
+  l <- egf_combine_Z(random = random, Z = Z)
+
+  expect_type(l, "list")
+  expect_length(l, 3L)
+  expect_named(l, c("Z", "effects", "contrasts"), ignore.order = TRUE)
+
+  expect_type(l$Z, "S4")
+  expect_s4_class(l$Z, "dgCMatrix")
+  expect_identical(dim(l$Z), c(6L, 10L))
+  expect_identical(dimnames(l$Z), list(NULL, sprintf("(%s | %s)", rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L)), rep.int(c("f1", "f2", "g1", "g2", "g3"), 2L))))
   Z0 <- cbind(
     c(1, 1, 1, 0, 0, 0),
     c(0, 0, 0, 1, 1, 1),
@@ -303,21 +302,22 @@ test_that("egf_combine_Z", {
     c(0, 0, -1, -1, 0, 0),
     c(0, 0, 0, 0, -1, -1)
   )
-  expect_identical(unname(as.matrix(Z)), Z0)
+  expect_identical(unname(as(l$Z, "matrix")), Z0)
 
-  info <- attr(Z, "info")
-  expect_type(info, "list")
-  expect_s3_class(info, "data.frame")
-  expect_length(info, 8L)
-  expect_identical(row.names(info), as.character(seq_len(10L)))
-  expect_named(info, c("cov", "vec", "bottom", "top", "term", "group", "level", "colname"))
-  expect_identical(info$cov, `levels<-`(interaction(info[c("term", "group")], drop = TRUE, lex.order = TRUE), enum_dupl_string(rep_len("Sigma", 4L))))
-  expect_identical(info$vec, `levels<-`(interaction(info[c("term", "group", "level")], drop = TRUE, lex.order = TRUE), enum_dupl_string(rep_len("u", 10L))))
-  expect_identical(info$bottom, enum_dupl_string(rep_len("b", 10L)))
-  expect_identical(info$top, rep.int(factor(rep.int(c("a", "b"), c(2L, 3L))), 2L))
-  expect_identical(info$term, factor(rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L))))
-  expect_identical(info$group, rep.int(factor(rep.int(c("f", "g"), c(2L, 3L))), 2L))
-  expect_identical(info$level, rep.int(factor(c(seq_len(2L), seq_len(3L))), 2L))
-  expect_identical(info$colname, colnames(Z))
-  expect_identical(do.call(order, unname(info[c("cov", "vec", "top")])), seq_len(10L))
+  expect_type(l$effects, "list")
+  expect_s3_class(l$effects, "data.frame")
+  expect_length(l$effects, 8L)
+  expect_identical(row.names(l$effects), as.character(seq_len(10L)))
+  expect_named(l$effects, c("cov", "vec", "bottom", "top", "term", "group", "level", "colname"))
+  expect_identical(l$effects$cov, `levels<-`(interaction(l$effects[c("term", "group")], drop = TRUE, lex.order = TRUE), disambiguate(rep_len("Sigma", 4L))))
+  expect_identical(l$effects$vec, `levels<-`(interaction(l$effects[c("term", "group", "level")], drop = TRUE, lex.order = TRUE), disambiguate(rep_len("u", 10L))))
+  expect_identical(l$effects$bottom, disambiguate(rep_len("b", 10L)))
+  expect_identical(l$effects$top, rep.int(factor(rep.int(c("a", "b"), c(2L, 3L))), 2L))
+  expect_identical(l$effects$term, factor(rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L))))
+  expect_identical(l$effects$group, rep.int(factor(rep.int(c("f", "g"), c(2L, 3L))), 2L))
+  expect_identical(l$effects$level, rep.int(factor(c(seq_len(2L), seq_len(3L))), 2L))
+  expect_identical(l$effects$colname, colnames(l$Z))
+  expect_identical(do.call(order, unname(l$effects[c("cov", "vec", "top")])), seq_len(10L))
+
+  expect_null(l$contrasts)
 })
