@@ -119,12 +119,12 @@ test_that("dpois_robust", {
 test_that("rnbinom_robust", {
   log_mu <- log(100)
   log_size <- log(50)
-  n <- 1e+7L
+  n <- 1e+6L
   set.seed(10235L)
   res <- get_test_res(test_enum = "rnbinom_robust", log_mu = log_mu, log_size = log_size, n = n)
   freq <- as.integer(table(factor(res, levels = seq.int(min(res), max(res)))))
   dens <- dnbinom(seq.int(min(res), max(res)), mu = exp(log_mu), size = exp(log_size))
-  expect_equal(freq / n, dens, tolerance = 2e-3)
+  expect_equal(freq / n, dens, tolerance = 1e-2)
 })
 
 test_that("eval_log_curve_exponential", {
