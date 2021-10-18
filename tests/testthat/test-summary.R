@@ -1,7 +1,7 @@
-o <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
-so <- summary(o)
+so <- readRDS(system.file("exdata", "summary-egf.rds", package = "epigrowthfit", mustWork = TRUE))
 
 test_that("basic", {
+  o <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
   fo <- readRDS(system.file("exdata", "fitted-egf.rds", package = "epigrowthfit", mustWork = TRUE))
 
   expect_type(so, "list")
