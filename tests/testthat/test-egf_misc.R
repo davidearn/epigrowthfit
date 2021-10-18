@@ -29,12 +29,3 @@ test_that("egf_has_random", {
   e$data$Z <- matrix(numeric(0L), 3L, 0L)
   expect_false(egf_has_random(object))
 })
-
-test_that("egf_combine_frames", {
-  object <- list(
-    frame_parameters = list(a = data.frame(x = 1:6), b = data.frame(y = letters[1:6])),
-    frame_append = data.frame(x = rnorm(6L), z = TRUE)
-  )
-  class(object) <- "egf"
-  expect_identical(egf_combine_frames(object), data.frame(x = 1:6, y = letters[1:6], z = TRUE))
-})
