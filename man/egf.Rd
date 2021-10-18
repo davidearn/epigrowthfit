@@ -92,8 +92,8 @@ In case (i),
 and hyperparameters supplied on the right hand side must have length 1.
 In cases (ii) and (iii),
 \code{parameter} must be \code{beta}, \code{theta}, or \code{Sigma}
-or a call to \code{\link{[}} or \code{\link{[[}}
-subsetting \code{beta}, \code{theta}, or \code{Sigma}
+or a call to \code{\link{[}} or \code{\link{[[}} referring to a subset
+or element of \code{beta}, \code{theta}, or \code{Sigma}
 (e.g., \code{beta[index]}, where \code{index} is a valid index vector
 for \code{beta}),
 and hyperparameters are recycled to the length of the indicated subset.

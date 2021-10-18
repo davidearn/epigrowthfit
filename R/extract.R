@@ -11,59 +11,53 @@
 #' @param full
 #'   A logical flag. If \code{FALSE}, then parameter vectors are returned
 #'   in the condensed format used by \pkg{TMB}, which excludes mapped elements.
-#'   (See \code{\link{egf}} argument \code{map}.)
-#' @param list
-#'   A logical flag.
-#'   If \code{FALSE}, then the parameter vectors are concatenated.
+#'   (See argument \code{map} of \code{\link{egf}}.)
 #' @param ...
 #'   Unused optional arguments.
 #'
 #' @details
 #' If \code{object} inherits from class \code{"egf_no_fit"},
-#' then the result lists initial parameter values to be used
+#' then the result contains initial parameter values to be used
 #' in the first likelihood evaluation.
 #'
 #' @return
-#' If \code{list = FALSE}, then a numeric vector \code{x = c(beta, theta, b)},
-#' with \code{names(x)} providing the grouping.
+#' A numeric vector concatenating \code{beta}, \code{theta}, and \code{b},
+#' possibly in their condensed format. The names of the result specify the
+#' grouping.
 #'
-#' If \code{list = TRUE}, then a named list \code{list(beta, theta, b)}.
-#' Each parameter vector has an attribute \code{map}, an index vector such
-#' that the full vector \code{y} and condensed vector \code{x} are related
-#' by \code{y = x[map]}, with the exception that \code{map[i]} is \code{NA}
-#' if \code{y[i]} is mapped to an initial value
+#' Attribute \code{map} is a named list of index vectors \code{i} such that
+#' that a full vector \code{y} and its condensed counterpart \code{x}
+#' are related by \code{y = x[i]}, with the exception that \code{map[i]} is
+#' \code{NA} if \code{y[i]} is mapped to an initial value
 #' (hence \code{x[map[i]]} is equal to \code{NA}, not \code{y[i]}).
+#' \code{NULL} is used in place of an index vector where \code{x} and \code{y}
+#' are identical.
 #'
-#' In both cases, the result inherits from class \code{"egf_coef"}.
+#' In both cases, the result inherits from class \code{"egf_coef"},
+#' which has \code{\link{print}} and \code{\link{as.list}} methods.
 #'
 #' @family extractors
 #' @export
 #' @importFrom stats coef
-coef.egf <- function(object, full = FALSE, list = FALSE, ...) {
+coef.egf <- function(object, full = FALSE, ...) {
   stop_if_not_true_false(full)
-  stop_if_not_true_false(list)
-
   if (full) {
     res <- egf_expand_par(object$tmb_out, par = object$best)
   } else {
     res <- object$best
-    attr(res, "lengths") <- c(table(factor(names(res), levels = c("beta", "theta", "b"))))
+    attr(res, "lengths") <- lengths(object$tmb_out$env$parameters)
   }
-  if (list) {
-    names(res) <- NULL
-    len <- attr(res, "lengths")
-    res <- split(res, rep.int(gl(length(len), 1L, labels = names(len)), len))
-    map <- lapply(object$tmb_out$env$parList(), attr, "map")
-    for (s in names(res)) {
-      if (length(res[[s]]) == 0L || is.null(map[[s]])) {
-        attr(res[[s]], "map") <- seq_along(res[[s]])
-      } else {
-        map[[s]] <- map[[s]] + 1L
-        map[[s]][map[[s]] == 0L] <- NA
-        attr(res[[s]], "map") <- map[[s]]
-      }
+  map <- lapply(object$tmb_out$env$parameters, attr, "map")
+  if (!egf_has_random(object)) {
+    map[names(map) != "beta"] <- list(NULL)
+  }
+  for (i in seq_along(map)) {
+    if (!is.null(map[[i]])) {
+      map[[i]][] <- map[[i]] + 1L
+      map[[i]][map[[i]] == 0L] <- NA
     }
   }
+  attr(res, "map") <- map
   attr(res, "full") <- full
   class(res) <- "egf_coef"
   res
@@ -72,24 +66,32 @@ coef.egf <- function(object, full = FALSE, list = FALSE, ...) {
 #' @rdname coef.egf
 #' @export
 #' @importFrom stats coef
-coef.egf_no_fit <- function(object, full = FALSE, list = FALSE, ...) {
+coef.egf_no_fit <- function(object, full = FALSE, ...) {
   object$best <- object$init
-  coef.egf(object, full = full, list = list, ...)
+  coef.egf(object, full = full, ...)
 }
 
 #' @export
 print.egf_coef <- function(x, ...) {
   y <- x
-  if (is.list(x)) {
-    attr(x, "lengths") <- NULL
-    for (i in seq_along(x)) {
-      attr(x[[i]], "map") <- NULL
-    }
-  }
-  attr(x, "full") <- NULL
-  class(x) <- NULL
+  attributes(x)[c("full", "lengths", "map", "class")] <- NULL
   NextMethod("print")
   invisible(y)
+}
+
+#' @method as.list egf_coef
+#' @export
+as.list.egf_coef <- function(x, ...) {
+  names(x) <- NULL
+  len <- attr(x, "lengths")
+  f <- rep.int(gl(length(len), 1L, labels = names(len)), len)
+  res <- split(x, f)
+  map <- attr(x, "map")
+  for (s in names(res)) {
+    attr(res[[s]], "map") <- map[[s]]
+  }
+  attr(res, "full") <- attr(x, "full")
+  res
 }
 
 #' @method as.data.frame egf_coef
@@ -308,14 +310,6 @@ getCall.egf <- function(x, ...) {
 #' @export
 #' @importFrom stats getCall
 getCall.egf_no_fit <- getCall.egf
-
-#' @export
-#' @importFrom stats getCall
-getCall.egf_model_simulate <- function(x, ...) {
-  call <- NextMethod("getCall")
-  call[[1L]] <- quote(simulate)
-  call
-}
 
 #' Extract model frames
 #'

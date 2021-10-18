@@ -2,7 +2,9 @@
 
 S3method(as.data.frame,egf_coef)
 S3method(as.data.frame,tdoubling)
+S3method(as.list,egf_coef)
 S3method(coef,egf)
+S3method(coef,egf_model_simulate)
 S3method(coef,egf_no_fit)
 S3method(confint,egf)
 S3method(confint,egf_fitted)

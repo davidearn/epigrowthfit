@@ -302,9 +302,8 @@ print.egf_simulate <- function(x, ...) {
 #'   corresponding time series.
 #' }
 #' \item{actual}{
-#'   A numeric vector giving the condensed bottom level parameter vector
-#'   of the generative model, corresponding to
-#'   \code{\link[=coef.egf]{coef}(<"egf" object>, full = FALSE)}.
+#'   A numeric vector giving the full bottom level parameter vector
+#'   of the generative model.
 #' }
 #' \item{random}{
 #'   A logical vector indexing the elements of \code{actual} that are
@@ -316,6 +315,8 @@ print.egf_simulate <- function(x, ...) {
 #' }
 #' Attribute \code{RNGstate} preserves the RNG state prior to simulation,
 #' making the result reproducible.
+#'
+#' \code{actual} can be extracted by passing the result to \code{\link{coef}}.
 #'
 #' @examples
 #' r <- 0.04
@@ -435,13 +436,16 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
       init[seq.int(from = 1L, by = nsim, length.out = p)] <- mu
       names(init) <- rep_len("beta", p * nsim)
     }
+    attr(init, "lengths") <- c(beta = length(init), theta = 0L, b = 0L)
   } else {
     formula_parameters <- ~(1 | ts)
     l <- list(beta = mu, theta = cov2theta(Sigma), b = rep_len(0, nsim * p))
     init <- unlist1(l)
-    names(init) <- rep.int(names(l), lengths(l, use.names = FALSE))
+    len <- lengths(l)
+    names(init) <- rep.int(names(len), len)
+    attr(init, "lengths") <- len
   }
-  environment(formula) <- environment(formula_windows) <-
+  environment(formula_ts) <- environment(formula_windows) <-
     environment(formula_parameters) <- .GlobalEnv
 
   ## Create TMB object without optimizing
@@ -516,6 +520,27 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   res
 }
 
+#' @export
+#' @importFrom stats coef
+coef.egf_model_simulate <- function(object, ...) {
+  res <- object[["actual"]]
+  len <- attr(res, "len")
+  map <- vector("list", length(len))
+  names(map) <- names(len)
+  attr(res, "map") <- map
+  attr(res, "full") <- TRUE
+  class(res) <- "egf_coef"
+  res
+}
+
+#' @export
+#' @importFrom stats getCall
+getCall.egf_model_simulate <- function(x, ...) {
+  call <- NextMethod("getCall")
+  call[[1L]] <- quote(simulate)
+  call
+}
+
 #' Fit simulated incidence time series
 #'
 #' Estimates the generative model underlying a set of simulated
@@ -527,6 +552,9 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
 #'   to be estimated.
 #' @param ...
 #'   Optional arguments passed to \code{\link{egf.egf_model}}.
+#'
+#' @return
+#' An \code{"\link{egf}"} object.
 #'
 #' @examples
 #' example("simulate.egf_model", package = "epigrowthfit", local = TRUE, echo = FALSE)
@@ -540,8 +568,8 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
 #'   object <- egf(model)
 #'   saveRDS(object, file = path_to_cache)
 #' }
-#' pp <- data.frame(actual = model$actual, fitted = coef(object, full = FALSE))
-#' pp[!object$random, , drop = FALSE]
+#' pp <- data.frame(actual = coef(model), fitted = coef(object))
+#' split(pp, row.names(pp))
 #'
 #' @export
 egf.egf_model_simulate <- function(model, ...) {

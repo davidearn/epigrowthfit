@@ -13,6 +13,9 @@ to be estimated.}
 
 \item{...}{Optional arguments passed to \code{\link{egf.egf_model}}.}
 }
+\value{
+An \code{"\link{egf}"} object.
+}
 \description{
 Estimates the generative model underlying a set of simulated
 incidence time series.
@@ -29,7 +32,7 @@ if (file.exists(path_to_cache)) {
   object <- egf(model)
   saveRDS(object, file = path_to_cache)
 }
-pp <- data.frame(actual = model$actual, fitted = coef(object, full = FALSE))
-pp[!object$random, , drop = FALSE]
+pp <- data.frame(actual = coef(model), fitted = coef(object))
+split(pp, row.names(pp))
 
 }

@@ -125,7 +125,7 @@ egf_has_converged <- function(object, tol = 1) {
 #' @return
 #' \code{egf_expand_par} returns \code{c(beta, theta, b)}.
 #' \code{egf_condense_par} returns \code{c(cbeta, ctheta, cb)},
-#' where \code{cbeta} is condensed form of \code{beta}, and so on.
+#' where \code{cbeta} is the condensed representation of \code{beta}, and so on.
 #' Attribute \code{lengths} preserves the length of each segment.
 #'
 #' @noRd
@@ -304,29 +304,35 @@ egf_preprofile <- function(object, subset, top) {
 
   Y <- object$tmb_out$env$data$Y
   Y <- Y[subset, top, drop = FALSE]
-
   X <- model.matrix(object, "fixed")
   X <- X[subset, , drop = FALSE]
 
-  l1 <- coef(object, full = TRUE, list = TRUE)
-  l0 <- coef(object, full = FALSE, list = TRUE)
+  c0 <- coef(object, full = FALSE)
+  len <- attr(c0, "lengths")
+  map <- attr(c0, "map")$beta
+  if (is.null(map)) {
+    argna <- rep_len(FALSE, len[["beta"]])
+    fmap <- gl(len[["beta"]], 1L)
+  } else {
+    argna <- is.na(map)
+    fmap <- factor(map[!argna])
+  }
 
-  map <- attr(l1$beta, "map")
-  argna <- is.na(map)
+  c1 <- coef(object, full = TRUE)
+  beta <- c1[names(c1) == "beta"]
 
-  f <- factor(fixef(object)$top, levels = top)
-  J <- as(f, "sparseMatrix")
+  ftop <- factor(fixef(object)$top, levels = top)
+  J <- as(ftop, "sparseMatrix")
   A <- KhatriRao(J, X)
 
-  BETA <- KhatriRao(J, t(l1$beta))
-  Y <- Y + tcrossprod(X[, argna, drop = FALSE], BETA[, argna, drop = FALSE])
+  B <- KhatriRao(J, t(beta))
+  Y <- Y + tcrossprod(X[, argna, drop = FALSE], B[, argna, drop = FALSE])
 
-  A <- tcrossprod(A[, !argna, drop = FALSE], as(factor(map[!argna]), "sparseMatrix"))
-  A <- cbind(A, Matrix(0, nrow(A), length(l0$theta)))
+  A <- tcrossprod(A[, !argna, drop = FALSE], as(fmap, "sparseMatrix"))
+  A <- cbind(A, Matrix(0, nrow(A), len[["theta"]]))
 
   if (!all(rowSums(abs(A)) > 0)) {
     stop(wrap("At least one population fitted value is not a function of any estimated parameters."))
   }
-
   list(Y = Y, A = A)
 }

@@ -5,34 +5,34 @@
 \alias{coef.egf_no_fit}
 \title{Extract coefficients and covariance parameters}
 \usage{
-\method{coef}{egf}(object, full = FALSE, list = FALSE, ...)
+\method{coef}{egf}(object, full = FALSE, ...)
 
-\method{coef}{egf_no_fit}(object, full = FALSE, list = FALSE, ...)
+\method{coef}{egf_no_fit}(object, full = FALSE, ...)
 }
 \arguments{
 \item{object}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}
 
 \item{full}{A logical flag. If \code{FALSE}, then parameter vectors are returned
 in the condensed format used by \pkg{TMB}, which excludes mapped elements.
-(See \code{\link{egf}} argument \code{map}.)}
-
-\item{list}{A logical flag.
-If \code{FALSE}, then the parameter vectors are concatenated.}
+(See argument \code{map} of \code{\link{egf}}.)}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-If \code{list = FALSE}, then a numeric vector \code{x = c(beta, theta, b)},
-with \code{names(x)} providing the grouping.
+A numeric vector concatenating \code{beta}, \code{theta}, and \code{b},
+possibly in their condensed format. The names of the result specify the
+grouping.
 
-If \code{list = TRUE}, then a named list \code{list(beta, theta, b)}.
-Each parameter vector has an attribute \code{map}, an index vector such
-that the full vector \code{y} and condensed vector \code{x} are related
-by \code{y = x[map]}, with the exception that \code{map[i]} is \code{NA}
-if \code{y[i]} is mapped to an initial value
+Attribute \code{map} is a named list of index vectors \code{i} such that
+that a full vector \code{y} and its condensed counterpart \code{x}
+are related by \code{y = x[i]}, with the exception that \code{map[i]} is
+\code{NA} if \code{y[i]} is mapped to an initial value
 (hence \code{x[map[i]]} is equal to \code{NA}, not \code{y[i]}).
+\code{NULL} is used in place of an index vector where \code{x} and \code{y}
+are identical.
 
-In both cases, the result inherits from class \code{"egf_coef"}.
+In both cases, the result inherits from class \code{"egf_coef"},
+which has \code{\link{print}} and \code{\link{as.list}} methods.
 }
 \description{
 Extracts bottom level parameter vectors \code{beta}, \code{theta},
@@ -43,7 +43,7 @@ linear random effects coefficients, respectively.
 }
 \details{
 If \code{object} inherits from class \code{"egf_no_fit"},
-then the result lists initial parameter values to be used
+then the result contains initial parameter values to be used
 in the first likelihood evaluation.
 }
 \seealso{

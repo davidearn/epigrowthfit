@@ -98,9 +98,8 @@ A list inheriting from class \code{"egf_model_simulate"}, with elements:
   corresponding time series.
 }
 \item{actual}{
-  A numeric vector giving the condensed bottom level parameter vector
-  of the generative model, corresponding to
-  \code{\link[=coef.egf]{coef}(<"egf" object>, full = FALSE)}.
+  A numeric vector giving the full bottom level parameter vector
+  of the generative model.
 }
 \item{random}{
   A logical vector indexing the elements of \code{actual} that are
@@ -112,6 +111,8 @@ A list inheriting from class \code{"egf_model_simulate"}, with elements:
 }
 Attribute \code{RNGstate} preserves the RNG state prior to simulation,
 making the result reproducible.
+
+\code{actual} can be extracted by passing the result to \code{\link{coef}}.
 }
 \description{
 Simulates incidence time series with a unit observation interval
