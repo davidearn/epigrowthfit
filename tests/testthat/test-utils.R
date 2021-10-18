@@ -1,13 +1,13 @@
-test_that("enum_dupl_string", {
+test_that("disambiguate", {
   x <- c("c", "b", "a", "b", "a",
          "a", "b", "c", "c", "c")
   y <- c("c[1]", "b[1]", "a[1]", "b[2]", "a[2]",
          "a[3]", "b[3]", "c[2]", "c[3]", "c[4]")
-  expect_identical(enum_dupl_string(x), y)
+  expect_identical(disambiguate(x), y)
 
   x <- `names<-`(seq_along(x), x)
   y <- `names<-`(seq_along(x), y)
-  expect_identical(enum_dupl_names(x), y)
+  expect_identical(disambiguate(x, nms = TRUE), y)
 })
 
 test_that("literal_rle", {
@@ -39,12 +39,12 @@ test_that("in_place_ragged_apply", {
   expect_identical(y, as.data.frame(lapply(x, f)))
 })
 
-test_that("do_wald", {
+test_that("wald", {
   estimate <- rnorm(6L, 0, 1)
   se <- rlnorm(6L, 0, 0.1)
   level <- 0.95
   q <- qchisq(level, df = 1)
-  W <- do_wald(estimate = estimate, se = se, level = level)
+  W <- wald(estimate = estimate, se = se, level = level)
   expect_type(W, "double")
   expect_true(is.matrix(W))
   expect_identical(dim(W), c(6L, 2L))
