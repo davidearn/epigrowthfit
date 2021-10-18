@@ -32,7 +32,6 @@ if (file.exists(path_to_cache)) {
   object <- egf(model)
   saveRDS(object, file = path_to_cache)
 }
-pp <- data.frame(actual = coef(model), fitted = coef(object))
-split(pp, row.names(pp))
+pp <- cbind(actual = coef(model), fitted = coef(object))
 
 }

@@ -568,8 +568,7 @@ getCall.egf_model_simulate <- function(x, ...) {
 #'   object <- egf(model)
 #'   saveRDS(object, file = path_to_cache)
 #' }
-#' pp <- data.frame(actual = coef(model), fitted = coef(object))
-#' split(pp, row.names(pp))
+#' pp <- cbind(actual = coef(model), fitted = coef(object))
 #'
 #' @export
 egf.egf_model_simulate <- function(model, ...) {
