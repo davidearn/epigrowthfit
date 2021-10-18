@@ -37,6 +37,20 @@
 #'   preserving the error message.
 #' }
 #'
+#' @examples
+#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
+#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+#' object <- readRDS(file.path(exdata, "egf.rds"))
+#'
+#' path_to_cache <- file.path(exdata, "summary-egf.rds")
+#' if (file.exists(path_to_cache)) {
+#'   zz <- readRDS(path_to_cache)
+#' } else {
+#'   zz <- summary(object)
+#'   saveRDS(zz, file = path_to_cache)
+#' }
+#' str(zz)
+#'
 #' @export
 #' @importFrom stats fitted aggregate
 summary.egf <- function(object, ...) {
