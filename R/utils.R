@@ -147,7 +147,7 @@ NULL
 cov2theta <- function(S) {
   n <- dim(S)[1L]
   log_sd <- 0.5 * log(diag(S, names = FALSE))
-  S <- chol(S)
+  S[] <- chol(S)
   S[] <- S * rep.int(1 / diag(S), rep.int(n, n))
   c(log_sd, S[upper.tri(S)])
 }
