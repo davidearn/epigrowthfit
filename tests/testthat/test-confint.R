@@ -7,9 +7,9 @@ test_that("basic", {
   expect_identical(c(co), c(confint(fo)))
 })
 
-skip_on_cran()
-
 test_that("plot", {
+  skip_on_cran()
+
   bars <- function() {
     op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
     on.exit(par(op))
