@@ -702,7 +702,7 @@ egf_combine_X <- function(fixed, X) {
 
   X <- do.call(cbind, X)
   effects <- data.frame(bottom, top, term, colname = colnames(X), row.names = NULL, stringsAsFactors = FALSE)
-  contrasts <- unlist1(unname(contrasts))
+  contrasts <- unlist(unname(contrasts), recursive = FALSE, use.names = TRUE)
   contrasts <- contrasts[!duplicated(names(contrasts))]
   list(X = X, effects = effects, contrasts = contrasts)
 }
@@ -739,7 +739,7 @@ egf_combine_Z <- function(random, Z) {
 
   Z <- do.call(cbind, Z)
   effects <- data.frame(cov, vec, bottom, top, term, group, level, colname = colnames(Z), row.names = NULL, stringsAsFactors = FALSE)
-  contrasts <- unlist1(unname(contrasts))
+  contrasts <- unlist(unname(contrasts), recursive = FALSE, use.names = TRUE)
   contrasts <- contrasts[!duplicated(names(contrasts))]
 
   o <- do.call(order, unname(effects[c("cov", "vec", "top")]))
