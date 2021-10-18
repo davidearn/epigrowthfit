@@ -12,9 +12,9 @@ test_that("day_of_week", {
     cstart = 10
   )
   mm <- egf(zz,
-    formula_priors_bottom = list(
+    formula_priors = list(
       beta[4:9] ~ Normal(mu = log(w), sigma = 0.2)
     )
   )
-  expect_equal(mm$best, zz$actual, tolerance = 2e-1)
+  expect_equal(mm$best, zz$actual, tolerance = 2e-1, ignore_attr = "lengths")
 })

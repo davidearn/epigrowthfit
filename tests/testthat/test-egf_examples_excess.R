@@ -12,9 +12,9 @@ test_that("excess", {
     cstart = 10
   )
   mm <- egf(zz,
-    formula_priors_top = list(
+    formula_priors = list(
       log(b) ~ Normal(mu = log(b), sigma = 0.5)
     )
   )
-  expect_equal(mm$best, zz$actual, tolerance = 5e-2)
+  expect_equal(mm$best, zz$actual, tolerance = 5e-2, ignore_attr = "lengths")
 })
