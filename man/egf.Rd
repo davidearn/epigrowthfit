@@ -73,7 +73,7 @@ all parameters.
 A list of parameters for which formulae may be specified can be retrieved
 with \code{\link{egf_get_names_top}}.
 Specifically, \code{\link{deparse}(parameter)} must be an element of
-\code{\link{egf_get_names_top}(model, link = TRUE)}.
+\code{\link{egf_get_names_top}(model)}.
 The default for parameters not assigned a formula is \code{~1}.}
 
 \item{formula_priors}{A \link{list} of \link{formula}e of the form \code{parameter ~ prior}
@@ -81,14 +81,14 @@ defining priors on:\cr
 (i) top level nonlinear model parameters,\cr
 (ii) fixed effects coefficients and random effect covariance parameters
 (elements of segments \code{beta} and \code{theta} of the bottom level
-parameter vector \code{c(beta, theta, b)}), or\cr
+parameter vector, or\cr
 (iii) random effect covariance matrices
 (elements of a \link{list} \code{Sigma} containing the matrices).\cr
 \code{prior} must be a \link{call} to a \link[=egf_prior]{prior} function
 with arguments specifying suitable hyperparameters.
 In case (i),
 \code{deparse(parameter)} must be an element of
-\code{\link{egf_get_names_top}(model, link = TRUE)},
+\code{\link{egf_get_names_top}(model)},
 and hyperparameters supplied on the right hand side must have length 1.
 In cases (ii) and (iii),
 \code{parameter} must be \code{beta}, \code{theta}, or \code{Sigma}
@@ -137,26 +137,28 @@ in \code{formula_windows} and \code{formula_parameters} variables.
 If \code{TRUE}, then the Hessian matrix of the negative log likelihood
 function is computed and inverted to approximate the joint covariance
 matrix of segments \code{beta} and \code{theta} of the bottom level
-parameter vector \code{c(beta, theta, b)}.
+parameter vector.
 In addition, the standard errors of the fitted values of all top level
 nonlinear model parameters are computed approximately using the delta
 method.
 Computations are preserved in the model object for reuse by methods.}
 
 \item{init}{A \link{numeric} vector to be used as the bottom level parameter vector
-\code{c(beta, theta, b)} for the first likelihood evaluation.
+for the first likelihood evaluation.
 The default (\code{\link{NULL}}) is to accept the internally generated
 default, which is a zero vector except for the \code{"(Intercept)"}
-coefficients in \code{beta}.}
+coefficients in segment \code{beta}.}
 
 \item{map}{A \link{factor} corresponding elementwise to the bottom level parameter
-vector \code{c(beta, theta, b)}.
-Elements of \code{c(beta, theta, b)} corresponding to \code{\link{NA}}
-in \code{map} are fixed at their initial values, rather than estimated.
-Elements corresponding to a common factor level (within segments) are
-constrained to have a common value during estimation.
+vector.
+Elements of the parameter vector corresponding to \code{\link{NA}} in
+\code{map} are fixed at their initial values, rather than estimated.
+Elements corresponding to a common factor level are constrained to have
+a common value during estimation.
+(However, grouping between segments \code{beta}, \code{theta}, and
+\code{b} is not implemented.)
 Alternatively, \code{map} can be an index vector for the elements of
-\code{c(beta, theta, b)}.
+the parameter vector.
 In this case, the indexed elements are fixed at their initial values.}
 
 \item{append}{An expression indicating variables in \code{data_windows}
@@ -171,21 +173,18 @@ similarly to argument \code{select} of function \code{\link{subset}}.}
 }
 \value{
 A \link{list} inheriting from \link{class} \code{"egf"}
-(or \code{"egf_no_fit"} if \code{fit = FALSE}).
-See topic \code{\link{egf-class}} for a description of the list elements.
-Only developers should need to access the list directly;
-typical users can rely on methods to retrieve information
-about the estimated (or to-be-estimated) model.
-Available methods can be queried by running, e.g.,
-\code{\link{methods}(class = "egf")}.
-Links to method help pages can be obtained by running, e.g.,
-\code{??`\\.egf$`} in an interactive \R session.
+or \code{"egf_no_fit"} depending on the value of \code{fit}.
+See topic \code{\link{egf-class}} for class documentation.
 }
 \description{
 Fits nonlinear mixed effects models of epidemic growth
 to collections of one or more disease incidence time series.
 }
 \details{
+Users attempting to set arguments \code{formula_priors}, \code{init}, and
+\code{map} should know the structure of the bottom level parameter vector.
+It is described under topic \code{\link{egf-class}}.
+
 If
 \code{formula_ts = cbind(time, x) ~ ts1}
 and
@@ -210,7 +209,7 @@ time series. This means that
 \code{\link{all.equal}(time, \link{round}(time))}
 and
 \code{\link{all}(\link{diff}(\link{round}(time)) == 1)}
-must both be \code{TRUE} in each level of \code{ts}.
+must both be \code{TRUE} in each level of \code{ts1}.
 These conditions ensure that intervals between successive
 time points each represent exactly one day of week.
 }
@@ -259,10 +258,15 @@ if (file.exists(path_to_cache)) {
     formula_priors = list(Sigma ~ LKJ(eta = 2)),
     data_ts = data_ts,
     data_windows = data_windows,
+    init = replace(rep_len(0))
     se = TRUE
   )
   dir.create(dirname(path_to_cache), showWarnings = FALSE)
   saveRDS(object, file = path_to_cache)
 }
+
+## Query available methods and their documentation
+methods(class = "egf")
+help.search("\\\\.egf$", fields = "alias", package = "epigrowthfit")
 
 }

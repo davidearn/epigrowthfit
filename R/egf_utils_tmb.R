@@ -184,10 +184,9 @@ egf_tmb_make_data <- function(model, frame, control, env) {
   names(indices) <- sub("^(log|logit)\\((.*)\\)$", "\\1_\\2", names_top_all)
 
   ## Stuff to preserve but not return
-  for (name in c("effects", "contrasts")) {
-    env[[name]] <- list(X = Xc[[name]], Z = Zc[[name]])
-  }
-  env[["len"]] <- c(beta = ncol(Xc$X), theta = sum(as.integer(choose(block_rows + 1L, 2L))), b = sum(block_rows * block_cols))
+  env$effects <- list(beta = Xc$effects, b = Zc$effects)
+  env$contrasts <- list(X = Xc$contrasts, Z = Zc$contrasts)
+  env$len <- c(beta = ncol(Xc$X), theta = sum(as.integer(choose(block_rows + 1L, 2L))), b = sum(block_rows * block_cols))
 
   list(
     time = time,
@@ -316,10 +315,6 @@ egf_tmb_make_parameters <- function(model, frame, env) {
   names_top <- names(frame$parameters)
   m <- match(names_top[has1], env$effects$X$top, 0L)
   res$beta[m] <- colMeans(naive[names_top[has1]])
-
-  ## Stuff to preserve but not return
-  env$Y0 <- as.matrix(naive[names_top])
-
   res
 }
 
@@ -358,7 +353,7 @@ egf_tmb_make_args <- function(model, frame, control, init, map, env) {
       map <- replace(gl(n, 1L), map, NA)
     }
     res$map <- split(map, rep.int(gl(3L, 1L, labels = names(len)), len))
-    res$map[] <- lapply(res$map, factor)
+    res$map <- lapply(res$map, factor)
   }
 
   if (ncol(res$data$Z) > 0L) {

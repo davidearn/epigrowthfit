@@ -94,8 +94,8 @@ dgi <- function(x, latent, infectious) {
     infectious >= 0,
     any(infectious > 0)
   )
-  latent[] <- latent / sum(latent)
-  infectious[] <- infectious / sum(infectious)
+  latent <- latent / sum(latent)
+  infectious <- infectious / sum(infectious)
 
   d <- x
   d[] <- NA
@@ -207,8 +207,8 @@ rgi <- function(n, latent, infectious) {
     infectious >= 0,
     any(infectious > 0)
   )
-  latent[] <- latent / sum(latent)
-  infectious[] <- infectious / sum(infectious)
+  latent <- latent / sum(latent)
+  infectious <- infectious / sum(infectious)
 
   ## Latent period is integer-valued,
   ## equal to 'i' with probability 'latent[i]'

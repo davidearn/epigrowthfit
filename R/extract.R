@@ -1,15 +1,12 @@
 #' Extract coefficients and covariance parameters
 #'
-#' Extracts bottom level parameter vectors \code{beta}, \code{theta},
-#' and \code{b}. These store
-#' linear fixed effects coefficients,
-#' random effect covariance parameters, and
-#' linear random effects coefficients, respectively.
+#' Extracts the bottom level parameter vector \code{c(beta, theta, b)};
+#' see \code{\link{egf}}.
 #'
 #' @param object
 #'   An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.
 #' @param full
-#'   A logical flag. If \code{FALSE}, then parameter vectors are returned
+#'   A logical flag. If \code{FALSE}, then the parameter vector is returned
 #'   in the condensed format used by \pkg{TMB}, which excludes mapped elements.
 #'   (See argument \code{map} of \code{\link{egf}}.)
 #' @param ...
@@ -21,9 +18,9 @@
 #' in the first likelihood evaluation.
 #'
 #' @return
-#' A numeric vector concatenating \code{beta}, \code{theta}, and \code{b},
-#' possibly in their condensed format. The names of the result specify the
-#' grouping.
+#' A named numeric vector concatenating \code{beta}, \code{theta}, and \code{b},
+#' without mapped elements if \code{full = FALSE}. The names group the elements
+#' by segment.
 #'
 #' Attribute \code{map} is a named list of index vectors \code{i} such that
 #' that a full vector \code{y} and its condensed counterpart \code{x}
@@ -53,7 +50,7 @@ coef.egf <- function(object, full = FALSE, ...) {
   }
   for (i in seq_along(map)) {
     if (!is.null(map[[i]])) {
-      map[[i]][] <- map[[i]] + 1L
+      map[[i]] <- map[[i]] + 1L
       map[[i]][map[[i]] == 0L] <- NA
     }
   }
@@ -489,7 +486,7 @@ model.matrix.egf <- function(object,
     stop(wrap("Expected 'random = NULL': mixed effects formula for parameter ", sQuote(top), " does not contain random effects terms."))
   }
 
-  l$random[] <- lapply(l$random, function(x) call("(", x))
+  l$random <- lapply(l$random, function(x) call("(", x))
   if (!any(l$random == random)) {
     stop(wrap("Expected 'random = NULL' or 'random' matching one of:"), "\n\n", paste0("  ", l$random, collapse = "\n"))
   }

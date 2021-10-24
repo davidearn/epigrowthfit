@@ -201,7 +201,7 @@ gsub_bar_plus <- function(x) {
     return(x)
   }
   m <- length(x)
-  l$random[] <- lapply(l$random, `[[<-`, 1L, as.name("+"))
+  l$random <- lapply(l$random, `[[<-`, 1L, as.name("+"))
   x[[m]] <- unsplit_terms(c(l$fixed[[m]], l$random))
   x
 }

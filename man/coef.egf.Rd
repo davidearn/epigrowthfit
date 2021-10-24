@@ -12,16 +12,16 @@
 \arguments{
 \item{object}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}
 
-\item{full}{A logical flag. If \code{FALSE}, then parameter vectors are returned
+\item{full}{A logical flag. If \code{FALSE}, then the parameter vector is returned
 in the condensed format used by \pkg{TMB}, which excludes mapped elements.
 (See argument \code{map} of \code{\link{egf}}.)}
 
 \item{...}{Unused optional arguments.}
 }
 \value{
-A numeric vector concatenating \code{beta}, \code{theta}, and \code{b},
-possibly in their condensed format. The names of the result specify the
-grouping.
+A named numeric vector concatenating \code{beta}, \code{theta}, and \code{b},
+without mapped elements if \code{full = FALSE}. The names group the elements
+by segment.
 
 Attribute \code{map} is a named list of index vectors \code{i} such that
 that a full vector \code{y} and its condensed counterpart \code{x}
@@ -35,11 +35,8 @@ In both cases, the result inherits from class \code{"egf_coef"},
 which has \code{\link{print}} and \code{\link{as.list}} methods.
 }
 \description{
-Extracts bottom level parameter vectors \code{beta}, \code{theta},
-and \code{b}. These store
-linear fixed effects coefficients,
-random effect covariance parameters, and
-linear random effects coefficients, respectively.
+Extracts the bottom level parameter vector \code{c(beta, theta, b)};
+see \code{\link{egf}}.
 }
 \details{
 If \code{object} inherits from class \code{"egf_no_fit"},

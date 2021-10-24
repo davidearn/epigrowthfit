@@ -59,7 +59,7 @@ egf_sanitize_formula_parameters <- function(formula_parameters, names_parameters
         sprintf("c(%s).", paste(dQuote(names_parameters), collapse = ", "))
       ))
     }
-    formula_parameters[] <- lapply(formula_parameters, function(x) simplify_terms(x[-2L]))
+    formula_parameters <- lapply(formula_parameters, function(x) simplify_terms(x[-2L]))
     formula_parameters[setdiff(names_parameters, names(formula_parameters))] <- list(~1)
     formula_parameters <- formula_parameters[names_parameters]
   }
@@ -256,7 +256,7 @@ egf_make_frame <- function(model,
   cc <- do.call(complete.cases, c(list(frame_windows), frame_parameters[len > 0L]))
   if (!all(cc)) {
     frame_windows <- frame_windows[cc, , drop = FALSE]
-    frame_parameters[] <- lapply(frame_parameters, `[`, cc, , drop = FALSE)
+    frame_parameters <- lapply(frame_parameters, `[`, cc, , drop = FALSE)
     frame_append <- frame_append[cc, , drop = FALSE]
     frame_windows$ts <- droplevels(frame_windows$ts)
   }
@@ -273,7 +273,7 @@ egf_make_frame <- function(model,
   frame_windows$ts <- factor(frame_windows$ts, levels = lts, exclude = NULL)
   i2 <- !is.na(frame_windows$ts)
   frame_windows <- frame_windows[i2, , drop = FALSE]
-  frame_parameters[] <- lapply(frame_parameters, `[`, i2, , drop = FALSE)
+  frame_parameters <- lapply(frame_parameters, `[`, i2, , drop = FALSE)
   frame_append <- frame_append[i2, , drop = FALSE]
 
 
@@ -340,7 +340,7 @@ egf_make_frame <- function(model,
   frame_ts <- frame_ts[o1, , drop = FALSE]
   o2 <- do.call(order, unname(frame_windows))
   frame_windows <- frame_windows[o2, , drop = FALSE]
-  frame_parameters[] <- lapply(frame_parameters, `[`, o2, , drop = FALSE)
+  frame_parameters <- lapply(frame_parameters, `[`, o2, , drop = FALSE)
   frame_append <- frame_append[o2, , drop = FALSE]
 
   ## Create enumerated labels for fitting windows as ordered
@@ -466,12 +466,12 @@ egf_make_priors <- function(formula_priors, top, beta, theta, Sigma) {
     }
     if (kind %in% nms) {
       allowed_prior_families <- l[[kind]]$family
-      prior$parameters[] <- lapply(prior$parameters, rep_len, length.out = length(index))
-      f <- function(k) {prior$parameters[] <- lapply(prior$parameters, `[[`, k); prior}
+      prior$parameters <- lapply(prior$parameters, rep_len, length.out = length(index))
+      f <- function(k) {prior$parameters <- lapply(prior$parameters, `[[`, k); prior}
       priors$bottom[[kind]][index] <- lapply(seq_along(index), f)
     } else {
       allowed_prior_families <- top$family
-      prior$parameters[] <- lapply(prior$parameters, `[[`, 1L)
+      prior$parameters <- lapply(prior$parameters, `[[`, 1L)
       priors$top[[kind]] <- prior
     }
     if (!(prior$family %in% allowed_prior_families)) {

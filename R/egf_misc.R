@@ -161,7 +161,7 @@ egf_condense_par <- function(obj, par) {
   index <- lapply(parameters, f)
   len <- vapply(index, attr, 0L, "n")
   l <- split(par, rep.int(gl(length(len), 1L, labels = names(len)), len))
-  l[] <- Map(`[`, l, index)
+  l <- Map(`[`, l, index)
   len <- lengths(l)
   res <- unlist1(l)
   names(res) <- rep.int(names(l), len)

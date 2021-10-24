@@ -287,7 +287,7 @@ profile.egf <- function(fitted,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
-    res$value[] <- res$value + rep.int(as.numeric(Y), nr)
+    res$value <- res$value + rep.int(as.numeric(Y), nr)
   }
   attr(res, "A") <- A
   attr(res, "x") <- fitted$best[!fitted$random]

@@ -141,26 +141,29 @@ wald <- function(estimate, se, level) {
 #' where \code{n} is the positive solution of
 #' \code{length(theta) = choose(n + 1, 2)}.
 #'
-#' @noRd
+#' @name cov2theta
 NULL
 
+#' @rdname cov2theta
+#' @export
 cov2theta <- function(S) {
   n <- dim(S)[1L]
   log_sd <- 0.5 * log(diag(S, names = FALSE))
-  S[] <- chol(S)
-  S[] <- S * rep.int(1 / diag(S), rep.int(n, n))
-  c(log_sd, S[upper.tri(S)])
+  R <- chol(S)
+  R <- R * rep.int(1 / diag(R), rep.int(n, n))
+  c(log_sd, R[upper.tri(R)])
 }
 
+#' @rdname cov2theta
+#' @export
 theta2cov <- function(theta) {
-  n <- round(0.5 * (-1 + sqrt(1 + 8 * length(theta))))
+  n <- as.integer(round(0.5 * (-1 + sqrt(1 + 8 * length(theta)))))
   i <- seq_len(n)
-  R1 <- diag(n)
-  R1[upper.tri(R1)] <- theta[-i]
-  R1[] <- crossprod(R1)
-  scale <- exp(theta[i] - 0.5 * log(diag(R1)))
-  R1[] <- scale * R1 * rep.int(scale, rep.int(n, n))
-  R1
+  R <- diag(n)
+  R[upper.tri(R)] <- theta[-i]
+  S <- crossprod(R)
+  scale <- exp(theta[i] - 0.5 * log(diag(S, names = FALSE)))
+  scale * S * rep.int(scale, rep.int(n, n))
 }
 
 #' Apply length-preserving functions to ragged vectors
@@ -177,14 +180,10 @@ theta2cov <- function(theta) {
 #' @param f
 #'   A function or list of one or more functions to be applied to the subsets
 #'   of \code{x} defined by \code{index}.
-#'   Functions are recycled to the number of levels of \code{index}
-#'   (unused levels are not dropped).
-#'   Each function must accept an initial vector argument matching
-#'   \code{typeof(x)} (or \code{typeof(x[[j]])} for all \code{j}
-#'   if \code{x} is a data frame) and return a vector of the same length
-#'   (though not necessarily of the same type).
-#'   It is expected that returned vectors have compatible modes,
-#'   so that they can be concatenated in a sensible way.
+#'   Functions are recycled to the number of levels of \code{index}.
+#'   Each function must accept a vector argument matching \code{typeof(x)}
+#'   (or \code{typeof(x[[j]])} for all \code{j} if \code{x} is a data frame)
+#'   and return a vector of the same length.
 #'
 #' @details
 #' Let \code{f} be a list of \code{nlevels(index)} functions,
@@ -198,12 +197,6 @@ theta2cov <- function(theta) {
 #' If \code{x} is a vector, then a vector of the same length.
 #' If \code{x} is a data frame, then a data frame with the same dimensions.
 #'
-#' @examples
-#' x <- 1:10
-#' in_place_ragged_apply(x, index = gl(2L, 5L), f = list(cumprod, function(x) x - mean(x)))
-#'
-#' x <- as.data.frame(replicate(3L, c(exp(rnorm(5L)), qlogis(runif(5L)))))
-#' in_place_ragged_apply(x, index = gl(2L, 5L), f = list(log, plogis))
 #'
 #' @noRd
 in_place_ragged_apply <- function(x, index, f) {

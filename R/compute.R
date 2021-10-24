@@ -96,7 +96,7 @@ compute_final_size <- function(R0, S0, I0) {
   Z[l2] <- S0[l2]
 
   ## Usual cases
-  ok[] <- ok & !(l1 | l2)
+  ok <- ok & !(l1 | l2)
   if (any(ok)) {
     Z[ok] <- S0[ok] + emdbook::lambertW(-R0[ok] * S0[ok] * exp(-R0[ok] * (S0[ok] + I0[ok]))) / R0[ok]
   }
@@ -231,10 +231,10 @@ compute_tdoubling <- function(r, per = NULL) {
     r[r < 0] <- NA
     warning("NA returned for negative 'r'.")
   }
-  r[] <- log(2) / r
-  class(r) <- c("tdoubling", oldClass(r))
-  attr(r, "per") <- per
-  r
+  res <- log(2) / r
+  class(res) <- c("tdoubling", oldClass(r))
+  attr(res, "per") <- per
+  res
 }
 
 #' @export

@@ -122,7 +122,7 @@ Wishart <- function(df, scale, tol = 1e-06) {
     is.finite(df),
     rep.int(df, length(scale)) > rep.int(vapply(scale, nrow, 0L), length(df)) - 1L
   )
-  scale[] <- lapply(scale, cov2theta)
+  scale <- lapply(scale, cov2theta)
   res <- list(
     family = "wishart",
     parameters = list(df = as.numeric(df), scale = unname(scale))

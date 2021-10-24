@@ -134,7 +134,7 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
         cat(sprintf("Commencing bootstrap optimization %d of %d...\n", i, nsim))
       }
       ## Update
-      args$data$x[] <- x
+      args$data$x <- x
       ## Retape
       tmb_out_retape <- do.call(TMB::MakeADFun, args)
       ## Optimize
