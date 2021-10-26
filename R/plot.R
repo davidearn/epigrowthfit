@@ -142,8 +142,7 @@
 #' of \code{subset}, \code{order}, \code{main}, \code{sub}, and \code{plab}.
 #'
 #' @examples
-#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' x <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
+#' x <- egf_cache("egf-1.rds")
 #'
 #' op <- par(mar = c(3.5, 5, 5, 1))
 #' control <- egf_plot_control(
@@ -206,42 +205,43 @@ plot.egf <- function(x,
   if (x$model$day_of_week > 0L) {
     dt <- 1
   } else {
-    stop_if_not_number(dt, "positive")
+    stopifnot(is_number(dt, "positive"))
   }
   if (type == "rt_heat") {
     show_predict <- 1L
     show_tdoubling <- 0L
     show_asymptote <- 0L
   } else {
-    stop_if_not_true_false(show_predict, allow_numeric = TRUE)
+    stopifnot(is_flag(show_predict))
     show_predict <- min(2L, max(0L, as.integer(show_predict)))
     if (x$model$curve %in% c("exponential", "logistic", "richards")) {
-      stop_if_not_true_false(show_tdoubling, allow_numeric = TRUE)
+      stopifnot(is_flag(show_tdoubling))
       show_tdoubling <- min(2L, max(0L, as.integer(show_tdoubling)))
-      show_asymptote <- as.integer(x$model$curve != "exponential")
+      show_asymptote <- as.integer(type == "rt" && x$model$curve != "exponential")
     } else {
       show_tdoubling <- 0L
       show_asymptote <- 0L
     }
   }
-  stop_if_not_true_false(plot)
+  stopifnot(is_true_or_false(plot))
   if (plot) {
     time_as <- match.arg(time_as)
-    stop_if_not_true_false(log)
+    stopifnot(is_true_or_false(log))
     if (!is.null(zero)) {
       if (grepl("^rt(_heat)?$", type)) {
         zero <- NULL
       } else if (is.na(zero)) {
-        zero <- as.numeric(zero)
+        zero <- as.double(zero)
       } else {
-        stop_if_not_number(zero, "positive")
+        stopifnot(is_number(zero, "positive"))
       }
     }
     if (any(c(show_predict, show_tdoubling) == 2L)) {
-      stop_if_not_number_in_interval(level, 0, 1, "()")
+      stopifnot(is_number_in_interval(level, 0, 1, "()"))
     }
     if (type == "rt_heat") {
-      stop_if_not_integer(per_plot, "positive")
+      stopifnot(is_number(per_plot, "positive", integer = TRUE))
+      per_plot <- as.integer(per_plot)
     }
     stopifnot(inherits(control, "egf_plot_control"))
     if (!is.null(cache)) {
@@ -360,9 +360,9 @@ plot.egf <- function(x,
       var = factor(),
       ts = factor(),
       window = factor(),
-      time = numeric(0L),
-      estimate = numeric(0L),
-      se = numeric(0L)
+      time = double(0L),
+      estimate = double(0L),
+      se = double(0L)
     )
   }
   nc <- names(cache)
@@ -487,7 +487,7 @@ plot.egf <- function(x,
   if (time_as == "Date" && is.list(args <- control$axis$x)) {
     nel <- setdiff(c("mgp", "cex.axis"), names(args))
     args[nel] <- gp[nel]
-    args <- rep_len(list(args), 2L)
+    args <- rep.int(list(args), 2L)
     names(args) <- c("minor", "major")
     args$major$mgp[1:2] <- args$minor$mgp[1:2] + 1.5
     args$major$cex.axis <- args$minor$cex.axis * 1.15
@@ -595,7 +595,7 @@ plot.egf.curve <- function(frame_ts, frame_windows, cache,
       interval = c(NA, data$x[-1L]) * dt / data$dt,
       cumulative = c(0, cumsum(data$x[-1L])),
       rt = local({
-        y <- rep_len(NA_real_, nrow(data))
+        y <- rep.int(NA_real_, nrow(data))
         f <- function(x, x0) c(diff(log(cumsum(c(x0, x))), lag = 2) / 2, NA)
         split(y, data$window, drop = TRUE) <- Map(f,
           x = split(data$x, data$window, drop = TRUE),
@@ -816,7 +816,7 @@ plot.egf.curve <- function(frame_ts, frame_windows, cache,
       }
       tdoubling$heights <- mapply(h, s = tdoubling$labels, l = args[names(tdoubling$labels)])
 
-      tdoubling$lines <- rep_len(0.25, 5L)
+      tdoubling$lines <- rep.int(0.25, 5L)
       names(tdoubling$lines) <- paste0(rep.int(c("", "label_"), c(2L, 3L)), names(tdoubling$labels)[c(1:2, 1:3)])
 
       if (show_tdoubling == 2L && is.list(args$ci)) {
@@ -852,7 +852,7 @@ plot.egf.curve <- function(frame_ts, frame_windows, cache,
       if (is.list(args$estimate)) {
         args$estimate$text <- c(sprintf("%.1f", tdoubling$estimate), if (show_legend) tdoubling$labels[["estimate"]])
         args$estimate$side <- 3
-        args$estimate$line <- c(rep_len(tdoubling$lines[["estimate"]], nrow(data_windows)), if (show_legend) tdoubling$lines[["label_estimate"]])
+        args$estimate$line <- c(rep.int(tdoubling$lines[["estimate"]], nrow(data_windows)), if (show_legend) tdoubling$lines[["label_estimate"]])
         args$estimate$at <- c((data_windows$start + data_windows$end) / 2, if (show_legend) x_body)
         args$estimate$adj <- 0.5
         args$estimate$padj <- 0
@@ -864,7 +864,7 @@ plot.egf.curve <- function(frame_ts, frame_windows, cache,
       if (show_tdoubling == 2L && is.list(args$ci)) {
         args$ci$text <- c(sprintf("(%.1f, %.1f)", tdoubling$lower, tdoubling$upper), if (show_legend) tdoubling$labels[["ci"]])
         args$ci$side <- 3
-        args$ci$line <- c(rep_len(tdoubling$lines[["ci"]], nrow(data_windows)), if (show_legend) tdoubling$lines[["label_ci"]])
+        args$ci$line <- c(rep.int(tdoubling$lines[["ci"]], nrow(data_windows)), if (show_legend) tdoubling$lines[["label_ci"]])
         args$ci$at <- c((data_windows$start + data_windows$end) / 2, if (show_legend) x_body)
         args$ci$adj <- 0.5
         args$ci$padj <- 0
@@ -930,7 +930,7 @@ plot.egf.heat <- function(cache, time_as, dt, log, per_plot, control,
   mar <- par("mar")
 
   ## Device layout
-  L <- c(seq_len(per_plot), rep_len(per_plot + 1L, per_plot))
+  L <- c(seq_len(per_plot), rep.int(per_plot + 1L, per_plot))
   dim(L) <- c(per_plot, 2L)
   layout(L, widths = c(0.925, 0.075))
   par(cex = 1)

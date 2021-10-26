@@ -98,17 +98,10 @@
 #' are retained as \link{attributes}.
 #'
 #' @examples
-#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-#' fitted <- readRDS(file.path(exdata, "egf.rds"))
-#'
-#' path_to_cache <- file.path(exdata, "profile-egf.rds")
-#' if (file.exists(path_to_cache)) {
-#'   zz <- readRDS(path_to_cache)
-#' } else {
-#'   zz <- profile(fitted, subset = (country == "A" & wave == 1))
-#'   saveRDS(zz, file = path_to_cache)
-#' }
+#' fitted <- egf_cache("egf-1.rds")
+#' zz <- egf_cache("profile-egf-1.rds", {
+#'   profile(fitted, subset = (country == "A" & wave == 1))
+#' })
 #' str(zz)
 #'
 #' @seealso \code{\link{confint.egf_profile}}, \code{\link{plot.egf_profile}}
@@ -131,10 +124,12 @@ profile.egf <- function(fitted,
                         .subset = NULL,
                         .append = NULL,
                         ...) {
-  stop_if_not_number_in_interval(level, 0, 1, "()")
-  stopifnot(inherits(parallel, "egf_parallel"))
-  stop_if_not_true_false(trace)
-  stop_if_not_number_in_interval(grid_len, 1, Inf, "[)")
+  stopifnot(
+    is_number_in_interval(level, 0, 1, "()"),
+    inherits(parallel, "egf_parallel"),
+    is_true_or_false(trace),
+    is_number_in_interval(grid_len, 1, Inf, "[)")
+  )
   n <- sum(!fitted$random)
 
   ## If profiling user-specified elements of 'c(beta, theta)'
@@ -287,7 +282,7 @@ profile.egf <- function(fitted,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
-    res$value <- res$value + rep.int(as.numeric(Y), nr)
+    res$value <- res$value + rep.int(as.double(Y), nr)
   }
   attr(res, "A") <- A
   attr(res, "x") <- fitted$best[!fitted$random]
@@ -340,19 +335,17 @@ profile.egf <- function(fitted,
 #' So are attributes \code{A} and \code{x} of \code{object}.
 #'
 #' @examples
-#' example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' object <- readRDS(system.file("exdata", "profile-egf.rds",
-#'                               package = "epigrowthfit", mustWork = TRUE))
-#'
-#' confint(object, link = TRUE)
-#' confint(object, link = FALSE)
+#' object <- egf_cache("profile-egf-1.rds")
+#' zz <- confint(object)
+#' str(zz)
 #'
 #' @export
 #' @importFrom stats qchisq approx
 confint.egf_profile <- function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
-  stop_if_not_true_false(link)
-  stop_if_not_number_in_interval(level, 0, 1, "()")
-  stopifnot(level <= attr(object, "level"))
+  stopifnot(
+    is_true_or_false(link),
+    is_number_in_interval(level, 0, attr(object, "level"), "(]")
+  )
   q <- qchisq(level, df = 1)
   method <- attr(object, "method")
 
@@ -422,10 +415,7 @@ confint.egf_profile <- function(object, parm, level = attr(object, "level"), lin
 #' \code{NULL} (invisibly).
 #'
 #' @examples
-#' example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' x <- readRDS(system.file("exdata", "profile-egf.rds",
-#'                          package = "epigrowthfit", mustWork = TRUE))
-#'
+#' x <- egf_cache("profile-egf-1.rds")
 #' plot(x, type = "o", bty = "u", las = 1, main = "")
 #'
 #' @export
@@ -435,7 +425,7 @@ plot.egf_profile <- function(x, level = attr(x, "level"), sqrt = FALSE, subset =
   subset <- egf_eval_subset(substitute(subset), x, parent.frame())
   subset <- match(levels(factor(x$linear_combination[subset])), levels(x$linear_combination))
 
-  stop_if_not_true_false(sqrt)
+  stopifnot(is_true_or_false(sqrt))
   f <- if (sqrt) base::sqrt else identity
   do_segments <-
     !sqrt &&
@@ -460,7 +450,7 @@ plot.egf_profile <- function(x, level = attr(x, "level"), sqrt = FALSE, subset =
     if (method == "top") {
       main <- c(tapply(as.character(x$window), x$linear_combination, `[[`, 1L))[subset]
     } else {
-      main <- rep_len("", length(subset))
+      main <- character(length(subset))
     }
   } else {
     main <- rep_len(dots$main, length(subset))

@@ -197,7 +197,6 @@ theta2cov <- function(theta) {
 #' If \code{x} is a vector, then a vector of the same length.
 #' If \code{x} is a data frame, then a data frame with the same dimensions.
 #'
-#'
 #' @noRd
 in_place_ragged_apply <- function(x, index, f) {
   if (!is.list(f)) {

@@ -37,7 +37,7 @@
 #' @export
 #' @importFrom stats coef
 coef.egf <- function(object, full = FALSE, ...) {
-  stop_if_not_true_false(full)
+  stopifnot(is_true_or_false(full))
   if (full) {
     res <- egf_expand_par(object$tmb_out, par = object$best)
   } else {
@@ -138,7 +138,7 @@ as.data.frame.egf_coef <- as.data.frame.vector
 fixef.egf <- function(object, ...) {
   par <- coef(object, full = TRUE)
   data.frame(
-    object$effects$X[c("bottom", "top", "term", "colname")],
+    object$effects$beta[c("bottom", "top", "term", "colname")],
     estimate = par[names(par) == "beta"],
     row.names = NULL,
     stringsAsFactors = FALSE
@@ -215,12 +215,14 @@ fixef.egf_no_fit <- fixef.egf
 #' @export ranef
 #' @importFrom nlme ranef
 ranef.egf <- function(object, build_cov = FALSE, ...) {
-  stopifnot(egf_has_random(object))
-  stop_if_not_true_false(build_cov)
+  stopifnot(
+    egf_has_random(object),
+    is_true_or_false(build_cov)
+  )
 
   par <- coef(object, full = TRUE)
   res <- data.frame(
-    object$effects$Z[c("cov", "vec", "bottom", "top", "term", "group", "level", "colname")],
+    object$effects$b[c("cov", "vec", "bottom", "top", "term", "group", "level", "colname")],
     mode = par[names(par) == "b"],
     row.names = NULL,
     stringsAsFactors = FALSE
@@ -234,8 +236,8 @@ ranef.egf <- function(object, build_cov = FALSE, ...) {
   p <- as.integer(choose(d1 + 1L, 2L))
   theta <- split(par[names(par) == "theta"], rep.int(seq_along(p), p))
   Sigma <- lapply(theta, theta2cov)
-  names(Sigma) <- levels(object$effects$Z$cov)
-  tt <- table(object$effects$Z$top, object$effects$Z$cov)
+  names(Sigma) <- levels(object$effects$b$cov)
+  tt <- table(object$effects$b$top, object$effects$b$cov)
   for (i in seq_along(Sigma)) {
     dimnames(Sigma[[i]])[1:2] <- list(rownames(tt)[tt[, i] > 0L])
   }
@@ -362,7 +364,7 @@ model.frame.egf <- function(formula,
   }
   res <- formula$frame[[which]]
   if (which == "ts") {
-    stop_if_not_true_false(full)
+    stopifnot(is_true_or_false(full))
     if (full) {
       return(res)
     } else {
@@ -618,7 +620,7 @@ nobs.egf_no_fit <- nobs.egf
 #' @export
 #' @importFrom stats nobs df.residual
 df.residual.egf <- function(object, ...) {
-  as.numeric(nobs(object)) - sum(!object$random)
+  as.double(nobs(object)) - sum(!object$random)
 }
 
 #' @rdname df.residual.egf
@@ -626,9 +628,9 @@ df.residual.egf <- function(object, ...) {
 #' @importFrom stats nobs df.residual
 df.residual.egf_no_fit <- df.residual.egf
 
-#' Extract log likelihood
+#' Extract log marginal likelihood
 #'
-#' Retrieves the value of log likelihood from a fitted model object.
+#' Retrieves the value of log marginal likelihood from a fitted model object.
 #'
 #' @param object
 #'   An \code{"\link{egf}"} object.
@@ -658,5 +660,5 @@ logLik.egf <- function(object, ...) {
 extractAIC.egf <- function(fit, scale, k = 2, ...) {
   ll <- logLik(fit)
   edf <- attr(ll, "df")
-  c(edf, -2 * as.numeric(ll) + k * edf)
+  c(edf, -2 * as.double(ll) + k * edf)
 }

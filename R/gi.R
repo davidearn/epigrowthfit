@@ -192,7 +192,7 @@ rgi <- function(n, latent, infectious) {
     )
     n <- trunc(n)
     if (n == 0) {
-      return(numeric(0L))
+      return(double(0L))
     }
   }
   stopifnot(

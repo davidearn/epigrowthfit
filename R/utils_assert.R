@@ -55,84 +55,33 @@ warn_if_not <- function(..., m = "", n = 1L) {
   invisible(NULL)
 }
 
-stop_if_not_true_false <- function(x, allow_numeric = FALSE, n = 1L) {
-  s <- deparse1(substitute(x))
-  a <- if (allow_numeric) " or a number" else ""
-  stop_if_not(
-    is.logical(x) || (allow_numeric && is.numeric(x)),
-    length(x) == 1L,
-    !is.na(x),
-    m = paste0(sQuote(s), " must be TRUE or FALSE", a, "."),
-    n = 1L + n
-  )
+is_true_or_false <- function(x) {
+  is.logical(x) && length(x) == 1L && !is.na(x)
 }
 
-stop_if_not_integer <- function(x, kind = c("any", "positive", "nonnegative", "negative", "nonpositive"), n = 1L) {
-  s <- deparse1(substitute(x))
+is_flag <- function(x) {
+  (is.logical(x) || is.numeric(x)) && length(x) == 1L && is.finite(x)
+}
+
+is_number <- function(x, kind = c("any", "positive", "nonnegative", "negative", "nonpositive"), integer = FALSE) {
   kind <- match.arg(kind)
-  a <- switch(kind, any = "an", paste("a", kind))
-  f <- switch(kind,
+  relop <- switch(kind,
     any         = function(x, y) TRUE,
     positive    = `>`,
     nonnegative = `>=`,
     negative    = `<`,
     nonpositive = `<=`
   )
-  stop_if_not(
-    is.numeric(x),
-    length(x) == 1L,
-    x %% 1 == 0,
-    f(x, 0),
-    m = paste0(sQuote(s), " must be ", a, " integer."),
-    n = 1L + n
-  )
+  is.numeric(x) && length(x) == 1L && is.finite(x) && relop(x, 0) && (!integer || x %% 1 == 0)
 }
 
-stop_if_not_number <- function(x, kind = c("any", "positive", "nonnegative", "negative", "nonpositive"), n = 1L) {
-  s <- deparse1(substitute(x))
-  kind <- match.arg(kind)
-  a <- switch(kind, any = "a", paste("a", kind))
-  f <- switch(kind,
-    any         = function(x, y) is.finite(x),
-    positive    = `>`,
-    nonnegative = `>=`,
-    negative    = `<`,
-    nonpositive = `<=`
-  )
-  stop_if_not(
-    is.numeric(x),
-    length(x) == 1L,
-    f(x, 0),
-    m = paste0(sQuote(s), " must be ", a, " number."),
-    n = 1L + n
-  )
-}
-
-stop_if_not_number_in_interval <- function(x, a = -Inf, b = Inf, include = c("()", "(]", "[)", "[]"), n = 1L) {
-  s <- deparse1(substitute(x))
+is_number_in_interval <- function(x, a = -Inf, b = Inf, include = c("()", "(]", "[)", "[]")) {
   include <- match.arg(include)
-  d1 <- substr(include, 1L, 1L)
-  d2 <- substr(include, 2L, 2L)
-  interval <- paste0(d1, deparse1(substitute(a)), ",", deparse1(substitute(b)), d2)
-  f1 <- switch(d1, `(` = `>`, `[` = `>=`)
-  f2 <- switch(d2, `)` = `<`, `]` = `<=`)
-  stop_if_not(
-    is.numeric(x),
-    length(x) == 1L,
-    f1(x, a),
-    f2(x, b),
-    m = paste0(sQuote(s), " must be a number in the interval ", interval, "."),
-    n = 1L + n
-  )
+  relop1 <- switch(substr(include, 1L, 1L), `(` = `>`, `[` = `>=`)
+  relop2 <- switch(substr(include, 2L, 2L), `)` = `<`, `]` = `<=`)
+  is.numeric(x) && length(x) == 1L && !is.na(x) && relop1(x, a) && relop2(x, b)
 }
 
-stop_if_not_string <- function(x, n = 1L) {
-  s <- deparse1(substitute(x))
-  stop_if_not(
-    is.character(x),
-    length(x) == 1L,
-    !is.na(x),
-    m = paste0(sQuote(s), " must be a character string."),
-    n = 1L + n
-  )
+is_string <- function(x) {
+  is.character(x) && length(x) == 1L && !is.na(x)
 }

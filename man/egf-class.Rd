@@ -90,38 +90,36 @@ or \code{"egf_no_fit"} depending on whether the nonlinear mixed effects model
 specified in the call was actually fit.
 }
 \details{
-Only developers should need to access the list directly.
+Only developers should need to access the list directly,
+e.g., using \code{$}.
 Typical users can rely on methods to get information about the estimated
 (or to-be-estimated) model.
-For a list of generic functions for which methods have been implemeneted,
-run, e.g., \code{\link{methods}(class = "egf")}.
-For links to method documentation,
-run, e.g., \code{alias??`\\\\.egf$`} in an interactive \R session.
+See Examples for ways to query available methods and their documentation.
 
 The estimated (or to-be-estimated) model is specified by a bottom level
 parameter vector that is the concatenation of three segments:
 \describe{
 \item{beta}{
-  The result of \code{\link{unlist}(lbeta)}, where \code{lbeta} is a list
-  of numeric vectors of fixed effects coefficients, with one vector for each
-  top level nonlinear model parameter.
+  The result of \code{unlist(lbeta)}, where \code{lbeta} is a list of
+  numeric vectors of fixed effects coefficients, with one vector for
+  each top level nonlinear model parameter.
   The order of top level parameters is given by
   \code{\link{egf_get_names_top}(model)}.
 }
 \item{theta}{
-  The result of \code{\link{unlist}(ltheta)}, where \code{ltheta} is a list
-  of numeric vectors of random effect covariance parameters, with one
-  vector for each distinct random effects term in \code{formula_parameters}.
+  The result of \code{unlist(ltheta)}, where \code{ltheta} is a list of
+  numeric vectors of random effect covariance parameters, with one vector
+  for each distinct random effects term in \code{formula_parameters}.
   Each vector parametrizes a random effect covariance matrix via
-  \code{\link{theta2cov}}.
+  \code{\link{theta2cov}} and its inverse \code{\link{cov2theta}}.
   (The list \code{Sigma} described under \code{\link{egf}} argument
   \code{formula_priors} is precisely
   \code{\link{lapply}(ltheta, \link{theta2cov})}.)
 }
 \item{b}{
-  The result of \code{\link{unlist}(lb)}, where \code{lb} is a list of
-  numeric matrices of scaled random effects coefficients, corresponding
-  elementwise to \code{ltheta}.
+  The result of \code{unlist(lb)}, where \code{lb} is a list of numeric
+  matrices of scaled random effects coefficients, corresponding elementwise
+  to \code{ltheta}.
   The columns of \code{lb[[i]]} (one per level of the grouping variable)
   are interpreted as samples from a zero mean, unit variance multivariate
   normal distribution with correlation matrix
@@ -138,4 +136,14 @@ see
 \code{\link[=coef.egf]{coef}},
 \code{\link[=fixef.egf]{fixef}}, and
 \code{\link[=ranef.egf]{ranef}}.
+}
+\examples{
+methods(class = "egf")
+help.search("\\\\.egf$", fields = "alias", package = "epigrowthfit")
+## less verbosely: alias??`\\\\.egf$`
+
+methods(class = "egf_no_fit")
+help.search("\\\\.egf_no_fit$", fields = "alias", package = "epigrowthfit")
+## less verbosely: alias??`\\\\.egf_no_fit$`
+
 }

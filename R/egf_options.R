@@ -34,9 +34,11 @@ egf_model <- function(curve = c("logistic", "exponential", "subexponential", "go
                       family = c("nbinom", "pois"),
                       day_of_week = FALSE) {
   curve <- match.arg(curve)
-  stop_if_not_true_false(excess)
   family <- match.arg(family)
-  stop_if_not_true_false(day_of_week, allow_numeric = TRUE)
+  stopifnot(
+    is_true_or_false(excess),
+    is_flag(day_of_week)
+  )
   day_of_week <- as.integer(day_of_week)
   day_of_week <- (day_of_week > 0L) * (1L + (day_of_week - 1L) %% 7L) # coercion to '0:7'
 
@@ -129,21 +131,20 @@ egf_control <- function(optimizer = egf_optimizer(),
                         profile = FALSE,
                         sparse_X = FALSE,
                         omp_num_threads = getOption("egf.cores", 1L)) {
-  stopifnot(inherits(optimizer, "egf_optimizer"))
   if (inherits(inner_optimizer, "egf_inner_optimizer")) {
     inner_optimizer <- list(inner_optimizer)
-  } else {
-    stopifnot(
-      is.list(inner_optimizer),
-      length(inner_optimizer) > 0L,
-      vapply(inner_optimizer, inherits, FALSE, "egf_inner_optimizer")
-    )
   }
-  stop_if_not_true_false(trace, allow_numeric = TRUE)
+  stopifnot(
+    inherits(optimizer, "egf_optimizer"),
+    is.list(inner_optimizer),
+    length(inner_optimizer) > 0L,
+    vapply(inner_optimizer, inherits, FALSE, "egf_inner_optimizer"),
+    is_true_or_false(trace),
+    is_true_or_false(profile),
+    is_true_or_false(sparse_X),
+    is_number(omp_num_threads, "positive", integer = TRUE)
+  )
   trace <- min(2L, max(0L, as.integer(trace))) # coercion to '0:2'
-  stop_if_not_true_false(profile)
-  stop_if_not_true_false(sparse_X)
-  stop_if_not_integer(omp_num_threads, "positive")
   omp_num_threads <- as.integer(omp_num_threads)
 
   res <- list(
@@ -389,15 +390,17 @@ egf_parallel <- function(method = c("serial", "multicore", "snow"),
                          args = list(),
                          cl = NULL) {
   method <- match.arg(method)
-  stop_if_not_string(outfile)
+  stopifnot(is_string(outfile))
   if (method == "serial") {
     cores <- 1L
     args <- list()
     cl <- NULL
   } else if (method == "multicore" || (method == "snow" && is.null(cl))) {
-    stop_if_not_integer(cores, "positive")
+    stopifnot(
+      is_number(cores, "positive", integer = TRUE),
+      is.list(args)
+    )
     cores <- as.integer(cores)
-    stopifnot(is.list(args))
     if (method == "multicore") {
       args$mc.cores <- cores
     } else {

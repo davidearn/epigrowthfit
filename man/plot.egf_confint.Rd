@@ -79,8 +79,7 @@ See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset}, \code{order}, and \code{label}.
 }
 \examples{
-example("confint.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-x <- readRDS(system.file("exdata", "confint-egf.rds", package = "epigrowthfit", mustWork = TRUE))
+x <- egf_cache("confint-egf-1.rds")
 
 op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
 plot(x, type = "bars")

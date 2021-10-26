@@ -97,17 +97,8 @@ for \code{log = FALSE}:
 }
 }
 \examples{
-example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-object <- readRDS(file.path(exdata, "egf.rds"))
-
-path_to_cache <- file.path(exdata, "predict-egf.rds")
-if (file.exists(path_to_cache)) {
-  zz <- readRDS(path_to_cache)
-} else {
-  zz <- predict(object, se = TRUE)
-  saveRDS(zz, file = path_to_cache)
-}
+object <- egf_cache("egf-1.rds")
+zz <- egf_cache("predict-egf-1.rds", predict(object, se = TRUE))
 str(zz)
 
 }

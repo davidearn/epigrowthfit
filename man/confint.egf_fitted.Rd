@@ -41,11 +41,8 @@ with \code{estimate} and \code{se} as in \code{object} and
 \code{q = \link{qchisq}(level, df = 1)}.
 }
 \examples{
-example("fitted.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-object <- readRDS(system.file("exdata", "fitted-egf.rds",
-                              package = "epigrowthfit", mustWork = TRUE))
-
-confint(object, link = TRUE)
-confint(object, link = FALSE)
+object <- egf_cache("fitted-egf-1.rds")
+zz <- confint(object)
+str(zz)
 
 }

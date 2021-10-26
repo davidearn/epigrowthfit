@@ -2,7 +2,7 @@
 % Please edit documentation in R/extract.R
 \name{logLik.egf}
 \alias{logLik.egf}
-\title{Extract log likelihood}
+\title{Extract log marginal likelihood}
 \usage{
 \method{logLik}{egf}(object, ...)
 }
@@ -19,7 +19,7 @@ Attribute \code{nobs} is the number of observations of disease incidence
 used in estimation.
 }
 \description{
-Retrieves the value of log likelihood from a fitted model object.
+Retrieves the value of log marginal likelihood from a fitted model object.
 }
 \seealso{
 Other extractors: 

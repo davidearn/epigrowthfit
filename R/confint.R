@@ -116,18 +116,17 @@
 #' are retained as attributes.
 #'
 #' @examples
-#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-#' object <- readRDS(file.path(exdata, "egf.rds"))
-#'
-#' path_to_cache <- file.path(exdata, "confint-egf.rds")
-#' if (file.exists(path_to_cache)) {
-#'   zz <- readRDS(path_to_cache)
-#' } else {
-#'   zz <- confint(object)
-#'   saveRDS(zz, file = path_to_cache)
-#' }
-#' str(zz)
+#' object <- egf_cache("egf-1.rds")
+#' zz1 <- egf_cache("confint-egf-1.rds", {
+#'   confint(object, method = "wald")
+#' })
+#' zz2 <- egf_cache("confint-egf-2.rds", {
+#'   confint(object, method = "profile", subset = (country == "A" & wave == 1))
+#' })
+#' zz3 <- egf_cache("confint-egf-3.rds", {
+#'   confint(object, method = "uniroot", subset = (country == "A" & wave == 1))
+#' })
+#' str(zz1)
 #'
 #' @seealso \code{\link{plot.egf_confint}}
 #' @export
@@ -150,18 +149,20 @@ confint.egf <- function(object,
                         .subset = NULL,
                         .append = NULL,
                         ...) {
-  stop_if_not_number_in_interval(level, 0, 1, "()")
-  stop_if_not_true_false(link)
+  stopifnot(
+    is_number_in_interval(level, 0, 1, "()"),
+    is_true_or_false(link)
+  )
   method <- match.arg(method)
   elu <- c("estimate", "lower", "upper")
 
-  names_top <- egf_get_names_top(object, link = TRUE)
+  names_top <- names_top_aug <- egf_get_names_top(object, link = TRUE)
   spec <- c("tdoubling", "R0")
   if (object$model$curve %in% c("exponential", "logistic", "richards")) {
-    names_top <- c(names_top, spec)
+    names_top_aug <- c(names_top_aug, spec)
   }
 
-  top <- top_bak <- unique(match.arg(top, names_top, several.ok = TRUE))
+  top <- top_aug <- unique(match.arg(top, names_top_aug, several.ok = TRUE))
   if ("R0" %in% top) {
     stopifnot(!is.null(breaks), !is.null(probs))
   }
@@ -190,12 +191,15 @@ confint.egf <- function(object,
       .append = append
     )
     res <- confint(po, level = level, link = link)
-    res$linear_combination <- NULL
+    res[["linear_combination"]] <- NULL
+    attr(res, "A") <- attr(res, "x") <- NULL
 
   } else { # "uniroot"
-    stopifnot(inherits(parallel, "egf_parallel"))
-    stop_if_not_true_false(trace)
-    stop_if_not_number(interval_scale, "positive")
+    stopifnot(
+      inherits(parallel, "egf_parallel"),
+      is_true_or_false(trace),
+      is_number(interval_scale, "positive")
+    )
     n <- sum(!object$random)
 
     l <- egf_preprofile(object, subset = subset, top = top)
@@ -269,14 +273,14 @@ confint.egf <- function(object,
       top = rep(factor(top, levels = names_top), each = length(subset)),
       ts = frame_windows$ts[subset],
       window = frame_windows$window[subset],
-      estimate = as.numeric(A %*% object$best[!object$random]),
+      estimate = as.double(A %*% object$best[!object$random]),
       do.call(rbind, res),
       frame_combined[subset, append, drop = FALSE],
       row.names = NULL,
       check.names = FALSE,
       stringsAsFactors = FALSE
     )
-    res[elu] <- res[elu] + as.numeric(Y)
+    res[elu] <- res[elu] + as.double(Y)
 
     if (!link) {
       res[elu] <- in_place_ragged_apply(res[elu], res$top,
@@ -286,14 +290,14 @@ confint.egf <- function(object,
     }
   } # "uniroot"
 
-  if (any(top_bak %in% spec)) {
+  if (any(spec %in% top_aug)) {
     s <- if (link) "log(r)" else "r"
     res_r <- res[res$top == s, , drop = FALSE]
     if (link) {
       res_r[elu] <- exp(res_r[elu])
     }
 
-    if ("tdoubling" %in% top_bak) {
+    if ("tdoubling" %in% top_aug) {
       eul <- elu[c(1L, 3L, 2L)]
       res_tdoubling <- res_r
       res_tdoubling[elu] <- log(2) / res_r[eul]
@@ -301,19 +305,20 @@ confint.egf <- function(object,
       res <- rbind(res, res_tdoubling)
     }
 
-    if ("R0" %in% top_bak) {
+    if ("R0" %in% top_aug) {
       res_R0 <- res_r
       res_R0[elu] <- lapply(res_r[elu], compute_R0, breaks = breaks, probs = probs)
       res_R0$top <- factor("R0")
       res <- rbind(res, res_R0)
     }
 
-    if (!"log(r)" %in% top_bak) {
+    if (!"log(r)" %in% top_aug) {
       res <- res[res$top != s, , drop = FALSE]
     }
   }
 
   row.names(res) <- NULL
+  attr(res, "method") <- method
   attr(res, "level") <- level
   attr(res, "frame_windows") <- frame_windows # for 'plot.egf_confint'
   class(res) <- c("egf_confint", oldClass(res))
@@ -384,8 +389,7 @@ confint.egf <- function(object,
 #' \code{NULL} (invisibly).
 #'
 #' @examples
-#' example("confint.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' x <- readRDS(system.file("exdata", "confint-egf.rds", package = "epigrowthfit", mustWork = TRUE))
+#' x <- egf_cache("confint-egf-1.rds")
 #'
 #' op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
 #' plot(x, type = "bars")
@@ -407,7 +411,8 @@ plot.egf_confint <- function(x,
                              ...) {
   type <- match.arg(type)
   time_as <- match.arg(time_as)
-  stop_if_not_integer(per_plot, "positive")
+  stopifnot(is_number(per_plot, "positive", integer = TRUE))
+  per_plot <- as.integer(per_plot)
 
   subset <- egf_eval_subset(substitute(subset), x, parent.frame())
   if (length(subset) == 0L) {
@@ -467,16 +472,16 @@ plot.egf_confint.bars <- function(x, per_plot, main) {
         x1  = data$estimate[k],
         y0  = seq_along(k),
         y1  = seq_along(k),
-        lty = 1 + as.numeric(argna$lower[k]),
-        lwd = 2 - as.numeric(argna$lower[k])
+        lty = 1 + as.double(argna$lower[k]),
+        lwd = 2 - as.double(argna$lower[k])
       )
       segments(
         x0  = data$estimate[k],
         x1  = replace(data$upper[k], argna$upper[k], gp$usr[2L]),
         y0  = seq_along(k),
         y1  = seq_along(k),
-        lty = 1 + as.numeric(argna$upper[k]),
-        lwd = 2 - as.numeric(argna$upper[k])
+        lty = 1 + as.double(argna$upper[k]),
+        lwd = 2 - as.double(argna$upper[k])
       )
       points(
         x   = data$estimate[k],

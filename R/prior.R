@@ -67,8 +67,8 @@ Normal <- function(mu = 0, sigma = 1) {
   res <- list(
     family = "norm",
     parameters = list(
-      mu = as.numeric(mu),
-      sigma = as.numeric(sigma)
+      mu = as.double(mu),
+      sigma = as.double(sigma)
     )
   )
   class(res) <- "egf_prior"
@@ -86,7 +86,7 @@ LKJ <- function(eta = 1) {
   )
   res <- list(
     family = "lkj",
-    parameters = list(eta = as.numeric(eta))
+    parameters = list(eta = as.double(eta))
   )
   class(res) <- "egf_prior"
   res
@@ -125,7 +125,7 @@ Wishart <- function(df, scale, tol = 1e-06) {
   scale <- lapply(scale, cov2theta)
   res <- list(
     family = "wishart",
-    parameters = list(df = as.numeric(df), scale = unname(scale))
+    parameters = list(df = as.double(df), scale = unname(scale))
   )
   class(res) <- "egf_prior"
   res

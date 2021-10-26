@@ -78,17 +78,8 @@
 #' }
 #'
 #' @examples
-#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-#' object <- readRDS(file.path(exdata, "egf.rds"))
-#'
-#' path_to_cache <- file.path(exdata, "fitted-egf.rds")
-#' if (file.exists(path_to_cache)) {
-#'   zz <- readRDS(path_to_cache)
-#' } else {
-#'   zz <- fitted(object, se = TRUE)
-#'   saveRDS(zz, file = path_to_cache)
-#' }
+#' object <- egf_cache("egf-1.rds")
+#' zz <- egf_cache("fitted-egf-1.rds", fitted(object, se = TRUE))
 #' str(zz)
 #'
 #' @family extractors
@@ -105,8 +96,10 @@ fitted.egf <- function(object,
                        .subset = NULL,
                        .append = NULL,
                        ...) {
-  stop_if_not_true_false(link)
-  stop_if_not_true_false(se)
+  stopifnot(
+    is_true_or_false(link),
+    is_true_or_false(se)
+  )
   if (se && !link) {
     stop(wrap(
       "Standard errors are not available for inverse link-transformed ",
@@ -183,13 +176,21 @@ fitted.egf_no_fit <- function(object,
   if (se) {
     stop(wrap(
       "Standard errors cannot be computed until the model is estimated. ",
-      "Retry after doing, e.g., 'object <- update(object, fit = TRUE, ...)'."
+      "Retry after doing, e.g., 'object <- update(object, se = TRUE, fit = TRUE, ...)'."
     ))
   }
+
+  ## Passing arguments to method for class "egf" without evaluating
+  ## 'subset' or 'append' requires minor acrobatics
+  call <- match.call(expand.dots = FALSE)
+  call[[1L]] <- quote(fitted.egf)
+  call[["..."]] <- NULL
+  nms <- names(call)
+  i <- match(nms[-1L], c("subset", "append"), 0L) == 0L
+  call[-1L][i] <- lapply(nms[-1L][i], as.name)
+
   object$best <- object$init
-  cl <- match.call()
-  cl[[1L]] <- quote(fitted.egf)
-  eval(cl)
+  eval(call)
 }
 
 #' Confidence intervals on fitted values
@@ -228,12 +229,9 @@ fitted.egf_no_fit <- function(object,
 #' \code{level} is retained as an \link[=attributes]{attribute}.
 #'
 #' @examples
-#' example("fitted.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' object <- readRDS(system.file("exdata", "fitted-egf.rds",
-#'                               package = "epigrowthfit", mustWork = TRUE))
-#'
-#' confint(object, link = TRUE)
-#' confint(object, link = FALSE)
+#' object <- egf_cache("fitted-egf-1.rds")
+#' zz <- confint(object)
+#' str(zz)
 #'
 #' @export
 confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
@@ -244,8 +242,10 @@ confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
       "Retry with 'object = fitted(<\"egf\" object>, link = TRUE, se = TRUE)'."
     ))
   }
-  stop_if_not_number_in_interval(level, 0, 1, "()")
-  stop_if_not_true_false(link)
+  stopifnot(
+    is_number_in_interval(level, 0, 1, "()"),
+    is_true_or_false(link)
+  )
 
   s <- c("top", "ts", "window", "estimate", "se")
   res <- data.frame(

@@ -174,8 +174,7 @@ See topic \code{\link{egf_eval}} for details on nonstandard evaluation
 of \code{subset}, \code{order}, \code{main}, \code{sub}, and \code{plab}.
 }
 \examples{
-example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-x <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
+x <- egf_cache("egf-1.rds")
 
 op <- par(mar = c(3.5, 5, 5, 1))
 control <- egf_plot_control(

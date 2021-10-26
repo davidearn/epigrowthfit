@@ -21,17 +21,8 @@ Estimates the generative model underlying a set of simulated
 incidence time series.
 }
 \examples{
-example("simulate.egf_model", package = "epigrowthfit", local = TRUE, echo = FALSE)
-exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-model <- readRDS(file.path(exdata, "simulate-egf_model.rds"))
-
-path_to_cache <- file.path(exdata, "egf-egf_model_simulate.rds")
-if (file.exists(path_to_cache)) {
-  object <- readRDS(path_to_cache)
-} else {
-  object <- egf(model)
-  saveRDS(object, file = path_to_cache)
-}
+model <- egf_cache("simulate-egf_model-1.rds")
+object <- egf_cache("egf-egf_model_simulate-1.rds", egf(model))
 pp <- cbind(actual = coef(model), fitted = coef(object))
 
 }

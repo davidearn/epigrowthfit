@@ -3,25 +3,25 @@
 #' Returns the underlying integer value of an enumerator in the package's
 #' C++ template.
 #'
-#' @param type
-#'   A character string. The name of an enumerated type.
 #' @param enum
-#'   A character string. The name of an enumerator of type \code{type}.
+#'   A character vectors listing names of enumerators of type \code{type}.
+#' @param type
+#'   A character string specifying an enumerated type.
 #'
 #' @details
 #' The source file defining \code{egf_get_flag} is kept synchronized with
-#' the package's C++ template using R script \file{utils/update_enums.R}.
+#' the package's C++ template using \R script \file{utils/update_enums.R}.
 #'
 #' @return
 #' An integer.
 #'
 #' @examples
-#' egf_get_flag("curve", "exponential")
-#' egf_get_flag("family", "pois")
-#' egf_get_flag("prior", "norm")
+#' egf_get_flag("exponential", "curve")
+#' egf_get_flag("pois", "family")
+#' egf_get_flag("norm", "prior")
 #'
 #' @noRd
-egf_get_flag <- function(type = c("curve", "family", "prior"), enum) {
+egf_get_flag <- function(enum, type = c("curve", "family", "prior")) {
   type <- match.arg(type)
   enum_all <- switch(type,
     curve = c("exponential", "subexponential", "gompertz", "logistic", "richards"),

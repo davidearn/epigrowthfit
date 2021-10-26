@@ -75,13 +75,13 @@ compute_final_size <- function(R0, S0, I0) {
   }
   len <- c(length(R0), length(S0), length(I0))
   if (min(len) == 0L) {
-    return(numeric(0L))
+    return(double(0L))
   }
   n <- max(len)
   R0 <- rep_len(R0, n)
   S0 <- rep_len(S0, n)
   I0 <- rep_len(I0, n)
-  Z <- rep_len(NA_real_, n)
+  Z <- rep.int(NA_real_, n)
 
   ## Degenerate cases
   ok <- !(is.na(R0) | is.na(S0) | is.na(I0) | R0 < 0 | S0 < 0 | I0 < 0 | S0 + I0 > 1)
@@ -155,7 +155,7 @@ compute_final_size <- function(R0, S0, I0) {
 compute_R0 <- function(r, breaks, probs) {
   stopifnot(is.numeric(r))
   if (length(r) == 0L) {
-    return(numeric(0L))
+    return(double(0L))
   }
   stopifnot(
     is.numeric(breaks),
@@ -200,7 +200,7 @@ compute_R0 <- function(r, breaks, probs) {
 #' @param r
 #'   A non-negative numeric vector listing exponential growth rates.
 #' @param per
-#'   A positive integer indicating that \code{r} is a rate per
+#'   A positive number indicating that \code{r} is a rate per
 #'   \code{per} days, in which case the result is printed with units.
 #'   Use the default (\code{NULL}) if \code{r} is unitless.
 #'
@@ -223,10 +223,10 @@ compute_R0 <- function(r, breaks, probs) {
 #' @family epidemic parameters
 #' @export
 compute_tdoubling <- function(r, per = NULL) {
-  stopifnot(is.numeric(r))
-  if (!is.null(per)) {
-    stop_if_not_integer(per, "positive")
-  }
+  stopifnot(
+    is.numeric(r),
+    is.null(per) || is_number(per, "positive")
+  )
   if (any(r < 0, na.rm = TRUE)) {
     r[r < 0] <- NA
     warning("NA returned for negative 'r'.")
@@ -245,7 +245,7 @@ print.tdoubling <- function(x, ...) {
       `1`   = "days",
       `7`   = "weeks",
       `365` = "years (1 year = 365 days)",
-      sprintf("units t = %d days", per)
+      sprintf("units dt = %g days", per)
     )
     cat("doubling times in ", units, ":\n\n", sep = "")
   }

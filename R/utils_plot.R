@@ -78,7 +78,7 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 #' axis, months are placed on the major axis, and years are not
 #' shown. The spacing on the minor axis in days is the value of
 #' \code{c(1, 2, 4, 7, 14)[w <= c(14, 28, 56, 112, 210)][1]}.
-#' Hence, for example, if `w` is greater than 112 and less than
+#' Hence, for example, if \code{w} is greater than 112 and less than
 #' or equal to 210, then the spacing is 14-daily.
 #'
 #' Otherwise, if \code{w <= 3*365} (3 years), then months are placed
@@ -160,7 +160,7 @@ Daxis <- function(side, origin = .Date(0), minor = list(), major = list()) {
     minor_at <- c(minor_at, (minor_at[-1L] + minor_at[-length(minor_at)]) / 2)
     length(minor_labels) <- length(minor_at)
 
-    major_at <- numeric(0L)
+    major_at <- double(0L)
     major <- NULL
   }
 
@@ -206,16 +206,16 @@ get_scientific_labels <- function(at) {
   ## ignoring trailing zeros
   digits <- max(nchar(sub("0+$", "", mp[, 1L]))) - 2L
 
-  ## Mantissa reformatted with exactly `digits` digits after decimal
-  man <- sprintf("%.*e", digits, as.numeric(mp[, 1L]))
+  ## Mantissa reformatted with exactly 'digits' digits after decimal
+  man <- sprintf("%.*e", digits, as.double(mp[, 1L]))
 
   ## Power reformatted without leading zeros
-  pow <- as.character(as.numeric(mp[, 2L]))
+  pow <- as.character(as.double(mp[, 2L]))
 
   ## Format nonzero labels as "mantissa x 10^power".
   ## Shorten to "10^power" if nonzero mantissas are all 1.
   ## Use "0" if mantissa is 0.
-  if (all(as.numeric(man) %in% c(0, 1))) {
+  if (all(as.double(man) %in% c(0, 1))) {
     labels <- parse(text = sprintf("10^%s", pow))
   } else {
     labels <- parse(text = sprintf("%s %%*%% 10^%s", man, pow))

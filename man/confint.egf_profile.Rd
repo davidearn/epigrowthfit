@@ -48,11 +48,8 @@ These provide the lower and upper confidence limits of interest
 (see \href{https://en.wikipedia.org/wiki/Wilks'_theorem}{Wilks' theorem}).
 }
 \examples{
-example("profile.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-object <- readRDS(system.file("exdata", "profile-egf.rds",
-                              package = "epigrowthfit", mustWork = TRUE))
-
-confint(object, link = TRUE)
-confint(object, link = FALSE)
+object <- egf_cache("profile-egf-1.rds")
+zz <- confint(object)
+str(zz)
 
 }

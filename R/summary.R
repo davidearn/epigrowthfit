@@ -38,17 +38,8 @@
 #' }
 #'
 #' @examples
-#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-#' object <- readRDS(file.path(exdata, "egf.rds"))
-#'
-#' path_to_cache <- file.path(exdata, "summary-egf.rds")
-#' if (file.exists(path_to_cache)) {
-#'   zz <- readRDS(path_to_cache)
-#' } else {
-#'   zz <- summary(object)
-#'   saveRDS(zz, file = path_to_cache)
-#' }
+#' object <- egf_cache("egf-1.rds")
+#' zz <- egf_cache("summary-egf-1.rds", summary(object))
 #' str(zz)
 #'
 #' @export
@@ -85,7 +76,7 @@ print.egf_summary <- function(x, width = 0.9 * getOption("width"), indent = 2L, 
   writeLines(paste0(strrep(" ", indent), capture.output(print(x$fitted))))
   cat("\n")
 
-  heading("Negative log likelihood", width = width)
+  heading("Negative log marginal likelihood", width = width)
   cat("\n")
   c1 <- c(
     "convergence",

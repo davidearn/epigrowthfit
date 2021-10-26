@@ -48,8 +48,7 @@ egf_sanitize_formula <- function(formula) {
 #' @importFrom stats terms
 egf_sanitize_formula_parameters <- function(formula_parameters, names_parameters, check_intercept) {
   if (recycled <- inherits(formula_parameters, "formula")) {
-    formula_parameters <- simplify_terms(formula_parameters)
-    formula_parameters <- rep_len(list(formula_parameters), length(names_parameters))
+    formula_parameters <- rep.int(list(simplify_terms(formula_parameters)), length(names_parameters))
     names(formula_parameters) <- names_parameters
   } else {
     names(formula_parameters) <- vapply(formula_parameters, function(x) deparse1(x[[2L]]), "")
@@ -103,7 +102,7 @@ egf_make_frame <- function(model,
     cl$subset <- subset
     mf <- eval(cl, parent.frame())
     if (!group) {
-      mf <- data.frame(rep_len(factor(1), nrow(mf)), mf)
+      mf <- data.frame(gl(1L, nrow(mf)), mf)
     }
     attr(mf, "names_original") <- names_original
     attr(mf, "terms") <- NULL
@@ -160,7 +159,7 @@ egf_make_frame <- function(model,
     na.action = switch(na_action_windows, fail = quote(na.fail), omit = quote(na.pass)),
     drop.unused.levels = TRUE
   )
-  frame_parameters <- rep_len(list(), length(formula_parameters))
+  frame_parameters <- vector("list", length(formula_parameters))
   names(frame_parameters) <- names(formula_parameters)
   for (i in seq_along(frame_parameters)) {
     cl$formula <- gsub_bar_plus(formula_parameters[[i]])
@@ -369,7 +368,7 @@ egf_make_frame <- function(model,
     if (any(vapply(index, function(i) sum(!is.na(d1$x[i])) == 0L, FALSE))) {
       stop(wrap(m0, " contain zero observations of ", sQuote(nf1$x), "."))
     }
-    window <- rep_len(factor(NA, levels = levels(d2$window)), nrow(d1))
+    window <- rep.int(factor(NA, levels = levels(d2$window)), nrow(d1))
     window[ulindex] <- rep.int(d2$window, lengths(index))
     window
   }
@@ -484,12 +483,10 @@ egf_make_priors <- function(formula_priors, top, beta, theta, Sigma) {
 
   x <- priors$bottom$Sigma
   for (i in seq_along(x)) {
-    xi <- x[[i]]
-    if (is.null(xi) || !grepl("^(inv)?wishart$", xi$family)) {
+    if (is.null(x[[i]]) || !grepl("^(inv)?wishart$", x[[i]]$family)) {
       next
     }
-    scale <- x[[i]]$parameters$scale
-    n1 <- as.integer(choose(length(scale) + 1L, 2L))
+    n1 <- as.integer(choose(length(x[[i]]$parameters$scale) + 1L, 2L))
     n2 <- Sigma$rows[i]
     if (n1 != n2) {
       stop(wrap(
@@ -695,7 +692,7 @@ egf_combine_X <- function(fixed, X) {
     c("(Intercept)", labels(terms(formula)))[1L + assign]
   }
 
-  bottom <- disambiguate(rep_len("beta", sum(nc)))
+  bottom <- disambiguate(rep.int("beta", sum(nc)))
   top <- rep.int(gl(length(fixed), 1L, labels = names(fixed)), nc)
   term <- Map(get_term_labels, formula = fixed, assign = assign)
   term <- factor(unlist1(term))
@@ -726,16 +723,16 @@ egf_combine_Z <- function(random, Z) {
     c("(Intercept)", labels(terms(formula)))[1L + assign]
   }
 
-  bottom <- disambiguate(rep_len("b", sum(nc)))
+  bottom <- disambiguate(rep.int("b", sum(nc)))
   top <- factor(rep.int(names(random), nc), levels = unique(names(random)))
   term <- Map(get_term_labels, formula = random_formula, assign = assign)
   term <- factor(unlist1(term))
   group <- factor(rep.int(vapply(random_group, deparse1, ""), nc))
   level <- unlist1(level)
   cov <- interaction(term, group, drop = TRUE, lex.order = TRUE)
-  levels(cov) <- disambiguate(rep_len("Sigma", nlevels(cov)))
+  levels(cov) <- disambiguate(rep.int("Sigma", nlevels(cov)))
   vec <- interaction(term, group, level, drop = TRUE, lex.order = TRUE)
-  levels(vec) <- disambiguate(rep_len("u", nlevels(vec)))
+  levels(vec) <- disambiguate(rep.int("u", nlevels(vec)))
 
   Z <- do.call(cbind, Z)
   effects <- data.frame(cov, vec, bottom, top, term, group, level, colname = colnames(Z), row.names = NULL, stringsAsFactors = FALSE)

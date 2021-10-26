@@ -125,14 +125,10 @@ r <- 0.04
 c0 <- 400
 
 mu <- log(c(r, c0))
-Sigma <- diag(rep_len(0.2^2, length(mu)))
+Sigma <- diag(rep.int(0.2^2, length(mu)))
 
-root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-path_to_cache <- file.path(root, "exdata", "simulate-egf_model.rds")
-if (file.exists(path_to_cache)) {
-  zz <- readRDS(path_to_cache)
-} else {
-  zz <- simulate(
+zz <- egf_cache("simulate-egf_model-1.rds", {
+  simulate(
     object = egf_model(curve = "exponential", family = "pois"),
     nsim = 20L,
     seed = 202737L,
@@ -140,9 +136,8 @@ if (file.exists(path_to_cache)) {
     Sigma = Sigma,
     cstart = 10
   )
-  dir.create(dirname(path_to_cache), showWarnings = FALSE)
-  saveRDS(zz, file = path_to_cache)
-}
+})
+str(zz)
 
 }
 \seealso{

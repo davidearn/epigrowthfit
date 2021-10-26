@@ -117,23 +117,26 @@
 #'   method.
 #'   Computations are preserved in the model object for reuse by methods.
 #' @param init
-#'   A \link{numeric} vector to be used as the bottom level parameter vector
-#'   for the first likelihood evaluation.
-#'   The default (\code{\link{NULL}}) is to accept the internally generated
-#'   default, which is a zero vector except for the \code{"(Intercept)"}
-#'   coefficients in segment \code{beta}.
+#'   A named \link{list} of \link{numeric} vectors with possible elements
+#'   \code{beta}, \code{theta}, and \code{b}, specifying values to be used
+#'   in the first likelihood evaluation for the so-named segments of the
+#'   bottom level parameter vector.
+#'   The default value of each segment is a zero vector, with the exception
+#'   that \code{"(Intercept)"} coefficients in \code{beta} have default values
+#'   computed from supplied time series.
+#'   To specify only a subset of a segment, use \code{\link{NA}} to indicate
+#'   elements that should retain their default value.
 #' @param map
-#'   A \link{factor} corresponding elementwise to the bottom level parameter
-#'   vector.
-#'   Elements of the parameter vector corresponding to \code{\link{NA}} in
-#'   \code{map} are fixed at their initial values, rather than estimated.
-#'   Elements corresponding to a common factor level are constrained to have
-#'   a common value during estimation.
-#'   (However, grouping between segments \code{beta}, \code{theta}, and
-#'   \code{b} is not implemented.)
-#'   Alternatively, \code{map} can be an index vector for the elements of
-#'   the parameter vector.
-#'   In this case, the indexed elements are fixed at their initial values.
+#'   A named list of \link{factor}s with possible elements \code{beta},
+#'   \code{theta}, and \code{b}, each as long as the so-named segment
+#'   of the bottom level parameter.
+#'   Elements of segment \code{name} indexed by \code{is.na(map[["name"]])},
+#'   are fixed at their initial values, rather than estimated, and elements
+#'   corresponding to a common factor level are are constrained to have a
+#'   common value during estimation.
+#'   \code{map[["name"]]} can be an index vector for segment \code{name},
+#'   instead of a factor. In this case, the elements of segment \code{name}
+#'   indexed by \code{map[["name"]]} are fixed at their initial values.
 #' @param append
 #'   An expression indicating variables in \code{data_windows}
 #'   to be preserved in the returned object for use by methods.
@@ -190,6 +193,8 @@
 #' set.seed(180149L)
 #' N <- 10L
 #' time <- seq.int(0, 40, 1)
+#' mu <- c(-3.2, 6)
+#' sigma <- c(0.2, 0.2)
 #' r <- rlnorm(N, -3.2, 0.2)
 #' c0 <- rlnorm(N, 6, 0.2)
 #' f <- function(time, r, c0) {
@@ -217,29 +222,33 @@
 #' )
 #'
 #' ## Estimate the generative model
-#' root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-#' path_to_cache <- file.path(root, "exdata", "egf.rds")
-#' if (file.exists(path_to_cache)) {
-#'   object <- readRDS(path_to_cache)
-#' } else {
-#'   object <- egf(
+#' m1 <- egf_cache("egf-1.rds", {
+#'   egf(
 #'     model = egf_model(curve = "exponential", family = "pois"),
 #'     formula_ts = cbind(time, x) ~ country,
 #'     formula_windows = cbind(start, end) ~ country,
 #'     formula_parameters = ~(1 | country:wave),
-#'     formula_priors = list(Sigma ~ LKJ(eta = 2)),
 #'     data_ts = data_ts,
 #'     data_windows = data_windows,
-#'     init = replace(rep_len(0))
 #'     se = TRUE
 #'   )
-#'   dir.create(dirname(path_to_cache), showWarnings = FALSE)
-#'   saveRDS(object, file = path_to_cache)
-#' }
+#' })
 #'
-#' ## Query available methods and their documentation
-#' methods(class = "egf")
-#' help.search("\\.egf$", fields = "alias", package = "epigrowthfit")
+#' ## Re-estimate the generative model with:
+#' ## * Gaussian prior on 'beta[1L]'
+#' ## * LKJ prior on all random effect covariance matrices (though here there is just one)
+#' ## * initial value of 'theta' set explicitly
+#' ## * 'theta[3L]' fixed at initial value
+#' m2 <- egf_cache("egf-2.rds", {
+#'   update(m1,
+#'     formula_priors = list(
+#'       beta[1L] ~ Normal(mu = -3, sigma = 1),
+#'       Sigma ~ LKJ(eta = 2)
+#'     ),
+#'     init = list(theta = c(0.5^2, 0.5^2, 0)),
+#'     map = list(theta = 3L)
+#'   )
+#' })
 #'
 #' @export
 #' @useDynLib epigrowthfit
@@ -264,8 +273,8 @@ egf.egf_model <- function(model,
                           control = egf_control(),
                           fit = TRUE,
                           se = FALSE,
-                          init = NULL,
-                          map = NULL,
+                          init = list(),
+                          map = list(),
                           append = NULL,
                           ...) {
   stopifnot(
@@ -300,10 +309,13 @@ egf.egf_model <- function(model,
   subset_windows <- substitute(subset_windows)
   na_action_ts <- match.arg(na_action_ts)
   na_action_windows <- match.arg(na_action_windows)
-  stopifnot(inherits(control, "egf_control"))
-  stop_if_not_true_false(fit)
-  stop_if_not_true_false(se)
-  stopifnot(is.numeric(init) || is.null(init))
+  stopifnot(
+    inherits(control, "egf_control"),
+    is_true_or_false(fit),
+    is_true_or_false(se),
+    is.list(init),
+    is.list(map)
+  )
   append <- substitute(append)
 
   names_parameters <- egf_get_names_top(model, link = TRUE)
@@ -404,7 +416,7 @@ egf.egf_model <- function(model,
   res$optimizer_out <- do.call(optimizer, optimizer_args)
 
   res$best <- tmb_out$env$last.par.best
-  res$value <- as.numeric(tmb_out$env$value.best)
+  res$value <- as.double(tmb_out$env$value.best)
   if (se) {
     res$sdreport <- try(sdreport(tmb_out, par.fixed = res$best[!res$random], getReportCovariance = FALSE))
   }
@@ -427,38 +439,36 @@ egf.egf_model <- function(model,
 #' specified in the call was actually fit.
 #'
 #' @details
-#' Only developers should need to access the list directly.
+#' Only developers should need to access the list directly,
+#' e.g., using \code{$}.
 #' Typical users can rely on methods to get information about the estimated
 #' (or to-be-estimated) model.
-#' For a list of generic functions for which methods have been implemeneted,
-#' run, e.g., \code{\link{methods}(class = "egf")}.
-#' For links to method documentation,
-#' run, e.g., \code{alias??`\\\\.egf$`} in an interactive \R session.
+#' See Examples for ways to query available methods and their documentation.
 #'
 #' The estimated (or to-be-estimated) model is specified by a bottom level
 #' parameter vector that is the concatenation of three segments:
 #' \describe{
 #' \item{beta}{
-#'   The result of \code{\link{unlist}(lbeta)}, where \code{lbeta} is a list
-#'   of numeric vectors of fixed effects coefficients, with one vector for each
-#'   top level nonlinear model parameter.
+#'   The result of \code{unlist(lbeta)}, where \code{lbeta} is a list of
+#'   numeric vectors of fixed effects coefficients, with one vector for
+#'   each top level nonlinear model parameter.
 #'   The order of top level parameters is given by
 #'   \code{\link{egf_get_names_top}(model)}.
 #' }
 #' \item{theta}{
-#'   The result of \code{\link{unlist}(ltheta)}, where \code{ltheta} is a list
-#'   of numeric vectors of random effect covariance parameters, with one
-#'   vector for each distinct random effects term in \code{formula_parameters}.
+#'   The result of \code{unlist(ltheta)}, where \code{ltheta} is a list of
+#'   numeric vectors of random effect covariance parameters, with one vector
+#'   for each distinct random effects term in \code{formula_parameters}.
 #'   Each vector parametrizes a random effect covariance matrix via
-#'   \code{\link{theta2cov}}.
+#'   \code{\link{theta2cov}} and its inverse \code{\link{cov2theta}}.
 #'   (The list \code{Sigma} described under \code{\link{egf}} argument
 #'   \code{formula_priors} is precisely
 #'   \code{\link{lapply}(ltheta, \link{theta2cov})}.)
 #' }
 #' \item{b}{
-#'   The result of \code{\link{unlist}(lb)}, where \code{lb} is a list of
-#'   numeric matrices of scaled random effects coefficients, corresponding
-#'   elementwise to \code{ltheta}.
+#'   The result of \code{unlist(lb)}, where \code{lb} is a list of numeric
+#'   matrices of scaled random effects coefficients, corresponding elementwise
+#'   to \code{ltheta}.
 #'   The columns of \code{lb[[i]]} (one per level of the grouping variable)
 #'   are interpreted as samples from a zero mean, unit variance multivariate
 #'   normal distribution with correlation matrix
@@ -556,6 +566,15 @@ egf.egf_model <- function(model,
 #' \code{optimizer_out}, \code{best}, \code{value}, \code{gradient},
 #' \code{hessian}, and \code{sdreport} have the value \code{NULL} in
 #' objects of class \code{"egf_no_fit"}.
+#'
+#' @examples
+#' methods(class = "egf")
+#' help.search("\\.egf$", fields = "alias", package = "epigrowthfit")
+#' ## less verbosely: alias??`\\\\.egf$`
+#'
+#' methods(class = "egf_no_fit")
+#' help.search("\\.egf_no_fit$", fields = "alias", package = "epigrowthfit")
+#' ## less verbosely: alias??`\\\\.egf_no_fit$`
 #'
 #' @name egf-class
 NULL

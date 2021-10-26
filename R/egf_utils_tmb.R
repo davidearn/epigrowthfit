@@ -126,12 +126,12 @@ egf_tmb_make_data <- function(model, frame, control, env) {
     ## noting that weekdays(.Date(2)) == "Saturday" ...
     day1 <- as.integer(julian(Date1, origin = .Date(2L + model$day_of_week)) %% 7)
   } else {
-    day1 <- rep_len(-1L, N)
+    day1 <- rep.int(-1L, N)
   }
 
   ## Response matrix, offset component only
   offsets <- lapply(frame$parameters, model.offset)
-  offsets[vapply(offsets, is.null, FALSE)] <- list(rep_len(0, N))
+  offsets[vapply(offsets, is.null, FALSE)] <- list(double(N))
   Y <- do.call(cbind, offsets)
 
   ## Names of top level nonlinear model parameters
@@ -155,7 +155,7 @@ egf_tmb_make_data <- function(model, frame, control, env) {
   Zc <- egf_combine_Z(random = random1, Z = Z)
   if (is.null(Zc)) {
     b_index <- integer(0L)
-    b_index_tab <- rep_len(0L, length(names_top))
+    b_index_tab <- integer(length(names_top))
     block_rows <- integer(0L)
     block_cols <- integer(0L)
   } else {
@@ -168,9 +168,9 @@ egf_tmb_make_data <- function(model, frame, control, env) {
 
   ## Flags
   flags <- list(
-    curve = egf_get_flag("curve", model$curve),
+    curve = egf_get_flag(model$curve, "curve"),
     excess = as.integer(model$excess),
-    family = egf_get_flag("family", model$family),
+    family = egf_get_flag(model$family, "family"),
     day_of_week = as.integer(model$day_of_week > 0L),
     trace = control$trace,
     sparse_X = as.integer(control$sparse_X),
@@ -196,9 +196,9 @@ egf_tmb_make_data <- function(model, frame, control, env) {
     flags = flags,
     indices = indices,
     Y = Y,
-    Xd = if (control$sparse_X) matrix(numeric(0L), N, 0L) else Xc$X,
-    Xs = if (control$sparse_X) Xc$X else Matrix(numeric(0L), N, 0L, sparse = TRUE),
-    Z = if (is.null(Zc)) Matrix(numeric(0L), N, 0L, sparse = TRUE) else Zc$Z,
+    Xd = if (control$sparse_X) matrix(double(0L), N, 0L) else Xc$X,
+    Xs = if (control$sparse_X) Xc$X else Matrix(double(0L), N, 0L, sparse = TRUE),
+    Z = if (is.null(Zc)) Matrix(double(0L), N, 0L, sparse = TRUE) else Zc$Z,
     beta_index = beta_index,
     b_index = b_index,
     beta_index_tab = beta_index_tab,
@@ -270,8 +270,8 @@ egf_tmb_make_data <- function(model, frame, control, env) {
 #' @noRd
 #' @importFrom stats coef lm na.omit qlogis terms
 egf_tmb_make_parameters <- function(model, frame, env) {
-  ## Initialize each parameter object to a vector of zeros
-  res <- lapply(env$len, numeric)
+  ## Initialize each parameter object to a zero vector
+  res <- lapply(env$len, double)
 
   ## Identify top level nonlinear model parameters
   ## whose mixed effects formula has an intercept
@@ -297,7 +297,7 @@ egf_tmb_make_parameters <- function(model, frame, env) {
     K <- 2 * sum(d$x, na.rm = TRUE)
     c(r = r, c0 = c0, tinfl = tinfl, K = K)
   }
-  naive <- as.data.frame(t(vapply(tx, compute_naive, numeric(4L))))
+  naive <- as.data.frame(t(vapply(tx, compute_naive, double(4L))))
   naive["p"] <- list(0.95)
   naive[c("a", "b", "disp", paste0("w", 1:6))] <- list(1)
   naive$alpha <- switch(model$curve,
@@ -313,64 +313,79 @@ egf_tmb_make_parameters <- function(model, frame, env) {
   ## Identify elements of 'beta' corresponding to "(Intercept)"
   ## and assign means of naive estimates over time series segments
   names_top <- names(frame$parameters)
-  m <- match(names_top[has1], env$effects$X$top, 0L)
+  m <- match(names_top[has1], env$effects$beta$top, 0L)
   res$beta[m] <- colMeans(naive[names_top[has1]])
   res
 }
 
 egf_tmb_make_args <- function(model, frame, control, init, map, env) {
-  res <- list()
-  res$data <- egf_tmb_make_data(
+  data <- egf_tmb_make_data(
     model = model,
     frame = frame,
     control = control,
     env = env
   )
-  len <- env$len
-  n <- sum(len)
+  parameters <- egf_tmb_make_parameters(
+    model = model,
+    frame = frame,
+    env = env
+  )
 
-  if (is.null(init)) {
-    res$parameters <- egf_tmb_make_parameters(
-      model = model,
-      frame = frame,
-      env = env
-    )
-  } else {
-    eval(bquote(stopifnot(is.numeric(init), length(init) == .(n), is.finite(init))))
-    res$parameters <- split(as.numeric(init), rep.int(gl(3L, 1L, labels = names(len)), len))
-  }
-
-  if (is.null(map)) {
-    res$map <- list()
-  } else {
-    if (is.factor(map)) {
-      eval(bquote(stopifnot(length(map) == .(n))))
-    } else {
-      map <- try(seq_len(n)[map])
-      if (!is.integer(map) || anyNA(map)) {
-        stop(sprintf("'map' must index 'seq_len(%d)'.", n))
-      }
-      map <- replace(gl(n, 1L), map, NA)
+  nms <- names(parameters)
+  init <- init[match(nms, names(init), 0L)]
+  map <- map[match(nms, names(map), 0L)]
+  for (s in nms) {
+    n <- length(parameters[[s]])
+    if (s %in% names(init)) {
+      eval(bquote(stopifnot(
+        is.numeric(init[[.(s)]]),
+        length(init[[.(s)]]) == .(n),
+        !is.infinite(init[[.(s)]])
+      )))
+      ## Replace
+      index <- !is.na(init[[s]])
+      parameters[[s]][index] <- init[[s]][index]
     }
-    res$map <- split(map, rep.int(gl(3L, 1L, labels = names(len)), len))
-    res$map <- lapply(res$map, factor)
+    if (s %in% names(map)) {
+      if (is.factor(map[[s]])) {
+        eval(bquote(stopifnot(
+          length(map[[.(s)]]) == .(n)
+        )))
+        map[[s]] <- factor(map[[s]])
+      } else {
+        eval(bquote(stopifnot(
+          !anyNA(index <- seq_len(.(n))[map[[.(s)]]])
+        )))
+        f <- rep.int(NA_integer_, n)
+        f[-index] <- seq_len(n - length(index))
+        levels(f) <- as.character(f[-index])
+        class(f) <- "factor"
+        map[[s]] <- f
+      }
+    }
   }
 
-  if (ncol(res$data$Z) > 0L) {
+  if (length(parameters$b) > 0L) {
     ## Declare that 'b' contains random effects
-    res$random <- "b"
+    random <- "b"
   } else {
     ## Declare that there are no random effects
-    res$random <- NULL
+    random <- NULL
     ## Fix 'theta' and 'b' to NA_real_ since only 'beta' is used
-    res$parameters$theta <- res$parameters$b <- NA_real_
-    res$map$theta <- res$map$b <- factor(NA)
+    ## and zero-length vectors are disallowed
+    parameters$theta <- parameters$b <- NA_real_
+    map$theta <- map$b <- factor(NA)
   }
 
-  res$profile <- if (control$profile) "beta" else NULL
-  res$DLL <- "epigrowthfit"
-  res$silent <- (control$trace == 0L)
-  res
+  list(
+    data = data,
+    parameters = parameters,
+    map = map,
+    random = random,
+    profile = if (control$profile) "beta" else NULL,
+    DLL = "epigrowthfit",
+    silent = (control$trace == 0L)
+  )
 }
 
 egf_tmb_update_data <- function(data, priors) {
@@ -380,11 +395,11 @@ egf_tmb_update_data <- function(data, priors) {
     n <- length(l)
     argnull <- vapply(l, is.null, FALSE)
 
-    flag <- rep_len(-1L, n)
-    flag[!argnull] <- egf_get_flag("prior", vapply(l[!argnull], `[[`, "", "family"))
+    flag <- rep.int(-1L, n)
+    flag[!argnull] <- egf_get_flag(vapply(l[!argnull], `[[`, "", "family"), "prior")
     data$flags[[paste0("regularize_", s)]] <- flag
 
-    par <- rep_len(list(numeric(0L)), n)
+    par <- rep.int(list(double(0L)), n)
     par[!argnull] <- lapply(l[!argnull], function(x) unlist1(x$parameters))
     data[[paste0("hyperparameters_", s)]] <- par
   }

@@ -78,17 +78,10 @@ Arguments \code{control}, \code{parallel}, and \code{trace} are unused
 when \code{boot = FALSE}.
 }
 \examples{
-example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-object <- readRDS(file.path(exdata, "egf.rds"))
-
-path_to_cache <- file.path(exdata, "simulate-egf.rds")
-if (file.exists(path_to_cache)) {
-  zz <- readRDS(path_to_cache)
-} else {
-  zz <- simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
-  saveRDS(zz, file = path_to_cache)
-}
+object <- egf_cache("egf-1.rds")
+zz <- egf_cache("simulate-egf-1.rds", {
+  simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
+})
 str(zz)
 matplot(t(zz$boot[object$nonrandom, ]), type = "o", las = 1,
   xlab = "simulation",

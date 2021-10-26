@@ -134,7 +134,7 @@ NULL
 egf_expand_par <- function(obj, par) {
   l <- obj$env$parList(par[obj$env$lfixed()], par)
   if (ncol(obj$env$data$Z) == 0L) {
-    l[names(l) != "beta"] <- list(numeric(0L))
+    l[names(l) != "beta"] <- list(double(0L))
   }
   len <- lengths(l)
   res <- unlist1(l)
@@ -146,7 +146,7 @@ egf_expand_par <- function(obj, par) {
 egf_condense_par <- function(obj, par) {
   parameters <- obj$env$parameters
   if (ncol(obj$env$data$Z) == 0L) {
-    parameters[names(parameters) != "beta"] <- list(numeric(0L))
+    parameters[names(parameters) != "beta"] <- list(double(0L))
   }
   f <- function(x) {
     if (is.null(map <- attr(x, "map"))) {
@@ -311,7 +311,7 @@ egf_preprofile <- function(object, subset, top) {
   len <- attr(c0, "lengths")
   map <- attr(c0, "map")$beta
   if (is.null(map)) {
-    argna <- rep_len(FALSE, len[["beta"]])
+    argna <- logical(len[["beta"]])
     fmap <- gl(len[["beta"]], 1L)
   } else {
     argna <- is.na(map)
@@ -335,4 +335,126 @@ egf_preprofile <- function(object, subset, top) {
     stop(wrap("At least one population fitted value is not a function of any estimated parameters."))
   }
   list(Y = Y, A = A)
+}
+
+#' Cache example objects
+#'
+#' A utility for caching objects created when code in the Examples section
+#' of an \pkg{epigrowthfit} help page is sourced by \code{\link{example}}.
+#' It is not intended for use outside of this context.
+#' (It is only exported so that it can be accessed without \code{\link{:::}}
+#' in Examples.)
+#'
+#' @param file
+#'   A character string containing the base name of a file.
+#'   The absolute path to the cache file is
+#'   \code{\link{system.file}("exdata", file, package = "epigrowthfit")}.
+#' @param object
+#'   An \R object.
+#' @param clear
+#'   A logical flag. If \code{TRUE}, then \code{file} is deleted by
+#'   \code{\link{file.remove}} if it exists, and nothing else is done.
+#' @param clear_all
+#'   A logical flag. If \code{TRUE}, then the package subdirectory
+#'   containing all cache files is deleted if it exists, and nothing
+#'   else is done. \code{clear_all} is resolved before \code{clear}.
+#' @param topic
+#'   A character string specifying the topic associated with \code{file}.
+#'   If \code{NULL}, then an attempt is made to recover \code{topic}
+#'   from \code{file}, and an error is thrown if the attempt fails.
+#' @param ...
+#'   Arguments passed to \code{\link{saveRDS}}.
+#'
+#' @details
+#' @section Behaviour when clear = FALSE and clear_all = FALSE:
+#' If \code{file} is found by \code{\link{file.exists}}, then the
+#' cached object is restored by \code{\link{readRDS}} and returned.
+#' Due to lazy evaluation of arguments by \R, \code{object} remains
+#' a \link{promise} and is never evaluated.
+#'
+#' If \code{file} is not found but \code{object} is supplied,
+#' then \code{object} is written to \code{file} by \code{\link{saveRDS}}
+#' and returned.
+#' Package subdirectory \code{exdata} is created if necessary.
+#'
+#' If \code{file} is not found and \code{object} is missing,
+#' then \code{\link{example}(topic, character.only = TRUE)}
+#' is run in order to create the file.
+#' If this works, then the cached object is restored using
+#' \code{\link{readRDS}}. Otherwise, an error is thrown.
+#'
+#' @section File naming system:
+#' In calls to \code{egf_cache} found in the Examples for topic \code{topic}
+#' (except for this one) \code{file} is set equal to the string obtained by
+#' (i) replacing non-word characters in \code{topic} with hyphens; then
+#' (ii) appending a hyphen, an integer index, and an \code{".rds"} extension
+#' to the end of the resulting string.
+#' This system allows \code{topic} to be recovered from \code{file} via
+#' pattern matching against topics found by \code{\link{help.search}}.
+#'
+#' @return
+#' If \code{clear = FALSE} and \code{clear_all = FALSE},
+#' then \code{object} or an \R object restored from \code{file}
+#' by \code{\link{readRDS}}.
+#'
+#' If \code{clear = TRUE} or \code{clear_all = TRUE},
+#' then the result of \code{\link{unlink}}.
+#'
+#' @examples
+#' root <- system.file(package = "epigrowthfit", mustWork = TRUE)
+#' subdir <- file.path(root, "exdata")
+#' lf1 <- list.files(subdir)
+#' file <- "test.rds"
+#' a <- 1
+#' x <- egf_cache(file, a)
+#' y <- egf_cache(file, a <- 2)
+#' lf2 <- list.files(subdir)
+#' z <- egf_cache(file, clear = TRUE)
+#' lf3 <- list.files(subdir)
+#'
+#' identical(x, 1)
+#' identical(y, 1)
+#' identical(z, 0L)
+#' identical(a, 1)
+#' identical(setdiff(lf2, lf1), file)
+#' identical(lf3, lf1)
+#'
+#' @export
+#' @importFrom utils help.search example
+egf_cache <- function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
+  root <- system.file(package = "epigrowthfit", mustWork = TRUE)
+  subdir <- file.path(root, "exdata")
+  if (clear_all) {
+    return(unlink(subdir, recursive = TRUE))
+  }
+  path <- file.path(subdir, file)
+  if (clear) {
+    return(unlink(path))
+  }
+  if (file.exists(path)) {
+    return(readRDS(path))
+  }
+  if (missing(object)) {
+    if (is.null(topic)) {
+      name <- sub("-\\d+\\.rds$", "", file)
+      pattern <- paste0("^", gsub("-", "\\\\W", name), "$")
+      hs <- help.search(pattern, ignore.case = FALSE, package = "epigrowthfit",
+                        fields = "name", types = "help", verbose = FALSE)
+      topic <- hs$matches$Topic
+      if (length(topic) != 1L) {
+        stop("Resource was not created because 'file' matches ", length(topic), " topics.")
+      }
+    }
+    example(topic, character.only = TRUE, package = "epigrowthfit",
+            local = TRUE, echo = FALSE)
+    if (!file.exists(path)) {
+      stop("Examples for topic ", dQuote(topic), " were sourced but resource was not created.")
+    }
+    return(readRDS(path))
+  }
+  if (!dir.exists(subdir)) {
+    dir.create(subdir)
+  }
+  saveRDS(object, file = path, ...)
+  object
 }

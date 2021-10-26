@@ -22,8 +22,8 @@ egf(model, ...)
   control = egf_control(),
   fit = TRUE,
   se = FALSE,
-  init = NULL,
-  map = NULL,
+  init = list(),
+  map = list(),
   append = NULL,
   ...
 )
@@ -143,23 +143,26 @@ nonlinear model parameters are computed approximately using the delta
 method.
 Computations are preserved in the model object for reuse by methods.}
 
-\item{init}{A \link{numeric} vector to be used as the bottom level parameter vector
-for the first likelihood evaluation.
-The default (\code{\link{NULL}}) is to accept the internally generated
-default, which is a zero vector except for the \code{"(Intercept)"}
-coefficients in segment \code{beta}.}
+\item{init}{A named \link{list} of \link{numeric} vectors with possible elements
+\code{beta}, \code{theta}, and \code{b}, specifying values to be used
+in the first likelihood evaluation for the so-named segments of the
+bottom level parameter vector.
+The default value of each segment is a zero vector, with the exception
+that \code{"(Intercept)"} coefficients in \code{beta} have default values
+computed from supplied time series.
+To specify only a subset of a segment, use \code{\link{NA}} to indicate
+elements that should retain their default value.}
 
-\item{map}{A \link{factor} corresponding elementwise to the bottom level parameter
-vector.
-Elements of the parameter vector corresponding to \code{\link{NA}} in
-\code{map} are fixed at their initial values, rather than estimated.
-Elements corresponding to a common factor level are constrained to have
-a common value during estimation.
-(However, grouping between segments \code{beta}, \code{theta}, and
-\code{b} is not implemented.)
-Alternatively, \code{map} can be an index vector for the elements of
-the parameter vector.
-In this case, the indexed elements are fixed at their initial values.}
+\item{map}{A named list of \link{factor}s with possible elements \code{beta},
+\code{theta}, and \code{b}, each as long as the so-named segment
+of the bottom level parameter.
+Elements of segment \code{name} indexed by \code{is.na(map[["name"]])},
+are fixed at their initial values, rather than estimated, and elements
+corresponding to a common factor level are are constrained to have a
+common value during estimation.
+\code{map[["name"]]} can be an index vector for segment \code{name},
+instead of a factor. In this case, the elements of segment \code{name}
+indexed by \code{map[["name"]]} are fixed at their initial values.}
 
 \item{append}{An expression indicating variables in \code{data_windows}
 to be preserved in the returned object for use by methods.
@@ -218,6 +221,8 @@ time points each represent exactly one day of week.
 set.seed(180149L)
 N <- 10L
 time <- seq.int(0, 40, 1)
+mu <- c(-3.2, 6)
+sigma <- c(0.2, 0.2)
 r <- rlnorm(N, -3.2, 0.2)
 c0 <- rlnorm(N, 6, 0.2)
 f <- function(time, r, c0) {
@@ -245,28 +250,32 @@ data_windows <- data.frame(
 )
 
 ## Estimate the generative model
-root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-path_to_cache <- file.path(root, "exdata", "egf.rds")
-if (file.exists(path_to_cache)) {
-  object <- readRDS(path_to_cache)
-} else {
-  object <- egf(
+m1 <- egf_cache("egf-1.rds", {
+  egf(
     model = egf_model(curve = "exponential", family = "pois"),
     formula_ts = cbind(time, x) ~ country,
     formula_windows = cbind(start, end) ~ country,
     formula_parameters = ~(1 | country:wave),
-    formula_priors = list(Sigma ~ LKJ(eta = 2)),
     data_ts = data_ts,
     data_windows = data_windows,
-    init = replace(rep_len(0))
     se = TRUE
   )
-  dir.create(dirname(path_to_cache), showWarnings = FALSE)
-  saveRDS(object, file = path_to_cache)
-}
+})
 
-## Query available methods and their documentation
-methods(class = "egf")
-help.search("\\\\.egf$", fields = "alias", package = "epigrowthfit")
+## Re-estimate the generative model with:
+## * Gaussian prior on 'beta[1L]'
+## * LKJ prior on all random effect covariance matrices (though here there is just one)
+## * initial value of 'theta' set explicitly
+## * 'theta[3L]' fixed at initial value
+m2 <- egf_cache("egf-2.rds", {
+  update(m1,
+    formula_priors = list(
+      beta[1L] ~ Normal(mu = -3, sigma = 1),
+      Sigma ~ LKJ(eta = 2)
+    ),
+    init = list(theta = c(0.5^2, 0.5^2, 0)),
+    map = list(theta = 3L)
+  )
+})
 
 }

@@ -32,7 +32,7 @@ NULL
 
 egf_link_get <- function(s) {
   ok <- s %in% egf_get_names_top(NULL, link = FALSE)
-  s[ok] <- replace(rep_len("log", sum(ok)), s[ok] == "p", "logit")
+  s[ok] <- replace(rep.int("log", sum(ok)), s[ok] == "p", "logit")
   s[!ok] <- NA
   s
 }

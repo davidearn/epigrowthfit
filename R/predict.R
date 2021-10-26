@@ -82,17 +82,8 @@
 #' }
 #'
 #' @examples
-#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-#' object <- readRDS(file.path(exdata, "egf.rds"))
-#'
-#' path_to_cache <- file.path(exdata, "predict-egf.rds")
-#' if (file.exists(path_to_cache)) {
-#'   zz <- readRDS(path_to_cache)
-#' } else {
-#'   zz <- predict(object, se = TRUE)
-#'   saveRDS(zz, file = path_to_cache)
-#' }
+#' object <- egf_cache("egf-1.rds")
+#' zz <- egf_cache("predict-egf-1.rds", predict(object, se = TRUE))
 #' str(zz)
 #'
 #' @export
@@ -106,8 +97,10 @@ predict.egf <- function(object,
                         se = FALSE,
                         ...) {
   what <- unique(match.arg(what, several.ok = TRUE))
-  stop_if_not_true_false(log)
-  stop_if_not_true_false(se)
+  stopifnot(
+    is_true_or_false(log),
+    is_true_or_false(se)
+  )
   if (se && !log) {
     stop(wrap(
       "Standard errors are not available for inverse log-transformed ",
@@ -209,7 +202,7 @@ predict.egf <- function(object,
 
   last <- cumsum(len)
   first <- c(0L, last[-length(last)]) + 1L
-  x <- rep_len(NA_real_, length(time))
+  x <- rep.int(NA_real_, length(time))
   ix <- list(
     interval = -first,
     cumulative = seq_along(time),
@@ -271,10 +264,7 @@ predict.egf <- function(object,
 #' \code{level} is retained as an attribute.
 #'
 #' @examples
-#' example("predict.egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' object <- readRDS(system.file("exdata", "predict-egf.rds",
-#'                               package = "epigrowthfit", mustWork = TRUE))
-#'
+#' object <- egf_cache("predict-egf-1.rds")
 #' confint(object, log = TRUE)
 #' confint(object, log = FALSE)
 #'
@@ -287,8 +277,10 @@ confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
       "Retry with 'object = predict(<\"egf\" object>, log = TRUE, se = TRUE)'."
     ))
   }
-  stop_if_not_number_in_interval(level, 0, 1, "()")
-  stop_if_not_true_false(log)
+  stopifnot(
+    is_number_in_interval(level, 0, 1, "()"),
+    is_true_or_false(log)
+  )
 
   res <- data.frame(
     object[-match("se", names(object), 0L)],

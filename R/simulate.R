@@ -62,17 +62,10 @@
 #' making the result reproducible.
 #'
 #' @examples
-#' example("egf", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-#' object <- readRDS(file.path(exdata, "egf.rds"))
-#'
-#' path_to_cache <- file.path(exdata, "simulate-egf.rds")
-#' if (file.exists(path_to_cache)) {
-#'   zz <- readRDS(path_to_cache)
-#' } else {
-#'   zz <- simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
-#'   saveRDS(zz, file = path_to_cache)
-#' }
+#' object <- egf_cache("egf-1.rds")
+#' zz <- egf_cache("simulate-egf-1.rds", {
+#'   simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
+#' })
 #' str(zz)
 #' matplot(t(zz$boot[object$nonrandom, ]), type = "o", las = 1,
 #'   xlab = "simulation",
@@ -87,8 +80,10 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
                          parallel = egf_parallel(),
                          trace = FALSE,
                          ...) {
-  stop_if_not_true_false(boot)
-  stop_if_not_integer(nsim, "positive")
+  stopifnot(
+    is_true_or_false(boot),
+    is_number(nsim, "positive", integer = TRUE)
+  )
   nsim <- as.integer(nsim)
 
   ## Set and preserve RNG state (modified from 'stats:::simulate.lm')
@@ -121,9 +116,11 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
   res <- list(simulations = frame, boot = NULL)
 
   if (boot) {
-    stopifnot(is.list(control))
-    stopifnot(inherits(parallel, "egf_parallel"))
-    stop_if_not_true_false(trace)
+    stopifnot(
+      is.list(control),
+      inherits(parallel, "egf_parallel"),
+      is_true_or_false(trace)
+    )
 
     ## Reconstruct list of arguments to 'MakeADFun' from object internals
     ## for retaping
@@ -323,14 +320,10 @@ print.egf_simulate <- function(x, ...) {
 #' c0 <- 400
 #'
 #' mu <- log(c(r, c0))
-#' Sigma <- diag(rep_len(0.2^2, length(mu)))
+#' Sigma <- diag(rep.int(0.2^2, length(mu)))
 #'
-#' root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-#' path_to_cache <- file.path(root, "exdata", "simulate-egf_model.rds")
-#' if (file.exists(path_to_cache)) {
-#'   zz <- readRDS(path_to_cache)
-#' } else {
-#'   zz <- simulate(
+#' zz <- egf_cache("simulate-egf_model-1.rds", {
+#'   simulate(
 #'     object = egf_model(curve = "exponential", family = "pois"),
 #'     nsim = 20L,
 #'     seed = 202737L,
@@ -338,9 +331,8 @@ print.egf_simulate <- function(x, ...) {
 #'     Sigma = Sigma,
 #'     cstart = 10
 #'   )
-#'   dir.create(dirname(path_to_cache), showWarnings = FALSE)
-#'   saveRDS(zz, file = path_to_cache)
-#' }
+#' })
+#' str(zz)
 #'
 #' @seealso
 #' \code{\link{egf.egf_model_simulate}} for estimating the generative model
@@ -353,7 +345,7 @@ print.egf_simulate <- function(x, ...) {
 simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
                                mu, Sigma = NULL, tol = 1e-06,
                                tmax = 100, cstart = 0, ...) {
-  stop_if_not_integer(nsim, "positive")
+  stopifnot(is_number(nsim, "positive", integer = TRUE))
   nsim <- as.integer(nsim)
 
   ## Set and preserve RNG state (modified from 'stats:::simulate.lm')
@@ -366,7 +358,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   } else {
     oRNGstate <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", oRNGstate, envir = .GlobalEnv), add = TRUE)
-    RNGstate <- c(list(as.numeric(seed)), as.list(RNGkind()))
+    RNGstate <- c(list(as.integer(seed)), as.list(RNGkind()))
     names(RNGstate) <- names(formals(set.seed))
     set_RNGstate <- function() do.call(set.seed, RNGstate)
   }
@@ -380,15 +372,15 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   )
   names(mu) <- names_top
   if (!is.null(Sigma)) {
-    stop_if_not_number(tol, "nonnegative")
     stopifnot(
+      is_number(tol, "nonnegative"),
       is.numeric(Sigma),
       dim(Sigma) == length(mu),
       is.finite(Sigma),
       isSymmetric(Sigma),
       (e <- eigen(Sigma, symmetric = TRUE, only.values = TRUE)$values) > -tol * abs(e[1L])
     )
-    dimnames(Sigma) <- rep_len(list(names_top), 2L)
+    dimnames(Sigma)[1:2] <- list(names_top)
   }
 
   has_inflection <- object$curve %in% c("gompertz", "logistic", "richards")
@@ -407,10 +399,10 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     }
   } else {
     ## Time: daily from 0 days to 'tmax' days
-    stop_if_not_number(tmax, "positive")
+    stopifnot(is_number(tmax, "positive"))
     tmax <- max(1, trunc(tmax))
   }
-  stop_if_not_number(cstart)
+  stopifnot(is_number(cstart))
 
   ## Construct arguments to 'egf' corresponding to 'nsim', 'mu', 'Sigma'
   formula_ts <- cbind(time, x) ~ ts
@@ -428,22 +420,16 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
   if (is.null(Sigma)) {
     if (nsim == 1L) {
       formula_parameters <- ~1
-      init <- mu
-      names(init) <- rep_len("beta", p)
+      init <- list(beta = mu, theta = double(0L), b = double(0L))
     } else {
       formula_parameters <- ~ts
-      init <- rep_len(0, p * nsim)
-      init[seq.int(from = 1L, by = nsim, length.out = p)] <- mu
-      names(init) <- rep_len("beta", p * nsim)
+      beta <- double(p * nsim)
+      beta[seq.int(from = 1L, by = nsim, length.out = p)] <- mu
+      init <- list(beta = beta, theta = double(0L), b = double(0L))
     }
-    attr(init, "lengths") <- c(beta = length(init), theta = 0L, b = 0L)
   } else {
     formula_parameters <- ~(1 | ts)
-    l <- list(beta = mu, theta = cov2theta(Sigma), b = rep_len(0, nsim * p))
-    init <- unlist1(l)
-    len <- lengths(l)
-    names(init) <- rep.int(names(len), len)
-    attr(init, "lengths") <- len
+    init <- list(beta = mu, theta = cov2theta(Sigma), b = double(nsim * p))
   }
   environment(formula_ts) <- environment(formula_windows) <-
     environment(formula_parameters) <- .GlobalEnv
@@ -459,13 +445,18 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     fit = FALSE
   )
 
+  actual <- unlist1(init)
+  len <- lengths(init)
+  names(actual) <- rep.int(names(len), len)
+  attr(actual, "lengths") <- len
+
   if (has_inflection && !is.null(Sigma)) {
     ## Second pass with 'data' of appropriate length,
     ## determined by simulated inflection times
     set_RNGstate()
-    Y <- mm$tmb_out$simulate(init)$Y
-    colnames(Y) <- names_top
-    tmax <- ceiling(exp(Y[, "log(tinfl)"])) + 1
+    sim <- mm$tmb_out$simulate(actual)
+    colnames(sim$Y) <- names_top
+    tmax <- ceiling(exp(sim$Y[, "log(tinfl)"])) + 1
     time <- lapply(tmax, function(x) seq.int(0, x, 1))
     data_ts <- data.frame(
       ts = rep.int(gl(nsim, 1L), lengths(time)),
@@ -478,7 +469,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
 
   ## Simulate
   set_RNGstate()
-  sim <- mm$tmb_out$simulate(init)
+  sim <- mm$tmb_out$simulate(actual)
   colnames(sim$Y) <- names_top
 
   ## Replace dummy observations in 'data' with simulated ones
@@ -511,8 +502,8 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     formula_parameters = formula_parameters,
     data_ts = data_ts,
     data_windows = data_windows,
-    actual = init,
-    random = (names(init) == "b"),
+    actual = actual,
+    random = (names(actual) == "b"),
     call = match.call()
   )
   attr(res, "RNGstate") <- RNGstate
@@ -524,7 +515,7 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
 #' @importFrom stats coef
 coef.egf_model_simulate <- function(object, ...) {
   res <- object[["actual"]]
-  len <- attr(res, "len")
+  len <- attr(res, "lengths")
   map <- vector("list", length(len))
   names(map) <- names(len)
   attr(res, "map") <- map
@@ -557,17 +548,8 @@ getCall.egf_model_simulate <- function(x, ...) {
 #' An \code{"\link{egf}"} object.
 #'
 #' @examples
-#' example("simulate.egf_model", package = "epigrowthfit", local = TRUE, echo = FALSE)
-#' exdata <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
-#' model <- readRDS(file.path(exdata, "simulate-egf_model.rds"))
-#'
-#' path_to_cache <- file.path(exdata, "egf-egf_model_simulate.rds")
-#' if (file.exists(path_to_cache)) {
-#'   object <- readRDS(path_to_cache)
-#' } else {
-#'   object <- egf(model)
-#'   saveRDS(object, file = path_to_cache)
-#' }
+#' model <- egf_cache("simulate-egf_model-1.rds")
+#' object <- egf_cache("egf-egf_model_simulate-1.rds", egf(model))
 #' pp <- cbind(actual = coef(model), fitted = coef(object))
 #'
 #' @export
