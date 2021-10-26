@@ -40,7 +40,7 @@ test_that("egf_sanitize_formula_parameters", {
   }
 
   fp1 <- ~x * y + (z | g) + (zz | g/h)
-  l1 <- rep_len(list(simplify_terms(fp1)), 2L)
+  l1 <- rep.int(list(simplify_terms(fp1)), 2L)
   names(l1) <- c("log(r)", "log(c0)")
   expect_identical(sanitize(fp1), l1)
 
@@ -208,11 +208,7 @@ test_that("egf_make_priors", {
 
 test_that("egf_make_X", {
   formula <- ~x + y + z
-  data <- list(
-    x = rep_len(0, 10L),
-    y = gl(2L, 5L),
-    z = rnorm(10L)
-  )
+  data <- list(x = double(10L), y = gl(2L, 5L), z = rnorm(10L))
   data <- model.frame(formula, data = data)
 
   mm1 <- model.matrix(formula, data = data)
@@ -242,7 +238,7 @@ test_that("egf_make_Z", {
   expect_identical(Z@x, data$x)
   expect_identical(Z@i, 0:9)
   expect_identical(Z@p, c(0L, cumsum(c(2L, 2L, 1L, 1L, 2L, 2L))))
-  expect_identical(Z@assign, rep_len(1L, 6L))
+  expect_identical(Z@assign, rep.int(1L, 6L))
   expect_error(Z@contrasts)
   expect_identical(Z@level, gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5:2")))
 })
@@ -268,7 +264,7 @@ test_that("egf_combine_X", {
   expect_length(l$effects, 4L)
   expect_identical(row.names(l$effects), as.character(seq_len(4L)))
   expect_named(l$effects, c("bottom", "top", "term", "colname"))
-  expect_identical(l$effects$bottom, disambiguate(rep_len("beta", 4L)))
+  expect_identical(l$effects$bottom, disambiguate(rep.int("beta", 4L)))
   expect_identical(l$effects$top, gl(2L, 2L, labels = c("a", "b")))
   expect_identical(l$effects$term, factor(c("(Intercept)", "x", "(Intercept)", "f")))
   expect_identical(l$effects$colname, colnames(l$X))
@@ -309,9 +305,9 @@ test_that("egf_combine_Z", {
   expect_length(l$effects, 8L)
   expect_identical(row.names(l$effects), as.character(seq_len(10L)))
   expect_named(l$effects, c("cov", "vec", "bottom", "top", "term", "group", "level", "colname"))
-  expect_identical(l$effects$cov, `levels<-`(interaction(l$effects[c("term", "group")], drop = TRUE, lex.order = TRUE), disambiguate(rep_len("Sigma", 4L))))
-  expect_identical(l$effects$vec, `levels<-`(interaction(l$effects[c("term", "group", "level")], drop = TRUE, lex.order = TRUE), disambiguate(rep_len("u", 10L))))
-  expect_identical(l$effects$bottom, disambiguate(rep_len("b", 10L)))
+  expect_identical(l$effects$cov, `levels<-`(interaction(l$effects[c("term", "group")], drop = TRUE, lex.order = TRUE), disambiguate(rep.int("Sigma", 4L))))
+  expect_identical(l$effects$vec, `levels<-`(interaction(l$effects[c("term", "group", "level")], drop = TRUE, lex.order = TRUE), disambiguate(rep.int("u", 10L))))
+  expect_identical(l$effects$bottom, disambiguate(rep.int("b", 10L)))
   expect_identical(l$effects$top, rep.int(factor(rep.int(c("a", "b"), c(2L, 3L))), 2L))
   expect_identical(l$effects$term, factor(rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L))))
   expect_identical(l$effects$group, rep.int(factor(rep.int(c("f", "g"), c(2L, 3L))), 2L))

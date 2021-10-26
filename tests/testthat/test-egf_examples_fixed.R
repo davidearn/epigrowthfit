@@ -8,8 +8,9 @@ test_that("exponential", {
     mu = log(c(r, c0)),
     cstart = 10
   )
+
   mm <- egf(zz)
-  expect_equal(mm$best, zz$actual, tolerance = 5e-2, ignore_attr = "lengths")
+  expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 })
 
 test_that("subexponential", {
@@ -23,12 +24,9 @@ test_that("subexponential", {
     mu = c(log(alpha), log(c0), qlogis(p)),
     cstart = 10
   )
-  mm <- egf(zz,
-    formula_priors = list(
-      logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)
-    )
-  )
-  expect_equal(mm$best, zz$actual, tolerance = 5e-2, ignore_attr = "lengths")
+
+  mm <- egf(zz, formula_priors = list(logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)))
+  expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 })
 
 test_that("gompertz", {
@@ -42,8 +40,9 @@ test_that("gompertz", {
     mu = log(c(alpha, tinfl, K)),
     cstart = 10
   )
+
   mm <- egf(zz)
-  expect_equal(mm$best, zz$actual, tolerance = 5e-2, ignore_attr = "lengths")
+  expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 })
 
 test_that("logistic", {
@@ -57,8 +56,9 @@ test_that("logistic", {
     mu = log(c(r, tinfl, K)),
     cstart = 10
   )
+
   mm <- egf(zz)
-  expect_equal(mm$best, zz$actual, tolerance = 5e-2, ignore_attr = "lengths")
+  expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 })
 
 test_that("richards", {
@@ -73,10 +73,7 @@ test_that("richards", {
     mu = log(c(r, tinfl, K, a)),
     cstart = 10
   )
-  mm <- egf(zz,
-    formula_priors_top = list(
-      log(a) ~ Normal(mu = log(a), sigma = 0.05)
-    )
-  )
-  expect_equal(mm$best, zz$actual, tolerance = 5e-2, ignore_attr = "lengths")
+
+  mm <- egf(zz, formula_priors = list(log(a) ~ Normal(mu = log(a), sigma = 0.05)))
+  expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 })

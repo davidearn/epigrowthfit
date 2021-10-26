@@ -11,10 +11,8 @@ test_that("excess", {
     mu = log(c(r, tinfl, K, b, disp)),
     cstart = 10
   )
-  mm <- egf(zz,
-    formula_priors = list(
-      log(b) ~ Normal(mu = log(b), sigma = 0.5)
-    )
-  )
-  expect_equal(mm$best, zz$actual, tolerance = 5e-2, ignore_attr = "lengths")
+
+  mm <- egf(zz, formula_priors = list(log(b) ~ Normal(mu = 2.5, sigma = 1)))
+  cbind(coef(mm), coef(zz))
+  expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 })

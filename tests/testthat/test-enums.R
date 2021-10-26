@@ -1,5 +1,5 @@
 test_that("egf_get_flag", {
-  f <- function(type, enum) egf_get_flag(type, c(enum, "invalid name"))
+  f <- function(type, enum) egf_get_flag(c(enum, "invalid enum"), type)
   flag <- Map(f,
     type = c("curve", "family", "prior"),
     enum = c("exponential", "pois", "norm")
@@ -12,5 +12,5 @@ test_that("egf_get_flag", {
       expect_identical(flag[[.(s)]][2L], -1L)
     }))
   }
-  expect_error(egf_get_flag("invalid name", c("foo", "bar")))
+  expect_error(egf_get_flag(c("foo", "bar"), "invalid type"))
 })

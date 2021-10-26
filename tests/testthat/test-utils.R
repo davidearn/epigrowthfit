@@ -44,7 +44,7 @@ test_that("cov2theta, theta2cov", {
   n <- 5L
   S <- crossprod(matrix(rnorm(n * n), n, n))
   R <- chol(S)
-  R[] <- R * rep.int(1 / diag(R), rep.int(n, n))
+  R <- R * rep.int(1 / diag(R), rep.int(n, n))
   theta <- c(0.5 * log(diag(S)), R[upper.tri(R)])
   expect_equal(cov2theta(S), theta)
   expect_equal(theta2cov(theta), S)
@@ -63,4 +63,3 @@ test_that("in_place_ragged_apply", {
   f <- function(x) c(log(x[1:5]), plogis(x[6:10]))
   expect_identical(y, as.data.frame(lapply(x, f)))
 })
-

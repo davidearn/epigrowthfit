@@ -22,15 +22,6 @@ get_test_res <- function(test_enum, ...) {
   obj$report()$res
 }
 
-make_Sigma <- function(x) {
-  n <- 0.5 * (-1 + sqrt(1 + 8 * length(x)))
-  R <- diag(n)
-  R[upper.tri(R)] <- x[-seq_len(n)]
-  Sigma <- t(R) %*% R
-  diag_D <- exp(x[seq_len(n)] - 0.5 * log(diag(Sigma)))
-  Sigma[] <- diag_D * Sigma * rep(diag_D, each = n)
-  Sigma
-}
 mvlgamma <- function(x, p) {
   0.25 * p * (p - 1) * log(pi) + rowSums(lgamma(outer(x, seq.int(0, p - 1, by = 1) / 2, `-`)))
 }
@@ -43,21 +34,21 @@ dlkj <- function(x, eta, give_log = FALSE) {
 }
 dwishart <- function(x, df, scale, give_log = FALSE) {
   n <- 0.5 * (-1 + sqrt(1 + 8 * length(x)))
-  X <- make_Sigma(x)
-  S <- make_Sigma(scale)
+  X <- theta2cov(x)
+  S <- theta2cov(scale)
   log_res <- -0.5 * (df * log(det(S)) + (-df + n + 1) * log(det(X)) + n * df * log(2) + 2 * mvlgamma(df / 2, n) + sum(diag(solve(S, X))))
   if (give_log) log_res else exp(log_res)
 }
 dinvwishart <- function(x, df, scale, give_log = FALSE) {
   n <- 0.5 * (-1 + sqrt(1 + 8 * length(x)))
-  X <- make_Sigma(x)
-  S <- make_Sigma(scale)
+  X <- theta2cov(x)
+  S <- theta2cov(scale)
   log_res <- -0.5 * (-df * log(det(S)) + (df + n + 1) * log(det(X)) + n * df * log(2) + 2 * mvlgamma(df / 2, n) + sum(diag(solve(X, S))))
   if (give_log) log_res else exp(log_res)
 }
 
 test_that("list_of_vectors_t", {
-  x <- list(rnorm(10L), seq_len(5L), TRUE, numeric(0L))
+  x <- list(rnorm(10L), seq_len(5L), TRUE, double(0L))
   res <- get_test_res(test_enum = "list_of_vectors_t", x = x)
   expect_identical(res, lapply(x, as.numeric))
 })

@@ -30,6 +30,6 @@ test_that("egf_eval_append", {
 test_that("egf_eval_label", {
   expect_identical(egf_eval_label(quote(paste("Date:", z)), data), paste("Date:", data$z))
   expect_null(egf_eval_label(NULL, data))
-  expect_identical(egf_eval_label("1", data), rep_len("1", 10L))
-  expect_identical(egf_eval_label(1, data), rep_len("1", 10L))
+  expect_identical(egf_eval_label("1", data), rep.int("1", 10L))
+  expect_identical(egf_eval_label(1, data), rep.int("1", 10L))
 })

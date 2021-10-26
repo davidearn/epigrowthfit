@@ -5,16 +5,13 @@ test_that("day_of_week", {
   w <- c(1, 1, 1, 0.8, 0.8, 1.4)
   disp <- 50
 
-  zz <- simulate(egf_model(curve = "logistic", family = "nbinom", day_of_week = 3L),
+  zz <- simulate(
+    object = egf_model(curve = "logistic", family = "nbinom", day_of_week = 3L),
     nsim = 1L,
     seed = 366465L,
     mu = log(c(r, tinfl, K, disp, w)),
     cstart = 10
   )
-  mm <- egf(zz,
-    formula_priors = list(
-      beta[4:9] ~ Normal(mu = log(w), sigma = 0.2)
-    )
-  )
-  expect_equal(mm$best, zz$actual, tolerance = 2e-1, ignore_attr = "lengths")
+  mm <- egf(zz)
+  expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 })

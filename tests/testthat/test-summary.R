@@ -1,8 +1,8 @@
-so <- readRDS(system.file("exdata", "summary-egf.rds", package = "epigrowthfit", mustWork = TRUE))
 
 test_that("basic", {
-  o <- readRDS(system.file("exdata", "egf.rds", package = "epigrowthfit", mustWork = TRUE))
-  fo <- readRDS(system.file("exdata", "fitted-egf.rds", package = "epigrowthfit", mustWork = TRUE))
+  o <- egf_cache("egf-1.rds")
+  so <- egf_cache("summary-egf-1.rds")
+  fo <- egf_cache("fitted-egf-1.rds")
 
   expect_type(so, "list")
   expect_s3_class(so, "egf_summary")
@@ -22,9 +22,10 @@ test_that("basic", {
 })
 
 test_that("print", {
+  so <- egf_cache("summary-egf-1.rds")
   capture.output({
-    pso <- expect_condition(print(so), regexp = NA)
-    expect_identical(pso, so)
+    expect_condition(print(so), regexp = NA)
+    expect_identical(print(so), so)
     expect_invisible(print(so))
   })
 })

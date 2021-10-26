@@ -6,7 +6,7 @@ test_that("compute_final_size", {
   Z <- S0 + emdbook::lambertW(-R0 * S0 * exp(-R0 * (S0 + I0))) / R0
 
   expect_equal(compute_final_size(R0 = R0, S0 = S0, I0 = I0), Z)
-  expect_equal(compute_final_size(R0 = 0, S0 = S0, I0 = I0), rep_len(0, n))
+  expect_equal(compute_final_size(R0 = 0, S0 = S0, I0 = I0), double(n))
   expect_equal(compute_final_size(R0 = Inf, S0 = S0, I0 = I0), S0)
   expect_warning(compute_final_size(R0 = -1, S0 = 1, I0 = 0), "NA")
   expect_warning(compute_final_size(R0 = 1, S0 = 1, I0 = 0.1), "NA")
@@ -36,7 +36,7 @@ test_that("compute_tdoubling", {
   per <- 1L
   tdoubling <- compute_tdoubling(r = r, per = per)
 
-  expect_equal(as.numeric(tdoubling), log(2) / r)
+  expect_equal(as.double(tdoubling), log(2) / r)
   expect_s3_class(tdoubling, "tdoubling")
   expect_identical(attr(tdoubling, "per"), per)
   expect_warning(compute_tdoubling(-1), "NA")

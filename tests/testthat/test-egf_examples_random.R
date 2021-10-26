@@ -5,7 +5,7 @@ test_that("exponential", {
   c0 <- 100
 
   mu <- log(c(r, c0))
-  Sigma <- diag(rep_len(0.2^2, length(mu)))
+  Sigma <- diag(rep.int(0.2^2, length(mu)))
 
   zz <- simulate(egf_model(curve = "exponential", family = "pois"),
     nsim = 20L,
@@ -14,18 +14,13 @@ test_that("exponential", {
     Sigma = Sigma,
     cstart = 10
   )
-  mm <- egf(zz,
-    formula_priors = list(
-      Sigma ~ LKJ(eta = 2)
-    )
-  )
 
+  mm <- egf(zz, formula_priors = list(Sigma ~ LKJ(eta = 2)))
+  p1 <- as.list(coef(mm))
+  p2 <- as.list(coef(zz))
   expect_lt(max(abs(mm$gradient)), 5e-5)
-  pp <- data.frame(fitted = mm$best, actual = zz$actual)
-  l <- split(pp, rownames(pp))
-  expect_equal(l$beta$fitted, l$beta$actual, tolerance = 5e-2)
-  expect_equal(l$theta$fitted[seq_along(mu)], l$theta$actual[seq_along(mu)], tolerance = 2e-1)
-  expect_equal(l$theta$fitted[-seq_along(mu)], l$theta$actual[-seq_along(mu)], tolerance = 5e-1)
+  expect_equal(p1$beta, p2$beta, tolerance = 5e-2)
+  expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 5e-2)
 })
 
 test_that("subexponential", {
@@ -34,7 +29,7 @@ test_that("subexponential", {
   p <- 0.95
 
   mu <- c(log(alpha), log(c0), qlogis(p))
-  Sigma <- diag(rep_len(0.2^2, length(mu)))
+  Sigma <- diag(rep.int(0.2^2, length(mu)))
 
   zz <- simulate(egf_model(curve = "subexponential", family = "pois"),
     nsim = 20L,
@@ -43,6 +38,7 @@ test_that("subexponential", {
     Sigma = Sigma,
     cstart = 10
   )
+
   mm <- egf(zz,
     formula_priors = list(
       beta[3L] ~ Normal(mu = mu[3L], sigma = 0.05),
@@ -50,13 +46,11 @@ test_that("subexponential", {
       Sigma ~ LKJ(eta = 2)
     )
   )
-
+  p1 <- as.list(coef(mm))
+  p2 <- as.list(coef(zz))
   expect_lt(max(abs(mm$gradient)), 5e-4)
-  pp <- data.frame(fitted = mm$best, actual = zz$actual)
-  l <- split(pp, rownames(pp))
-  expect_equal(l$beta$fitted, l$beta$actual, tolerance = 5e-2)
-  expect_equal(l$theta$fitted[seq_along(mu)], l$theta$actual[seq_along(mu)], tolerance = 2e-1)
-  expect_equal(l$theta$fitted[-seq_along(mu)], l$theta$actual[-seq_along(mu)], tolerance = 5e-1)
+  expect_equal(p1$beta, p2$beta, tolerance = 5e-2)
+  expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 })
 
 test_that("gompertz", {
@@ -65,7 +59,7 @@ test_that("gompertz", {
   K <- 25000
 
   mu <- log(c(alpha, tinfl, K))
-  Sigma <- diag(rep_len(0.2^2, length(mu)))
+  Sigma <- diag(rep.int(0.2^2, length(mu)))
 
   zz <- simulate(egf_model(curve = "gompertz", family = "pois"),
     nsim = 20L,
@@ -74,18 +68,13 @@ test_that("gompertz", {
     Sigma = Sigma,
     cstart = 10
   )
-  mm <- egf(zz,
-    formula_priors = list(
-      Sigma ~ LKJ(eta = 2)
-    )
-  )
 
+  mm <- egf(zz, formula_priors = list(Sigma ~ LKJ(eta = 2)))
+  p1 <- as.list(coef(mm))
+  p2 <- as.list(coef(zz))
   expect_lt(max(abs(mm$gradient)), 5e-4)
-  pp <- data.frame(fitted = mm$best, actual = zz$actual)
-  l <- split(pp, rownames(pp))
-  expect_equal(l$beta$fitted, l$beta$actual, tolerance = 5e-2)
-  expect_equal(l$theta$fitted[seq_along(mu)], l$theta$actual[seq_along(mu)], tolerance = 2e-1)
-  expect_equal(l$theta$fitted[-seq_along(mu)], l$theta$actual[-seq_along(mu)], tolerance = 2)
+  expect_equal(p1$beta, p2$beta, tolerance = 5e-2)
+  expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 })
 
 test_that("logistic", {
@@ -94,7 +83,7 @@ test_that("logistic", {
   K <- 25000
 
   mu <- log(c(r, tinfl, K))
-  Sigma <- diag(rep_len(0.2^2, length(mu)))
+  Sigma <- diag(rep.int(0.2^2, length(mu)))
 
   zz <- simulate(egf_model(curve = "logistic", family = "pois"),
     nsim = 20L,
@@ -103,18 +92,13 @@ test_that("logistic", {
     Sigma = Sigma,
     cstart = 10
   )
-  mm <- egf(zz,
-    formula_priors = list(
-      Sigma ~ LKJ(eta = 2)
-    )
-  )
 
+  mm <- egf(zz, formula_priors = list(Sigma ~ LKJ(eta = 2)))
+  p1 <- as.list(coef(mm))
+  p2 <- as.list(coef(zz))
   expect_lt(max(abs(mm$gradient)), 1e-2)
-  pp <- data.frame(fitted = mm$best, actual = zz$actual)
-  l <- split(pp, rownames(pp))
-  expect_equal(l$beta$fitted, l$beta$actual, tolerance = 1e-2)
-  expect_equal(l$theta$fitted[seq_along(mu)], l$theta$actual[seq_along(mu)], tolerance = 5e-2)
-  expect_equal(l$theta$fitted[-seq_along(mu)], l$theta$actual[-seq_along(mu)], tolerance = 1e-1)
+  expect_equal(p1$beta, p2$beta, tolerance = 1e-2)
+  expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 })
 
 test_that("richards", {
@@ -124,7 +108,7 @@ test_that("richards", {
   a <- 1.005
 
   mu <- log(c(r, tinfl, K, a))
-  Sigma <- diag(rep_len(0.2^2, length(mu)))
+  Sigma <- diag(rep.int(0.2^2, length(mu)))
 
   zz <- simulate(egf_model(curve = "richards", family = "pois"),
     nsim = 20L,
@@ -133,6 +117,7 @@ test_that("richards", {
     Sigma = Sigma,
     cstart = 10
   )
+
   mm <- egf(zz,
     formula_priors = list(
       beta[4L] ~ Normal(mu = log(a), sigma = 0.005),
@@ -140,12 +125,11 @@ test_that("richards", {
       Sigma ~ LKJ(eta = 2)
     )
   )
+  p1 <- as.list(coef(mm))
+  p2 <- as.list(coef(zz))
   expect_lt(max(abs(mm$gradient)), 2e-2)
-  pp <- data.frame(fitted = mm$best, actual = zz$actual)
-  l <- split(pp, rownames(pp))
-  expect_equal(l$beta$fitted, l$beta$actual, tolerance = 5e-3)
-  expect_equal(l$theta$fitted[seq_along(mu)], l$theta$actual[seq_along(mu)], tolerance = 1e-1)
-  expect_equal(l$theta$fitted[-seq_along(mu)], l$theta$actual[-seq_along(mu)], tolerance = 2e-1)
+  expect_equal(p1$beta, p2$beta, tolerance = 5e-3)
+  expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 })
 
 options(oo)

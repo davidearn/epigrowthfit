@@ -6,13 +6,13 @@ test_that("Normal", {
   expect_s3_class(prior, "egf_prior")
   expect_identical(unclass(prior), list(family = "norm", parameters = list(mu = mu, sigma = sigma)))
 
-  expect_error(Normal(mu = "1",       sigma = sigma))
-  expect_error(Normal(mu = numeric(0L), sigma = sigma))
-  expect_error(Normal(mu = NA_real_,    sigma = sigma))
-  expect_error(Normal(mu = Inf,         sigma = sigma))
+  expect_error(Normal(mu = "1",        sigma = sigma))
+  expect_error(Normal(mu = double(0L), sigma = sigma))
+  expect_error(Normal(mu = NA_real_,   sigma = sigma))
+  expect_error(Normal(mu = Inf,        sigma = sigma))
 
   expect_error(Normal(mu = mu, sigma = "1"))
-  expect_error(Normal(mu = mu, sigma = numeric(0L)))
+  expect_error(Normal(mu = mu, sigma = double(0L)))
   expect_error(Normal(mu = mu, sigma = NA_real_))
   expect_error(Normal(mu = mu, sigma = Inf))
   expect_error(Normal(mu = mu, sigma = 0))
@@ -27,7 +27,7 @@ test_that("LKJ", {
   expect_identical(unclass(prior), list(family = "lkj", parameters = list(eta = eta)))
 
   expect_error(LKJ(eta = "1"))
-  expect_error(LKJ(eta = numeric(0L)))
+  expect_error(LKJ(eta = double(0L)))
   expect_error(LKJ(eta = NA_real_))
   expect_error(LKJ(eta = Inf))
   expect_error(LKJ(eta = 0))
