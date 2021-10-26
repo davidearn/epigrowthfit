@@ -245,7 +245,7 @@
 #'       beta[1L] ~ Normal(mu = -3, sigma = 1),
 #'       Sigma ~ LKJ(eta = 2)
 #'     ),
-#'     init = list(theta = c(0.5^2, 0.5^2, 0)),
+#'     init = list(theta = c(log(0.5), log(0.5), 0)),
 #'     map = list(theta = 3L)
 #'   )
 #' })
