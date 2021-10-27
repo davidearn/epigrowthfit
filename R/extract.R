@@ -50,7 +50,7 @@ coef.egf <- function(object, full = FALSE, ...) {
   }
   for (i in seq_along(map)) {
     if (!is.null(map[[i]])) {
-      map[[i]] <- map[[i]] + 1L
+      map[[i]] <- as.integer(map[[i]]) + 1L
       map[[i]][map[[i]] == 0L] <- NA
     }
   }
@@ -360,7 +360,8 @@ model.frame.egf <- function(formula,
   if (which == "combined") {
     res <- do.call(cbind, unname(formula$frame$parameters))
     res <- cbind(res, formula$frame$append)
-    return(res[!duplicated(names(res))])
+    res[duplicated(names(res))] <- NULL
+    return(res)
   }
   res <- formula$frame[[which]]
   if (which == "ts") {
@@ -480,7 +481,8 @@ model.matrix.egf <- function(object,
     ## Append 'contrasts' but not 'assign', which only makes sense
     ## for submatrices
     contrasts <- unlist1(lapply(Z, attr, "contrasts"))
-    attr(res, "contrasts") <- contrasts[!duplicated(names(contrasts))]
+    contrasts[duplicated(names(contrasts))] <- NULL
+    attr(res, "contrasts") <- contrasts
     return(res)
   }
 
@@ -593,7 +595,8 @@ formula.egf_no_fit <- formula.egf
 #' @export
 #' @importFrom stats model.frame nobs
 nobs.egf <- function(object, ...) {
-  sum(!is.na(model.frame(object)$x))
+  mf <- model.frame(object, which = "ts", full = FALSE)
+  sum(!is.na(mf$x))
 }
 
 #' @rdname nobs.egf
