@@ -37,10 +37,12 @@ Imports:
     nlme
 Suggests:
     knitr,
-    shiny,
-    shinyFeedback,
+    pkgload,
     testthat (>= 3.0.0),
     vdiffr,
+    diffviewer,
+    shiny,
+    shinyFeedback,
     emdbook (>= 1.3.12)
 LinkingTo:
     TMB,

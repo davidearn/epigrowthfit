@@ -1,6 +1,5 @@
 test_that("coef", {
   o <- egf_cache("egf-2.rds")
-
   co <- coef(o, full = FALSE)
   expect_type(co, "double")
   co_expected <- structure(as.double(co),

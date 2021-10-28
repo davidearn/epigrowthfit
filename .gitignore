@@ -18,3 +18,5 @@
 !data-raw/*.RData
 
 inst/build_versions
+inst/exdata
+tests/testthat/_snaps

@@ -49,16 +49,20 @@ pdf: $(MANUAL)
 $(MANUAL): update-docs
 	$(R) CMD Rd2pdf -o $@ --force --no-preview .
 
-test: copy-headers
-	$(R) --quiet -e "devtools::test(\".\")"
-
 check-cran: clean build-cran
+	export NOT_CRAN=false;
 	$(R) CMD check --as-cran $(TARBALL)
+
+check-all: clean build
+	export NOT_CRAN=true;
+	$(R) CMD check $(TARBALL)
 
 check: clean build
 	$(R) CMD check --no-tests $(TARBALL)
 
 clean:
-	rm -fr $(TARBALL) $(MANUAL) $(CHECKDIR)
 	find . \( -name "#*" -o -name "*~" \) -exec rm {} +
-	rm -f src/*.{o,so,tmp} tests/testthat/*.{o,so,tmp}
+	rm -rf $(TARBALL) $(MANUAL) $(CHECKDIR)
+	rm -f src/*.{o,so,tmp}
+	rm -f tests/testthat/*.{o,so,tmp}
+	rm -rf inst/exdata

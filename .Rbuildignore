@@ -7,6 +7,8 @@
 ^.*\.pdf$
 ^.*\.tar\.gz$
 ^.*\.Rcheck$
+^inst/exdata$
 ^inst/shiny/windowselect/world\.rds$
 ^inst/shiny/windowselect/world_windows\.rds$
+^tests/testthat/_snaps$
 ^\.github$

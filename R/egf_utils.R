@@ -140,7 +140,7 @@ egf_make_frame <- function(model,
     drop.unused.levels = TRUE
   )
   names(frame_windows) <- c("ts", "start", "end")
-  if((N <- nrow(frame_windows)) == 0L) {
+  if ((N <- nrow(frame_windows)) == 0L) {
     stop(wrap(
       "Data frame constructed from ",
       "'formula_windows', 'data_windows', and 'subset_windows' ",
@@ -564,7 +564,6 @@ egf_make_X <- function(fixed, data, sparse) {
     X <- model.matrix(fixed, data = data)
     j <- colSums(abs(X)) > 0
   }
-  ## FIXME: setting attributes on an S4 object is probably bad practice...
   structure(X[, j, drop = FALSE],
     assign = attr(X, "assign")[j],
     contrasts = attr(X, "contrasts")
@@ -585,11 +584,11 @@ egf_make_Z <- function(random, data) {
   G <- model.matrix(as.formula(call("~", call("+", 0, random[[3L]]))), data = data)
   j <- colSums(abs(G)) > 0
   G <- G[, j, drop = FALSE]
+  rownames(Z) <- as.character(seq_len(nrow(Z)))
   colnames(Z) <- sprintf("(%s | %s)",
     rep(colnames(X), times = ncol(G)),
     rep(colnames(G), each = ncol(X))
   )
-  ## FIXME: setting attributes on an S4 object is probably bad practice...
   structure(Z,
     assign = rep(attr(X, "assign"), times = ncol(G)),
     contrasts = attr(X, "contrasts"),
@@ -700,7 +699,7 @@ egf_combine_X <- function(fixed, X) {
   X <- do.call(cbind, X)
   effects <- data.frame(bottom, top, term, colname = colnames(X), row.names = NULL, stringsAsFactors = FALSE)
   contrasts <- unlist(unname(contrasts), recursive = FALSE, use.names = TRUE)
-  contrasts <- contrasts[!duplicated(names(contrasts))]
+  contrasts[duplicated(names(contrasts))] <- NULL
   list(X = X, effects = effects, contrasts = contrasts)
 }
 
@@ -737,7 +736,7 @@ egf_combine_Z <- function(random, Z) {
   Z <- do.call(cbind, Z)
   effects <- data.frame(cov, vec, bottom, top, term, group, level, colname = colnames(Z), row.names = NULL, stringsAsFactors = FALSE)
   contrasts <- unlist(unname(contrasts), recursive = FALSE, use.names = TRUE)
-  contrasts <- contrasts[!duplicated(names(contrasts))]
+  contrasts[duplicated(names(contrasts))] <- NULL
 
   o <- do.call(order, unname(effects[c("cov", "vec", "top")]))
   Z <- Z[, o, drop = FALSE]

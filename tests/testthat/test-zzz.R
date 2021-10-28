@@ -1,17 +1,12 @@
-## Trying to be defensive... in the unlikely situation that the namespace
-## is not already loaded, then loading it with 'loadNamepace' inside of
-## a test has the side effect of registering S3 methods. This side effect
-## is not reversed by 'unloadNamespace', so it would persist during later
-## tests...
-skip_if_not("epigrowthfit" %in% loadedNamespaces())
+skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
 
 test_that(".on(Load|Unload)", {
   is_ns_loaded <- function() "epigrowthfit" %in% loadedNamespaces()
   is_so_loaded <- function() "epigrowthfit" %in% names(getLoadedDLLs())
-  unloadNamespace("epigrowthfit")
+  unloadNamspace("epigrowthfit")
   expect_false(is_ns_loaded())
   expect_false(is_so_loaded())
-  loadNamespace("epigrowthfit")
+  loadNamspace("epigrowthfit")
   expect_true(is_ns_loaded())
   expect_true(is_so_loaded())
 })
