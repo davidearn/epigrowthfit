@@ -1,3 +1,4 @@
+## Replacement for 'rle' that treats missing values like other constants
 rle_patch <- function(x) {
   n <- length(x)
   if (n == 0L) {
@@ -12,18 +13,18 @@ rle_patch <- function(x) {
   list(lengths = diff(c(0L, i)), values = x[i])
 }
 
+## Imputation by last observation carried forward
 locf <- function(x, x0 = NULL, period = 1L) {
   if (period >= 2L) {
     index <- gl(period, 1L, length(x))
-    split(x, index, drop = TRUE) <-
-      lapply(split(x, index, drop = TRUE), locf, x0 = x0)
+    split(x, index) <- lapply(split(x, index), locf, x0 = x0)
     return(x)
   }
   if (!anyNA(x)) {
     return(x)
   }
   rle_x <- rle_patch(x)
-  y <- rle_x$values
+  y <- rle_x[["values"]]
   if (is.na(y[1L]) && !is.null(x0)) {
     y[1L] <- x0
   }
@@ -31,25 +32,29 @@ locf <- function(x, x0 = NULL, period = 1L) {
     argna_y <- which(c(FALSE, is.na(y[-1L])))
     y[argna_y] <- y[argna_y - 1L]
   }
-  rle_x$values <- y
+  rle_x[["values"]] <- y
   inverse.rle(rle_x)
 }
 
-geom_mean <- function(x, na.rm = FALSE, zero.rm = FALSE) {
+## Replacement for 'mean.default' with a geometric option (but no 'trim')
+Mean <- function(x, na.rm = FALSE, geom = FALSE, zero.rm = FALSE) {
+  if (!geom) {
+    return(mean(x, na.rm = na.rm))
+  }
   if (any(x < 0, na.rm = TRUE)) {
     return(NaN)
   }
   if (zero.rm) {
-    exp(mean(x[x > 0], na.rm = na.rm))
-  } else {
-    if (any(x == 0, na.rm = TRUE)) {
-      return(0)
-    }
-    exp(mean(log(x), na.rm = na.rm))
+    return(exp(mean(x[x > 0], na.rm = na.rm)))
   }
+  if (any(x == 0, na.rm = TRUE)) {
+    return(0)
+  }
+  exp(mean(log(x), na.rm = na.rm))
 }
 
-stat_mode <- function(x, na.rm = FALSE) {
+## Mode
+Mode <- function(x, na.rm = FALSE) {
   if (length(x) == 0L) {
     return(NaN)
   }
@@ -68,11 +73,11 @@ stat_mode <- function(x, na.rm = FALSE) {
   u[argmax_f]
 }
 
+## Imputation by linear interpolation with a geometric option
 linear <- function(x, x0 = NULL, x1 = NULL, period = 1L, geom = FALSE) {
   if (period >= 2L) {
     index <- gl(period, 1L, length(x))
-    split(x, index, drop = TRUE) <-
-      lapply(split(x, index, drop = TRUE), linear, x0 = x0, x1 = x1, geom = geom)
+    split(x, index) <- lapply(split(x, index), linear, x0 = x0, x1 = x1, geom = geom)
     return(x)
   }
   if (all(argna <- is.na(x))) {
@@ -95,20 +100,32 @@ linear <- function(x, x0 = NULL, x1 = NULL, period = 1L, geom = FALSE) {
     x = seq_len(n),
     y = if (geom) log(x) else x,
     xout = which(argna),
+    method = "linear",
     rule = 2L
   )
-  x[argna] <- if (geom) exp(l$y) else l$y
+  x[argna] <- if (geom) exp(l[["y"]]) else l[["y"]]
   x
 }
 
-summarize <- function(d, i, func, ...) {
-  di <- d[i, , drop = FALSE]
-  f <- function(x) sum(!is.na(x))
-  c(vapply(di, func, 0, ...), n = vapply(di, f, 0))
+## Compute a summary statistic from a subset of each variable of a data frame
+## and preserve the number of observations used
+summarize <- function(data, subset, func, ...) {
+  data <- data[subset, , drop = FALSE]
+  list(
+    x = vapply(d, func, 0, ...),
+    n = vapply(d, function(x) sum(!is.na(x)), 0L)
+  )
 }
 
-get_summary_ <- function(d, d_Date, start, func, ...,
-                         lag, k, method, x0, x1, period, geom) {
+#' @param data a data frame
+#' @param date a Date vector of length \code{nrow(data)}
+#' @param start a Date vector listing left endpoints of fitting windows
+#' @param func a function computing a summary statistic from subsets of each variable of \code{data}
+#' @param ... optional arguments to \code{func}
+#' @param lag
+
+.get_summary <- function(data, date, start, func, ...,
+                         lag, b, method, x0, x1, period, geom) {
   if (length(start) == 0L || nrow(d) == 0L) {
     X <- matrix(NA_real_,
       nrow = length(start),

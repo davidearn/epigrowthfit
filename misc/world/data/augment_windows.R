@@ -1,40 +1,51 @@
-library("countrycode")
-source("utils.R")
-windows <- readRDS("rds/world_windows.rds")
+(path_utils <- Sys.getenv("PATH_UTILS"))
+utils <- new.env()
+source(path_utils, local = utils)
+
+(path_rds <- Sys.getenv("PATH_RDS"))
+windows <- readRDS(path_rds)
+
+datasets <- c("covid", "coords", "population", "mobility", "npi", "vaccine", "devel", "equity")
+for (s in paste0("path_", datasets)) {
+  print(assign(s, Sys.getenv(toupper(s))))
+  assign(sub("path_", "", s), readRDS(get(s)))
+}
 
 ## ISO 3166-1 alpha-3 code
-country_iso_alpha3 <- levels(windows$country_iso_alpha3)
+country_iso_alpha3 <- levels(windows[["country_iso_alpha3"]])
 n <- length(country_iso_alpha3)
-r <- match(windows$country_iso_alpha3, country_iso_alpha3, 0L)
+i <- unclass(windows[["country_iso_alpha3"]])
 
-## ISO 3166-1 alpha-2 code
-country_iso_alpha2 <- countrycode(
+## Country code, ISO 3166-1 alpha-3
+country_iso_alpha2 <- countrycode::countrycode(
   sourcevar = country_iso_alpha3,
   origin = "iso3c",
   destination = "iso2c"
 )
-windows$country_iso_alpha2 <- gl(n, 1L, labels = country_iso_alpha2)[r]
+windows[["country_iso_alpha2"]]  <- gl(n, 1L, labels = country_iso_alpha2)[i]
 
-## ISO 3166-1 numeric code
-country_iso_numeric <- countrycode(
-  sourcevar = country_iso_alpha3,
+## Country code, ISO 3166-1 numeric
+country_iso_numeric <- countrycode::countrycode(
+  sourcevar = al3,
   origin = "iso3c",
   destination = "iso3n"
 )
-windows$country_iso_numeric <- gl(n, 1L, labels = country_iso_numeric)[r]
+windows[["country_iso_numeric"]] <- gl(n, 1L, labels = country_iso_numeric)[i]
 
-## Name
-country <- countrycode(
+## Country name
+country <- countrycode::countrycode(
   sourcevar = country_iso_alpha3,
   origin = "iso3c",
   destination = "country.name",
-  custom_match = c(BIH = "Bosnia and Herzegovina",
-                   CIV = "Côte d'Ivoire",
-                   MMR = "Myanmar",
-                   PSE = "Palestine",
-                   TTO = "Trinidad and Tobago")
+  custom_match = c(
+    BIH = "Bosnia and Herzegovina",
+    CIV = "Côte d'Ivoire",
+    MMR = "Myanmar",
+    PSE = "Palestine",
+    TTO = "Trinidad and Tobago"
+  )
 )
-windows$country <- gl(n, 1L, labels = country)[r]
+windows[["country"]] <- gl(n, 1L, labels = country)[i]
 
 ## Subregion
 subregion <- countrycode(
@@ -43,7 +54,7 @@ subregion <- countrycode(
   destination = "un.regionsub.name",
   custom_match = c(TWN = "Eastern Asia")
 )
-windows$subregion <- factor(subregion)[r]
+windows[["subregion"]] <- factor(subregion)[i]
 
 ## Region
 region <- countrycode(
@@ -52,47 +63,44 @@ region <- countrycode(
   destination = "un.region.name",
   custom_match = c(TWN = "Asia")
 )
-windows$region <- factor(region)[r]
+windows[["region"]] <- factor(region)[i]
 
-## Population-weighted latitude and longitude
-coords <- readRDS("rds/coords.rds")
-coords$country_iso_alpha3 <- factor(coords$country_iso_alpha3, levels = country_iso_alpha3)
+## City population-weighted latitude and longitude
+coords[["country_iso_alpha3"]] <- factor(coords[["country_iso_alpha3"]], levels = country_iso_alpha3)
 f <- function(d) {
-  c(weighted.mean(d$latitude,  d$population),
-    weighted.mean(d$longitude, d$population))
+  c(weighted.mean(d[["longitude"]], d[["population"]]),
+    weighted.mean(d[["latitude"]],  d[["population"]]))
 }
-ll_rows <- by(coords, coords$country_iso_alpha3, f, simplify = FALSE)
-ll <- matrix(unlist(ll_rows), ncol = 2L, byrow = TRUE)
-windows[c("latitude", "longitude")] <- ll[r, , drop = FALSE]
-rm(coords)
+longitude_latitude_rows <- c(by(coords, coords[["country_iso_alpha3"]], f, simplify = FALSE))
+longitude_latitude <- matrix(unlist(ll_rows), ncol = 2L, byrow = TRUE)
+windows[c("longitude", "latitude")] <- ll[i, , drop = FALSE]
 
-## Latitude and longitude bands
-latitude_band_20deg <- cut(ll[, 1L],
-  breaks = seq.int(-90, 90, by = 20),
-  right = FALSE,
-  include.lowest = TRUE,
-  ordered_result = TRUE
-)
-longitude_band_20deg <- cut(ll[, 2L],
+## Longitude and latitude bands
+longitude_band_20deg <- cut(
+  x = ll[, 1L],
   breaks = seq.int(0, 360, by = 20),
   right = FALSE,
   include.lowest = FALSE,
   ordered_result = TRUE
 )
-windows$latitude_band_20deg <- latitude_band_20deg[r]
-windows$longitude_band_20deg <- longitude_band_20deg[r]
+latitude_band_20deg <- cut(
+  x = ll[, 2L],
+  breaks = seq.int(-90, 90, by = 20),
+  right = FALSE,
+  include.lowest = TRUE,
+  ordered_result = TRUE
+)
+windows[["longitude_band_20deg"]] <- longitude_band_20deg[i]
+windows[["latitude_band_20deg"]] <- latitude_band_20deg[i]
 
 ## Population size
-population <- readRDS("rds/population.rds")
-population <- population[population$year == "2020", , drop = FALSE]
-m <- match(country_iso_numeric, population$country_iso_numeric, 0L)
-windows$population <- population$population[m][r]
-rm(population)
+population <- population[population[["year"]] == "2020", , drop = FALSE]
+m <- match(country_iso_numeric, population[["country_iso_numeric"]], 0L)
+windows[["population"]] <- population[["population"]][m][i]
 
 ## Mobility
-mobility <- readRDS("rds/mobility.rds")
 s <- grep("^mobility_", names(mobility), value = TRUE)
-mobility$country_iso_alpha2 <- factor(mobility$country_iso_alpha2, levels = country_iso_alpha2)
+mobility[["country_iso_alpha2"]] <- factor(mobility[["country_iso_alpha2"]], levels = country_iso_alpha2)
 M <- get_summary(
   d = mobility[s],
   d_Date = mobility$Date,
@@ -241,4 +249,4 @@ windows$days_since_50 <- as.numeric(windows$start - Date_50[r])
 windows$days_since_2in1m <- as.numeric(windows$start - Date_2in1m[r])
 rm(covid19)
 
-saveRDS(windows, file = "rds/windows.rds")
+saveRDS(windows, file = path_rds)

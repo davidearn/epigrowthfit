@@ -1,3 +1,5 @@
+(path_rds <- Sys.getenv("PATH_RDS"))
+
 l <- list(
   AFG = list( # Afghanistan
     c("2020-03-18", "2020-04-02"),
@@ -901,14 +903,22 @@ l <- list(
     c("2020-12-28", "2021-01-08")
   )
 )
-se <- matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, c("start", "end")))
-se <- as.data.frame(se, stringsAsFactors = FALSE)
-se[] <- lapply(se, as.Date)
-country_iso_alpha3 <- factor(rep.int(names(l), lengths(l)))
-windows <- data.frame(country_iso_alpha3, se)
-o <- do.call(order, unname(windows))
-windows <- windows[o, , drop = FALSE]
-windows$window <- factor(unlist(lapply(c(table(country_iso_alpha3)), seq_len), FALSE, FALSE))
-windows <- windows[c("country_iso_alpha3", "window", "start", "end")]
-row.names(windows) <- NULL
-saveRDS(windows, file = "rds/world_windows.rds")
+
+f <- function(l) {
+  se <- matrix(unlist(l), ncol = 2L, byrow = TRUE, dimnames = list(NULL, c("start", "end")))
+  se <- as.data.frame(se, stringsAsFactors = FALSE)
+  se[] <- lapply(se, as.Date)
+
+  country_iso_alpha3 <- factor(rep.int(names(l), lengths(l)))
+  res <- data.frame(country_iso_alpha3, se)
+
+  o <- do.call(order, unname(res))
+  res <- res[o, , drop = FALSE]
+  row.names(res) <- NULL
+
+  res[["window"]] <- as.factor(unlist(lapply(c(table(country_iso_alpha3)), seq_len)))
+  res[c("country_iso_alpha3", "window", "start", "end")]
+}
+windows <- f(l)
+saveRDS(windows, file = path_rds)
+str(windows)
