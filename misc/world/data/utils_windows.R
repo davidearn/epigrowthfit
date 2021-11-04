@@ -107,59 +107,62 @@ linear <- function(x, x0 = NULL, x1 = NULL, period = 1L, geom = FALSE) {
   x
 }
 
-## Compute a summary statistic from a subset of each variable of a data frame
-## and preserve the number of observations used
-summarize <- function(data, subset, func, ...) {
-  data <- data[subset, , drop = FALSE]
-  list(
-    x = vapply(d, func, 0, ...),
-    n = vapply(d, function(x) sum(!is.na(x)), 0L)
-  )
-}
-
-#' @param data a data frame
-#' @param date a Date vector of length \code{nrow(data)}
-#' @param start a Date vector listing left endpoints of fitting windows
-#' @param func a function computing a summary statistic from subsets of each variable of \code{data}
-#' @param ... optional arguments to \code{func}
-#' @param lag
-
-.get_summary <- function(data, date, start, func, ...,
-                         lag, b, method, x0, x1, period, geom) {
-  if (length(start) == 0L || nrow(d) == 0L) {
-    X <- matrix(NA_real_,
-      nrow = length(start),
-      ncol = 2L * length(d),
-      dimnames = list(NULL, c(names(d), paste0("n.", names(d))))
-    )
-    return(X)
-  }
-  if (k %% 2 == 0) {
-    kL <- k / 2 - 1
-    kR <- k / 2
-  } else {
-    kL <- kR <- (k - 1) / 2
-  }
-  first <- start - lag - kL
-  last  <- start - lag + kR
-  ab <- seq(min(first, d_Date), max(last, d_Date), by = 1)
-  d <- d[match(ab, d_Date), , drop = FALSE]
+.get_summary <- function(data, date, start, end, func, ..., method, x0, x1, period, geom) {
+  date1 <- seq(min(start, date), max(end, date), 1)
+  data1 <- data[match(date1, date, NA_integer_), , drop = FALSE]
   if (method != "none") {
-    d[] <- switch(method,
-      locf = lapply(d, locf, x0 = x0, period = period),
-      linear = lapply(d, linear, x0 = x0, x1 = x1, period = period, geom = geom)
+    data1[] <- switch(method,
+      locf = lapply(data1, locf, x0 = x0, period = period),
+      linear = lapply(data1, linear, x0 = x0, x1 = x1, period = period, geom = geom)
     )
   }
-  l <- lapply(match(first, ab), seq.int, length.out = k)
-  t(vapply(l, summarize, rep_len(0, 2L * length(d)), d = d, func = func, ...))
+  subset <- Map(seq.int, match(start, date1), match(end, date1))
+
+  f <- function(data, subset, func, ...) {
+    data <- data[subset, , drop = FALSE]
+    list(
+      x = vapply(data, func, 0, ...),
+      n = vapply(data, function(x) sum(!is.na(x)), 0L)
+    )
+  }
+
+  l <- lapply(subset, f, data = data, func = func, ...)
+  res <- sapply(c("x", "n"), function(el) matrix(unlist(lapply(l, `[[`, el)), nrow = length(l), ncol = length(data), byrow = TRUE, dimnames = list(NULL, names(data))), simplify = FALSE)
+  names(res) <- toupper(names(res))
+  res
 }
 
-get_summary <- function(d, d_Date, d_index, start, start_index, func, ...,
-                        lag = 14L, k = 14L,
+#' @param data a data frame listing only numeric variables
+#' @param date a Date vector of length \code{nrow(data)}
+#' @param start,end Date vectors of equal length indicating left and right endpoints of fitting windows
+#' @param index1 a factor grouping the rows of \code{data} and elements of \code{date}
+#' @param index2 a factor grouping the elements of \code{start} and \code{end}
+#' @param func a function computing a summary statistic from subsets of \code{data[[i]]}
+#' @param ... optional arguments to \code{func}
+#' @param method a character string indicating a method of imputation
+#' @param x0,x1,period,geom optional arguments to imputation function
+get_summary <- function(data, date, start, end, index1, index2, func, ...,
                         method = c("none", "locf", "linear"),
-                        x0 = NULL, x1 = NULL,
-                        period = 1L, geom = FALSE) {
-  stopifnot(lag >= 0, lag %% 1 == 0, k > 0, k %% 1 == 0)
+                        x0 = NULL, x1 = NULL, period = 1L, geom = FALSE) {
+  index1 <- as.factor(index1)
+  index2 <- as.factor(index2)
+  stopifnot(
+    is.data.frame(data),
+    vapply(data, mode, "") == "numeric",
+    inherits(date, "Date"),
+    length(date) == nrow(data),
+    is.finite(date),
+    length(index1) == length(index)
+    inherits(start, "Date"),
+    is.finite(start),
+    inherits(end, "Date"),
+    length(end) == length(start),
+    end > start,
+
+    length(date) == nrow(data),
+    is.finite(date),
+
+  )
   method <- match.arg(method)
   start_index <- droplevels(start_index)
   d_index <- factor(d_index, levels = levels(start_index))
