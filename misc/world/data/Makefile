@@ -14,24 +14,24 @@ DS_NPI := npi
 DS_VACCINE := vaccine
 DS_DEVEL := devel
 DS_EQUITY := equity
-DS_WEATHER := weather
 DS_WORLD := world
-DS_WINDOWS := windows
+DS_WEATHER := world_weather
+DS_WINDOWS := world_windows
 
 META_DS_ALL := $(filter DS_%,$(.VARIABLES))
 META_DS_DEPS := $(filter-out %_WORLD %_WINDOWS,$(META_DS_ALL))
 
-CSV := $(foreach name,$(filter-out %_WEATHER %_WORLD %_WINDOWS,$(META_DS_ALL)),$(DIR_CSV)/$($(name)).csv)
+CSV := $(foreach name,$(filter-out %_WORLD %_WEATHER %_WINDOWS,$(META_DS_ALL)),$(DIR_CSV)/$($(name)).csv)
 RDS := $(foreach name,$(META_DS_ALL),$(DIR_RDS)/$($(name)).rds)
 
 
-.PHONY: update-weather update-world update-windows clean new
+.PHONY: update-world update-weather update-windows clean new
 
-all: update-weather update-world update-windows
-
-update-weather: $(DIR_RDS)/$(DS_WEATHER).rds
+all: update-world update-weather update-windows
 
 update-world: $(DIR_RDS)/$(DS_WORLD).rds
+
+update-weather: $(DIR_RDS)/$(DS_WEATHER).rds
 
 update-windows: $(DIR_RDS)/$(DS_WINDOWS).rds
 
@@ -58,6 +58,14 @@ $(DIR_RDS)/%.rds: export PATH_CSV = $(filter %.csv,$^)
 $(DIR_RDS)/%.rds: export PATH_RDS = $@
 
 
+$(DIR_RDS)/$(DS_WORLD).rds: make_$(DS_WORLD).R $(DIR_RDS)/$(DS_COVID).rds
+	$(R) --quiet -f $< >& $(<:.R=.Rout)
+
+$(DIR_RDS)/$(DS_WORLD).rds: export PATH_COVID = $(DIR_RDS)/$(DS_COVID).rds
+
+$(DIR_RDS)/$(DS_WORLD).rds: export PATH_RDS = $@
+
+
 $(DIR_RDS)/$(DS_WEATHER).rds: make_$(DS_WEATHER).R utils_$(DS_WEATHER).R $(DIR_WEATHER) $(DIR_RDS)/$(DS_COORDS).rds 
 	export DIR_WEATHER=$(DIR_WEATHER); $(R) --quiet -f $< >& $(<:.R=.Rout)
 
@@ -66,14 +74,6 @@ $(DIR_RDS)/$(DS_WEATHER).rds: export PATH_UTILS = utils_$(DS_WEATHER).R
 $(DIR_RDS)/$(DS_WEATHER).rds: export PATH_COORDS = $(DIR_RDS)/$(DS_COORDS).rds
 
 $(DIR_RDS)/$(DS_WEATHER).rds: export PATH_RDS = $@
-
-
-$(DIR_RDS)/$(DS_WORLD).rds: make_$(DS_WORLD).R $(DIR_RDS)/$(DS_COVID).rds
-	$(R) --quiet -f $< >& $(<:.R=.Rout)
-
-$(DIR_RDS)/$(DS_WORLD).rds: export PATH_COVID = $(DIR_RDS)/$(DS_COVID).rds
-
-$(DIR_RDS)/$(DS_WORLD).rds: export PATH_RDS = $@
 
 
 $(DIR_RDS)/$(DS_WINDOWS).rds: make_$(DS_WINDOWS).R augment_$(DS_WINDOWS).R utils_$(DS_WINDOWS).R $(foreach name,$(META_DS_DEPS),$(DIR_RDS)/$($(name)).rds) 
