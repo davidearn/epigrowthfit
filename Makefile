@@ -50,13 +50,13 @@ $(MANUAL): update-docs
 	$(R) CMD Rd2pdf -o $@ --force --no-preview .
 
 check-cran: clean build-cran
-	export NOT_CRAN=false; $(R) CMD check --as-cran $(TARBALL)
+	export NOT_CRAN=false && $(R) CMD check --as-cran $(TARBALL)
 
 check-test: clean build
-	export NOT_CRAN=true; $(R) CMD check $(TARBALL)
+	export NOT_CRAN=true && $(R) CMD check $(TARBALL)
 
 check: clean build
-	export NOT_CRAN=true; $(R) CMD check --no-tests $(TARBALL)
+	export NOT_CRAN=true && $(R) CMD check --no-tests $(TARBALL)
 
 clean:
 	find . \( -name "#*" -o -name "*~" \) -exec rm {} +

@@ -67,7 +67,7 @@ $(DIR_RDS)/$(DS_WORLD).rds: export PATH_RDS = $@
 
 
 $(DIR_RDS)/$(DS_WEATHER).rds: make_$(DS_WEATHER).R utils_$(DS_WEATHER).R $(DIR_WEATHER) $(DIR_RDS)/$(DS_COORDS).rds 
-	export DIR_WEATHER=$(DIR_WEATHER); $(R) --quiet -f $< >& $(<:.R=.Rout)
+	export DIR_WEATHER=$(DIR_WEATHER) && $(R) --quiet -f $< >& $(<:.R=.Rout)
 
 $(DIR_RDS)/$(DS_WEATHER).rds: export PATH_UTILS = utils_$(DS_WEATHER).R
 
