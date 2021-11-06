@@ -12,7 +12,8 @@ tidy <- function(d0) {
   d0[["indic_code"]] <- factor(d0[["indic_code"]], levels = d0[["indic_code"]][m])
 
   x <- grep("^X[0-9]{4}", names(d0), value = TRUE)
-  d1 <- reshape(d0,
+  d1 <- reshape(
+    data = d0,
     direction = "long",
     varying = x,
     v.names = "value",

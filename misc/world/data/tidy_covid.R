@@ -11,7 +11,8 @@ tidy <- function(d0) {
   i <- grep("^X\\d+\\.\\d+\\.\\d+$", names(d0))
   d1 <- aggregate(d0[i], d0["country_iso_alpha3"], sum, na.rm = TRUE)
 
-  d2 <- reshape(d1,
+  d2 <- reshape(
+    data = d1,
     direction = "long",
     varying = names(d1)[-1L],
     v.names = "cases_total",

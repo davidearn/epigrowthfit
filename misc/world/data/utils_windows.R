@@ -1,4 +1,4 @@
-## Replacement for 'rle' that treats missing values like other constants
+## Replacement for 'rle' that treats 'NA' and 'NaN' like other constants
 rle_patch <- function(x) {
   n <- length(x)
   if (n == 0L) {
@@ -13,7 +13,7 @@ rle_patch <- function(x) {
   list(lengths = diff(c(0L, i)), values = x[i])
 }
 
-## Imputation by last observation carried forward
+## Impute by last observation carried forward
 locf <- function(x, x0 = NULL, period = 1L) {
   if (period >= 2L) {
     index <- gl(period, 1L, length(x))
@@ -39,7 +39,7 @@ locf <- function(x, x0 = NULL, period = 1L) {
 ## Replacement for 'mean.default' with a geometric option (but no 'trim')
 Mean <- function(x, na.rm = FALSE, geom = FALSE, zero.rm = FALSE) {
   if (!geom) {
-    return(mean(x, na.rm = na.rm))
+    return(mean.default(x, na.rm = na.rm))
   }
   if (any(x < 0, na.rm = TRUE)) {
     return(NaN)
@@ -56,24 +56,24 @@ Mean <- function(x, na.rm = FALSE, geom = FALSE, zero.rm = FALSE) {
 ## Mode
 Mode <- function(x, na.rm = FALSE) {
   if (length(x) == 0L) {
-    return(NaN)
+    return(if (is.double(x)) NaN else x[NA_integer_])
   }
   argna_x <- is.na(x)
   y <- x[!argna_x]
   if (length(y) == 0L) {
-    return(if (na.rm) NaN else NA)
+    return(if (na.rm && is.double(x)) NaN else x[NA_integer_])
   }
   u <- unique(y)
   f <- tabulate(match(y, u))
   max_f <- max(f)
   argmax_f <- f == max_f
   if (!na.rm && max_f <= max(c(0L, f[!argmax_f])) + sum(argna_x)) {
-    return(NA)
+    return(x[NA_integer_])
   }
   u[argmax_f]
 }
 
-## Imputation by linear interpolation with a geometric option
+## Impute by linear interpolation with a geometric option
 linear <- function(x, x0 = NULL, x1 = NULL, period = 1L, geom = FALSE) {
   if (period >= 2L) {
     index <- gl(period, 1L, length(x))
@@ -107,79 +107,93 @@ linear <- function(x, x0 = NULL, x1 = NULL, period = 1L, geom = FALSE) {
   x
 }
 
-.get_summary <- function(data, date, start, end, func, ..., method, x0, x1, period, geom) {
+.get_summary <- function(data, date, start, end, presummarize, summarize) {
   date1 <- seq(min(start, date), max(end, date), 1)
   data1 <- data[match(date1, date, NA_integer_), , drop = FALSE]
-  if (method != "none") {
-    data1[] <- switch(method,
-      locf = lapply(data1, locf, x0 = x0, period = period),
-      linear = lapply(data1, linear, x0 = x0, x1 = x1, period = period, geom = geom)
-    )
-  }
+  data1[] <- lapply(data1, presummarize)
   subset <- Map(seq.int, match(start, date1), match(end, date1))
 
-  f <- function(data, subset, func, ...) {
-    data <- data[subset, , drop = FALSE]
+  f <- function(i) {
+    d <- data1[i, , drop = FALSE]
     list(
-      x = vapply(data, func, 0, ...),
-      n = vapply(data, function(x) sum(!is.na(x)), 0L)
+      x = data.frame(lapply(d, summarize)),
+      n = vapply(d, function(x) sum(!is.na(x)), 0L)
     )
   }
 
-  l <- lapply(subset, f, data = data, func = func, ...)
-  res <- sapply(c("x", "n"), function(el) matrix(unlist(lapply(l, `[[`, el)), nrow = length(l), ncol = length(data), byrow = TRUE, dimnames = list(NULL, names(data))), simplify = FALSE)
-  names(res) <- toupper(names(res))
+  l <- lapply(subset, f)
+  list(
+    X = do.call(rbind, lapply(l, `[[`, "x")),
+    N = as.data.frame(matrix(unlist(lapply(l, `[[`, "n")), nrow = length(l), ncol = length(data), byrow = TRUE, dimnames = list(NULL, names(data))))
+  )
+}
+
+#' @param data
+#'   A data frame.
+#' @param date
+#'   A Date vector of length \code{nrow(data)}.
+#' @param start,end
+#'   Date vectors of equal length specifying summary windows.
+#' @param f1
+#'   A factor grouping the rows of \code{data} and elements of \code{date}.
+#'   Levels not belonging to \code{levels(index2)} are dropped.
+#' @param f2
+#'   A factor grouping the elements of \code{start} and \code{end}.
+#' @param presummarize
+#'   A length-preserving function applied groupwise to \code{data[[i]]}
+#'   before \code{summarize} is called, enabling, e.g., imputation or
+#'   smoothing.
+#' @param summarize
+#'   A function returning a length-one summary statistic when passed
+#'   any subset of \code{data[[i]]}.
+get_summary <- function(data, date, start, end, f1, f2, presummarize = identity, summarize = mean) {
+  f2 <- as.factor(f2)
+  f1 <- factor(f1, levels = levels(f2))
+  l <- Map(.get_summary,
+    data = split(data, f1),
+    date = split(date, f1),
+    start = split(start, f2),
+    end = split(end, f2),
+    presummarize = list(presummarize),
+    summarize = list(summarize)
+  )
+  i <- rep.int(NA_integer_, length(f2))
+  res <- list(
+    X = l[[1L]][["X"]][i, , drop = FALSE],
+    N = l[[1L]][["N"]][i, , drop = FALSE]
+  )
+  split(res[["X"]], f2) <- lapply(l, `[[`, "X")
+  split(res[["N"]], f2) <- lapply(l, `[[`, "N")
   res
 }
 
-#' @param data a data frame listing only numeric variables
-#' @param date a Date vector of length \code{nrow(data)}
-#' @param start,end Date vectors of equal length indicating left and right endpoints of fitting windows
-#' @param index1 a factor grouping the rows of \code{data} and elements of \code{date}
-#' @param index2 a factor grouping the elements of \code{start} and \code{end}
-#' @param func a function computing a summary statistic from subsets of \code{data[[i]]}
-#' @param ... optional arguments to \code{func}
-#' @param method a character string indicating a method of imputation
-#' @param x0,x1,period,geom optional arguments to imputation function
-get_summary <- function(data, date, start, end, index1, index2, func, ...,
-                        method = c("none", "locf", "linear"),
-                        x0 = NULL, x1 = NULL, period = 1L, geom = FALSE) {
-  index1 <- as.factor(index1)
-  index2 <- as.factor(index2)
-  stopifnot(
-    is.data.frame(data),
-    vapply(data, mode, "") == "numeric",
-    inherits(date, "Date"),
-    length(date) == nrow(data),
-    is.finite(date),
-    length(index1) == length(index)
-    inherits(start, "Date"),
-    is.finite(start),
-    inherits(end, "Date"),
-    length(end) == length(start),
-    end > start,
-
-    length(date) == nrow(data),
-    is.finite(date),
-
-  )
-  method <- match.arg(method)
-  start_index <- droplevels(start_index)
-  d_index <- factor(d_index, levels = levels(start_index))
-  Xl <- Map(get_summary_,
-    d = split(d, d_index),
-    d_Date = split(d_Date, d_index),
-    start = split(start, start_index),
-    func = list(func),
-    ...,
-    lag = lag,
-    k = k,
-    method = method,
-    x0 = list(x0),
-    x1 = list(x1),
-    period = period,
-    geom = geom
-  )
-  do.call(rbind, Xl)
+## Extract index of last observation from an atomic vector
+lo <- function(x, value = FALSE) {
+  i <- length(x)
+  while (i > 0L && is.na(x[i])) {
+    i <- i - 1L
+  }
+  if (i == 0L) {
+    i <- NA_integer_
+  }
+  if (value) x[i] else i
 }
 
+## Extract index of first observation from an atomic vector
+fo <- function(x, value = FALSE, min = NULL) {
+  n <- length(x)
+  i <- 1L
+  if (is.null(min)) {
+    while (i <= n && is.na(x[i])) {
+      i <- i + 1L
+    }
+  } else {
+    while (i <= n && (is.na(x[i]) || x[i] < min)) {
+      i <- i + 1L
+    }
+  }
+  if (i == n + 1L) {
+    i <- NA_integer_
+  }
+  if (value) x[i] else i
+}

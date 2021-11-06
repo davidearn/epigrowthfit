@@ -3,10 +3,10 @@
 
 tidy <- function(d0) {
   map <- c(
-    country_iso_alpha3       = "iso_code",
-    date                     = "date",
-    vaccinated_geq1d_per_100 = "people_vaccinated_per_hundred",
-    vaccinated_fully_per_100 = "people_fully_vaccinated_per_hundred"
+    country_iso_alpha3 = "iso_code",
+    date               = "date",
+    vaccinated_geq1d   = "people_vaccinated_per_hundred",
+    vaccinated_fully   = "people_fully_vaccinated_per_hundred"
   )
   i <- grep("^OWID_", d0[["iso_code"]], invert = TRUE)
   d1 <- d0[i, map, drop = FALSE]
@@ -14,6 +14,7 @@ tidy <- function(d0) {
 
   d1[["country_iso_alpha3"]] <- factor(d1[["country_iso_alpha3"]])
   d1[["date"]] <- as.Date(d1[["date"]])
+  d1[c("vaccinated_geq1d", "vaccinated_fully")] <- 0.01 * d1[c("vaccinated_geq1d", "vaccinated_fully")]
 
   o <- do.call(order, unname(d1[c("country_iso_alpha3", "date")]))
   d2 <- d1[o, , drop = FALSE]

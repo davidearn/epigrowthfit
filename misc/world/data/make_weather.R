@@ -13,7 +13,7 @@ coords <- readRDS(path_coords)
 coords <- coords[c("country_iso_alpha3", "longitude", "latitude", "population")]
 names(coords)[1L] <- "country"
 
-weather <- evalq(envir = utils, {
+weather_long <- evalq(envir = utils, {
   update_weather(
     path = dir_weather,
     data = coords,
@@ -22,6 +22,18 @@ weather <- evalq(envir = utils, {
   )
   shape_weather(dir_weather)
 })
-names(weather)[match("country", names(weather), 0L)] <- "country_iso_alpha3"
-saveRDS(weather, file = path_rds)
-str(weather)
+names(weather_long)[match("country", names(weather_long), 0L)] <- "country_iso_alpha3"
+levels(weather_long[["varid"]]) <- paste0("weather_", levels(weather_long[["varid"]]))
+
+weather_wide <- reshape(
+  data = weather_long,
+  direction = "wide",
+  varying = levels(weather_long[["varid"]]),
+  v.names = "value",
+  timevar = "varid",
+  idvar = c("country_iso_alpha3", "date")
+)
+attr(weather_wide, "reshapeWide") <- NULL
+
+saveRDS(weather_wide, file = path_rds)
+str(weather_wide)
