@@ -393,7 +393,6 @@ egf.egf_model <- function(model,
     sdreport = NULL,
     effects = env$effects,
     contrasts = env$contrasts,
-    Y0 = env$Y0,
     call = match.call()
   )
 
