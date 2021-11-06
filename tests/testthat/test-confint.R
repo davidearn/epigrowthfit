@@ -2,10 +2,8 @@ test_that("object", {
   co1 <- egf_cache("confint-egf-1.rds")
   co2 <- egf_cache("confint-egf-2.rds")
   co3 <- egf_cache("confint-egf-3.rds")
-
   fo <- egf_cache("fitted-egf-1.rds")
   cfo <- confint(fo)
-
   po <- egf_cache("profile-egf-1.rds")
   cpo <- confint(po)
   cpo[["linear_combination"]] <- NULL
@@ -23,9 +21,8 @@ test_that("object", {
   expect_equal(co3, co2, tolerance = 1e-3, ignore_attr = "method")
 })
 
-skip_on_cran()
-
 test_that("parallel", {
+  skip_on_cran()
   o <- egf_cache("egf-1.rds")
   co3 <- egf_cache("confint-egf-3.rds")
 
@@ -40,6 +37,7 @@ test_that("parallel", {
 })
 
 test_that("plot", {
+  skip_on_cran()
   co1 <- egf_cache("confint-egf-1.rds")
 
   bars <- function() {

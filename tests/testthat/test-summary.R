@@ -1,11 +1,10 @@
-
 test_that("basic", {
   o <- egf_cache("egf-1.rds")
   so <- egf_cache("summary-egf-1.rds")
   fo <- egf_cache("fitted-egf-1.rds")
 
   expect_type(so, "list")
-  expect_s3_class(so, "egf_summary")
+  expect_s3_class(so, "egf_summary", exact = TRUE)
   expect_length(so, 5L)
   expect_named(so, c("fitted", "convergence", "value", "gradient", "hessian"), ignore.order = TRUE)
   expect_identical(so$convergence, o$optimizer_out$convergence)

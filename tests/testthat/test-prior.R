@@ -3,7 +3,7 @@ test_that("Normal", {
   sigma <- rlnorm(5L)
   prior <- Normal(mu = mu, sigma = sigma)
   expect_type(prior, "list")
-  expect_s3_class(prior, "egf_prior")
+  expect_s3_class(prior, "egf_prior", exact = TRUE)
   expect_identical(unclass(prior), list(family = "norm", parameters = list(mu = mu, sigma = sigma)))
 
   expect_error(Normal(mu = "1",        sigma = sigma))
@@ -23,7 +23,7 @@ test_that("LKJ", {
   eta <- c(0.1, 1, 10)
   prior <- LKJ(eta = eta)
   expect_type(prior, "list")
-  expect_s3_class(prior, "egf_prior")
+  expect_s3_class(prior, "egf_prior", exact = TRUE)
   expect_identical(unclass(prior), list(family = "lkj", parameters = list(eta = eta)))
 
   expect_error(LKJ(eta = "1"))
@@ -46,7 +46,7 @@ test_that("(Inverse)?Wishart", {
   chol <- R[upper.tri(R)]
 
   expect_type(prior, "list")
-  expect_s3_class(prior, "egf_prior")
+  expect_s3_class(prior, "egf_prior", exact = TRUE)
   expect_equal(unclass(prior), list(family = "wishart", parameters = list(df = df, scale = list(c(log_sd, chol)))))
 
   expect_error(Wishart(df = 3, scale = scale)) # 'df' not greater than 'n - 1'

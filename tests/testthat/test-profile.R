@@ -41,9 +41,9 @@ test_that("confint", {
   expect_true(all(cpo$estimate < cpo$upper))
 })
 
-skip_on_cran()
 
 test_that("parallel", {
+  skip_on_cran()
   o <- egf_cache("egf-1.rds")
   po <- egf_cache("profile-egf-1.rds")
 
@@ -58,6 +58,7 @@ test_that("parallel", {
 })
 
 test_that("plot", {
+  skip_on_cran()
   po <- egf_cache("profile-egf-1.rds")
 
   f <- function() {

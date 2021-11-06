@@ -182,7 +182,7 @@ predict.egf <- function(object,
 
   tmb_args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
   tmb_args$data$flags$predict <- 1L
-  tmb_args$data$what <- as.integer(eval(formals(predict.egf)$what) %in% what)
+  tmb_args$data$what <- as.integer(eval(formals(sys.function())$what) %in% what)
   tmb_args$data$subset <- subset - 1L
   tmb_args$data$new_time <- time - rep.int(start, len)
   tmb_args$data$new_time_seg_len <- len

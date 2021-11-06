@@ -236,7 +236,7 @@
 #'
 #' ## Re-estimate the generative model with:
 #' ## * Gaussian prior on 'beta[1L]'
-#' ## * LKJ prior on all random effect covariance matrices (though here there is just one)
+#' ## * LKJ prior on all random effect covariance matrices (here there happens to be just one)
 #' ## * initial value of 'theta' set explicitly
 #' ## * 'theta[3L]' fixed at initial value
 #' m2 <- egf_cache("egf-2.rds", {
