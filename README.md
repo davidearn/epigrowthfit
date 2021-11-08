@@ -30,8 +30,14 @@ Windows users must have installed
 and added it to their `PATH`.
 macOS users must have installed Apple's Command Line Tools,
 which are packaged with [Xcode](https://developer.apple.com/xcode/).
-The most recent version of Xcode can be installed by running 
-`xcode-select --install` in a terminal.
+The most recent version can be installed by running 
+
+```r
+rm -rf /Library/Developer/CommandLineTools
+xcode-select --install
+```
+
+in a terminal.
 However, users should install whichever version of Xcode was used 
 to build their R binary.
 General information about installing R packages, 
@@ -41,12 +47,15 @@ accessible with `help.start()`).
 
 Vignette builds depend on a 
 [LaTeX](https://www.latex-project.org/get/) distribution.
-Specifically, `PATH` must include a path to the directory 
-containing `pdflatex`. A minimal distribution can be 
-installed and managed via the R package **tinytex**.
-Should errors during vignette builds persist, 
-one can always install **epigrowthfit** without vignettes 
-by setting `build_vignettes = FALSE`.
+Specifically, `PATH` must include a path to the directory containing 
+`pdflatex`. 
+A minimal distribution can be installed and managed via the R package 
+**tinytex**.
+Should errors during vignette builds persist, one can always install
+**epigrowthfit** without vignettes by setting `build_vignettes = FALSE`.
+
+Installation-related issues can be reported
+[here](https://github.com/davidearn/epigrowthfit/issues/1).
 
 ### OpenMP support
 
@@ -67,10 +76,12 @@ On modern Linux and Windows (with Rtools), if one installs
 a current version of R from a binary prebuilt by CRAN, then
 OpenMP support is often automatic.
 On macOS, some configuration is needed, because the default
-Command Line Tools `clang` toolchain does not include OpenMP
-support. _Provisional_ instructions for obtaining a working
-`clang` toolchain on Macs with Intel- or ARM-based architectures,
-running _native_ builds of R, are as follows.
+Command Line Tools `clang` toolchain does not include OpenMP support. 
+Below are _provisional_ instructions, based on `R-admin`, for
+obtaining a working `clang` toolchain on Macs with Intel- or ARM-based
+architectures, running _native_ builds of R. 
+These may need to be adapted to future releases of macOS, R, and
+R prerequisites.
 
 First, install Xcode.
 
@@ -99,17 +110,17 @@ your system):
 ```make
 #### Intel-based Macs only ####
 
-R_HOME=/usr/local
-LLVM_HOME=/usr/local/opt/llvm
+LIBS_DIR=/usr/local
+LLVM_DIR=/usr/local/opt/llvm
 
 ## Mojave and later
 SDK_PATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
-CC="${LLVM_HOME}/bin/clang -isysroot ${SDK_PATH}"
-CXX="${LLVM_HOME}/bin/clang++ -isysroot ${SDK_PATH}"
+CC="${LLVM_DIR}/bin/clang -isysroot ${SDK_PATH}"
+CXX="${LLVM_DIR}/bin/clang++ -isysroot ${SDK_PATH}"
 
 ## High Sierra and earlier
-CC=${LLVM_HOME}/bin/clang
-CXX=${LLVM_HOME}/bin/clang++
+CC=${LLVM_DIR}/bin/clang
+CXX=${LLVM_DIR}/bin/clang++
 
 ## Xcode 12 and later
 CFLAGS="-g -O2 -Wall -pedantic -Wno-implicit-function-declaration"
@@ -122,12 +133,12 @@ CXXFLAGS="-g -O2 -Wall -pedantic"
 
 #### ARM-based Macs only ####
 
-R_HOME=/opt/R/arm64
-LLVM_HOME=/opt/homebrew/opt/llvm
+LIBS_DIR=/opt/R/arm64
+LLVM_DIR=/opt/homebrew/opt/llvm
 SDK_PATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
-CC="${LLVM_HOME}/bin/clang -isysroot ${SDK_PATH} -target arm64-apple-macos11"
-CXX="${LLVM_HOME}/bin/clang++ -isysroot ${SDK_PATH} -target arm64-apple-macos11"
+CC="${LLVM_DIR}/bin/clang -isysroot ${SDK_PATH} -target arm64-apple-macos11"
+CXX="${LLVM_DIR}/bin/clang++ -isysroot ${SDK_PATH} -target arm64-apple-macos11"
 
 CFLAGS="-falign-functions=8 -g -O2 -Wall -pedantic -Wno-implicit-function-declaration"
 CXXFLAGS="-g -O2 -Wall -pedantic"
@@ -138,18 +149,9 @@ CXXFLAGS="-g -O2 -Wall -pedantic"
 SHLIB_OPENMP_CFLAGS=-fopenmp
 SHLIB_OPENMP_CXXFLAGS=-fopenmp
 
-CPPFLAGS="-I${LLVM_HOME}/include -I${R_HOME}/include"
-LDFLAGS="-L${LLVM_HOME}/lib -L${R_HOME}/lib"
+CPPFLAGS="-I${LLVM_DIR}/include -I${LIBS_DIR}/include"
+LDFLAGS="-L${LLVM_DIR}/lib -L${LIBS_DIR}/lib"
 ```
-
-These steps, gathered from different sections of `R-admin`, 
-should ensure that building **epigrowthfit** from source 
-results in an installation that supports OpenMP parallelism. 
-If this is not the case, then please comment on 
-[#1](https://github.com/davidearn/epigrowthfit/issues/1)
-with your system details so that these instructions can be 
-updated.
-
 
 ### Package version mismatch
 
@@ -157,10 +159,10 @@ updated.
 In turn, **TMB** must be binary-compatible with **Matrix**. 
 This means that the version of **TMB** currently installed should 
 match the version that was installed when **epigrowthfit** was 
-built from source. Similarly, the version of **Matrix** currently 
-installed should match the version that was installed when 
-**TMB** was built from source. Thus, version mismatch can occur
-when a user:
+built from source. 
+Similarly, the version of **Matrix** currently installed should match
+the version that was installed when **TMB** was built from source. 
+Thus, version mismatch can occur when a user:
 
 * updates **TMB** without rebuilding **epigrowthfit** from source, or
 * updates **Matrix** without rebuilding **TMB** from source.
@@ -175,7 +177,7 @@ remotes::install_github("davidearn/epigrowthfit")
 ```
 
 If you are only warned about a **TMB**-**epigrowthfit** mismatch,
-then the second line should suffice.
+then only run the second line.
 
 ## References
 
