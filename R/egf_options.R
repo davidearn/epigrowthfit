@@ -139,12 +139,12 @@ egf_control <- function(optimizer = egf_optimizer(),
     is.list(inner_optimizer),
     length(inner_optimizer) > 0L,
     vapply(inner_optimizer, inherits, FALSE, "egf_inner_optimizer"),
-    is_true_or_false(trace),
+    is_flag(trace),
     is_true_or_false(profile),
     is_true_or_false(sparse_X),
     is_number(omp_num_threads, "positive", integer = TRUE)
   )
-  trace <- min(2L, max(0L, as.integer(trace))) # coercion to '0:2'
+  trace <- as.integer(min(2, max(0, trace))) # coercion to '0:2'
   omp_num_threads <- as.integer(omp_num_threads)
 
   res <- list(
