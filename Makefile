@@ -42,7 +42,7 @@ install-cran: build-cran install
 install-github: build install
 
 install:
-	$(R) CMD INSTALL --preclean $(TARBALL)
+	$(R) CMD INSTALL --preclean --install-tests $(TARBALL)
 
 pdf: $(MANUAL)
 
