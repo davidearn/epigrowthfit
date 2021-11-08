@@ -32,7 +32,7 @@ macOS users must have installed Apple's Command Line Tools,
 which are packaged with [Xcode](https://developer.apple.com/xcode/).
 The most recent version can be installed by running 
 
-```r
+```shell
 rm -rf /Library/Developer/CommandLineTools
 xcode-select --install
 ```
@@ -85,14 +85,14 @@ R prerequisites.
 
 First, install Xcode.
 
-```bash
+```shell
 xcode-select --install
 ```
 
 Next, install the LLVM `clang` toolchain, which includes OpenMP 
 support:
 
-```bash
+```shell
 ## With Homebrew
 brew update
 brew install llvm
