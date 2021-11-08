@@ -35,7 +35,7 @@ $(TARBALL):
 	$(R) CMD build --no-manual .
 
 install-deps:
-	$(R) --quiet -e "devtools::install_deps(\".\")"
+	$(R) --quiet -e "devtools::install_dev_deps(\".\")"
 
 install-cran: build-cran install
 
