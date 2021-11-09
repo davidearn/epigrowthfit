@@ -11,7 +11,7 @@ ymd <- function(x, which = "ymd", drop = TRUE) {
   X <- matrix(NA_integer_, nrow = length(x), ncol = 3L, dimnames = list(names(x), c("y", "m", "d")))
   if (length(x) > 0L) {
     ok <- is.finite(x)
-    i <- as.integer(unlist(strsplit(as.character(x[ok]), "-"), FALSE, FALSE))
+    i <- as.integer(unlist(strsplit(as.character(x[ok]), "-")))
     X[ok, ] <- matrix(i, nrow = sum(ok), ncol = 3L, byrow = TRUE)
   }
   j <- match(strsplit(which, "")[[1L]], colnames(X), 0L)
@@ -52,6 +52,37 @@ Dfloor <- function(x, to = c("day", "month", "year")) {
     x[ok] <- as.Date(paste(X$y, "1", "1", sep = "-"), format = "%Y-%m-%d")
   }
   x
+}
+
+baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
+  stopifnot((side <- as.integer(side)) %in% 1:4)
+  dots <- list(...)
+
+  if (is.null(a) || is.null(b)) {
+    gp <- par("usr", "xlog", "ylog")
+    if (side %% 2L == 1L) {
+      usr <- gp$usr[1:2]
+      log <- gp$xlog
+    } else {
+      usr <- gp$usr[3:4]
+      log <- gp$ylog
+    }
+    if (log) {
+      usr <- 10^usr
+    }
+    if (is.null(a)) {
+      a <- usr[1L]
+    }
+    if (is.null(b)) {
+      b <- usr[2L]
+    }
+  }
+
+  args <- list(side = side, at = c(a, b), labels = c("", ""))
+  do.call(axis, c(args, replace(dots, "lwd.ticks", list(0))))
+
+  args <- list(side = side, at = at, labels = labels)
+  do.call(axis, c(args, replace(dots, c("lwd", "lwd.ticks"), list(0, dots[["lwd.ticks"]]))))
 }
 
 Daxis <- function(side, origin = .Date(0), minor = list(), major = list()) {
@@ -122,7 +153,7 @@ Daxis <- function(side, origin = .Date(0), minor = list(), major = list()) {
     minor_at <- c(minor_at, (minor_at[-1L] + minor_at[-length(minor_at)]) / 2)
     length(minor_labels) <- length(minor_at)
 
-    major_at <- numeric(0L)
+    major_at <- double(0L)
     major <- NULL
   }
 
