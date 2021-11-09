@@ -184,7 +184,7 @@ fitted.egf_no_fit <- function(object,
   ## 'subset' or 'append' requires minor acrobatics
   call <- match.call(expand.dots = FALSE)
   call[[1L]] <- quote(fitted.egf)
-  call[["..."]] <- NULL
+  call$... <- NULL
   nms <- names(call)
   i <- match(nms[-1L], c("subset", "append"), 0L) == 0L
   call[-1L][i] <- lapply(nms[-1L][i], as.name)
