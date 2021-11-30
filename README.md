@@ -115,20 +115,20 @@ LLVM_DIR=/usr/local/opt/llvm
 
 ## Mojave and later
 SDK_PATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
-CC="${LLVM_DIR}/bin/clang -isysroot ${SDK_PATH}"
-CXX="${LLVM_DIR}/bin/clang++ -isysroot ${SDK_PATH}"
+CC=$(LLVM_DIR)/bin/clang -isysroot $(SDK_PATH)
+CXX=$(LLVM_DIR)/bin/clang++ -isysroot $(SDK_PATH)
 
 ## High Sierra and earlier
-CC=${LLVM_DIR}/bin/clang
-CXX=${LLVM_DIR}/bin/clang++
+CC=$(LLVM_DIR)/bin/clang
+CXX=$(LLVM_DIR)/bin/clang++
 
 ## Xcode 12 and later
-CFLAGS="-g -O2 -Wall -pedantic -Wno-implicit-function-declaration"
-CXXFLAGS="-g -O2 -Wall -pedantic"
+CFLAGS=-g -O2 -Wall -pedantic -Wno-implicit-function-declaration
+CXXFLAGS=-g -O2 -Wall -pedantic
 
 ## Xcode 11 and earlier
-CFLAGS="-g -O2 -Wall -pedantic"
-CXXFLAGS="-g -O2 -Wall -pedantic"
+CFLAGS=-g -O2 -Wall -pedantic
+CXXFLAGS=-g -O2 -Wall -pedantic
 
 
 #### ARM-based Macs only ####
@@ -137,11 +137,11 @@ LIBS_DIR=/opt/R/arm64
 LLVM_DIR=/opt/homebrew/opt/llvm
 SDK_PATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
 
-CC="${LLVM_DIR}/bin/clang -isysroot ${SDK_PATH} -target arm64-apple-macos11"
-CXX="${LLVM_DIR}/bin/clang++ -isysroot ${SDK_PATH} -target arm64-apple-macos11"
+CC=$(LLVM_DIR)/bin/clang -isysroot $(SDK_PATH) -target arm64-apple-macos11
+CXX=$(LLVM_DIR)/bin/clang++ -isysroot $(SDK_PATH) -target arm64-apple-macos11
 
-CFLAGS="-falign-functions=8 -g -O2 -Wall -pedantic -Wno-implicit-function-declaration"
-CXXFLAGS="-g -O2 -Wall -pedantic"
+CFLAGS=-falign-functions=8 -g -O2 -Wall -pedantic -Wno-implicit-function-declaration
+CXXFLAGS=-g -O2 -Wall -pedantic
 
 
 #### Both Intel- and ARM-based Macs ####
@@ -149,8 +149,8 @@ CXXFLAGS="-g -O2 -Wall -pedantic"
 SHLIB_OPENMP_CFLAGS=-fopenmp
 SHLIB_OPENMP_CXXFLAGS=-fopenmp
 
-CPPFLAGS="-I${LLVM_DIR}/include -I${LIBS_DIR}/include"
-LDFLAGS="-L${LLVM_DIR}/lib -L${LIBS_DIR}/lib"
+CPPFLAGS=-I$(LLVM_DIR)/include -I$(LIBS_DIR)/include
+LDFLAGS=-L$(LLVM_DIR)/lib -L$(LIBS_DIR)/lib
 ```
 
 ### Package version mismatch
