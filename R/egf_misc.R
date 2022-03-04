@@ -17,50 +17,49 @@
 #'
 #' @export
 egf_get_names_top <- function(object, ...) {
-  UseMethod("egf_get_names_top", object)
+    UseMethod("egf_get_names_top", object)
 }
 
 #' @rdname egf_get_names_top
 #' @export
 egf_get_names_top.default <- function(object, link = TRUE, ...) {
-  stopifnot(is.null(object))
-  names_top <- c("r", "alpha", "c0", "tinfl", "K",
-                 "p", "a", "b", "disp", paste0("w", 1:6))
-  if (!link) {
-    return(names_top)
-  }
-  egf_link_add(names_top)
+    stopifnot(is.null(object))
+    names_top <- c("r", "alpha", "c0", "tinfl", "K",
+                   "p", "a", "b", "disp", paste0("w", 1:6))
+    if (!link) {
+        return(names_top)
+    }
+    egf_link_add(names_top)
 }
 
 #' @rdname egf_get_names_top
 #' @export
 egf_get_names_top.egf_model <- function(object, link = TRUE, ...) {
-  names_top <- switch(object$curve,
-    exponential    = c("r", "c0"),
-    subexponential = c("alpha", "c0", "p"),
-    gompertz       = c("alpha", "tinfl", "K"),
-    logistic       = c("r", "tinfl", "K"),
-    richards       = c("r", "tinfl", "K", "a")
-  )
-  if (object$excess) {
-    names_top <- c(names_top, "b")
-  }
-  if (object$family == "nbinom") {
-    names_top <- c(names_top, "disp")
-  }
-  if (object$day_of_week > 0L) {
-    names_top <- c(names_top, paste0("w", 1:6))
-  }
-  if (!link) {
-    return(names_top)
-  }
-  egf_link_add(names_top)
+    names_top <- switch(object$curve,
+                        exponential = c("r", "c0"),
+                        subexponential = c("alpha", "c0", "p"),
+                        gompertz = c("alpha", "tinfl", "K"),
+                        logistic = c("r", "tinfl", "K"),
+                        richards = c("r", "tinfl", "K", "a"))
+    if (object$excess) {
+        names_top <- c(names_top, "b")
+    }
+    if (object$family == "nbinom") {
+        names_top <- c(names_top, "disp")
+    }
+    if (object$day_of_week > 0L) {
+        names_top <- c(names_top, paste0("w", 1:6))
+    }
+    if (!link) {
+        return(names_top)
+    }
+    egf_link_add(names_top)
 }
 
 #' @rdname egf_get_names_top
 #' @export
 egf_get_names_top.egf <- function(object, link = TRUE, ...) {
-  egf_get_names_top(object$model, link = link)
+    egf_get_names_top(object$model, link = link)
 }
 
 #' @rdname egf_get_names_top
@@ -79,8 +78,8 @@ egf_get_names_top.egf_no_fit <- egf_get_names_top.egf
 #'
 #' @export
 egf_has_random <- function(object) {
-  stopifnot(inherits(object, c("egf", "egf_no_fit")))
-  ncol(object$tmb_out$env$data$Z) > 0L
+    stopifnot(inherits(object, c("egf", "egf_no_fit")))
+    ncol(object$tmb_out$env$data$Z) > 0L
 }
 
 #' Check for convergence
@@ -103,12 +102,12 @@ egf_has_random <- function(object) {
 #'
 #' @export
 egf_has_converged <- function(object, tol = 1) {
-  stopifnot(inherits(object, "egf"))
-  object$optimizer_out$convergence == 0L &&
-    is.finite(object$value) &&
-    all(is.finite(object$gradient)) &&
-    max(abs(object$gradient)) < tol &&
-    object$hessian
+    stopifnot(inherits(object, "egf"))
+    object$optimizer_out$convergence == 0L &&
+        is.finite(object$value) &&
+        all(is.finite(object$gradient)) &&
+        max(abs(object$gradient)) < tol &&
+        object$hessian
 }
 
 #' Convert between condensed and full parameter vectors
@@ -132,41 +131,41 @@ egf_has_converged <- function(object, tol = 1) {
 NULL
 
 egf_expand_par <- function(obj, par) {
-  l <- obj$env$parList(par[obj$env$lfixed()], par)
-  if (ncol(obj$env$data$Z) == 0L) {
-    l[names(l) != "beta"] <- list(double(0L))
-  }
-  len <- lengths(l)
-  res <- unlist1(l)
-  names(res) <- rep.int(names(l), len)
-  attr(res, "lengths") <- len
-  res
+    l <- obj$env$parList(par[obj$env$lfixed()], par)
+    if (ncol(obj$env$data$Z) == 0L) {
+        l[names(l) != "beta"] <- list(double(0L))
+    }
+    len <- lengths(l)
+    res <- unlist1(l)
+    names(res) <- rep.int(names(l), len)
+    attr(res, "lengths") <- len
+    res
 }
 
 egf_condense_par <- function(obj, par) {
-  parameters <- obj$env$parameters
-  if (ncol(obj$env$data$Z) == 0L) {
-    parameters[names(parameters) != "beta"] <- list(double(0L))
-  }
-  f <- function(x) {
-    if (is.null(map <- attr(x, "map"))) {
-      res <- seq_along(x)
-      attr(res, "n") <- length(x)
-    } else {
-      res <- match(seq_len(attr(x, "nlevels")) - 1L, map)
-      attr(res, "n") <- length(map)
+    parameters <- obj$env$parameters
+    if (ncol(obj$env$data$Z) == 0L) {
+        parameters[names(parameters) != "beta"] <- list(double(0L))
     }
+    f <- function(x) {
+        if (is.null(map <- attr(x, "map"))) {
+            res <- seq_along(x)
+            attr(res, "n") <- length(x)
+        } else {
+            res <- match(seq_len(attr(x, "nlevels")) - 1L, map)
+            attr(res, "n") <- length(map)
+        }
+        res
+    }
+    index <- lapply(parameters, f)
+    len <- vapply(index, attr, 0L, "n")
+    l <- split(par, rep.int(gl(length(len), 1L, labels = names(len)), len))
+    l <- Map(`[`, l, index)
+    len <- lengths(l)
+    res <- unlist1(l)
+    names(res) <- rep.int(names(l), len)
+    attr(res, "lengths") <- len
     res
-  }
-  index <- lapply(parameters, f)
-  len <- vapply(index, attr, 0L, "n")
-  l <- split(par, rep.int(gl(length(len), 1L, labels = names(len)), len))
-  l <- Map(`[`, l, index)
-  len <- lengths(l)
-  res <- unlist1(l)
-  names(res) <- rep.int(names(l), len)
-  attr(res, "lengths") <- len
-  res
 }
 
 #' Extract TMB-generated covariance information
@@ -183,26 +182,26 @@ egf_condense_par <- function(obj, par) {
 #' @noRd
 #' @importFrom TMB sdreport
 egf_get_sdreport <- function(object) {
-  stopifnot(inherits(object, "egf"))
-  res <- object$sdreport
-  if (is.null(res)) {
-    if (egf_has_random(object)) {
-      warning(wrap(
-        "Computing a Hessian matrix for a model with random effects, ",
-        "which might take a while. To avoid needless recomputation, ",
-        "retry after doing, e.g., 'object <- update(object, se = TRUE)'."
-      ))
+    stopifnot(inherits(object, "egf"))
+    res <- object$sdreport
+    if (is.null(res)) {
+        if (egf_has_random(object)) {
+            warning1("Computing a Hessian matrix for a model with ",
+                     "random effects, which might take a while. ",
+                     "To avoid needless recomputation, retry after doing, ",
+                     "e.g., 'object <- update(object, se = TRUE)'.")
+        }
+        res <- try(sdreport(object$tmb_out,
+                            par.fixed = object$best[!object$random],
+                            getReportCovariance = FALSE),
+                   silent = TRUE)
     }
-    res <- try(sdreport(object$tmb_out, par.fixed = object$best[!object$random], getReportCovariance = FALSE), silent = TRUE)
-  }
-  if (inherits(res, "try-error")) {
-    stop(wrap(
-      "Unable to proceed due to 'TMB::sdreport' error:\n\n ",
-      conditionMessage(attr(res, "condition")), "\n\n",
-      "Retry after diagnosing and refitting."
-    ))
-  }
-  res
+    if (inherits(res, "try-error")) {
+        stop1("Unable to proceed due to 'TMB::sdreport' error:\n\n ",
+              conditionMessage(attr(res, "condition")), "\n\n",
+              "Retry after diagnosing and refitting.")
+    }
+    res
 }
 
 #' Patch TMB-generated functions
@@ -226,65 +225,67 @@ egf_get_sdreport <- function(object) {
 NULL
 
 egf_patch_fn <- function(fn, inner_optimizer) {
-  e <- environment(fn)
-  if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
-    e$.egf_env <- new.env(parent = emptyenv())
-  }
-  e$.egf_env$fn <- fn
-  e$.egf_env$inner_optimizer <- inner_optimizer
-
-  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for 'check'
-  pfn <- function(x = last.par[-random], ...) {
-    oim <- inner.method
-    oic <- inner.control
-    on.exit({
-      inner.method <<- oim
-      inner.control <<- oic
-    })
-    for (io in .egf_env$inner_optimizer) {
-      inner.method <<- io$method
-      inner.control <<- io$control
-      v <- .egf_env$fn(x, ...)
-      if (is.numeric(v) && length(v) == 1L && is.finite(v)) {
-        return(v)
-      }
+    e <- environment(fn)
+    if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
+        e$.egf_env <- new.env(parent = emptyenv())
     }
-    NaN # no warning to avoid duplication of 'optim' and 'nlminb' warnings
-  }
-  environment(pfn) <- e
-  pfn
+    e$.egf_env$fn <- fn
+    e$.egf_env$inner_optimizer <- inner_optimizer
+
+    ## For 'R CMD check'
+    last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL
+    pfn <- function(x = last.par[-random], ...) {
+        oim <- inner.method
+        oic <- inner.control
+        on.exit({
+            inner.method <<- oim
+            inner.control <<- oic
+        })
+        for (io in .egf_env$inner_optimizer) {
+            inner.method <<- io$method
+            inner.control <<- io$control
+            v <- .egf_env$fn(x, ...)
+            if (is.numeric(v) && length(v) == 1L && is.finite(v)) {
+                return(v)
+            }
+        }
+        NaN # no warning to avoid duplication of 'optim' and 'nlminb' warnings
+    }
+    environment(pfn) <- e
+    pfn
 }
 
 egf_patch_gr <- function(gr, inner_optimizer) {
-  e <- environment(gr)
-  if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
-    e$.egf_env <- new.env(parent = emptyenv())
-  }
-  e$.egf_env$gr <- gr
-  e$.egf_env$inner_optimizer <- inner_optimizer
-
-  last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL # for 'check'
-  pgr <- function(x = last.par[-random], ...) {
-    oim <- inner.method
-    oic <- inner.control
-    on.exit({
-      inner.method <<- oim
-      inner.control <<- oic
-    })
-    n <- length(x)
-    for (io in .egf_env$inner_optimizer) {
-      inner.method <<- io$method
-      inner.control <<- io$control
-      v <- .egf_env$gr(x, ...)
-      if (is.numeric(v) && length(v) == n && all(is.finite(v))) {
-        return(v)
-      }
+    e <- environment(gr)
+    if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
+        e$.egf_env <- new.env(parent = emptyenv())
     }
-    warning("Unable to evaluate 'gr(x)', returning NaN.")
-    NaN # warning because length 1 result is unexpected
-  }
-  environment(pgr) <- e
-  pgr
+    e$.egf_env$gr <- gr
+    e$.egf_env$inner_optimizer <- inner_optimizer
+
+    # For 'R CMD check'
+    last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL
+    pgr <- function(x = last.par[-random], ...) {
+        oim <- inner.method
+        oic <- inner.control
+        on.exit({
+            inner.method <<- oim
+            inner.control <<- oic
+        })
+        n <- length(x)
+        for (io in .egf_env$inner_optimizer) {
+            inner.method <<- io$method
+            inner.control <<- io$control
+            v <- .egf_env$gr(x, ...)
+            if (is.numeric(v) && length(v) == n && all(is.finite(v))) {
+                return(v)
+            }
+        }
+        warning("Unable to evaluate 'gr(x)', returning NaN.")
+        NaN # warning because length 1 result is unexpected
+    }
+    environment(pgr) <- e
+    pgr
 }
 
 #' @importFrom stats model.matrix coef
@@ -292,49 +293,49 @@ egf_patch_gr <- function(gr, inner_optimizer) {
 #' @importFrom Matrix Matrix sparseMatrix KhatriRao
 #' @importMethodsFrom Matrix t tcrossprod rowSums
 egf_preprofile <- function(object, subset, top) {
-  if (object$control$profile) {
-    stop(wrap(
-      "Fixed effects coefficients have been \"profiled out\" of the likelihood. ",
-      "Hence likelihood profiles with respect to population fitted values ",
-      "(linear functions of fixed effects coefficients) are not defined. ",
-      "Retry after doing, e.g., ",
-      "'object <- update(object, control = egf_control(profile = FALSE))'."
-    ))
-  }
+    if (object$control$profile) {
+        stop1("Fixed effects coefficients have been \"profiled out\" of ",
+              "the likelihood. Hence likelihood profiles with respect to ",
+              "population fitted values ",
+              "(linear functions of fixed effects coefficients) ",
+              "are not defined. Retry after doing, e.g., 'object <- ",
+              "update(object, control = egf_control(profile = FALSE))'.")
+    }
 
-  Y <- object$tmb_out$env$data$Y
-  Y <- Y[subset, top, drop = FALSE]
-  X <- model.matrix(object, "fixed")
-  X <- X[subset, , drop = FALSE]
+    Y <- object$tmb_out$env$data$Y
+    Y <- Y[subset, top, drop = FALSE]
+    X <- model.matrix(object, "fixed")
+    X <- X[subset, , drop = FALSE]
 
-  c0 <- coef(object, full = FALSE)
-  len <- attr(c0, "lengths")
-  map <- attr(c0, "map")$beta
-  if (is.null(map)) {
-    argna <- logical(len[["beta"]])
-    fmap <- gl(len[["beta"]], 1L)
-  } else {
-    argna <- is.na(map)
-    fmap <- factor(map[!argna])
-  }
+    c0 <- coef(object, full = FALSE)
+    len <- attr(c0, "lengths")
+    map <- attr(c0, "map")$beta
+    if (is.null(map)) {
+        argna <- logical(len[["beta"]])
+        fmap <- gl(len[["beta"]], 1L)
+    } else {
+        argna <- is.na(map)
+        fmap <- factor(map[!argna])
+    }
 
-  c1 <- coef(object, full = TRUE)
-  beta <- c1[names(c1) == "beta"]
+    c1 <- coef(object, full = TRUE)
+    beta <- c1[names(c1) == "beta"]
 
-  ftop <- factor(fixef(object)$top, levels = top)
-  J <- as(ftop, "sparseMatrix")
-  A <- KhatriRao(J, X)
+    ftop <- factor(fixef(object)$top, levels = top)
+    J <- as(ftop, "sparseMatrix")
+    A <- KhatriRao(J, X)
 
-  B <- KhatriRao(J, t(beta))
-  Y <- Y + tcrossprod(X[, argna, drop = FALSE], B[, argna, drop = FALSE])
+    B <- KhatriRao(J, t(beta))
+    Y <- Y + tcrossprod(X[, argna, drop = FALSE], B[, argna, drop = FALSE])
 
-  A <- tcrossprod(A[, !argna, drop = FALSE], as(fmap, "sparseMatrix"))
-  A <- cbind(A, Matrix(0, nrow(A), len[["theta"]]))
+    A <- tcrossprod(A[, !argna, drop = FALSE], as(fmap, "sparseMatrix"))
+    A <- cbind(A, Matrix(0, nrow(A), len[["theta"]]))
 
-  if (!all(rowSums(abs(A)) > 0)) {
-    stop(wrap("At least one population fitted value is not a function of any estimated parameters."))
-  }
-  list(Y = Y, A = A)
+    if (!all(rowSums(abs(A)) > 0)) {
+        stop1("At least one population fitted value is not a function ",
+              "of any estimated parameters.")
+    }
+    list(Y = Y, A = A)
 }
 
 #' Cache example objects
@@ -365,7 +366,6 @@ egf_preprofile <- function(object, subset, top) {
 #' @param ...
 #'   Arguments passed to \code{\link{saveRDS}}.
 #'
-#' @details
 #' @section Behaviour when clear = FALSE and clear_all = FALSE:
 #' If \code{file} is found by \code{\link{file.exists}}, then the
 #' cached object is restored by \code{\link{readRDS}} and returned.
@@ -412,69 +412,75 @@ egf_preprofile <- function(object, subset, top) {
 #' z <- egf_cache(file, clear = TRUE)
 #' lf3 <- list.files(subdir)
 #'
-#' identical(x, 1)
-#' identical(y, 1)
-#' identical(z, 0L)
-#' identical(a, 1)
-#' identical(setdiff(lf2, lf1), file)
-#' identical(lf3, lf1)
+#' stopifnot(identical(x, 1),
+#'           identical(y, 1),
+#'           identical(z, 0L),
+#'           identical(a, 1),
+#'           identical(setdiff(lf2, lf1), file),
+#'           identical(lf3, lf1))
 #'
 #' @export
 #' @importFrom utils help.search example
 egf_cache <- function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
-  pkgload <- requireNamespace("pkgload", quietly = TRUE) &&
-    !is.null(pkgload::dev_meta("epigrowthfit"))
-  if (pkgload) {
-    root <- find.package("epigrowthfit")
-    subdir <- file.path(root, "inst", "exdata")
-  } else {
-    root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-    subdir <- file.path(root, "exdata")
-  }
-  if (clear_all) {
-    return(unlink(subdir, recursive = TRUE))
-  }
-  path <- file.path(subdir, file)
-  if (clear) {
-    return(unlink(path))
-  }
-  if (file.exists(path)) {
-    return(readRDS(path))
-  }
-  if (missing(object)) {
-    if (is.null(topic)) {
-      name <- sub("-\\d+\\.rds$", "", file)
-      pattern <- paste0("^", gsub("-", "\\\\W", name))
-      if (pkgload) {
-        man <- file.path(root, "man")
-        pattern <- paste0(pattern, ".Rd$")
-        rd <- list.files(man, pattern = pattern, full.names = TRUE)
-        topic <- sub("\\.Rd$", "", rd)
-      } else {
-        pattern <- paste0(pattern, "$")
-        hs <- help.search(pattern, ignore.case = FALSE, package = "epigrowthfit",
-                          fields = "name", types = "help", verbose = FALSE)
-        topic <- hs$matches$Topic
-      }
-      if (length(topic) != 1L) {
-        stop("Resource was not created because 'file' matches ", length(topic), " topics.")
-      }
-    }
+    pkgload <- requireNamespace("pkgload", quietly = TRUE) &&
+        !is.null(pkgload::dev_meta("epigrowthfit"))
     if (pkgload) {
-      rd <- paste0(topic, ".Rd")
-      pkgload::run_example(rd, quiet = FALSE)
+        root <- find.package("epigrowthfit")
+        subdir <- file.path(root, "inst", "exdata")
     } else {
-      example(topic, character.only = TRUE, package = "epigrowthfit",
-              local = TRUE, echo = FALSE)
+        root <- system.file(package = "epigrowthfit", mustWork = TRUE)
+        subdir <- file.path(root, "exdata")
     }
-    if (!file.exists(path)) {
-      stop("Examples for topic ", dQuote(topic), " were sourced but resource was not created.")
+    if (clear_all) {
+        return(unlink(subdir, recursive = TRUE))
     }
-    return(readRDS(path))
-  }
-  if (!dir.exists(subdir)) {
-    dir.create(subdir)
-  }
-  saveRDS(object, file = path, ...)
-  object
+    path <- file.path(subdir, file)
+    if (clear) {
+        return(unlink(path))
+    }
+    if (file.exists(path)) {
+        return(readRDS(path))
+    }
+    if (missing(object)) {
+        if (is.null(topic)) {
+            name <- sub("-\\d+\\.rds$", "", file)
+            pattern <- paste0("^", gsub("-", "\\\\W", name))
+            if (pkgload) {
+                man <- file.path(root, "man")
+                pattern <- paste0(pattern, ".Rd$")
+                rd <- list.files(man, pattern = pattern, full.names = TRUE)
+                topic <- sub("\\.Rd$", "", rd)
+            } else {
+                pattern <- paste0(pattern, "$")
+                hs <- help.search(pattern,
+                                  ignore.case = FALSE,
+                                  package = "epigrowthfit",
+                                  fields = "name",
+                                  types = "help",
+                                  verbose = FALSE)
+                topic <- hs$matches$Topic
+            }
+            if (length(topic) != 1L) {
+                stop("Resource was not created because 'file' matches ",
+                     length(topic), " topics.")
+            }
+        }
+        if (pkgload) {
+            rd <- paste0(topic, ".Rd")
+            pkgload::run_example(rd, quiet = FALSE)
+        } else {
+            example(topic, character.only = TRUE, package = "epigrowthfit",
+                    local = TRUE, echo = FALSE)
+        }
+        if (!file.exists(path)) {
+            stop("Examples for topic ", dQuote(topic), " were sourced ",
+                 "but resource was not created.")
+        }
+        return(readRDS(path))
+    }
+    if (!dir.exists(subdir)) {
+        dir.create(subdir)
+    }
+    saveRDS(object, file = path, ...)
+    object
 }

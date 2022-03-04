@@ -61,10 +61,8 @@ to a character vector of length 1 or length \code{nrow(data)}.
 }
 \examples{
 ## year <- 2021L
-## data <- data.frame(
-##   month = sample(month.abb, 20L, replace = TRUE),
-##   day = sample(30L, 20L, replace = TRUE)
-## )
+## data <- data.frame(month = sample(month.abb, 20L, replace = TRUE),
+##                    day = sample(30L, 20L, replace = TRUE))
 ##
 ## subset <- quote(grepl("^J", month) & day < 16L)
 ## egf_eval_subset(subset, data)

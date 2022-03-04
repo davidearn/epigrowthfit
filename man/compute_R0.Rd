@@ -45,9 +45,8 @@ probs <- diff(pgamma(breaks, shape = 1, scale = 2.5))
 R0 <- compute_R0(r, breaks, probs)
 
 plot(r, R0, las = 1,
-  xlab = "initial exponential growth rate",
-  ylab = "basic reproduction number"
-)
+     xlab = "initial exponential growth rate",
+     ylab = "basic reproduction number")
 
 }
 \references{

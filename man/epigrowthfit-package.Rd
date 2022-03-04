@@ -18,11 +18,16 @@ growth rates, while enabling broader characterization of the effects
 of covariates of interest.
 }
 \references{
-Ma J, Dushoff J, Bolker BM, Earn DJD. Estimating initial epidemic
-growth rates. Bull Math Biol. 2014;76:246--60.
+Kristensen K, Nielsen A, Berg CW, Skaug H, Bell BM.
+TMB: Automatic differentiation and Laplace approximation.
+J Stat Softw. 2016;70:1--21.
 
-Earn DJD, Ma J, Poinar HN, Dushoff J, Bolker BM. Acceleration
-of plague outbreaks in the second pandemic. Proc Natl Acad Sci U S A.
-2020;117:27703--11.
+Ma J, Dushoff J, Bolker BM, Earn DJD.
+Estimating initial epidemic growth rates.
+Bull Math Biol. 2014;76:246--60.
+
+Earn DJD, Ma J, Poinar HN, Dushoff J, Bolker BM.
+Acceleration of plague outbreaks in the second pandemic.
+Proc Natl Acad Sci U S A. 2020;117:27703--11.
 }
 \keyword{internal}

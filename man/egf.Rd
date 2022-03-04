@@ -226,40 +226,32 @@ sigma <- c(0.2, 0.2)
 r <- rlnorm(N, -3.2, 0.2)
 c0 <- rlnorm(N, 6, 0.2)
 f <- function(time, r, c0) {
-  lambda <- diff(exp(log(c0) + r * time))
-  c(NA, rpois(lambda, lambda))
+    lambda <- diff(exp(log(c0) + r * time))
+    c(NA, rpois(lambda, lambda))
 }
-data_ts <- data.frame(
-  country = gl(N, length(time), labels = LETTERS[seq_len(N)]),
-  time = rep.int(time, N),
-  x = unlist(Map(f, time = list(time), r = r, c0 = c0))
-)
+data_ts <-
+    data.frame(country = gl(N, length(time), labels = LETTERS[1:N]),
+               time = rep.int(time, N),
+               x = unlist(Map(f, time = list(time), r = r, c0 = c0)))
 
 ## Define fitting windows (here, two per time series)
-data_windows <- data.frame(
-  country = gl(N, 1L, 2L * N, labels = LETTERS[seq_len(N)]),
-  wave = gl(2L, 10L),
-  start = c(
-    sample(seq.int(0, 5, 1), size = N, replace = TRUE),
-    sample(seq.int(20, 25, 1), size = N, replace = TRUE)
-  ),
-  end = c(
-    sample(seq.int(15, 20, 1), size = N, replace = TRUE),
-    sample(seq.int(35, 40, 1), size = N, replace = TRUE)
-  )
-)
+data_windows <-
+    data.frame(country = gl(N, 1L, 2L * N, labels = LETTERS[1:N]),
+               wave = gl(2L, 10L),
+               start = c(sample(seq.int(0, 5, 1), N, TRUE),
+                         sample(seq.int(20, 25, 1), N, TRUE)),
+               end = c(sample(seq.int(15, 20, 1), N, TRUE),
+                       sample(seq.int(35, 40, 1), N, TRUE)))
 
 ## Estimate the generative model
 m1 <- egf_cache("egf-1.rds", {
-  egf(
-    model = egf_model(curve = "exponential", family = "pois"),
-    formula_ts = cbind(time, x) ~ country,
-    formula_windows = cbind(start, end) ~ country,
-    formula_parameters = ~(1 | country:wave),
-    data_ts = data_ts,
-    data_windows = data_windows,
-    se = TRUE
-  )
+    egf(model = egf_model(curve = "exponential", family = "pois"),
+        formula_ts = cbind(time, x) ~ country,
+        formula_windows = cbind(start, end) ~ country,
+        formula_parameters = ~(1 | country:wave),
+        data_ts = data_ts,
+        data_windows = data_windows,
+        se = TRUE)
 })
 
 ## Re-estimate the generative model with:
@@ -268,14 +260,11 @@ m1 <- egf_cache("egf-1.rds", {
 ## * initial value of 'theta' set explicitly
 ## * 'theta[3L]' fixed at initial value
 m2 <- egf_cache("egf-2.rds", {
-  update(m1,
-    formula_priors = list(
-      beta[1L] ~ Normal(mu = -3, sigma = 1),
-      Sigma ~ LKJ(eta = 2)
-    ),
-    init = list(theta = c(log(0.5), log(0.5), 0)),
-    map = list(theta = 3L)
-  )
+    update(m1,
+           formula_priors = list(beta[1L] ~ Normal(mu = -3, sigma = 1),
+                                 Sigma ~ LKJ(eta = 2)),
+           init = list(theta = c(log(0.5), log(0.5), 0)),
+           map = list(theta = 3L))
 })
 
 }

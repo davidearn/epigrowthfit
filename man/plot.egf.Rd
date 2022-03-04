@@ -177,24 +177,19 @@ of \code{subset}, \code{order}, \code{main}, \code{sub}, and \code{plab}.
 x <- egf_cache("egf-1.rds")
 
 op <- par(mar = c(3.5, 5, 5, 1))
-control <- egf_plot_control(
-  tdoubling = list(
-    legend = list(cex = 0.8),
-    estimate = list(cex = 0.8, font = 2),
-    ci = list(cex = 0.8)
-  )
-)
+control <-
+    egf_plot_control(tdoubling = list(legend = list(cex = 0.8),
+                                      estimate = list(cex = 0.8, font = 2),
+                                      ci = list(cex = 0.8)))
 plot(x,
-  type = "interval",
-  show_predict = 2L,
-  show_tdoubling = 2L,
-  control = control
-)
+     type = "interval",
+     show_predict = 2L,
+     show_tdoubling = 2L,
+     control = control)
 plot(x,
-  type = "cumulative",
-  main = "Fitted exponential model",
-  sub = paste("Country", country)
-)
+     type = "cumulative",
+     main = "Fitted exponential model",
+     sub = paste("Country", country))
 par(op)
 
 op <- par(mar = c(3.5, 9.5, 5, 1))

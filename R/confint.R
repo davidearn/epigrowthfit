@@ -25,23 +25,27 @@
 #' @param parallel (For \code{method = "profile"} or \code{"uniroot"}.)
 #'   An \code{"\link{egf_parallel}"} object defining options for \R level
 #'   parallelization.
-#' @param trace (For \code{method = "profile"} or \code{"uniroot"}.)
+#' @param trace
+#'   (For \code{method = "profile"} or \code{"uniroot"}.)
 #'   A logical flag.
 #'   If \code{TRUE}, then basic tracing messages indicating progress
 #'   are printed.
 #'   Depending on \code{object$control$trace}, these may be mixed with
 #'   optimizer output.
-#' @param grid_len (For \code{method = "profile"}.)
+#' @param grid_len
+#'   (For \code{method = "profile"}.)
 #'   A positive integer. Step sizes chosen adaptively by
 #'   \code{\link[TMB]{tmbprofile}} will generate approximately
 #'   this many points on each side of a profile's minimum point.
-#' @param interval_scale (For \code{method = "uniroot"}.)
+#' @param interval_scale
+#'   (For \code{method = "uniroot"}.)
 #'   A positive number.
 #'   \code{\link[TMB]{tmbroot}} will search for roots in the interval
 #'   of width \code{interval_scale * se} centered at \code{estimate},
 #'   where \code{estimate} is the fitted value (link scale)
 #'   and \code{se} is the corresponding standard error.
-#' @param breaks,probs (For \code{top = "R0"}.)
+#' @param breaks,probs
+#'   (For \code{top = "R0"}.)
 #'   Arguments to \code{\link{compute_R0}}.
 #' @param subset
 #'   An expression to be evaluated in
@@ -118,20 +122,22 @@
 #' @examples
 #' object <- egf_cache("egf-1.rds")
 #' zz1 <- egf_cache("confint-egf-1.rds", {
-#'   confint(object, method = "wald")
+#'     confint(object, method = "wald")
 #' })
 #' zz2 <- egf_cache("confint-egf-2.rds", {
-#'   confint(object, method = "profile", subset = (country == "A" & wave == 1))
+#'     confint(object, method = "profile",
+#'             subset = (country == "A" & wave == 1))
 #' })
 #' zz3 <- egf_cache("confint-egf-3.rds", {
-#'   confint(object, method = "uniroot", subset = (country == "A" & wave == 1))
+#'     confint(object, method = "uniroot",
+#'             subset = (country == "A" & wave == 1))
 #' })
 #' str(zz1)
 #'
 #' @seealso \code{\link{plot.egf_confint}}
 #' @export
 #' @importFrom stats qchisq fitted profile confint model.frame
-#' @import parallel
+#' @importFrom parallel makePSOCKcluster stopCluster clusterExport clusterEvalQ clusterMap mcMap
 confint.egf <- function(object,
                         parm,
                         level = 0.95,
@@ -149,180 +155,182 @@ confint.egf <- function(object,
                         .subset = NULL,
                         .append = NULL,
                         ...) {
-  stopifnot(
-    is_number_in_interval(level, 0, 1, "()"),
-    is_true_or_false(link)
-  )
-  method <- match.arg(method)
-  elu <- c("estimate", "lower", "upper")
+    stopifnot(is_number_in_interval(level, 0, 1, "()"), is_true_or_false(link))
+    method <- match.arg(method)
+    elu <- c("estimate", "lower", "upper")
 
-  names_top <- names_top_aug <- egf_get_names_top(object, link = TRUE)
-  spec <- c("tdoubling", "R0")
-  if (object$model$curve %in% c("exponential", "logistic", "richards")) {
-    names_top_aug <- c(names_top_aug, spec)
-  }
-
-  top <- top_aug <- unique(match.arg(top, names_top_aug, several.ok = TRUE))
-  if ("R0" %in% top) {
-    stopifnot(!is.null(breaks), !is.null(probs))
-  }
-  top[top %in% spec] <- "log(r)"
-  top <- unique(top)
-
-  frame_windows <- model.frame(object, "windows")
-  frame_combined <- model.frame(object, "combined")
-  subset <- if (is.null(.subset)) substitute(subset) else .subset
-  subset <- egf_eval_subset(subset, frame_combined, parent.frame())
-  append <- if (is.null(.append)) substitute(append) else .append
-  append <- egf_eval_append(append, frame_combined, baseenv())
-
-  if (method == "wald") {
-    fo <- fitted(object, top = top, se = TRUE, .subset = subset, .append = append)
-    res <- confint(fo, level = level, link = link)
-
-  } else if (method == "profile") {
-    po <- profile(object,
-      level = level + min(0.01, 0.1 * (1 - level)),
-      top = top,
-      parallel = parallel,
-      trace = trace,
-      grid_len = grid_len,
-      .subset = subset,
-      .append = append
-    )
-    res <- confint(po, level = level, link = link)
-    res[["linear_combination"]] <- NULL
-    attr(res, "A") <- attr(res, "x") <- NULL
-
-  } else { # "uniroot"
-    stopifnot(
-      inherits(parallel, "egf_parallel"),
-      is_true_or_false(trace),
-      is_number(interval_scale, "positive")
-    )
-    n <- sum(!object$random)
-
-    l <- egf_preprofile(object, subset = subset, top = top)
-    Y <- l$Y
-    A <- l$A
-
-    m <- nrow(A)
-    a <- lapply(seq_len(m), function(i) A[i, ])
-    target <- 0.5 * qchisq(level, df = 1) # y := nll_restricted - nll_minimum = 0.5 * deviance
-    sd.range <- interval_scale
-    nomp <- object$control$omp_num_threads
-
-    do_uniroot <- function(i, a) {
-      if (trace) {
-        cat(sprintf("Computing confidence interval %d of %d...\n", i, m))
-      }
-      res <- TMB::tmbroot(obj, lincomb = a, target = target, sd.range = sd.range, trace = FALSE)
-      names(res) <- c("lower", "upper")
-      res
+    ## Initial doubling time and basic reproduction number are
+    ## monotone functions of initial exponential growth rate,
+    ## so confidence intervals can be obtained "for free" _if_
+    ## the top level nonlinear model _has_ an initial exponential
+    ## growth rate
+    names_top <- names_top_aug <- egf_get_names_top(object, link = TRUE)
+    mono <- c("tdoubling", "R0")
+    if (object$model$curve %in% c("exponential", "logistic", "richards")) {
+        names_top_aug <- c(names_top_aug, mono)
     }
+    top <- top_aug <- unique(match.arg(top, names_top_aug, several.ok = TRUE))
+    if ("R0" %in% top) {
+        stopifnot(!is.null(breaks), !is.null(probs))
+    }
+    top[top %in% mono] <- "log(r)"
+    top <- unique(top)
 
-    if (parallel$method == "snow") {
-      environment(do_uniroot) <- .GlobalEnv
+    frame_windows <- model.frame(object, "windows")
+    frame_combined <- model.frame(object, "combined")
+    subset <- if (is.null(.subset)) substitute(subset) else .subset
+    subset <- egf_eval_subset(subset, frame_combined, parent.frame())
+    append <- if (is.null(.append)) substitute(append) else .append
+    append <- egf_eval_append(append, frame_combined, baseenv())
 
-      ## Reconstruct list of arguments to 'MakeADFun' from object internals
-      ## for retaping
-      args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
+    if (method == "wald") {
+        fo <- fitted(object, top = top, se = TRUE,
+                     .subset = subset, .append = append)
+        res <- confint(fo, level = level, link = link)
 
-      ## Retrieve path to shared object for loading
-      dll <- system.file("libs", TMB::dynlib("epigrowthfit"), package = "epigrowthfit", mustWork = TRUE)
+    } else if (method == "profile") {
+        po <- profile(object,
+                      level = level + min(0.01, 0.1 * (1 - level)),
+                      top = top,
+                      parallel = parallel,
+                      trace = trace,
+                      grid_len = grid_len,
+                      .subset = subset,
+                      .append = append)
+        res <- confint(po, level = level, link = link)
+        res[["linear_combination"]] <- NULL
+        attr(res, "A") <- attr(res, "x") <- NULL
 
-      cl <- parallel$cl
-      if (is.null(cl)) {
-        cl <- do.call(makePSOCKcluster, parallel$args)
-        on.exit(stopCluster(cl), add = TRUE)
-      }
-      clusterExport(cl,
-        varlist = c("dll", "nomp", "args", "trace", "m", "target", "sd.range"),
-        envir = environment()
-      )
-      clusterEvalQ(cl, {
-        dyn.load(dll)
-        if (TMB::openmp(n = NULL) > 0L) {
-          TMB::openmp(n = nomp)
+    } else { # "uniroot"
+        stopifnot(inherits(parallel, "egf_parallel"),
+                  is_true_or_false(trace),
+                  is_number(interval_scale, "positive"))
+        n <- sum(!object$random)
+
+        l <- egf_preprofile(object, subset = subset, top = top)
+        Y <- l$Y
+        A <- l$A
+
+        m <- nrow(A)
+        a <- lapply(seq_len(m), function(i) A[i, ])
+
+        ## y := nll_restricted - nll_minimum = 0.5 * deviance
+        target <- 0.5 * qchisq(level, df = 1)
+        sd.range <- interval_scale
+        nomp <- object$control$omp_num_threads
+
+        do_uniroot <- function(i, a) {
+            if (trace) {
+                cat(sprintf("Computing confidence interval %d of %d...\n",
+                            i, m))
+            }
+            res <- TMB::tmbroot(obj, lincomb = a, target = target,
+                                sd.range = sd.range, trace = FALSE)
+            names(res) <- c("lower", "upper")
+            res
         }
-        obj <- do.call(TMB::MakeADFun, args)
-      })
-      res <- clusterMap(cl, do_uniroot, i = seq_len(m), a = a)
-    } else {
-      if (given_outfile <- nzchar(parallel$outfile)) {
-        outfile <- file(parallel$outfile, open = "wt")
-        sink(outfile, type = "output")
-        sink(outfile, type = "message")
-        on.exit(add = TRUE, {
-          sink(type = "message")
-          sink(type = "output")
-        })
-      }
-      if ((onomp <- TMB::openmp(n = NULL)) > 0L) {
-        TMB::openmp(n = nomp)
-        on.exit(TMB::openmp(n = onomp), add = TRUE)
-      }
-      obj <- object$tmb_out
-      res <- switch(parallel$method,
-        multicore = do.call(mcMap, c(list(f = do_uniroot, i = seq_len(m), a = a), parallel$args)),
-        serial = Map(do_uniroot, i = seq_len(m), a = a)
-      )
+
+        if (parallel$method == "snow") {
+            environment(do_uniroot) <- .GlobalEnv
+
+            ## Reconstruct list of arguments to 'MakeADFun'
+            ## from object internals for retaping
+            args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
+
+            ## Retrieve path to shared object for loading
+            dll <- system.file("libs", TMB::dynlib("epigrowthfit"),
+                               package = "epigrowthfit", mustWork = TRUE)
+
+            cl <- parallel$cl
+            if (is.null(cl)) {
+                cl <- do.call(makePSOCKcluster, parallel$args)
+                on.exit(stopCluster(cl), add = TRUE)
+            }
+            vars <- c("dll", "nomp", "args", "trace", "m", "target", "sd.range")
+            clusterExport(cl, varlist = vars, envir = environment())
+            clusterEvalQ(cl, {
+                dyn.load(dll)
+                if (TMB::openmp(n = NULL) > 0L) {
+                    TMB::openmp(n = nomp)
+                }
+                obj <- do.call(TMB::MakeADFun, args)
+            })
+            res <- clusterMap(cl, do_uniroot, i = seq_len(m), a = a)
+        } else {
+            if (given_outfile <- nzchar(parallel$outfile)) {
+                outfile <- file(parallel$outfile, open = "wt")
+                sink(outfile, type = "output")
+                sink(outfile, type = "message")
+                on.exit(add = TRUE, {
+                    sink(type = "message")
+                    sink(type = "output")
+                })
+            }
+            onomp <- TMB::openmp(n = NULL)
+            if (onomp > 0L) {
+                TMB::openmp(n = nomp)
+                on.exit(TMB::openmp(n = onomp), add = TRUE)
+            }
+            obj <- object$tmb_out
+            res <- switch(parallel$method,
+                          multicore = do.call(mcMap, c(list(f = do_uniroot, i = seq_len(m), a = a), parallel$args)),
+                          serial = Map(do_uniroot, i = seq_len(m), a = a))
+        }
+
+        res <- data.frame(top = rep(factor(top, levels = names_top),
+                                    each = length(subset)),
+                          ts = frame_windows$ts[subset],
+                          window = frame_windows$window[subset],
+                          estimate = as.double(A %*% object$best[!object$random]),
+                          do.call(rbind, res),
+                          frame_combined[subset, append, drop = FALSE],
+                          row.names = NULL,
+                          check.names = FALSE,
+                          stringsAsFactors = FALSE)
+        res[elu] <- res[elu] + as.double(Y)
+
+        if (!link) {
+            f <- lapply(egf_link_extract(levels(res$top)), egf_link_match,
+                        inverse = TRUE)
+            res[elu] <- in_place_ragged_apply(res[elu], res$top, f = f)
+            levels(res$top) <- egf_link_remove(levels(res$top))
+        }
+    } # "uniroot"
+
+    if (any(mono %in% top_aug)) {
+        s <- if (link) "log(r)" else "r"
+        res_r <- res[res$top == s, , drop = FALSE]
+        if (link) {
+            res_r[elu] <- exp(res_r[elu])
+        }
+
+        if ("tdoubling" %in% top_aug) {
+            eul <- elu[c(1L, 3L, 2L)]
+            res_tdoubling <- res_r
+            res_tdoubling[elu] <- log(2) / res_r[eul]
+            res_tdoubling$top <- factor("tdoubling")
+            res <- rbind(res, res_tdoubling)
+        }
+
+        if ("R0" %in% top_aug) {
+            res_R0 <- res_r
+            res_R0[elu] <- lapply(res_r[elu], compute_R0,
+                                  breaks = breaks, probs = probs)
+            res_R0$top <- factor("R0")
+            res <- rbind(res, res_R0)
+        }
+
+        if (!"log(r)" %in% top_aug) {
+            res <- res[res$top != s, , drop = FALSE]
+        }
     }
 
-    res <- data.frame(
-      top = rep(factor(top, levels = names_top), each = length(subset)),
-      ts = frame_windows$ts[subset],
-      window = frame_windows$window[subset],
-      estimate = as.double(A %*% object$best[!object$random]),
-      do.call(rbind, res),
-      frame_combined[subset, append, drop = FALSE],
-      row.names = NULL,
-      check.names = FALSE,
-      stringsAsFactors = FALSE
-    )
-    res[elu] <- res[elu] + as.double(Y)
-
-    if (!link) {
-      res[elu] <- in_place_ragged_apply(res[elu], res$top,
-        f = lapply(egf_link_extract(levels(res$top)), egf_link_match, inverse = TRUE)
-      )
-      levels(res$top) <- egf_link_remove(levels(res$top))
-    }
-  } # "uniroot"
-
-  if (any(spec %in% top_aug)) {
-    s <- if (link) "log(r)" else "r"
-    res_r <- res[res$top == s, , drop = FALSE]
-    if (link) {
-      res_r[elu] <- exp(res_r[elu])
-    }
-
-    if ("tdoubling" %in% top_aug) {
-      eul <- elu[c(1L, 3L, 2L)]
-      res_tdoubling <- res_r
-      res_tdoubling[elu] <- log(2) / res_r[eul]
-      res_tdoubling$top <- factor("tdoubling")
-      res <- rbind(res, res_tdoubling)
-    }
-
-    if ("R0" %in% top_aug) {
-      res_R0 <- res_r
-      res_R0[elu] <- lapply(res_r[elu], compute_R0, breaks = breaks, probs = probs)
-      res_R0$top <- factor("R0")
-      res <- rbind(res, res_R0)
-    }
-
-    if (!"log(r)" %in% top_aug) {
-      res <- res[res$top != s, , drop = FALSE]
-    }
-  }
-
-  row.names(res) <- NULL
-  attr(res, "method") <- method
-  attr(res, "level") <- level
-  attr(res, "frame_windows") <- frame_windows # for 'plot.egf_confint'
-  class(res) <- c("egf_confint", oldClass(res))
-  res
+    row.names(res) <- NULL
+    attr(res, "method") <- method
+    attr(res, "level") <- level
+    attr(res, "frame_windows") <- frame_windows # for 'plot.egf_confint'
+    class(res) <- c("egf_confint", oldClass(res))
+    res
 }
 
 #' Plot confidence intervals
@@ -409,204 +417,194 @@ plot.egf_confint <- function(x,
                              main = NULL,
                              label = NULL,
                              ...) {
-  type <- match.arg(type)
-  time_as <- match.arg(time_as)
-  stopifnot(is_number(per_plot, "positive", integer = TRUE))
-  per_plot <- as.integer(per_plot)
+    type <- match.arg(type)
+    time_as <- match.arg(time_as)
+    stopifnot(is_number(per_plot, "positive", integer = TRUE))
+    per_plot <- as.integer(per_plot)
 
-  subset <- egf_eval_subset(substitute(subset), x, parent.frame())
-  if (length(subset) == 0L) {
-    stop("'subset' indexes zero confidence intervals, so there is nothing to plot.")
-  }
-  label <- egf_eval_label(substitute(label), x, parent.frame())
-  order <- egf_eval_order(substitute(order), x, parent.frame())
-  subset <- order[order %in% subset]
+    subset <- egf_eval_subset(substitute(subset), x, parent.frame())
+    if (length(subset) == 0L) {
+        stop1("'subset' indexes zero confidence intervals, ",
+              "so there is nothing to plot.")
+    }
+    label <- egf_eval_label(substitute(label), x, parent.frame())
+    order <- egf_eval_order(substitute(order), x, parent.frame())
+    subset <- order[order %in% subset]
 
-  a <- attributes(x)
-  if (is.null(main)) {
-    s <- switch(type, bars = "fitting window", boxes = "time series")
-    main <- sprintf("%.3g%% confidence intervals by %s", 100 * a$level, s)
-  }
-  if (is.null(label)) {
-    s <- switch(type, bars = "window", boxes = "ts")
-    label <- as.character(x[[s]])
-  }
+    a <- attributes(x)
+    if (is.null(main)) {
+        s <- switch(type, bars = "fitting window", boxes = "time series")
+        main <- sprintf("%.3g%% confidence intervals by %s", 100 * a$level, s)
+    }
+    if (is.null(label)) {
+        s <- switch(type, bars = "window", boxes = "ts")
+        label <- as.character(x[[s]])
+    }
 
-  nx <- c("top", "ts", "window", "estimate", "lower", "upper")
-  x <- x[nx]
-  x$label <- label
-  x <- x[subset, , drop = FALSE]
-  x$top <- factor(x$top)
+    nx <- c("top", "ts", "window", "estimate", "lower", "upper")
+    x <- x[nx]
+    x$label <- label
+    x <- x[subset, , drop = FALSE]
+    x$top <- factor(x$top)
 
-  if (type == "bars") {
-    plot.egf_confint.bars(x, per_plot = per_plot, main = main)
-  } else {
-    i <- match(x$window, a$frame_windows$window, 0L)
-    frame_windows <- a$frame_windows[i, c("start", "end"), drop = FALSE]
-    x <- data.frame(x, frame_windows)
-    plot.egf_confint.boxes(x, time_as = time_as, per_plot = per_plot, main = main)
-  }
+    if (type == "bars") {
+        plot.egf_confint.bars(x, per_plot = per_plot, main = main)
+    } else {
+        i <- match(x$window, a$frame_windows$window, 0L)
+        frame_windows <- a$frame_windows[i, c("start", "end"), drop = FALSE]
+        x <- data.frame(x, frame_windows)
+        plot.egf_confint.boxes(x, per_plot = per_plot, main = main,
+                               time_as = time_as)
+    }
 }
 
-#' @import graphics
+#' @importFrom graphics par plot.new plot.window axTicks abline segments points box axis mtext title
 plot.egf_confint.bars <- function(x, per_plot, main) {
-  gp <- par()
-  sfcex <- get_space_filling_cex(x$label, target = 0.95 * max(0, gp$mar[2L] - 0.25), units = "lines")
+    x <- split(x, x$top)
+    for (xlab in names(x)) { # loop over parameters
+        data <- x[[xlab]]
+        n <- nrow(data)
+        argna <- lapply(data[c("lower", "upper")], is.na)
+        xlim <- range(data[c("estimate", "lower", "upper")], na.rm = TRUE)
 
-  for (top in levels(x$top)) { # loop over parameters
-    data <- x[x$top == top, , drop = FALSE]
-    argna <- lapply(data[c("lower", "upper")], is.na)
-    n <- nrow(data)
-    xlab <- top
-    xlim <- range(data[c("estimate", "lower", "upper")], na.rm = TRUE)
+        i <- 0L
+        while (i < n) { # loop over plots
+            k <- i + seq_len(min(per_plot, n - i))
+            plot.new()
+            plot.window(xlim = xlim, ylim = c(per_plot + 1, 0),
+                        xaxs = "r", yaxs = "i")
+            gp <- par(c("usr", "cex", "mar"))
+            sfcex <- get_sfcex(x$label,
+                               target = 0.95 * max(0, gp$mar[2L] - 0.25),
+                               units = "lines")
+            abline(v = axTicks(side = 1), lty = 3, col = "grey75")
+            segments(x0 = replace(data$lower[k], argna$lower[k], gp$usr[1L]),
+                     x1 = data$estimate[k],
+                     y0 = seq_along(k),
+                     y1 = seq_along(k),
+                     lty = 1 + as.double(argna$lower[k]),
+                     lwd = 2 - as.double(argna$lower[k]))
+            segments(x0 = data$estimate[k],
+                     x1 = replace(data$upper[k], argna$upper[k], gp$usr[2L]),
+                     y0 = seq_along(k),
+                     y1 = seq_along(k),
+                     lty = 1 + as.double(argna$upper[k]),
+                     lwd = 2 - as.double(argna$upper[k]))
+            points(x = data$estimate[k],
+                   y = seq_along(k),
+                   pch = 21,
+                   bg = "grey80")
+            box()
+            axis(side = 1)
+            mtext(text = data$label[k],
+                  side = 2,
+                  line = 0.25,
+                  at = seq_along(k),
+                  las = 1,
+                  adj = 1,
+                  padj = 0.5,
+                  cex = gp$cex * sfcex)
+            title(xlab = xlab)
+            title(main, adj = 0)
+            i <- i + per_plot
+        } # loop over plots
+    } # loop over parameters
 
-    i <- 0L
-    while (i < n) { # loop over plots
-      k <- i + seq_len(min(per_plot, n - i))
-      plot.new()
-      plot.window(xlim = xlim, ylim = c(per_plot + 1, 0), xaxs = "r", yaxs = "i")
-      gp$usr <- par("usr")
-      abline(v = axTicks(side = 1), lty = 3, col = "grey75")
-      segments(
-        x0  = replace(data$lower[k], argna$lower[k], gp$usr[1L]),
-        x1  = data$estimate[k],
-        y0  = seq_along(k),
-        y1  = seq_along(k),
-        lty = 1 + as.double(argna$lower[k]),
-        lwd = 2 - as.double(argna$lower[k])
-      )
-      segments(
-        x0  = data$estimate[k],
-        x1  = replace(data$upper[k], argna$upper[k], gp$usr[2L]),
-        y0  = seq_along(k),
-        y1  = seq_along(k),
-        lty = 1 + as.double(argna$upper[k]),
-        lwd = 2 - as.double(argna$upper[k])
-      )
-      points(
-        x   = data$estimate[k],
-        y   = seq_along(k),
-        pch = 21,
-        bg  = "grey80"
-      )
-      box()
-      axis(side = 1)
-      mtext(
-        text = data$label[k],
-        side = 2,
-        line = 0.25,
-        at = seq_along(k),
-        las = 1,
-        adj = 1,
-        padj = 0.5,
-        cex = gp$cex * sfcex
-      )
-      title(xlab = xlab)
-      title(main, adj = 0)
-      i <- i + per_plot
-    } # loop over plots
-  } # loop over parameters
-
-  invisible(NULL)
+    invisible(NULL)
 }
 
-#' @import graphics
-plot.egf_confint.boxes <- function(x, time_as, per_plot, main) {
-  op <- par(mfrow = c(per_plot, 1))
-  on.exit(par(op))
-  gp <- par()
-  xlim <- range(x[c("start", "end")])
+#' @importFrom graphics par plot.new plot.window abline rect segments grconvertX grconvertY text box axis title
+plot.egf_confint.boxes <- function(x, per_plot, main, time_as) {
+    xlim <- range(x[c("start", "end")])
+    x <- split(x, x$top)
 
-  for (top in levels(x$top)) { # loop over parameters
-    data <- x[x$top == top, , drop = FALSE]
-    ylim <- range(data[c("estimate", "lower", "upper")], na.rm = TRUE)
-    ylab <- top
+    op <- par(mfrow = c(per_plot, 1))
+    on.exit(par(op))
 
-    data <- split(data, factor(data$ts, levels = as.character(unique(data$ts))))
-    n <- length(data)
+    for (ylab in names(x)) { # loop over parameters
+        data <- x[[ylab]]
+        ylim <- range(data[c("estimate", "lower", "upper")], na.rm = TRUE)
+        data <- split(data, factor(data$ts, levels = unique(data$ts)))
+        n <- length(data)
 
-    i <- 0L
-    while (i < n) { # loop over pages
-      for (k in i + seq_len(min(per_plot, n - i))) { # loop over plots
-        plot.new()
-        plot.window(xlim = xlim, ylim = ylim)
+        i <- 0L
+        while (i < n) { # loop over pages
+            for (k in i + seq_len(min(per_plot, n - i))) { # loop over plots
+                plot.new()
+                plot.window(xlim = xlim, ylim = ylim)
+                gp <- par(c("mfrow", "usr", "mai", "omi", "mgp",
+                            "cex", "cex.axis", "cex.lab"))
 
-        v <- Daxis(side = 1, major = NULL, minor = NULL)$minor
-        abline(v = v, lty = 3, col = "grey75")
+                v <- Daxis(side = 1, major = NULL, minor = NULL)$minor
+                abline(v = v, lty = 3, col = "grey75")
 
-        gp$usr <- par("usr")
-        argna <- lapply(data[[k]][c("lower", "upper")], is.na)
-        data[[k]]$lower[argna$lower] <- gp$usr[3L]
-        data[[k]]$upper[argna$upper] <- gp$usr[4L]
+                argna <- lapply(data[[k]][c("lower", "upper")], is.na)
+                data[[k]]$lower[argna$lower] <- gp$usr[3L]
+                data[[k]]$upper[argna$upper] <- gp$usr[4L]
 
-        for (l in seq_len(nrow(data[[k]]))) { # loop over confidence intervals
-          rect(
-            xleft   = data[[k]]$start[l],
-            xright  = data[[k]]$end[l],
-            ybottom = data[[k]]$lower[l],
-            ytop    = data[[k]]$estimate[l],
-            col     = if (argna$lower[l]) NA else "grey80",
-            border  = "grey50",
-            lty     = if (argna$lower[l]) 2 else 1
-          )
-          rect(
-            xleft   = data[[k]]$start[l],
-            xright  = data[[k]]$end[l],
-            ybottom = data[[k]]$estimate[l],
-            ytop    = data[[k]]$upper[l],
-            col     = if (argna$upper[l]) NA else "grey80",
-            border  = "grey50",
-            lty     = if (argna$upper[l]) 2 else 1
-          )
-          segments(
-            x0  = data[[k]]$start[l],
-            x1  = data[[k]]$end[l],
-            y0  = data[[k]]$estimate[l],
-            y1  = data[[k]]$estimate[l],
-            col = "grey50",
-            lwd = 2
-          )
-        } # loop over confidence intervals
+                for (l in seq_len(nrow(data[[k]]))) { # loop over CI
+                    rect(xleft = data[[k]]$start[l],
+                         xright = data[[k]]$end[l],
+                         ybottom = data[[k]]$lower[l],
+                         ytop = data[[k]]$estimate[l],
+                         col = if (argna$lower[l]) NA else "grey80",
+                         border = "grey50",
+                         lty = if (argna$lower[l]) 2 else 1)
+                    rect(xleft = data[[k]]$start[l],
+                         xright = data[[k]]$end[l],
+                         ybottom = data[[k]]$estimate[l],
+                         ytop = data[[k]]$upper[l],
+                         col = if (argna$upper[l]) NA else "grey80",
+                         border = "grey50",
+                         lty = if (argna$upper[l]) 2 else 1)
+                    segments(x0 = data[[k]]$start[l],
+                             x1 = data[[k]]$end[l],
+                             y0 = data[[k]]$estimate[l],
+                             y1 = data[[k]]$estimate[l],
+                             col = "grey50",
+                             lwd = 2)
+                } # loop over CI
 
-        p <- diff(grconvertY(c(0, 0.08), "npc", "inches"))
-        px <- diff(grconvertX(c(0, p), "inches", "user"))
-        py <- diff(grconvertY(c(0, p), "inches", "user"))
+                p <- diff(grconvertY(c(0, 0.08), "npc", "inches"))
+                px <- diff(grconvertX(c(0, p), "inches", "user"))
+                py <- diff(grconvertY(c(0, p), "inches", "user"))
 
-        ocex <- par(cex = 1)
-        text(
-          x = gp$usr[1L] + px,
-          y = gp$usr[4L] - py,
-          labels = data[[k]]$label[1L],
-          adj = c(0, 1),
-          cex = gp$cex.lab
-        )
-        par(ocex)
+                par(cex = 1)
+                text(x = gp$usr[1L] + px,
+                     y = gp$usr[4L] - py,
+                     labels = data[[k]]$label[1L],
+                     adj = c(0, 1),
+                     cex = gp$cex.lab)
+                par(cex = gp$cex)
 
-        box()
-        axis(side = 2)
-      } # loop over plots
+                box()
+                axis(side = 2)
+            } # loop over plots
 
-      ocex <- par(cex = 1)
-      if (time_as == "numeric") {
-        axis(side = 1)
-      } else {
-        Daxis(
-          side = 1,
-          major = list(cex.axis = 1.2 * gp$cex.axis, mgp = gp$mgp + c(0, 1.5, 0), tick = FALSE)
-        )
-      }
-      par(ocex)
+            par(cex = 1)
+            if (time_as == "numeric") {
+                axis(side = 1)
+            } else {
+                Daxis(side = 1,
+                      major = list(cex.axis = 1.2 * gp$cex.axis,
+                                   mgp = gp$mgp + c(0, 1.5, 0),
+                                   tick = FALSE))
+            }
+            par(cex = gp$cex)
 
-      ## Hack to avoid dealing with normalized figure coordinates
-      par(new = TRUE, mfrow = c(1, 1), mai = gp$mai + gp$omi, omi = c(0, 0, 0, 0))
-      plot.window(xlim = xlim, ylim = c(0, 1))
-      title(main = main, adj = 0)
-      title(ylab = ylab, adj = 0.5)
-      par(new = FALSE, mfrow = gp$mfrow, mai = gp$mai, omi = gp$omi)
+            ## Hack to avoid dealing with normalized figure coordinates
 
-      i <- i + per_plot
-    } # loop over pages
-  } # loop over parameters
+            par(new = TRUE, mfrow = c(1, 1),
+                mai = gp$mai + gp$omi, omi = c(0, 0, 0, 0))
+            plot.window(xlim = xlim, ylim = c(0, 1))
+            title(main = main, adj = 0)
+            title(ylab = ylab, adj = 0.5)
+            par(new = FALSE, mfrow = gp$mfrow,
+                mai = gp$mai, omi = gp$omi)
 
-  invisible(NULL)
+            i <- i + per_plot
+        } # loop over pages
+    } # loop over parameters
+
+    invisible(NULL)
 }

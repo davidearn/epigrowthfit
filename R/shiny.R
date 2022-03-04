@@ -42,19 +42,13 @@
 #'
 #' @export
 egf_shiny <- function(app = c("toplevel", "windowselect"), ...) {
-  app <- match.arg(app)
-  suggests <- list(
-    toplevel = c("shiny"),
-    windowselect = c("shiny", "shinyFeedback")
-  )
-  for (s in suggests[[app]]) {
-    if (!requireNamespace(s, quietly = TRUE)) {
-      stop(wrap(
-        "Application ", sQuote(app), " depends on uninstalled package ", sQuote(s), ". ",
-        "Install it by running 'install.packages(", dQuote(s), ")', then try again."
-      ))
+    app <- match.arg(app)
+    dep <- list(toplevel = c("shiny"),
+                windowselect = c("shiny", "shinyFeedback"))
+    for (package in dep[[app]]) {
+        suggest(package)
     }
-  }
-  dir <- system.file("shiny", app, package = "epigrowthfit", mustWork = TRUE)
-  shiny::runApp(dir, ...)
+    dirname <- system.file("shiny", app, package = "epigrowthfit",
+                           mustWork = TRUE)
+    shiny::runApp(dirname, ...)
 }

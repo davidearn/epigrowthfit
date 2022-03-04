@@ -83,11 +83,11 @@ lf2 <- list.files(subdir)
 z <- egf_cache(file, clear = TRUE)
 lf3 <- list.files(subdir)
 
-identical(x, 1)
-identical(y, 1)
-identical(z, 0L)
-identical(a, 1)
-identical(setdiff(lf2, lf1), file)
-identical(lf3, lf1)
+stopifnot(identical(x, 1),
+          identical(y, 1),
+          identical(z, 0L),
+          identical(a, 1),
+          identical(setdiff(lf2, lf1), file),
+          identical(lf3, lf1))
 
 }

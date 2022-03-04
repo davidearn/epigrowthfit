@@ -12,26 +12,25 @@
 #' @examples
 #' x <- quote(x)
 #' minus_x <- call("-", x)
-#' identical(negate(x), minus_x)
-#' identical(negate(minus_x), x)
+#' stopifnot(identical(negate(x), minus_x))
+#' stopifnot(identical(negate(minus_x), x))
 #'
 #' @noRd
 negate <- function(x) {
-  if (is.call(x) && x[[1L]] == "-" && length(x) == 2L) {
-    return(x[[2L]])
-  }
-  call("-", x)
+    if (is.call(x) && x[[1L]] == "-" && length(x) == 2L) {
+        return(x[[2L]])
+    }
+    call("-", x)
 }
 
 #' Split and unsplit formula terms
 #'
 #' Split nested \link{call}s to binary operators \code{`+`}
-#' and \code{`-`} with \code{split_terms}. Perform the inverse
-#' operation with \code{unsplit_terms}.
+#' and \code{`-`} with \code{split_terms}.
+#' Perform the inverse operation with \code{unsplit_terms}.
 #'
 #' @param x
-#'   A \link{call} (possibly a \link{formula}), \link{name},
-#'   or \link{atomic} scalar.
+#'   A \link{call}, \link{name}, or \link{atomic} scalar.
 #' @param l
 #'   A \link{list} of \link{call}s, \link{name}s, and \link{atomic} scalars.
 #'
@@ -54,67 +53,66 @@ negate <- function(x) {
 #' x <- quote(1 + a * b - b + (c | d) + (0 + e | f))
 #' l <- split_terms(x)
 #' y <- unsplit_terms(l)
-#' identical(x, y)
-#' ## [1] TRUE
+#' stopifnot(identical(x, y))
 #'
 #' @noRd
 NULL
 
 split_terms <- function(x) {
-  if (inherits(x, "formula")) {
-    x <- x[[length(x)]]
-  }
-  if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
-    return(list(x))
-  }
-  stopifnot(is.call(x))
-  if (x[[1L]] == "(") {
-    return(split_terms(x[[2L]]))
-  }
-  if (x[[1L]] == "+") {
-    if (length(x) == 2L) {
-      return(split_terms(x[[2L]]))
-    } else {
-      return(c(split_terms(x[[2L]]), split_terms(x[[3L]])))
+    if (inherits(x, "formula")) {
+        x <- x[[length(x)]]
     }
-  }
-  if (x[[1L]] == "-") {
-    if (length(x) == 2L) {
-      return(lapply(split_terms(x[[2L]]), negate))
-    } else {
-      return(c(split_terms(x[[2L]]), split_terms(x[-2L])))
+    if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
+        return(list(x))
     }
-  }
-  list(x)
+    stopifnot(is.call(x))
+    if (x[[1L]] == "(") {
+        return(split_terms(x[[2L]]))
+    }
+    if (x[[1L]] == "+") {
+        if (length(x) == 2L) {
+            return(split_terms(x[[2L]]))
+        } else {
+            return(c(split_terms(x[[2L]]), split_terms(x[[3L]])))
+        }
+    }
+    if (x[[1L]] == "-") {
+        if (length(x) == 2L) {
+            return(lapply(split_terms(x[[2L]]), negate))
+        } else {
+            return(c(split_terms(x[[2L]]), split_terms(x[-2L])))
+        }
+    }
+    list(x)
 }
 
 unsplit_terms <- function(l) {
-  stopifnot(inherits(l, "list"))
-  if (length(l) == 0L) {
-    return(NULL)
-  }
-  is_pm <- function(x) {
-    is.call(x) && (x[[1L]] == "+" || x[[1L]] == "-") && length(x) == 2L
-  }
-  is_bar <- function(x) {
-    is.call(x) && x[[1L]] == "|"
-  }
-  x <- l[[1L]]
-  if (is_bar(x)) {
-    x <- call("(", x)
-  }
-  for (i in seq_along(l)[-1L]) {
-    y <- l[[i]]
-    if (is_pm(y)) {
-      x <- as.call(list(y[[1L]], x, y[[2L]]))
-    } else {
-      if (is_bar(y)) {
-        y <- call("(", y)
-      }
-      x <- call("+", x, y)
+    stopifnot(is.list(l))
+    if (length(l) == 0L) {
+        return(NULL)
     }
-  }
-  x
+    is_pm <- function(x) {
+        is.call(x) && (x[[1L]] == "+" || x[[1L]] == "-") && length(x) == 2L
+    }
+    is_bar <- function(x) {
+        is.call(x) && x[[1L]] == "|"
+    }
+    x <- l[[1L]]
+    if (is_bar(x)) {
+        x <- call("(", x)
+    }
+    for (i in seq_along(l)[-1L]) {
+        y <- l[[i]]
+        if (is_pm(y)) {
+            x <- as.call(list(y[[1L]], x, y[[2L]]))
+        } else {
+            if (is_bar(y)) {
+                y <- call("(", y)
+            }
+            x <- call("+", x, y)
+        }
+    }
+    x
 }
 
 #' Split fixed and random effects terms
@@ -140,12 +138,12 @@ unsplit_terms <- function(l) {
 #' @noRd
 #' @importFrom stats as.formula
 split_effects <- function(x) {
-  stopifnot(inherits(x, "formula"))
-  l <- split_terms(x)
-  is_bar <- function(x) is.call(x) && x[[1L]] == "|"
-  l_is_bar <- vapply(l, is_bar, FALSE)
-  x[[length(x)]] <- if (all(l_is_bar)) 1 else unsplit_terms(l[!l_is_bar])
-  list(fixed = x, random = l[l_is_bar])
+    stopifnot(inherits(x, "formula"))
+    l <- split_terms(x)
+    is_bar <- function(x) is.call(x) && x[[1L]] == "|"
+    l_is_bar <- vapply(l, is_bar, FALSE)
+    x[[length(x)]] <- if (all(l_is_bar)) 1 else unsplit_terms(l[!l_is_bar])
+    list(fixed = x, random = l[l_is_bar])
 }
 
 #' Split an interaction
@@ -165,17 +163,17 @@ split_effects <- function(x) {
 #'
 #' @noRd
 split_interaction <- function(x) {
-  if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
-    return(list(x))
-  }
-  if (is.call(x)) {
-    if (x[[1L]] == ":") {
-      return(do.call(c, lapply(x[-1L], split_interaction)))
-    } else {
-      return(list(x))
+    if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
+        return(list(x))
     }
-  }
-  stop("'x' must be a call, name, or atomic scalar.")
+    if (is.call(x)) {
+        if (x[[1L]] == ":") {
+            return(do.call(c, lapply(x[-1L], split_interaction)))
+        } else {
+            return(list(x))
+        }
+    }
+    stop("'x' must be a call, name, or atomic scalar.")
 }
 
 #' Replace `|` with `+` in formula terms
@@ -195,15 +193,15 @@ split_interaction <- function(x) {
 #'
 #' @noRd
 gsub_bar_plus <- function(x) {
-  stopifnot(inherits(x, "formula"))
-  l <- split_effects(x)
-  if (length(l$random) == 0L) {
-    return(x)
-  }
-  m <- length(x)
-  l$random <- lapply(l$random, `[[<-`, 1L, as.name("+"))
-  x[[m]] <- unsplit_terms(c(l$fixed[[m]], l$random))
-  x
+    stopifnot(inherits(x, "formula"))
+    l <- split_effects(x)
+    if (length(l$random) == 0L) {
+        return(x)
+    }
+    m <- length(x)
+    l$random <- lapply(l$random, `[[<-`, 1L, as.name("+"))
+    x[[m]] <- unsplit_terms(c(l$fixed[[m]], l$random))
+    x
 }
 
 #' Expand and simplify formula terms
@@ -214,14 +212,13 @@ gsub_bar_plus <- function(x) {
 #' to address handling of calls to binary operator \code{`|`}.
 #'
 #' @param x
-#'   A \link{call} (possibly a \link{formula}), \link{name},
-#'   or \link{atomic} scalar.
+#'   A \link{call}, \link{name}, or \link{atomic} scalar.
 #'
 #' @details
 #' \code{x} is split into a \link{list} of constituent terms.
 #' Terms that _are not_ \link{call}s to \code{`|`} are regrouped,
 #' and the resulting expression is expanded and simplified
-#' using \code{\link{terms}(simplify = TRUE)}.
+#' using \code{\link{terms.formula}(simplify = TRUE)}.
 #' Terms that _are_ \link{call}s to \code{`|`} are regrouped,
 #' and the resulting expression is expanded and simplified
 #' following extended rules (see below).
@@ -232,14 +229,14 @@ gsub_bar_plus <- function(x) {
 #' The second component is obtained from the subexpression
 #' \code{(x * y | f) + (z | f/g)}.
 #' First, the arguments of each \link{call} to \code{`|`} are
-#' expanded and simplified using \code{\link{terms}(simplify = TRUE)},
+#' expanded and simplified using \code{\link{terms.formula}(simplify = TRUE)},
 #' producing \code{(x + y + x:y | f) + (z | f + f:g)}.
 #' Second, left hand expressions are distributed to right hand terms,
 #' producing \code{(x + y + x:y | f) + (z | f) + (z | f:g)}.
 #' Third, left hand expressions with matching right hand terms are merged,
 #' producing \code{(x + y + x:y + z | f) + (z | f:g)}.
 #' Finally, left hand expressions are simplified,
-#' again using \code{\link{terms}(simplify = TRUE)},
+#' again using \code{\link{terms.formula}(simplify = TRUE)},
 #' producing \code{(x + y + z + x:y | f) + (z | f:g)}.
 #' (In this case, the effect is merely a permutation of terms
 #' according to their order.) Hence the final result is
@@ -260,37 +257,37 @@ gsub_bar_plus <- function(x) {
 #' @noRd
 #' @importFrom stats terms as.formula
 simplify_terms <- function(x) {
-  if (inherits(x, "formula")) {
-    x[-1L] <- lapply(x[-1L], simplify_terms)
-    return(x)
-  }
-  if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
-    return(x)
-  }
-  stopifnot(is.call(x))
-  l <- split_terms(x)
-  is_bar <- function(x) is.call(x) && x[[1L]] == "|"
-  l_is_bar <- vapply(l, is_bar, FALSE)
-  if (all(l_is_bar)) {
-    no_bar <- NULL
-  } else {
-    no_bar <- terms(as.formula(call("~", unsplit_terms(l[!l_is_bar]))), simplify = TRUE)[[2L]]
-    if (!any(l_is_bar)) {
-      return(no_bar)
+    if (inherits(x, "formula")) {
+        x[-1L] <- lapply(x[-1L], simplify_terms)
+        return(x)
     }
-  }
-  expand_bar <- function(x) {
-    lhs <- simplify_terms(x[[2L]])
-    rhs <- split_terms(simplify_terms(x[[3L]]))
-    lapply(rhs, function(x) call("|", lhs, x))
-  }
-  bar <- do.call(c, lapply(l[l_is_bar], expand_bar))
-  rhs_deparsed <- vapply(bar, function(x) deparse1(x[[3L]]), "")
-  merge_bars <- function(l) {
-    lhs <- lapply(l, `[[`, 2L)
-    rhs <- l[[1L]][[3L]]
-    call("|", simplify_terms(unsplit_terms(lhs)), rhs)
-  }
-  bar <- tapply(bar, rhs_deparsed, merge_bars, simplify = FALSE)
-  unsplit_terms(c(no_bar, bar))
+    if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
+        return(x)
+    }
+    stopifnot(is.call(x))
+    l <- split_terms(x)
+    is_bar <- function(x) is.call(x) && x[[1L]] == "|"
+    l_is_bar <- vapply(l, is_bar, FALSE)
+    if (all(l_is_bar)) {
+        no_bar <- NULL
+    } else {
+        no_bar <- terms(as.formula(call("~", unsplit_terms(l[!l_is_bar]))), simplify = TRUE)[[2L]]
+        if (!any(l_is_bar)) {
+            return(no_bar)
+        }
+    }
+    expand_bar <- function(x) {
+        lhs <- simplify_terms(x[[2L]])
+        rhs <- split_terms(simplify_terms(x[[3L]]))
+        lapply(rhs, function(x) call("|", lhs, x))
+    }
+    bar <- do.call(c, lapply(l[l_is_bar], expand_bar))
+    rhs_deparsed <- vapply(bar, function(x) deparse1(x[[3L]]), "")
+    merge_bars <- function(l) {
+        lhs <- lapply(l, `[[`, 2L)
+        rhs <- l[[1L]][[3L]]
+        call("|", simplify_terms(unsplit_terms(lhs)), rhs)
+    }
+    bar <- tapply(bar, rhs_deparsed, merge_bars, simplify = FALSE)
+    unsplit_terms(c(no_bar, bar))
 }

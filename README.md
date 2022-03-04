@@ -10,13 +10,13 @@ models of epidemic growth to collections of one or more disease
 incidence time series. It can be applied to birth processes other
 than epidemics, as the statistical machinery is agnostic to the
 precise interpretation of supplied count data. **epigrowthfit**
-is built on [Template Model Builder](https://github.com/kaskr/adcomp).
+is built on [Template Model Builder](https://cran.r-project.org/package=TMB).
 
 ## Installation
 
 **epigrowthfit** is not (yet) available on
-[CRAN](https://cran.r-project.org/). 
-It can be installed from its sources on GitHub.
+[CRAN](https://cran.r-project.org/),
+but can be installed from its sources on GitHub.
 
 ```r
 remotes::install_github("davidearn/epigrowthfit", build_vignettes = TRUE)
@@ -27,34 +27,29 @@ depends on compilers and related tools.
 These will already be available on most modern Linux installations.
 Windows users must have installed
 [Rtools](https://cran.r-project.org/bin/windows/Rtools/)
-and added it to their `PATH`.
-macOS users must have installed Apple's Command Line Tools,
-which are packaged with [Xcode](https://developer.apple.com/xcode/).
-The most recent version can be installed by running 
+and placed it on their `PATH`.
+macOS users must have installed Apple's Command Line Tools for 
+[Xcode](https://developer.apple.com/xcode/).
+The most recent version of Command Line Tools can be installed 
+by running 
 
 ```shell
-rm -rf /Library/Developer/CommandLineTools
-xcode-select --install
+sudo rm -rf /Library/Developer/CommandLineTools
+sudo xcode-select --install
 ```
 
-in a terminal.
-However, users should install whichever version of Xcode was used 
-to build their R binary.
-General information about installing R packages, 
-including extensive platform-specific notes, can be found in `R-admin`
-(i.e., the R manual called _R Installation and Administration_,
-accessible with `help.start()`).
+in Terminal. Older binaries can be downloaded
+[here](https://developer.apple.com/download/all/?q=xcode).
 
 Vignette builds depend on a 
 [LaTeX](https://www.latex-project.org/get/) distribution.
-Specifically, `PATH` must include a path to the directory containing 
-`pdflatex`. 
+Specifically, `PATH` must specify a directory containing `pdflatex`. 
 A minimal distribution can be installed and managed via the R package 
-**tinytex**.
-Should errors during vignette builds persist, one can always install
+[**tinytex**](https://cran.r-project.org/package=tinytex).
+Should errors due to vignette builds persist, one can always install
 **epigrowthfit** without vignettes by setting `build_vignettes = FALSE`.
 
-Installation-related issues can be reported
+Installation-related issues should be reported
 [here](https://github.com/davidearn/epigrowthfit/issues/1).
 
 ### OpenMP support
@@ -75,93 +70,56 @@ Whether OpenMP is supported on a given system depends on:
 On modern Linux and Windows (with Rtools), if one installs
 a current version of R from a binary prebuilt by CRAN, then
 OpenMP support is often automatic.
-On macOS, some configuration is needed, because the default
-Command Line Tools `clang` toolchain does not include OpenMP support. 
-Below are _provisional_ instructions, based on `R-admin`, for
-obtaining a working `clang` toolchain on Macs with Intel- or ARM-based
-architectures, running _native_ builds of R. 
-These may need to be adapted to future releases of macOS, R, and
-R prerequisites.
+On macOS, some configuration is needed, because Apple `clang`,
+the C compiler provided with Apple's Command Line Tools,
+does not support OpenMP.
+Below are _provisional_ instructions for obtaining a `clang`
+toolchain supporting OpenMP on Macs with Intel- or ARM-based 
+architectures running native builds of R. 
+These may need to be adapted to future releases of macOS, R,
+and R prerequisites.
 
-First, install Xcode.
-
-```shell
-xcode-select --install
-```
-
-Next, install the LLVM `clang` toolchain, which includes OpenMP 
-support:
+First, install Command Line Tools:
 
 ```shell
-## With Homebrew
-brew update
-brew install llvm
-
-## Without Homebrew (Intel-based Macs only)
-wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/clang+llvm-11.0.0-x86_64-apple-darwin.tar.xz
-tar xvf clang+llvm-11.0.0-x86_64-apple-darwin.tar.xz -C /usr/local --strip-components 1
-rm clang+llvm-11.0.0-x86_64-apple-darwin.tar.xz
+sudo xcode-select --install
 ```
 
-Finally, add these lines to `HOME/.R/Makevars` (creating the 
-file if necessary and deleting those lines not indicated for 
-your system):
+Next, find your version of Apple `clang` with
+
+```shell
+clang --version
+```
+
+Use [this](https://mac.r-project.org/openmp/) link to download 
+the OpenMP runtime library suitable for your macOS and `clang` 
+versions, and install by unpacking to root.
+For example, if your `clang` version is `clang-1205.0.22.11`, 
+then you could do:
+
+```shell
+wget https://mac.r-project.org/openmp/openmp-11.0.1-darwin20-Release.tar.gz
+sudo tar xvf openmp-11.0.1-darwin20-Release.tar.gz -C /
+```
+
+Finally, add these lines to `HOME/.R/Makevars`:
 
 ```make
-#### Intel-based Macs only ####
-
-LIBS_DIR=/usr/local
-LLVM_DIR=/usr/local/opt/llvm
-
-## Mojave and later
-SDK_PATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
-CC=$(LLVM_DIR)/bin/clang -isysroot $(SDK_PATH)
-CXX=$(LLVM_DIR)/bin/clang++ -isysroot $(SDK_PATH)
-
-## High Sierra and earlier
-CC=$(LLVM_DIR)/bin/clang
-CXX=$(LLVM_DIR)/bin/clang++
-
-## Xcode 12 and later
-CFLAGS=-g -O2 -Wall -pedantic -Wno-implicit-function-declaration
-CXXFLAGS=-g -O2 -Wall -pedantic
-
-## Xcode 11 and earlier
-CFLAGS=-g -O2 -Wall -pedantic
-CXXFLAGS=-g -O2 -Wall -pedantic
-
-
-#### ARM-based Macs only ####
-
-LIBS_DIR=/opt/R/arm64
-LLVM_DIR=/opt/homebrew/opt/llvm
-SDK_PATH=/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk
-
-CC=$(LLVM_DIR)/bin/clang -isysroot $(SDK_PATH) -target arm64-apple-macos11
-CXX=$(LLVM_DIR)/bin/clang++ -isysroot $(SDK_PATH) -target arm64-apple-macos11
-
-CFLAGS=-falign-functions=8 -g -O2 -Wall -pedantic -Wno-implicit-function-declaration
-CXXFLAGS=-g -O2 -Wall -pedantic
-
-
-#### Both Intel- and ARM-based Macs ####
-
-SHLIB_OPENMP_CFLAGS=-fopenmp
-SHLIB_OPENMP_CXXFLAGS=-fopenmp
-
-CPPFLAGS=-I$(LLVM_DIR)/include -I$(LIBS_DIR)/include
-LDFLAGS=-L$(LLVM_DIR)/lib -L$(LIBS_DIR)/lib
+CPPFLAGS+=-I/usr/local/include -Xclang -fopenmp
+LDFLAGS+=-L/usr/local/lib -lomp
 ```
 
 ### Package version mismatch
 
-**epigrowthfit** must be binary-compatible with **TMB**. 
-In turn, **TMB** must be binary-compatible with **Matrix**. 
+**epigrowthfit** must be binary-compatible with 
+[**TMB**](https://cran.r-project.org/package=TMB). 
+In turn, **TMB** must be binary-compatible with 
+[**Matrix**](https://cran.r-project.org/package=Matrix). 
 This means that the version of **TMB** currently installed should 
 match the version that was installed when **epigrowthfit** was 
-built from source. 
+built from sources. 
 Similarly, the version of **Matrix** currently installed should match
-the version that was installed when **TMB** was built from source. 
+the version that was installed when **TMB** was built from sources. 
 Thus, version mismatch can occur when a user:
 
 * updates **TMB** without rebuilding **epigrowthfit** from source, or

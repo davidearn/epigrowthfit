@@ -28,8 +28,8 @@ all.equal(tdoubling, log(2) / r)
 
 ## 'per' affects printing
 for (i in c(1, 2, 7, 8, 365, 366)) {
-  attr(tdoubling, "per") <- i
-  print(tdoubling)
+    attr(tdoubling, "per") <- i
+    print(tdoubling)
 }
 
 }

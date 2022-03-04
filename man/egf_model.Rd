@@ -5,7 +5,7 @@
 \title{Define an epidemic model}
 \usage{
 egf_model(
-  curve = c("logistic", "exponential", "subexponential", "gompertz", "richards"),
+  curve = c("logistic", "richards", "exponential", "subexponential", "gompertz"),
   excess = FALSE,
   family = c("nbinom", "pois"),
   day_of_week = FALSE

@@ -60,30 +60,26 @@ n <- length(infectious)
 ## Histogram of samples
 y <- rgi(1e06, latent, infectious)
 hist(y, breaks = seq(0, m + n + 1), freq = FALSE, las = 1,
-  ylab = "relative frequency",
-  main = ""
-)
+     ylab = "relative frequency",
+     main = "")
 
 ## Density and distribution functions
 x <- seq(0, m + n + 1, by = 0.02)
 fx <- dgi(x, latent, infectious)
 Fx <- pgi(x, latent, infectious)
 plot(x, fx, type = "l", las = 1, # consistent with histogram
-  xlab = "generation interval",
-  ylab = "density function"
-)
+     xlab = "generation interval",
+     ylab = "density function")
 plot(x, Fx, type = "l", las = 1,
-  xlab = "generation interval",
-  ylab = "distribution function"
-)
+     xlab = "generation interval",
+     ylab = "distribution function")
 
 ## Quantile function
 p <- seq(0, 1, by = 0.001)
 qp <- qgi(p, latent, infectious)
 plot(p, qp, type = "l", las = 1,
-  xlab = "probability",
-  ylab = "quantile function"
-)
+     xlab = "probability",
+     ylab = "quantile function")
 
 }
 \references{

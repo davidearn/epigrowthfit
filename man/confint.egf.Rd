@@ -148,13 +148,15 @@ of \code{subset} and \code{append}.
 \examples{
 object <- egf_cache("egf-1.rds")
 zz1 <- egf_cache("confint-egf-1.rds", {
-  confint(object, method = "wald")
+    confint(object, method = "wald")
 })
 zz2 <- egf_cache("confint-egf-2.rds", {
-  confint(object, method = "profile", subset = (country == "A" & wave == 1))
+    confint(object, method = "profile",
+            subset = (country == "A" & wave == 1))
 })
 zz3 <- egf_cache("confint-egf-3.rds", {
-  confint(object, method = "uniroot", subset = (country == "A" & wave == 1))
+    confint(object, method = "uniroot",
+            subset = (country == "A" & wave == 1))
 })
 str(zz1)
 

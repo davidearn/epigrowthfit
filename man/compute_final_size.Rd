@@ -52,9 +52,8 @@ R0 <- 10^seq(-3, 1, length.out = 151L)
 final_size <- compute_final_size(R0, S0 = 1, I0 = 0)
 
 plot(R0, final_size, type = "l", las = 1,
-  xlab = "basic reproduction number",
-  ylab = "final size"
-)
+     xlab = "basic reproduction number",
+     ylab = "final size")
 
 }
 \references{

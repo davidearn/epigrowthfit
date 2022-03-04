@@ -80,12 +80,11 @@ when \code{boot = FALSE}.
 \examples{
 object <- egf_cache("egf-1.rds")
 zz <- egf_cache("simulate-egf-1.rds", {
-  simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
+    simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
 })
 str(zz)
 matplot(t(zz$boot[object$nonrandom, ]), type = "o", las = 1,
-  xlab = "simulation",
-  ylab = "parameter value"
-)
+        xlab = "simulation",
+        ylab = "parameter value")
 
 }
