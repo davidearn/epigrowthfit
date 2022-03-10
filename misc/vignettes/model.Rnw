@@ -21,24 +21,41 @@ source("knit_config.R", local = knitr::knit_global())
 \section{Introduction}
 \label{sec:intro}
 
-The most basic application of \pkg{epigrowthfit} is to fit a nonlinear
-function of time to a segment of a disease incidence time series in
-which observations (i.e., the number of cases observed over a fixed
-interval) are roughly increasing in time. Here, to ``fit'' means to
-find the model $\xi \in \mathbb{R}^{p}$ with the greatest likelihood
-given the data, where $\xi$ contains all of the parameters of the
-nonlinear function and any dispersion parameters of the family of
-statistical distributions assigned to observations.
+A disease incidence time series is a pairing
+$(\mathcal{T},\mathcal{X})$, where 
+$\mathcal{T} = (t_k)_{k=0}^{n}$
+is an increasing sequence of time points and 
+$\mathcal{X} = (x_{k})_{k=1}^{n}$ is a sequence of counts, 
+with $x_{k}$ interpreted as the number of disease cases observed 
+from time $t_{k-1}$ to time $t_{k}$.%
+\footnote{%
+  The term ``cases'' is used loosely to refer to one of three things:
+  (i)~infections, (ii)~reported infections, or (iii)~reported deaths
+  from disease.
+}
 
-This is a special case of the more general application, which is to
-fit such a model \emph{jointly} to one or more segments of one or more
-time series. In this more general case, the ``top level'' model $\xi$
-varies between segments according to a ``bottom level'' generalized
-linear mixed effects model specified by the user.
+The basic application of \pkg{epigrowthfit} is to fit a nonlinear 
+function of time to a \emph{segment} of a disease incidence time
+series in which counts are roughly increasing, indicating disease
+spread.%
+\footnote{%
+  In unequally spaced time series, disease spread is indicated 
+  by increasing \emph{scaled} counts $x_{k} / (t_{k} - t_{k-1})$.
+}
+Here, to ``fit'' means to find the model $\xi \in \mathbb{R}^{p}$ 
+with the greatest likelihood given the data, where $\xi$ contains 
+all of the parameters of the nonlinear function and any dispersion 
+parameters of the family of probability distributions assigned to 
+observations. 
 
-This vignette documents the different top level models implemented 
-in \pkg{epigrowthfit}, the general form of the bottom level model, 
-and some details about likelihood computation.
+This is a special case of the more general application, which is 
+to fit such a model \emph{jointly} to one or more segments of one 
+or more time series. In this more general setting, the ``top level'' 
+nonlinear model $\xi$ varies between segments according to a 
+``bottom level'' linear mixed effects model. This vignette documents 
+the different top level models implemented in \pkg{epigrowthfit}, 
+the general form of the bottom level model, and some details about 
+likelihood computation.
 
 
 \section{Top level model of epidemic growth}
@@ -57,10 +74,8 @@ X(s,t) \sim F(\mu(s,t),\theta)
 \end{equation}
 \end{linenomath}
 %
-for all $s \leq t$. Now let $c(t;\eta)$ denote the expected number 
-of cases observed \emph{up to} time $t \in \mathbb{R}$. Here, $c$ is a
-non-negative function of time $t$ with zero or more parameters $\eta$. 
-It follows that
+for all $s \leq t$. If $c(t;\eta)$ is the expected number of cases 
+observed up to time $t \in \mathbb{R}$, then
 % 
 \begin{linenomath}
 \begin{equation}
@@ -70,23 +85,20 @@ It follows that
 \end{linenomath}
 %
 Together, the function $c$, the family $F$, and the parameter
-$\xi = (\eta,\theta) \in \mathbb{R}^{p}$ specify a top level model 
-of observed disease spread.
+$\xi = (\eta,\theta) \in \mathbb{R}^{p}$ specify a top level 
+nonlinear model of observed disease spread.
 
-Currently, users of \pkg{epigrowthfit} can choose between five
-functions $c$ and two families $F$. This choice should depend on
-features of the disease incidence data being fit. The different
-options are summarized below.
-% 
 
-\footnote{%
-  We assume here that $X$ and $c$ count cases associated with one wave
-  of one epidemic. What constitutes an epidemic, what constitutes a
-  wave, and which cases are associated with a given wave are decisions
-  for the modeler. These issues are discussed in \vignette{windows}.
-}
+\subsection{Expected cumulative incidence \tops{$c(t;\eta)$}{c(t;eta)}}
 
-\subsection{Expected cumulative incidence functions \tops{$c(t;\eta)$}{c(t;eta)}}
+\pkg{epigrowthfit} implements five models of expected cumulative
+incidence $c(t;\eta)$. Users should choose a parsimonious model---%
+one that is general enough to capture important features of 
+the disease incidence time series segments under consideration 
+(\eg concavity), while remaining identifiable. Details of the 
+implemented models are outlined below, where it is assumed for 
+simplicity that time series are equally spaced and that time is 
+measured in units of the fixed observation interval.
 
 \subsubsection{Exponential model}
 
@@ -108,9 +120,9 @@ c(t) = c(0) \exp(r t)\,.
 \end{equation}
 \end{linenomath}
 %
-This model is appropriate only for segments of disease incidence 
-time series in which observations increase roughly linearly in time 
-on a logarithmic scale, since
+The exponential model is appropriate only for segments of disease
+incidence time series in which observations increase roughly linearly
+in time on a logarithmic scale, since
 %
 \begin{linenomath}
 \begin{equation}
@@ -118,9 +130,9 @@ on a logarithmic scale, since
 \end{equation}
 \end{linenomath}
 %
-Exponential growth tends to arise when a large proportion of the 
-population remains susceptible to the disease and few control measures 
-have been implemented to reduce potentially infectious contacts.
+Exponential growth tends to occur when a relatively large proportion 
+of the population remains susceptible to the disease and few control
+measures have been implemented to reduce infectious contacts.
 
 
 \subsubsection{Subexponential model}
@@ -139,33 +151,28 @@ then $c(t)$ grows subexponentially as
 \begin{linenomath}
 \begin{equation}
 \label{eq:subexponential}
-c(t) = 
+c(t) =
 \begin{cases}
 0\,, & t < t^{*}\,, \\
-c(0) \big(1 + \frac{1 - p}{c(0)^{1 - p}} \alpha t\big)^{1/(1 - p)}\,, & t \geq t^{*}\,,
+c(0) [1 + \alpha (1 - p) c(0)^{-(1 - p)} t]^{1/(1 - p)}\,, & t \geq t^{*}\,,
 \end{cases}
 \end{equation}
 \end{linenomath}
 %
-where $t^{*} = -c(0)^{1 - p} / \alpha (1 - p)$.%
+where $t^{*} = -c(0)^{1 - p} / [\alpha (1 - p)]$.%
 \footnote{%
-  For $t < t^{*}$, $c \equiv 0$ is not the necessarily the unique
-  solution of \cref{eq:subexponential-de}. However, in the context
-  of population growth, it is the only meaningful solution.
+  For $t < t^{*}$, $c \equiv 0$ is not always the unique solution 
+  of \cref{eq:subexponential-de}. However, it is the only meaningful 
+  solution in the context of population growth.
 }
-Note that the limits $p \to 0^{+}$ and $p \to 1^{-}$ correspond to
-linear and exponential growth, respectively, each with rate $\alpha$.
-This model is appropriate only for segments of disease incidence
-time series in which observations increase sublinearly on a
-logarithmic scale, since
-%
-\begin{linenomath}
-\begin{equation}
-\frac{\text{d}}{\text{d}t} \log(c(t) - c(t - 1)) > 0\,,\qquad \lim_{t \to \infty} \frac{\text{d}}{\text{d}t} \log(c(t) - c(t - 1)) = 0\,.
-\end{equation}
-\end{linenomath}
-%
-Subexponential growth tends to arise when disease spread is restricted
+The limits $p \to 0^{+}$ and $p \to 1^{-}$ correspond to linear and 
+exponential growth, respectively, each with rate $\alpha$.
+
+The subexponential model is appropriate only for segments of disease
+incidence time series in which observations increase sublinearly on a
+logarithmic scale, since $\log(c(t) - c(t - 1))$ is increasing and
+its first derivative converges monotonically to 0 as $t \to \infty$. 
+Subexponential growth tends to occur when disease spread is restricted 
 to clusters of individuals within a population.
 
 
@@ -185,14 +192,21 @@ then $c(t)$ grows sigmoidally as
 \begin{linenomath}
 \begin{equation}
 \label{eq:gompertz-no-sub}
-c(t) = K \Big(\frac{c(0)}{K}\Big)^{\exp(-\alpha t)}\,,
+c(t) = K \exp\Big(-\exp(-\alpha t) \log\Big(\frac{K}{c(0)}\Big)\Big)\,,
 \end{equation}
 \end{linenomath}
 %
-reaching an inflection point at 
-$t = \tinfl = \log(\log(K / c(0))) / \alpha$
-and approaching $K$ as $t \to \infty$. 
-Substituting $c(0) / K = \exp(-\exp(\alpha \tinfl))$
+reaching an inflection point at
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:gompertz-tinfl}
+t = \tinfl \coloneqq \frac{1}{\alpha} \log\Big(\log\Big(\frac{K}{c(0)}\Big)\Big)
+\end{equation}
+\end{linenomath}
+%
+and converging to $K$ as $t \to \infty$.
+Substituting $\log(K / c(0)) = \exp(\alpha \tinfl)$
 in \cref{eq:gompertz-no-sub} yields
 %
 \begin{linenomath}
@@ -202,9 +216,24 @@ c(t) = K \exp(-\exp(-\alpha (t - \tinfl)))\,.
 \end{equation}
 \end{linenomath}
 %
-This parametrization is convenient for estimation because $\tinfl$ is
-unconstrained (allowed to take any value in $\mathbb{R}$), whereas 
-$c(0)$ is constrained to the interval $(0,K)$.
+The latter parametrization, which exchanges $c(0)$ for $\tinfl$ 
+as a parameter, is convenient because $\tinfl$ is unconstrained 
+(allowed to take any value in $\mathbb{R}$), whereas $c(0)$ is 
+constrained to the interval $(0,K)$. The difference $c(t) - c(t - 1)$
+increases to a local maximum at
+%
+\begin{linenomath}
+\begin{equation}
+\label{eq:gompertz-tmax}
+t = \tmax \coloneqq \tinfl + \frac{1}{\alpha} \log\Big(\frac{\exp(\alpha) - 1}{\alpha}\Big)
+\end{equation}
+\end{linenomath}
+%
+before converging to 0 as $t \to \infty$.
+
+The Gompertz model is appropriate only for segments of disease incidence
+time series in which observations increase to a local maximum 
+
 
 
 \subsubsection{Logistic model}
@@ -238,6 +267,12 @@ parametrization
 \begin{equation}
 \label{eq:logistic}
 c(t) = \frac{K}{1 + \exp(-r (t - \tinfl))}\,.
+\end{equation}
+\end{linenomath}
+
+\begin{linenomath}
+\begin{equation}
+t = \tinfl + \frac{1}{2}
 \end{equation}
 \end{linenomath}
 
@@ -278,6 +313,12 @@ c(t) = \frac{K}{[1 + a \exp(-a r (t - \tinfl))]^{1 / a}}\,.
 %
 Note that the Richards model admits the logistic model as a 
 special case ($a = 1$).
+
+\begin{linenomath}
+\begin{equation}
+t = \tinfl + \frac{1}{a r} \log\Big(a \cdot \frac{\exp(a r) - \exp(a^{2} r / (a + 1))}{\exp(a^{2} r / (a + 1)) - 1}\Big)
+\end{equation}
+\end{linenomath}
 
 
 \subsubsection{Notes on model selection}
