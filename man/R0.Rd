@@ -19,5 +19,5 @@ object that is passed, and the serial interval distribution available
 in the package
 }
 \references{
-\insertRef{WallLips07}{epigrowthfit}
+\insertRef{WallLips07}{epigrowthfitPNAS}
 }

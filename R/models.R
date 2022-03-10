@@ -1,5 +1,5 @@
 #' a class representing a trajectory model used to fit exponential growth rates
-#' 
+#'
 #' @slot expr an expression specifying the model
 #' @slot grad gradient with respect to the parameters
 #' @slot hessian Hessian of the model
@@ -132,7 +132,7 @@ setMethod(
 )
 
 #' Evaluate a model
-#' 
+#'
 #' @docType methods
 #' @param obj a model object
 #' @rdname Eval
@@ -145,7 +145,7 @@ setGeneric(
 )
 
 #' Evaluate a model
-#' 
+#'
 #' @param data a dataframe object holding input values, if NULL, take from ...
 #' @param par a named vector (or list) of parameter values, if NULL, take from ...
 #' @param ... the input values and parameter values
@@ -176,7 +176,7 @@ setGeneric(
 )
 
 #' compute gradients
-#' 
+#'
 #' compute the gradients of the model negative log-likelihood as a function of the parameters
 #' @param data a dataframe object holding inut values, if NULL, take from ...
 #' @param par a named vector (or list) of parameters to compute the derivatives
@@ -224,7 +224,7 @@ setMethod(
     par <- as.list(par)
     frame <- c(par, as.list(data), list(...))
     var <- names(par)
-    l <- lapply(obj@hessian[var], function(dd) { 
+    l <- lapply(obj@hessian[var], function(dd) {
       sapply(dd[var], function(e) eval(e, frame))})
     n <- length(l)
     mat <- array(dim=c(dim(l[[1]]), n), dimnames=list(NULL, var, var))
@@ -235,7 +235,7 @@ setMethod(
 )
 
 #' a model with transformed parameters
-#' 
+#'
 #' @slot orig_expr original expression
 #' @slot transforms the parameter transforms
 #' @slot inverses the inverse transforms
@@ -292,7 +292,7 @@ setMethod(
       as.call(l)
     }
     # if no transform, return model
-    if (length(transforms) == 0) 
+    if (length(transforms) == 0)
       return(model)
     allvars <- c(model@input, model@par)
     .Object@orig_expr <- model@expr
@@ -306,7 +306,7 @@ setMethod(
 )
 
 #' transform parameter values
-#' 
+#'
 #' Map parameter values of a transformed model to/from the parameter values of the original model.
 #' @param model a list of Model objects defining parameter transformations
 #' @return a named list of transformed parameter values
@@ -318,9 +318,9 @@ setGeneric(
   })
 
 #' transform parameter values
-#' 
+#'
 #' return the same parameter values as input, but in a named list
-#' 
+#'
 #' @param model a Model object
 #' @param par a named vector (or list) of parameters to be transformed
 #' @param inverse logical, if TRUE, map from the TransformedModel parameters to the original model parameters; if FALSE, map from the original model parameters to the TransformedModel parameters
@@ -335,7 +335,7 @@ setMethod(
 )
 
 #' transform parameter values
-#' 
+#'
 #' Map parameter values of a transformed model to/from the parameter values of the original model.
 #' @param trans a list of Model objects defining parameter transformations
 #' @param par a named vector (or list) of parameters to be transformed
@@ -435,7 +435,7 @@ get_model <- function(model,
 
     ## FIXME: modify model name/make it easier to determine which
     ##  variants (constant incidence term, s bounds) were added?
-    
+
     ## "link" here means the transformation between the natural
     ## parameter and the (unconstrained) scale on which we fit the
     ## model.  Unconstrained scales are better because we can't fit
@@ -489,7 +489,7 @@ get_model <- function(model,
         itrans <- as.formula(substitute(s ~ log(s-s_lower),list("s_lower"=s_lower)))
         links <- links[names(links) != "s"]
     }
-        
+
     mod <- maketrans(mod,as.list(links), trans, itrans)
 
     return(mod)
@@ -504,8 +504,8 @@ NBconst <- function(k,x) {
 get_loglik <- function(loglik) {
     switch(loglik,
            poisson = {
-        new("Model", "poisson", 
-            LL ~ -lgamma(X+1) + X*log(lambda) - lambda, 
+        new("Model", "poisson",
+            LL ~ -lgamma(X+1) + X*log(lambda) - lambda,
             input = c("lambda", "X"),
             par = c())
     },
@@ -517,7 +517,7 @@ get_loglik <- function(loglik) {
                    input = c("mu", "X"),
                    par = "ll.k",
                    inits = c(ll.k=1))
-        
+
         TransformedModel(
             nb,
             transforms = list(ll.k ~ exp(ll.k)),
@@ -532,7 +532,7 @@ get_loglik <- function(loglik) {
         ## i.e. mu/k=phi -> k=mu/phi
         nb1 <- new("Model", "nbinom1",
                    LL ~ lgamma(mu/ll.phi+X) - lgamma(mu/ll.phi) - lgamma(X+1) +
-                       mu/ll.phi*log(mu/ll.phi) - mu/ll.phi*log(mu/ll.phi+mu) + X*log(mu) - 
+                       mu/ll.phi*log(mu/ll.phi) - mu/ll.phi*log(mu/ll.phi+mu) + X*log(mu) -
                        X*log(mu/ll.phi+mu),
                    input = c("mu", "X"),
                    par = "ll.phi",

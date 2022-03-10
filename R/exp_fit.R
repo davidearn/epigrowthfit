@@ -12,7 +12,7 @@
 #' @param method name of optimization method (ignored unless \code{optimizer} is "optim")
 #' @param fallback_stderr_fac quasi-standard error (for profiling), as a proporition of estimated r value, when Hessian is non-positive-definite
 #' @param drop_mle2_call to save space, drop call slot from mle2 object
-#' 
+#'
 #' @importFrom stats dpois dnbinom optim as.formula
 #' @importFrom stats4 confint profile coef
 #' @importFrom bbmle mle2 parnames<- AICc logLik vcov
@@ -102,7 +102,7 @@ exp_fit <- function(t, X, theta0,
     ##     we need to refit the model (return to #1) with the better
     ##     solution as a starting point, because the parameter
     ##     names in the returned better fit can be wrong (FIXME: why??)
-    tries <- 0 
+    tries <- 0
     while (TRUE) {
         tries <- tries+1
         if (optimizer=="user" && is.null(optimfun)) {
@@ -168,7 +168,7 @@ exp_fit <- function(t, X, theta0,
                 conf = confint(prof)
                 break
             }
-            ## if we reach here, confint must have found a 
+            ## if we reach here, confint must have found a
             ## better solution. we need to repeat
             theta0 = coef(prof)
             names(theta0) = names(p)
@@ -176,7 +176,7 @@ exp_fit <- function(t, X, theta0,
     }
     if (confint) {
         p.upper <- p.lower <- p
-        p.lower[["r"]] <- conf[[1]] 
+        p.lower[["r"]] <- conf[[1]]
         p.upper[["r"]] <- conf[[2]]
         result <- c(
             growth.rate = transformPar(model0, p)$r,
@@ -191,7 +191,7 @@ exp_fit <- function(t, X, theta0,
     if (drop_mle2_call) {
         fit@call <- fit@call.orig <- quote(call_deleted)
     }
-    L <- list(result = result, fit = fit, prof = prof, 
+    L <- list(result = result, fit = fit, prof = prof,
               mean = function(p, t) {
                       t1 <- t - t0
 	              t2 <- c(t[-1], tail(t, n=1)+t[2]-t[1]) - t0
@@ -228,7 +228,7 @@ optim_combo <- function(par, fn, gr = NULL, ...,
         ## FIXME: how will it come out differently next time??
         ## next
     }
-    # check if the convergence has been reached 
+    # check if the convergence has been reached
     # and if the vcov is positive definite
     if (out$convergence == 0 && is.valid(out$hessian) &&
         is.valid(solve(out$hessian))) {
@@ -269,10 +269,10 @@ optim_repeat_nlminb <- function(par, fn, gr = NULL, ...,
     tries <- 0
     while (tries<max.tries) {
         tries <- tries+1
-        out <- nlminb(start=par, objective=fn, gradient=gr,
-                      ...,
-                      control = control,
-                      lower=lower, upper=upper)
+        out <- stats::nlminb(start=par, objective=fn, gradient=gr,
+                             ...,
+                             control = control,
+                             lower=lower, upper=upper)
         hessian <- numDeriv::hessian(fn, out$par)
         ## if we made no progress, break
         par <- out$par

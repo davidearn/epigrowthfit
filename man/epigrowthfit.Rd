@@ -82,7 +82,7 @@ slot name should match argument?  (distrib != loglik)}
 \item{deaths_var}{column name of deaths vector within \code{data}}
 
 \item{baseline}{A "baseline" refers to a cumulative incidence model that incorporates
-a \code{b*t} term.  If \code{baseline=TRUE} then (if a baseline is being used) 
+a \code{b*t} term.  If \code{baseline=TRUE} then (if a baseline is being used)
 its value (\code{b}) is fixed (i.e., it is a fixed offset), based on
 the computed mean values in the surrounding years, rather than estimated
 from the outbreak year data.  Whether or not a baseline is used is specified
@@ -189,5 +189,5 @@ if (require("outbreaks")) {
 }
 }
 \references{
-\insertRef{Ma+14}{epigrowthfit}
+\insertRef{Ma+14}{epigrowthfitPNAS}
 }

@@ -96,6 +96,6 @@
 #' \describe{
 #' \item{\code{Date}}{reporting date}
 #' \item{\code{Province}}{province}
-#' \time{\code{newConfirmations}}{number of new confirmed cases}
+#' \item{\code{newConfirmations}}{number of new confirmed cases}
 #' }
 "canada_covid"

@@ -1,13 +1,14 @@
-*.log
-*.blg
 *.aux
-*.toc
+*.bbl
+*.blg
+*.log
 *.out
-*-tikzDictionary
 *.Rout
-figure/*
-## specific files:
+*.toc
 plotmodels.tex
 plotmodels.pdf
+epigrowthfit-intro.R
 epigrowthfit-intro.tex
 epigrowthfit-intro.pdf
+figure
+cache

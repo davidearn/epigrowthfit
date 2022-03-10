@@ -1,13 +1,13 @@
+\usepackage{scrtime} % for \thistime ... _must_ be listed first!
 
-\usepackage{scrtime} % for \thistime (this package MUST be listed first!)
 \usepackage[margin=1in]{geometry}
-\usepackage[usenames,dvipsnames]{xcolor}
-\definecolor{aqua}{RGB}{0, 128, 225}
-\usepackage[colorlinks=true,citecolor=aqua,linkcolor=aqua,urlcolor=aqua,hypertexnames=false]{hyperref}
-\usepackage{xspace}
-\usepackage{tikz}
 
-%% cleveref package for convenient hyperrefercing/citing:
+\usepackage{xspace}
+\usepackage{xcolor}
+\definecolor{aqua}{RGB}{0, 128, 225}
+
+% convenient hyperlinking/citation
+\usepackage[colorlinks=true,citecolor=aqua,linkcolor=aqua,urlcolor=aqua,hypertexnames=false]{hyperref}
 \usepackage[nameinlink,capitalize]{cleveref}
 \crefname{equation}{Equation}{Equations}
 \Crefname{equation}{Equation}{Equations}
@@ -16,8 +16,12 @@
 \crefname{section}{\S}{\SS}
 \Crefname{section}{\S}{\SS}
 
-%% line numbers
+%% line numbering
 \usepackage{lineno}\renewcommand\thelinenumber{\color{gray}\arabic{linenumber}}
+
+%% tables
+\newcommand{\tableleft}[1]{\texttt{#1}}
+\newcommand{\tableright}[1]{\relax{#1}}
 
 %% comments
 \newcommand{\comment}[3]{\textcolor{#1}{\textbf{[#2: }\textit{#3}\textbf{]}}}
@@ -30,9 +34,3 @@
 
 %% misc macros
 \newcommand{\etal}{\textit{et al}.\xspace}
-%% for referencing TeX macros:
-\newcommand\ttbackslash{{\tt\char`\\}}
-\newcommand{\macro}[1]{{\tt\ttbackslash#1}}
-
-%% settings
-\date{\today\ @ \thistime}

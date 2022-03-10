@@ -17,7 +17,7 @@ final size formula (Kermack and McKendrick 1927,
 Ma and Earn 2006) is used.
 }
 \references{
-\insertRef{KermMcKe27}{epigrowthfit}
+\insertRef{KermMcKe27}{epigrowthfitPNAS}
 
-\insertRef{MaEarn06}{epigrowthfit}
+\insertRef{MaEarn06}{epigrowthfitPNAS}
 }

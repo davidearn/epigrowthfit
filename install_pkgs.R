@@ -1,10 +1,6 @@
-## install all packages needed by epigrowthfit
-pkgs <- c("bbmle","emdbook","Hmisc", "Deriv", "lubridate", "zoo", "numDeriv",
-          "Rdpack","testthat", "outbreaks","knitr")
+## Install all 'epigrowthfit' dependencies
+pkgs <- c("Deriv", "numDeriv", "bbmle", "emdbook", "Hmisc", "zoo", "lubridate",
+          "Rdpack", "knitr", "tikzDevice", "dplyr", "tidyr", "ggplot2",
+          "outbreaks")
 i1 <- installed.packages()
-pkgs <- pkgs[!pkgs %in% rownames(i1)]
-install.packages(pkgs)
-
-
-
-
+install.packages(setdiff(pkgs, rownames(i1)))

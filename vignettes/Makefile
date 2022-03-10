@@ -1,12 +1,21 @@
-R = $(R_HOME)/bin/R
-
-all: plotmodels.pdf epigrowthfit-intro.pdf
+all: plotmodels.pdf epigrowthfit-intro.pdf clean
 
 plotmodels.tex: plotmodels.R
-	$(R) CMD BATCH --vanilla $<
-
-%.pdf: %.Rnw *.bib *preamble.tex
-	$(R) --no-echo -e "knitr::knit2pdf('$<')"
-
-%.pdf: %.tex
+	R --no-echo --vanilla -f $<
+plotmodels.pdf: plotmodels.tex
 	pdflatex $<
+
+epigrowthfit-intro.tex: epigrowthfit-intro.Rnw epigrowthfit-intro.bib vignettepreamble.tex
+	R --no-echo --vanilla -e "knitr::knit(\"$<\")"
+
+epigrowthfit-intro.pdf: epigrowthfit-intro.tex
+	pdflatex -interaction=batchmode $<
+	bibtex epigrowthfit-intro
+	pdflatex -interaction=batchmode $<
+	pdflatex $<
+
+clean:
+	rm -f *.{aux,bbl,blg,log,out,toc}
+	rm -f plotmodels.{tex,pdf}
+	rm -f epigrowthfit-intro.{R,tex}
+	rm -rf cache figure

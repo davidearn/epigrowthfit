@@ -6,7 +6,7 @@
 \usage{
 plotPlague(
   epidemic = NULL,
-  data = epigrowthfit::plague,
+  data = epigrowthfitPNAS::plague,
   name.data = "plague.deaths",
   toprightlabel = NULL,
   cex.toprightlabel = 2,

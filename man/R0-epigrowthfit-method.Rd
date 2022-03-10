@@ -19,5 +19,5 @@ a vector
 returns R0 and its 95\% confidence interval
 }
 \references{
-\insertRef{WallLips07}{epigrowthfit}
+\insertRef{WallLips07}{epigrowthfitPNAS}
 }

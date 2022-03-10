@@ -1,25 +1,48 @@
 Package: epigrowthfitPNAS
-Title: Estimate epidemic growth rate parameters
-Version: 0.0.5.1
-Authors@R: c(person("Ben", "Bolker", email = "bbolker@mcmaster.ca", role = c("aut", "cre")),
-	   person("Junling", "Ma", role="aut"),
-	   person("David", "Earn", role="aut"),
-	   person("Jonathan", "Dushoff", role="aut"))
-Description: Simple estimation of epidemic growth rate parameters.
-Depends: R (>= 3.3.0)
-Imports: bbmle (>= 1.0.21.9004), stats4, emdbook, methods, MASS, Hmisc, Deriv, lubridate, zoo, numDeriv
-RdMacros: Rdpack
-Suggests: testthat, outbreaks, Rdpack, knitr
-VignetteBuilder: knitr
+Version: 0.0.6
+Date: 2022-03-10
 License: GPL-3
 Encoding: UTF-8
+Authors@R: c(person("Ben", "Bolker", role = c("aut", "cre"),
+	            email = "bbolker@mcmaster.ca"),
+	     person("Junling", "Ma", role = "aut"),
+	     person("David", "Earn", role = "aut"),
+	     person("Jonathan", "Dushoff", role = "aut"))	
+Title: Estimate epidemic growth rate parameters
+Description: Simple estimation of epidemic growth rate parameters.
+Depends:
+    R (>= 3.3.0)
+Imports:
+    methods,
+    graphics,
+    grDevices,
+    stats,
+    stats4,
+    MASS,
+    Deriv,
+    numDeriv,
+    bbmle (>= 1.0.21.9004),
+    emdbook,
+    Hmisc,
+    zoo,
+    lubridate,
+    Rdpack
+Suggests:
+    knitr,
+    tikzDevice,
+    dplyr,
+    tidyr,
+    ggplot2,
+    outbreaks
+RdMacros: Rdpack
+VignetteBuilder: knitr
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Collate: 
-    'data.R'
-    'models.R'
-    'epigrowthfit.R'
-    'exp_fit.R'
-    'get_baseline.R'
-    'utils.R'
-    'zzz.R'
+    data.R
+    models.R
+    epigrowthfit.R
+    exp_fit.R
+    get_baseline.R
+    utils.R
+    zzz.R

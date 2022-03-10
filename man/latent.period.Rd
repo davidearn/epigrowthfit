@@ -22,6 +22,6 @@ latent.period
 Estimated latent period for pneumonic plague
 }
 \references{
-\insertRef{GaniLeac04}{epigrowthfit}
+\insertRef{GaniLeac04}{epigrowthfitPNAS}
 }
 \keyword{datasets}

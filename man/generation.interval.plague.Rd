@@ -12,5 +12,5 @@ compute generation interval for plague by convolving
 infectious period distribution
 }
 \references{
-\insertRef{Sven07}{epigrowthfit}
+\insertRef{Sven07}{epigrowthfitPNAS}
 }

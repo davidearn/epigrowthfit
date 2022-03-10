@@ -1,1 +1,7 @@
-utils/resave_data.R
+^Makefile$
+^README\.md$
+^TODO\.md$
+^install_pkgs\.R$
+^sandbox$
+^utils$
+^vignettes/nlipreamble\.tex$

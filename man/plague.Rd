@@ -50,11 +50,11 @@ These data are also available online from the International Infectious Disease D
 head(plague)
 }
 \references{
-\insertRef{Cohn03}{epigrowthfit}
+\insertRef{Cohn03}{epigrowthfitPNAS}
 
-\insertRef{Crei65}{epigrowthfit}
+\insertRef{Crei65}{epigrowthfitPNAS}
 
-\insertRef{Diet09}{epigrowthfit}
+\insertRef{Diet09}{epigrowthfitPNAS}
 }
 \author{
 These data were compiled from Cohn (2003), Creighton (1965) and Dietz (2009).

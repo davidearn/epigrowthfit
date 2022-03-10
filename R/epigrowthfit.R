@@ -28,6 +28,7 @@ safe_date <- function(tvec) {
 #' \insertRef{Ma+14}{epigrowthfitPNAS}
 #' @include models.R
 #' @importFrom methods setClass
+#' @importFrom Rdpack reprompt
 #' @rdname epigrowthfit
 #' @name epigrowthfit
 #' @export
@@ -724,7 +725,7 @@ setMethod("summary",
                finalsize=if (plague_R0) finalsize(R0(object)) else NA_real_,
                coefficients=coef(object),
                gof=gof(object,gof_agg),
-               conv=object@mle2@details$conv,
+               conv=object@mle2@details$convergence,
                convmsg=msg))
 })
 
