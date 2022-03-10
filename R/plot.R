@@ -682,9 +682,9 @@ plot.egf.curve <- function(frame_ts, frame_windows, cache,
             if (is.list(args <- control$data[[s]])) {
                 reserved <- c("formula", "data", "subset", "x", "y")
                 args[names(args) %in% reserved] <- NULL
-                args <- c(args, list(formula = formula,
-                                     data = data,
-                                     subset = (data$pty == s)))
+                args <- c(list(formula = formula, data = data,
+                               subset = (data$pty == s)),
+                          args)
                 do.call(points, args)
             }
         }
@@ -718,7 +718,7 @@ plot.egf.curve <- function(frame_ts, frame_windows, cache,
                 }
                 reserved <- c("formula", "data", "subset", "x", "y")
                 args[names(args) %in% reserved] <- NULL
-                args <- c(args, list(formula = estimate ~ time, data = px))
+                args <- c(list(formula = estimate ~ time, data = px), args)
                 do.call(lines, args)
             }
         }

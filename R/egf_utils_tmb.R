@@ -304,7 +304,7 @@ egf_tmb_make_parameters <- function(model, frame, env) {
             r <- ab[[2L]]
             c0 <- exp(ab[[1L]])
         }
-        tinfl <- max(d$t)
+        tinfl <- max(d$time)
         K <- 2 * sum(d$x, na.rm = TRUE)
         c(r = r, c0 = c0, tinfl = tinfl, K = K)
     }
