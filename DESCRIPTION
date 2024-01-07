@@ -48,7 +48,6 @@ LinkingTo:
     TMB,
     RcppEigen
 SystemRequirements: GNU make
-NeedsCompilation: yes
 LazyData: true
 RoxygenNote: 7.2.1
 Config/testthat/edition: 3
