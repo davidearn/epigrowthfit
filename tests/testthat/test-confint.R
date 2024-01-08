@@ -34,7 +34,7 @@ test_that("parallel", {
                 parallel = egf_parallel(method = "multicore", cores = 2L))
     expect_equal(co3_multicore, co3)
 
-    skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
+    ## skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
     co3_snow <-
         confint(o,
                 method = "uniroot",

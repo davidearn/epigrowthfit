@@ -422,15 +422,8 @@ egf_preprofile <- function(object, subset, top) {
 #' @export
 #' @importFrom utils help.search example
 egf_cache <- function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
-    pkgload <- requireNamespace("pkgload", quietly = TRUE) &&
-        !is.null(pkgload::dev_meta("epigrowthfit"))
-    if (pkgload) {
-        root <- find.package("epigrowthfit")
-        subdir <- file.path(root, "inst", "exdata")
-    } else {
-        root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-        subdir <- file.path(root, "exdata")
-    }
+    root <- system.file(package = "epigrowthfit", mustWork = TRUE)
+    subdir <- file.path(root, "exdata")
     if (clear_all) {
         return(unlink(subdir, recursive = TRUE))
     }
@@ -445,33 +438,21 @@ egf_cache <- function(file, object, topic = NULL, clear = FALSE, clear_all = FAL
         if (is.null(topic)) {
             name <- sub("-\\d+\\.rds$", "", file)
             pattern <- paste0("^", gsub("-", "\\\\W", name))
-            if (pkgload) {
-                man <- file.path(root, "man")
-                pattern <- paste0(pattern, ".Rd$")
-                rd <- list.files(man, pattern = pattern, full.names = TRUE)
-                topic <- sub("\\.Rd$", "", rd)
-            } else {
-                pattern <- paste0(pattern, "$")
-                hs <- help.search(pattern,
-                                  ignore.case = FALSE,
-                                  package = "epigrowthfit",
-                                  fields = "name",
-                                  types = "help",
-                                  verbose = FALSE)
-                topic <- hs$matches$Topic
-            }
+            pattern <- paste0(pattern, "$")
+            hs <- help.search(pattern,
+                              ignore.case = FALSE,
+                              package = "epigrowthfit",
+                              fields = "name",
+                              types = "help",
+                              verbose = FALSE)
+            topic <- hs$matches$Topic
             if (length(topic) != 1L) {
                 stop("Resource was not created because 'file' matches ",
                      length(topic), " topics.")
             }
         }
-        if (pkgload) {
-            rd <- paste0(topic, ".Rd")
-            pkgload::run_example(rd, quiet = FALSE)
-        } else {
-            example(topic, character.only = TRUE, package = "epigrowthfit",
-                    local = TRUE, echo = FALSE)
-        }
+        example(topic, character.only = TRUE, package = "epigrowthfit",
+                local = TRUE, echo = FALSE)
         if (!file.exists(path)) {
             stop("Examples for topic ", dQuote(topic), " were sourced ",
                  "but resource was not created.")

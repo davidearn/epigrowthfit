@@ -1,4 +1,4 @@
-skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
+## skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
 
 test_that(".on(Load|Unload)", {
     is_ns_loaded <- function() "epigrowthfit" %in% loadedNamespaces()

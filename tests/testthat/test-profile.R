@@ -56,7 +56,7 @@ test_that("parallel", {
                 parallel = egf_parallel(method = "multicore", cores = 2L))
     expect_equal(po_multicore, po)
 
-    skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
+    ## skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
     po_snow <-
         profile(o,
                 subset = (country == "A" & wave == 1),
