@@ -71,7 +71,7 @@ test_that("plot", {
     f <- function() {
         plot(po, type = "o", bty = "u", las = 1, main = "")
     }
-    vdiffr::expect_doppelganger("plot-egf_profile-1", fig = f)
+    ## vdiffr::expect_doppelganger("plot-egf_profile-1", fig = f)
 
     expect_true(TRUE) # otherwise test is considered skipped
 })

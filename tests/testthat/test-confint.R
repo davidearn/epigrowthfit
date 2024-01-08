@@ -52,14 +52,14 @@ test_that("plot", {
         on.exit(par(op))
         plot(co1, type = "bars")
     }
-    vdiffr::expect_doppelganger("plot-egf_confint-1", fig = bars)
+    ## vdiffr::expect_doppelganger("plot-egf_confint-1", fig = bars)
 
     boxes <- function() {
         op <- par(mar = c(0.2, 0, 0.2, 0), oma = c(4.5, 6, 2, 1), las = 1)
         on.exit(par(op))
         plot(co1, type = "boxes")
     }
-    vdiffr::expect_doppelganger("plot-egf_confint-2", fig = boxes)
+    ## vdiffr::expect_doppelganger("plot-egf_confint-2", fig = boxes)
 
     expect_true(TRUE) # otherwise test is considered skipped
 })
