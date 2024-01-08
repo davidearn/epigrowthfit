@@ -1,97 +1,97 @@
-#' Construct data objects for C++ template
-#'
-#' Gathers in a list data objects to be passed to
-#' \code{\link[TMB]{MakeADFun}}.
-#' These are retrieved inside of \pkg{epigrowthfit}'s C++ template
-#' via \pkg{TMB}'s \code{DATA_*} macros.
-#'
-#' @param model
-#'   An \code{"\link{egf_model}"} object.
-#' @param frame
-#'   A list returned by \code{egf_make_frame}.
-#' @param control
-#'   An \code{"\link{egf_control}"} object.
-#' @param env
-#'   An environment for storing intermediate objects that are not ultimately
-#'   passed to \code{\link[TMB]{MakeADFun}}, but must nonetheless be preserved
-#'   somewhere.
-#'
-#' @return
-#' [Below,
-#' \code{N = nlevels(frame$ts$window)}
-#' is the number of fitting windows,
-#' \code{n = N + sum(!is.na(frame$ts$window))}
-#' is the total number of time points associated with a fitting window, and
-#' \code{p = length(frame$parameters)}
-#' is the number of top level nonlinear model parameters.]
-#'
-#' A list with elements:
-#' \item{time}{
-#'   A numeric vector of length \code{n} giving times since the left endpoint
-#'   of the current fitting window.
-#' }
-#' \item{time_seg_len}{
-#'   An integer vector of length \code{N} specifying the length of each
-#'   fitting window as a number of time points.
-#' }
-#' \item{x}{
-#'   A numeric vector of length \code{n-N} giving incidence in each
-#'   fitting window. \code{x[i]} in window \code{k} is the number
-#'   of cases observed from \code{time[k+i-1]} to \code{time[k+i]}.
-#' }
-#' \item{day1}{
-#'   An integer vector of length \code{N}.
-#'   If \code{model$day_of_week > 0}, then it indicates the first day
-#'   of week in each fitting window, with value \code{i} in \code{0:6}
-#'   mapping to the day of week \code{i} days after the reference day
-#'   specified by \code{model$day_of_week}.
-#'   Otherwise, it is filled with \code{-1}.
-#' }
-#' \item{flags}{
-#'   A list with integer elements, used as flags to specify the model
-#'   being estimated and to indicate what blocks of template code should
-#'   be run.
-#' }
-#' \item{indices}{
-#'   A list with integer elements and names of the form
-#'   \code{"<link>_<parameter>"} (e.g., \code{"log_r"}),
-#'   giving the column 0-index of top level nonlinear model parameters
-#'   (e.g., \code{log(r)}) in the response matrix.
-#'   Value \code{-1} is used for parameters not belonging to the model
-#'   being estimated.
-#' }
-#' \item{Y}{
-#'   The \link[=model.offset]{offset} component of the response matrix
-#'   in dense format, with \code{N} rows and \code{p} columns.
-#' }
-#' \item{Xs, Xd}{
-#'   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
-#'   or \link[=matrix]{dense} format, with \code{N} rows.
-#'   If \code{control$sparse_X = TRUE}, then \code{Xs} is the sparse
-#'   design matrix and \code{Xd} is an empty dense matrix.
-#'   Otherwise, \code{Xs} is an empty sparse matrix and \code{Xd} is
-#'   the dense design matrix.
-#' }
-#' \item{Z}{
-#'   The random effects design matrix in \link[Matrix:sparseMatrix]{sparse}
-#'   format, with \code{N} rows.
-#'   If there are no random effects, then \code{Z} is an empty sparse matrix.
-#' }
-#' \item{beta_index, b_index}{
-#'   Integer vectors of length \code{ncol(X)} and \code{ncol(Z)}, respectively,
-#'   with values in \code{0:(p-1)}.
-#'   These split the columns of \code{X} and \code{Z} by relation to a common
-#'   top level nonlinear model parameter.
-#' }
-#' \item{beta_index_tab, b_index_tab}{
-#'   Integer vectors of length \code{p} counting the columns of \code{X} and
-#'   \code{Z}, respectively, that relate to a common top level nonlinear model
-#'   parameter.
-#' }
-#' \item{block_rows, block_cols}{
-#'   Integer vectors together giving the dimensions of each block of random
-#'   effects coefficients.
-#' }
+##' Construct data objects for C++ template
+##'
+##' Gathers in a list data objects to be passed to
+##' \code{\link[TMB]{MakeADFun}}.
+##' These are retrieved inside of \pkg{epigrowthfit}'s C++ template
+##' via \pkg{TMB}'s \code{DATA_*} macros.
+##'
+##' @param model
+##'   An \code{"\link{egf_model}"} object.
+##' @param frame
+##'   A list returned by \code{egf_make_frame}.
+##' @param control
+##'   An \code{"\link{egf_control}"} object.
+##' @param env
+##'   An environment for storing intermediate objects that are not ultimately
+##'   passed to \code{\link[TMB]{MakeADFun}}, but must nonetheless be preserved
+##'   somewhere.
+##'
+##' @return
+##' [Below,
+##' \code{N = nlevels(frame$ts$window)}
+##' is the number of fitting windows,
+##' \code{n = N + sum(!is.na(frame$ts$window))}
+##' is the total number of time points associated with a fitting window, and
+##' \code{p = length(frame$parameters)}
+##' is the number of top level nonlinear model parameters.]
+##'
+##' A list with elements:
+##' \item{time}{
+##'   A numeric vector of length \code{n} giving times since the left endpoint
+##'   of the current fitting window.
+##' }
+##' \item{time_seg_len}{
+##'   An integer vector of length \code{N} specifying the length of each
+##'   fitting window as a number of time points.
+##' }
+##' \item{x}{
+##'   A numeric vector of length \code{n-N} giving incidence in each
+##'   fitting window. \code{x[i]} in window \code{k} is the number
+##'   of cases observed from \code{time[k+i-1]} to \code{time[k+i]}.
+##' }
+##' \item{day1}{
+##'   An integer vector of length \code{N}.
+##'   If \code{model$day_of_week > 0}, then it indicates the first day
+##'   of week in each fitting window, with value \code{i} in \code{0:6}
+##'   mapping to the day of week \code{i} days after the reference day
+##'   specified by \code{model$day_of_week}.
+##'   Otherwise, it is filled with \code{-1}.
+##' }
+##' \item{flags}{
+##'   A list with integer elements, used as flags to specify the model
+##'   being estimated and to indicate what blocks of template code should
+##'   be run.
+##' }
+##' \item{indices}{
+##'   A list with integer elements and names of the form
+##'   \code{"<link>_<parameter>"} (e.g., \code{"log_r"}),
+##'   giving the column 0-index of top level nonlinear model parameters
+##'   (e.g., \code{log(r)}) in the response matrix.
+##'   Value \code{-1} is used for parameters not belonging to the model
+##'   being estimated.
+##' }
+##' \item{Y}{
+##'   The \link[=model.offset]{offset} component of the response matrix
+##'   in dense format, with \code{N} rows and \code{p} columns.
+##' }
+##' \item{Xs, Xd}{
+##'   The fixed effects design matrix in \link[Matrix:sparseMatrix]{sparse}
+##'   or \link[=matrix]{dense} format, with \code{N} rows.
+##'   If \code{control$sparse_X = TRUE}, then \code{Xs} is the sparse
+##'   design matrix and \code{Xd} is an empty dense matrix.
+##'   Otherwise, \code{Xs} is an empty sparse matrix and \code{Xd} is
+##'   the dense design matrix.
+##' }
+##' \item{Z}{
+##'   The random effects design matrix in \link[Matrix:sparseMatrix]{sparse}
+##'   format, with \code{N} rows.
+##'   If there are no random effects, then \code{Z} is an empty sparse matrix.
+##' }
+##' \item{beta_index, b_index}{
+##'   Integer vectors of length \code{ncol(X)} and \code{ncol(Z)}, respectively,
+##'   with values in \code{0:(p-1)}.
+##'   These split the columns of \code{X} and \code{Z} by relation to a common
+##'   top level nonlinear model parameter.
+##' }
+##' \item{beta_index_tab, b_index_tab}{
+##'   Integer vectors of length \code{p} counting the columns of \code{X} and
+##'   \code{Z}, respectively, that relate to a common top level nonlinear model
+##'   parameter.
+##' }
+##' \item{block_rows, block_cols}{
+##'   Integer vectors together giving the dimensions of each block of random
+##'   effects coefficients.
+##' }
 
 egf_tmb_make_data <- function(model, frame, control, env) {
     ## Indices of time points associated with fitting windows
@@ -211,64 +211,64 @@ egf_tmb_make_data <- function(model, frame, control, env) {
          block_cols = block_cols)
 }
 
-#' Construct parameter objects for C++ template
-#'
-#' Gathers in a list parameter objects to be passed to
-#' \code{\link[TMB]{MakeADFun}}
-#' and used during the first likelihood evaluation.
-#' These are retrieved inside of \pkg{epigrowthfit}'s C++ template
-#' via \pkg{TMB}'s \code{PARAMETER_*} macros.
-#'
-#' @param model
-#'   An \code{"\link{egf_model}"} object.
-#' @param frame
-#'   A list returned by \code{egf_make_frame}.
-#' @param env
-#'   An environment for storing intermediate objects that are not ultimately
-#'   passed to \code{\link[TMB]{MakeADFun}}, but must nonetheless be preserved
-#'   somewhere.
-#'
-#' @details
-#' Naive estimates of top level nonlinear model parameters are obtained
-#' for each fitting window as follows:
-#' \describe{
-#' \item{\code{r}}{
-#'   The slope of a linear model fit to \code{log1p(cumsum(x)))}.
-#' }
-#' \item{\code{c0}}{
-#'   \code{exp(log_c0)}, where \code{log_c0} is the intercept of
-#'   a linear model fit to \code{log1p(cumsum(x))}.
-#' }
-#' \item{\code{tinfl}}{
-#'   \code{max(time)}. This assumes that the fitting window ends
-#'   near the time of a peak in incidence.
-#' }
-#' \item{\code{K}}{
-#'   \code{2*sum(x)}. This assumes that the fitting window ends
-#'   near the time of a peak in incidence _and_ that incidence
-#'   is roughly symmetric about the peak.
-#' }
-#' \item{\code{p}}{0.95}
-#' \item{\code{a, b, disp, w[123456]}}{1}
-#' \item{\code{alpha}}{
-#'   \code{r*c0^(1-p)} if \code{curve = "subexponential"},
-#'   \code{r/log(K/c0)} if \code{curve = "gompertz"}.
-#'   These are the values obtained by setting the per capita growth
-#'   rate at time 0 in the subexponential and Gompertz models equal
-#'   to \code{r}, substituting the naive estimates of \code{r},
-#'   \code{c0}, \code{K}, and \code{p}, and solving for \code{alpha}.
-#' }
-#' }
-#' The naive estimates are link-transformed, and the means of the
-#' link scale estimates across fitting windows are used as initial
-#' values for corresponding \code{"(Intercept)"} coefficients in
-#' \code{beta}.
-#'
-#' @return
-#' A list with elements \code{beta}, \code{theta}, and \code{b},
-#' each numeric vectors. \code{theta} and \code{b} are zero vectors,
-#' while \code{beta} is a zero vector except for \code{"(Intercept)"}
-#' coefficients; see Details.
+##' Construct parameter objects for C++ template
+##'
+##' Gathers in a list parameter objects to be passed to
+##' \code{\link[TMB]{MakeADFun}}
+##' and used during the first likelihood evaluation.
+##' These are retrieved inside of \pkg{epigrowthfit}'s C++ template
+##' via \pkg{TMB}'s \code{PARAMETER_*} macros.
+##'
+##' @param model
+##'   An \code{"\link{egf_model}"} object.
+##' @param frame
+##'   A list returned by \code{egf_make_frame}.
+##' @param env
+##'   An environment for storing intermediate objects that are not ultimately
+##'   passed to \code{\link[TMB]{MakeADFun}}, but must nonetheless be preserved
+##'   somewhere.
+##'
+##' @details
+##' Naive estimates of top level nonlinear model parameters are obtained
+##' for each fitting window as follows:
+##' \describe{
+##' \item{\code{r}}{
+##'   The slope of a linear model fit to \code{log1p(cumsum(x)))}.
+##' }
+##' \item{\code{c0}}{
+##'   \code{exp(log_c0)}, where \code{log_c0} is the intercept of
+##'   a linear model fit to \code{log1p(cumsum(x))}.
+##' }
+##' \item{\code{tinfl}}{
+##'   \code{max(time)}. This assumes that the fitting window ends
+##'   near the time of a peak in incidence.
+##' }
+##' \item{\code{K}}{
+##'   \code{2*sum(x)}. This assumes that the fitting window ends
+##'   near the time of a peak in incidence _and_ that incidence
+##'   is roughly symmetric about the peak.
+##' }
+##' \item{\code{p}}{0.95}
+##' \item{\code{a, b, disp, w[123456]}}{1}
+##' \item{\code{alpha}}{
+##'   \code{r*c0^(1-p)} if \code{curve = "subexponential"},
+##'   \code{r/log(K/c0)} if \code{curve = "gompertz"}.
+##'   These are the values obtained by setting the per capita growth
+##'   rate at time 0 in the subexponential and Gompertz models equal
+##'   to \code{r}, substituting the naive estimates of \code{r},
+##'   \code{c0}, \code{K}, and \code{p}, and solving for \code{alpha}.
+##' }
+##' }
+##' The naive estimates are link-transformed, and the means of the
+##' link scale estimates across fitting windows are used as initial
+##' values for corresponding \code{"(Intercept)"} coefficients in
+##' \code{beta}.
+##'
+##' @return
+##' A list with elements \code{beta}, \code{theta}, and \code{b},
+##' each numeric vectors. \code{theta} and \code{b} are zero vectors,
+##' while \code{beta} is a zero vector except for \code{"(Intercept)"}
+##' coefficients; see Details.
 
 egf_tmb_make_parameters <- function(model, frame, env) {
     ## Initialize each parameter object to a zero vector

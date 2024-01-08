@@ -1,25 +1,25 @@
-#' Utilities for data validation and processing
-#'
-#' Functions used inside of \code{\link{egf}} to validate and process
-#' user-supplied formulae and data. Most edge cases should be caught
-#' and handled here, so that functions called downstream can operate
-#' without excessive conditional logic.
-#'
-#' @return
-#' \describe{
-#' \item{egf_sanitize_formula}{
-#'   A formula.
-#' }
-#' \item{egf_sanitize_formula_parameters}{
-#'   A list of formulae.
-#' }
-#' \item{egf_make_frame}{
-#'   A (recursive) list of data frames.
-#' }
-#' \item{egf_make_priors}{
-#'   A (recursive) list of \code{"\link{egf_prior"}} objects.
-#' }
-#' }
+##' Utilities for data validation and processing
+##'
+##' Functions used inside of \code{\link{egf}} to validate and process
+##' user-supplied formulae and data. Most edge cases should be caught
+##' and handled here, so that functions called downstream can operate
+##' without excessive conditional logic.
+##'
+##' @return
+##' \describe{
+##' \item{egf_sanitize_formula}{
+##'   A formula.
+##' }
+##' \item{egf_sanitize_formula_parameters}{
+##'   A list of formulae.
+##' }
+##' \item{egf_make_frame}{
+##'   A (recursive) list of data frames.
+##' }
+##' \item{egf_make_priors}{
+##'   A (recursive) list of \code{"\link{egf_prior"}} objects.
+##' }
+##' }
 
 egf_sanitize_formula <- function(formula) {
     s <- deparse1(substitute(formula))
@@ -497,58 +497,58 @@ egf_make_priors <- function(formula_priors, top, beta, theta, Sigma) {
     priors
 }
 
-#' Construct design matrices
-#'
-#' Utilities for constructing the design matrix \code{X} and \code{Z}
-#' associated with a fixed effects model formula \code{~tt} or random
-#' effects term \code{(tt | g)}, respectively.
-#'
-#' @param fixed
-#'   A fixed effects formula \code{~tt}.
-#' @param random
-#'   A random effects term \code{(tt | g)}.
-#'   More precisely, a \link{call} to binary operator \code{`|`}.
-#' @param data
-#'   A \link[=model.frame]{model frame} listing the variables
-#'   used in \code{fixed} or \code{random}.
-#' @param sparse
-#'   A logical flag. If \code{TRUE}, then the design matrix
-#'   is returned in \link[Matrix:sparseMatrix]{sparse} format.
-#'
-#' @details
-#' \code{egf_make_X(fixed, data, sparse)}
-#' constructs an \code{X} matrix by evaluating
-#' \code{\link{model.matrix}(fixed, data)} or
-#' \code{\link[Matrix]{sparse.model.matrix}(fixed, data)}
-#' (depending on \code{sparse})
-#' and deleting from the result columns containing only zeros.
-#'
-#' \code{egf_make_Z(x, data)} constructs a \code{Z} matrix
-#' following the steps outlined in \code{\link{vignette}("lmer", "lme4")}.
-#' It uses \code{egf_make_X} to construct the so-called raw model matrix
-#' from \code{random[[2L]]}.
-#' The result is always sparse.
-#'
-#' @return
-#' A \link[=matrix]{dense} or \link[Matrix:sparseMatrix]{sparse} matrix
-#' with attributes:
-#' \item{assign}{
-#'   See \code{\link{model.matrix}}.
-#'   Indexes \code{\link{labels}(\link{terms}(~tt))}
-#'   for the expression \code{tt} in \code{fixed ~ tt}
-#'   or \code{random = (tt | g)}.
-#' }
-#' \item{contrasts}{
-#'   See \code{\link{model.matrix}}.
-#'   Absent if the expression \code{tt} in \code{fixed = ~tt}
-#'   or \code{random = (tt | g)} does not contain terms
-#'   evaluating to character vectors or factors.
-#' }
-#' \item{level}{
-#'   (\code{egf_make_Z} only.)
-#'   A factor of length \code{ncol(Z)} with levels \code{levels(g)},
-#'   useful for splitting the columns of \code{Z} by group level.
-#' }
+##' Construct design matrices
+##'
+##' Utilities for constructing the design matrix \code{X} and \code{Z}
+##' associated with a fixed effects model formula \code{~tt} or random
+##' effects term \code{(tt | g)}, respectively.
+##'
+##' @param fixed
+##'   A fixed effects formula \code{~tt}.
+##' @param random
+##'   A random effects term \code{(tt | g)}.
+##'   More precisely, a \link{call} to binary operator \code{`|`}.
+##' @param data
+##'   A \link[=model.frame]{model frame} listing the variables
+##'   used in \code{fixed} or \code{random}.
+##' @param sparse
+##'   A logical flag. If \code{TRUE}, then the design matrix
+##'   is returned in \link[Matrix:sparseMatrix]{sparse} format.
+##'
+##' @details
+##' \code{egf_make_X(fixed, data, sparse)}
+##' constructs an \code{X} matrix by evaluating
+##' \code{\link{model.matrix}(fixed, data)} or
+##' \code{\link[Matrix]{sparse.model.matrix}(fixed, data)}
+##' (depending on \code{sparse})
+##' and deleting from the result columns containing only zeros.
+##'
+##' \code{egf_make_Z(x, data)} constructs a \code{Z} matrix
+##' following the steps outlined in \code{\link{vignette}("lmer", "lme4")}.
+##' It uses \code{egf_make_X} to construct the so-called raw model matrix
+##' from \code{random[[2L]]}.
+##' The result is always sparse.
+##'
+##' @return
+##' A \link[=matrix]{dense} or \link[Matrix:sparseMatrix]{sparse} matrix
+##' with attributes:
+##' \item{assign}{
+##'   See \code{\link{model.matrix}}.
+##'   Indexes \code{\link{labels}(\link{terms}(~tt))}
+##'   for the expression \code{tt} in \code{fixed ~ tt}
+##'   or \code{random = (tt | g)}.
+##' }
+##' \item{contrasts}{
+##'   See \code{\link{model.matrix}}.
+##'   Absent if the expression \code{tt} in \code{fixed = ~tt}
+##'   or \code{random = (tt | g)} does not contain terms
+##'   evaluating to character vectors or factors.
+##' }
+##' \item{level}{
+##'   (\code{egf_make_Z} only.)
+##'   A factor of length \code{ncol(Z)} with levels \code{levels(g)},
+##'   useful for splitting the columns of \code{Z} by group level.
+##' }
 
 egf_make_X <- function(fixed, data, sparse) {
     mm <- if (sparse) sparse.model.matrix else model.matrix
@@ -579,85 +579,85 @@ egf_make_Z <- function(random, data) {
               level = gl(ncol(G), ncol(X), labels = levels(g)))
 }
 
-#' Combine design matrices
-#'
-#' Utilities for combining parameter-specific fixed effects design matrices
-#' \code{X} and term-specific random effects design matrices \code{Z}.
-#'
-#' @param fixed
-#'   A named list of fixed effects formulae \code{~tt}.
-#'   \code{names(fixed)} must indicate corresponding top level
-#'   nonlinear model parameters.
-#' @param X
-#'   A list of \code{X} matrices obtained by applying
-#'   \code{egf_make_X} to the elements of \code{fixed}.
-#' @param random
-#'   A named list of random effects terms \code{(tt | g)}.
-#'   More precisely, a named list of \link{call}s to binary operator
-#'   \code{`|`}.
-#'   \code{names(random)} must indicate corresponding top level
-#'   nonlinear model parameters.
-#' @param Z
-#'   A list of \code{Z} matrices obtained by applying \code{egf_make_Z}
-#'   to the elements of \code{random}.
-#'
-#' @return
-#' \code{egf_combine_X} returns a list with elements:
-#' \item{X}{
-#'   The result of combining (in the sense of \code{\link{cbind}})
-#'   the supplied design matrices.
-#' }
-#' \item{effects}{
-#'   A data frame with one row per column of the combined design matrix,
-#'   storing details about the corresponding linear coefficients.
-#' }
-#' \item{contrasts}{
-#'   The result of concatenating the so-named attributes of the supplied
-#'   design matrices and deleting duplicates.
-#' }
-#' \code{egf_combine_Z} returns a similar list, with \code{Z} replacing
-#' \code{X}. However, the columns of \code{Z} and rows of \code{effects}
-#' are permuted so that they are ordered
-#' by relation to a common random effects term \code{(tt | g)}
-#' (order of terms is by appearance in \code{random}), then
-#' by relation to a common level of grouping variable \code{g}
-#' (order of levels of interactions is reverse lexicographic), then
-#' by top level nonlinear model parameter
-#' (order of parameters is by appearance in \code{names(random)}).
-#'
-#' Element \code{effects} stores the following details about coefficients:
-#' \item{cov}{
-#'   (\code{egf_combine_Z} only.)
-#'   Name of a covariance matrix, in the format \code{"Sigma[\%d]"}.
-#'   This is the interaction of \code{term} and \code{group}.
-#' }
-#' \item{vec}{
-#'   (\code{egf_combine_Z} only.)
-#'   Name of a random vector, in the format \code{"u[\%d]"}
-#'   This is the interaction of \code{term}, \code{group}, and \code{level}.
-#' }
-#' \item{bottom}{
-#'   Name of a bottom level mixed effects model parameter,
-#'   in the format \code{"beta[\%d]"} or \code{"b[\%d]"}.
-#' }
-#' \item{top}{
-#'   Name of the top level nonlinear model parameter whose fitted value
-#'   is a function of \code{bottom}.
-#' }
-#' \item{term}{
-#'   Deparsed term from \code{tt}, or \code{"(Intercept)"}.
-#' }
-#' \item{group}{
-#'   (\code{egf_combine_Z} only.)
-#'   Deparsed expression \code{g}.
-#' }
-#' \item{level}{
-#'   (\code{egf_combine_Z} only.)
-#'   Level of factor or interaction indicated by \code{group}.
-#' }
-#' \item{colname}{
-#'   Column name in design matrix.
-#' }
+##' Combine design matrices
+##'
+##' Utilities for combining parameter-specific fixed effects design matrices
+##' \code{X} and term-specific random effects design matrices \code{Z}.
+##'
+##' @param fixed
+##'   A named list of fixed effects formulae \code{~tt}.
+##'   \code{names(fixed)} must indicate corresponding top level
+##'   nonlinear model parameters.
+##' @param X
+##'   A list of \code{X} matrices obtained by applying
+##'   \code{egf_make_X} to the elements of \code{fixed}.
+##' @param random
+##'   A named list of random effects terms \code{(tt | g)}.
+##'   More precisely, a named list of \link{call}s to binary operator
+##'   \code{`|`}.
+##'   \code{names(random)} must indicate corresponding top level
+##'   nonlinear model parameters.
+##' @param Z
+##'   A list of \code{Z} matrices obtained by applying \code{egf_make_Z}
+##'   to the elements of \code{random}.
+##'
+##' @return
+##' \code{egf_combine_X} returns a list with elements:
+##' \item{X}{
+##'   The result of combining (in the sense of \code{\link{cbind}})
+##'   the supplied design matrices.
+##' }
+##' \item{effects}{
+##'   A data frame with one row per column of the combined design matrix,
+##'   storing details about the corresponding linear coefficients.
+##' }
+##' \item{contrasts}{
+##'   The result of concatenating the so-named attributes of the supplied
+##'   design matrices and deleting duplicates.
+##' }
+##' \code{egf_combine_Z} returns a similar list, with \code{Z} replacing
+##' \code{X}. However, the columns of \code{Z} and rows of \code{effects}
+##' are permuted so that they are ordered
+##' by relation to a common random effects term \code{(tt | g)}
+##' (order of terms is by appearance in \code{random}), then
+##' by relation to a common level of grouping variable \code{g}
+##' (order of levels of interactions is reverse lexicographic), then
+##' by top level nonlinear model parameter
+##' (order of parameters is by appearance in \code{names(random)}).
+##'
+##' Element \code{effects} stores the following details about coefficients:
+##' \item{cov}{
+##'   (\code{egf_combine_Z} only.)
+##'   Name of a covariance matrix, in the format \code{"Sigma[\%d]"}.
+##'   This is the interaction of \code{term} and \code{group}.
+##' }
+##' \item{vec}{
+##'   (\code{egf_combine_Z} only.)
+##'   Name of a random vector, in the format \code{"u[\%d]"}
+##'   This is the interaction of \code{term}, \code{group}, and \code{level}.
+##' }
+##' \item{bottom}{
+##'   Name of a bottom level mixed effects model parameter,
+##'   in the format \code{"beta[\%d]"} or \code{"b[\%d]"}.
+##' }
+##' \item{top}{
+##'   Name of the top level nonlinear model parameter whose fitted value
+##'   is a function of \code{bottom}.
+##' }
+##' \item{term}{
+##'   Deparsed term from \code{tt}, or \code{"(Intercept)"}.
+##' }
+##' \item{group}{
+##'   (\code{egf_combine_Z} only.)
+##'   Deparsed expression \code{g}.
+##' }
+##' \item{level}{
+##'   (\code{egf_combine_Z} only.)
+##'   Level of factor or interaction indicated by \code{group}.
+##' }
+##' \item{colname}{
+##'   Column name in design matrix.
+##' }
 
 egf_combine_X <- function(fixed, X) {
     stopifnot(length(fixed) == length(X))

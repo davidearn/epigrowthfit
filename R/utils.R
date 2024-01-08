@@ -1,19 +1,19 @@
-## A frequent case of 'unlist' usage
+### A frequent case of 'unlist' usage
 unlist1 <- function(x) {
     unlist(x, recursive = FALSE, use.names = FALSE)
 }
 
-## For backwards compatibility
+### For backwards compatibility
 if (getRversion() < "4.0.0") {
     deparse1 <- function (expr, collapse = " ", width.cutoff = 500L, ...) {
         paste(deparse(expr, width.cutoff, ...), collapse = collapse)
     }
 }
 
-## Coerces a sequence of R objects to character, concatenates them with
-## no separator, and formats the resulting string so that, when printed,
-## the user sees nicely wrapped paragraphs. Used inside of 'stop', etc.
-## so that condition messages print nicely.
+### Coerces a sequence of R objects to character, concatenates them with
+### no separator, and formats the resulting string so that, when printed,
+### the user sees nicely wrapped paragraphs. Used inside of 'stop', etc.
+### so that condition messages print nicely.
 wrap <- function(..., width = 0.9 * getOption("width")) {
     dots <- list(...)
     x <- vapply(dots, paste0, "", collapse = "")
@@ -24,9 +24,9 @@ wrap <- function(..., width = 0.9 * getOption("width")) {
     paste0(z, collapse = "\n")
 }
 
-## Tests that a package
-## (usually one listed in the 'Suggests' field of DESCRIPTION)
-## is installed and throws error if not.
+### Tests that a package
+### (usually one listed in the 'Suggests' field of DESCRIPTION)
+### is installed and throws error if not.
 suggest <- function(package, name = NULL) {
     if (!requireNamespace(package, quietly = TRUE)) {
         name <- if (is.null(name)) package else paste0(package, "::", name)
@@ -38,22 +38,22 @@ suggest <- function(package, name = NULL) {
     invisible(NULL)
 }
 
-## Creates and prints headings. Used to section 'print' method output.
+### Creates and prints headings. Used to section 'print' method output.
 heading <- function(text, width = 0.9 * getOption("width"), symbol = ".") {
     line <- strrep(symbol, max(0L, width - 1L - nchar(text)))
     cat(text, " ", line, "\n", sep = "")
 }
 
-## Conditionally pluralizes most singular English nouns.
-## Used to make sure 'print' and 'plot' method output is grammatical.
+### Conditionally pluralizes most singular English nouns.
+### Used to make sure 'print' and 'plot' method output is grammatical.
 pluralize <- function(word, n) {
     plural <- (n > 1L)
     word[plural] <- paste0(word[plural], "s")
     word
 }
 
-## Formats tables of text.
-## Used by 'print' methods instead of hacking 'print.default'.
+### Formats tables of text.
+### Used by 'print' methods instead of hacking 'print.default'.
 align <- function(..., justify = "right", gap = 1L) {
     dots <- list(...) # list of column vectors
     dots <- Map(format, x = dots, justify = justify, USE.NAMES = FALSE)
@@ -61,7 +61,7 @@ align <- function(..., justify = "right", gap = 1L) {
     do.call(paste, dots)
 }
 
-## Disambiguates duplicated strings (or names)
+### Disambiguates duplicated strings (or names)
 disambiguate <- function(x, nms = FALSE, fmt = "%s[%d]") {
     if (nms) {
         nx <- names(x)
@@ -78,8 +78,8 @@ disambiguate <- function(x, nms = FALSE, fmt = "%s[%d]") {
     sprintf(fmt, x, i)
 }
 
-## A drop-in replacement for 'rle' that regards NA as equal to previous NA
-## and (in double vectors) NaN as equal to previous NaN
+### A drop-in replacement for 'rle' that regards NA as equal to previous NA
+### and (in double vectors) NaN as equal to previous NaN
 literal_rle <- function(x) {
     n <- length(x)
     if (n == 0L) {
@@ -99,7 +99,7 @@ literal_rle <- function(x) {
     list(lengths = diff(c(0L, i)), values = x[i])
 }
 
-## Last observation carried forward, with optional replacement of leading NA
+### Last observation carried forward, with optional replacement of leading NA
 locf <- function(x, x0 = NULL) {
     if (!anyNA(x)) {
         return(x)
@@ -117,7 +117,7 @@ locf <- function(x, x0 = NULL) {
     inverse.rle(rle_x)
 }
 
-## Computes Wald confidence intervals from estimates and standard errors
+### Computes Wald confidence intervals from estimates and standard errors
 wald <- function(estimate, se, level) {
     q <- qchisq(level, df = 1)
     n <- length(estimate)
@@ -145,36 +145,36 @@ theta2cov <- function(theta) {
     scale * S * rep.int(scale, rep.int(n, n))
 }
 
-#' Apply length-preserving functions to ragged vectors
-#'
-#' Modifies ragged vectors in place by replacing each group of elements
-#' with the result of applying a length-preserving function to that group
-#' of elements.
-#'
-#' @param x
-#'   A vector or data frame.
-#' @param index
-#'   A factor (insofar as \code{as.factor(index)} is a factor)
-#'   defining a grouping of the elements or rows of \code{x}.
-#' @param f
-#'   A function or list of one or more functions to be applied to the subsets
-#'   of \code{x} defined by \code{index}.
-#'   Functions are recycled to the number of levels of \code{index}.
-#'   Each function must accept a vector argument matching \code{typeof(x)}
-#'   (or \code{typeof(x[[j]])} for all \code{j} if \code{x} is a data frame)
-#'   and return a vector of the same length.
-#'
-#' @details
-#' Let \code{f} be a list of \code{nlevels(index)} functions,
-#' and let \code{k = split(seq_along(index), index)}.
-#' For vectors \code{x}, function \code{f[[i]]} is applied to
-#' \code{x[k[[i]]]}.
-#' For data frames \code{x}, function \code{f[[i]]} is applied to
-#' \code{x[[j]][k[[i]]]} for all \code{j}.
-#'
-#' @return
-#' If \code{x} is a vector, then a vector of the same length.
-#' If \code{x} is a data frame, then a data frame with the same dimensions.
+##' Apply length-preserving functions to ragged vectors
+##'
+##' Modifies ragged vectors in place by replacing each group of elements
+##' with the result of applying a length-preserving function to that group
+##' of elements.
+##'
+##' @param x
+##'   A vector or data frame.
+##' @param index
+##'   A factor (insofar as \code{as.factor(index)} is a factor)
+##'   defining a grouping of the elements or rows of \code{x}.
+##' @param f
+##'   A function or list of one or more functions to be applied to the subsets
+##'   of \code{x} defined by \code{index}.
+##'   Functions are recycled to the number of levels of \code{index}.
+##'   Each function must accept a vector argument matching \code{typeof(x)}
+##'   (or \code{typeof(x[[j]])} for all \code{j} if \code{x} is a data frame)
+##'   and return a vector of the same length.
+##'
+##' @details
+##' Let \code{f} be a list of \code{nlevels(index)} functions,
+##' and let \code{k = split(seq_along(index), index)}.
+##' For vectors \code{x}, function \code{f[[i]]} is applied to
+##' \code{x[k[[i]]]}.
+##' For data frames \code{x}, function \code{f[[i]]} is applied to
+##' \code{x[[j]][k[[i]]]} for all \code{j}.
+##'
+##' @return
+##' If \code{x} is a vector, then a vector of the same length.
+##' If \code{x} is a data frame, then a data frame with the same dimensions.
 
 in_place_ragged_apply <- function(x, index, f) {
     if (!is.list(f)) {

@@ -1,27 +1,27 @@
-#' Utilities for object validation
-#'
-#' \code{stop_if_not} is a drop-in replacement for \code{\link{stopifnot}},
-#' signalling an error with a user-specified message if at least one assertion
-#' is not true. \code{warn_if_not} behaves identically but issues a warning
-#' instead of an error.
-#'
-#' @param ...
-#'   Logical vectors.
-#' @param m
-#'   A \link{character} string used as an error or warning message.
-#' @param n
-#'   A non-negative integer specifying a call to be associated with the error
-#'   or warning message. \code{n} indicates a number of generations backwards
-#'   relative to the evaluation frame.
-#'   The default (\code{n = 1}) corresponds to the call from the parent frame.
-#'
-#' @return
-#' \code{NULL} (invisibly).
-#'
-#' @examples
-#' x <- 1.1
-#' stop_if_not(is.double(x), length(x) == 1L, x > 0, x < 1,
-#'             m = "'x' must be a number in the interval (0,1).")
+##' Utilities for object validation
+##'
+##' \code{stop_if_not} is a drop-in replacement for \code{\link{stopifnot}},
+##' signalling an error with a user-specified message if at least one assertion
+##' is not true. \code{warn_if_not} behaves identically but issues a warning
+##' instead of an error.
+##'
+##' @param ...
+##'   Logical vectors.
+##' @param m
+##'   A \link{character} string used as an error or warning message.
+##' @param n
+##'   A non-negative integer specifying a call to be associated with the error
+##'   or warning message. \code{n} indicates a number of generations backwards
+##'   relative to the evaluation frame.
+##'   The default (\code{n = 1}) corresponds to the call from the parent frame.
+##'
+##' @return
+##' \code{NULL} (invisibly).
+##'
+##' @examples
+##' x <- 1.1
+##' stop_if_not(is.double(x), length(x) == 1L, x > 0, x < 1,
+##'             m = "'x' must be a number in the interval (0,1).")
 
 stopifnot1 <- function(..., m = "", n = 1L) {
     for (i in seq_len(...length())) {

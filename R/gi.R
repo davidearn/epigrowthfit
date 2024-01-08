@@ -125,7 +125,7 @@ rgi <- function(n, latent, infectious) {
     rlp + riwt
 }
 
-## Infectious period distribution function
+### Infectious period distribution function
 pip <- function(q, infectious) {
     n <- length(infectious)
     p <- q
@@ -139,7 +139,7 @@ pip <- function(q, infectious) {
     p
 }
 
-## Infectious waiting time density function
+### Infectious waiting time density function
 diwt <- function(x, infectious) {
     d <- x
     d[] <- NA_real_

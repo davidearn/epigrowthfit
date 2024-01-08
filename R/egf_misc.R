@@ -54,22 +54,22 @@ egf_has_converged <- function(object, tol = 1) {
         object$hessian
 }
 
-#' Convert between condensed and full parameter vectors
-#'
-#' Condense the full bottom level parameter vector \code{c(beta, theta, b)}
-#' to the representation used by \pkg{TMB} (as in, e.g., \code{last.par.best}),
-#' which excludes mapped elements, or do the inverse operation.
-#'
-#' @param obj
-#'   A list returned by \code{\link[TMB]{MakeADFun}}.
-#' @param par
-#'   A numeric vector.
-#'
-#' @return
-#' \code{egf_expand_par} returns \code{c(beta, theta, b)}.
-#' \code{egf_condense_par} returns \code{c(cbeta, ctheta, cb)},
-#' where \code{cbeta} is the condensed representation of \code{beta}, and so on.
-#' Attribute \code{lengths} preserves the length of each segment.
+##' Convert between condensed and full parameter vectors
+##'
+##' Condense the full bottom level parameter vector \code{c(beta, theta, b)}
+##' to the representation used by \pkg{TMB} (as in, e.g., \code{last.par.best}),
+##' which excludes mapped elements, or do the inverse operation.
+##'
+##' @param obj
+##'   A list returned by \code{\link[TMB]{MakeADFun}}.
+##' @param par
+##'   A numeric vector.
+##'
+##' @return
+##' \code{egf_expand_par} returns \code{c(beta, theta, b)}.
+##' \code{egf_condense_par} returns \code{c(cbeta, ctheta, cb)},
+##' where \code{cbeta} is the condensed representation of \code{beta}, and so on.
+##' Attribute \code{lengths} preserves the length of each segment.
 
 egf_expand_par <- function(obj, par) {
     l <- obj$env$parList(par[obj$env$lfixed()], par)
@@ -109,16 +109,16 @@ egf_condense_par <- function(obj, par) {
     res
 }
 
-#' Extract TMB-generated covariance information
-#'
-#' A utility for extracting or, if necessary, computing covariance information,
-#' reused by various methods.
-#'
-#' @param object
-#'   An \code{"\link{egf}"} object.
-#'
-#' @return
-#' An \code{"\link{sdreport}"} object.
+##' Extract TMB-generated covariance information
+##'
+##' A utility for extracting or, if necessary, computing covariance information,
+##' reused by various methods.
+##'
+##' @param object
+##'   An \code{"\link{egf}"} object.
+##'
+##' @return
+##' An \code{"\link{sdreport}"} object.
 
 egf_get_sdreport <- function(object) {
     stopifnot(inherits(object, "egf"))
@@ -143,22 +143,22 @@ egf_get_sdreport <- function(object) {
     res
 }
 
-#' Patch TMB-generated functions
-#'
-#' Define wrapper functions on top of \code{\link[TMB]{MakeADFun}}-generated
-#' functions \code{fn} and \code{gr}, so that function and gradient evaluations
-#' can retry inner optimization using fallback methods in the event that the
-#' default method (usually \code{\link[TMB]{newton}}) fails.
-#'
-#' @param fn,gr
-#'   Functions to be patched, assumed to be the so-named elements
-#'   of a \code{\link[TMB]{MakeADFun}}-generated list object.
-#' @param inner_optimizer
-#'   A list of \code{"\link{egf_inner_optimizer}"} objects
-#'   specifying inner optimization methods to be tried in turn.
-#'
-#' @return
-#' A function.
+##' Patch TMB-generated functions
+##'
+##' Define wrapper functions on top of \code{\link[TMB]{MakeADFun}}-generated
+##' functions \code{fn} and \code{gr}, so that function and gradient evaluations
+##' can retry inner optimization using fallback methods in the event that the
+##' default method (usually \code{\link[TMB]{newton}}) fails.
+##'
+##' @param fn,gr
+##'   Functions to be patched, assumed to be the so-named elements
+##'   of a \code{\link[TMB]{MakeADFun}}-generated list object.
+##' @param inner_optimizer
+##'   A list of \code{"\link{egf_inner_optimizer}"} objects
+##'   specifying inner optimization methods to be tried in turn.
+##'
+##' @return
+##' A function.
 
 egf_patch_fn <- function(fn, inner_optimizer) {
     e <- environment(fn)
