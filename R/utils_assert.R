@@ -22,9 +22,6 @@
 #' x <- 1.1
 #' stop_if_not(is.double(x), length(x) == 1L, x > 0, x < 1,
 #'             m = "'x' must be a number in the interval (0,1).")
-#'
-#' @noRd
-NULL
 
 stopifnot1 <- function(..., m = "", n = 1L) {
     for (i in seq_len(...length())) {

@@ -1,79 +1,3 @@
-#' Simulation and parametric bootstrapping
-#'
-#' Simulates incidence data conditional on a fitted nonlinear
-#' mixed effects model of epidemic growth.
-#' (Only observations within fitting windows are simulated.)
-#' Optionally re-estimates the model given the simulated data,
-#' thus generating samples from the conditional distribution
-#' of the bottom level parameter vector.
-#'
-#' @param object
-#'   An \code{"\link{egf}"} object.
-#' @param nsim
-#'   A positive integer indicating a number of replications.
-#' @param seed
-#'   An integer used to set the \link{RNG} state before simulation.
-#'   The default (\code{NULL}) is to use the state at the time of
-#'   the function call. The RNG state (either a list of arguments to
-#'   \code{\link{set.seed}} or a value of \code{\link{.Random.seed}})
-#'   is preserved as an attribute of the result.
-#' @param boot
-#'   A \link{logical} flag. If \code{TRUE}, then a bootstrapping
-#'   step is performed.
-#' @param control
-#'   A list of control parameters passed to \code{\link{nlminb}}.
-#' @param parallel
-#'   An \code{"\link{egf_parallel}"} object defining options for \R level
-#'   parallelization.
-#' @param trace
-#'   A logical flag.
-#'   If \code{TRUE}, then basic tracing messages indicating progress
-#'   are printed.
-#'   Depending on \code{object$control$trace}, these may be mixed with
-#'   optimizer output.
-#' @param ...
-#'   Unused optional arguments.
-#'
-#' @details
-#' Bootstrap optimizations are typically expensive for nontrivial models.
-#' They are parallelized at the C++ level when there is OpenMP support and
-#' \code{object$control$omp_num_threads} is set to an integer greater than 1.
-#' If there is no OpenMP support, then bootstrap optimizations can still be
-#' parallelized at the \R level with appropriate setting of \code{parallel}.
-#'
-#' Arguments \code{control}, \code{parallel}, and \code{trace} are unused
-#' when \code{boot = FALSE}.
-#'
-#' @return
-#' A list inheriting from class \code{"egf_simulate"}, with elements:
-#' \item{simulations}{
-#'   A data frame containing simulated incidence data. It has variables
-#'   \code{ts}, \code{window}, and \code{time}, and \code{nsim} further
-#'   variables with names of the form \code{x[0-9]+}. It corresponds
-#'   rowwise to \code{\link[=model.frame.egf]{model.frame}(object)}.
-#' }
-#' \item{boot}{
-#'   If \code{boot = TRUE}, then a numeric matrix with \code{nsim} columns,
-#'   each a sample from the conditional distribution of the parameter vector
-#'   \code{unlist(\link[=coef.egf]{coef}(object, full = FALSE))}.
-#'   Otherwise, \code{NULL}.
-#' }
-#' Attribute \code{RNGstate} preserves the RNG state prior to simulation,
-#' making the result reproducible.
-#'
-#' @examples
-#' object <- egf_cache("egf-1.rds")
-#' zz <- egf_cache("simulate-egf-1.rds", {
-#'     simulate(object, nsim = 6L, seed = 181952L, boot = TRUE)
-#' })
-#' str(zz)
-#' matplot(t(zz$boot[object$nonrandom, ]), type = "o", las = 1,
-#'         xlab = "simulation",
-#'         ylab = "parameter value")
-#'
-#' @export
-#' @importFrom stats simulate
-#' @importFrom parallel makePSOCKcluster stopCluster clusterExport clusterEvalQ clusterSetRNGStream clusterMap mcmapply
 simulate.egf <- function(object, nsim = 1L, seed = NULL,
                          boot = FALSE,
                          control = list(),
@@ -201,7 +125,6 @@ simulate.egf <- function(object, nsim = 1L, seed = NULL,
     res
 }
 
-#' @export
 print.egf_simulate <- function(x, ...) {
     y <- x
     attr(x, "RNGstate") <- NULL
@@ -210,136 +133,6 @@ print.egf_simulate <- function(x, ...) {
     invisible(y)
 }
 
-#' Simulate incidence time series
-#'
-#' Simulates incidence time series with a unit observation interval
-#' according to a specified nonlinear model. Top level nonlinear model
-#' parameters vary between time series according to a fixed intercept
-#' model \code{~ts} or random intercept model \code{~(1 | ts)}.
-#'
-#' @param object
-#'   An \code{"\link{egf_model}"} specifying a top level nonlinear model
-#'   to be simulated.
-#' @param nsim
-#'   A positive integer indicating a number of simulated time series.
-#' @param seed
-#'   An integer used to set the \link{RNG} state before simulation.
-#'   The default (\code{NULL}) is to use the state at the time of
-#'   the function call. The RNG state (either a list of arguments to
-#'   \code{\link{set.seed}} or a value of \code{\link{.Random.seed}})
-#'   is preserved as an attribute of the result.
-#' @param mu
-#'   A numeric vector listing means across time series
-#'   of top level nonlinear model parameters (link scale).
-#'   It is assumed that elements are ordered as in
-#'   \code{\link{egf_get_names_top}(object, link = TRUE)}.
-#' @param Sigma
-#'   A symmetric positive definite numeric matrix to be used
-#'   as the covariance matrix corresponding to \code{mu}.
-#'   The default (\code{NULL}) is equivalent (conceptually)
-#'   to a zero matrix and is handled specially.
-#' @param tol
-#'   A non-negative number indicating a tolerance for lack of positive
-#'   definiteness of \code{Sigma}. All eigenvalues of \code{Sigma}
-#'   must exceed \code{-tol * rho}, where \code{rho} is the spectral
-#'   radius of \code{Sigma}.
-#'   (However, regardless of \code{tol}, \code{\link{diag}(Sigma)} must
-#'   be positive, as standard deviations are processed on the log scale.)
-#' @param tmax
-#'   A positive number. Simulated time series run from 0 days to 1 day
-#'   after the inflection time of the expected cumulative incidence
-#'   function indicated by \code{object$curve}. However, if there is no
-#'   inflection time, as in the exponential and subexponential models
-#'   of cumulative incidence, then simulated time series run from 0 days
-#'   to \code{tmax} days.
-#' @param cstart
-#'   A number indicating a threshold value of cumulative incidence.
-#'   Left endpoints of suggested fitting windows are those times
-#'   when cumulative incidence first exceeds this threshold.
-#' @param ...
-#'   Unused optional arguments.
-#'
-#' @return
-#' A list inheriting from class \code{"egf_model_simulate"}, with elements:
-#' \item{model, mu, Sigma, origin}{
-#'   Copies of the so-named arguments.
-#'   (\code{model} is a copy of argument \code{object}.)
-#' }
-#' \item{Y}{
-#'   A numeric matrix with \code{nsim} rows and \code{length(mu)} columns
-#'   listing the top level nonlinear model parameter values underlying each
-#'   time series.
-#'   If \code{Sigma} is \code{NULL}, then the row vectors of \code{Y}
-#'   are all \code{mu}. Otherwise, \code{Y} is (conceptually) the result
-#'   of \code{MASS::mvrnorm(nsim, mu, Sigma, tol)}.
-#' }
-#' \item{formula_ts}{
-#'   A formula, \code{cbind(time, x) ~ ts}, expressing how simulated
-#'   time series are stored in \code{data_ts}.
-#' }
-#' \item{formula_windows}{
-#'   A formula, \code{cbind(start, end) ~ ts}, expressing how
-#'   fitting window endpoints are stored in \code{data_windows}.
-#' }
-#' \item{formula_parameters}{
-#'   A formula specifying the generative model.
-#'   If \code{Sigma = NULL}, then the formula is
-#'   \code{~1} if \code{nsim = 1} and \code{~ts} if \code{nsim > 1}.
-#'   Otherwise, it is \code{~(1 | ts)}.
-#' }
-#' \item{data_ts}{
-#'   A data frame with variables \code{ts}, \code{time}, and \code{x}
-#'   storing \code{nsim} simulated time series in long format.
-#' }
-#' \item{data_windows}{
-#'   A data frame with \code{nsim} rows and variables \code{ts},
-#'   \code{start}, and \code{end} suggesting a fitting window for each
-#'   simulated time series. Start times are determined according to
-#'   \code{cstart}. End times are precisely the last time point in the
-#'   corresponding time series.
-#' }
-#' \item{actual}{
-#'   A numeric vector giving the full bottom level parameter vector
-#'   of the generative model.
-#' }
-#' \item{random}{
-#'   A logical vector indexing the elements of \code{actual} that are
-#'   random effects.
-#' }
-#' \item{call}{
-#'   The \link{call} to \code{simulate.egf_model}, allowing for updates
-#'   to the \code{"egf_model_simulate"} object via \code{\link{update}}.
-#' }
-#' Attribute \code{RNGstate} preserves the RNG state prior to simulation,
-#' making the result reproducible.
-#'
-#' \code{actual} can be extracted by passing the result to \code{\link{coef}}.
-#'
-#' @examples
-#' r <- 0.04
-#' c0 <- 400
-#'
-#' mu <- log(c(r, c0))
-#' Sigma <- diag(rep.int(0.2^2, length(mu)))
-#'
-#' zz <- egf_cache("simulate-egf_model-1.rds", {
-#'     simulate(object = egf_model(curve = "exponential", family = "pois"),
-#'              nsim = 20L,
-#'              seed = 202737L,
-#'              mu = mu,
-#'              Sigma = Sigma,
-#'              cstart = 10)
-#' })
-#' str(zz)
-#'
-#' @seealso
-#' \code{\link{egf.egf_model_simulate}} for estimating the generative model
-#' from simulated time series,\cr
-#' \code{\link{simulate.egf}} for simulating time series from \emph{fitted}
-#' models
-#'
-#' @export
-#' @importFrom stats simulate update runif cov2cor
 simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
                                mu, Sigma = NULL, tol = 1e-06,
                                tmax = 100, cstart = 0, ...) {
@@ -498,8 +291,6 @@ simulate.egf_model <- function(object, nsim = 1L, seed = NULL,
     res
 }
 
-#' @export
-#' @importFrom stats coef
 coef.egf_model_simulate <- function(object, ...) {
     res <- object[["actual"]]
     len <- attr(res, "lengths")
@@ -511,35 +302,12 @@ coef.egf_model_simulate <- function(object, ...) {
     res
 }
 
-#' @export
-#' @importFrom stats getCall
 getCall.egf_model_simulate <- function(x, ...) {
     call <- NextMethod("getCall")
     call[[1L]] <- quote(simulate)
     call
 }
 
-#' Fit simulated incidence time series
-#'
-#' Estimates the generative model underlying a set of simulated
-#' incidence time series.
-#'
-#' @param model
-#'   An \code{"\link[=simulate.egf_model]{egf_model_simulate}"} object
-#'   supplying simulated time series and details about the generative model
-#'   to be estimated.
-#' @param ...
-#'   Optional arguments passed to \code{\link{egf.egf_model}}.
-#'
-#' @return
-#' An \code{"\link{egf}"} object.
-#'
-#' @examples
-#' model <- egf_cache("simulate-egf_model-1.rds")
-#' object <- egf_cache("egf-egf_model_simulate-1.rds", egf(model))
-#' pp <- cbind(actual = coef(model), fitted = coef(object))
-#'
-#' @export
 egf.egf_model_simulate <- function(model, ...) {
     nel <- c("model", "formula_ts", "formula_windows", "formula_parameters",
              "data_ts", "data_windows")

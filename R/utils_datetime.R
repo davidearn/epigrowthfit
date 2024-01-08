@@ -22,8 +22,7 @@
 #' x <- .Date(sample.int(1e+04L, 10L))
 #' ymd(x)
 #' ymd(x, which = "d", drop = TRUE)
-#'
-#' @noRd
+
 ymd <- function(x, which = "ymd", drop = TRUE) {
     stopifnot(inherits(x, c("Date", "POSIXlt", "POSIXct")),
               is.character(which),
@@ -65,9 +64,6 @@ ymd <- function(x, which = "ymd", drop = TRUE) {
 #'
 #' l <- sapply(dmy, Dfloor, x = x, simplify = FALSE)
 #' floor_x <- replace(ceiling_y, dmy, l)
-#'
-#' @noRd
-NULL
 
 Dceiling <- function(x, to = c("day", "month", "year")) {
     stopifnot(inherits(x, "Date"))

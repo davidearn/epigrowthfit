@@ -92,10 +92,7 @@
 #'   Integer vectors together giving the dimensions of each block of random
 #'   effects coefficients.
 #' }
-#'
-#' @noRd
-#' @importFrom stats formula terms model.offset
-#' @importFrom Matrix Matrix
+
 egf_tmb_make_data <- function(model, frame, control, env) {
     ## Indices of time points associated with fitting windows
     first <- attr(frame$ts, "first")
@@ -272,9 +269,7 @@ egf_tmb_make_data <- function(model, frame, control, env) {
 #' each numeric vectors. \code{theta} and \code{b} are zero vectors,
 #' while \code{beta} is a zero vector except for \code{"(Intercept)"}
 #' coefficients; see Details.
-#'
-#' @noRd
-#' @importFrom stats coef lm na.omit qlogis terms
+
 egf_tmb_make_parameters <- function(model, frame, env) {
     ## Initialize each parameter object to a zero vector
     res <- lapply(env$len, double)

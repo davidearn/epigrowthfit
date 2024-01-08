@@ -1,27 +1,7 @@
-#' Get top level nonlinear model parameter names
-#'
-#' Retrieves the names used internally for top level nonlinear model
-#' parameters.
-#'
-#' @param object
-#'   An \R object specifying a top level nonlinear model, or \code{NULL}.
-#' @param link
-#'   A \link{logical} flag. If \code{TRUE},
-#'   then \code{"<link>(<name>)"} is returned instead of \code{"<name>"}.
-#' @param ...
-#'   Unused optional arguments.
-#'
-#' @return
-#' A character vector giving the subset of names relevant to \code{object},
-#' or the complete set if \code{object = \link{NULL}}.
-#'
-#' @export
 egf_get_names_top <- function(object, ...) {
     UseMethod("egf_get_names_top", object)
 }
 
-#' @rdname egf_get_names_top
-#' @export
 egf_get_names_top.default <- function(object, link = TRUE, ...) {
     stopifnot(is.null(object))
     names_top <- c("r", "alpha", "c0", "tinfl", "K",
@@ -32,8 +12,6 @@ egf_get_names_top.default <- function(object, link = TRUE, ...) {
     egf_link_add(names_top)
 }
 
-#' @rdname egf_get_names_top
-#' @export
 egf_get_names_top.egf_model <- function(object, link = TRUE, ...) {
     names_top <- switch(object$curve,
                         exponential = c("r", "c0"),
@@ -56,51 +34,17 @@ egf_get_names_top.egf_model <- function(object, link = TRUE, ...) {
     egf_link_add(names_top)
 }
 
-#' @rdname egf_get_names_top
-#' @export
 egf_get_names_top.egf <- function(object, link = TRUE, ...) {
     egf_get_names_top(object$model, link = link)
 }
 
-#' @rdname egf_get_names_top
-#' @export
 egf_get_names_top.egf_no_fit <- egf_get_names_top.egf
 
-
-#' Check for random effects
-#'
-#' Determines whether an object specifies a random effects model.
-#'
-#' @param object An \code{"\link{egf}"} or \code{"egf_no_fit"} object.
-#'
-#' @return
-#' \code{TRUE} or \code{FALSE}.
-#'
-#' @export
 egf_has_random <- function(object) {
     stopifnot(inherits(object, c("egf", "egf_no_fit")))
     ncol(object$tmb_out$env$data$Z) > 0L
 }
 
-#' Check for convergence
-#'
-#' Performs simple diagnostic checks to assess whether the optimizer that
-#' produced an estimated model actually converged to a local minimum point
-#' of the negative log likelihood function.
-#'
-#' @param object
-#'   An \code{"\link{egf}"} object.
-#' @param tol
-#'   A positive number. Convergence requires all gradient elements
-#'   to be less than or equal to \code{tol} in absolute value.
-#'
-#' @return
-#' \code{TRUE} if all tests pass. \code{FALSE} if any test fails.
-#' \code{NA} if no test fails, but the test for a positive definite
-#' Hessian matrix is indeterminate because the matrix has not been
-#' computed.
-#'
-#' @export
 egf_has_converged <- function(object, tol = 1) {
     stopifnot(inherits(object, "egf"))
     object$optimizer_out$convergence == 0L &&
@@ -126,9 +70,6 @@ egf_has_converged <- function(object, tol = 1) {
 #' \code{egf_condense_par} returns \code{c(cbeta, ctheta, cb)},
 #' where \code{cbeta} is the condensed representation of \code{beta}, and so on.
 #' Attribute \code{lengths} preserves the length of each segment.
-#'
-#' @noRd
-NULL
 
 egf_expand_par <- function(obj, par) {
     l <- obj$env$parList(par[obj$env$lfixed()], par)
@@ -178,9 +119,7 @@ egf_condense_par <- function(obj, par) {
 #'
 #' @return
 #' An \code{"\link{sdreport}"} object.
-#'
-#' @noRd
-#' @importFrom TMB sdreport
+
 egf_get_sdreport <- function(object) {
     stopifnot(inherits(object, "egf"))
     res <- object$sdreport
@@ -220,9 +159,6 @@ egf_get_sdreport <- function(object) {
 #'
 #' @return
 #' A function.
-#'
-#' @noRd
-NULL
 
 egf_patch_fn <- function(fn, inner_optimizer) {
     e <- environment(fn)
@@ -288,10 +224,6 @@ egf_patch_gr <- function(gr, inner_optimizer) {
     pgr
 }
 
-#' @importFrom stats model.matrix coef
-#' @importFrom methods as
-#' @importFrom Matrix Matrix sparseMatrix KhatriRao
-#' @importMethodsFrom Matrix t tcrossprod rowSums
 egf_preprofile <- function(object, subset, top) {
     if (object$control$profile) {
         stop1("Fixed effects coefficients have been \"profiled out\" of ",
@@ -338,89 +270,6 @@ egf_preprofile <- function(object, subset, top) {
     list(Y = Y, A = A)
 }
 
-#' Cache example objects
-#'
-#' A utility for caching objects created when code in the Examples section
-#' of an \pkg{epigrowthfit} help page is sourced by \code{\link{example}}.
-#' It is not intended for use outside of this context.
-#' (It is only exported so that it can be accessed without \code{\link{:::}}
-#' in Examples.)
-#'
-#' @param file
-#'   A character string containing the base name of a file.
-#'   The absolute path to the cache file is
-#'   \code{\link{system.file}("exdata", file, package = "epigrowthfit")}.
-#' @param object
-#'   An \R object.
-#' @param clear
-#'   A logical flag. If \code{TRUE}, then \code{file} is deleted by
-#'   \code{\link{file.remove}} if it exists, and nothing else is done.
-#' @param clear_all
-#'   A logical flag. If \code{TRUE}, then the package subdirectory
-#'   containing all cache files is deleted if it exists, and nothing
-#'   else is done. \code{clear_all} is resolved before \code{clear}.
-#' @param topic
-#'   A character string specifying the topic associated with \code{file}.
-#'   If \code{NULL}, then an attempt is made to recover \code{topic}
-#'   from \code{file}, and an error is thrown if the attempt fails.
-#' @param ...
-#'   Arguments passed to \code{\link{saveRDS}}.
-#'
-#' @section Behaviour when clear = FALSE and clear_all = FALSE:
-#' If \code{file} is found by \code{\link{file.exists}}, then the
-#' cached object is restored by \code{\link{readRDS}} and returned.
-#' Due to lazy evaluation of arguments by \R, \code{object} remains
-#' a \link{promise} and is never evaluated.
-#'
-#' If \code{file} is not found but \code{object} is supplied,
-#' then \code{object} is written to \code{file} by \code{\link{saveRDS}}
-#' and returned.
-#' Package subdirectory \code{exdata} is created if necessary.
-#'
-#' If \code{file} is not found and \code{object} is missing,
-#' then \code{\link{example}(topic, character.only = TRUE)}
-#' is run in order to create the file.
-#' If this works, then the cached object is restored using
-#' \code{\link{readRDS}}. Otherwise, an error is thrown.
-#'
-#' @section File naming system:
-#' In calls to \code{egf_cache} found in the Examples for topic \code{topic}
-#' (except for this one) \code{file} is set equal to the string obtained by
-#' (i) replacing non-word characters in \code{topic} with hyphens; then
-#' (ii) appending a hyphen, an integer index, and an \code{".rds"} extension
-#' to the end of the resulting string.
-#' This system allows \code{topic} to be recovered from \code{file} via
-#' pattern matching against topics found by \code{\link{help.search}}.
-#'
-#' @return
-#' If \code{clear = FALSE} and \code{clear_all = FALSE},
-#' then \code{object} or an \R object restored from \code{file}
-#' by \code{\link{readRDS}}.
-#'
-#' If \code{clear = TRUE} or \code{clear_all = TRUE},
-#' then the result of \code{\link{unlink}}.
-#'
-#' @examples
-#' root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-#' subdir <- file.path(root, "exdata")
-#' lf1 <- list.files(subdir)
-#' file <- "test.rds"
-#' a <- 1
-#' x <- egf_cache(file, a)
-#' y <- egf_cache(file, a <- 2)
-#' lf2 <- list.files(subdir)
-#' z <- egf_cache(file, clear = TRUE)
-#' lf3 <- list.files(subdir)
-#'
-#' stopifnot(identical(x, 1),
-#'           identical(y, 1),
-#'           identical(z, 0L),
-#'           identical(a, 1),
-#'           identical(setdiff(lf2, lf1), file),
-#'           identical(lf3, lf1))
-#'
-#' @export
-#' @importFrom utils help.search example
 egf_cache <- function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
     root <- system.file(package = "epigrowthfit", mustWork = TRUE)
     subdir <- file.path(root, "exdata")

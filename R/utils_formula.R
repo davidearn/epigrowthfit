@@ -14,8 +14,7 @@
 #' minus_x <- call("-", x)
 #' stopifnot(identical(negate(x), minus_x))
 #' stopifnot(identical(negate(minus_x), x))
-#'
-#' @noRd
+
 negate <- function(x) {
     if (is.call(x) && x[[1L]] == "-" && length(x) == 2L) {
         return(x[[2L]])
@@ -54,9 +53,6 @@ negate <- function(x) {
 #' l <- split_terms(x)
 #' y <- unsplit_terms(l)
 #' stopifnot(identical(x, y))
-#'
-#' @noRd
-NULL
 
 split_terms <- function(x) {
     if (inherits(x, "formula")) {
@@ -134,9 +130,7 @@ unsplit_terms <- function(l) {
 #'
 #' @examples
 #' split_effects(y ~ 0 + x + (1 | f) + (a | g))
-#'
-#' @noRd
-#' @importFrom stats as.formula
+
 split_effects <- function(x) {
     stopifnot(inherits(x, "formula"))
     l <- split_terms(x)
@@ -160,8 +154,7 @@ split_effects <- function(x) {
 #' @examples
 #' x <- quote(a:b:I(f:g):sort(h))
 #' split_interaction(x)
-#'
-#' @noRd
+
 split_interaction <- function(x) {
     if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
         return(list(x))
@@ -190,8 +183,7 @@ split_interaction <- function(x) {
 #'
 #' @examples
 #' gsub_bar_plus(~x + (1 | f))
-#'
-#' @noRd
+
 gsub_bar_plus <- function(x) {
     stopifnot(inherits(x, "formula"))
     l <- split_effects(x)
@@ -253,9 +245,7 @@ gsub_bar_plus <- function(x) {
 #' simplify_terms(~0 + x * y - y)
 #' simplify_terms(~0 + x * y - y + (1 | f/g))
 #' simplify_terms(~0 + x * y - y + (1 | f/g) + (a | f) + (0 + b | f:g))
-#'
-#' @noRd
-#' @importFrom stats terms as.formula
+
 simplify_terms <- function(x) {
     if (inherits(x, "formula")) {
         x[-1L] <- lapply(x[-1L], simplify_terms)

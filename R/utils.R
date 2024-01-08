@@ -118,7 +118,6 @@ locf <- function(x, x0 = NULL) {
 }
 
 ## Computes Wald confidence intervals from estimates and standard errors
-#' @importFrom stats qchisq
 wald <- function(estimate, se, level) {
     q <- qchisq(level, df = 1)
     n <- length(estimate)
@@ -128,39 +127,6 @@ wald <- function(estimate, se, level) {
     lu
 }
 
-#' Convert between covariance matrix and parameters
-#'
-#' \pkg{TMB} uses \code{choose(n + 1, 2)}-vectors \code{theta}
-#' to parametrize \code{n}-by-\code{n} symmetric positive definite
-#' matrices \code{S}.
-#' The specific parametrization is given by
-#' \code{theta = c(log(sqrt(diag(S))), R1[upper.tri(R1)])},
-#' where
-#' \code{R1 = R \%*\% diag(1 / diag(R))},
-#' \code{R = chol(S)}.
-#' \code{cov2theta} converts from matrix to vector;
-#' \code{theta2cov} performs the inverse operation.
-#' Neither performs any checks on the supplied argument.
-#'
-#' @param S
-#'   A symmetric positive definite numeric matrix.
-#' @param theta
-#'   A numeric vector parametrizing a symmetric positive definite
-#'   numeric matrix.
-#'
-#' @return
-#' \code{cov2theta(S)} returns a numeric vector of length
-#' \code{choose(nrow(S) + 1, 2)}.
-#' \code{theta2cov(theta)} returns a symmetric positive definite
-#' numeric matrix with dimensions \code{c(n, n)},
-#' where \code{n} is the positive solution of
-#' \code{length(theta) = choose(n + 1, 2)}.
-#'
-#' @name cov2theta
-NULL
-
-#' @rdname cov2theta
-#' @export
 cov2theta <- function(S) {
     n <- dim(S)[1L]
     log_sd <- 0.5 * log(diag(S, names = FALSE))
@@ -169,8 +135,6 @@ cov2theta <- function(S) {
     c(log_sd, R[upper.tri(R)])
 }
 
-#' @rdname cov2theta
-#' @export
 theta2cov <- function(theta) {
     n <- as.integer(round(0.5 * (-1 + sqrt(1 + 8 * length(theta)))))
     i <- seq_len(n)
@@ -211,8 +175,7 @@ theta2cov <- function(theta) {
 #' @return
 #' If \code{x} is a vector, then a vector of the same length.
 #' If \code{x} is a data frame, then a data frame with the same dimensions.
-#'
-#' @noRd
+
 in_place_ragged_apply <- function(x, index, f) {
     if (!is.list(f)) {
         f <- list(f)

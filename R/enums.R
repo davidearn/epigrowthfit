@@ -19,8 +19,7 @@
 #' egf_get_flag("exponential", "curve")
 #' egf_get_flag("pois", "family")
 #' egf_get_flag("norm", "prior")
-#'
-#' @noRd
+
 egf_get_flag <- function(enum, type = c("curve", "family", "prior")) {
     type <- match.arg(type)
     enum_all <- switch(type,

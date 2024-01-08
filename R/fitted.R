@@ -1,92 +1,3 @@
-#' Extract fitted values
-#'
-#' Retrieves fitted values of top level nonlinear model parameters.
-#' The fitted value of a given parameter for a given fitting window
-#' is obtained by adding
-#' (i) the population fitted value computed as a linear combination
-#' of fixed effects coefficients and
-#' (ii) all applicable random effects, with random effects set equal
-#' to their conditional modes.
-#'
-#' @param object
-#'   An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.
-#' @param top
-#'   A subset of \code{\link{egf_get_names_top}(object, link = TRUE)}
-#'   naming top level nonlinear model parameters for which fitted
-#'   values should be retrieved.
-#' @param link
-#'   A logical flag.
-#'   If \code{FALSE}, then fitted values are inverse link-transformed.
-#' @param se
-#'   A logical flag. If \code{se = TRUE} and \code{link = TRUE},
-#'   then approximate delta method standard errors on fitted values
-#'   are reported.
-#'   Standard errors are required for subsequent use
-#'   of \code{\link{confint.egf_fitted}}.
-#'   Setting \code{se = TRUE} and \code{link = FALSE} is an error,
-#'   as standard errors are not available for inverse link-transformed
-#'   fitted values.
-#'   Setting \code{se = TRUE} when \code{object} inherits from class
-#'   \code{"egf_no_fit"} is likewise an error.
-#' @param subset
-#'   An expression to be evaluated in
-#'   \code{\link[=model.frame.egf]{model.frame}(object, "combined")}.
-#'   It must evaluate to a valid index vector for the rows of
-#'   the data frame and, in turn, fitting windows.
-#'   Fitted values are retrieved only for indexed windows.
-#'   The default (\code{NULL}) is to consider all windows.
-#' @param append
-#'   An expression indicating variables in
-#'   \code{\link[=model.frame.egf]{model.frame}(object, "combined")}
-#'   to be included with the result.
-#'   The default (\code{NULL}) is to append nothing.
-#' @param .subset,.append
-#'   Index vectors to be used (if non-\code{NULL}) in place of
-#'   the result of evaluating \code{subset} and \code{append}.
-#' @param ...
-#'   Unused optional arguments.
-#'
-#' @details
-#' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-#' of \code{subset} and \code{append}.
-#'
-#' @return
-#' A data frame inheriting from class \code{"egf_fitted"}, with variables:
-#' \item{top}{
-#'   Top level nonlinear model parameter,
-#'   from \code{\link{egf_get_names_top}(object, link = link)}.
-#' }
-#' \item{ts}{
-#'   Time series, from
-#'   \code{levels(\link[=model.frame.egf]{model.frame}(object)$ts)}.
-#' }
-#' \item{window}{
-#'   Fitting window, from
-#'   \code{levels(\link[=model.frame.egf]{model.frame}(object)$window)}.
-#' }
-#' \item{estimate}{
-#'   Fitted value of parameter \code{top} in fitting window \code{window}.
-#'   If \code{object} inherits from class \code{"egf"},
-#'   then this is conditioned on the estimated mixed effects model.
-#'   If \code{object} inherits from class \code{"egf_no_fit"},
-#'   then this is conditioned on the \emph{initial} values
-#'   of mixed effects model parameters.
-#' }
-#' \item{se}{
-#'   Approximate delta method standard error on \code{estimate}.
-#'   Absent except for calls matching \code{fitted(link = TRUE, se = TRUE)}.
-#' }
-#'
-#' @examples
-#' object <- egf_cache("egf-1.rds")
-#' zz <- egf_cache("fitted-egf-1.rds", fitted(object, se = TRUE))
-#' str(zz)
-#'
-#' @family extractors
-#' @seealso \code{\link{confint.egf_fitted}}
-#' @export
-#' @importFrom stats model.frame
-#' @importFrom TMB sdreport
 fitted.egf <- function(object,
                        top = egf_get_names_top(object, link = TRUE),
                        link = TRUE,
@@ -155,8 +66,6 @@ fitted.egf <- function(object,
     res
 }
 
-#' @rdname fitted.egf
-#' @export
 fitted.egf_no_fit <- function(object,
                               top = egf_get_names_top(object, link = TRUE),
                               link = TRUE,
@@ -185,47 +94,6 @@ fitted.egf_no_fit <- function(object,
     eval(call)
 }
 
-#' Confidence intervals on fitted values
-#'
-#' Computes confidence intervals on fitted values of top level nonlinear model
-#' parameters.
-#'
-#' @param object
-#'   An \code{"\link[=fitted.egf]{egf_fitted}"} object.
-#'   Must supply link scale fitted values and corresponding standard errors.
-#' @param parm
-#'   Unused argument included for generic consistency.
-#' @param level
-#'   A number in the interval (0,1) indicating a confidence level.
-#' @param link
-#'   A \link{logical} flag. If \code{FALSE}, then confidence intervals
-#'   on inverse link-transformed fitted values are returned.
-#' @param ...
-#'   Unused optional arguments.
-#'
-#' @details
-#' Confidence limits on fitted values (link scale) are computed
-#' as \code{estimate[i] + c(-1, 1) * sqrt(q) * se[i]},
-#' with \code{estimate} and \code{se} as in \code{object} and
-#' \code{q = \link{qchisq}(level, df = 1)}.
-#'
-#' @return
-#' If \code{link = TRUE}, then \code{object} but with variable
-#' \code{se} replaced with variables \code{lower} and \code{upper}
-#' supplying confidence limits on fitted values (link scale).
-#'
-#' Otherwise, the same result but with variables \code{estimate},
-#' \code{lower}, and \code{upper} inverse link-transformed and
-#' the \link{levels} of variable \code{top} modified accordingly.
-#'
-#' \code{level} is retained as an \link[=attributes]{attribute}.
-#'
-#' @examples
-#' object <- egf_cache("fitted-egf-1.rds")
-#' zz <- confint(object)
-#' str(zz)
-#'
-#' @export
 confint.egf_fitted <- function(object, parm, level = 0.95, link = TRUE, ...) {
     if (!isTRUE(attr(object, "se"))) {
         stop1("'object' must supply link scale fitted values ",

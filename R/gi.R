@@ -1,78 +1,3 @@
-#' Generation interval distribution
-#'
-#' Generation interval
-#' density function (\code{dgi}), distribution function (\code{pgi}),
-#' quantile function (\code{qgi}), and sampling (\code{rgi}).
-#' Results are conditional on supplied latent and infectious period
-#' distributions. It is assumed
-#' \itemize{
-#' \item that the latent period and infectious waiting time are independent,
-#' \item that infectiousness is constant over the infectious period, and
-#' \item that the latent and infectious periods are positive and integer-valued
-#' (in arbitrary but like units of time).
-#' }
-#'
-#' @param x,q
-#'   A numeric vector listing generation intervals.
-#' @param p
-#'   A numeric vector listing probabilities.
-#' @param n
-#'   A non-negative integer indicating a sample size.
-#'   If \code{length(n) > 1}, then \code{length(n)} is taken
-#'   to be the sample size.
-#' @param latent,infectious
-#'   Numeric vectors such that \code{latent[i]} and \code{infectious[i]}
-#'   are the probabilities that the latent and infectious periods,
-#'   respectively, are \code{i} units of time.
-#'   It is sufficient to supply probability weights, as both vectors
-#'   are divided by their sums internally.
-#'
-#' @return
-#' A numeric vector with length equal to the that of the first argument,
-#' or length \code{n} in the case of \code{rgi}.
-#'
-#' @references
-#' Svensson, Å. A note on generation times in epidemic models.
-#' Math Biosci. 2007;208:300--11.
-#'
-#' @examples
-#' data(plague_latent_period)
-#' latent <- plague_latent_period$relfreq
-#' m <- length(latent)
-#'
-#' data(plague_infectious_period)
-#' infectious <- plague_infectious_period$relfreq
-#' n <- length(infectious)
-#'
-#' ## Histogram of samples
-#' y <- rgi(1e06, latent, infectious)
-#' hist(y, breaks = seq(0, m + n + 1), freq = FALSE, las = 1,
-#'      ylab = "relative frequency",
-#'      main = "")
-#'
-#' ## Density and distribution functions
-#' x <- seq(0, m + n + 1, by = 0.02)
-#' fx <- dgi(x, latent, infectious)
-#' Fx <- pgi(x, latent, infectious)
-#' plot(x, fx, type = "l", las = 1, # consistent with histogram
-#'      xlab = "generation interval",
-#'      ylab = "density function")
-#' plot(x, Fx, type = "l", las = 1,
-#'      xlab = "generation interval",
-#'      ylab = "distribution function")
-#'
-#' ## Quantile function
-#' p <- seq(0, 1, by = 0.001)
-#' qp <- qgi(p, latent, infectious)
-#' plot(p, qp, type = "l", las = 1,
-#'      xlab = "probability",
-#'      ylab = "quantile function")
-#'
-#' @name gi
-NULL
-
-#' @rdname gi
-#' @export
 dgi <- function(x, latent, infectious) {
     stopifnot(is.numeric(x))
     if (length(x) == 0L) {
@@ -112,9 +37,6 @@ dgi <- function(x, latent, infectious) {
     d
 }
 
-#' @rdname gi
-#' @export
-#' @importFrom stats approx
 pgi <- function(q, latent, infectious) {
     stopifnot(is.numeric(q))
     if (length(q) == 0L) {
@@ -138,9 +60,6 @@ pgi <- function(q, latent, infectious) {
     p
 }
 
-#' @rdname gi
-#' @export
-#' @importFrom stats approx
 qgi <- function(p, latent, infectious) {
     stopifnot(is.numeric(p))
     if (length(p) == 0L) {
@@ -165,9 +84,6 @@ qgi <- function(p, latent, infectious) {
     q
 }
 
-#' @rdname gi
-#' @export
-#' @importFrom stats runif
 rgi <- function(n, latent, infectious) {
     if (length(n) > 1L) {
         n <- length(n)

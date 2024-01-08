@@ -1,143 +1,3 @@
-#' Confidence intervals on fitted values
-#'
-#' Computes confidence intervals on fitted values of top level nonlinear
-#' model parameters and, where appropriate, initial doubling times and
-#' basic reproduction numbers.
-#'
-#' @param object
-#'   An \code{"\link{egf}"} object.
-#' @param parm
-#'   Unused argument included for generic consistency.
-#' @param level
-#'   A number in the interval (0,1) indicating a confidence level.
-#' @param top
-#'   A subset of \code{\link{egf_get_names_top}(object, link = TRUE)}
-#'   naming top level nonlinear model parameters for which confidence
-#'   intervals should be computed. If \code{object$model$curve} is
-#'   \code{"exponential"}, \code{"logistic"}, or \code{"richards"},
-#'   then \code{top} may also contain \code{"tdoubling"} and \code{"R0"}.
-#' @param link
-#'   A logical flag. If \code{FALSE}, then confidence intervals
-#'   on inverse link-transformed fitted values are computed.
-#' @param method
-#'   A \link{character} string indicating how confidence intervals
-#'   should be computed.
-#' @param parallel (For \code{method = "profile"} or \code{"uniroot"}.)
-#'   An \code{"\link{egf_parallel}"} object defining options for \R level
-#'   parallelization.
-#' @param trace
-#'   (For \code{method = "profile"} or \code{"uniroot"}.)
-#'   A logical flag.
-#'   If \code{TRUE}, then basic tracing messages indicating progress
-#'   are printed.
-#'   Depending on \code{object$control$trace}, these may be mixed with
-#'   optimizer output.
-#' @param grid_len
-#'   (For \code{method = "profile"}.)
-#'   A positive integer. Step sizes chosen adaptively by
-#'   \code{\link[TMB]{tmbprofile}} will generate approximately
-#'   this many points on each side of a profile's minimum point.
-#' @param interval_scale
-#'   (For \code{method = "uniroot"}.)
-#'   A positive number.
-#'   \code{\link[TMB]{tmbroot}} will search for roots in the interval
-#'   of width \code{interval_scale * se} centered at \code{estimate},
-#'   where \code{estimate} is the fitted value (link scale)
-#'   and \code{se} is the corresponding standard error.
-#' @param breaks,probs
-#'   (For \code{top = "R0"}.)
-#'   Arguments to \code{\link{compute_R0}}.
-#' @param subset
-#'   An expression to be evaluated in
-#'   \code{\link[=model.frame.egf]{model.frame}(object, "combined")}.
-#'   It must evaluate to a valid index vector for the rows of
-#'   the data frame and, in turn, fitting windows.
-#'   Confidence intervals are computed only for indexed windows.
-#'   The default (\code{NULL}) is to consider all windows.
-#' @param append
-#'   An expression indicating variables in
-#'   \code{\link[=model.frame.egf]{model.frame}(object, "combined")}
-#'   to be included with the result.
-#'   The default (\code{NULL}) is to append nothing.
-#' @param .subset,.append
-#'   Index vectors to be used (if non-\code{NULL}) in place of
-#'   the result of evaluating \code{subset} and \code{append}.
-#' @param ...
-#'   Unused optional arguments.
-#'
-#' @details
-#' Three methods are provided for calculating confidence intervals:
-#' \describe{
-#' \item{\code{wald}}{
-#'   See \code{\link{confint.egf_fitted}}.
-#' }
-#' \item{\code{profile}}{
-#'   See \code{\link{confint.egf_profile}}.
-#' }
-#' \item{\code{uniroot}}{
-#'   Similar to \code{"profile"}, except that the two solutions
-#'   of \code{deviance(value) = \link{qchisq}(level, df = 1)} are
-#'   approximated by root-finding using \code{\link[TMB]{tmbroot}}
-#'   (\code{\link{uniroot}} internally).
-#' }
-#' }
-#' For top level parameters following random effects models,
-#' \code{"wald"} returns confidence intervals on individual fitted values,
-#' while \code{"profile"} and \code{"uniroot"} return confidence intervals
-#' on population fitted values, which are the fixed effects components of
-#' individual fitted values.
-#'
-#' \code{"wald"} assumes, e.g., asymptotic normality of the maximum likelihood
-#' estimator. \code{"profile"} and \code{"uniroot"} avoid these issues but are
-#' typically more expensive, requiring estimation of many restricted models.
-#' They are parallelized at the C++ level when there is OpenMP support and
-#' \code{object$control$omp_num_threads} is set to an integer greater than 1.
-#' If there is no OpenMP support, then computation can still be parallelized
-#' at the \R level with appropriate setting of \code{parallel}.
-#'
-#' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-#' of \code{subset} and \code{append}.
-#'
-#' @return
-#' A data frame inheriting from class \code{"egf_confint"}, with variables:
-#' \item{top}{
-#'   Top level nonlinear model parameter,
-#'   from \code{\link{egf_get_names_top}(object, link = TRUE)}.
-#' }
-#' \item{ts}{
-#'   Time series, from
-#'   \code{\link{levels}(\link[=model.frame.egf]{model.frame}(object)$ts)}.
-#' }
-#' \item{window}{
-#'   Fitting window, from
-#'   \code{\link{levels}(\link[=model.frame.egf]{model.frame}(object)$window)}.
-#' }
-#' \item{estimate, lower, upper}{
-#'   Fitted value and approximate lower and upper confidence limits.
-#' }
-#' \code{level} and
-#' \code{frame_windows = \link[=model.frame.egf]{model.frame}(object, "windows")}
-#' are retained as attributes.
-#'
-#' @examples
-#' object <- egf_cache("egf-1.rds")
-#' zz1 <- egf_cache("confint-egf-1.rds", {
-#'     confint(object, method = "wald")
-#' })
-#' zz2 <- egf_cache("confint-egf-2.rds", {
-#'     confint(object, method = "profile",
-#'             subset = (country == "A" & wave == 1))
-#' })
-#' zz3 <- egf_cache("confint-egf-3.rds", {
-#'     confint(object, method = "uniroot",
-#'             subset = (country == "A" & wave == 1))
-#' })
-#' str(zz1)
-#'
-#' @seealso \code{\link{plot.egf_confint}}
-#' @export
-#' @importFrom stats qchisq fitted profile confint model.frame
-#' @importFrom parallel makePSOCKcluster stopCluster clusterExport clusterEvalQ clusterMap mcMap
 confint.egf <- function(object,
                         parm,
                         level = 0.95,
@@ -333,81 +193,6 @@ confint.egf <- function(object,
     res
 }
 
-#' Plot confidence intervals
-#'
-#' A method for graphically comparing confidence intervals
-#' on fitted values of top level nonlinear model parameters.
-#'
-#' @param x
-#'   An \code{"\link[=confint.egf]{egf_confint}"} object.
-#' @param type
-#'   A character string determining how confidence intervals are displayed
-#'   (see Details).
-#' @param time_as
-#'   A character string indicating how time is displayed on the bottom axis.
-#'   The options are:
-#'   as is (\code{"numeric"}) and with a calendar (\code{"Date"}).
-#'   In the latter case, numeric times are interpreted as numbers of days
-#'   since \code{1970-01-01 00:00:00}. [\code{type = "boxes"} only.]
-#' @param per_plot
-#'   A positive integer. One plot will display at most this many
-#'   confidence intervals or time series (depending on \code{type}).
-#' @param subset
-#'   An expression to be evaluated in \code{x}.
-#'   It must evaluate to a valid index vector for the rows of \code{x}.
-#'   Only indexed confidence intervals are plotted.
-#'   The default (\code{NULL}) is to plot all confidence intervals.
-#' @param order
-#'   An expression to be evaluated in \code{x},
-#'   typically a call to \code{\link{order}},
-#'   determining the order in which confidence intervals
-#'   or time series (depending on \code{type}) are plotted.
-#'   It must evaluate to a permutation of \code{seq_len(nrow(x))}.
-#'   The default (\code{NULL}) is equivalent to \code{seq_len(nrow(x))}.
-#' @param label
-#'   An expression to be evaluated in \code{x}, typically a factor,
-#'   an interaction of factors, or a call to \code{\link{sprintf}}.
-#'   It is used to create appropriate \eqn{y}-axis labels for confidence
-#'   intervals when \code{type = "bars"} and appropriate panel labels for
-#'   time series when \code{type = "boxes"}. The default (\code{NULL})
-#'   is to take labels from \code{x$window} and \code{x$ts}, respectively.
-#' @param main
-#'   An expression or character string indicating a plot title,
-#'   to be recycled for all plots.
-#' @param ...
-#'   Unused optional arguments.
-#'
-#' @details
-#' \code{type = "bars"} creates a one-dimensional plot with
-#' confidence intervals drawn as stacked horizontal line segments.
-#'
-#' \code{type = "boxes"} creates a two-dimensional plot for each
-#' time series (level of \code{x$ts}), each containing shaded boxes.
-#' Projection of boxes onto the horizontal and vertical axes yields
-#' fitting windows and corresponding confidence intervals, respectively.
-#'
-#' If an endpoint of a confidence interval is \code{NaN},
-#' then dashed lines are drawn from the point estimate to
-#' the boundary of the plotting region to indicate missingness.
-#'
-#' See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-#' of \code{subset}, \code{order}, and \code{label}.
-#'
-#' @return
-#' \code{NULL} (invisibly).
-#'
-#' @examples
-#' x <- egf_cache("confint-egf-1.rds")
-#'
-#' op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
-#' plot(x, type = "bars")
-#' par(op)
-#'
-#' op <- par(mar = c(0.2, 0, 0.2, 0), oma = c(4.5, 6, 2, 1), las = 1)
-#' plot(x, type = "boxes")
-#' par(op)
-#'
-#' @export
 plot.egf_confint <- function(x,
                              type = c("bars", "boxes"),
                              time_as = c("Date", "numeric"),
@@ -458,7 +243,6 @@ plot.egf_confint <- function(x,
     }
 }
 
-#' @importFrom graphics par plot.new plot.window axTicks abline segments points box axis mtext title
 plot.egf_confint.bars <- function(x, per_plot, main) {
     x <- split(x, x$top)
     for (xlab in names(x)) { # loop over parameters
@@ -513,7 +297,6 @@ plot.egf_confint.bars <- function(x, per_plot, main) {
     invisible(NULL)
 }
 
-#' @importFrom graphics par plot.new plot.window abline rect segments grconvertX grconvertY text box axis title
 plot.egf_confint.boxes <- function(x, per_plot, main, time_as) {
     xlim <- range(x[c("start", "end")])
     x <- split(x, x$top)

@@ -26,9 +26,6 @@
 #' egf_link_extract("log(r)")
 #'
 #' egf_link_extract("invalid string", "r" , "log(r)")
-#'
-#' @noRd
-NULL
 
 egf_link_get <- function(s) {
     ok <- s %in% egf_get_names_top(NULL, link = FALSE)
@@ -73,9 +70,7 @@ egf_link_extract <- function(fs) {
 #' @examples
 #' egf_link_match("log")
 #' egf_link_match("log", inverse = TRUE)
-#'
-#' @noRd
-#' @importFrom stats plogis qlogis
+
 egf_link_match <- function(f, inverse = FALSE) {
     if (inverse) {
         switch(f,

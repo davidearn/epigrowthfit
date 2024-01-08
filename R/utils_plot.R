@@ -13,9 +13,7 @@
 #' @return
 #' A numeric vector identical to that returned by
 #' \code{\link{axis}(side, at, labels, \dots)}.
-#'
-#' @noRd
-#' @importFrom graphics axis par
+
 baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
     stopifnot((side <- as.integer(side)) %in% 1:4)
     dots <- list(...)
@@ -89,9 +87,7 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 #' Otherwise, if \code{w > 3*365} (3 years), then years are placed on
 #' the minor axis, and days and months are not shown. The spacing on the
 #' minor axis is the value of \code{ceiling(ceiling(w / 365) / 7)}.
-#'
-#' @noRd
-#' @importFrom graphics axis par
+
 Daxis <- function(side, origin = .Date(0), minor = list(), major = list()) {
     stopifnot((side <- as.integer(side)) %in% 1:4,
               inherits(origin, "Date"),
@@ -186,8 +182,7 @@ Daxis <- function(side, origin = .Date(0), minor = list(), major = list()) {
 #'
 #' @return
 #' An \link{expression} vector of length \code{length(at)} listing tick labels.
-#'
-#' @noRd
+
 get_scientific_labels <- function(at) {
     ## Exponential notation split into mantissa and power
     mp <- matrix(unlist1(strsplit(sprintf("%.6e", at), "e")),
@@ -240,9 +235,7 @@ get_scientific_labels <- function(at) {
 #'
 #' @return
 #' A positive number.
-#'
-#' @noRd
-#' @importFrom graphics strwidth strheight grconvertX grconvertY
+
 get_sfcex <- function(text, target, units = c("lines", "inches", "user"),
                       horizontal = TRUE, ...) {
     if (length(text) == 0L) {
@@ -270,9 +263,7 @@ get_sfcex <- function(text, target, units = c("lines", "inches", "user"),
 #'
 #' @return
 #' A character vector listing colours with indicated transparency.
-#'
-#' @noRd
-#' @importFrom grDevices col2rgb rgb
+
 alpha <- function(colour, alpha) {
     m <- t(col2rgb(colour, alpha = FALSE))
     rgb(m[, 1:3, drop = FALSE], alpha = 255 * alpha, maxColorValue = 255)

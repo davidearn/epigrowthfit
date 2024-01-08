@@ -20,11 +20,7 @@
 #'   A (recursive) list of \code{"\link{egf_prior"}} objects.
 #' }
 #' }
-#'
-#' @noRd
-NULL
 
-#' @importFrom stats terms formula
 egf_sanitize_formula <- function(formula) {
     s <- deparse1(substitute(formula))
     tt <- terms(formula, simplify = TRUE)
@@ -43,7 +39,6 @@ egf_sanitize_formula <- function(formula) {
     formula(tt)
 }
 
-#' @importFrom stats terms
 egf_sanitize_formula_parameters <-
 function(formula_parameters, names_parameters, check_intercept) {
     recycled <- inherits(formula_parameters, "formula")
@@ -87,7 +82,6 @@ function(formula_parameters, names_parameters, check_intercept) {
     formula_parameters
 }
 
-#' @importFrom stats terms as.formula model.frame na.fail na.pass complete.cases
 egf_make_frame <- function(model,
                            formula_ts, formula_windows, formula_parameters,
                            data_ts, data_windows,
@@ -555,13 +549,7 @@ egf_make_priors <- function(formula_priors, top, beta, theta, Sigma) {
 #'   A factor of length \code{ncol(Z)} with levels \code{levels(g)},
 #'   useful for splitting the columns of \code{Z} by group level.
 #' }
-#'
-#' @noRd
-NULL
 
-#' @importFrom stats model.matrix
-#' @importFrom Matrix sparse.model.matrix
-#' @importMethodsFrom Matrix colSums
 egf_make_X <- function(fixed, data, sparse) {
     mm <- if (sparse) sparse.model.matrix else model.matrix
     X <- mm(fixed, data = data)
@@ -571,10 +559,6 @@ egf_make_X <- function(fixed, data, sparse) {
               contrasts = attr(X, "contrasts"))
 }
 
-#' @importFrom methods as
-#' @importFrom stats model.matrix as.formula
-#' @importFrom Matrix KhatriRao
-#' @importMethodsFrom Matrix t
 egf_make_Z <- function(random, data) {
     X <- egf_make_X(as.formula(call("~", random[[2L]])), data = data, sparse = FALSE)
     ng <- vapply(split_interaction(random[[3L]]), deparse1, "")
@@ -674,11 +658,7 @@ egf_make_Z <- function(random, data) {
 #' \item{colname}{
 #'   Column name in design matrix.
 #' }
-#'
-#' @noRd
-NULL
 
-#' @importFrom stats terms
 egf_combine_X <- function(fixed, X) {
     stopifnot(length(fixed) == length(X))
 
@@ -703,7 +683,6 @@ egf_combine_X <- function(fixed, X) {
     list(X = X, effects = effects, contrasts = contrasts)
 }
 
-#' @importFrom stats as.formula terms
 egf_combine_Z <- function(random, Z) {
     stopifnot(length(random) == length(Z))
     if (length(random) == 0L) {

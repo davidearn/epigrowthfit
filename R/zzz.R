@@ -1,4 +1,3 @@
-#' @importFrom utils packageVersion
 .onLoad <- function(libname, pkgname) {
     build_versions <- system.file("build_versions", package = pkgname,
                                   mustWork = TRUE)

@@ -1,5 +1,3 @@
-#' @export
-#' @importFrom utils str
 print.egf <- function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
     width <- as.integer(width)
     indent <- strrep(" ", indent)
@@ -69,5 +67,4 @@ print.egf <- function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
     invisible(x)
 }
 
-#' @export
 print.egf_no_fit <- print.egf
