@@ -263,9 +263,9 @@ Type objective_function<Type>::operator() ()
 
     if (flags.do_trace && !flags.do_simulate)
     {
-        std::cout << "Y = \n" << Y << "\n";
-	printf("nll initialized to %.6e\n", asDouble(res));
-	std::cout << "commencing loop over observations\n";
+        Rcout << "Y = \n" << Y << "\n";
+	Rprintf("nll initialized to %.6e\n", asDouble(res));
+	Rcout << "commencing loop over observations\n";
     }
     res += nll_obs(this, time, time_seg_len, x, Y, indices, flags, day1);
     if (flags.do_simulate)
@@ -275,8 +275,8 @@ Type objective_function<Type>::operator() ()
     }
     if (flags.do_trace)
     {
-        std::cout << "loop over observations complete\n";
-        printf("nll is %.6e\n", asDouble(res));
+        Rcout << "loop over observations complete\n";
+        Rprintf("nll is %.6e\n", asDouble(res));
     }
 
     
@@ -285,13 +285,13 @@ Type objective_function<Type>::operator() ()
     if (flags.do_random_effects) {
         if (flags.do_trace)
 	{
-	    std::cout << "commencing loop over random effects\n";
+	    Rcout << "commencing loop over random effects\n";
 	}
 	res += nll_ran(this, list_of_blocks, list_of_nld, flags);
 	if (flags.do_trace)
 	{
-	    std::cout << "loop over random effects complete\n";
-	    printf("nll is %.6e\n", asDouble(res));
+	    Rcout << "loop over random effects complete\n";
+	    Rprintf("nll is %.6e\n", asDouble(res));
 	}
     }
 
@@ -307,13 +307,13 @@ Type objective_function<Type>::operator() ()
 
 	if (flags.do_trace)
 	{
-	    std::cout << "commencing loop over top level parameters\n";
+	    Rcout << "commencing loop over top level parameters\n";
 	}
         res += nll_top(this, Y, hyperparameters_top, flags);
         if (flags.do_trace)
 	{
-	    std::cout << "loop over top level parameters complete\n";
-	    printf("nll is %.6e\n", asDouble(res));
+	    Rcout << "loop over top level parameters complete\n";
+	    Rprintf("nll is %.6e\n", asDouble(res));
 	}
     }
 
@@ -329,14 +329,14 @@ Type objective_function<Type>::operator() ()
 
 	if (flags.do_trace)
 	{
-	    std::cout << "commencing loop over bottom level parameters\n";
+	    Rcout << "commencing loop over bottom level parameters\n";
 	}
         res += nll_bot(this, beta, theta, list_of_sd, list_of_chol,
 		       hyperparameters_bottom, flags);
         if (flags.do_trace)
 	{
-	    std::cout << "loop over bottom level parameters complete\n";
-	    printf("nll is %.6e\n", asDouble(res));
+	    Rcout << "loop over bottom level parameters complete\n";
+	    Rprintf("nll is %.6e\n", asDouble(res));
 	}
     }
 

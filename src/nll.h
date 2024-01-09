@@ -123,16 +123,16 @@ Type nll_obs(objective_function<Type> *obj,
 
 	    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 	    {
-		printf("at index %d of segment %d: nll term is %.6e\n",
+		Rprintf("at index %d of segment %d: nll term is %.6e\n",
 		       k, sx, asDouble(nll_term));
 		switch(flags.family)
 		{
 		case pois:
-		    printf("-dpois(x = %d, lambda = %.6e, give_log = true)\n",
+		    Rprintf("-dpois(x = %d, lambda = %.6e, give_log = true)\n",
 			   (int) asDouble(x(i)), exp(asDouble(log_lambda)));
 		    break;
 		case nbinom:
-		    printf("-dnbinom(x = %d, mu = %.6e, size = %.6e, give_log = true)\n",
+		    Rprintf("-dnbinom(x = %d, mu = %.6e, size = %.6e, give_log = true)\n",
 			   (int) asDouble(x(i)), exp(asDouble(log_mu)), exp(asDouble(log_size)));
 		    break;
 		}
@@ -143,7 +143,7 @@ Type nll_obs(objective_function<Type> *obj,
     
     if (print_Y_row)
     {
-	std::cout << "Y.row(" << sx << ") =\n" << Y_row << "\n";
+	Rcout << "Y.row(" << sx << ") =\n" << Y_row << "\n";
     }
 
     return res;
@@ -174,7 +174,7 @@ Type nll_ran(objective_function<Type> *obj,
 
 		if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 		{
-		    printf("at column %d of block %d: nll term is %.6e\n",
+		    Rprintf("at column %d of block %d: nll term is %.6e\n",
 			   j, m, asDouble(nll_term));
 		}
 	    }
@@ -227,12 +227,12 @@ Type nll_top(objective_function<Type> *obj,
 
 		    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 		    {
-			printf("parameter %d in segment %d: nll term is %.6e\n",
+			Rprintf("parameter %d in segment %d: nll term is %.6e\n",
 			       j, i, asDouble(nll_term));
 			switch (flags.regularize_top(j))
 			{
 			case norm:
-			    printf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
+			    Rprintf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
 				   asDouble(Y(i, j)), asDouble(mu), asDouble(sigma));
 			    break;
 			}
@@ -279,12 +279,12 @@ Type nll_bot(objective_function<Type> *obj,
 
 	    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 	    {
-		printf("beta element %d: nll term is %.6e\n",
+		Rprintf("beta element %d: nll term is %.6e\n",
 		       j, asDouble(nll_term));
 		switch (flags.regularize_bottom(i))
 		{
 		case norm:
-		    printf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
+		    Rprintf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
 			   asDouble(beta(j)), asDouble(mu), asDouble(sigma));
 		    break;
 		}
@@ -314,12 +314,12 @@ Type nll_bot(objective_function<Type> *obj,
 
 	    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 	    {
-		printf("theta element %d: nll term is %.6e\n",
+		Rprintf("theta element %d: nll term is %.6e\n",
 		       j, asDouble(nll_term));
 		switch (flags.regularize_bottom(i))
 		{
 		case norm:
-		    printf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
+		    Rprintf("-dnorm(x = %.6e, mean = %.6e, sd = %.6e, give_log = true)\n",
 			   asDouble(theta(j)), asDouble(mu), asDouble(sigma));
 		    break;
 		}
@@ -364,18 +364,18 @@ Type nll_bot(objective_function<Type> *obj,
 
 	    if (flags.do_trace && (flags.do_trace_verbose || !is_nll_term_ok(nll_term)))
 	    {
-		printf("correlation/covariance matrix %d: nll term is %.6e\n",
+		Rprintf("correlation/covariance matrix %d: nll term is %.6e\n",
 		       j, asDouble(nll_term));
 		switch (flags.regularize_bottom(i))
 		{
 		case lkj:
-		    std::cout << "-dlkj(x = " << x << ", eta = " << eta << ", give_log = true)\n";
+		    Rcout << "-dlkj(x = " << x << ", eta = " << eta << ", give_log = true)\n";
 		    break;
 		case wishart:
-		    std::cout << "-dwishart(x = " << x << ", df = " << df << ", scale = " << scale << ", give_log = true)\n";
+		    Rcout << "-dwishart(x = " << x << ", df = " << df << ", scale = " << scale << ", give_log = true)\n";
 		    break;
 		case invwishart:
-		    std::cout << "-dinvwishart(x = " << x << ", df = " << df << ", scale = " << scale << ", give_log = true)\n";
+		    Rcout << "-dinvwishart(x = " << x << ", df = " << df << ", scale = " << scale << ", give_log = true)\n";
 		    break;
 		}
 	    }
