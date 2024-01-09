@@ -14,35 +14,36 @@
 ##' A numeric vector identical to that returned by
 ##' \code{\link{axis}(side, at, labels, \dots)}.
 
-baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
-    stopifnot((side <- as.integer(side)) %in% 1:4)
-    dots <- list(...)
+baxis <-
+function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
+	stopifnot((side <- as.integer(side)) %in% 1:4)
+	dots <- list(...)
 
-    if (is.null(a) || is.null(b)) {
-        gp <- par("usr", "xlog", "ylog")
-        if (side %% 2L == 1L) {
-            usr <- gp$usr[1:2]
-            log <- gp$xlog
-        } else {
-            usr <- gp$usr[3:4]
-            log <- gp$ylog
-        }
-        if (log) {
-            usr <- 10^usr
-        }
-        if (is.null(a)) {
-            a <- usr[1L]
-        }
-        if (is.null(b)) {
-            b <- usr[2L]
-        }
-    }
+	if (is.null(a) || is.null(b)) {
+		gp <- par("usr", "xlog", "ylog")
+		if (side %% 2L == 1L) {
+			usr <- gp$usr[1:2]
+			log <- gp$xlog
+		} else {
+			usr <- gp$usr[3:4]
+			log <- gp$ylog
+		}
+		if (log) {
+			usr <- 10^usr
+		}
+		if (is.null(a)) {
+			a <- usr[1L]
+		}
+		if (is.null(b)) {
+			b <- usr[2L]
+		}
+	}
 
-    args <- list(side = side, at = c(a, b), labels = c("", ""))
-    do.call(axis, c(args, replace(dots, "lwd.ticks", list(0))))
+	args <- list(side = side, at = c(a, b), labels = c("", ""))
+	do.call(axis, c(args, replace(dots, "lwd.ticks", list(0))))
 
-    args <- list(side = side, at = at, labels = labels)
-    do.call(axis, c(args, replace(dots, c("lwd", "lwd.ticks"), list(0, dots[["lwd.ticks"]]))))
+	args <- list(side = side, at = at, labels = labels)
+	do.call(axis, c(args, replace(dots, c("lwd", "lwd.ticks"), list(0, dots[["lwd.ticks"]]))))
 }
 
 ##' Date axis
@@ -88,87 +89,88 @@ baxis <- function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 ##' the minor axis, and days and months are not shown. The spacing on the
 ##' minor axis is the value of \code{ceiling(ceiling(w / 365) / 7)}.
 
-Daxis <- function(side, origin = .Date(0), minor = list(), major = list()) {
-    stopifnot((side <- as.integer(side)) %in% 1:4,
-              inherits(origin, "Date"),
-              length(origin) == 1L,
-              is.finite(origin),
-              is.list(minor) || is.null(minor),
-              is.list(major) || is.null(major))
-    usr <- par("usr")[if (side %% 2L == 1L) 1:2 else 3:4]
-    Dusr <- origin + usr
-    D0 <- min(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]))
-    D1 <- max(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]), D0 + 1)
-    t0 <- julian(D0, origin = origin)
-    t1 <- julian(D1, origin = origin)
-    w <- t1 - t0
+Daxis <-
+function(side, origin = .Date(0), minor = list(), major = list()) {
+	stopifnot((side <- as.integer(side)) %in% 1:4,
+	          inherits(origin, "Date"),
+	          length(origin) == 1L,
+	          is.finite(origin),
+	          is.list(minor) || is.null(minor),
+	          is.list(major) || is.null(major))
+	usr <- par("usr")[if (side %% 2L == 1L) 1:2 else 3:4]
+	Dusr <- origin + usr
+	D0 <- min(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]))
+	D1 <- max(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]), D0 + 1)
+	t0 <- julian(D0, origin = origin)
+	t1 <- julian(D1, origin = origin)
+	w <- t1 - t0
 
-    ## Determine tick coordinates and labels
-    if (w <= 210) {
-        ## Days
-        by <- c(1, 2, 4, 7, 14)[w <= c(14, 28, 56, 112, 210)][1L]
-        minor_at_as_Date <- seq(D0, D1, by = by)
-        minor_at <- julian(minor_at_as_Date, origin = D0)
-        minor_labels <- ymd(minor_at_as_Date, "d")
+	## Determine tick coordinates and labels
+	if (w <= 210) {
+		## Days
+		by <- c(1, 2, 4, 7, 14)[w <= c(14, 28, 56, 112, 210)][1L]
+		minor_at_as_Date <- seq(D0, D1, by = by)
+		minor_at <- julian(minor_at_as_Date, origin = D0)
+		minor_labels <- ymd(minor_at_as_Date, "d")
 
-        ## Months
-        if (ymd(D0, "m") == ymd(D1, "m")) {
-            major_at_as_Date <- D0
-            major_at <- 0
-        } else {
-            major_at_as_Date <- seq(Dceiling(D0, "m"), D1, by = "m")
-            major_at <- julian(major_at_as_Date, origin = D0)
-            if (major_at[1L] > w / 8) {
-                major_at_as_Date <- c(D0, major_at_as_Date)
-                major_at <- c(0, major_at)
-            }
-        }
-        major_labels <- months(major_at_as_Date, abbreviate = TRUE)
-    }
-    else if (w <= 3 * 365) {
-        ## Months
-        by <- c(1L, 2L, 3L)[w <= c(1, 2, 3) * 365][1L]
-        minor_at_as_Date <- seq(Dceiling(D0, "m"), D1, by = paste(by, "m"))
-        minor_at <- julian(minor_at_as_Date, origin = D0)
-        minor_labels <- months(minor_at_as_Date, abbreviate = TRUE)
+		## Months
+		if (ymd(D0, "m") == ymd(D1, "m")) {
+			major_at_as_Date <- D0
+			major_at <- 0
+		} else {
+			major_at_as_Date <- seq(Dceiling(D0, "m"), D1, by = "m")
+			major_at <- julian(major_at_as_Date, origin = D0)
+			if (major_at[1L] > w / 8) {
+				major_at_as_Date <- c(D0, major_at_as_Date)
+				major_at <- c(0, major_at)
+			}
+		}
+		major_labels <- months(major_at_as_Date, abbreviate = TRUE)
+	}
+	else if (w <= 3 * 365) {
+		## Months
+		by <- c(1L, 2L, 3L)[w <= c(1, 2, 3) * 365][1L]
+		minor_at_as_Date <- seq(Dceiling(D0, "m"), D1, by = paste(by, "m"))
+		minor_at <- julian(minor_at_as_Date, origin = D0)
+		minor_labels <- months(minor_at_as_Date, abbreviate = TRUE)
 
-        ## Years
-        if (ymd(D0, "y") == ymd(D1, "y")) {
-            major_at_as_Date <- D0
-            major_at <- 0
-        } else {
-            major_at_as_Date <- seq(Dceiling(D0, "y"), D1, by = "y")
-            major_at <- julian(major_at_as_Date, origin = D0)
-            if (major_at[1L] > w / 8) {
-                major_at_as_Date <- c(D0, major_at_as_Date)
-                major_at <- c(0, major_at)
-            }
-        }
-        major_labels <- ymd(major_at_as_Date, "y")
-    } else {
-        ## Years
-        by <- ceiling(ceiling(w / 365) / 7)
-        minor_at_as_Date <- seq(Dceiling(D0, "year"), D1 + (by + 1) * 365, by = paste(by, "y"))
-        minor_at <- julian(minor_at_as_Date, origin = D0)
-        minor_labels <- ymd(minor_at_as_Date, "y")
-        minor_at <- c(minor_at, (minor_at[-1L] + minor_at[-length(minor_at)]) / 2)
-        length(minor_labels) <- length(minor_at)
+		## Years
+		if (ymd(D0, "y") == ymd(D1, "y")) {
+			major_at_as_Date <- D0
+			major_at <- 0
+		} else {
+			major_at_as_Date <- seq(Dceiling(D0, "y"), D1, by = "y")
+			major_at <- julian(major_at_as_Date, origin = D0)
+			if (major_at[1L] > w / 8) {
+				major_at_as_Date <- c(D0, major_at_as_Date)
+				major_at <- c(0, major_at)
+			}
+		}
+		major_labels <- ymd(major_at_as_Date, "y")
+	} else {
+		## Years
+		by <- ceiling(ceiling(w / 365) / 7)
+		minor_at_as_Date <- seq(Dceiling(D0, "year"), D1 + (by + 1) * 365, by = paste(by, "y"))
+		minor_at <- julian(minor_at_as_Date, origin = D0)
+		minor_labels <- ymd(minor_at_as_Date, "y")
+		minor_at <- c(minor_at, (minor_at[-1L] + minor_at[-length(minor_at)]) / 2)
+		length(minor_labels) <- length(minor_at)
 
-        major_at <- double(0L)
-        major <- NULL
-    }
+		major_at <- double(0L)
+		major <- NULL
+	}
 
-    ## Minor axis
-    if (!is.null(minor)) {
-        args <- list(side = side, at = t0 + minor_at, labels = minor_labels)
-        do.call(baxis, c(args, minor))
-    }
-    ## Major axis
-    if (!is.null(major)) {
-        args <- list(side = side, at = t0 + major_at, labels = major_labels)
-        do.call(baxis, c(args, major))
-    }
-    list(minor = t0 + minor_at, major = t0 + major_at)
+	## Minor axis
+	if (!is.null(minor)) {
+		args <- list(side = side, at = t0 + minor_at, labels = minor_labels)
+		do.call(baxis, c(args, minor))
+	}
+	## Major axis
+	if (!is.null(major)) {
+		args <- list(side = side, at = t0 + major_at, labels = major_labels)
+		do.call(baxis, c(args, major))
+	}
+	list(minor = t0 + minor_at, major = t0 + major_at)
 }
 
 ##' Get nicely formatted tick labels
@@ -183,33 +185,34 @@ Daxis <- function(side, origin = .Date(0), minor = list(), major = list()) {
 ##' @return
 ##' An \link{expression} vector of length \code{length(at)} listing tick labels.
 
-get_scientific_labels <- function(at) {
-    ## Exponential notation split into mantissa and power
-    mp <- matrix(unlist1(strsplit(sprintf("%.6e", at), "e")),
-                 ncol = 2L, byrow = TRUE)
+get_scientific_labels <-
+function(at) {
+	## Exponential notation split into mantissa and power
+	mp <- matrix(unlist1(strsplit(sprintf("%.6e", at), "e")),
+	             ncol = 2L, byrow = TRUE)
 
-    ## Greatest number of digits after mantissa decimal,
-    ## ignoring trailing zeros
-    digits <- max(nchar(sub("0+$", "", mp[, 1L]))) - 2L
+	## Greatest number of digits after mantissa decimal,
+	## ignoring trailing zeros
+	digits <- max(nchar(sub("0+$", "", mp[, 1L]))) - 2L
 
-    ## Mantissa reformatted with exactly 'digits' digits after decimal
-    man <- sprintf("%.*e", digits, as.double(mp[, 1L]))
+	## Mantissa reformatted with exactly 'digits' digits after decimal
+	man <- sprintf("%.*e", digits, as.double(mp[, 1L]))
 
-    ## Power reformatted without leading zeros
-    pow <- as.character(as.double(mp[, 2L]))
+	## Power reformatted without leading zeros
+	pow <- as.character(as.double(mp[, 2L]))
 
-    ## Format nonzero labels as "mantissa x 10^power".
-    ## Shorten to "10^power" if nonzero mantissas are all 1.
-    ## Use "0" if mantissa is 0.
-    if (all(as.double(man) %in% c(0, 1))) {
-        labels <- parse(text = sprintf("10^%s", pow))
-    } else {
-        labels <- parse(text = sprintf("%s %%*%% 10^%s", man, pow))
-    }
-    if (0 %in% at) {
-        labels[at == 0] <- expression(0)
-    }
-    labels
+	## Format nonzero labels as "mantissa x 10^power".
+	## Shorten to "10^power" if nonzero mantissas are all 1.
+	## Use "0" if mantissa is 0.
+	if (all(as.double(man) %in% c(0, 1))) {
+		labels <- parse(text = sprintf("10^%s", pow))
+	} else {
+		labels <- parse(text = sprintf("%s %%*%% 10^%s", man, pow))
+	}
+	if (0 %in% at) {
+		labels[at == 0] <- expression(0)
+	}
+	labels
 }
 
 ##' Calculate a space-filling text size
@@ -236,19 +239,20 @@ get_scientific_labels <- function(at) {
 ##' @return
 ##' A positive number.
 
-get_sfcex <- function(text, target, units = c("lines", "inches", "user"),
-                      horizontal = TRUE, ...) {
-    if (length(text) == 0L) {
-        return(1)
-    }
-    measure <- if (horizontal) strwidth else strheight
-    inches_current <- max(measure(text, units = "inches", ...))
-    if (inches_current == 0) {
-        return(1)
-    }
-    convert <- if (horizontal) grconvertX else grconvertY
-    inches_target <- target * diff(convert(c(0, 1), match.arg(units), "inches"))
-    inches_target / inches_current
+get_sfcex <-
+function(text, target, units = c("lines", "inches", "user"),
+         horizontal = TRUE, ...) {
+	if (length(text) == 0L) {
+		return(1)
+	}
+	measure <- if (horizontal) strwidth else strheight
+	inches_current <- max(measure(text, units = "inches", ...))
+	if (inches_current == 0) {
+		return(1)
+	}
+	convert <- if (horizontal) grconvertX else grconvertY
+	inches_target <- target * diff(convert(c(0, 1), match.arg(units), "inches"))
+	inches_target / inches_current
 }
 
 ##' Modify colour transparency
@@ -264,7 +268,8 @@ get_sfcex <- function(text, target, units = c("lines", "inches", "user"),
 ##' @return
 ##' A character vector listing colours with indicated transparency.
 
-alpha <- function(colour, alpha) {
-    m <- t(col2rgb(colour, alpha = FALSE))
-    rgb(m[, 1:3, drop = FALSE], alpha = 255 * alpha, maxColorValue = 255)
+alpha <-
+function(colour, alpha) {
+	m <- t(col2rgb(colour, alpha = FALSE))
+	rgb(m[, 1:3, drop = FALSE], alpha = 255 * alpha, maxColorValue = 255)
 }

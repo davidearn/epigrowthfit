@@ -27,32 +27,36 @@
 ##'
 ##' egf_link_extract("invalid string", "r" , "log(r)")
 
-egf_link_get <- function(s) {
-    ok <- s %in% egf_get_names_top(NULL, link = FALSE)
-    s[ok] <- replace(rep.int("log", sum(ok)), s[ok] == "p", "logit")
-    s[!ok] <- NA
-    s
+egf_link_get <-
+function(s) {
+	ok <- s %in% egf_get_names_top(NULL, link = FALSE)
+	s[ok] <- replace(rep.int("log", sum(ok)), s[ok] == "p", "logit")
+	s[!ok] <- NA
+	s
 }
 
-egf_link_add <- function(s) {
-    ok <- s %in% egf_get_names_top(NULL, link = FALSE)
-    s[ok] <- sprintf("%s(%s)", egf_link_get(s[ok]), s[ok])
-    s[!ok] <- NA
-    s
+egf_link_add <-
+function(s) {
+	ok <- s %in% egf_get_names_top(NULL, link = FALSE)
+	s[ok] <- sprintf("%s(%s)", egf_link_get(s[ok]), s[ok])
+	s[!ok] <- NA
+	s
 }
 
-egf_link_remove <- function(fs) {
-    ok <- fs %in% egf_get_names_top(NULL, link = TRUE)
-    fs[ok] <- sub("^(log|logit)\\((.*)\\)$", "\\2", fs[ok])
-    fs[!ok] <- NA
-    fs
+egf_link_remove <-
+function(fs) {
+	ok <- fs %in% egf_get_names_top(NULL, link = TRUE)
+	fs[ok] <- sub("^(log|logit)\\((.*)\\)$", "\\2", fs[ok])
+	fs[!ok] <- NA
+	fs
 }
 
-egf_link_extract <- function(fs) {
-    ok <- fs %in% egf_get_names_top(NULL, link = TRUE)
-    fs[ok] <- sub("^(log|logit)\\((.*)\\)$", "\\1", fs[ok])
-    fs[!ok] <- NA
-    fs
+egf_link_extract <-
+function(fs) {
+	ok <- fs %in% egf_get_names_top(NULL, link = TRUE)
+	fs[ok] <- sub("^(log|logit)\\((.*)\\)$", "\\1", fs[ok])
+	fs[!ok] <- NA
+	fs
 }
 
 ##' Get link and inverse link functions
@@ -71,18 +75,19 @@ egf_link_extract <- function(fs) {
 ##' egf_link_match("log")
 ##' egf_link_match("log", inverse = TRUE)
 
-egf_link_match <- function(f, inverse = FALSE) {
-    if (inverse) {
-        switch(f,
-               identity = identity,
-               log = exp,
-               logit = function(q) plogis(q),
-               stop("Link not implemented."))
-    } else {
-        switch(f,
-               identity = identity,
-               log = log,
-               logit = function(p) qlogis(p),
-               stop("Link not implemented."))
-    }
+egf_link_match <-
+function(f, inverse = FALSE) {
+	if (inverse) {
+		switch(f,
+		       identity = identity,
+		       log = exp,
+		       logit = function(q) plogis(q),
+		       stop("Link not implemented."))
+	} else {
+		switch(f,
+		       identity = identity,
+		       log = log,
+		       logit = function(p) qlogis(p),
+		       stop("Link not implemented."))
+	}
 }

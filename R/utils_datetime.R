@@ -23,22 +23,23 @@
 ##' ymd(x)
 ##' ymd(x, which = "d", drop = TRUE)
 
-ymd <- function(x, which = "ymd", drop = TRUE) {
-    stopifnot(inherits(x, c("Date", "POSIXlt", "POSIXct")),
-              is.character(which),
-              length(which) == 1L,
-              !is.na(which),
-              is.logical(drop),
-              length(drop) == 1L,
-              !is.na(drop))
-    x <- as.POSIXct(x)
-    attr(x, "tzone") <- "UTC"
-    x <- as.POSIXlt(x)
-    res <- matrix(c(1900L + x$year, 1L + x$mon, x$mday),
-                  nrow = length(x), ncol = 3L,
-                  dimnames = list(names(x), c("y", "m", "d")))
-    j <- match(strsplit(which, "")[[1L]], colnames(res), 0L)
-    res[, j, drop = drop]
+ymd <-
+function(x, which = "ymd", drop = TRUE) {
+	stopifnot(inherits(x, c("Date", "POSIXlt", "POSIXct")),
+	          is.character(which),
+	          length(which) == 1L,
+	          !is.na(which),
+	          is.logical(drop),
+	          length(drop) == 1L,
+	          !is.na(drop))
+	x <- as.POSIXct(x)
+	attr(x, "tzone") <- "UTC"
+	x <- as.POSIXlt(x)
+	res <- matrix(c(1900L + x$year, 1L + x$mon, x$mday),
+	              nrow = length(x), ncol = 3L,
+	              dimnames = list(names(x), c("y", "m", "d")))
+	j <- match(strsplit(which, "")[[1L]], colnames(res), 0L)
+	res[, j, drop = drop]
 }
 
 ##' Round a Date vector
@@ -65,35 +66,37 @@ ymd <- function(x, which = "ymd", drop = TRUE) {
 ##' l <- sapply(dmy, Dfloor, x = x, simplify = FALSE)
 ##' floor_x <- replace(ceiling_y, dmy, l)
 
-Dceiling <- function(x, to = c("day", "month", "year")) {
-    stopifnot(inherits(x, "Date"))
-    to <- match.arg(to)
-    if (to == "day") {
-        return(.Date(ceiling(unclass(x))))
-    }
-    x <- as.POSIXlt(x)
-    if (to == "month") {
-        x$mon <- x$mon + (x$mday > 1L)
-        x$year <- x$year + (i <- x$mon > 11L)
-        x$mon[i] <- 0L
-    } else {
-        x$year <- x$year + (x$mon > 0L || x$mday > 1L)
-        x$mon[] <- 0L
-    }
-    x$mday[] <- 1L
-    as.Date(x)
+Dceiling <-
+function(x, to = c("day", "month", "year")) {
+	stopifnot(inherits(x, "Date"))
+	to <- match.arg(to)
+	if (to == "day") {
+		return(.Date(ceiling(unclass(x))))
+	}
+	x <- as.POSIXlt(x)
+	if (to == "month") {
+		x$mon <- x$mon + (x$mday > 1L)
+		x$year <- x$year + (i <- x$mon > 11L)
+		x$mon[i] <- 0L
+	} else {
+		x$year <- x$year + (x$mon > 0L || x$mday > 1L)
+		x$mon[] <- 0L
+	}
+	x$mday[] <- 1L
+	as.Date(x)
 }
 
-Dfloor <- function(x, to = c("day", "month", "year")) {
-    stopifnot(inherits(x, "Date"))
-    to <- match.arg(to)
-    if (to == "day") {
-        return(.Date(floor(unclass(x))))
-    }
-    x <- as.POSIXlt(x)
-    x$mday[] <- 1L
-    if (to == "year") {
-        x$mon[] <- 0L
-    }
-    as.Date(x)
+Dfloor <-
+function(x, to = c("day", "month", "year")) {
+	stopifnot(inherits(x, "Date"))
+	to <- match.arg(to)
+	if (to == "day") {
+		return(.Date(floor(unclass(x))))
+	}
+	x <- as.POSIXlt(x)
+	x$mday[] <- 1L
+	if (to == "year") {
+		x$mon[] <- 0L
+	}
+	as.Date(x)
 }

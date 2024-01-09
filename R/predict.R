@@ -1,148 +1,150 @@
-predict.egf <- function(object,
-                        what = c("interval", "cumulative", "rt"),
-                        time,
-                        window,
-                        log = TRUE,
-                        se = FALSE,
-                        ...) {
-    what <- unique(match.arg(what, several.ok = TRUE))
-    stopifnot(is_true_or_false(log), is_true_or_false(se))
-    if (se && !log) {
-        stop1("Standard errors are not available for inverse log-transformed ",
-              "predicted values.")
-    }
+predict.egf <-
+function(object,
+         what = c("interval", "cumulative", "rt"),
+         time,
+         window,
+         log = TRUE,
+         se = FALSE,
+         ...) {
+	what <- unique(match.arg(what, several.ok = TRUE))
+	stopifnot(is_true_or_false(log), is_true_or_false(se))
+	if (se && !log) {
+		stop1("Standard errors are not available for inverse log-transformed ",
+		      "predicted values.")
+	}
 
-    frame_windows <- model.frame(object, "windows")
-    start <- frame_windows$start
-    end <- frame_windows$end
-    day1 <- object$tmb_out$env$data$day1
-    do_day_of_week <- object$model$day_of_week > 0L
+	frame_windows <- model.frame(object, "windows")
+	start <- frame_windows$start
+	end <- frame_windows$end
+	day1 <- object$tmb_out$env$data$day1
+	do_day_of_week <- object$model$day_of_week > 0L
 
-    if (missing_time <- missing(time)) {
-        len  <- object$tmb_out$env$data$time_seg_len
-        subset <- seq_along(len)
-        time <- object$tmb_out$env$data$time + rep.int(start, len)
-        time_split <- split(time, rep.int(subset, len))
-    } else {
-        if (inherits(time, c("Date", "POSIXct", "POSIXlt"))) {
-            time <- julian(time)
-        }
-        stopifnot(is.numeric(time), length(time) > 0L, is.finite(time))
-        if (do_day_of_week) {
-            stopifnot(all.equal(time, z <- round(time)))
-            time <- z
-        }
-        stopifnot(is.factor(window), length(window) == length(time))
+	if (missing_time <- missing(time)) {
+		len  <- object$tmb_out$env$data$time_seg_len
+		subset <- seq_along(len)
+		time <- object$tmb_out$env$data$time + rep.int(start, len)
+		time_split <- split(time, rep.int(subset, len))
+	} else {
+		if (inherits(time, c("Date", "POSIXct", "POSIXlt"))) {
+			time <- julian(time)
+		}
+		stopifnot(is.numeric(time), length(time) > 0L, is.finite(time))
+		if (do_day_of_week) {
+			stopifnot(all.equal(time, z <- round(time)))
+			time <- z
+		}
+		stopifnot(is.factor(window), length(window) == length(time))
 
-        subset <- which(levels(frame_windows$window)%in%levels(factor(window)))
-        window <- factor(window, levels = levels(frame_windows$window)[subset])
+		subset <- which(levels(frame_windows$window)%in%levels(factor(window)))
+		window <- factor(window, levels = levels(frame_windows$window)[subset])
 
-        if (nlevels(window) == 0L) {
-            stop("'window' must have at least one valid level.")
-        }
-        len <- c(table(window))
-        min_len <- 1L + as.integer("interval" %in% what)
-        if (any(len < min_len)) {
-            stop("'time' must have length ", min_len, " or greater ",
-                 "in each level of 'window'.")
-        }
+		if (nlevels(window) == 0L) {
+			stop("'window' must have at least one valid level.")
+		}
+		len <- c(table(window))
+		min_len <- 1L + as.integer("interval" %in% what)
+		if (any(len < min_len)) {
+			stop("'time' must have length ", min_len, " or greater ",
+			     "in each level of 'window'.")
+		}
 
-        time_split <- split(time, window)
-        t0 <- vapply(time_split, min, 0)
-        t1 <- vapply(time_split, max, 0)
+		time_split <- split(time, window)
+		t0 <- vapply(time_split, min, 0)
+		t1 <- vapply(time_split, max, 0)
 
-        start <- start[subset]
-        end <- end[subset]
-        day1 <- day1[subset]
+		start <- start[subset]
+		end <- end[subset]
+		day1 <- day1[subset]
 
-        if (any(t0 < start | t1 > end)) {
-            stop("'time[i]' must not occur before (after) the start (end) ",
-                 "of 'window[i]'.")
-        }
-        if (do_day_of_week) {
-            check_ok_diff_time <- function(x) all(diff(x) == 1)
-        } else {
-            check_ok_diff_time <- function(x) all(diff(x) > 0)
-        }
-        if (!all(vapply(time_split, check_ok_diff_time, FALSE))) {
-            stop1("'time' must be increasing ",
-                  if (do_day_of_week) "with one day spacing ",
-                  "in each level of 'window'.")
-        }
+		if (any(t0 < start | t1 > end)) {
+			stop("'time[i]' must not occur before (after) the start (end) ",
+			     "of 'window[i]'.")
+		}
+		if (do_day_of_week) {
+			check_ok_diff_time <- function(x) all(diff(x) == 1)
+		} else {
+			check_ok_diff_time <- function(x) all(diff(x) > 0)
+		}
+		if (!all(vapply(time_split, check_ok_diff_time, FALSE))) {
+			stop1("'time' must be increasing ",
+			      if (do_day_of_week) "with one day spacing ",
+			      "in each level of 'window'.")
+		}
 
-        time <- unlist1(time_split)
-        if (do_day_of_week) {
-            day1 <- as.integer((day1 + (t0 - start)) %% 7)
-        }
-    }
+		time <- unlist1(time_split)
+		if (do_day_of_week) {
+			day1 <- as.integer((day1 + (t0 - start)) %% 7)
+		}
+	}
 
-    tmb_args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
-    tmb_args$data$flags$predict <- 1L
-    tmb_args$data$what <- as.integer(eval(formals(sys.function())$what)%in%what)
-    tmb_args$data$subset <- subset - 1L
-    tmb_args$data$new_time <- time - rep.int(start, len)
-    tmb_args$data$new_time_seg_len <- len
-    tmb_args$data$new_day1 <- day1
-    tmb_out_retape <- do.call(MakeADFun, tmb_args)
+	tmb_args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
+	tmb_args$data$flags$predict <- 1L
+	tmb_args$data$what <- as.integer(eval(formals(sys.function())$what)%in%what)
+	tmb_args$data$subset <- subset - 1L
+	tmb_args$data$new_time <- time - rep.int(start, len)
+	tmb_args$data$new_time_seg_len <- len
+	tmb_args$data$new_day1 <- day1
+	tmb_out_retape <- do.call(MakeADFun, tmb_args)
 
-    if (se) {
-        sdr <- sdreport(tmb_out_retape,
-                        par.fixed = object$best[!object$random],
-                        getReportCovariance = FALSE)
-        ssdr <- summary(sdr, select = "report")
-        index <- factor(rownames(ssdr),
-                        levels = sprintf("log_%s", what),
-                        labels = sprintf("log(%s)", what))
-        report <- split(unname(ssdr[, "Estimate"]), index)
-        report_se <- split(unname(ssdr[, "Std. Error"]), index)
-    } else {
-        report <- tmb_out_retape$report(object$best)[sprintf("log_%s", what)]
-        names(report) <- sprintf("log(%s)", what)
-    }
+	if (se) {
+		sdr <- sdreport(tmb_out_retape,
+		                par.fixed = object$best[!object$random],
+		                getReportCovariance = FALSE)
+		ssdr <- summary(sdr, select = "report")
+		index <- factor(rownames(ssdr),
+		                levels = sprintf("log_%s", what),
+		                labels = sprintf("log(%s)", what))
+		report <- split(unname(ssdr[, "Estimate"]), index)
+		report_se <- split(unname(ssdr[, "Std. Error"]), index)
+	} else {
+		report <- tmb_out_retape$report(object$best)[sprintf("log_%s", what)]
+		names(report) <- sprintf("log(%s)", what)
+	}
 
-    last <- cumsum(len)
-    first <- c(0L, last[-length(last)]) + 1L
-    x <- rep.int(NA_real_, length(time))
-    ix <- list(interval = -first,
-               cumulative = seq_along(time),
-               rt = seq_along(time))
+	last <- cumsum(len)
+	first <- c(0L, last[-length(last)]) + 1L
+	x <- rep.int(NA_real_, length(time))
+	ix <- list(interval = -first,
+	           cumulative = seq_along(time),
+	           rt = seq_along(time))
 
-    res <- data.frame(var = gl(length(report), length(time),
-                               labels = names(report)),
-                      ts = rep.int(frame_windows$ts[subset], len),
-                      window = rep.int(frame_windows$window[subset], len),
-                      time = time,
-                      estimate =
-                          unlist1(Map(replace, list(x), ix[what], report)))
-    if (se) {
-        res$se <- unlist1(Map(replace, list(x), ix[what], report_se))
-    }
-    if (!log) {
-        res$estimate <- exp(res$estimate)
-        levels(res$var) <- what
-    }
-    attr(res, "se") <- se
-    class(res) <- c("egf_predict", oldClass(res))
-    res
+	res <- data.frame(var = gl(length(report), length(time),
+	                           labels = names(report)),
+	                  ts = rep.int(frame_windows$ts[subset], len),
+	                  window = rep.int(frame_windows$window[subset], len),
+	                  time = time,
+	                  estimate =
+	                      unlist1(Map(replace, list(x), ix[what], report)))
+	if (se) {
+		res$se <- unlist1(Map(replace, list(x), ix[what], report_se))
+	}
+	if (!log) {
+		res$estimate <- exp(res$estimate)
+		levels(res$var) <- what
+	}
+	attr(res, "se") <- se
+	class(res) <- c("egf_predict", oldClass(res))
+	res
 }
 
-confint.egf_predict <- function(object, parm, level = 0.95, log = TRUE, ...) {
-    if (!isTRUE(attr(object, "se"))) {
-        stop1("'object' must supply log scale predicted values ",
-              "and corresponding standard errors. Retry with ",
-              "'object = predict(<\"egf\" object>, log = TRUE, se = TRUE)'.")
-    }
-    stopifnot(is_number_in_interval(level, 0, 1, "()"), is_true_or_false(log))
+confint.egf_predict <-
+function(object, parm, level = 0.95, log = TRUE, ...) {
+	if (!isTRUE(attr(object, "se"))) {
+		stop1("'object' must supply log scale predicted values ",
+		      "and corresponding standard errors. Retry with ",
+		      "'object = predict(<\"egf\" object>, log = TRUE, se = TRUE)'.")
+	}
+	stopifnot(is_number_in_interval(level, 0, 1, "()"), is_true_or_false(log))
 
-    res <- data.frame(object[-match("se", names(object), 0L)],
-                      wald(estimate = object$estimate, se = object$se,
-                           level = level))
-    attr(res, "level") <- level
-    if (log) {
-        return(res)
-    }
-    elu <- c("estimate", "lower", "upper")
-    res[elu] <- exp(res[elu])
-    levels(res$var) <- sub("^log\\((.+)\\)$", "\\1", levels(res$var))
-    res
+	res <- data.frame(object[-match("se", names(object), 0L)],
+	                  wald(estimate = object$estimate, se = object$se,
+	                       level = level))
+	attr(res, "level") <- level
+	if (log) {
+		return(res)
+	}
+	elu <- c("estimate", "lower", "upper")
+	res[elu] <- exp(res[elu])
+	levels(res$var) <- sub("^log\\((.+)\\)$", "\\1", levels(res$var))
+	res
 }

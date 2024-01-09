@@ -20,11 +20,12 @@
 ##' egf_get_flag("pois", "family")
 ##' egf_get_flag("norm", "prior")
 
-egf_get_flag <- function(enum, type = c("curve", "family", "prior")) {
-    type <- match.arg(type)
-    enum_all <- switch(type,
-                       curve = c("exponential", "subexponential", "gompertz", "logistic", "richards"),
-                       family = c("pois", "nbinom"),
-                       prior = c("norm", "lkj", "wishart", "invwishart"))
-    match(enum, enum_all, 0L) - 1L
+egf_get_flag <-
+function(enum, type = c("curve", "family", "prior")) {
+	type <- match.arg(type)
+	enum_all <- switch(type,
+	                   curve = c("exponential", "subexponential", "gompertz", "logistic", "richards"),
+	                   family = c("pois", "nbinom"),
+	                   prior = c("norm", "lkj", "wishart", "invwishart"))
+	match(enum, enum_all, 0L) - 1L
 }
