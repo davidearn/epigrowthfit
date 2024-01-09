@@ -3,8 +3,8 @@ file.copy(testsrc, ".", recursive = TRUE)
 setwd("testsrc")
 dll <- "test"
 cpp <- paste0(dll, ".cpp")
-compile(cpp)
-dyn.load(dynlib(dll))
+TMB::compile(cpp)
+dyn.load(TMB::dynlib(dll))
 
 tt <- paste(readLines(cpp), collapse = "\n")
 tt <- sub("^.*?enum[ \t\n]+test[ \t\n]*\\{(.*?)\\};.*$", "\\1", tt)
@@ -237,6 +237,6 @@ test_that("logspace_add_(baseline|offsets)", {
     expect_equal(res2, log_diff_curve + rep_len(c(log_w[-seq_len(from)], log_w[seq_len(from)]), length(log_diff_curve)))
 })
 
-dyn.unload(dynlib(dll))
+dyn.unload(TMB::dynlib(dll))
 setwd("..")
 unlink("testsrc", recursive = TRUE)
