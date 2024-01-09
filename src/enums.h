@@ -1,22 +1,22 @@
 enum curve
 {
-    exponential,
-    subexponential,
-    gompertz,
-    logistic,
-    richards
+	exponential,
+	subexponential,
+	gompertz,
+	logistic,
+	richards
 };
 
 enum family
 {
-    pois,
-    nbinom
+	pois,
+	nbinom
 };
 
 enum prior
 {
-    norm,
-    lkj,
-    wishart,
-    invwishart
+	norm,
+	lkj,
+	wishart,
+	invwishart
 };
