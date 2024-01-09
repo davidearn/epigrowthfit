@@ -7,7 +7,7 @@ egf_cache(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...)
 \arguments{
 \item{file}{A character string containing the base name of a file.
 The absolute path to the cache file is
-\code{\link{system.file}("exdata", file, package = "epigrowthfit")}.}
+\code{\link{file.path}(tools::\link{R_user_dir}("epigrowthfit", "cache"), file)}.}
 
 \item{object}{An \R object.}
 
@@ -49,7 +49,6 @@ a \link{promise} and is never evaluated.
 If \code{file} is not found but \code{object} is supplied,
 then \code{object} is written to \code{file} by \code{\link{saveRDS}}
 and returned.
-Package subdirectory \code{exdata} is created if necessary.
 
 If \code{file} is not found and \code{object} is missing,
 then \code{\link{example}(topic, character.only = TRUE)}
@@ -70,8 +69,7 @@ pattern matching against topics found by \code{\link{help.search}}.
 }
 
 \examples{
-root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-subdir <- file.path(root, "exdata")
+subdir <- tools::R_user_dir("epigrowthfit", "cache")
 lf1 <- list.files(subdir)
 file <- "test.rds"
 a <- 1

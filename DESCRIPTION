@@ -26,7 +26,8 @@ Authors@R:
 	  person("Junling", "Ma", role = "aut"))
 Depends: R (>= 4.3)
 LinkingTo: RcppEigen (>= 0.3.3.9.4), TMB
-Imports: Matrix (>= 1.6-2), grDevices, graphics, methods, nlme, stats, utils
+Imports: Matrix (>= 1.6-2), grDevices, graphics, methods, nlme,
+	stats, tools, utils
 Suggests: emdbook, shiny, shinyFeedback, testthat (>= 3.0.0)
 LazyData: true
 Config/testthat/edition: 3

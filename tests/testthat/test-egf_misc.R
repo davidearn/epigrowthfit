@@ -78,7 +78,7 @@ test_that("egf_preprofile", {
 })
 
 test_that("egf_cache", {
-    subdir <- system.file("exdata", package = "epigrowthfit", mustWork = TRUE)
+    subdir <- tools::R_user_dir("epigrowthfit", "cache")
     lf1 <- list.files(subdir)
     file <- "test.rds"
     a <- 1

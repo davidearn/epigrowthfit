@@ -271,8 +271,7 @@ egf_preprofile <- function(object, subset, top) {
 }
 
 egf_cache <- function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
-    root <- system.file(package = "epigrowthfit", mustWork = TRUE)
-    subdir <- file.path(root, "exdata")
+    subdir <- R_user_dir("epigrowthfit", "cache")
     if (clear_all) {
         return(unlink(subdir, recursive = TRUE))
     }
