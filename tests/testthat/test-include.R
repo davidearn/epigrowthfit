@@ -1,6 +1,8 @@
-testsrc <- system.file("testsrc", package = "epigrowthfit", mustWork = TRUE)
-file.copy(testsrc, ".", recursive = TRUE)
-setwd("testsrc")
+tmp <- tempfile()
+dir.create(tmp)
+file.copy("src", tmp, recursive = TRUE)
+setwd(file.path(tmp, "src"))
+
 dll <- "test"
 cpp <- paste0(dll, ".cpp")
 TMB::compile(cpp)
@@ -238,5 +240,3 @@ test_that("logspace_add_(baseline|offsets)", {
 })
 
 dyn.unload(TMB::dynlib(dll))
-setwd("..")
-unlink("testsrc", recursive = TRUE)
