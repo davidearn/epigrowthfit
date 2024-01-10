@@ -11,16 +11,16 @@ options(warn = 2L, error = recover)
     identical(names(x), names_)
 
     is.character(x$curve) && length(x$curve) == 1L
-    expect_true(x$curve %in% eval(formals(egf_model)$curve))
+    x$curve %in% eval(formals(egf_model)$curve)
 
     is.logical(x$excess) && length(x$excess) == 1L
-    expect_false(is.na(x$excess))
+    !is.na(x$excess)
 
     is.character(x$family) && length(x$family) == 1L
-    expect_true(x$family %in% eval(formals(egf_model)$family))
+    x$family %in% eval(formals(egf_model)$family)
 
     is.integer(x$day_of_week) && length(x$day_of_week) == 1L
-    expect_true(x$day_of_week %in% 0:7)
+    x$day_of_week %in% 0:7
 
 
 ## egf_control ######
@@ -43,13 +43,13 @@ options(warn = 2L, error = recover)
     }
 
     is.integer(x$trace) && length(x$trace) == 1L
-    expect_true(x$trace %in% 0:2)
+    x$trace %in% 0:2
 
     is.logical(x$profile) && length(x$profile) == 1L
-    expect_false(is.na(x$profile))
+    !is.na(x$profile)
 
     is.logical(x$sparse_X) && length(x$sparse_X) == 1L
-    expect_false(is.na(x$sparse_X))
+    !is.na(x$sparse_X)
 
     is.integer(x$omp_num_threads) && length(x$omp_num_threads) == 1L
     x$omp_num_threads > 0L
@@ -67,7 +67,7 @@ options(warn = 2L, error = recover)
     identical(names(formals(x$f)), names_)
 
     is.list(x$args)
-    expect_false(any(names(args) %in% names_))
+    !any(names(args) %in% names_)
 
     is.list(x$control)
 
@@ -80,12 +80,12 @@ options(warn = 2L, error = recover)
     identical(names(x), c("method", "control"))
 
     is.character(x$method) && length(x$method) == 1L
-    expect_true(x$method %in% c("newton", eval(formals(optim)$method)))
+    x$method %in% c("newton", eval(formals(optim)$method))
 
     is.list(x$control)
     if (x$method == "newton") {
         reserved <- c("par", "fn", "gr", "he", "env", "...")
-        expect_false(any(names(x$control) %in% reserved))
+        !any(names(x$control) %in% reserved)
     }
 
 
@@ -98,10 +98,10 @@ options(warn = 2L, error = recover)
     identical(names(x), names_)
 
     is.character(x$method) && length(x$method) == 1L
-    expect_true(x$method %in% eval(formals(egf_parallel)$method))
+    x$method %in% eval(formals(egf_parallel)$method)
 
     is.character(x$outfile) && length(x$outfile) == 1L
-    expect_false(is.na(x$outfile))
+    !is.na(x$outfile)
 
     is.integer(x$cores) && length(x$cores) == 1L
     x$cores > 0L

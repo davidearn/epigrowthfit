@@ -41,8 +41,8 @@ options(warn = 2L, error = recover)
     cpo_expected$linear_combination <- seq_len(n)
     cpo_expected[c("estimate", "lower", "upper")] <- list(double(n))
     all.equal(cpo, cpo_expected, tolerance = Inf)
-    expect_true(all(cpo$lower < cpo$estimate))
-    expect_true(all(cpo$estimate < cpo$upper))
+    all(cpo$lower < cpo$estimate)
+    all(cpo$estimate < cpo$upper)
 
 
 
@@ -74,5 +74,5 @@ options(warn = 2L, error = recover)
     }
     ## vdiffr::expect_doppelganger("plot-egf_profile-1", fig = f)
 
-    expect_true(TRUE) # otherwise test is considered skipped
+    TRUE # otherwise test is considered skipped
 

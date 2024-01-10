@@ -6,14 +6,14 @@ options(warn = 2L, error = recover)
     x <- egf_get_names_top(NULL, link = FALSE)
     is.character(x)
     length(x) > 0L
-    expect_false(anyNA(x))
+    !anyNA(x)
     is.null(names(x))
 
     model <- egf_model()
     x0 <- egf_get_names_top(model, link = FALSE)
     is.character(x0)
     length(x0) > 0L
-    expect_true(all(x0 %in% x))
+    all(x0 %in% x)
 
     o <- list(model = model)
     class(o) <- "egf"
@@ -27,10 +27,10 @@ options(warn = 2L, error = recover)
     class(o) <- "egf"
 
     e$data$Z <- matrix(double(9L), 3L, 3L)
-    expect_true(egf_has_random(o))
+    egf_has_random(o)
 
     e$data$Z <- matrix(double(0L), 3L, 0L)
-    expect_false(egf_has_random(o))
+    !egf_has_random(o)
 
 
 ## egf_has_converged ######
@@ -40,11 +40,11 @@ options(warn = 2L, error = recover)
               hessian = TRUE)
     class(o) <- c("egf", "list")
 
-    expect_true(egf_has_converged(o))
-    expect_false(egf_has_converged(within(o, optimizer_out$convergence <- 1L)))
-    expect_false(egf_has_converged(within(o, value <- NaN)))
-    expect_false(egf_has_converged(within(o, gradient[1L] <- 10)))
-    expect_false(egf_has_converged(within(o, hessian <- FALSE)))
+    egf_has_converged(o)
+    !egf_has_converged(within(o, optimizer_out$convergence <- 1L))
+    !egf_has_converged(within(o, value <- NaN))
+    !egf_has_converged(within(o, gradient[1L] <- 10))
+    !egf_has_converged(within(o, hessian <- FALSE))
     identical(egf_has_converged(within(o, hessian <- NA)), NA)
 
 

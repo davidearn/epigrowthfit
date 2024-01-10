@@ -65,5 +65,5 @@ options(warn = 2L, error = recover)
     }
     ## vdiffr::expect_doppelganger("plot-egf_confint-2", fig = boxes)
 
-    expect_true(TRUE) # otherwise test is considered skipped
+    TRUE # otherwise test is considered skipped
 
