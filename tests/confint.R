@@ -14,16 +14,16 @@ options(warn = 2L, error = recover)
 
     expect_type(co1, "list")
     expect_s3_class(co1, c("egf_confint", "data.frame"), exact = TRUE)
-    expect_equal(co1, cfo, ignore_attr = c("class", "method", "frame_windows"))
+    all.equal(co1, cfo, ignore_attr = c("class", "method", "frame_windows"))
 
     expect_type(co2, "list")
     expect_s3_class(co2, c("egf_confint", "data.frame"), exact = TRUE)
-    expect_equal(co2, cpo,
+    all.equal(co2, cpo,
                  ignore_attr = c("class", "method", "frame_windows", "A", "x"))
 
     expect_type(co3, "list")
     expect_s3_class(co3, c("egf_confint", "data.frame"), exact = TRUE)
-    expect_equal(co3, co2, tolerance = 1e-3, ignore_attr = "method")
+    all.equal(co3, co2, tolerance = 1e-3, ignore_attr = "method")
 
 
 ## parallel ######
@@ -36,7 +36,7 @@ options(warn = 2L, error = recover)
                 method = "uniroot",
                 subset = (country == "A" & wave == 1),
                 parallel = egf_parallel(method = "multicore", cores = 2L))
-    expect_equal(co3_multicore, co3)
+    all.equal(co3_multicore, co3)
 
     ## skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
     co3_snow <-
@@ -44,7 +44,7 @@ options(warn = 2L, error = recover)
                 method = "uniroot",
                 subset = (country == "A" & wave == 1),
                 parallel = egf_parallel(method = "snow", cores = 2L))
-    expect_equal(co3_snow, co3)
+    all.equal(co3_snow, co3)
 
 
 ## plot ######

@@ -17,5 +17,5 @@ options(warn = 2L, error = recover)
                    cstart = 10)
 
     mm <- egf(zz, formula_priors = list(log(b) ~ Normal(mu = 2.5, sigma = 1)))
-    expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+    all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 

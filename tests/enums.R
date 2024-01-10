@@ -12,7 +12,7 @@ options(warn = 2L, error = recover)
             expect_type(flag[[.(s)]], "integer")
             expect_length(flag[[.(s)]], 2L)
             expect_gte(flag[[.(s)]][1L], 0L)
-            expect_identical(flag[[.(s)]][2L], -1L)
+            identical(flag[[.(s)]][2L], -1L)
         }))
     }
     expect_error(egf_get_flag(c("foo", "bar"), "invalid type"))

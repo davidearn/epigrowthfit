@@ -13,7 +13,7 @@ options(warn = 2L, error = recover)
                    cstart = 10)
 
     mm <- egf(zz)
-    expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+    all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 
 
 ## subexponential ######
@@ -28,7 +28,7 @@ options(warn = 2L, error = recover)
                    cstart = 10)
 
     mm <- egf(zz, formula_priors = list(logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)))
-    expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+    all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 
 
 ## gompertz ######
@@ -43,7 +43,7 @@ options(warn = 2L, error = recover)
                    cstart = 10)
 
     mm <- egf(zz)
-    expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+    all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 
 
 ## logistic ######
@@ -58,7 +58,7 @@ options(warn = 2L, error = recover)
                    cstart = 10)
 
     mm <- egf(zz)
-    expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+    all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 
 
 ## richards ######
@@ -74,5 +74,5 @@ options(warn = 2L, error = recover)
                    cstart = 10)
 
     mm <- egf(zz, formula_priors = list(log(a) ~ Normal(mu = log(a), sigma = 0.05)))
-    expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+    all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 

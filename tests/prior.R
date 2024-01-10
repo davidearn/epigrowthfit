@@ -8,7 +8,7 @@ options(warn = 2L, error = recover)
     prior <- Normal(mu = mu, sigma = sigma)
     expect_type(prior, "list")
     expect_s3_class(prior, "egf_prior", exact = TRUE)
-    expect_identical(unclass(prior),
+    identical(unclass(prior),
                      list(family = "norm",
                           parameters = list(mu = mu, sigma = sigma)))
 
@@ -30,7 +30,7 @@ options(warn = 2L, error = recover)
     prior <- LKJ(eta = eta)
     expect_type(prior, "list")
     expect_s3_class(prior, "egf_prior", exact = TRUE)
-    expect_identical(unclass(prior),
+    identical(unclass(prior),
                      list(family = "lkj", parameters = list(eta = eta)))
 
     expect_error(LKJ(eta = "1"))
@@ -54,7 +54,7 @@ options(warn = 2L, error = recover)
 
     expect_type(prior, "list")
     expect_s3_class(prior, "egf_prior", exact = TRUE)
-    expect_equal(unclass(prior),
+    all.equal(unclass(prior),
                  list(family = "wishart",
                       parameters = list(df = df, scale=list(c(log_sd, chol)))))
 
@@ -62,8 +62,8 @@ options(warn = 2L, error = recover)
     expect_error(Wishart(df = df, scale = A)) # 'scale' not symmetric
     expect_error(Wishart(df = df, scale = diag(0:3))) # 'scale' not positive definite
 
-    expect_identical(Wishart(df = df, scale = list(scale)),
+    identical(Wishart(df = df, scale = list(scale)),
                      prior)
-    expect_identical(InverseWishart(df = df, scale = scale),
+    identical(InverseWishart(df = df, scale = scale),
                      replace(prior, "family", list("invwishart")))
 

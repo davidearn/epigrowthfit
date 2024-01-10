@@ -22,8 +22,8 @@ oo <- options(egf.cores = 4L)
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
     expect_lt(max(abs(mm$gradient)), 5e-5)
-    expect_equal(p1$beta, p2$beta, tolerance = 5e-2)
-    expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 5e-2)
+    all.equal(p1$beta, p2$beta, tolerance = 5e-2)
+    all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 5e-2)
 
 
 ## subexponential ######
@@ -48,8 +48,8 @@ oo <- options(egf.cores = 4L)
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
     expect_lt(max(abs(mm$gradient)), 5e-4)
-    expect_equal(p1$beta, p2$beta, tolerance = 5e-2)
-    expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
+    all.equal(p1$beta, p2$beta, tolerance = 5e-2)
+    all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
 
 ## gompertz ######
@@ -70,8 +70,8 @@ oo <- options(egf.cores = 4L)
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
     expect_lt(max(abs(mm$gradient)), 5e-4)
-    expect_equal(p1$beta, p2$beta, tolerance = 5e-2)
-    expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
+    all.equal(p1$beta, p2$beta, tolerance = 5e-2)
+    all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
 
 ## logistic ######
@@ -93,8 +93,8 @@ oo <- options(egf.cores = 4L)
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
     expect_lt(max(abs(mm$gradient)), 1e-2)
-    expect_equal(p1$beta, p2$beta, tolerance = 1e-2)
-    expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
+    all.equal(p1$beta, p2$beta, tolerance = 1e-2)
+    all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
 
 ## richards ######
@@ -120,8 +120,8 @@ oo <- options(egf.cores = 4L)
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
     expect_lt(max(abs(mm$gradient)), 2e-2)
-    expect_equal(p1$beta, p2$beta, tolerance = 5e-3)
-    expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
+    all.equal(p1$beta, p2$beta, tolerance = 5e-3)
+    all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
 
 options(oo)

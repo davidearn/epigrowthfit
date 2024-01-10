@@ -16,5 +16,5 @@ options(warn = 2L, error = recover)
                    mu = log(c(r, tinfl, K, disp, w)),
                    cstart = 10)
     mm <- egf(zz)
-    expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+    all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 

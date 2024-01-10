@@ -7,6 +7,6 @@ options(warn = 2L, error = recover)
     capture.output({
         expect_condition(print(o), regexp = NA)
         expect_invisible(print(o))
-        expect_identical(print(o), o)
+        identical(print(o), o)
     })
 

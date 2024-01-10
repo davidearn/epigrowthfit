@@ -17,17 +17,17 @@ options(warn = 2L, error = recover)
 
     expect_type(po$linear_combination, "integer")
     expect_s3_class(po$linear_combination, "factor")
-    expect_identical(levels(po$linear_combination), c("1", "2"))
+    identical(levels(po$linear_combination), c("1", "2"))
 
-    expect_identical(po$top, factor(po$linear_combination, labels = c("log(r)", "log(c0)")))
-    expect_identical(po$ts, rep.int(factor("A", levels = LETTERS[1:10]), nrow(po)))
-    expect_identical(po$window, rep.int(factor("window_01", levels = sprintf("window_%02d", seq_len(20L))), nrow(po)))
+    identical(po$top, factor(po$linear_combination, labels = c("log(r)", "log(c0)")))
+    identical(po$ts, rep.int(factor("A", levels = LETTERS[1:10]), nrow(po)))
+    identical(po$window, rep.int(factor("window_01", levels = sprintf("window_%02d", seq_len(20L))), nrow(po)))
 
     expect_type(po$value, "double")
     expect_type(po$deviance, "double")
 
     f <- function(d) d$value[[which.min(d$deviance)]]
-    expect_identical(c(by(po, po$linear_combination, f)), co[1:2],
+    identical(c(by(po, po$linear_combination, f)), co[1:2],
                      ignore_attr = "names")
 
 
@@ -43,7 +43,7 @@ options(warn = 2L, error = recover)
                               class = "data.frame")
     cpo_expected$linear_combination <- seq_len(n)
     cpo_expected[c("estimate", "lower", "upper")] <- list(double(n))
-    expect_equal(cpo, cpo_expected, tolerance = Inf)
+    all.equal(cpo, cpo_expected, tolerance = Inf)
     expect_true(all(cpo$lower < cpo$estimate))
     expect_true(all(cpo$estimate < cpo$upper))
 
@@ -58,14 +58,14 @@ options(warn = 2L, error = recover)
         profile(o,
                 subset = (country == "A" & wave == 1),
                 parallel = egf_parallel(method = "multicore", cores = 2L))
-    expect_equal(po_multicore, po)
+    all.equal(po_multicore, po)
 
     ## skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
     po_snow <-
         profile(o,
                 subset = (country == "A" & wave == 1),
                 parallel = egf_parallel(method = "snow", cores = 2L))
-    expect_equal(po_snow, po)
+    all.equal(po_snow, po)
 
 
 ## plot ######

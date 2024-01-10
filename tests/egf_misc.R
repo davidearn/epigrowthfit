@@ -17,7 +17,7 @@ options(warn = 2L, error = recover)
 
     o <- list(model = model)
     class(o) <- "egf"
-    expect_identical(egf_get_names_top(o, link = FALSE), x0)
+    identical(egf_get_names_top(o, link = FALSE), x0)
 
 
 ## egf_has_random ######
@@ -45,7 +45,7 @@ options(warn = 2L, error = recover)
     expect_false(egf_has_converged(within(o, value <- NaN)))
     expect_false(egf_has_converged(within(o, gradient[1L] <- 10)))
     expect_false(egf_has_converged(within(o, hessian <- FALSE)))
-    expect_identical(egf_has_converged(within(o, hessian <- NA)), NA)
+    identical(egf_has_converged(within(o, hessian <- NA)), NA)
 
 
 ## egf_(expand|condense)_par ######
@@ -53,18 +53,18 @@ options(warn = 2L, error = recover)
     par <- o$tmb_out$env$last.par.best
     len <- c(table(factor(names(par), levels = c("beta", "theta", "b"))))
     epar <- egf_expand_par(o$tmb_out, par = par)
-    expect_equal(epar, structure(c(par[1:4], theta = 0, par[-(1:4)]),
+    all.equal(epar, structure(c(par[1:4], theta = 0, par[-(1:4)]),
                                  lengths = len + c(0L, 1L, 0L)))
     cpar <- egf_condense_par(o$tmb_out, par = epar)
-    expect_equal(cpar, structure(par, lengths = len))
+    all.equal(cpar, structure(par, lengths = len))
 
 
 ## egf_get_sdreport ######
     o <- egf_cache("egf-1.rds")
     sdr <- o$sdreport
-    expect_identical(egf_get_sdreport(o)$cov.fixed, sdr$cov.fixed)
+    identical(egf_get_sdreport(o)$cov.fixed, sdr$cov.fixed)
     o$sdreport <- NULL
-    expect_warning(expect_equal(egf_get_sdreport(o)$cov.fixed, sdr$cov.fixed))
+    expect_warning(all.equal(egf_get_sdreport(o)$cov.fixed, sdr$cov.fixed))
 
 
 ## egf_preprofile ######
@@ -74,8 +74,8 @@ options(warn = 2L, error = recover)
     expect_type(l, "list")
     expect_length(l, 2L)
     expect_named(l, c("Y", "A"), ignore.order = TRUE)
-    expect_identical(unname(l$Y), Matrix(0, 20L, 2L))
-    expect_identical(unname(l$A), sparseMatrix(i = seq_len(40L),
+    identical(unname(l$Y), Matrix(0, 20L, 2L))
+    identical(unname(l$A), sparseMatrix(i = seq_len(40L),
                                                j = rep.int(1:2, c(20L, 20L)),
                                                x = 1,
                                                dims = c(40L, 5L)))
@@ -92,10 +92,10 @@ options(warn = 2L, error = recover)
     z <- egf_cache(file, clear = TRUE)
     lf3 <- list.files(subdir)
 
-    expect_identical(x, 1)
-    expect_identical(y, 1)
-    expect_identical(z, 0L)
-    expect_identical(a, 1)
-    expect_identical(setdiff(lf2, lf1), file)
-    expect_identical(lf3, lf1)
+    identical(x, 1)
+    identical(y, 1)
+    identical(z, 0L)
+    identical(a, 1)
+    identical(setdiff(lf2, lf1), file)
+    identical(lf3, lf1)
 

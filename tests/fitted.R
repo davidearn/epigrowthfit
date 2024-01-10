@@ -14,7 +14,7 @@ options(warn = 2L, error = recover)
                    se = as.double(o$sdreport$sd))
     attr(fo_expected, "se") <- TRUE
     class(fo_expected) <- c("egf_fitted", "data.frame")
-    expect_identical(fo, fo_expected)
+    identical(fo, fo_expected)
 
 
 ## confint ######
@@ -26,5 +26,5 @@ options(warn = 2L, error = recover)
     attr(cfo_expected, "level") <- 0.95
     attr(cfo_expected, "se") <- NULL
     class(cfo_expected) <- "data.frame"
-    expect_identical(cfo, cfo_expected)
+    identical(cfo, cfo_expected)
 

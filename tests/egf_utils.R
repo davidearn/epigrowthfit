@@ -12,7 +12,7 @@ options(warn = 2L, error = recover)
                cbind(x, y) ~ I(g * h),
                cbind(x - 1, cumsum(y)) ~ g)
     e1 <- function(x, y) {
-        eval(bquote(expect_identical(egf_sanitize_formula(.(x)), .(y))))
+        eval(bquote(identical(egf_sanitize_formula(.(x)), .(y))))
     }
     Map(e1, l1, l1[c(1L, 2L, 2L, 2L, 5:8)])
 
@@ -44,15 +44,15 @@ options(warn = 2L, error = recover)
     fp1 <- ~x * y + (z | g) + (zz | g/h)
     l1 <- rep.int(list(simplify_terms(fp1)), 2L)
     names(l1) <- c("log(r)", "log(c0)")
-    expect_identical(sanitize(fp1), l1)
+    identical(sanitize(fp1), l1)
 
     fp2 <- list(replace(fp1, 2:3, list(quote(log(r)), fp1[[2L]])))
     l2 <- replace(l1, "log(c0)", list(~1))
-    expect_identical(sanitize(fp2), l2, ignore_formula_env = TRUE)
+    identical(sanitize(fp2), l2, ignore_formula_env = TRUE)
 
     fp3 <- c(fp2, list(log(c0) ~ x))
     l3 <- replace(l2, "log(c0)", list(~x))
-    expect_identical(sanitize(fp3), l3, ignore_formula_env = TRUE)
+    identical(sanitize(fp3), l3, ignore_formula_env = TRUE)
 
     expect_warning(sanitize(~0 + x))
 
@@ -107,7 +107,7 @@ options(warn = 2L, error = recover)
                    x = data_ts$count[c(NA, 14:22, NA, 25:33)])
     attr(o1_expected, "first") <- c(1L, 5L, 11L)
     attr(o1_expected, "last") <- c(5L, 10L, 15L)
-    expect_identical(o1, o1_expected)
+    identical(o1, o1_expected)
 
     o2 <- res$windows
     o2_expected <-
@@ -115,7 +115,7 @@ options(warn = 2L, error = recover)
                    window = gl(3L, 1L, labels = sprintf("window_%d", 1:3)),
                    start = c(1, 5, 1),
                    end = c(5, 10, 5))
-    expect_identical(o2, o2_expected)
+    identical(o2, o2_expected)
 
     o3 <- res$parameters
     expect_type(o3, "list")
@@ -126,18 +126,18 @@ options(warn = 2L, error = recover)
     o31_expected <- droplevels(data_windows[3:5, c("x1", "g1", "g2"), drop = FALSE])
     attr(o31_expected, "terms") <- terms(formula_parameters$`log(r)`)
     row.names(o31_expected) <- NULL
-    expect_identical(o31, o31_expected)
+    identical(o31, o31_expected)
 
     o32 <- o3$`log(c0)`
     o32_expected <- droplevels(data_windows[3:5, "g3", drop = FALSE])
     attr(o32_expected, "terms") <- terms(formula_parameters$`log(c0)`)
     row.names(o32_expected) <- NULL
-    expect_identical(o32, o32_expected)
+    identical(o32, o32_expected)
 
     o4 <- res$append
     o4_expected <- droplevels(data_windows[3:5, c("country", "left", "right", "x2", "x3"), drop = FALSE])
     row.names(o4_expected) <- NULL
-    expect_identical(o4, o4_expected)
+    identical(o4, o4_expected)
 
 
 ## egf_make_priors ######
@@ -170,8 +170,8 @@ options(warn = 2L, error = recover)
     expect_type(priors, "list")
     expect_length(priors, 2L)
     expect_named(priors, c("top", "bottom"), ignore.order = TRUE)
-    expect_identical(priors$top, `names<-`(list(p1, p1), top$names))
-    expect_identical(priors$bottom,
+    identical(priors$top, `names<-`(list(p1, p1), top$names))
+    identical(priors$bottom,
                      list(beta = list(p1, p1, p1, p1),
                           theta = list(p1, f(1L), f(2L), p1, NULL, p3),
                           Sigma = list(p4)))
@@ -186,13 +186,13 @@ options(warn = 2L, error = recover)
     X2 <- model.matrix(formula, data = data)
     a <- attributes(X2)
     X2 <- structure(X2[, -2L], assign = a$assign[-2L], contrasts = a$contrasts)
-    expect_identical(X1, X2)
+    identical(X1, X2)
 
     X1 <- egf_make_X(formula, data = data, sparse = TRUE)
     X2 <- Matrix::sparse.model.matrix(formula, data = data)
     a <- attributes(X2)
     X2 <- structure(X2[, -2L], assign = a$assign[-2L], contrasts = a$contrasts)
-    expect_identical(X1, X2)
+    identical(X1, X2)
 
 
 ## egf_make_Z ######
@@ -209,7 +209,7 @@ options(warn = 2L, error = recover)
                                                sprintf("(x | %s)", c("f1:g1", "f2:g1", "f3:g1", "f3:g2", "f4:g2", "f5:g2"))))
     attr(Z2, "assign") <- rep.int(1L, 6L)
     attr(Z2, "level") <- gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5:2"))
-    expect_identical(Z1, Z2)
+    identical(Z1, Z2)
 
 
 ## egf_combine_X ######
@@ -233,9 +233,9 @@ options(warn = 2L, error = recover)
                           colname = colnames(X))
     contrasts <- list(f = getOption("contrasts")[["unordered"]])
 
-    expect_identical(l$X, X)
-    expect_identical(l$effects, effects)
-    expect_identical(l$contrasts, contrasts)
+    identical(l$X, X)
+    identical(l$effects, effects)
+    identical(l$contrasts, contrasts)
 
 
 ## egf_combine_Z ######
@@ -276,7 +276,7 @@ options(warn = 2L, error = recover)
     colname <- colnames(Z)
     effects <- data.frame(cov, vec, bottom, top, term, group, level, colname)
 
-    expect_identical(l$Z, Z)
-    expect_identical(l$effects, effects)
+    identical(l$Z, Z)
+    identical(l$effects, effects)
     expect_null(l$contrasts)
 
