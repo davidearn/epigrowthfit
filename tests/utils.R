@@ -35,7 +35,7 @@ options(warn = 2L, error = recover)
     level <- 0.95
     q <- qchisq(level, df = 1)
     W <- wald(estimate = estimate, se = se, level = level)
-    expect_type(W, "double")
+    is.double(W)
     expect_true(is.matrix(W))
     identical(dim(W), c(6L, 2L))
     identical(dimnames(W), list(NULL, c("lower", "upper")))

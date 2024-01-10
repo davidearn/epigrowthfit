@@ -33,7 +33,7 @@ data <- data.frame(x = 1:10,
 ## egf_eval_label ######
     identical(egf_eval_label(quote(paste("Date:", z)), data),
                      paste("Date:", data$z))
-    expect_null(egf_eval_label(NULL, data))
+    is.null(egf_eval_label(NULL, data))
     identical(egf_eval_label("1", data), rep.int("1", 10L))
     identical(egf_eval_label(1, data), rep.int("1", 10L))
 

@@ -21,7 +21,7 @@ oo <- options(egf.cores = 4L)
     mm <- egf(zz, formula_priors = list(Sigma ~ LKJ(eta = 2)))
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
-    expect_lt(max(abs(mm$gradient)), 5e-5)
+    max(abs(mm$gradient)) < 5e-5
     all.equal(p1$beta, p2$beta, tolerance = 5e-2)
     all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 5e-2)
 
@@ -47,7 +47,7 @@ oo <- options(egf.cores = 4L)
     mm <- egf(zz, formula_priors = fp)
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
-    expect_lt(max(abs(mm$gradient)), 5e-4)
+    max(abs(mm$gradient)) < 5e-4
     all.equal(p1$beta, p2$beta, tolerance = 5e-2)
     all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
@@ -69,7 +69,7 @@ oo <- options(egf.cores = 4L)
     mm <- egf(zz, formula_priors = list(Sigma ~ LKJ(eta = 2)))
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
-    expect_lt(max(abs(mm$gradient)), 5e-4)
+    max(abs(mm$gradient)) < 5e-4
     all.equal(p1$beta, p2$beta, tolerance = 5e-2)
     all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
@@ -92,7 +92,7 @@ oo <- options(egf.cores = 4L)
     mm <- egf(zz, formula_priors = list(Sigma ~ LKJ(eta = 2)))
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
-    expect_lt(max(abs(mm$gradient)), 1e-2)
+    max(abs(mm$gradient)) < 1e-2
     all.equal(p1$beta, p2$beta, tolerance = 1e-2)
     all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
@@ -119,7 +119,7 @@ oo <- options(egf.cores = 4L)
     mm <- egf(zz, formula_priors = fp)
     p1 <- as.list(coef(mm))
     p2 <- as.list(coef(zz))
-    expect_lt(max(abs(mm$gradient)), 2e-2)
+    max(abs(mm$gradient)) < 2e-2
     all.equal(p1$beta, p2$beta, tolerance = 5e-3)
     all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 

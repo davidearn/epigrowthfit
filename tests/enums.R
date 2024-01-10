@@ -9,9 +9,9 @@ options(warn = 2L, error = recover)
                 enum = c("exponential", "pois", "norm"))
     for (s in names(flag)) {
         eval(bquote({
-            expect_type(flag[[.(s)]], "integer")
-            expect_length(flag[[.(s)]], 2L)
-            expect_gte(flag[[.(s)]][1L], 0L)
+            is.integer(flag[[.(s)]])
+            length(flag[[.(s)]]) == 2L
+            flag[[.(s)]][1L] >= 0L
             identical(flag[[.(s)]][2L], -1L)
         }))
     }

@@ -4,85 +4,85 @@ options(warn = 2L, error = recover)
 
 ## egf_model ######
     x <- egf_model()
-    expect_type(x, "list")
-    expect_s3_class(x, "egf_model", exact = TRUE)
-    expect_length(x, 4L)
+    is.list(x)
+    identical(oldClass(x), "egf_model")
+    length(x) == 4L
     names_ <- c("curve", "excess", "family", "day_of_week")
-    expect_named(x, names_, ignore.order = TRUE)
+    identical(names(x), names_)
 
-    expect_vector(x$curve, character(0L), 1L)
+    is.character(x$curve) && length(x$curve) == 1L
     expect_true(x$curve %in% eval(formals(egf_model)$curve))
 
-    expect_vector(x$excess, logical(0L), 1L)
+    is.logical(x$excess) && length(x$excess) == 1L
     expect_false(is.na(x$excess))
 
-    expect_vector(x$family, character(0L), 1L)
+    is.character(x$family) && length(x$family) == 1L
     expect_true(x$family %in% eval(formals(egf_model)$family))
 
-    expect_vector(x$day_of_week, integer(0L), 1L)
+    is.integer(x$day_of_week) && length(x$day_of_week) == 1L
     expect_true(x$day_of_week %in% 0:7)
 
 
 ## egf_control ######
     x <- egf_control()
-    expect_type(x, "list")
-    expect_s3_class(x, "egf_control", exact = TRUE)
-    expect_length(x, 6L)
+    is.list(x)
+    identical(oldClass(x), "egf_control")
+    length(x) == 6L
     names_ <- c("optimizer", "inner_optimizer", "trace",
                 "profile", "sparse_X", "omp_num_threads")
-    expect_named(x, names_, ignore.order = TRUE)
+    identical(names(x), names_)
 
-    expect_type(x$optimizer, "list")
-    expect_s3_class(x$optimizer, "egf_optimizer")
+    is.list(x$optimizer)
+    identical(oldClass(x$optimizer), "egf_optimizer")
 
-    expect_type(x$inner_optimizer, "list")
-    expect_gt(length(x$inner_optimizer), 0L)
+    is.list(x$inner_optimizer)
+    length(x$inner_optimizer) > 0L
     for (i in seq_along(x$inner_optimizer)) {
-        expect_type(x$inner_optimizer[[i]], "list")
-        expect_s3_class(x$inner_optimizer[[i]], "egf_inner_optimizer")
+        is.list(x$inner_optimizer[[i]])
+        identical(oldClass(x$inner_optimizer[[i]]), "egf_inner_optimizer")
     }
 
-    expect_vector(x$trace, integer(0L), 1L)
+    is.integer(x$trace) && length(x$trace) == 1L
     expect_true(x$trace %in% 0:2)
 
-    expect_vector(x$profile, logical(0L), 1L)
+    is.logical(x$profile) && length(x$profile) == 1L
     expect_false(is.na(x$profile))
 
-    expect_vector(x$sparse_X, logical(0L), 1L)
+    is.logical(x$sparse_X) && length(x$sparse_X) == 1L
     expect_false(is.na(x$sparse_X))
 
-    expect_vector(x$omp_num_threads, integer(0L), 1L)
-    expect_gt(x$omp_num_threads, 0L)
+    is.integer(x$omp_num_threads) && length(x$omp_num_threads) == 1L
+    x$omp_num_threads > 0L
 
 
 ## egf_optimizer ######
     x <- egf_optimizer()
-    expect_type(x, "list")
-    expect_s3_class(x, "egf_optimizer", exact = TRUE)
-    expect_length(x, 3L)
-    expect_named(x, c("f", "args", "control"), ignore.order = TRUE)
+    is.list(x)
+    identical(oldClass(x), "egf_optimizer")
+    length(x) == 3L
+    identical(names(x), c("f", "args", "control"))
 
-    expect_type(x$f, "closure")
+    is.function(x$f) && !is.primitive(x$f)
     names_ <- c("par", "fn", "gr", "control", "...")
-    expect_named(formals(x$f), names_)
+    identical(names(formals(x$f)), names_)
 
-    expect_type(x$args, "list")
+    is.list(x$args)
     expect_false(any(names(args) %in% names_))
 
-    expect_type(x$control, "list")
+    is.list(x$control)
 
 
 ## egf_inner_optimizer ######
     x <- egf_inner_optimizer()
-    expect_s3_class(x, "egf_inner_optimizer", exact = TRUE)
-    expect_type(x, "list")
-    expect_length(x, 2L)
-    expect_named(x, c("method", "control"), ignore.order = TRUE)
+    identical(oldClass(x), "egf_inner_optimizer")
+    is.list(x)
+    length(x) == 2L
+    identical(names(x), c("method", "control"))
 
-    expect_vector(x$method, character(0L), 1L)
+    is.character(x$method) && length(x$method) == 1L
     expect_true(x$method %in% c("newton", eval(formals(optim)$method)))
 
-    expect_type(x$control, "list")
+    is.list(x$control)
     if (x$method == "newton") {
         reserved <- c("par", "fn", "gr", "he", "env", "...")
         expect_false(any(names(x$control) %in% reserved))
@@ -91,37 +91,37 @@ options(warn = 2L, error = recover)
 
 ## egf_parallel ######
     x <- egf_parallel()
-    expect_type(x, "list")
-    expect_s3_class(x, "egf_parallel", exact = TRUE)
-    expect_length(x, 5L)
+    is.list(x)
+    identical(oldClass(x), "egf_parallel")
+    length(x) == 5L
     names_ <- c("method", "outfile", "cores", "args", "cl")
-    expect_named(x, names_, ignore.order = TRUE)
+    identical(names(x), names_)
 
-    expect_vector(x$method, character(0L), 1L)
+    is.character(x$method) && length(x$method) == 1L
     expect_true(x$method %in% eval(formals(egf_parallel)$method))
 
-    expect_vector(x$outfile, character(0L), 1L)
+    is.character(x$outfile) && length(x$outfile) == 1L
     expect_false(is.na(x$outfile))
 
-    expect_vector(x$cores, integer(0L), 1L)
-    expect_gt(x$cores, 0L)
+    is.integer(x$cores) && length(x$cores) == 1L
+    x$cores > 0L
 
-    expect_type(x$args, "list")
+    is.list(x$args)
 
     if (!is.null(x$cl)) {
-        expect_type(x$cl, "list")
-        expect_s3_class(x$cl, "SOCKcluster")
+        is.list(x$cl)
+        identical(oldClass(x$cl), c("SOCKcluster", "cluster"))
     }
 
 
 ## egf_plot_control ######
     x <- egf_plot_control()
-    expect_type(x, "list")
-    expect_s3_class(x, "egf_plot_control", exact = TRUE)
-    expect_length(x, 9L)
+    is.list(x)
+    identical(oldClass(x), "egf_plot_control")
+    length(x) == 9L
     names_ <- c("window", "data", "predict", "asymptote",
                 "box", "axis", "title", "tdoubling", "heat")
-    expect_named(x, names_, ignore.order = TRUE)
+    identical(names(x), names_)
 
     nest <- list(data = c("main", "short", "long"),
                  predict = c("estimate", "ci"),
@@ -130,10 +130,10 @@ options(warn = 2L, error = recover)
                  tdoubling = c("legend", "estimate", "ci"),
                  heat = c("pal", "bg", "ul"))
     for (s in names(x)) {
-        eval(bquote(expect_type(x[[.(s)]], "list")))
+        eval(bquote(is.list(x[[.(s)]])))
     }
     for (s in names(nest)) {
-        eval(bquote(expect_length(x[[.(s)]], .(length(nest[[s]])))))
-        eval(bquote(expect_named(x[[.(s)]], .(nest[[s]]), ignore.order = TRUE)))
+        eval(bquote(length(x[[.(s)]]) == .(length(nest[[s]]))))
+        eval(bquote(identical(names(x[[.(s)]]), .(nest[[s]]))))
     }
 

@@ -7,17 +7,16 @@ options(warn = 2L, error = recover)
     so <- egf_cache("summary-egf-1.rds")
     fo <- egf_cache("fitted-egf-1.rds")
 
-    expect_type(so, "list")
-    expect_s3_class(so, "egf_summary", exact = TRUE)
-    expect_length(so, 5L)
-    expect_named(so, c("fitted", "convergence", "value", "gradient", "hessian"),
-                 ignore.order = TRUE)
+    is.list(so)
+    identical(oldClass(so), "egf_summary")
+    length(so) == 5L
+    identical(names(so), c("fitted", "convergence", "value", "gradient", "hessian"))
     identical(so$convergence, o$optimizer_out$convergence)
     identical(so$value, o$value)
     identical(so$gradient, o$gradient)
     identical(so$hessian, o$hessian)
 
-    expect_type(so$fitted, "double")
+    is.double(so$fitted)
     identical(dim(so$fitted), c(6L, nlevels(fo$top)))
     identical(dimnames(so$fitted),
                      list(names(summary(0)), levels(fo$top)))

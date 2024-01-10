@@ -12,17 +12,17 @@ options(warn = 2L, error = recover)
     cpo <- confint(po)
     cpo[["linear_combination"]] <- NULL
 
-    expect_type(co1, "list")
-    expect_s3_class(co1, c("egf_confint", "data.frame"), exact = TRUE)
+    is.list(co1)
+    identical(oldClass(co1), c("egf_confint", "data.frame"))
     all.equal(co1, cfo, ignore_attr = c("class", "method", "frame_windows"))
 
-    expect_type(co2, "list")
-    expect_s3_class(co2, c("egf_confint", "data.frame"), exact = TRUE)
+    is.list(co2)
+    identical(oldClass(co2), c("egf_confint", "data.frame"))
     all.equal(co2, cpo,
                  ignore_attr = c("class", "method", "frame_windows", "A", "x"))
 
-    expect_type(co3, "list")
-    expect_s3_class(co3, c("egf_confint", "data.frame"), exact = TRUE)
+    is.list(co3)
+    identical(oldClass(co3), c("egf_confint", "data.frame"))
     all.equal(co3, co2, tolerance = 1e-3, ignore_attr = "method")
 
 

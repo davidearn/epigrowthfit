@@ -92,10 +92,9 @@ options(warn = 2L, error = recover)
                           na_action_ts = na_action_ts,
                           na_action_windows = na_action_windows,
                           append = append)
-    expect_type(res, "list")
-    expect_length(res, 4L)
-    expect_named(res, c("ts", "windows", "parameters", "append"),
-                 ignore.order = TRUE)
+    is.list(res)
+    length(res) == 4L
+    identical(names(res), c("ts", "windows", "parameters", "append"))
 
     o1 <- res$ts
     o1_expected <-
@@ -118,9 +117,9 @@ options(warn = 2L, error = recover)
     identical(o2, o2_expected)
 
     o3 <- res$parameters
-    expect_type(o3, "list")
-    expect_length(o3, 2L)
-    expect_named(o3, c("log(r)", "log(c0)"))
+    is.list(o3)
+    length(o3) == 2L
+    identical(names(o3), c("log(r)", "log(c0)"))
 
     o31 <- o3$`log(r)`
     o31_expected <- droplevels(data_windows[3:5, c("x1", "g1", "g2"), drop = FALSE])
@@ -167,9 +166,9 @@ options(warn = 2L, error = recover)
                               theta = theta,
                               Sigma = Sigma)
 
-    expect_type(priors, "list")
-    expect_length(priors, 2L)
-    expect_named(priors, c("top", "bottom"), ignore.order = TRUE)
+    is.list(priors)
+    length(priors) == 2L
+    identical(names(priors), c("top", "bottom"))
     identical(priors$top, `names<-`(list(p1, p1), top$names))
     identical(priors$bottom,
                      list(beta = list(p1, p1, p1, p1),
@@ -219,9 +218,9 @@ options(warn = 2L, error = recover)
                        X = lapply(fixed, egf_make_X, data = data,
                                   sparse = FALSE))
 
-    expect_type(l, "list")
-    expect_length(l, 3L)
-    expect_named(l, c("X", "effects", "contrasts"), ignore.order = TRUE)
+    is.list(l)
+    length(l) == 3L
+    identical(names(l), c("X", "effects", "contrasts"))
 
     X <- cbind(1, 1:6, 1, rep.int(c(0, 1), c(3L, 3L)))
     rownames(X) <- as.character(seq_len(6L))
@@ -244,9 +243,9 @@ options(warn = 2L, error = recover)
     l <- egf_combine_Z(random = random,
                        Z = lapply(random, egf_make_Z, data = data))
 
-    expect_type(l, "list")
-    expect_length(l, 3L)
-    expect_named(l, c("Z", "effects", "contrasts"), ignore.order = TRUE)
+    is.list(l)
+    length(l) == 3L
+    identical(names(l), c("Z", "effects", "contrasts"))
 
     Z <- cbind(c(1, 1, 1, 0, 0, 0),
                c(0, 0, 0, 1, 1, 1),
@@ -278,5 +277,5 @@ options(warn = 2L, error = recover)
 
     identical(l$Z, Z)
     identical(l$effects, effects)
-    expect_null(l$contrasts)
+    is.null(l$contrasts)
 

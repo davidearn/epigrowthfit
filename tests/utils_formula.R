@@ -34,7 +34,7 @@ options(warn = 2L, error = recover)
     identical(split_terms(x), l)
     identical(unsplit_terms(l), x)
 
-    expect_null(unsplit_terms(list()))
+    is.null(unsplit_terms(list()))
 
 
 ## split_effects ######

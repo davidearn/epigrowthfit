@@ -7,24 +7,21 @@ options(warn = 2L, error = recover)
     po <- egf_cache("profile-egf-1.rds")
     co <- coef(o, full = TRUE)
 
-    expect_type(po, "list")
-    expect_s3_class(po, c("egf_profile", "data.frame"), exact = TRUE)
-    expect_length(po, 6L)
-    expect_named(po,
-                 c("top", "ts", "window", "linear_combination",
-                   "value", "deviance"),
-                 ignore.order = FALSE)
+    is.list(po)
+    identical(oldClass(po), c("egf_profile", "data.frame"))
+    length(po) == 6L
+    identical(names(po), c("top", "ts", "window", "linear_combination", "value", "deviance"))
 
-    expect_type(po$linear_combination, "integer")
-    expect_s3_class(po$linear_combination, "factor")
+    is.integer(po$linear_combination)
+    identical(oldClass(po$linear_combination), "factor")
     identical(levels(po$linear_combination), c("1", "2"))
 
     identical(po$top, factor(po$linear_combination, labels = c("log(r)", "log(c0)")))
     identical(po$ts, rep.int(factor("A", levels = LETTERS[1:10]), nrow(po)))
     identical(po$window, rep.int(factor("window_01", levels = sprintf("window_%02d", seq_len(20L))), nrow(po)))
 
-    expect_type(po$value, "double")
-    expect_type(po$deviance, "double")
+    is.double(po$value)
+    is.double(po$deviance)
 
     f <- function(d) d$value[[which.min(d$deviance)]]
     identical(c(by(po, po$linear_combination, f)), co[1:2],

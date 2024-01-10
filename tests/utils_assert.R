@@ -3,7 +3,7 @@ options(warn = 2L, error = recover)
 
 
 ## stopifnot1 ######
-    expect_null(stopifnot1(TRUE))
+    is.null(stopifnot1(TRUE))
     assertError(stopifnot1(FALSE))
     assertError(stopifnot1(NA))
     assertError(stopifnot1(NULL))
@@ -14,7 +14,7 @@ options(warn = 2L, error = recover)
 
 
 ## warnifnot1 ######
-    expect_null(warnifnot1(TRUE))
+    is.null(warnifnot1(TRUE))
     assertWarning(warnifnot1(FALSE))
     assertWarning(warnifnot1(NA))
     assertWarning(warnifnot1(NULL))

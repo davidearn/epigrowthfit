@@ -5,7 +5,7 @@ options(warn = 2L, error = recover)
 ## coef ######
     o <- egf_cache("egf-2.rds")
     co <- coef(o, full = FALSE)
-    expect_type(co, "double")
+    is.double(co)
     co_expected <- structure(as.double(co),
                              names = rep.int(c("beta", "theta", "b"),
                                              c(2L, 2L, 40L)),

@@ -6,8 +6,8 @@ options(warn = 2L, error = recover)
     mu <- rnorm(10L)
     sigma <- rlnorm(5L)
     prior <- Normal(mu = mu, sigma = sigma)
-    expect_type(prior, "list")
-    expect_s3_class(prior, "egf_prior", exact = TRUE)
+    is.list(prior)
+    identical(oldClass(prior), "egf_prior")
     identical(unclass(prior),
                      list(family = "norm",
                           parameters = list(mu = mu, sigma = sigma)))
@@ -28,8 +28,8 @@ options(warn = 2L, error = recover)
 ## LKJ ######
     eta <- c(0.1, 1, 10)
     prior <- LKJ(eta = eta)
-    expect_type(prior, "list")
-    expect_s3_class(prior, "egf_prior", exact = TRUE)
+    is.list(prior)
+    identical(oldClass(prior), "egf_prior")
     identical(unclass(prior),
                      list(family = "lkj", parameters = list(eta = eta)))
 
@@ -52,8 +52,8 @@ options(warn = 2L, error = recover)
     R[] <- R * rep(1 / diag(R), each = nrow(R))
     chol <- R[upper.tri(R)]
 
-    expect_type(prior, "list")
-    expect_s3_class(prior, "egf_prior", exact = TRUE)
+    is.list(prior)
+    identical(oldClass(prior), "egf_prior")
     all.equal(unclass(prior),
                  list(family = "wishart",
                       parameters = list(df = df, scale=list(c(log_sd, chol)))))

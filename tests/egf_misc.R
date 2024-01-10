@@ -4,15 +4,15 @@ options(warn = 2L, error = recover)
 
 ## egf_get_names_top ######
     x <- egf_get_names_top(NULL, link = FALSE)
-    expect_type(x, "character")
-    expect_gt(length(x), 0L)
+    is.character(x)
+    length(x) > 0L
     expect_false(anyNA(x))
-    expect_named(x, NULL)
+    is.null(names(x))
 
     model <- egf_model()
     x0 <- egf_get_names_top(model, link = FALSE)
-    expect_type(x0, "character")
-    expect_gt(length(x0), 0L)
+    is.character(x0)
+    length(x0) > 0L
     expect_true(all(x0 %in% x))
 
     o <- list(model = model)
@@ -71,9 +71,9 @@ options(warn = 2L, error = recover)
     ## FIXME: Only testing a trivial case as no elements of 'beta' are mapped
     o <- egf_cache("egf-1.rds")
     l <- egf_preprofile(o, subset = seq_len(20L), top = c("log(r)", "log(c0)"))
-    expect_type(l, "list")
-    expect_length(l, 2L)
-    expect_named(l, c("Y", "A"), ignore.order = TRUE)
+    is.list(l)
+    length(l) == 2L
+    identical(names(l), c("Y", "A"))
     identical(unname(l$Y), Matrix(0, 20L, 2L))
     identical(unname(l$A), sparseMatrix(i = seq_len(40L),
                                                j = rep.int(1:2, c(20L, 20L)),
