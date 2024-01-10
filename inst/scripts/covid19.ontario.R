@@ -41,7 +41,8 @@ stopifnot(exprs = {
 	identical(range(diff(dat[["date"]])), .difftime(c(1, 1), "days"))
 })
 
-## Account for changes in reporting of tests on two dates
+## Account for changes in reporting of tests on two dates;
+## see ./covid19.ontario.definitions.tsv
 i0 <- match("2020-03-30", dat[["date"]], 0L)
 i1 <- match("2020-04-15", dat[["date"]], 0L)
 i2 <- nrow(dat) + 1L
