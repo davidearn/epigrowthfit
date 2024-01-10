@@ -1,33 +1,59 @@
-canadacovid_raw <- read.csv("canadacovid_raw.csv")
+pkg <- "epigrowthfit"
+obj <- "covid19.canada"
 
-## Extract cumulative incidence by province
-canadacovid <- data.frame(
-  province = factor(canadacovid_raw$Province),
-  Date = as.Date(canadacovid_raw$Date),
-  cases_tot = canadacovid_raw$confirmed_positive
-)
+if (!file.exists("DESCRIPTION") ||
+	read.dcf("DESCRIPTION", fields = "Package")[1L] != pkg)
+	stop(gettextf("script must be run in package [%s] root directory", pkg),
+	     domain = NA)
 
-## Replace non-postal abbreviation
-m <- match("PEI", levels(canadacovid$province), 0L)
-levels(canadacovid$province)[m] <- "PE"
+url <- "https://wzmli.github.io/COVID19-Canada/COVID19_Canada.csv"
+csv <- tempfile()
+download.file(url, csv)
+dat <- raw <- read.csv(csv)
+str(raw)
 
-## Order
-o <- order(canadacovid$province, canadacovid$Date, -canadacovid$cases_tot)
-canadacovid <- canadacovid[o, , drop = FALSE]
+stopifnot(exprs = {
+	is.data.frame(dat)
+	(m <- match(c("Province", "Date", "confirmed_positive"), names(dat))) > 0L
+	vapply(dat[m], typeof, "") == c("character", "character", "integer")
+})
+dat <- dat[m]
+names(dat) <- c("province", "date", "confirmed")
 
-## Process by province
+p <- c("AB", "BC", "MB", "NB" , "NL", "NS",
+       "NT", "NU", "ON", "PEI", "QC", "SK", "YT")
+dat[["province"]] <- factor(dat[["province"]],
+                            levels = p,
+                            labels = replace(p, p == "PEI", "PE"))
+dat[["date"]] <- as.Date(dat[["date"]]) + 1 # assume right alignment
+
+stopifnot(!anyNA(dat[c("province", "date")]))
+table(dat[["province"]])
+
+## Discard confirmations after 2022-05-01 00:00:00
+s <- dat[["date"]] <= as.Date("2022-05-01")
+dat <- dat[s, , drop = FALSE]
+
+## Order by province, then date, then confirmed
+o <- do.call(order, unname(dat))
+dat <- dat[o, , drop = FALSE]
+is.unsorted(o)
+
+tapply(dat[["date"]], dat[["province"]],
+       function(x) sum(duplicated(x)))
+tapply(dat[["confirmed"]], dat[["province"]],
+       function(x) sum(is.na(x)))
+
 f <- function(d) {
-  ## Ignore leading missing values and duplicated dates
-  k <- seq.int(which.max(!is.na(d$cases_tot)), nrow(d))
-  k <- k[!duplicated(d$Date[k])]
-  d <- d[k, , drop = FALSE]
-
-  ## Compute interval incidence
-  d$cases_new <- c(NA, diff(d$cases_tot))
-  d
+	## Discard leading NA and duplicated times (keeping argmax)
+	n <- nrow(d)
+	k <- seq.int(which.min(is.na(d[["confirmed"]])), n)
+	k <- k[!duplicated(d[["date"]][k], fromLast = TRUE)]
+	d[k, , drop = FALSE]
 }
-canadacovid <- do.call(rbind, by(canadacovid, canadacovid$province, f, simplify = FALSE))
-row.names(canadacovid) <- NULL
+dat <- do.call(rbind, by(dat, dat[["province"]], f))
+row.names(dat) <- NULL
 
-## Save
-save(canadacovid, file = "../data/canadacovid.RData", compress = "xz")
+assign(obj, dat)
+save(list = obj, file = file.path("data", paste0(obj, ".rda")))
+str(dat)
