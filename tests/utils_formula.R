@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("negate", {
     x <- quote(x)
     log_x <- call("log", x)

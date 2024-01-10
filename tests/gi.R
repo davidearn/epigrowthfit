@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 latent <- c(0.026, 0.104, 0.182, 0.246, 0.318, 0.104,
             0.013, 0.004, 0.003)
 m <- length(latent)

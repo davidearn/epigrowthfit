@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("stopifnot1", {
     expect_null(stopifnot1(TRUE))
     expect_error(stopifnot1(FALSE))

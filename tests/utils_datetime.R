@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("ymd", {
     x <- c(0, 0.5, NA, NaN, -Inf, Inf)
     Dx <- .Date(x)

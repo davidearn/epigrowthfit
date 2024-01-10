@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("egf_model", {
     x <- egf_model()
     expect_type(x, "list")

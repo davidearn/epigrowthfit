@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("egf_sanitize_formula", {
     l1 <- list(cbind(x, y) ~ 1,
                cbind(x, y) ~ g,

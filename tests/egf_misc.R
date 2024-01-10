@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("egf_get_names_top", {
     x <- egf_get_names_top(NULL, link = FALSE)
     expect_type(x, "character")

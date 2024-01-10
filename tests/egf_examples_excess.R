@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("excess", {
     r <- log(2) / 20
     tinfl <- 100

@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("object", {
     o <- egf_cache("egf-1.rds")
     po <- egf_cache("profile-egf-1.rds")

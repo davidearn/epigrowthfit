@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("egf_link_(get|add|remove|extract)", {
     x0 <- egf_get_names_top(NULL, link = FALSE)
     x1 <- egf_link_add(x0)

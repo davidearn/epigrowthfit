@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 ## skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
 
 test_that(".on(Load|Unload)", {

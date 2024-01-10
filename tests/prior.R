@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("Normal", {
     mu <- rnorm(10L)
     sigma <- rlnorm(5L)

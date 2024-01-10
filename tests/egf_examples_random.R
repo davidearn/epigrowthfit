@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 oo <- options(egf.cores = 4L)
 
 test_that("exponential", {

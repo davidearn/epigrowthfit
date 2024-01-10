@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("object", {
     co1 <- egf_cache("confint-egf-1.rds")
     co2 <- egf_cache("confint-egf-2.rds")

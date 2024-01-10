@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 tmp <- tempfile()
 dir.create(tmp)
 file.copy("src", tmp, recursive = TRUE)

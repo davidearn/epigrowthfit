@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("egf_get_flag", {
     f <- function(type, enum) egf_get_flag(c(enum, "invalid enum"), type)
     flag <- Map(f,

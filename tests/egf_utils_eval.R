@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 data <- data.frame(x = 1:10,
                    y = letters[11:20],
                    z = .Date(0:9),

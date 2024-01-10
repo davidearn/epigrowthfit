@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("disambiguate", {
     x <- c("c", "b", "a", "b", "a",
            "a", "b", "c", "c", "c")

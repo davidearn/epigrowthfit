@@ -1,3 +1,7 @@
+library(epigrowthfit)
+options(warn = 2L, error = recover)
+
+
 test_that("compute_final_size", {
     n <- 10L
     R0 <- rlnorm(n, 0, 2)
