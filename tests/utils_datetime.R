@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("ymd", {
+## ymd ######
     x <- c(0, 0.5, NA, NaN, -Inf, Inf)
     Dx <- .Date(x)
     names(Dx) <- letters[seq_along(Dx)]
@@ -17,9 +17,9 @@ test_that("ymd", {
     expect_identical(R1, A)
     R2 <- ymd(Dx, which = "y", drop = TRUE)
     expect_identical(R2, A[, "y", drop = TRUE])
-})
 
-test_that("Dround", {
+
+## Dround ######
     x <- c(0, 0.5, NA, NaN, -Inf, Inf)
     Dx <- .Date(x)
     names(Dx) <- letters[seq_along(Dx)]
@@ -35,4 +35,4 @@ test_that("Dround", {
     expect_identical(Dceiling(Dx, "month"), as.Date("1970-08-01"))
     expect_identical(Dfloor(  Dx, "year"),  as.Date("1970-01-01"))
     expect_identical(Dceiling(Dx, "year"),  as.Date("1971-01-01"))
-})
+

@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("egf_sanitize_formula", {
+## egf_sanitize_formula ######
     l1 <- list(cbind(x, y) ~ 1,
                cbind(x, y) ~ g,
                cbind(x, y) ~ 1 + g,
@@ -30,9 +30,9 @@ test_that("egf_sanitize_formula", {
         eval(bquote(expect_error(egf_sanitize_formula(.(x)))))
     }
     lapply(l2, e2)
-})
 
-test_that("egf_sanitize_formula_parameters", {
+
+## egf_sanitize_formula_parameters ######
     model <- egf_model(curve = "exponential", excess = FALSE,
                        family = "pois", day_of_week = FALSE)
     names_parameters <- egf_get_names_top(model, link = TRUE)
@@ -55,9 +55,9 @@ test_that("egf_sanitize_formula_parameters", {
     expect_identical(sanitize(fp3), l3, ignore_formula_env = TRUE)
 
     expect_warning(sanitize(~0 + x))
-})
 
-test_that("egf_make_frame", {
+
+## egf_make_frame ######
     model <- egf_model(curve = "exponential", family = "pois")
     formula_ts <- cbind(day, count) ~ country
     formula_windows <- cbind(left, right) ~ country
@@ -138,9 +138,9 @@ test_that("egf_make_frame", {
     o4_expected <- droplevels(data_windows[3:5, c("country", "left", "right", "x2", "x3"), drop = FALSE])
     row.names(o4_expected) <- NULL
     expect_identical(o4, o4_expected)
-})
 
-test_that("egf_make_priors", {
+
+## egf_make_priors ######
     top <- list(names = c("foo(bar)", "baz"), family = "norm")
     beta <- list(length = 4L, family = "norm")
     theta <- list(length = 6L, family = "norm")
@@ -175,9 +175,9 @@ test_that("egf_make_priors", {
                      list(beta = list(p1, p1, p1, p1),
                           theta = list(p1, f(1L), f(2L), p1, NULL, p3),
                           Sigma = list(p4)))
-})
 
-test_that("egf_make_X", {
+
+## egf_make_X ######
     formula <- ~x + y + z
     data <- list(x = double(10L), y = gl(2L, 5L), z = rnorm(10L))
     data <- model.frame(formula, data = data)
@@ -193,9 +193,9 @@ test_that("egf_make_X", {
     a <- attributes(X2)
     X2 <- structure(X2[, -2L], assign = a$assign[-2L], contrasts = a$contrasts)
     expect_identical(X1, X2)
-})
 
-test_that("egf_make_Z", {
+
+## egf_make_Z ######
     bar <- quote(x - 1 | f:g)
     data <- list(x = rnorm(10L), f = gl(5L, 2L), g = gl(2L, 5L))
     data <- model.frame(~x - 1 + f:g, data = data)
@@ -210,9 +210,9 @@ test_that("egf_make_Z", {
     attr(Z2, "assign") <- rep.int(1L, 6L)
     attr(Z2, "level") <- gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5:2"))
     expect_identical(Z1, Z2)
-})
 
-test_that("egf_combine_X", {
+
+## egf_combine_X ######
     fixed <- list(a = ~x, b = ~f)
     data <- data.frame(x = 1:6, f = gl(2L, 3L))
     l <- egf_combine_X(fixed = fixed,
@@ -236,9 +236,9 @@ test_that("egf_combine_X", {
     expect_identical(l$X, X)
     expect_identical(l$effects, effects)
     expect_identical(l$contrasts, contrasts)
-})
 
-test_that("egf_combine_Z", {
+
+## egf_combine_Z ######
     random <- list(a = quote(x | f), b = quote(y | g))
     data <- data.frame(x = 1:6, y = -1, f = gl(2L, 3L), g = gl(3L, 2L))
     l <- egf_combine_Z(random = random,
@@ -279,4 +279,4 @@ test_that("egf_combine_Z", {
     expect_identical(l$Z, Z)
     expect_identical(l$effects, effects)
     expect_null(l$contrasts)
-})
+

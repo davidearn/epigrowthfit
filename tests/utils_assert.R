@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("stopifnot1", {
+## stopifnot1 ######
     expect_null(stopifnot1(TRUE))
     expect_error(stopifnot1(FALSE))
     expect_error(stopifnot1(NA))
@@ -11,9 +11,9 @@ test_that("stopifnot1", {
     expect_error(stopifnot1(1))
     expect_error(stopifnot1(TRUE, FALSE))
     expect_error(stopifnot1(FALSE, m = "bar"), "bar")
-})
 
-test_that("warnifnot1", {
+
+## warnifnot1 ######
     expect_null(warnifnot1(TRUE))
     expect_warning(warnifnot1(FALSE))
     expect_warning(warnifnot1(NA))
@@ -22,18 +22,18 @@ test_that("warnifnot1", {
     expect_warning(warnifnot1(1))
     expect_warning(warnifnot1(TRUE, FALSE))
     expect_warning(warnifnot1(FALSE, m = "bar"), "bar")
-})
 
-test_that("is_true_or_false", {
+
+## is_true_or_false ######
     expect_true(is_true_or_false(TRUE))
     expect_true(is_true_or_false(FALSE))
     expect_false(is_true_or_false(NA))
     expect_false(is_true_or_false(NULL))
     expect_false(is_true_or_false(c(TRUE, TRUE)))
     expect_false(is_true_or_false(1))
-})
 
-test_that("is_flag", {
+
+## is_flag ######
     expect_true(is_flag(TRUE))
     expect_true(is_flag(FALSE))
     expect_false(is_flag(NA))
@@ -43,9 +43,9 @@ test_that("is_flag", {
     expect_false(is_flag(NA_real_))
     expect_false(is_flag(NULL))
     expect_false(is_flag(c(1, 1)))
-})
 
-test_that("is_number", {
+
+## is_number ######
     expect_true(is_number(1L))
     expect_true(is_number(1))
     expect_true(is_number(1e+10))
@@ -77,20 +77,20 @@ test_that("is_number", {
     expect_true(is_number(1L, integer = TRUE))
     expect_true(is_number(1, integer = TRUE))
     expect_false(is_number(1 + .Machine$double.eps, integer = TRUE))
-})
 
-test_that("is_number_in_interval", {
+
+## is_number_in_interval ######
     expect_false(is_number_in_interval(0, 0, 1, "()"))
     expect_false(is_number_in_interval(0, 0, 1, "(]"))
     expect_true(is_number_in_interval(0, 0, 1, "[)"))
     expect_true(is_number_in_interval(0, 0, 1, "[]"))
-})
 
 
-test_that("is_string", {
+
+## is_string ######
     expect_true(is_string("foo"))
     expect_false(is_string(NA_character_))
     expect_false(is_string(NULL))
     expect_false(is_string(c("foo", "foo")))
     expect_false(is_string(1))
-})
+

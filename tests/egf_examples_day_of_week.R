@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("day_of_week", {
+## day_of_week ######
     r <- log(2) / 20
     tinfl <- 100
     K <- 25000
@@ -17,4 +17,4 @@ test_that("day_of_week", {
                    cstart = 10)
     mm <- egf(zz)
     expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
-})
+

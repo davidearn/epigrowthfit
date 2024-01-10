@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("object", {
+## object ######
     o <- egf_cache("egf-1.rds")
     po <- egf_cache("profile-egf-1.rds")
     co <- coef(o, full = TRUE)
@@ -29,9 +29,9 @@ test_that("object", {
     f <- function(d) d$value[[which.min(d$deviance)]]
     expect_identical(c(by(po, po$linear_combination, f)), co[1:2],
                      ignore_attr = "names")
-})
 
-test_that("confint", {
+
+## confint ######
     po <- egf_cache("profile-egf-1.rds")
     cpo <- confint(po, level = 0.95)
     n <- nlevels(po$linear_combination)
@@ -46,10 +46,10 @@ test_that("confint", {
     expect_equal(cpo, cpo_expected, tolerance = Inf)
     expect_true(all(cpo$lower < cpo$estimate))
     expect_true(all(cpo$estimate < cpo$upper))
-})
 
 
-test_that("parallel", {
+
+## parallel ######
     skip_on_cran()
     o <- egf_cache("egf-1.rds")
     po <- egf_cache("profile-egf-1.rds")
@@ -66,9 +66,9 @@ test_that("parallel", {
                 subset = (country == "A" & wave == 1),
                 parallel = egf_parallel(method = "snow", cores = 2L))
     expect_equal(po_snow, po)
-})
 
-test_that("plot", {
+
+## plot ######
     skip_on_cran()
     po <- egf_cache("profile-egf-1.rds")
 
@@ -78,4 +78,4 @@ test_that("plot", {
     ## vdiffr::expect_doppelganger("plot-egf_profile-1", fig = f)
 
     expect_true(TRUE) # otherwise test is considered skipped
-})
+

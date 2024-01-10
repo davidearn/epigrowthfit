@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("egf_link_(get|add|remove|extract)", {
+## egf_link_(get|add|remove|extract) ######
     x0 <- egf_get_names_top(NULL, link = FALSE)
     x1 <- egf_link_add(x0)
     link <- egf_link_get(x0)
@@ -22,9 +22,9 @@ test_that("egf_link_(get|add|remove|extract)", {
     expect_identical(egf_link_extract(x1), link)
     expect_identical(egf_link_extract("invalid name"), NA_character_)
     expect_identical(egf_link_extract("r"), NA_character_)
-})
 
-test_that("egf_link_match", {
+
+## egf_link_match ######
     expect_identical(egf_link_match("identity"), identity)
     expect_identical(egf_link_match("log"), log)
     expect_identical(egf_link_match("logit"),
@@ -38,4 +38,4 @@ test_that("egf_link_match", {
                      function(q) plogis(q),
                      ignore_function_env = TRUE)
     expect_error(egf_link_match("invalid name", inverse = TRUE))
-})
+

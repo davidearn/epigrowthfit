@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("object", {
+## object ######
     co1 <- egf_cache("confint-egf-1.rds")
     co2 <- egf_cache("confint-egf-2.rds")
     co3 <- egf_cache("confint-egf-3.rds")
@@ -24,9 +24,9 @@ test_that("object", {
     expect_type(co3, "list")
     expect_s3_class(co3, c("egf_confint", "data.frame"), exact = TRUE)
     expect_equal(co3, co2, tolerance = 1e-3, ignore_attr = "method")
-})
 
-test_that("parallel", {
+
+## parallel ######
     skip_on_cran()
     o <- egf_cache("egf-1.rds")
     co3 <- egf_cache("confint-egf-3.rds")
@@ -45,9 +45,9 @@ test_that("parallel", {
                 subset = (country == "A" & wave == 1),
                 parallel = egf_parallel(method = "snow", cores = 2L))
     expect_equal(co3_snow, co3)
-})
 
-test_that("plot", {
+
+## plot ######
     skip_on_cran()
     co1 <- egf_cache("confint-egf-1.rds")
 
@@ -66,4 +66,4 @@ test_that("plot", {
     ## vdiffr::expect_doppelganger("plot-egf_confint-2", fig = boxes)
 
     expect_true(TRUE) # otherwise test is considered skipped
-})
+

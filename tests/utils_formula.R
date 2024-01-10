@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("negate", {
+## negate ######
     x <- quote(x)
     log_x <- call("log", x)
 
@@ -18,9 +18,9 @@ test_that("negate", {
     expect_identical(negate(call("-", 1)), 1)
     expect_identical(negate(-1), call("-", -1))
     expect_identical(negate(call("-", -1)), -1)
-})
 
-test_that("(un)?split_terms", {
+
+## (un)?split_terms ######
     expect_identical(split_terms(quote(+1)), list(quote(1)))
     expect_identical(split_terms(quote(-1)), list(quote(-1)))
 
@@ -35,29 +35,29 @@ test_that("(un)?split_terms", {
     expect_identical(unsplit_terms(l), x)
 
     expect_null(unsplit_terms(list()))
-})
 
-test_that("split_effects", {
+
+## split_effects ######
     x <- y ~ x + (1 | f) + (a + b | g)
     l <- list(fixed = y ~ x, random = list(quote(1 | f), quote(a + b | g)))
     expect_identical(split_effects(x), l)
-})
 
-test_that("split_interaction", {
+
+## split_interaction ######
     x <- quote(a:b:I(f:g):log(h))
     l <- list(quote(a), quote(b), quote(I(f:g)), quote(log(h)))
     expect_identical(split_interaction(x), l)
     expect_error(split_interaction(list()))
-})
 
-test_that("gsub_bar_plus", {
+
+## gsub_bar_plus ######
     x1 <- ~x + (1 | f) + (a + b | g)
     x2 <- call("+", call("+", quote(x), quote(1 + f)), quote(a + b + g))
     x2 <- as.formula(call("~", x2))
     expect_identical(gsub_bar_plus(x1), x2)
-})
 
-test_that("simplify_terms", {
+
+## simplify_terms ######
     x1 <- ~0 + x * y - y
     y1 <- formula(terms(x1, simplify = TRUE))
     expect_identical(simplify_terms(x1), y1)
@@ -68,4 +68,4 @@ test_that("simplify_terms", {
                      call("+", y2[[2L]], quote((a | f))),
                      quote((b - 1 | f:g)))
     expect_identical(simplify_terms(x2), y2)
-})
+

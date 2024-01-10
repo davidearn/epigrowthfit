@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("exponential", {
+## exponential ######
     r <- log(2) / 20
     c0 <- 100
 
@@ -14,9 +14,9 @@ test_that("exponential", {
 
     mm <- egf(zz)
     expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
-})
 
-test_that("subexponential", {
+
+## subexponential ######
     alpha <- log(2) / 20
     c0 <- 100
     p <- 0.95
@@ -29,9 +29,9 @@ test_that("subexponential", {
 
     mm <- egf(zz, formula_priors = list(logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)))
     expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
-})
 
-test_that("gompertz", {
+
+## gompertz ######
     alpha <- log(2) / 20
     tinfl <- 100
     K <- 25000
@@ -44,9 +44,9 @@ test_that("gompertz", {
 
     mm <- egf(zz)
     expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
-})
 
-test_that("logistic", {
+
+## logistic ######
     r <- log(2) / 20
     tinfl <- 100
     K <- 25000
@@ -59,9 +59,9 @@ test_that("logistic", {
 
     mm <- egf(zz)
     expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
-})
 
-test_that("richards", {
+
+## richards ######
     r <- log(2) / 20
     tinfl <- 100
     K <- 25000
@@ -75,4 +75,4 @@ test_that("richards", {
 
     mm <- egf(zz, formula_priors = list(log(a) ~ Normal(mu = log(a), sigma = 0.05)))
     expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
-})
+

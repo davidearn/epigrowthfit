@@ -4,7 +4,7 @@ options(warn = 2L, error = recover)
 
 ## skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
 
-test_that(".on(Load|Unload)", {
+## .on(Load|Unload) ######
     is_ns_loaded <- function() "epigrowthfit" %in% loadedNamespaces()
     is_so_loaded <- function() "epigrowthfit" %in% names(getLoadedDLLs())
     unloadNamespace("epigrowthfit")
@@ -13,4 +13,4 @@ test_that(".on(Load|Unload)", {
     loadNamespace("epigrowthfit")
     expect_true(is_ns_loaded())
     expect_true(is_so_loaded())
-})
+

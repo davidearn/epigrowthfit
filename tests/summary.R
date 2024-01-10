@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("basic", {
+## basic ######
     o <- egf_cache("egf-1.rds")
     so <- egf_cache("summary-egf-1.rds")
     fo <- egf_cache("fitted-egf-1.rds")
@@ -25,13 +25,13 @@ test_that("basic", {
         eval(bquote(expect_equal(so$fitted[, .(s)],
                                  c(summary(fo$estimate[fo$top == .(s)])))))
     }
-})
 
-test_that("print", {
+
+## print ######
     so <- egf_cache("summary-egf-1.rds")
     capture.output({
         expect_condition(print(so), regexp = NA)
         expect_identical(print(so), so)
         expect_invisible(print(so))
     })
-})
+

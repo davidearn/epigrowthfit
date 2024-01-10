@@ -10,7 +10,7 @@ infectious <- c(0.138, 0.462, 0.256, 0.078, 0.041, 0.007,
                 0.004, 0.004, 0.006, 0.004)
 n <- length(infectious)
 
-test_that("dgi", {
+## dgi ######
     dgi1 <- function(x) dgi(x = x, latent = latent, infectious = infectious)
 
     ## Supported on interval [1, m + n)
@@ -20,9 +20,9 @@ test_that("dgi", {
                      dgi1(seq_len(m + n - 1L) + runif(m + n - 1L, 0, 1)))
     ## Integrates to 1
     expect_equal(sum(dgi1(seq_len(m + n - 1L))), 1)
-})
 
-test_that("rgi", {
+
+## rgi ######
     set.seed(411422L)
     x <- rgi(1e+6L, latent = latent, infectious = infectious)
     xbin <- .bincode(x, breaks = seq_len(m + n), right = FALSE)
@@ -30,4 +30,4 @@ test_that("rgi", {
     freqs <- unname(c(table(xbin))) / length(xbin)
     probs <- dgi(seq_len(m + n - 1L), latent = latent, infectious = infectious)
     expect_equal(freqs, probs, tolerance = 1e-2)
-})
+

@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("compute_final_size", {
+## compute_final_size ######
     n <- 10L
     R0 <- rlnorm(n, 0, 2)
     S0 <- runif(n, 0, 1)
@@ -14,9 +14,9 @@ test_that("compute_final_size", {
     expect_equal(compute_final_size(R0 = Inf, S0 = S0, I0 = I0), S0)
     expect_warning(compute_final_size(R0 = -1, S0 = 1, I0 = 0), "NA")
     expect_warning(compute_final_size(R0 = 1, S0 = 1, I0 = 0.1), "NA")
-})
 
-test_that("compute_R0", {
+
+## compute_R0 ######
     r <- rlnorm(10L, -3, 1)
     breaks <- 0:20
     probs <- diff(pgamma(breaks, shape = 1, scale = 2.5))
@@ -31,9 +31,9 @@ test_that("compute_R0", {
     expect_warning(.compute_R0(-1), "NA")
     .compute_R0 <- function(x) compute_R0(r = r, breaks = breaks, probs = x)
     expect_equal(.compute_R0(probs), .compute_R0(100 * probs))
-})
 
-test_that("compute_tdoubling", {
+
+## compute_tdoubling ######
     r <- c(rlnorm(10L, -3, 1), 0, NA, NaN, Inf)
     per <- 1L
     tdoubling <- compute_tdoubling(r = r, per = per)
@@ -46,4 +46,4 @@ test_that("compute_tdoubling", {
         expect_identical(print(tdoubling), tdoubling)
         expect_invisible(print(tdoubling))
     })
-})
+

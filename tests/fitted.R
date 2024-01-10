@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("object", {
+## object ######
     o <- egf_cache("egf-1.rds")
     fo <- egf_cache("fitted-egf-1.rds")
     fo_expected <-
@@ -15,9 +15,9 @@ test_that("object", {
     attr(fo_expected, "se") <- TRUE
     class(fo_expected) <- c("egf_fitted", "data.frame")
     expect_identical(fo, fo_expected)
-})
 
-test_that("confint", {
+
+## confint ######
     fo <- egf_cache("fitted-egf-1.rds")
     cfo <- confint(fo, level = 0.95)
     cfo_expected <- fo
@@ -27,4 +27,4 @@ test_that("confint", {
     attr(cfo_expected, "se") <- NULL
     class(cfo_expected) <- "data.frame"
     expect_identical(cfo, cfo_expected)
-})
+

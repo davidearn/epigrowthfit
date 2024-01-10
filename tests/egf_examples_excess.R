@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("excess", {
+## excess ######
     r <- log(2) / 20
     tinfl <- 100
     K <- 25000
@@ -18,4 +18,4 @@ test_that("excess", {
 
     mm <- egf(zz, formula_priors = list(log(b) ~ Normal(mu = 2.5, sigma = 1)))
     expect_equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
-})
+

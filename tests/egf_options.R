@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("egf_model", {
+## egf_model ######
     x <- egf_model()
     expect_type(x, "list")
     expect_s3_class(x, "egf_model", exact = TRUE)
@@ -21,9 +21,9 @@ test_that("egf_model", {
 
     expect_vector(x$day_of_week, integer(0L), 1L)
     expect_true(x$day_of_week %in% 0:7)
-})
 
-test_that("egf_control", {
+
+## egf_control ######
     x <- egf_control()
     expect_type(x, "list")
     expect_s3_class(x, "egf_control", exact = TRUE)
@@ -53,9 +53,9 @@ test_that("egf_control", {
 
     expect_vector(x$omp_num_threads, integer(0L), 1L)
     expect_gt(x$omp_num_threads, 0L)
-})
 
-test_that("egf_optimizer", {
+
+## egf_optimizer ######
     x <- egf_optimizer()
     expect_type(x, "list")
     expect_s3_class(x, "egf_optimizer", exact = TRUE)
@@ -70,9 +70,9 @@ test_that("egf_optimizer", {
     expect_false(any(names(args) %in% names_))
 
     expect_type(x$control, "list")
-})
 
-test_that("egf_inner_optimizer", {
+
+## egf_inner_optimizer ######
     x <- egf_inner_optimizer()
     expect_s3_class(x, "egf_inner_optimizer", exact = TRUE)
     expect_type(x, "list")
@@ -87,9 +87,9 @@ test_that("egf_inner_optimizer", {
         reserved <- c("par", "fn", "gr", "he", "env", "...")
         expect_false(any(names(x$control) %in% reserved))
     }
-})
 
-test_that("egf_parallel", {
+
+## egf_parallel ######
     x <- egf_parallel()
     expect_type(x, "list")
     expect_s3_class(x, "egf_parallel", exact = TRUE)
@@ -112,9 +112,9 @@ test_that("egf_parallel", {
         expect_type(x$cl, "list")
         expect_s3_class(x$cl, "SOCKcluster")
     }
-})
 
-test_that("egf_plot_control", {
+
+## egf_plot_control ######
     x <- egf_plot_control()
     expect_type(x, "list")
     expect_s3_class(x, "egf_plot_control", exact = TRUE)
@@ -136,4 +136,4 @@ test_that("egf_plot_control", {
         eval(bquote(expect_length(x[[.(s)]], .(length(nest[[s]])))))
         eval(bquote(expect_named(x[[.(s)]], .(nest[[s]]), ignore.order = TRUE)))
     }
-})
+

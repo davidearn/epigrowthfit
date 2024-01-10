@@ -4,7 +4,7 @@ options(warn = 2L, error = recover)
 
 oo <- options(egf.cores = 4L)
 
-test_that("exponential", {
+## exponential ######
     r <- log(2) / 20
     c0 <- 100
 
@@ -24,9 +24,9 @@ test_that("exponential", {
     expect_lt(max(abs(mm$gradient)), 5e-5)
     expect_equal(p1$beta, p2$beta, tolerance = 5e-2)
     expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 5e-2)
-})
 
-test_that("subexponential", {
+
+## subexponential ######
     alpha <- log(2) / 20
     c0 <- 100
     p <- 0.95
@@ -50,9 +50,9 @@ test_that("subexponential", {
     expect_lt(max(abs(mm$gradient)), 5e-4)
     expect_equal(p1$beta, p2$beta, tolerance = 5e-2)
     expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
-})
 
-test_that("gompertz", {
+
+## gompertz ######
     alpha <- log(2) / 20
     tinfl <- 100
     K <- 25000
@@ -72,9 +72,9 @@ test_that("gompertz", {
     expect_lt(max(abs(mm$gradient)), 5e-4)
     expect_equal(p1$beta, p2$beta, tolerance = 5e-2)
     expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
-})
 
-test_that("logistic", {
+
+## logistic ######
     r <- log(2) / 20
     tinfl <- 100
     K <- 25000
@@ -95,9 +95,9 @@ test_that("logistic", {
     expect_lt(max(abs(mm$gradient)), 1e-2)
     expect_equal(p1$beta, p2$beta, tolerance = 1e-2)
     expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
-})
 
-test_that("richards", {
+
+## richards ######
     r <- log(2) / 20
     tinfl <- 100
     K <- 25000
@@ -122,6 +122,6 @@ test_that("richards", {
     expect_lt(max(abs(mm$gradient)), 2e-2)
     expect_equal(p1$beta, p2$beta, tolerance = 5e-3)
     expect_equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
-})
+
 
 options(oo)

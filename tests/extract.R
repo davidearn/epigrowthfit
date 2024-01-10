@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("coef", {
+## coef ######
     o <- egf_cache("egf-2.rds")
     co <- coef(o, full = FALSE)
     expect_type(co, "double")
@@ -24,9 +24,9 @@ test_that("coef", {
     }
     attr(lco_expected, "full") <- FALSE
     expect_identical(lco, lco_expected)
-})
 
-test_that("fixef", {
+
+## fixef ######
     o <- egf_cache("egf-2.rds")
     co <- coef(o, full = TRUE)
     fo <- fixef(o)
@@ -36,9 +36,9 @@ test_that("fixef", {
                               colname = rep.int("(Intercept)", 2L),
                               estimate = co[seq_len(2L)])
     expect_identical(fo, fo_expected)
-})
 
-test_that("ranef", {
+
+## ranef ######
     o <- egf_cache("egf-2.rds")
     co <- coef(o, full = TRUE)
     ro <- ranef(o, build_cov = TRUE)
@@ -58,22 +58,22 @@ test_that("ranef", {
     names(Sigma_expected) <- levels(ro$cov)
     dimnames(Sigma_expected[[1L]])[1:2] <- list(levels(ro$top))
     expect_identical(Sigma, Sigma_expected)
-})
 
-test_that("vcov", {
+
+## vcov ######
     o <- egf_cache("egf-1.rds")
     expect_identical(vcov(o), o$sdreport$cov.fixed)
-})
 
-test_that("getCall", {
+
+## getCall ######
     o <- list(call = call("egf.method"))
     class(o) <- "egf"
     expect_identical(getCall(o), call("egf"))
     class(o) <- "egf_no_fit"
     expect_identical(getCall(o), call("egf"))
-})
 
-test_that("model.frame", {
+
+## model.frame ######
     o <- egf_cache("egf-1.rds")
 
     mf0 <- model.frame(o, which = "ts", full = FALSE)
@@ -96,9 +96,9 @@ test_that("model.frame", {
     dd <- cbind(dd, o$frame$append)
     dd[duplicated(names(dd))] <- NULL
     expect_identical(mf5, dd)
-})
 
-test_that("model.matrix", {
+
+## model.matrix ######
     o <- egf_cache("egf-1.rds")
     fo <- fixef(o)
     ro <- ranef(o)
@@ -121,15 +121,15 @@ test_that("model.matrix", {
     Z11 <- model.matrix(o, which = "random", top = "log(r)",
                         random = (1 | country:wave))
     expect_identical(Z1, Z11)
-})
 
-test_that("terms", {
+
+## terms ######
     o <- egf_cache("egf-1.rds")
     expect_identical(terms(o, top = "log(r)"),
                      terms(model.frame(o, which = "parameters", top="log(r)")))
-})
 
-test_that("formula", {
+
+## formula ######
     split.formula <- function(x) {
         l <- split_effects(x)
         res <- l$fixed
@@ -141,30 +141,30 @@ test_that("formula", {
     fo1 <- formula(o, top = "log(r)", split = TRUE)
     expect_identical(fo0, formula(terms(o, top = "log(r)")))
     expect_identical(fo1, split(fo0))
-})
 
-test_that("nobs", {
+
+## nobs ######
     o <- egf_cache("egf-1.rds")
     mf <- model.frame(o, which = "ts", full = FALSE)
     expect_identical(nobs(o), sum(!is.na(mf$x)))
-})
 
-test_that("df.residual", {
+
+## df.residual ######
     o <- egf_cache("egf-1.rds")
     expect_identical(df.residual(o), as.double(nobs(o)) - sum(!o$random))
-})
 
-test_that("logLik", {
+
+## logLik ######
     o <- egf_cache("egf-1.rds")
     expect_identical(logLik(o), structure(-o$value,
                                           df = sum(!o$random),
                                           nobs = nobs(o),
                                           class = "logLik"))
-})
 
-test_that("extractAIC", {
+
+## extractAIC ######
     o <- egf_cache("egf-1.rds")
     ll <- logLik(o)
     edf <- attr(ll, "df")
     expect_identical(extractAIC(o), c(edf, -2 * as.double(ll) + 2 * edf))
-})
+

@@ -2,7 +2,7 @@ library(epigrowthfit)
 options(warn = 2L, error = recover)
 
 
-test_that("Normal", {
+## Normal ######
     mu <- rnorm(10L)
     sigma <- rlnorm(5L)
     prior <- Normal(mu = mu, sigma = sigma)
@@ -23,9 +23,9 @@ test_that("Normal", {
     expect_error(Normal(mu = mu, sigma = Inf))
     expect_error(Normal(mu = mu, sigma = 0))
     expect_error(Normal(mu = mu, sigma = -1))
-})
 
-test_that("LKJ", {
+
+## LKJ ######
     eta <- c(0.1, 1, 10)
     prior <- LKJ(eta = eta)
     expect_type(prior, "list")
@@ -39,9 +39,9 @@ test_that("LKJ", {
     expect_error(LKJ(eta = Inf))
     expect_error(LKJ(eta = 0))
     expect_error(LKJ(eta = -1))
-})
 
-test_that("(Inverse)?Wishart", {
+
+## (Inverse)?Wishart ######
     df <- 8
     A <- matrix(rnorm(16L), 4L, 4L)
     scale <- A %*% t(A)
@@ -66,4 +66,4 @@ test_that("(Inverse)?Wishart", {
                      prior)
     expect_identical(InverseWishart(df = df, scale = scale),
                      replace(prior, "family", list("invwishart")))
-})
+
