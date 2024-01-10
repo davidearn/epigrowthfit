@@ -47,12 +47,12 @@ distributions. It is assumed
 }
 }
 \examples{
-data(plague_latent_period)
-latent <- plague_latent_period$relfreq
+latent <- c(0.026, 0.104, 0.182, 0.246, 0.318, 0.104,
+            0.013, 0.004, 0.003)
 m <- length(latent)
 
-data(plague_infectious_period)
-infectious <- plague_infectious_period$relfreq
+infectious <- c(0.138, 0.462, 0.256, 0.078, 0.041, 0.007,
+                0.004, 0.004, 0.006, 0.004)
 n <- length(infectious)
 
 ## Histogram of samples
