@@ -27,7 +27,7 @@ options(warn = 2L, error = recover)
                cbind(x, y, z) ~ g,
                not_cbind(x, y) ~ g)
     e2 <- function(x) {
-        eval(bquote(expect_error(egf_sanitize_formula(.(x)))))
+        eval(bquote(assertError(egf_sanitize_formula(.(x)))))
     }
     lapply(l2, e2)
 
@@ -54,7 +54,7 @@ options(warn = 2L, error = recover)
     l3 <- replace(l2, "log(c0)", list(~x))
     identical(sanitize(fp3), l3, ignore_formula_env = TRUE)
 
-    expect_warning(sanitize(~0 + x))
+    assertWarning(sanitize(~0 + x))
 
 
 ## egf_make_frame ######

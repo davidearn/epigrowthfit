@@ -12,8 +12,8 @@ options(warn = 2L, error = recover)
     all.equal(compute_final_size(R0 = R0, S0 = S0, I0 = I0), Z)
     all.equal(compute_final_size(R0 = 0, S0 = S0, I0 = I0), double(n))
     all.equal(compute_final_size(R0 = Inf, S0 = S0, I0 = I0), S0)
-    expect_warning(compute_final_size(R0 = -1, S0 = 1, I0 = 0), "NA")
-    expect_warning(compute_final_size(R0 = 1, S0 = 1, I0 = 0.1), "NA")
+    assertWarning(compute_final_size(R0 = -1, S0 = 1, I0 = 0), "NA")
+    assertWarning(compute_final_size(R0 = 1, S0 = 1, I0 = 0.1), "NA")
 
 
 ## compute_R0 ######
@@ -28,7 +28,7 @@ options(warn = 2L, error = recover)
     .compute_R0 <- function(x) compute_R0(r = x, breaks = breaks, probs = probs)
     all.equal(.compute_R0(r), vapply(r, f, 0))
     all.equal(.compute_R0(c(0, NA, NaN, Inf)), c(1, NA, NaN, Inf))
-    expect_warning(.compute_R0(-1), "NA")
+    assertWarning(.compute_R0(-1), "NA")
     .compute_R0 <- function(x) compute_R0(r = r, breaks = breaks, probs = x)
     all.equal(.compute_R0(probs), .compute_R0(100 * probs))
 
@@ -39,7 +39,7 @@ options(warn = 2L, error = recover)
     tdoubling <- compute_tdoubling(r = r, per = per)
     identical(tdoubling,
                      structure(log(2) / r, per = per, class = "tdoubling"))
-    expect_warning(compute_tdoubling(-1), "NA")
+    assertWarning(compute_tdoubling(-1), "NA")
 
     capture.output({
         expect_condition(print(tdoubling), regexp = NA)

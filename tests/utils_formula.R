@@ -47,7 +47,7 @@ options(warn = 2L, error = recover)
     x <- quote(a:b:I(f:g):log(h))
     l <- list(quote(a), quote(b), quote(I(f:g)), quote(log(h)))
     identical(split_interaction(x), l)
-    expect_error(split_interaction(list()))
+    assertError(split_interaction(list()))
 
 
 ## gsub_bar_plus ######

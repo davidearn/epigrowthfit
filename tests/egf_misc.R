@@ -64,7 +64,7 @@ options(warn = 2L, error = recover)
     sdr <- o$sdreport
     identical(egf_get_sdreport(o)$cov.fixed, sdr$cov.fixed)
     o$sdreport <- NULL
-    expect_warning(all.equal(egf_get_sdreport(o)$cov.fixed, sdr$cov.fixed))
+    assertWarning(all.equal(egf_get_sdreport(o)$cov.fixed, sdr$cov.fixed))
 
 
 ## egf_preprofile ######

@@ -19,7 +19,7 @@ data <- data.frame(x = 1:10,
                      10:1)
     identical(egf_eval_order(NULL, data), seq_len(10L))
     identical(egf_eval_order(c(1:5, 10:6), data), c(1:5, 10:6))
-    expect_error(egf_eval_order(1:5, data))
+    assertError(egf_eval_order(1:5, data))
 
 
 ## egf_eval_append ######

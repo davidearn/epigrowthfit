@@ -4,24 +4,24 @@ options(warn = 2L, error = recover)
 
 ## stopifnot1 ######
     expect_null(stopifnot1(TRUE))
-    expect_error(stopifnot1(FALSE))
-    expect_error(stopifnot1(NA))
-    expect_error(stopifnot1(NULL))
-    expect_error(stopifnot1(c(TRUE, FALSE)))
-    expect_error(stopifnot1(1))
-    expect_error(stopifnot1(TRUE, FALSE))
-    expect_error(stopifnot1(FALSE, m = "bar"), "bar")
+    assertError(stopifnot1(FALSE))
+    assertError(stopifnot1(NA))
+    assertError(stopifnot1(NULL))
+    assertError(stopifnot1(c(TRUE, FALSE)))
+    assertError(stopifnot1(1))
+    assertError(stopifnot1(TRUE, FALSE))
+    assertError(stopifnot1(FALSE, m = "bar"), "bar")
 
 
 ## warnifnot1 ######
     expect_null(warnifnot1(TRUE))
-    expect_warning(warnifnot1(FALSE))
-    expect_warning(warnifnot1(NA))
-    expect_warning(warnifnot1(NULL))
-    expect_warning(warnifnot1(c(TRUE, FALSE)))
-    expect_warning(warnifnot1(1))
-    expect_warning(warnifnot1(TRUE, FALSE))
-    expect_warning(warnifnot1(FALSE, m = "bar"), "bar")
+    assertWarning(warnifnot1(FALSE))
+    assertWarning(warnifnot1(NA))
+    assertWarning(warnifnot1(NULL))
+    assertWarning(warnifnot1(c(TRUE, FALSE)))
+    assertWarning(warnifnot1(1))
+    assertWarning(warnifnot1(TRUE, FALSE))
+    assertWarning(warnifnot1(FALSE, m = "bar"), "bar")
 
 
 ## is_true_or_false ######

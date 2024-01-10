@@ -15,5 +15,5 @@ options(warn = 2L, error = recover)
             identical(flag[[.(s)]][2L], -1L)
         }))
     }
-    expect_error(egf_get_flag(c("foo", "bar"), "invalid type"))
+    assertError(egf_get_flag(c("foo", "bar"), "invalid type"))
 

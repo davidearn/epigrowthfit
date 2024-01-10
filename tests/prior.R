@@ -12,17 +12,17 @@ options(warn = 2L, error = recover)
                      list(family = "norm",
                           parameters = list(mu = mu, sigma = sigma)))
 
-    expect_error(Normal(mu = "1",        sigma = sigma))
-    expect_error(Normal(mu = double(0L), sigma = sigma))
-    expect_error(Normal(mu = NA_real_,   sigma = sigma))
-    expect_error(Normal(mu = Inf,        sigma = sigma))
+    assertError(Normal(mu = "1",        sigma = sigma))
+    assertError(Normal(mu = double(0L), sigma = sigma))
+    assertError(Normal(mu = NA_real_,   sigma = sigma))
+    assertError(Normal(mu = Inf,        sigma = sigma))
 
-    expect_error(Normal(mu = mu, sigma = "1"))
-    expect_error(Normal(mu = mu, sigma = double(0L)))
-    expect_error(Normal(mu = mu, sigma = NA_real_))
-    expect_error(Normal(mu = mu, sigma = Inf))
-    expect_error(Normal(mu = mu, sigma = 0))
-    expect_error(Normal(mu = mu, sigma = -1))
+    assertError(Normal(mu = mu, sigma = "1"))
+    assertError(Normal(mu = mu, sigma = double(0L)))
+    assertError(Normal(mu = mu, sigma = NA_real_))
+    assertError(Normal(mu = mu, sigma = Inf))
+    assertError(Normal(mu = mu, sigma = 0))
+    assertError(Normal(mu = mu, sigma = -1))
 
 
 ## LKJ ######
@@ -33,12 +33,12 @@ options(warn = 2L, error = recover)
     identical(unclass(prior),
                      list(family = "lkj", parameters = list(eta = eta)))
 
-    expect_error(LKJ(eta = "1"))
-    expect_error(LKJ(eta = double(0L)))
-    expect_error(LKJ(eta = NA_real_))
-    expect_error(LKJ(eta = Inf))
-    expect_error(LKJ(eta = 0))
-    expect_error(LKJ(eta = -1))
+    assertError(LKJ(eta = "1"))
+    assertError(LKJ(eta = double(0L)))
+    assertError(LKJ(eta = NA_real_))
+    assertError(LKJ(eta = Inf))
+    assertError(LKJ(eta = 0))
+    assertError(LKJ(eta = -1))
 
 
 ## (Inverse)?Wishart ######
@@ -58,9 +58,9 @@ options(warn = 2L, error = recover)
                  list(family = "wishart",
                       parameters = list(df = df, scale=list(c(log_sd, chol)))))
 
-    expect_error(Wishart(df = 3, scale = scale)) # 'df' not greater than 'n - 1'
-    expect_error(Wishart(df = df, scale = A)) # 'scale' not symmetric
-    expect_error(Wishart(df = df, scale = diag(0:3))) # 'scale' not positive definite
+    assertError(Wishart(df = 3, scale = scale)) # 'df' not greater than 'n - 1'
+    assertError(Wishart(df = df, scale = A)) # 'scale' not symmetric
+    assertError(Wishart(df = df, scale = diag(0:3))) # 'scale' not positive definite
 
     identical(Wishart(df = df, scale = list(scale)),
                      prior)

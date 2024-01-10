@@ -30,12 +30,12 @@ options(warn = 2L, error = recover)
     identical(egf_link_match("logit"),
                      function(p) qlogis(p),
                      ignore_function_env = TRUE)
-    expect_error(egf_link_match("invalid name"))
+    assertError(egf_link_match("invalid name"))
 
     identical(egf_link_match("identity", inverse = TRUE), identity)
     identical(egf_link_match("log", inverse = TRUE), exp)
     identical(egf_link_match("logit", inverse = TRUE),
                      function(q) plogis(q),
                      ignore_function_env = TRUE)
-    expect_error(egf_link_match("invalid name", inverse = TRUE))
+    assertError(egf_link_match("invalid name", inverse = TRUE))
 
