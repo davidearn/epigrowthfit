@@ -1,6 +1,6 @@
 \docType{data}
-\name{canadacovid}
-\alias{canadacovid}
+\name{covid19.canada}
+\alias{covid19.canada}
 \title{COVID-19 in Canadian provinces and territories}
 \format{
 A \link[=data.frame]{data frame} with 5451 rows and 4 variables:
@@ -30,15 +30,15 @@ Up-to-date data can be downloaded
 \href{https://wzmli.github.io/COVID19-Canada/COVID19_Canada.csv}{here}.
 }
 \usage{
-data(canadacovid)
+data(covid19.canada)
 }
 \description{
 Daily confirmations of COVID-19 in Canadian provinces
 and territories, from first confirmation to May 8, 2021.
 }
 \examples{
-data(canadacovid)
-subset(canadacovid, province == "ON", -province)
+data(covid19.canada)
+subset(covid19.canada, province == "ON", -province)
 
 }
 \keyword{datasets}
