@@ -1,0 +1,34 @@
+* TODO Submit epigrowthfit 0.15.0 to CRAN
+
+** TODO Finish transition away from testthat
+
+Easy stuff done with 'sed -e s/*/*/g'; rest "by hand".
+
+** TODO De-activate "features" no longer wanted in API
+
+Mostly straightforward, but documentation must be updated.
+
+*** TODO plot(<egf_confint>, type = "boxes")
+*** TODO confint(<egf>, top = c("R0", "tdoubling"))
+*** TODO '.subset', '.append' arguments to methods [replace with 'nse' flag]
+
+** TODO API change: user should specify cumulative incidence
+
+So that future changes for non-count data are backwards compatible.
+
+Will resolve awkwardness with interval incidence: first observation
+is often discarded unnecessarily.
+
+** TODO Prior distribution density function should integrate to one
+
+So that later transition to TMB entry points is backwards compatible.
+https://github.com/kaskr/adcomp/issues/351
+
+** TODO Update README.md
+
+Should definitely happen, even if it is in .Rbuildignore.
+
+
+* TODO Submit epigrowthfit 0.15.1 to CRAN
+
+** TODO Simple vignette ...
