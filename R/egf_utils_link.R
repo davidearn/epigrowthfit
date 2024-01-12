@@ -81,13 +81,13 @@ function(f, inverse = FALSE) {
 		switch(f,
 		       identity = identity,
 		       log = exp,
-		       logit = function(q) plogis(q),
+		       logit = plogis,
 		       stop("Link not implemented."))
 	} else {
 		switch(f,
 		       identity = identity,
 		       log = log,
-		       logit = function(p) qlogis(p),
+		       logit = qlogis,
 		       stop("Link not implemented."))
 	}
 }
