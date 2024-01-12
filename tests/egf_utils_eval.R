@@ -1,5 +1,5 @@
 library(epigrowthfit)
-options(warn = 2L, error = recover)
+options(warn = 2L, error = if (interactive()) recover)
 
 
 data <- data.frame(x = 1:10,
