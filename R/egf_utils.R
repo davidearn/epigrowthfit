@@ -60,7 +60,7 @@ function(formula_parameters, names_parameters, check_intercept) {
 		g <- function(x) simplify_terms(x[-2L])
 		formula_parameters <- lapply(formula_parameters, g)
 		need <- setdiff(names_parameters, names(formula_parameters))
-		formula_parameters[need] <- list(~1)
+		formula_parameters[need] <- list(`environment<-`(~1, globalenv()))
 		formula_parameters <- formula_parameters[names_parameters]
 	}
 	if (check_intercept) {
