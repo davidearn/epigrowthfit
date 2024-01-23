@@ -1,37 +1,38 @@
 library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
+o.1  <- egf_cache(        "egf-1.rds")
+o.1s <- egf_cache("summary-egf-1.rds")
+o.1f <- egf_cache( "fitted-egf-1.rds")
+
 
 ## object ##############################################################
 
-o <- egf_cache("egf-1.rds")
-so <- egf_cache("summary-egf-1.rds")
-fo <- egf_cache("fitted-egf-1.rds")
-
-is.list(so)
-identical(oldClass(so), "egf_summary")
-length(so) == 5L
-identical(names(so), c("fitted", "convergence", "value", "gradient", "hessian"))
-identical(so$convergence, o$optimizer_out$convergence)
-identical(so$value, o$value)
-identical(so$gradient, o$gradient)
-identical(so$hessian, o$hessian)
-
-is.double(so$fitted)
-identical(dim(so$fitted), c(6L, nlevels(fo$top)))
-identical(dimnames(so$fitted),
-                 list(names(summary(0)), levels(fo$top)))
-for (s in colnames(so$fitted)) {
-    eval(bquote(all.equal(so$fitted[, .(s)],
-                             c(summary(fo$estimate[fo$top == .(s)])))))
+## FIXME: working around apparent bug in simplify2array
+s2a <-
+function(...) {
+	r <- simplify2array(...)
+	array(r, dim = unname(dim(r)), dimnames = dimnames(r))
 }
+
+stopifnot(exprs = {
+	is.list(o.1s)
+	identical(oldClass(o.1s), "egf_summary")
+	length(o.1s) == 5L
+	identical(names(o.1s), c("fitted", "convergence", "value", "gradient", "hessian"))
+	identical(o.1s[["convergence"]], o.1[["optimizer_out"]][["convergence"]])
+	identical(o.1s[["value"]], o.1[["value"]])
+	identical(o.1s[["gradient"]], o.1[["gradient"]])
+	identical(o.1s[["hessian"]], o.1[["hessian"]])
+	all.equal(o.1s[["fitted"]],
+	          s2a(tapply(o.1f[["estimate"]], o.1f[["top"]], summary)))
+})
 
 
 ## print ###############################################################
 
-so <- egf_cache("summary-egf-1.rds")
-capture.output({
-    expect_condition(print(so), regexp = NA)
-    identical(print(so), so)
-    expect_invisible(print(so))
+vv <- withVisible(print(o.1s))
+stopifnot(exprs = {
+	identical(vv[["value"]], o.1s)
+	identical(vv[["visible"]], FALSE)
 })

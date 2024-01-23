@@ -17,4 +17,5 @@ zz <- simulate(egf_model(curve = "logistic", family = "nbinom",
                mu = log(c(r, tinfl, K, disp, w)),
                cstart = 10)
 mm <- egf(zz)
-all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+
+stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))

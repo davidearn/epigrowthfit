@@ -12,9 +12,9 @@ zz <- simulate(egf_model(curve = "exponential", family = "pois"),
                seed = 412575L,
                mu = log(c(r, c0)),
                cstart = 10)
-
 mm <- egf(zz)
-all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+
+stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))
 
 
 ## subexponential ######################################################
@@ -28,9 +28,10 @@ zz <- simulate(egf_model(curve = "subexponential", family = "pois"),
                seed = 696182L,
                mu = c(log(alpha), log(c0), qlogis(p)),
                cstart = 10)
+mm <- egf(zz,
+          formula_priors = list(logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)))
 
-mm <- egf(zz, formula_priors = list(logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)))
-all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))
 
 
 ## gompertz ############################################################
@@ -44,9 +45,9 @@ zz <- simulate(egf_model(curve = "gompertz", family = "pois"),
                seed = 720748L,
                mu = log(c(alpha, tinfl, K)),
                cstart = 10)
-
 mm <- egf(zz)
-all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+
+stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))
 
 
 ## logistic ############################################################
@@ -60,9 +61,9 @@ zz <- simulate(egf_model(curve = "logistic", family = "pois"),
                seed = 366465L,
                mu = log(c(r, tinfl, K)),
                cstart = 10)
-
 mm <- egf(zz)
-all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+
+stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))
 
 
 ## richards ############################################################
@@ -77,6 +78,7 @@ zz <- simulate(egf_model(curve = "richards", family = "pois"),
                seed = 51520L,
                mu = log(c(r, tinfl, K, a)),
                cstart = 10)
+mm <- egf(zz,
+          formula_priors = list(log(a) ~ Normal(mu = log(a), sigma = 0.05)))
 
-mm <- egf(zz, formula_priors = list(log(a) ~ Normal(mu = log(a), sigma = 0.05)))
-all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
+stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))

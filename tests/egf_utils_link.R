@@ -30,14 +30,10 @@ identical(egf_link_extract("r"), NA_character_)
 
 identical(egf_link_match("identity"), identity)
 identical(egf_link_match("log"), log)
-identical(egf_link_match("logit"),
-                 function(p) qlogis(p),
-                 ignore_function_env = TRUE)
+identical(egf_link_match("logit"), qlogis)
 assertError(egf_link_match("invalid name"))
 
 identical(egf_link_match("identity", inverse = TRUE), identity)
 identical(egf_link_match("log", inverse = TRUE), exp)
-identical(egf_link_match("logit", inverse = TRUE),
-                 function(q) plogis(q),
-                 ignore_function_env = TRUE)
+identical(egf_link_match("logit", inverse = TRUE), plogis)
 assertError(egf_link_match("invalid name", inverse = TRUE))
