@@ -1,4 +1,4 @@
-library(epigrowthfit)
+attach(asNamespace("epigrowthfit"))
 options(warn = 2L, error = if (interactive()) recover)
 
 
