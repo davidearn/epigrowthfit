@@ -2,7 +2,8 @@ library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## object ######
+## object ##############################################################
+
 co1 <- egf_cache("confint-egf-1.rds")
 co2 <- egf_cache("confint-egf-2.rds")
 co3 <- egf_cache("confint-egf-3.rds")
@@ -26,8 +27,8 @@ identical(oldClass(co3), c("egf_confint", "data.frame"))
 all.equal(co3, co2, tolerance = 1e-3, ignore_attr = "method")
 
 
-## parallel ######
-skip_on_cran()
+## parallel ############################################################
+
 o <- egf_cache("egf-1.rds")
 co3 <- egf_cache("confint-egf-3.rds")
 
@@ -38,7 +39,6 @@ co3_multicore <-
             parallel = egf_parallel(method = "multicore", cores = 2L))
 all.equal(co3_multicore, co3)
 
-## skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
 co3_snow <-
     confint(o,
             method = "uniroot",
@@ -47,8 +47,8 @@ co3_snow <-
 all.equal(co3_snow, co3)
 
 
-## plot ######
-skip_on_cran()
+## plot ################################################################
+
 co1 <- egf_cache("confint-egf-1.rds")
 
 bars <- function() {
@@ -56,14 +56,9 @@ bars <- function() {
     on.exit(par(op))
     plot(co1, type = "bars")
 }
-## vdiffr::expect_doppelganger("plot-egf_confint-1", fig = bars)
 
 boxes <- function() {
     op <- par(mar = c(0.2, 0, 0.2, 0), oma = c(4.5, 6, 2, 1), las = 1)
     on.exit(par(op))
     plot(co1, type = "boxes")
 }
-## vdiffr::expect_doppelganger("plot-egf_confint-2", fig = boxes)
-
-TRUE # otherwise test is considered skipped
-

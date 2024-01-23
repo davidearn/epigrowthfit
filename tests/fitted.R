@@ -2,7 +2,8 @@ library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## object ######
+## object ##############################################################
+
 o <- egf_cache("egf-1.rds")
 fo <- egf_cache("fitted-egf-1.rds")
 fo_expected <-
@@ -17,7 +18,8 @@ class(fo_expected) <- c("egf_fitted", "data.frame")
 identical(fo, fo_expected)
 
 
-## confint ######
+## confint #############################################################
+
 fo <- egf_cache("fitted-egf-1.rds")
 cfo <- confint(fo, level = 0.95)
 cfo_expected <- fo
@@ -27,4 +29,3 @@ attr(cfo_expected, "level") <- 0.95
 attr(cfo_expected, "se") <- NULL
 class(cfo_expected) <- "data.frame"
 identical(cfo, cfo_expected)
-

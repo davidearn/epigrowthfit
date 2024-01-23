@@ -2,7 +2,8 @@ library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## day_of_week ######
+## day_of_week #########################################################
+
 r <- log(2) / 20
 tinfl <- 100
 K <- 25000
@@ -17,4 +18,3 @@ zz <- simulate(egf_model(curve = "logistic", family = "nbinom",
                cstart = 10)
 mm <- egf(zz)
 all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
-

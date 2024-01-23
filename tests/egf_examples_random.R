@@ -1,10 +1,11 @@
 library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
-
 oo <- options(egf.cores = 4L)
 
-## exponential ######
+
+## exponential #########################################################
+
 r <- log(2) / 20
 c0 <- 100
 
@@ -26,7 +27,8 @@ all.equal(p1$beta, p2$beta, tolerance = 5e-2)
 all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 5e-2)
 
 
-## subexponential ######
+## subexponential ######################################################
+
 alpha <- log(2) / 20
 c0 <- 100
 p <- 0.95
@@ -52,7 +54,8 @@ all.equal(p1$beta, p2$beta, tolerance = 5e-2)
 all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
 
-## gompertz ######
+## gompertz ############################################################
+
 alpha <- log(2) / 20
 tinfl <- 100
 K <- 25000
@@ -74,7 +77,8 @@ all.equal(p1$beta, p2$beta, tolerance = 5e-2)
 all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
 
-## logistic ######
+## logistic ############################################################
+
 r <- log(2) / 20
 tinfl <- 100
 K <- 25000
@@ -97,7 +101,8 @@ all.equal(p1$beta, p2$beta, tolerance = 1e-2)
 all.equal(theta2cov(p1$theta), theta2cov(p2$theta), tolerance = 2e-2)
 
 
-## richards ######
+## richards ############################################################
+
 r <- log(2) / 20
 tinfl <- 100
 K <- 25000

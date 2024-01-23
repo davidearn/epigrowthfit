@@ -3,7 +3,8 @@ library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## compute_final_size ######
+## compute_final_size ##################################################
+
 n <- 10L
 R0 <- rlnorm(n, 0, 2)
 S0 <- runif(n, 0, 1)
@@ -17,7 +18,8 @@ assertWarning(compute_final_size(R0 = -1, S0 = 1, I0 = 0), "NA")
 assertWarning(compute_final_size(R0 = 1, S0 = 1, I0 = 0.1), "NA")
 
 
-## compute_R0 ######
+## compute_R0 ##########################################################
+
 r <- rlnorm(10L, -3, 1)
 breaks <- 0:20
 probs <- diff(pgamma(breaks, shape = 1, scale = 2.5))
@@ -34,7 +36,8 @@ assertWarning(.compute_R0(-1), "NA")
 all.equal(.compute_R0(probs), .compute_R0(100 * probs))
 
 
-## compute_tdoubling ######
+## compute_tdoubling ###################################################
+
 r <- c(rlnorm(10L, -3, 1), 0, NA, NaN, Inf)
 per <- 1L
 tdoubling <- compute_tdoubling(r = r, per = per)
@@ -47,4 +50,3 @@ capture.output({
     identical(print(tdoubling), tdoubling)
     expect_invisible(print(tdoubling))
 })
-

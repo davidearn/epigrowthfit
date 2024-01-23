@@ -3,7 +3,8 @@ library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## egf_get_flag ######
+## egf_get_flag ########################################################
+
 f <- function(type, enum) egf_get_flag(c(enum, "invalid enum"), type)
 flag <- Map(f,
             type = c("curve", "family", "prior"),
@@ -17,4 +18,3 @@ for (s in names(flag)) {
     }))
 }
 assertError(egf_get_flag(c("foo", "bar"), "invalid type"))
-

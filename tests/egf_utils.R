@@ -4,7 +4,8 @@ library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## egf_sanitize_formula ######
+## egf_sanitize_formula ################################################
+
 l1 <- list(cbind(x, y) ~ 1,
            cbind(x, y) ~ g,
            cbind(x, y) ~ 1 + g,
@@ -34,7 +35,8 @@ e2 <- function(x) {
 lapply(l2, e2)
 
 
-## egf_sanitize_formula_parameters ######
+## egf_sanitize_formula_parameters #####################################
+
 model <- egf_model(curve = "exponential", excess = FALSE,
                    family = "pois", day_of_week = FALSE)
 names_parameters <- egf_get_names_top(model, link = TRUE)
@@ -59,7 +61,8 @@ identical(sanitize(fp3), l3, ignore_formula_env = TRUE)
 assertWarning(sanitize(~0 + x))
 
 
-## egf_make_frame ######
+## egf_make_frame ######################################################
+
 model <- egf_model(curve = "exponential", family = "pois")
 formula_ts <- cbind(day, count) ~ country
 formula_windows <- cbind(left, right) ~ country
@@ -141,7 +144,8 @@ row.names(o4_expected) <- NULL
 identical(o4, o4_expected)
 
 
-## egf_make_priors ######
+## egf_make_priors #####################################################
+
 top <- list(names = c("foo(bar)", "baz"), family = "norm")
 beta <- list(length = 4L, family = "norm")
 theta <- list(length = 6L, family = "norm")
@@ -178,7 +182,8 @@ identical(priors$bottom,
                       Sigma = list(p4)))
 
 
-## egf_make_X ######
+## egf_make_X ##########################################################
+
 formula <- ~x + y + z
 data <- list(x = double(10L), y = gl(2L, 5L), z = rnorm(10L))
 data <- model.frame(formula, data = data)
@@ -196,7 +201,8 @@ X2 <- structure(X2[, -2L], assign = a$assign[-2L], contrasts = a$contrasts)
 identical(X1, X2)
 
 
-## egf_make_Z ######
+## egf_make_Z ##########################################################
+
 bar <- quote(x - 1 | f:g)
 data <- list(x = rnorm(10L), f = gl(5L, 2L), g = gl(2L, 5L))
 data <- model.frame(~x - 1 + f:g, data = data)
@@ -213,7 +219,8 @@ attr(Z2, "level") <- gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5
 identical(Z1, Z2)
 
 
-## egf_combine_X ######
+## egf_combine_X #######################################################
+
 fixed <- list(a = ~x, b = ~f)
 data <- data.frame(x = 1:6, f = gl(2L, 3L))
 l <- egf_combine_X(fixed = fixed,
@@ -239,7 +246,8 @@ identical(l$effects, effects)
 identical(l$contrasts, contrasts)
 
 
-## egf_combine_Z ######
+## egf_combine_Z #######################################################
+
 random <- list(a = quote(x | f), b = quote(y | g))
 data <- data.frame(x = 1:6, y = -1, f = gl(2L, 3L), g = gl(3L, 2L))
 l <- egf_combine_Z(random = random,
@@ -280,4 +288,3 @@ effects <- data.frame(cov, vec, bottom, top, term, group, level, colname)
 identical(l$Z, Z)
 identical(l$effects, effects)
 is.null(l$contrasts)
-

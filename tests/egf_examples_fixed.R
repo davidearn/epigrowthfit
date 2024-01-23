@@ -2,7 +2,8 @@ library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## exponential ######
+## exponential #########################################################
+
 r <- log(2) / 20
 c0 <- 100
 
@@ -16,7 +17,8 @@ mm <- egf(zz)
 all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 
 
-## subexponential ######
+## subexponential ######################################################
+
 alpha <- log(2) / 20
 c0 <- 100
 p <- 0.95
@@ -31,7 +33,8 @@ mm <- egf(zz, formula_priors = list(logit(p) ~ Normal(mu = qlogis(p), sigma = 0.
 all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 
 
-## gompertz ######
+## gompertz ############################################################
+
 alpha <- log(2) / 20
 tinfl <- 100
 K <- 25000
@@ -46,7 +49,8 @@ mm <- egf(zz)
 all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 
 
-## logistic ######
+## logistic ############################################################
+
 r <- log(2) / 20
 tinfl <- 100
 K <- 25000
@@ -61,7 +65,8 @@ mm <- egf(zz)
 all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
 
 
-## richards ######
+## richards ############################################################
+
 r <- log(2) / 20
 tinfl <- 100
 K <- 25000
@@ -75,4 +80,3 @@ zz <- simulate(egf_model(curve = "richards", family = "pois"),
 
 mm <- egf(zz, formula_priors = list(log(a) ~ Normal(mu = log(a), sigma = 0.05)))
 all.equal(coef(mm, full = TRUE), coef(zz), tolerance = 5e-2)
-

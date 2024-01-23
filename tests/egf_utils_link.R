@@ -3,7 +3,8 @@ library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## egf_link_(get|add|remove|extract) ######
+## egf_link_(get|add|remove|extract) ###################################
+
 x0 <- egf_get_names_top(NULL, link = FALSE)
 x1 <- egf_link_add(x0)
 link <- egf_link_get(x0)
@@ -25,7 +26,8 @@ identical(egf_link_extract("invalid name"), NA_character_)
 identical(egf_link_extract("r"), NA_character_)
 
 
-## egf_link_match ######
+## egf_link_match ######################################################
+
 identical(egf_link_match("identity"), identity)
 identical(egf_link_match("log"), log)
 identical(egf_link_match("logit"),
@@ -39,4 +41,3 @@ identical(egf_link_match("logit", inverse = TRUE),
                  function(q) plogis(q),
                  ignore_function_env = TRUE)
 assertError(egf_link_match("invalid name", inverse = TRUE))
-

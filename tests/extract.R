@@ -2,7 +2,8 @@ library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## coef ######
+## coef ################################################################
+
 o <- egf_cache("egf-2.rds")
 co <- coef(o, full = FALSE)
 is.double(co)
@@ -26,7 +27,8 @@ attr(lco_expected, "full") <- FALSE
 identical(lco, lco_expected)
 
 
-## fixef ######
+## fixef ###############################################################
+
 o <- egf_cache("egf-2.rds")
 co <- coef(o, full = TRUE)
 fo <- fixef(o)
@@ -38,7 +40,8 @@ fo_expected <- data.frame(bottom = disambiguate(rep.int("beta", 2L)),
 identical(fo, fo_expected)
 
 
-## ranef ######
+## ranef ###############################################################
+
 o <- egf_cache("egf-2.rds")
 co <- coef(o, full = TRUE)
 ro <- ranef(o, build_cov = TRUE)
@@ -60,12 +63,14 @@ dimnames(Sigma_expected[[1L]])[1:2] <- list(levels(ro$top))
 identical(Sigma, Sigma_expected)
 
 
-## vcov ######
+## vcov ################################################################
+
 o <- egf_cache("egf-1.rds")
 identical(vcov(o), o$sdreport$cov.fixed)
 
 
-## getCall ######
+## getCall #############################################################
+
 o <- list(call = call("egf.method"))
 class(o) <- "egf"
 identical(getCall(o), call("egf"))
@@ -73,7 +78,8 @@ class(o) <- "egf_no_fit"
 identical(getCall(o), call("egf"))
 
 
-## model.frame ######
+## model.frame #########################################################
+
 o <- egf_cache("egf-1.rds")
 
 mf0 <- model.frame(o, which = "ts", full = FALSE)
@@ -98,7 +104,8 @@ dd[duplicated(names(dd))] <- NULL
 identical(mf5, dd)
 
 
-## model.matrix ######
+## model.matrix ########################################################
+
 o <- egf_cache("egf-1.rds")
 fo <- fixef(o)
 ro <- ranef(o)
@@ -123,13 +130,15 @@ Z11 <- model.matrix(o, which = "random", top = "log(r)",
 identical(Z1, Z11)
 
 
-## terms ######
+## terms ###############################################################
+
 o <- egf_cache("egf-1.rds")
 identical(terms(o, top = "log(r)"),
                  terms(model.frame(o, which = "parameters", top="log(r)")))
 
 
-## formula ######
+## formula #############################################################
+
 split.formula <- function(x) {
     l <- split_effects(x)
     res <- l$fixed
@@ -143,18 +152,21 @@ identical(fo0, formula(terms(o, top = "log(r)")))
 identical(fo1, split(fo0))
 
 
-## nobs ######
+## nobs ################################################################
+
 o <- egf_cache("egf-1.rds")
 mf <- model.frame(o, which = "ts", full = FALSE)
 identical(nobs(o), sum(!is.na(mf$x)))
 
 
-## df.residual ######
+## df.residual #########################################################
+
 o <- egf_cache("egf-1.rds")
 identical(df.residual(o), as.double(nobs(o)) - sum(!o$random))
 
 
-## logLik ######
+## logLik ##############################################################
+
 o <- egf_cache("egf-1.rds")
 identical(logLik(o), structure(-o$value,
                                       df = sum(!o$random),
@@ -162,9 +174,9 @@ identical(logLik(o), structure(-o$value,
                                       class = "logLik"))
 
 
-## extractAIC ######
+## extractAIC ##########################################################
+
 o <- egf_cache("egf-1.rds")
 ll <- logLik(o)
 edf <- attr(ll, "df")
 identical(extractAIC(o), c(edf, -2 * as.double(ll) + 2 * edf))
-

@@ -2,7 +2,8 @@ library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## excess ######
+## excess ##############################################################
+
 r <- log(2) / 20
 tinfl <- 100
 K <- 25000

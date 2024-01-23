@@ -2,7 +2,8 @@ attach(asNamespace("epigrowthfit"))
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## ymd ######
+## ymd #################################################################
+
 x <- c(0, 0.5, NA, NaN, -Inf, Inf)
 Dx <- .Date(x)
 names(Dx) <- letters[seq_along(Dx)]
@@ -19,7 +20,7 @@ R2 <- ymd(Dx, which = "y", drop = TRUE)
 identical(R2, A[, "y", drop = TRUE])
 
 
-## Dround ######
+## Dround ##############################################################
 x <- c(0, 0.5, NA, NaN, -Inf, Inf)
 Dx <- .Date(x)
 names(Dx) <- letters[seq_along(Dx)]
@@ -35,4 +36,3 @@ identical(Dfloor(  Dx, "month"), as.Date("1970-07-01"))
 identical(Dceiling(Dx, "month"), as.Date("1970-08-01"))
 identical(Dfloor(  Dx, "year"),  as.Date("1970-01-01"))
 identical(Dceiling(Dx, "year"),  as.Date("1971-01-01"))
-

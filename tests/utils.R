@@ -2,7 +2,8 @@ attach(asNamespace("epigrowthfit"))
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## disambiguate ######
+## disambiguate ########################################################
+
 x <- c("c", "b", "a", "b", "a",
        "a", "b", "c", "c", "c")
 y <- c("c[1]", "b[1]", "a[1]", "b[2]", "a[2]",
@@ -14,7 +15,8 @@ y <- `names<-`(seq_along(x), y)
 identical(disambiguate(x, nms = TRUE), y)
 
 
-## literal_rle ######
+## literal_rle #########################################################
+
 x <- c(0, NA, NaN, Inf, 1)
 times <- 1:5
 y <- rep.int(x, times)
@@ -23,13 +25,15 @@ identical(rle_y, list(lengths = times, values = x))
 identical(y, inverse.rle(rle_y))
 
 
-## locf ######
+## locf ################################################################
+
 x <- c(NA, NA, 1, NA, 2, 2, 3, NA)
 identical(locf(x), c(NA, NA, 1, 1, 2, 2, 3, 3))
 identical(locf(x, x0 = 0), c(0, 0, 1, 1, 2, 2, 3, 3))
 
 
-## wald ######
+## wald ################################################################
+
 estimate <- rnorm(6L, 0, 1)
 se <- rlnorm(6L, 0, 0.1)
 level <- 0.95
@@ -43,7 +47,8 @@ all.equal(W[, "lower"], estimate - sqrt(q) * se)
 all.equal(W[, "upper"], estimate + sqrt(q) * se)
 
 
-## cov2theta, theta2cov ######
+## cov2theta, theta2cov ################################################
+
 set.seed(230719L)
 n <- 5L
 S <- crossprod(matrix(rnorm(n * n), n, n))
@@ -54,7 +59,8 @@ all.equal(cov2theta(S), theta)
 all.equal(theta2cov(theta), S)
 
 
-## in_place_ragged_apply ######
+## in_place_ragged_apply ###############################################
+
 submean <- function(x) x - mean(x)
 
 x <- 1:10
@@ -66,4 +72,3 @@ x <- as.data.frame(replicate(3L, c(exp(rnorm(5L)), qlogis(runif(5L)))))
 y <- in_place_ragged_apply(x, index = gl(2L, 5L), f = list(log, plogis))
 f <- function(x) c(log(x[1:5]), plogis(x[6:10]))
 identical(y, as.data.frame(lapply(x, f)))
-

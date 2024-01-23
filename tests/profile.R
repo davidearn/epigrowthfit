@@ -2,7 +2,8 @@ library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## object ######
+## object ##############################################################
+
 o <- egf_cache("egf-1.rds")
 po <- egf_cache("profile-egf-1.rds")
 co <- coef(o, full = TRUE)
@@ -28,7 +29,8 @@ identical(c(by(po, po$linear_combination, f)), co[1:2],
                  ignore_attr = "names")
 
 
-## confint ######
+## confint #############################################################
+
 po <- egf_cache("profile-egf-1.rds")
 cpo <- confint(po, level = 0.95)
 n <- nlevels(po$linear_combination)
@@ -45,9 +47,8 @@ all(cpo$lower < cpo$estimate)
 all(cpo$estimate < cpo$upper)
 
 
+## parallel ############################################################
 
-## parallel ######
-skip_on_cran()
 o <- egf_cache("egf-1.rds")
 po <- egf_cache("profile-egf-1.rds")
 
@@ -57,7 +58,6 @@ po_multicore <-
             parallel = egf_parallel(method = "multicore", cores = 2L))
 all.equal(po_multicore, po)
 
-## skip_if_not(is.null(pkgload::dev_meta("epigrowthfit")))
 po_snow <-
     profile(o,
             subset = (country == "A" & wave == 1),
@@ -65,14 +65,10 @@ po_snow <-
 all.equal(po_snow, po)
 
 
-## plot ######
-skip_on_cran()
+## plot ################################################################
+
 po <- egf_cache("profile-egf-1.rds")
 
 f <- function() {
     plot(po, type = "o", bty = "u", las = 1, main = "")
 }
-## vdiffr::expect_doppelganger("plot-egf_profile-1", fig = f)
-
-TRUE # otherwise test is considered skipped
-

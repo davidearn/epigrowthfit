@@ -3,7 +3,8 @@ library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## Normal ######
+## Normal ##############################################################
+
 mu <- rnorm(10L)
 sigma <- rlnorm(5L)
 prior <- Normal(mu = mu, sigma = sigma)
@@ -26,7 +27,8 @@ assertError(Normal(mu = mu, sigma = 0))
 assertError(Normal(mu = mu, sigma = -1))
 
 
-## LKJ ######
+## LKJ #################################################################
+
 eta <- c(0.1, 1, 10)
 prior <- LKJ(eta = eta)
 is.list(prior)
@@ -42,7 +44,8 @@ assertError(LKJ(eta = 0))
 assertError(LKJ(eta = -1))
 
 
-## (Inverse)?Wishart ######
+## (Inverse)?Wishart ###################################################
+
 df <- 8
 A <- matrix(rnorm(16L), 4L, 4L)
 scale <- A %*% t(A)
@@ -67,4 +70,3 @@ identical(Wishart(df = df, scale = list(scale)),
                  prior)
 identical(InverseWishart(df = df, scale = scale),
                  replace(prior, "family", list("invwishart")))
-

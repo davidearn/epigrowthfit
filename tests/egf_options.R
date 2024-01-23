@@ -2,7 +2,8 @@ library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## egf_model ######
+## egf_model ###########################################################
+
 x <- egf_model()
 is.list(x)
 identical(oldClass(x), "egf_model")
@@ -23,7 +24,8 @@ is.integer(x$day_of_week) && length(x$day_of_week) == 1L
 x$day_of_week %in% 0:7
 
 
-## egf_control ######
+## egf_control #########################################################
+
 x <- egf_control()
 is.list(x)
 identical(oldClass(x), "egf_control")
@@ -55,7 +57,8 @@ is.integer(x$omp_num_threads) && length(x$omp_num_threads) == 1L
 x$omp_num_threads > 0L
 
 
-## egf_optimizer ######
+## egf_optimizer #######################################################
+
 x <- egf_optimizer()
 is.list(x)
 identical(oldClass(x), "egf_optimizer")
@@ -72,7 +75,8 @@ is.list(x$args)
 is.list(x$control)
 
 
-## egf_inner_optimizer ######
+## egf_inner_optimizer #################################################
+
 x <- egf_inner_optimizer()
 identical(oldClass(x), "egf_inner_optimizer")
 is.list(x)
@@ -89,7 +93,8 @@ if (x$method == "newton") {
 }
 
 
-## egf_parallel ######
+## egf_parallel ########################################################
+
 x <- egf_parallel()
 is.list(x)
 identical(oldClass(x), "egf_parallel")
@@ -114,7 +119,8 @@ if (!is.null(x$cl)) {
 }
 
 
-## egf_plot_control ######
+## egf_plot_control ####################################################
+
 x <- egf_plot_control()
 is.list(x)
 identical(oldClass(x), "egf_plot_control")
@@ -136,4 +142,3 @@ for (s in names(nest)) {
     eval(bquote(length(x[[.(s)]]) == .(length(nest[[s]]))))
     eval(bquote(identical(names(x[[.(s)]]), .(nest[[s]]))))
 }
-

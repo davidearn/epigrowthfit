@@ -4,7 +4,8 @@ library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## egf_get_names_top ######
+## egf_get_names_top ###################################################
+
 x <- egf_get_names_top(NULL, link = FALSE)
 is.character(x)
 length(x) > 0L
@@ -22,7 +23,8 @@ class(o) <- "egf"
 identical(egf_get_names_top(o, link = FALSE), x0)
 
 
-## egf_has_random ######
+## egf_has_random ######################################################
+
 e <- new.env()
 e$data <- list()
 o <- list(tmb_out = list(env = e))
@@ -35,7 +37,8 @@ e$data$Z <- matrix(double(0L), 3L, 0L)
 !egf_has_random(o)
 
 
-## egf_has_converged ######
+## egf_has_converged ###################################################
+
 o <- list(optimizer_out = list(convergence = 0L),
           value = 100,
           gradient = runif(10, -0.5, 0.5),
@@ -50,7 +53,8 @@ egf_has_converged(o)
 identical(egf_has_converged(within(o, hessian <- NA)), NA)
 
 
-## egf_(expand|condense)_par ######
+## egf_(expand|condense)_par ###########################################
+
 o <- egf_cache("egf-2.rds")
 par <- o$tmb_out$env$last.par.best
 len <- c(table(factor(names(par), levels = c("beta", "theta", "b"))))
@@ -61,7 +65,8 @@ cpar <- egf_condense_par(o$tmb_out, par = epar)
 all.equal(cpar, structure(par, lengths = len))
 
 
-## egf_get_sdreport ######
+## egf_get_sdreport ####################################################
+
 o <- egf_cache("egf-1.rds")
 sdr <- o$sdreport
 identical(egf_get_sdreport(o)$cov.fixed, sdr$cov.fixed)
@@ -69,8 +74,9 @@ o$sdreport <- NULL
 assertWarning(all.equal(egf_get_sdreport(o)$cov.fixed, sdr$cov.fixed))
 
 
-## egf_preprofile ######
+## egf_preprofile ######################################################
 ## FIXME: Only testing a trivial case as no elements of 'beta' are mapped
+
 o <- egf_cache("egf-1.rds")
 l <- egf_preprofile(o, subset = seq_len(20L), top = c("log(r)", "log(c0)"))
 is.list(l)
@@ -83,8 +89,9 @@ identical(unname(l$A), sparseMatrix(i = seq_len(40L),
                                            dims = c(40L, 5L)))
 
 
-## egf_cache ######
-subdir <- tools::R_user_dir("epigrowthfit", "cache")
+## egf_cache ###########################################################
+
+subdir <- R_user_dir("epigrowthfit", "cache")
 lf1 <- list.files(subdir)
 file <- "test.rds"
 a <- 1
@@ -100,4 +107,3 @@ identical(z, 0L)
 identical(a, 1)
 identical(setdiff(lf2, lf1), file)
 identical(lf3, lf1)
-

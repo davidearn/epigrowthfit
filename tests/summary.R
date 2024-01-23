@@ -2,7 +2,8 @@ library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## basic ######
+## object ##############################################################
+
 o <- egf_cache("egf-1.rds")
 so <- egf_cache("summary-egf-1.rds")
 fo <- egf_cache("fitted-egf-1.rds")
@@ -26,11 +27,11 @@ for (s in colnames(so$fitted)) {
 }
 
 
-## print ######
+## print ###############################################################
+
 so <- egf_cache("summary-egf-1.rds")
 capture.output({
     expect_condition(print(so), regexp = NA)
     identical(print(so), so)
     expect_invisible(print(so))
 })
-
