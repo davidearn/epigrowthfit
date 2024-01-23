@@ -1,4 +1,5 @@
 library(epigrowthfit)
+library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
 
