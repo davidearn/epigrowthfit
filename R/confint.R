@@ -197,16 +197,12 @@ function(object,
 
 plot.egf_confint <-
 function(x,
-         type = c("bars", "boxes"),
-         time_as = c("Date", "numeric"),
-         per_plot = switch(type, bars = 12L, boxes = 3L),
+         per_plot = 12L,
          subset = NULL,
          order = NULL,
          main = NULL,
          label = NULL,
          ...) {
-	type <- match.arg(type)
-	time_as <- match.arg(time_as)
 	stopifnot(is_number(per_plot, "positive", integer = TRUE))
 	per_plot <- as.integer(per_plot)
 
@@ -221,12 +217,11 @@ function(x,
 
 	a <- attributes(x)
 	if (is.null(main)) {
-		s <- switch(type, bars = "fitting window", boxes = "time series")
-		main <- sprintf("%.3g%% confidence intervals by %s", 100 * a$level, s)
+		main <- sprintf("%.3g%% confidence intervals by fitting window",
+		                100 * a$level, s)
 	}
 	if (is.null(label)) {
-		s <- switch(type, bars = "window", boxes = "ts")
-		label <- as.character(x[[s]])
+		label <- as.character(x[["window"]])
 	}
 
 	nx <- c("top", "ts", "window", "estimate", "lower", "upper")
@@ -235,15 +230,7 @@ function(x,
 	x <- x[subset, , drop = FALSE]
 	x$top <- factor(x$top)
 
-	if (type == "bars") {
-		plot.egf_confint.bars(x, per_plot = per_plot, main = main)
-	} else {
-		i <- match(x$window, a$frame_windows$window, 0L)
-		frame_windows <- a$frame_windows[i, c("start", "end"), drop = FALSE]
-		x <- data.frame(x, frame_windows)
-		plot.egf_confint.boxes(x, per_plot = per_plot, main = main,
-		                       time_as = time_as)
-	}
+	plot.egf_confint.bars(x, per_plot = per_plot, main = main)
 }
 
 plot.egf_confint.bars <-
@@ -296,102 +283,6 @@ function(x, per_plot, main) {
 			title(main, adj = 0)
 			i <- i + per_plot
 		} # loop over plots
-	} # loop over parameters
-
-	invisible(NULL)
-}
-
-plot.egf_confint.boxes <-
-function(x, per_plot, main, time_as) {
-	xlim <- range(x[c("start", "end")])
-	x <- split(x, x$top)
-
-	op <- par(mfrow = c(per_plot, 1))
-	on.exit(par(op))
-
-	for (ylab in names(x)) { # loop over parameters
-		data <- x[[ylab]]
-		ylim <- range(data[c("estimate", "lower", "upper")], na.rm = TRUE)
-		data <- split(data, factor(data$ts, levels = unique(data$ts)))
-		n <- length(data)
-
-		i <- 0L
-		while (i < n) { # loop over pages
-			for (k in i + seq_len(min(per_plot, n - i))) { # loop over plots
-				plot.new()
-				plot.window(xlim = xlim, ylim = ylim)
-				gp <- par(c("mfrow", "usr", "mai", "omi", "mgp",
-				            "cex", "cex.axis", "cex.lab"))
-
-				v <- Daxis(side = 1, major = NULL, minor = NULL)$minor
-				abline(v = v, lty = 3, col = "grey75")
-
-				argna <- lapply(data[[k]][c("lower", "upper")], is.na)
-				data[[k]]$lower[argna$lower] <- gp$usr[3L]
-				data[[k]]$upper[argna$upper] <- gp$usr[4L]
-
-				for (l in seq_len(nrow(data[[k]]))) { # loop over CI
-					rect(xleft = data[[k]]$start[l],
-					     xright = data[[k]]$end[l],
-					     ybottom = data[[k]]$lower[l],
-					     ytop = data[[k]]$estimate[l],
-					     col = if (argna$lower[l]) NA else "grey80",
-					     border = "grey50",
-					     lty = if (argna$lower[l]) 2 else 1)
-					rect(xleft = data[[k]]$start[l],
-					     xright = data[[k]]$end[l],
-					     ybottom = data[[k]]$estimate[l],
-					     ytop = data[[k]]$upper[l],
-					     col = if (argna$upper[l]) NA else "grey80",
-					     border = "grey50",
-					     lty = if (argna$upper[l]) 2 else 1)
-					segments(x0 = data[[k]]$start[l],
-					         x1 = data[[k]]$end[l],
-					         y0 = data[[k]]$estimate[l],
-					         y1 = data[[k]]$estimate[l],
-					         col = "grey50",
-					         lwd = 2)
-				} # loop over CI
-
-				p <- diff(grconvertY(c(0, 0.08), "npc", "inches"))
-				px <- diff(grconvertX(c(0, p), "inches", "user"))
-				py <- diff(grconvertY(c(0, p), "inches", "user"))
-
-				par(cex = 1)
-				text(x = gp$usr[1L] + px,
-				     y = gp$usr[4L] - py,
-				     labels = data[[k]]$label[1L],
-				     adj = c(0, 1),
-				     cex = gp$cex.lab)
-				par(cex = gp$cex)
-
-				box()
-				axis(side = 2)
-			} # loop over plots
-
-			par(cex = 1)
-			if (time_as == "numeric") {
-				axis(side = 1)
-			} else {
-				Daxis(side = 1,
-				      major = list(cex.axis = 1.2 * gp$cex.axis,
-				                   mgp = gp$mgp + c(0, 1.5, 0),
-				                   tick = FALSE))
-			}
-			par(cex = gp$cex)
-
-			## Hack to avoid dealing with normalized figure coordinates
-
-			par(new = TRUE, mfrow = c(1, 1),
-			    mai = gp$mai + gp$omi, omi = c(0, 0, 0, 0))
-			plot.window(xlim = xlim, ylim = c(0, 1))
-			title(main = main, adj = 0)
-			title(ylab = ylab, adj = 0.5)
-			par(new = FALSE, mfrow = gp$mfrow,
-			    mai = gp$mai, omi = gp$omi)
-
-			i <- i + per_plot
-		} # loop over pages
 	} # loop over parameters
 
 	invisible(NULL)

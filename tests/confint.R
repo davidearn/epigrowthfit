@@ -58,7 +58,3 @@ stopifnot(exprs = {
 op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
 plot(o.1c.p, type = "bars")
 par(op)
-
-op <- par(mar = c(0.2, 0, 0.2, 0), oma = c(4.5, 6, 2, 1), las = 1)
-plot(o.1c.p, type = "boxes")
-par(op)
