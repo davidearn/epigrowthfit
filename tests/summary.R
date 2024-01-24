@@ -8,13 +8,6 @@ o.1f <- egf_cache( "fitted-egf-1.rds")
 
 ## object ##############################################################
 
-## FIXME: working around apparent bug in simplify2array
-s2a <-
-function(...) {
-	r <- simplify2array(...)
-	array(r, dim = unname(dim(r)), dimnames = dimnames(r))
-}
-
 stopifnot(exprs = {
 	is.list(o.1s)
 	identical(oldClass(o.1s), "egf_summary")
@@ -24,8 +17,7 @@ stopifnot(exprs = {
 	identical(o.1s[["value"]], o.1[["value"]])
 	identical(o.1s[["gradient"]], o.1[["gradient"]])
 	identical(o.1s[["hessian"]], o.1[["hessian"]])
-	all.equal(o.1s[["fitted"]],
-	          s2a(tapply(o.1f[["estimate"]], o.1f[["top"]], summary)))
+	all.equal(o.1s[["fitted"]], simplify2array(c(tapply(o.1f[["estimate"]], o.1f[["top"]], summary))))
 })
 
 
