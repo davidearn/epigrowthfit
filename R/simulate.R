@@ -86,8 +86,7 @@ function(object, nsim = 1L, seed = NULL,
 			environment(do_boot) <- .GlobalEnv
 
 			## Retrieve path to shared object for loading
-			dll <- system.file("libs", TMB::dynlib("epigrowthfit"),
-			                   package = "epigrowthfit", mustWork = TRUE)
+			dll <- .dll
 
 			cl <- parallel$cl
 			if (is.null(cl)) {

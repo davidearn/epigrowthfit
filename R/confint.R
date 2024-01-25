@@ -84,8 +84,7 @@ function(object,
 			args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
 
 			## Retrieve path to shared object for loading
-			dll <- system.file("libs", TMB::dynlib("epigrowthfit"),
-			                   package = "epigrowthfit", mustWork = TRUE)
+			dll <- .dll
 
 			cl <- parallel$cl
 			if (is.null(cl)) {
