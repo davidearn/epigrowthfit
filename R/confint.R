@@ -218,7 +218,7 @@ function(x,
 	a <- attributes(x)
 	if (is.null(main)) {
 		main <- sprintf("%.3g%% confidence intervals by fitting window",
-		                100 * a$level, s)
+		                100 * a$level)
 	}
 	if (is.null(label)) {
 		label <- as.character(x[["window"]])

@@ -56,5 +56,5 @@ stopifnot(exprs = {
 ## plot ################################################################
 
 op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
-plot(o.1c.p, type = "bars")
+plot(o.1c.p)
 par(op)

@@ -57,6 +57,6 @@ of \code{subset}, \code{order}, and \code{label}.
 x <- egf_cache("confint-egf-1.rds")
 
 op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
-plot(x, type = "bars")
+plot(x)
 par(op)
 }
