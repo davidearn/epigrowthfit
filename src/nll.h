@@ -69,15 +69,15 @@ Type nll_obs(objective_function<Type> *obj,
              int sx)
 {
 	Type res = Type(0.0);
-	Type nll_term;
+	Type nll_term = Type(0.0);
 
 	int n = log_diff_curve.size();
 	bool print_Y_row = flags.do_trace_verbose;
 
-	Type log_lambda;
-	Type log_mu;
-	Type log_size;
-	Type log_var_minus_mu;
+	Type log_lambda = Type(0.0);
+	Type log_mu = Type(0.0);
+	Type log_size = Type(0.0);
+	Type log_var_minus_mu = Type(0.0);
 	if (flags.family == nbinom)
 	{
 		log_size = Y_row(indices.log_disp);
@@ -193,14 +193,14 @@ Type nll_top(objective_function<Type> *obj,
              const egf::flags_t<Type> &flags)
 {
 	Type res = Type(0.0);
-	Type nll_term;
+	Type nll_term = Type(0.0);
 
 	int nr = Y.rows();
 	int nc = Y.cols();
 
 	vector<Type> hp;
-	Type mu;
-	Type sigma;
+	Type mu = Type(0.0);
+	Type sigma = Type(0.0);
 
 	for (int j = 0; j < nc; ++j)
 	{ /* loop over parameters */
@@ -258,11 +258,11 @@ Type nll_bot(objective_function<Type> *obj,
              const egf::flags_t<Type> &flags)
 {
 	Type res = Type(0.0);
-	Type nll_term;
+	Type nll_term = Type(0.0);
 	vector<Type> hp;
 
-	Type mu;
-	Type sigma;
+	Type mu = Type(0.0);
+	Type sigma = Type(0.0);
 
 	int i = 0;
 	for (int j = 0; j < beta.size(); ++i, ++j)
@@ -333,8 +333,8 @@ Type nll_bot(objective_function<Type> *obj,
 	} /* loop over 'theta' elements */
 
 	vector<Type> x;
-	Type eta;
-	Type df;
+	Type eta = Type(0.0);
+	Type df = Type(0.0);
 	vector<Type> scale;
 
 	for (int j = 0; j < list_of_chol.size(); ++i, ++j)
