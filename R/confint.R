@@ -190,7 +190,6 @@ function(object,
 	row.names(res) <- NULL
 	attr(res, "method") <- method
 	attr(res, "level") <- level
-	attr(res, "frame_windows") <- frame_windows # for 'plot.egf_confint'
 	class(res) <- c("egf_confint", oldClass(res))
 	res
 }

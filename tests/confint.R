@@ -26,11 +26,11 @@ o.1pc[["linear_combination"]] <- NULL
 stopifnot(exprs = {
 	is.list(o.1c.w)
 	identical(oldClass(o.1c.w), c("egf_confint", "data.frame"))
-	all.equal(o.1c.w, o.1fc, ignore = c("class", "method", "frame_windows"))
+	all.equal(o.1c.w, o.1fc, ignore = c("class", "method"))
 
 	is.list(o.1c.p)
 	identical(oldClass(o.1c.p), c("egf_confint", "data.frame"))
-	all.equal(o.1c.p, o.1pc, ignore = c("class", "method", "frame_windows", "A", "x"))
+	all.equal(o.1c.p, o.1pc, ignore = c("class", "method", "A", "x"))
 
 	is.list(o.1c.u)
 	identical(oldClass(o.1c.u), c("egf_confint", "data.frame"))
