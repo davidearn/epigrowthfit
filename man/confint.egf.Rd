@@ -13,8 +13,6 @@
   trace = FALSE,
   grid_len = 12,
   interval_scale = 7,
-  breaks = NULL,
-  probs = NULL,
   subset = NULL,
   append = NULL,
   .subset = NULL,
@@ -31,9 +29,7 @@
 
 \item{top}{A subset of \code{\link{egf_get_names_top}(object, link = TRUE)}
 naming top level nonlinear model parameters for which confidence
-intervals should be computed. If \code{object$model$curve} is
-\code{"exponential"}, \code{"logistic"}, or \code{"richards"},
-then \code{top} may also contain \code{"tdoubling"} and \code{"R0"}.}
+intervals should be computed.}
 
 \item{link}{A logical flag. If \code{FALSE}, then confidence intervals
 on inverse link-transformed fitted values are computed.}
@@ -63,9 +59,6 @@ A positive number.
 of width \code{interval_scale * se} centered at \code{estimate},
 where \code{estimate} is the fitted value (link scale)
 and \code{se} is the corresponding standard error.}
-
-\item{breaks, probs}{(For \code{top = "R0"}.)
-Arguments to \code{\link{compute_R0}}.}
 
 \item{subset}{An expression to be evaluated in
 \code{\link[=model.frame.egf]{model.frame}(object, "combined")}.
@@ -107,8 +100,7 @@ are retained as attributes.
 }
 \description{
 Computes confidence intervals on fitted values of top level nonlinear
-model parameters and, where appropriate, initial doubling times and
-basic reproduction numbers.
+model parameters.
 }
 \details{
 Three methods are provided for calculating confidence intervals:

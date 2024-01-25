@@ -9,8 +9,6 @@ function(object,
          trace = FALSE,
          grid_len = 12,
          interval_scale = 7,
-         breaks = NULL,
-         probs = NULL,
          subset = NULL,
          append = NULL,
          .subset = NULL,
@@ -20,22 +18,8 @@ function(object,
 	method <- match.arg(method)
 	elu <- c("estimate", "lower", "upper")
 
-	## Initial doubling time and basic reproduction number are
-	## monotone functions of initial exponential growth rate,
-	## so confidence intervals can be obtained "for free" _if_
-	## the top level nonlinear model _has_ an initial exponential
-	## growth rate
-	names_top <- names_top_aug <- egf_get_names_top(object, link = TRUE)
-	mono <- c("tdoubling", "R0")
-	if (object$model$curve %in% c("exponential", "logistic", "richards")) {
-		names_top_aug <- c(names_top_aug, mono)
-	}
-	top <- top_aug <- unique(match.arg(top, names_top_aug, several.ok = TRUE))
-	if ("R0" %in% top) {
-		stopifnot(!is.null(breaks), !is.null(probs))
-	}
-	top[top %in% mono] <- "log(r)"
-	top <- unique(top)
+	names_top <- egf_get_names_top(object, link = TRUE)
+	top <- unique(match.arg(top, names_top, several.ok = TRUE))
 
 	frame_windows <- model.frame(object, "windows")
 	frame_combined <- model.frame(object, "combined")
@@ -158,34 +142,6 @@ function(object,
 			levels(res$top) <- egf_link_remove(levels(res$top))
 		}
 	} # "uniroot"
-
-	if (any(mono %in% top_aug)) {
-		s <- if (link) "log(r)" else "r"
-		res_r <- res[res$top == s, , drop = FALSE]
-		if (link) {
-			res_r[elu] <- exp(res_r[elu])
-		}
-
-		if ("tdoubling" %in% top_aug) {
-			eul <- elu[c(1L, 3L, 2L)]
-			res_tdoubling <- res_r
-			res_tdoubling[elu] <- log(2) / res_r[eul]
-			res_tdoubling$top <- factor("tdoubling")
-			res <- rbind(res, res_tdoubling)
-		}
-
-		if ("R0" %in% top_aug) {
-			res_R0 <- res_r
-			res_R0[elu] <- lapply(res_r[elu], compute_R0,
-			                      breaks = breaks, probs = probs)
-			res_R0$top <- factor("R0")
-			res <- rbind(res, res_R0)
-		}
-
-		if (!"log(r)" %in% top_aug) {
-			res <- res[res$top != s, , drop = FALSE]
-		}
-	}
 
 	row.names(res) <- NULL
 	attr(res, "method") <- method
