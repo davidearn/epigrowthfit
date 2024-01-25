@@ -41,15 +41,16 @@ stopifnot(exprs = {
 ## parallel ############################################################
 
 f <-
-function(method)
+function(method, cores)
 	confint(o.1,
 	        method = "uniroot",
 	        subset = country == "A" & wave == 1,
-	        parallel = egf_parallel(method = method, cores = 2L))
+	        parallel = egf_parallel(method = method, cores = cores))
 
+windows <- .Platform[["OS.type"]] == "windows"
 stopifnot(exprs = {
-	all.equal(o.1c.u, f("multicore"))
-	all.equal(o.1c.u, f("snow"))
+	all.equal(o.1c.u, f("multicore", if (windows) 1L else 2L))
+	all.equal(o.1c.u, f("snow", 2L))
 })
 
 
