@@ -1,8 +1,10 @@
 library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
-file.copy("src", tempdir(), recursive = TRUE)
-setwd(file.path(tempdir(), "src"))
+src <- "src"
+src. <- system.file("tests", src, package = "epigrowthfit", mustWork = TRUE)
+file.copy(c(src, src.), tempdir(), recursive = TRUE)
+setwd(file.path(tempdir(), src))
 Sys.setenv(R_TESTS = "") # startup.Rs does not exist here
 
 dll <- "test"

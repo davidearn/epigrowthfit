@@ -6,4 +6,5 @@ all: $(SHLIB) pre_install
 pre_install:
 	@ zzz="$$(cat enums.h | sed -e 's/^enum//' | tr -d ' \t\n' | sed -e 's/{/ = c(\\\"/g' -e 's/,/\\\", \\\"/g' -e 's/};/\\\"), /g')"; sed -e "s/[.]__ARGS__[.]/$${zzz}/" ../R/enums.R > sed.out
 	@ mv sed.out ../R/enums.R
-	@ cp *.h ../tests/src
+	@ mkdir -p ../inst/tests/src
+	@ cp *.h ../inst/tests/src
