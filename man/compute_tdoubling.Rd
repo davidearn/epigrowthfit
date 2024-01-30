@@ -1,8 +1,8 @@
-\name{compute_tdoubling}
-\alias{compute_tdoubling}
+\name{timescale}
+\alias{timescale}
 \title{Compute doubling time}
 \usage{
-compute_tdoubling(r, per = NULL)
+timescale(r, per = NULL)
 }
 \arguments{
 \item{r}{A non-negative numeric vector listing exponential growth rates.}
@@ -21,7 +21,7 @@ Computes doubling times corresponding to exponential growth rates.
 }
 \examples{
 r <- 10^(-2:0)
-tdoubling <- compute_tdoubling(r)
+tdoubling <- timescale(r)
 all.equal(tdoubling, log(2) / r)
 
 ## 'per' affects printing
@@ -33,7 +33,7 @@ for (i in c(1, 2, 7, 8, 365, 366)) {
 }
 \seealso{
 Other epidemic parameters: 
-\code{\link{compute_R0}()},
-\code{\link{compute_final_size}()}
+\code{\link{R0}()},
+\code{\link{finalsize}()}
 }
 \concept{epidemic parameters}

@@ -1,8 +1,8 @@
-\name{compute_R0}
-\alias{compute_R0}
+\name{R0}
+\alias{R0}
 \title{Compute the basic reproduction number}
 \usage{
-compute_R0(r, breaks, probs)
+R0(r, breaks, probs)
 }
 \arguments{
 \item{r}{A non-negative numeric vector listing initial exponential growth rates.}
@@ -40,7 +40,7 @@ where \code{n = length(breaks)}.
 r <- seq(0, 1, by = 0.02)
 breaks <- 0:20
 probs <- diff(pgamma(breaks, shape = 1, scale = 2.5))
-R0 <- compute_R0(r, breaks, probs)
+R0 <- R0(r, breaks, probs)
 
 plot(r, R0, las = 1,
      xlab = "initial exponential growth rate",
@@ -54,7 +54,7 @@ between growth rates and reproductive numbers. Proc R Soc Lond B Biol Sci.
 }
 \seealso{
 Other epidemic parameters: 
-\code{\link{compute_final_size}()},
-\code{\link{compute_tdoubling}()}
+\code{\link{finalsize}()},
+\code{\link{timescale}()}
 }
 \concept{epidemic parameters}

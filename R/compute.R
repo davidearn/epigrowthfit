@@ -1,4 +1,4 @@
-compute_final_size <-
+finalsize <-
 function(R0, S0, I0) {
 	suggest("emdbook", "lambertW")
 	if (missing(S0)) {
@@ -51,7 +51,7 @@ function(R0, S0, I0) {
 	Z
 }
 
-compute_R0 <-
+R0 <-
 function(r, breaks, probs) {
 	stopifnot(is.numeric(r),
 	          is.numeric(breaks),
@@ -82,7 +82,7 @@ function(r, breaks, probs) {
 	R0
 }
 
-compute_tdoubling <-
+timescale <-
 function(r, per = NULL) {
 	stopifnot(is.numeric(r), is.null(per) || is_number(per, "positive"))
 	if (any(r < 0, na.rm = TRUE)) {

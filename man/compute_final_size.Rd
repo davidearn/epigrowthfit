@@ -1,8 +1,8 @@
-\name{compute_final_size}
-\alias{compute_final_size}
+\name{finalsize}
+\alias{finalsize}
 \title{Compute expected epidemic final size}
 \usage{
-compute_final_size(R0, S0, I0)
+finalsize(R0, S0, I0)
 }
 \arguments{
 \item{R0}{A numeric vector listing non-negative values for the basic reproduction
@@ -41,13 +41,13 @@ epidemic final size \code{Z} through the implicit relation
 
 \code{Z(R0, S0, I0) = S0 + (1 / R0) * lambertW(-R0 * S0 * exp(-R0 * (S0 + I0)))}.
 
-\code{compute_final_size} evaluates this function at each supplied
+\code{finalsize} evaluates this function at each supplied
 \code{(R0, S0, I0)} triple.
 }
 
 \examples{
 R0 <- 10^seq(-3, 1, length.out = 151L)
-final_size <- compute_final_size(R0, S0 = 1, I0 = 0)
+final_size <- finalsize(R0, S0 = 1, I0 = 0)
 
 plot(R0, final_size, type = "l", las = 1,
      xlab = "basic reproduction number",
@@ -60,7 +60,7 @@ of a newly invading infectious disease. Bull Math Biol. 2006;68:679–-702.
 }
 \seealso{
 Other epidemic parameters: 
-\code{\link{compute_R0}()},
-\code{\link{compute_tdoubling}()}
+\code{\link{R0}()},
+\code{\link{timescale}()}
 }
 \concept{epidemic parameters}
