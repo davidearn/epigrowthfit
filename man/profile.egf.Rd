@@ -119,7 +119,8 @@ of \code{subset} and \code{append}.
 \examples{
 fitted <- egf_cache("egf-1.rds")
 zz <- egf_cache("profile-egf-1.rds", {
-  profile(fitted, subset = (country == "A" & wave == 1))
+    profile(fitted, top = "log(r)",
+            subset = (country == "A" & wave == 1))
 })
 str(zz)
 

@@ -141,11 +141,11 @@ zz1 <- egf_cache("confint-egf-1.rds", {
     confint(object, method = "wald")
 })
 zz2 <- egf_cache("confint-egf-2.rds", {
-    confint(object, method = "profile",
+    confint(object, method = "profile", top = "log(r)",
             subset = (country == "A" & wave == 1))
 })
 zz3 <- egf_cache("confint-egf-3.rds", {
-    confint(object, method = "uniroot",
+    confint(object, method = "uniroot", top = "log(r)",
             subset = (country == "A" & wave == 1))
 })
 str(zz1)
