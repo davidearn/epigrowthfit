@@ -37,12 +37,11 @@ where \code{n = length(breaks)}.
 }
 
 \examples{
-r <- seq(0, 1, by = 0.02)
-breaks <- 0:20
+r <- seq(0, 1, 0.02)
+breaks <- seq(0, 20, 1)
 probs <- diff(pgamma(breaks, shape = 1, scale = 2.5))
-R0 <- R0(r, breaks, probs)
 
-plot(r, R0, las = 1,
+plot(r, R0(r, breaks, probs), las = 1,
      xlab = "initial exponential growth rate",
      ylab = "basic reproduction number")
 
@@ -53,8 +52,5 @@ between growth rates and reproductive numbers. Proc R Soc Lond B Biol Sci.
 2007;274:599--604.
 }
 \seealso{
-Other epidemic parameters: 
-\code{\link{finalsize}()},
-\code{\link{timescale}()}
+\code{\link{timescale}}, \code{\link{finalsize}}
 }
-\concept{epidemic parameters}

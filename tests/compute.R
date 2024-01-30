@@ -22,8 +22,8 @@ assertWarning(finalsize(R0 = 1, S0 = 1, I0 = 0.1))
 
 ## R0 ##################################################################
 
-r <- rlnorm(10L, -3, 1)
-breaks <- 0:20
+r <- c(rlnorm(10L, -3, 1), 0, NaN, Inf)
+breaks <- seq(0, 20, 1)
 probs <- diff(pgamma(breaks, shape = 1, scale = 2.5))
 probs <- probs / sum(probs)
 
@@ -34,8 +34,7 @@ R0.1 <- function(x) R0(r = x, breaks = breaks, probs = probs)
 R0.3 <- function(x) R0(r = r, breaks = breaks, probs = x)
 
 stopifnot(exprs = {
-	all.equal(R0.1(r), vapply(r, f, 0))
-	all.equal(R0.1(c(0, NaN, Inf)), c(1, NaN, Inf))
+	all.equal(R0.1(r), c(vapply(r[1:10], f, 0), 1, NaN, Inf))
 	all.equal(R0.3(probs), R0.3(100 * probs))
 })
 assertWarning(R0.1(-1))
@@ -44,13 +43,9 @@ assertWarning(R0.1(-1))
 ## timescale ###########################################################
 
 r <- c(rlnorm(10L, -3, 1), 0, NaN, Inf)
-per <- 1L
-tdoubling <- timescale(r = r, per = per)
-vv <- withVisible(print(tdoubling))
-
+units <- "days"
 stopifnot(exprs = {
-	identical(tdoubling, structure(log(2) / r, per = per, class = "tdoubling"))
-	identical(vv[["value"]], tdoubling)
-	identical(vv[["visible"]], FALSE)
+	all.equal(timescale(r), 1 / r)
+	all.equal(timescale(r, units), .difftime(1 / r, units))
 })
 assertWarning(timescale(-1))

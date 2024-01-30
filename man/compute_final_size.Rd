@@ -1,6 +1,6 @@
 \name{finalsize}
 \alias{finalsize}
-\title{Compute expected epidemic final size}
+\title{Compute the expected epidemic final size}
 \usage{
 finalsize(R0, S0, I0)
 }
@@ -47,9 +47,8 @@ epidemic final size \code{Z} through the implicit relation
 
 \examples{
 R0 <- 10^seq(-3, 1, length.out = 151L)
-final_size <- finalsize(R0, S0 = 1, I0 = 0)
 
-plot(R0, final_size, type = "l", las = 1,
+plot(R0, finalsize(R0, S0 = 1, I0 = 0), type = "l", las = 1,
      xlab = "basic reproduction number",
      ylab = "final size")
 
@@ -59,8 +58,5 @@ Ma J, Earn DJD. Generality of the final size formula for an epidemic
 of a newly invading infectious disease. Bull Math Biol. 2006;68:679–-702.
 }
 \seealso{
-Other epidemic parameters: 
-\code{\link{R0}()},
-\code{\link{timescale}()}
+\code{\link{timescale}}, \code{\link{R0}}
 }
-\concept{epidemic parameters}

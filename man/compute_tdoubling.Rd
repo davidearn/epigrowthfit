@@ -1,39 +1,30 @@
 \name{timescale}
 \alias{timescale}
-\title{Compute doubling time}
+\title{Compute the characteristic time scale}
 \usage{
-timescale(r, per = NULL)
+timescale(r, units)
 }
 \arguments{
 \item{r}{A non-negative numeric vector listing exponential growth rates.}
 
-\item{per}{A positive number indicating that \code{r} is a rate per
-\code{per} days, in which case the result is printed with units.
-Use the default (\code{NULL}) if \code{r} is unitless.}
+\item{units}{A character string indicating units for the result.
+If missing, then the result is unitless.}
 }
 \value{
-\code{log(2) / r} with \code{"tdoubling"} prepended to its \code{class}
-attribute.
-\code{per} is retained as an attribute for use by \code{print.tdoubling}.
+\code{1 / r}, as a \code{\link{difftime}} if \code{units} is not missing.
 }
 \description{
-Computes doubling times corresponding to exponential growth rates.
+Computes characteristic time scales corresponding to exponential growth rates.
 }
 \examples{
 r <- 10^(-2:0)
-tdoubling <- timescale(r)
-all.equal(tdoubling, log(2) / r)
-
-## 'per' affects printing
-for (i in c(1, 2, 7, 8, 365, 366)) {
-    attr(tdoubling, "per") <- i
-    print(tdoubling)
-}
+units <- "days"
+stopifnot(exprs = {
+	all.equal(timescale(r), 1 / r)
+	all.equal(timescale(r, units), .difftime(1 / r, units))
+})
 
 }
 \seealso{
-Other epidemic parameters: 
-\code{\link{R0}()},
-\code{\link{finalsize}()}
+\code{\link{R0}}, \code{\link{finalsize}}
 }
-\concept{epidemic parameters}
