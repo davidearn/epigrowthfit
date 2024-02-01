@@ -6,7 +6,7 @@
   object,
   parm,
   level = 0.95,
-  top = egf_get_names_top(object, link = TRUE),
+  top = egf_top(object, link = TRUE),
   link = TRUE,
   method = c("wald", "profile", "uniroot"),
   parallel = egf_parallel(),
@@ -25,7 +25,7 @@
 
 \item{level}{A number in the interval (0,1) indicating a confidence level.}
 
-\item{top}{A subset of \code{\link{egf_get_names_top}(object, link = TRUE)}
+\item{top}{A subset of \code{\link{egf_top}(object, link = TRUE)}
 naming top level nonlinear model parameters for which confidence
 intervals should be computed.}
 
@@ -74,7 +74,7 @@ Evaluation of language objects follows the implementation of
 A data frame inheriting from class \code{"egf_confint"}, with variables:
 \item{top}{
   Top level nonlinear model parameter,
-  from \code{\link{egf_get_names_top}(object, link = TRUE)}.
+  from \code{\link{egf_top}(object, link = TRUE)}.
 }
 \item{ts}{
   Time series, from

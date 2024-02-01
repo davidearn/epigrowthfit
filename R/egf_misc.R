@@ -1,8 +1,8 @@
-egf_get_names_top <-
+egf_top <-
 function(object, ...)
-	UseMethod("egf_get_names_top", object)
+	UseMethod("egf_top", object)
 
-egf_get_names_top.default <-
+egf_top.default <-
 function(object, link = TRUE, ...) {
 	stopifnot(is.null(object))
 	names_top <- c("r", "alpha", "c0", "tinfl", "K",
@@ -13,7 +13,7 @@ function(object, link = TRUE, ...) {
 	egf_link_add(names_top)
 }
 
-egf_get_names_top.egf_model <-
+egf_top.egf_model <-
 function(object, link = TRUE, ...) {
 	names_top <- switch(object$curve,
 	                    exponential = c("r", "c0"),
@@ -36,11 +36,11 @@ function(object, link = TRUE, ...) {
 	egf_link_add(names_top)
 }
 
-egf_get_names_top.egf <-
+egf_top.egf <-
 function(object, link = TRUE, ...)
-	egf_get_names_top(object$model, link = link)
+	egf_top(object$model, link = link)
 
-egf_get_names_top.egf_no_fit <- egf_get_names_top.egf
+egf_top.egf_no_fit <- egf_top.egf
 
 egf_has_random <-
 function(object) {

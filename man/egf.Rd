@@ -69,9 +69,9 @@ using \pkg{lme4}-like syntax (see \code{?lme4::lmer}).
 Alternatively, a formula of the form \code{~terms} to be recycled for
 all parameters.
 A list of parameters for which formulae may be specified can be retrieved
-with \code{\link{egf_get_names_top}}.
+with \code{\link{egf_top}}.
 Specifically, \code{\link{deparse}(parameter)} must be an element of
-\code{\link{egf_get_names_top}(model)}.
+\code{\link{egf_top}(model)}.
 The default for parameters not assigned a formula is \code{~1}.}
 
 \item{formula_priors}{A \link{list} of \link{formula}e of the form \code{parameter ~ prior}
@@ -86,7 +86,7 @@ parameter vector, or\cr
 with arguments specifying suitable hyperparameters.
 In case (i),
 \code{deparse(parameter)} must be an element of
-\code{\link{egf_get_names_top}(model)},
+\code{\link{egf_top}(model)},
 and hyperparameters supplied on the right hand side must have length 1.
 In cases (ii) and (iii),
 \code{parameter} must be \code{beta}, \code{theta}, or \code{Sigma}

@@ -1,20 +1,20 @@
-\name{egf_get_names_top}
-\alias{egf_get_names_top}
-\alias{egf_get_names_top.default}
-\alias{egf_get_names_top.egf_model}
-\alias{egf_get_names_top.egf}
-\alias{egf_get_names_top.egf_no_fit}
+\name{egf_top}
+\alias{egf_top}
+\alias{egf_top.default}
+\alias{egf_top.egf_model}
+\alias{egf_top.egf}
+\alias{egf_top.egf_no_fit}
 \title{Get top level nonlinear model parameter names}
 \usage{
-egf_get_names_top(object, ...)
+egf_top(object, ...)
 
-\method{egf_get_names_top}{default}(object, link = TRUE, ...)
+\method{egf_top}{default}(object, link = TRUE, ...)
 
-\method{egf_get_names_top}{egf_model}(object, link = TRUE, ...)
+\method{egf_top}{egf_model}(object, link = TRUE, ...)
 
-\method{egf_get_names_top}{egf}(object, link = TRUE, ...)
+\method{egf_top}{egf}(object, link = TRUE, ...)
 
-\method{egf_get_names_top}{egf_no_fit}(object, link = TRUE, ...)
+\method{egf_top}{egf_no_fit}(object, link = TRUE, ...)
 }
 \arguments{
 \item{object}{An \R object specifying a top level nonlinear model, or \code{NULL}.}

@@ -23,7 +23,7 @@ A data frame with one row per coefficient and variables:
 \item{top}{
   Name of the top level nonlinear model parameter whose fitted value
   is a function of \code{bottom},
-  from \code{\link{egf_get_names_top}(object, link = TRUE)}.
+  from \code{\link{egf_top}(object, link = TRUE)}.
 }
 \item{term}{
   Term from the fixed effects component of the mixed effects model formula

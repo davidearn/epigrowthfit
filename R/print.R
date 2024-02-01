@@ -38,7 +38,7 @@ function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
 	offset <-
 	function(s)
 		max(n <- nchar(s)) - n
-	names_top <- egf_get_names_top(x, link = TRUE)
+	names_top <- egf_top(x, link = TRUE)
 	lines_bottom <- mapply(line, names_top, offset(names_top))
 
 	## Number of observations

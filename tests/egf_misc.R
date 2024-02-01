@@ -7,16 +7,16 @@ o.1 <- egf_cache("egf-1.rds")
 o.2 <- egf_cache("egf-2.rds")
 
 
-## egf_get_names_top ###################################################
+## egf_top ###################################################
 
 x1 <- NULL
 x2 <- egf_model()
 x3 <- list(model = x2)
 class(x3) <- "egf"
 
-s1 <- egf_get_names_top(x1, link = FALSE)
-s2 <- egf_get_names_top(x2, link = FALSE)
-s3 <- egf_get_names_top(x3, link = FALSE)
+s1 <- egf_top(x1, link = FALSE)
+s2 <- egf_top(x2, link = FALSE)
+s3 <- egf_top(x3, link = FALSE)
 
 stopifnot(exprs = {
 	is.character(s1)

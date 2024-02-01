@@ -5,7 +5,7 @@
 \usage{
 \method{fitted}{egf}(
   object,
-  top = egf_get_names_top(object, link = TRUE),
+  top = egf_top(object, link = TRUE),
   link = TRUE,
   se = FALSE,
   subset = NULL,
@@ -15,7 +15,7 @@
 
 \method{fitted}{egf_no_fit}(
   object,
-  top = egf_get_names_top(object, link = TRUE),
+  top = egf_top(object, link = TRUE),
   link = TRUE,
   se = FALSE,
   subset = NULL,
@@ -26,7 +26,7 @@
 \arguments{
 \item{object}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}
 
-\item{top}{A subset of \code{\link{egf_get_names_top}(object, link = TRUE)}
+\item{top}{A subset of \code{\link{egf_top}(object, link = TRUE)}
 naming top level nonlinear model parameters for which fitted
 values should be retrieved.}
 
@@ -60,7 +60,7 @@ Evaluation of language objects follows the implementation of
 A data frame inheriting from class \code{"egf_fitted"}, with variables:
 \item{top}{
   Top level nonlinear model parameter,
-  from \code{\link{egf_get_names_top}(object, link = link)}.
+  from \code{\link{egf_top}(object, link = link)}.
 }
 \item{ts}{
   Time series, from

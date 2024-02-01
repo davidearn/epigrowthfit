@@ -7,7 +7,7 @@
   level = 0.95,
   which = NULL,
   A = NULL,
-  top = egf_get_names_top(fitted, link = TRUE),
+  top = egf_top(fitted, link = TRUE),
   parallel = egf_parallel(),
   trace = FALSE,
   grid_len = 12,
@@ -31,7 +31,7 @@ Each row specifies a linear combination of the elements
 of \code{fitted$best[!fitted$random]} to be profiled.
 Ignored if \code{which} is non-\code{NULL}.}
 
-\item{top}{A subset of \code{\link{egf_get_names_top}(fitted, link = TRUE)}
+\item{top}{A subset of \code{\link{egf_top}(fitted, link = TRUE)}
 naming top level nonlinear model parameters whose population
 fitted values (see \code{\link[=fitted.egf]{fitted}}) should be
 profiled.
@@ -68,7 +68,7 @@ A data frame inheriting from class \code{"egf_profile"}, with variables:
 \item{top}{
   (\code{top}-based calls only.)
   Top level nonlinear model parameter,
-  from \code{\link{egf_get_names_top}(fitted, link = link)}.
+  from \code{\link{egf_top}(fitted, link = link)}.
 }
 \item{ts}{
   (\code{top}-based calls only.)

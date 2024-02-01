@@ -2,7 +2,7 @@ confint.egf <-
 function(object,
          parm,
          level = 0.95,
-         top = egf_get_names_top(object, link = TRUE),
+         top = egf_top(object, link = TRUE),
          link = TRUE,
          method = c("wald", "profile", "uniroot"),
          parallel = egf_parallel(),
@@ -16,7 +16,7 @@ function(object,
 	method <- match.arg(method)
 	elu <- c("estimate", "lower", "upper")
 
-	names_top <- egf_get_names_top(object, link = TRUE)
+	names_top <- egf_top(object, link = TRUE)
 	top <- unique(match.arg(top, names_top, several.ok = TRUE))
 
 	frame_windows <- model.frame(object, "windows")

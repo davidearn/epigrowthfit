@@ -102,7 +102,7 @@ parameter vector that is the concatenation of three segments:
   numeric vectors of fixed effects coefficients, with one vector for
   each top level nonlinear model parameter.
   The order of top level parameters is given by
-  \code{\link{egf_get_names_top}(model)}.
+  \code{\link{egf_top}(model)}.
 }
 \item{theta}{
   The result of \code{unlist(ltheta)}, where \code{ltheta} is a list of

@@ -114,7 +114,7 @@ model.frame.egf <-
 function(formula,
          which = c("ts", "windows", "parameters", "extra", "combined"),
          full = FALSE,
-         top = egf_get_names_top(formula, link = TRUE),
+         top = egf_top(formula, link = TRUE),
          ...) {
 	which <- match.arg(which)
 	if (which == "combined") {
@@ -163,7 +163,7 @@ function(object,
 		return(res)
 	}
 
-	top <- match.arg(top, egf_get_names_top(object, link = TRUE))
+	top <- match.arg(top, egf_top(object, link = TRUE))
 	frame <- model.frame(object, which = "parameters", top = top)
 	l <- split_effects(formula(terms(frame))) # list(fixed = <formula>, random = <list of calls to `|`>)
 
@@ -214,7 +214,7 @@ function(object,
 model.matrix.egf_no_fit <- model.matrix.egf
 
 terms.egf <-
-function(x, top = egf_get_names_top(x, link = TRUE), ...) {
+function(x, top = egf_top(x, link = TRUE), ...) {
 	top <- match.arg(top)
 	frame <- model.frame(x, which = "parameters", top = top)
 	terms(frame)
@@ -224,7 +224,7 @@ terms.egf_no_fit <- terms.egf
 
 formula.egf <-
 function(x,
-         top = egf_get_names_top(x, link = TRUE),
+         top = egf_top(x, link = TRUE),
          split = FALSE, ...) {
 	top <- match.arg(top)
 	res <- formula(terms(x, top = top))

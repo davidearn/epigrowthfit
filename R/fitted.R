@@ -1,6 +1,6 @@
 fitted.egf <-
 function(object,
-         top = egf_get_names_top(object, link = TRUE),
+         top = egf_top(object, link = TRUE),
          link = TRUE,
          se = FALSE,
          subset = NULL,
@@ -13,7 +13,7 @@ function(object,
 		      "fitted values.")
 	}
 
-	names_top <- egf_get_names_top(object, link = TRUE)
+	names_top <- egf_top(object, link = TRUE)
 	top <- unique(match.arg(top, names_top, several.ok = TRUE))
 
 	frame_windows <- model.frame(object, "windows")
@@ -65,7 +65,7 @@ function(object,
 
 fitted.egf_no_fit <-
 function(object,
-         top = egf_get_names_top(object, link = TRUE),
+         top = egf_top(object, link = TRUE),
          link = TRUE,
          se = FALSE,
          subset = NULL,

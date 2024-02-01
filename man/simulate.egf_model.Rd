@@ -29,7 +29,7 @@ is preserved as an attribute of the result.}
 \item{mu}{A numeric vector listing means across time series
 of top level nonlinear model parameters (link scale).
 It is assumed that elements are ordered as in
-\code{\link{egf_get_names_top}(object, link = TRUE)}.}
+\code{\link{egf_top}(object, link = TRUE)}.}
 
 \item{Sigma}{A symmetric positive definite numeric matrix to be used
 as the covariance matrix corresponding to \code{mu}.

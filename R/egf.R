@@ -54,7 +54,7 @@ function(model,
 	          is.list(init),
 	          is.list(map))
 
-	names_parameters <- egf_get_names_top(model, link = TRUE)
+	names_parameters <- egf_top(model, link = TRUE)
 
 	formula_ts <- egf_sanitize_formula(formula_ts)
 	formula_windows <- egf_sanitize_formula(formula_windows)
