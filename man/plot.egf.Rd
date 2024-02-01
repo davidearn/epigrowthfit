@@ -4,7 +4,7 @@
 \usage{
 \method{plot}{egf}(
   x,
-  type = c("interval", "cumulative", "rt", "rt_heat"),
+  type = c("interval", "cumulative", "rt"),
   time_as = c("Date", "numeric"),
   dt = 1,
   log = TRUE,
@@ -12,7 +12,6 @@
   show_predict = TRUE,
   show_tdoubling = FALSE,
   level = 0.95,
-  per_plot = min(6L, nlevels(model.frame(x)$ts)),
   control = egf_plot_control(),
   cache = NULL,
   plot = TRUE,
@@ -25,7 +24,6 @@
   xlab = NULL,
   ylab = NULL,
   ylab_outer = NULL,
-  plab = NULL,
   ...
 )
 }
@@ -34,11 +32,8 @@
 
 \item{type}{A character string indicating a type of plot. The options are:
 interval incidence (\code{"interval"}),
-cumulative incidence (\code{"cumulative"}),
-per capita growth rate (\code{"rt"}), and
-per capita growth rate \emph{as heat map} (\code{"rt_heat"}).
-\code{"rt_heat"} displays \code{per_plot} time series in each plot.
-The rest display one time series in each plot.}
+cumulative incidence (\code{"cumulative"}), and
+per capita growth rate (\code{"rt"}).}
 
 \item{time_as}{A character string indicating how numeric times are displayed
 on the bottom axis. The options are:
@@ -64,14 +59,13 @@ is plotted on a logarithmic scale.}
 when \code{log = TRUE}.
 \code{NA} is to place zeros on the bottom axis.
 \code{NULL} is to suppress zeros.
-[\code{type = "interval"} and \code{"cumulative"} only].}
+\code{zero} is used for \code{type = "interval"} or \code{"cumulative"} only.}
 
 \item{show_predict}{An integer flag:
 2 is to draw predicted curves with confidence bands,
 1 is draw predicted curves only,
 0 is to draw neither.
-Logical values are coerced to integer.
-[\code{type != "rt_heat"} only.]}
+Logical values are coerced to integer.}
 
 \item{show_tdoubling}{An integer flag:
 2 is to print initial doubling time estimates in the top margin
@@ -80,16 +74,10 @@ with confidence intervals,
 0 is to print neither.
 Logical values are coerced to integer.
 Supported only if \code{x$model$curve} is
-\code{"exponential"}, \code{"logistic"}, or \code{"richards"}.
-[\code{type != "rt_heat"} only.]}
+\code{"exponential"}, \code{"logistic"}, or \code{"richards"}.}
 
 \item{level}{A number in the interval (0,1). This is the confidence level used
-when \code{show_predict = 2} or \code{show_tdoubling = 2}.
-[\code{type != "rt_heat"} only.]}
-
-\item{per_plot}{A positive integer giving the number of time series displayed
-in each plot.
-[\code{type = "rt_heat"} only.]}
+when \code{show_predict = 2} or \code{show_tdoubling = 2}.}
 
 \item{control}{An \code{"\link{egf_plot_control}"} object controlling the appearance
 of most plot elements.}
@@ -122,26 +110,17 @@ The default (\code{NULL}) is to respect the original ordering.}
 which are recycled for all plots.
 If \code{time_as = "Date"}, then \code{xlim} can instead
 be a \link{Date} vector or any vector coercible to Date
-via \code{\link{as.Date}(xlim)}.
-\code{ylim} is unused by \code{type = "rt_heat"}.}
+via \code{\link{as.Date}(xlim)}.}
 
-\item{main, sub, xlab, ylab, ylab_outer, plab}{Character strings or expressions used to generate
-plot (\code{main}, \code{sub}),
-axis (\code{xlab}, \code{ylab}, \code{ylab_outer}), and
-panel (\code{plab}) titles.
+\item{main, sub, xlab, ylab, ylab_outer}{Character strings or expressions used to generate
+plot (\code{main}, \code{sub}) and
+axis (\code{xlab}, \code{ylab}, \code{ylab_outer}).
 \code{main}, \code{sub}, \code{xlab}, and \code{ylab}
 are supported for all values of \code{type}.
-\code{plab} is used by \code{type = "rt_heat"} only.
-\code{ylab_outer} is used by \code{type = "rt"} and \code{"rt_heat"} only.
-When \code{type != "rt_heat"},
+\code{ylab_outer} is used for \code{type = "rt"} only.
 \code{main} and \code{sub} are evaluated in
 \code{\link[=model.frame.egf]{model.frame}(x, "combined")}
-in order to generate unique (sub)titles for each plot.
-When \code{type = "rt_heat"},
-\code{plab} is evaluated similarly in order to generate
-unique titles for each panel.
-\code{\link{plotmath}} expressions are not supported for
-\code{main}, \code{sub}, and \code{plab} in these cases.}
+in order to generate unique (sub)titles for each plot.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -167,9 +146,6 @@ Caching functionality must be used with care, as mismatch between
 as \code{plot(y, cache = plot(x, \dots), \dots)}, where \code{x}
 and \code{y} are different objects, should not be expected to produce
 correct results.
-
-See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-of \code{subset}, \code{order}, \code{main}, \code{sub}, and \code{plab}.
 }
 \examples{
 x <- egf_cache("egf-1.rds")
@@ -192,10 +168,6 @@ par(op)
 
 op <- par(mar = c(3.5, 9.5, 5, 1))
 plot(x, type = "rt", subset = country \%in\% LETTERS[4:6])
-par(op)
-
-op <- par(mar = c(0.1, 1, 0.1, 1), oma = c(3.5, 0, 0.5, 9.5))
-plot(x, type = "rt_heat", per_plot = 10L)
 par(op)
 
 }

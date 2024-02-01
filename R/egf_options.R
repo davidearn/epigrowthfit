@@ -171,8 +171,7 @@ function(method = c("serial", "multicore", "snow"),
 }
 
 egf_plot_control <-
-function(window, data, predict, asymptote,
-         box, axis, title, tdoubling, heat) {
+function(window, data, predict, asymptote, box, axis, title, tdoubling) {
 	res <-
 	list(window =
 	         list(col = alpha("#DDCC77", 0.25),
@@ -194,27 +193,11 @@ function(window, data, predict, asymptote,
 	         list(main = list(adj = 0, xpd = NA),
 	              sub = list(mgp = c(0, 0, 0), xpd = NA),
 	              xlab = list(xpd = NA),
-	              ylab = list(xpd = NA),
-	              plab = list(col.lab = "white")),
+	              ylab = list(xpd = NA)),
 	     tdoubling =
 	         list(legend = list(),
 	              estimate = list(),
-	              ci = list()),
-	     heat =
-	         list(pal =
-	                  list(colors = c("#364B9A", "#4A7BB7", "#6EA6CD",
-	                                  "#98CAE1", "#C2E4EF", "#EAECCC",
-	                                  "#FEDA8B", "#FDB366", "#F67E4B",
-	                                  "#DD3D2D", "#A50026"),
-	                       bias = 1,
-	                       space = "rgb",
-	                       interpolate = "linear"),
-	              bg =
-	                  list(col = "black",
-	                       border = NA),
-	              ul =
-	                  list(col = alpha("black", 0.5),
-	                       border = NA)))
+	              ci = list()))
 
 	## Multi-assign from 'value' into 'default',
 	## recursively up to one level of nesting
@@ -242,7 +225,7 @@ function(window, data, predict, asymptote,
 		into
 	}
 
-	recursive <- c("data", "predict", "axis", "title", "tdoubling", "heat")
+	recursive <- c("data", "predict", "axis", "title", "tdoubling")
 	nms <- names(match.call()[-1L])
 	if (length(nms)) {
 		res[nms] <- Map(rmerge,

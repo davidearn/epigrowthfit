@@ -10,8 +10,7 @@ egf_plot_control(
   box,
   axis,
   title,
-  tdoubling,
-  heat
+  tdoubling
 )
 }
 \arguments{
@@ -51,21 +50,15 @@ In this case, the major axis uses a modified version of \code{x}
 that tries to ensure that it is displayed below the minor axis in
 a slightly larger font.}
 
-\item{title}{A named list of the form \code{list(main, sub, xlab, ylab, plab)}.
+\item{title}{A named list of the form \code{list(main, sub, xlab, ylab)}.
 The elements are named lists of arguments to \code{\link{title}}
-affecting the appearance of plot (sub)titles and axis and panel labels.
+affecting the appearance of plot (sub)titles and axis labels.
 \code{sub$adj} defaults to \code{main$adj}.}
 
 \item{tdoubling}{A named list of the form \code{list(legend, estimate, ci)}.
 The elements are named lists of arguments to \code{\link{mtext}}
 affecting the appearance of initial doubling times printed in the
 top margin.}
-
-\item{heat}{A named list of the form \code{list(pal, bg, ul, ips)}.
-\code{pal} is a named list of arguments to \code{\link{colorRamp}}
-defining a colour palette for heat maps.
-\code{bg} and \code{ul} are named lists of arguments to \code{\link{rect}}
-affecting the appearance of panel backgrounds and panel label underlays.}
 }
 \value{
 A named list.
@@ -82,7 +75,4 @@ refer to the so-named arguments of \code{plot.egf}.
 Setting an argument (or an element thereof, in the case of nested lists)
 to \code{\link{NULL}} has the effect of suppressing the corresponding
 plot element.
-
-For \code{type = "rt_heat"}, the only useful arguments are \code{axis},
-\code{title}, and \code{heat}.
 }

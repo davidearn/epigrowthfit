@@ -1,6 +1,6 @@
 plot.egf <-
 function(x,
-         type = c("interval", "cumulative", "rt", "rt_heat"),
+         type = c("interval", "cumulative", "rt"),
          time_as = c("Date", "numeric"),
          dt = 1,
          log = TRUE,
@@ -8,7 +8,6 @@ function(x,
          show_predict = TRUE,
          show_tdoubling = FALSE,
          level = 0.95,
-         per_plot = min(6L, nlevels(model.frame(x)$ts)),
          control = egf_plot_control(),
          cache = NULL,
          plot = TRUE,
@@ -21,7 +20,6 @@ function(x,
          xlab = NULL,
          ylab = NULL,
          ylab_outer = NULL,
-         plab = NULL,
          ...) {
 	## Validate arguments ------------------------------------------------------
 
@@ -31,29 +29,23 @@ function(x,
 	} else {
 		stopifnot(is_number(dt, "positive"))
 	}
-	if (type == "rt_heat") {
-		show_predict <- 1L
+	stopifnot(is_flag(show_predict))
+	show_predict <- min(2L, max(0L, as.integer(show_predict)))
+	if (x$model$curve %in% c("exponential", "logistic", "richards")) {
+		stopifnot(is_flag(show_tdoubling))
+		show_tdoubling <- min(2L, max(0L, as.integer(show_tdoubling)))
+		show_asymptote <-
+			as.integer(type == "rt" && x$model$curve != "exponential")
+	} else {
 		show_tdoubling <- 0L
 		show_asymptote <- 0L
-	} else {
-		stopifnot(is_flag(show_predict))
-		show_predict <- min(2L, max(0L, as.integer(show_predict)))
-		if (x$model$curve %in% c("exponential", "logistic", "richards")) {
-			stopifnot(is_flag(show_tdoubling))
-			show_tdoubling <- min(2L, max(0L, as.integer(show_tdoubling)))
-			show_asymptote <-
-				as.integer(type == "rt" && x$model$curve != "exponential")
-		} else {
-			show_tdoubling <- 0L
-			show_asymptote <- 0L
-		}
 	}
 	stopifnot(is_true_or_false(plot))
 	if (plot) {
 		time_as <- match.arg(time_as)
 		stopifnot(is_true_or_false(log))
 		if (!is.null(zero)) {
-			if (grepl("^rt(_heat)?$", type)) {
+			if (type == "rt") {
 				zero <- NULL
 			} else if (is.na(zero)) {
 				zero <- as.double(zero)
@@ -63,10 +55,6 @@ function(x,
 		}
 		if (any(c(show_predict, show_tdoubling) == 2L)) {
 			stopifnot(is_number_in_interval(level, 0, 1, "()"))
-		}
-		if (type == "rt_heat") {
-			stopifnot(is_number(per_plot, "positive", integer = TRUE))
-			per_plot <- as.integer(per_plot)
 		}
 		stopifnot(inherits(control, "egf_plot_control"))
 		if (!is.null(cache)) {
@@ -129,33 +117,16 @@ function(x,
 	if (plot) {
 		n <- nlevels(frame_ts$ts)
 		subset1 <- subset[match(lts, frame_windows$ts, 0L)]
-		if (type == "rt_heat") {
-			nplot <- as.integer(ceiling(n / per_plot))
-			if (is.null(main)) {
-				main <- ""
-			}
-			if (is.null(sub)) {
-				sub <- ""
-			}
-			plab <- egf_eval_label(substitute(plab), frame_combined,
-			                       parent.frame())[subset1]
-			if (is.null(plab)) {
-				plab <- levels(frame_ts$ts)
-			}
-			plab <- rep_len(plab, n)
-		} else {
-			nplot <- n
-			main <- egf_eval_label(substitute(main), frame_combined,
-			                       parent.frame())[subset1]
-			if (is.null(main)) {
-				main <- levels(frame_ts$ts)
-			}
-			sub <- egf_eval_label(substitute(sub), frame_combined,
-			                      parent.frame())[subset1]
-			if (is.null(sub)) {
-				sub <- ""
-			}
-			plab <- NULL
+		nplot <- n
+		main <- egf_eval_label(substitute(main), frame_combined,
+		                       parent.frame())[subset1]
+		if (is.null(main)) {
+			main <- levels(frame_ts$ts)
+		}
+		sub <- egf_eval_label(substitute(sub), frame_combined,
+		                      parent.frame())[subset1]
+		if (is.null(sub)) {
+			sub <- ""
 		}
 		main <- rep_len(main, nplot)
 		sub <- rep_len(sub, nplot)
@@ -163,7 +134,7 @@ function(x,
 		if (is.null(xlab)) {
 			xlab <- switch(time_as, Date = "", numeric = "time")
 		}
-		if (grepl("^rt(_heat)?$", type)) {
+		if (type == "rt") {
 			if (is.null(ylab)) {
 				ylab <- "per capita growth rate"
 			}
@@ -194,10 +165,9 @@ function(x,
 
 	## If necessary, augment 'cache' with predicted values
 	## of whatever is being plotted and standard errors
-	what <- base::sub("_heat$", "", type)
 	if (show_predict > 0L) {
 		ok <-
-			cache$var == sprintf("log(%s)", what) &
+			cache$var == sprintf("log(%s)", type) &
 			!(show_predict == 2L & is.na(cache$se))
 		required <- setdiff(lw, cache$window[ok])
 		if (length(required) > 0L) {
@@ -207,7 +177,7 @@ function(x,
 			                  to = frame_windows_bak$end[m],
 			                  by = dt)
 			px <- predict(x,
-			              what = what,
+			              what = type,
 			              time = unlist1(time_split),
 			              window = rep.int(frame_windows_bak$window[m],
 			                               lengths(time_split)),
@@ -262,7 +232,7 @@ function(x,
 	})
 
 	## Extract only those rows of 'cache' needed by the low level plot function
-	lvar <- c(sprintf("log(%s)", what), if (show_tdoubling > 0L) "log(r)")
+	lvar <- c(sprintf("log(%s)", type), if (show_tdoubling > 0L) "log(r)")
 	cache[1:3] <- Map(factor, cache[1:3], levels = list(lvar, lts, lw))
 	i <- complete.cases(cache[1:3])
 	cache <- cache[i, , drop = FALSE]
@@ -270,7 +240,7 @@ function(x,
 	## Augment with confidence intervals
 	cache[c("lower", "upper")] <- list(NA_real_)
 	i <-
-		(show_predict == 2L & cache$var == sprintf("log(%s)", what)) |
+		(show_predict == 2L & cache$var == sprintf("log(%s)", type)) |
 		(show_tdoubling == 2L & cache$var == "log(r)")
 	if (any(i)) {
 		cache[i, c("lower", "upper")] <-
@@ -300,19 +270,11 @@ function(x,
 		               names(control$title$ylab))
 		control$title$ylab[nms] <- gp[nms]
 	}
-	if (type == "rt_heat") {
-		if (is.list(control$title$plab)) {
-			nms <- setdiff(c("cex.lab", "font.lab", "family"),
-			               names(control$title$plab))
-			control$title$plab[nms] <- gp[nms]
-		}
-	} else {
-		for (s in c("ci", "estimate", "legend")) {
-			if (is.list(control$tdoubling[[s]])) {
-				nms <- setdiff(c("adj", "cex", "font", "family"),
-				               names(control$tdoubling[[s]]))
-				control$tdoubling[[s]][nms] <- gp[nms]
-			}
+	for (s in c("ci", "estimate", "legend")) {
+		if (is.list(control$tdoubling[[s]])) {
+			nms <- setdiff(c("adj", "cex", "font", "family"),
+			               names(control$tdoubling[[s]]))
+			control$tdoubling[[s]][nms] <- gp[nms]
 		}
 	}
 
@@ -348,42 +310,26 @@ function(x,
 
 	## Plot and return ---------------------------------------------------------
 
-	if (type == "rt_heat") {
-		plot.egf.heat(cache = cache,
-		              time_as = time_as,
-		              dt = dt,
-		              log = log,
-		              per_plot = per_plot,
-		              control = control,
-		              xlim = xlim,
-		              main = main,
-		              sub = sub,
-		              xlab = xlab,
-		              ylab = ylab,
-		              ylab_outer = ylab_outer,
-		              plab = plab)
-	} else {
-		plot.egf.curve(frame_ts = frame_ts,
-		               frame_windows = frame_windows,
-		               cache = cache,
-		               type = type,
-		               time_as = time_as,
-		               dt = dt,
-		               log = log,
-		               zero = zero,
-		               show_predict = show_predict,
-		               show_tdoubling = show_tdoubling,
-		               show_asymptote = show_asymptote,
-		               level = level,
-		               control = control,
-		               xlim = xlim,
-		               ylim = ylim,
-		               main = main,
-		               sub = sub,
-		               xlab = xlab,
-		               ylab = ylab,
-		               ylab_outer = ylab_outer)
-	}
+	plot.egf.curve(frame_ts = frame_ts,
+	               frame_windows = frame_windows,
+	               cache = cache,
+	               type = type,
+	               time_as = time_as,
+	               dt = dt,
+	               log = log,
+	               zero = zero,
+	               show_predict = show_predict,
+	               show_tdoubling = show_tdoubling,
+	               show_asymptote = show_asymptote,
+	               level = level,
+	               control = control,
+	               xlim = xlim,
+	               ylim = ylim,
+	               main = main,
+	               sub = sub,
+	               xlab = xlab,
+	               ylab = ylab,
+	               ylab_outer = ylab_outer)
 
 	## Discard exit instructions if low level plot function runs without error
 	on.exit()
@@ -795,238 +741,6 @@ function(frame_ts, frame_windows, cache,
 			do.call(title, args2)
 		}
 	} # loop over plots
-
-	invisible(NULL)
-}
-
-plot.egf.heat <-
-function(cache, time_as, dt, log, per_plot, control,
-         xlim, main, sub, xlab, ylab, ylab_outer, plab) {
-	n <- nlevels(cache$ts)
-	pal <- do.call(colorRamp, control$heat$pal)
-	range_log_r <- range(cache$estimate, na.rm = TRUE)
-	range_r <- exp(range_log_r)
-	if (log) {
-		diff_range_log_r <- diff(range_log_r)
-		to_unit <- function(x) (x - range_log_r[1L]) / diff_range_log_r
-	} else {
-		to_unit <- function(x) exp(x) / range_r[2L]
-	}
-	if (is.null(xlim)) {
-		xlim <- range(cache$time)
-	}
-	xlim1 <- xlim
-	ylim1 <- c(0, 1)
-	xlim2 <- c(0, 1)
-	ylim2 <- if (log) range_r else c(0, range_r[2L])
-
-	## Graphical parameters
-	op <- par(mfrow = c(1, 1), xaxs = "i", yaxs = "i")
-	on.exit(par(op))
-	mar <- par("mar")
-
-	## Device layout
-	L <- c(seq_len(per_plot), rep.int(per_plot + 1L, per_plot))
-	dim(L) <- c(per_plot, 2L)
-	layout(L, widths = c(0.925, 0.075))
-	par(cex = 1)
-
-	i <- 0L
-	while (i < n) { # loop over pages
-		for (k in i + seq_len(min(per_plot, n - i))) { # loop over plots
-			data <- cache[unclass(cache$ts) == k, , drop = FALSE]
-
-			plot.new()
-			plot.window(xlim = xlim1, ylim = ylim1)
-
-			if (k == i + 1L) {
-				## Plot subtitle
-				if (is.list(args1 <- control$title$sub)) {
-					args1$main <- sub[1 + i / per_plot]
-					names(args1) <- base::sub("\\.sub$", ".main", names(args1))
-					if (is.null(args1$line)) {
-						args1$line <- args1$mgp[1L] + 1
-					}
-					do.call(title, args1)
-					height <- strheight(args1$main,
-					                    units = "inches",
-					                    cex = args1$cex.main,
-					                    font = args1$font.main,
-					                    family = args1$family)
-					line <- args1$line +
-						diff(grconvertY(c(0, height), "inches", "lines")) + 0.25
-				}
-
-				## Plot title
-				if (is.list(args2 <- control$title$main)) {
-					args2$main <- main[1 + i / per_plot]
-					if (is.list(args1)) {
-						args2$line <- line
-					}
-					do.call(title, args2)
-				}
-			}
-
-			## Background
-			if (is.list(args <- control$heat$bg)) {
-				args[c("xleft", "xright", "ybottom", "ytop")] <-
-					as.list(c(xlim1, ylim1))
-				do.call(rect, args)
-			}
-
-			## Pixels
-			rect(xleft = data$time - 0.5 * dt,
-			     xright = data$time + 0.5 * dt,
-			     ybottom = ylim1[1L],
-			     ytop = ylim1[2L],
-			     border = NA,
-			     col = rgb(pal(to_unit(data$estimate)), maxColorValue = 255))
-
-			## Panel title
-			if (is.list(args1 <- control$title$plab)) {
-				names(args1) <- base::sub("\\.lab$", "", names(args1))
-
-				## Pad from top left corner
-				p <- diff(grconvertY(c(0, 0.08), "npc", "inches"))
-				px <- diff(grconvertX(c(0, p), "inches", "user"))
-				py <- diff(grconvertY(c(0, p), "inches", "user"))
-
-				## Underlay
-				if (is.list(args2 <- control$heat$ul)) {
-					width  <- strwidth(plab[k],
-					                   units = "user",
-					                   cex = args1$cex,
-					                   font = args1$font,
-					                   family = args1$family)
-					height <- strheight(plab[k],
-					                    units = "user",
-					                    cex = args1$cex,
-					                    font = args1$font,
-					                    family = args1$family)
-					args2$xleft   <- xlim1[1L]
-					args2$xright  <- xlim1[1L] + width  + 2 * px
-					args2$ybottom <- ylim1[2L] - height - 2 * py
-					args2$ytop    <- ylim1[2L]
-					do.call(rect, args2)
-				}
-
-				## Text
-				args1$x <- xlim1[1L] + px
-				args1$y <- ylim1[2L] - py
-				args1$labels <- plab[k]
-				args1$adj <- c(0, 1)
-				do.call(text, args1)
-			}
-		} # loop over plots
-
-		## Axis (x)
-		if (is.list(args <- control$axis$x)) {
-			args$side <- 1
-			do.call(switch(time_as, Date = Daxis, baxis), args)
-		}
-
-		## Axis title (x)
-		if (time_as == "numeric" && is.list(args <- control$title$xlab)) {
-			args$xlab <- xlab
-			do.call(title, args)
-		}
-
-		while (k %% per_plot > 0L) {
-			plot.new()
-			k <- k + 1L
-		}
-		par(mar = replace(mar, c(2L, 4L), 0))
-		plot.new()
-		plot.window(xlim = xlim2, ylim = c(0, 1))
-
-		## Color scale
-		dy <- 0.001
-		y <- seq.int(0, 1, by = 2 * dy)
-		rect(xleft = xlim2[1L],
-		     xright = xlim2[2L],
-		     ybottom = y - dy,
-		     ytop = y + dy,
-		     border = NA,
-		     col = rgb(pal(y), maxColorValue = 255))
-
-		## Axis (y)
-		if (is.list(args1 <- control$axis$y)) {
-			par(new = TRUE)
-			plot.window(xlim = xlim2, ylim = ylim2, log = "y")
-			args1$side <- 4
-			args1$las <- 1
-			args1$at <- axTicks(side = 4)
-			args1$labels <- as.character(args1$at)
-			do.call(baxis, args1)
-			width <- max(strwidth(args1$labels,
-			                      units = "inches",
-			                      cex = args1$cex.axis,
-			                      font = args1$font.axis,
-			                      family = args1$family))
-			line <- args1$mgp[2L] +
-				diff(grconvertX(c(0, width), "inches", "lines")) + 0.75
-		}
-
-		## Axis title (y)
-		if (is.list(args2 <- control$title$ylab)) {
-			if (!is.list(args1)) {
-				line <- args2$line
-				if (is.null(line)) {
-					line <- args2$mgp[1L]
-				}
-			}
-			tmp <- args2[c("cex.lab", "col.lab", "font.lab", "family", "xpd")]
-			names(tmp) <- sub("\\.lab$", "", names(tmp))
-			args2 <- list(x = xlim2[2L] +
-			                  diff(grconvertX(c(0, line), "lines", "user")),
-			              y = if (log) exp(mean(log(ylim2))) else mean(ylim2),
-			              labels = ylab,
-			              adj = c(0.5, 0),
-			              srt = 270)
-			args2 <- c(args2, tmp)
-			do.call(text, args2)
-			width <- strheight(ylab,
-			                   units = "inches",
-			                   cex = args2$cex,
-			                   font = args2$font,
-			                   family = args2$family)
-			line <- line +
-				diff(grconvertX(c(0, width), "inches", "lines")) + 1.25
-		}
-
-		if (log) {
-			## Axis (y), outer
-			if (is.list(args1)) {
-				par(new = TRUE)
-				plot.window(xlim = xlim2, ylim = base::log(2) / ylim2,
-				            log = "y")
-				args1$at <- axTicks(side = 4)
-				args1$labels <- as.character(args1$at)
-				args1$mgp <- line + args1$mgp
-				do.call(baxis, args1)
-				width <- max(strwidth(args1$labels,
-				                      units = "inches",
-				                      cex = args1$cex.axis,
-				                      font = args1$font.axis,
-				                      family = args1$family))
-				line <- args1$mgp[2L] +
-					diff(grconvertX(c(0, width), "inches", "lines")) + 0.75
-				par(new = TRUE)
-				plot.window(xlim = xlim2, ylim = ylim2, log = "y")
-			}
-
-			## Axis title (y), outer
-			if (is.list(args2)) {
-				args2$x = xlim2[2L] +
-					diff(grconvertX(c(0, line), "lines", "user"))
-				args2$labels <- ylab_outer
-				do.call(text, args2)
-			}
-		}
-
-		par(mar = mar)
-		i <- i + per_plot
-	} # loop over pages
 
 	invisible(NULL)
 }
