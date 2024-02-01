@@ -1,31 +1,35 @@
 ##' Nonstandard evaluation
 ##'
-##' Utilities for obtaining index vectors from unevaluated \code{subset},
-##' \code{select}, and \code{order} expressions and character vectors from
-##' unevaluated \code{label} expressions.
+##' Utilities for obtaining index vectors from \code{subset}, \code{select},
+##' and \code{order} arguments and character or expression vectors from
+##' \code{label} arguments.
 ##'
 ##' @param expr
-##'   A \link{language} object to be evaluated in \code{data} or,
-##'   in the case of \code{egf_eval_select},
-##'   in \code{`names<-`(as.list(seq_along(data)), names(data))}.
-##'   Alternatively, a non-language object to be used in place of
-##'   the hypothetical result of evaluation.
+##'   A \link{symbol} or \link{call} to be evaluated in an environment
+##'   constructed from \code{data} and \code{enclos} or, in the case of
+##'   \code{egf_eval_select}, from
+##'   \code{`names<-`(as.list(seq_len(ncol(data))), names(data))}
+##'   and \code{enclos}.
+##'   Alternatively, an \R object of a different type to be used in place
+##'   of the hypothetical result of evaluation.
 ##' @param data
 ##'   A data frame.
 ##' @param enclos
 ##'   An environment to enclose \code{data}.
 ##'
 ##' @details
-##' \code{subset} must evaluate to a valid index vector
-##' for the rows of \code{data} (see \code{\link{[.data.frame}}).
+##' \code{subset} must evaluate to a valid index vector for
+##' \code{seq_len(nrow(data))}.
 ##'
-##' \code{select} must evaluate to a valid index vector
-##' for the variables in \code{data} (see \code{\link{[.data.frame}}).
+##' \code{select} must evaluate to a valid index vector for
+##' \code{seq_len(ncol(data))}.
 ##'
-##' \code{order} must evaluate to a permutation of \code{seq_len(nrow(data))}.
+##' \code{order} must evaluate to a permutation of
+##' \code{seq_len(nrow(data))}.
 ##'
-##' \code{label} must evaluate to an \R object coercible via \code{as.character}
-##' to a character vector of length 1 or length \code{nrow(data)}.
+##' \code{label} must evaluate to a character vector or expression vector
+##' of length 1 or length \code{nrow(data)} or, otherwise, to an \R object
+##' coercible via \code{as.character} to such a vector.
 ##'
 ##' @return
 ##' Let \code{res} be the result of evaluating \code{expr}.
@@ -37,9 +41,9 @@
 ##' \code{match(names(data[res]), names(data), 0L)},
 ##' with zeros (if any) deleted.
 ##'
-##' \code{egf_eval_order} returns \code{as.integer(res)}.
+##' \code{egf_eval_order} returns \code{res}.
 ##'
-##' \code{egf_eval_label} returns \code{as.character(res)},
+##' \code{egf_eval_label} returns \code{res} or \code{as.character(res)},
 ##' repeated to length \code{nrow(data)}.
 ##'
 ##' @examples
@@ -63,67 +67,60 @@ egf_eval_subset <-
 function(expr, data, enclos = parent.frame()) {
 	stopifnot(is.data.frame(data))
 	n <- nrow(data)
-	if (is.null(expr)) {
-		return(seq_len(n))
-	}
-	if (is.language(expr)) {
-		subset <- eval(expr, data, enclos)
-	} else {
-		subset <- expr
-	}
-	index <- seq_len(n)
-	names(index) <- row.names(data)
-	subset <- index[subset]
-	sort(unique(subset[!is.na(subset)]))
+	sln <- seq_len(n)
+	if (is.null(expr))
+		return(sln)
+	names(sln) <- row.names(data)
+	subset <-
+		if (is.symbol(expr) || is.call(expr))
+			eval(expr, data, enclos)
+		else expr
+	ans <- sln[subset]
+	names(ans) <- NULL
+	sort(unique(ans[!is.na(ans)]))
 }
 
 egf_eval_select <-
 function(expr, data, enclos = baseenv()) {
 	stopifnot(is.data.frame(data))
-	if (is.null(expr)) {
+	if (is.null(expr))
 		return(integer(0L))
-	}
-	if (is.language(expr)) {
-		l <- as.list(seq_along(data))
-		names(l) <- names(data)
-		select <- eval(expr, l, enclos)
-	} else {
-		select <- expr
-	}
-	select <- match(names(data[select]), names(data), 0L)
-	select[select > 0L]
+	nms <- names(data)
+	select <-
+		if (is.symbol(expr) || is.call(expr))
+			eval(expr, `names<-`(as.list(seq_along(data)), nms), enclos)
+		else expr
+	ans <- match(names(data[select]), nms, 0L)
+	ans[ans > 0L]
 }
 
 egf_eval_order <-
 function(expr, data, enclos = parent.frame()) {
 	stopifnot(is.data.frame(data))
 	n <- nrow(data)
-	if (is.null(expr)) {
-		return(seq_len(n))
-	}
-	if (is.language(expr)) {
-		order <- eval(expr, data, enclos)
-	} else {
-		order <- expr
-	}
-	stopifnot(is.numeric(order),
-	          length(order) == n,
-	          sort(order) == seq_len(n))
-	as.integer(order)
+	sln <- seq_len(n)
+	if (is.null(expr))
+		return(sln)
+	order <-
+		if (is.symbol(expr) || is.call(expr))
+			eval(expr, data, enclos)
+		else expr
+	stopifnot(is.integer(order), length(order) == n, all(sort(order) == sln))
+	order
 }
 
 egf_eval_label <-
 function(expr, data, enclos = parent.frame()) {
 	stopifnot(is.data.frame(data))
-	if (is.null(expr)) {
+	if (is.null(expr))
 		return(NULL)
-	}
-	if (is.language(expr)) {
-		label <- eval(expr, data, enclos)
-	} else {
-		label <- expr
-	}
-	label <- as.character(label)
-	stopifnot(length(label) %in% c(1L, n <- nrow(data)))
+	n <- nrow(data)
+	label <-
+		if (is.symbol(expr) || is.call(expr))
+			eval(expr, data, enclos)
+		else expr
+	if (!(is.character(label) || is.expression(label)))
+		label <- as.character(label)
+	stopifnot(any(length(label) == c(1L, n)))
 	rep_len(label, n)
 }
