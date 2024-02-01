@@ -3,9 +3,9 @@
 \alias{terms.egf_no_fit}
 \title{Extract model terms}
 \usage{
-\method{terms}{egf}(x, top = egf_top(x, link = TRUE), ...)
+\method{terms}{egf}(x, top = egf_top(x), ...)
 
-\method{terms}{egf_no_fit}(x, top = egf_top(x, link = TRUE), ...)
+\method{terms}{egf_no_fit}(x, top = egf_top(x), ...)
 }
 \arguments{
 \item{x}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}

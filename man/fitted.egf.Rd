@@ -5,7 +5,7 @@
 \usage{
 \method{fitted}{egf}(
   object,
-  top = egf_top(object, link = TRUE),
+  top = egf_top(object),
   link = TRUE,
   se = FALSE,
   subset = NULL,
@@ -15,7 +15,7 @@
 
 \method{fitted}{egf_no_fit}(
   object,
-  top = egf_top(object, link = TRUE),
+  top = egf_top(object),
   link = TRUE,
   se = FALSE,
   subset = NULL,

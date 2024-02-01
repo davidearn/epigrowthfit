@@ -6,7 +6,7 @@
   object,
   parm,
   level = 0.95,
-  top = egf_top(object, link = TRUE),
+  top = egf_top(object),
   link = TRUE,
   method = c("wald", "profile", "uniroot"),
   parallel = egf_parallel(),

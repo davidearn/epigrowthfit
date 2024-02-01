@@ -180,7 +180,7 @@ function(model, frame, control, env) {
 
 	## Column indices of top level nonlinear model parameters
 	## in response matrix
-	names_top_all <- egf_top(NULL, link = TRUE)
+	names_top_all <- egf_top(NULL)
 	indices <- as.list(match(names_top_all, names_top, 0L) - 1L)
 	names(indices) <- sub("^(log|logit)\\((.*)\\)$", "\\1_\\2", names_top_all)
 

@@ -7,7 +7,7 @@
   formula,
   which = c("ts", "windows", "parameters", "extra", "combined"),
   full = FALSE,
-  top = egf_top(formula, link = TRUE),
+  top = egf_top(formula),
   ...
 )
 
@@ -15,7 +15,7 @@
   formula,
   which = c("ts", "windows", "parameters", "extra", "combined"),
   full = FALSE,
-  top = egf_top(formula, link = TRUE),
+  top = egf_top(formula),
   ...
 )
 }

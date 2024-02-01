@@ -45,7 +45,7 @@ function(s) {
 
 egf_link_remove <-
 function(fs) {
-	ok <- fs %in% egf_top(NULL, link = TRUE)
+	ok <- fs %in% egf_top(NULL)
 	fs[ok] <- sub("^(log|logit)\\((.*)\\)$", "\\2", fs[ok])
 	fs[!ok] <- NA
 	fs
@@ -53,7 +53,7 @@ function(fs) {
 
 egf_link_extract <-
 function(fs) {
-	ok <- fs %in% egf_top(NULL, link = TRUE)
+	ok <- fs %in% egf_top(NULL)
 	fs[ok] <- sub("^(log|logit)\\((.*)\\)$", "\\1", fs[ok])
 	fs[!ok] <- NA
 	fs

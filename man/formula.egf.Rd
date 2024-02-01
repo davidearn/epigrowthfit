@@ -3,9 +3,9 @@
 \alias{formula.egf_no_fit}
 \title{Extract model formulae}
 \usage{
-\method{formula}{egf}(x, top = egf_top(x, link = TRUE), split = FALSE, ...)
+\method{formula}{egf}(x, top = egf_top(x), split = FALSE, ...)
 
-\method{formula}{egf_no_fit}(x, top = egf_top(x, link = TRUE), split = FALSE, ...)
+\method{formula}{egf_no_fit}(x, top = egf_top(x), split = FALSE, ...)
 }
 \arguments{
 \item{x}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}

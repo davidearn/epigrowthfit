@@ -7,7 +7,7 @@
   level = 0.95,
   which = NULL,
   A = NULL,
-  top = egf_top(fitted, link = TRUE),
+  top = egf_top(fitted),
   parallel = egf_parallel(),
   trace = FALSE,
   grid_len = 12,

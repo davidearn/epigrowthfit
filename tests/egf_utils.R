@@ -34,7 +34,7 @@ for (formula in l2)
 ## egf_sanitize_formula_parameters #####################################
 
 model <- egf_model(curve = "exponential", family = "pois")
-names_parameters <- egf_top(model, link = TRUE)
+names_parameters <- egf_top(model)
 
 s <-
 function(formula_parameters)

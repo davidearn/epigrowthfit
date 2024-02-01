@@ -158,7 +158,7 @@ function(object, nsim = 1L, seed = NULL,
 		set_RNGstate <- function() do.call(set.seed, RNGstate)
 	}
 
-	names_top <- egf_top(object, link = TRUE)
+	names_top <- egf_top(object)
 	p <- length(names_top)
 	stopifnot(is.numeric(mu), length(mu) == p, is.finite(mu))
 	names(mu) <- names_top

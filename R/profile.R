@@ -3,7 +3,7 @@ function(fitted,
          level = 0.95,
          which = NULL,
          A = NULL,
-         top = egf_top(fitted, link = TRUE),
+         top = egf_top(fitted),
          parallel = egf_parallel(),
          trace = FALSE,
          grid_len = 12,
@@ -49,7 +49,7 @@ function(fitted,
 	} else if (!is.null(top)) {
 		method <- "top"
 
-		names_top <- egf_top(fitted, link = TRUE)
+		names_top <- egf_top(fitted)
 		top <- unique(match.arg(top, names_top, several.ok = TRUE))
 
 		frame_windows <- model.frame(fitted, "windows")
