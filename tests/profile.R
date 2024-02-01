@@ -24,14 +24,14 @@ stopifnot(exprs = {
 	identical(o.1p[["window"]],
 	          rep.int(factor("window_01", levels = sprintf("window_%02d", seq_len(20L))), nrow(o.1p)))
 	identical(o.1p[["linear_combination"]],
-	          factor(o.1p[["top"]], labels = c("1", "2")))
+	          factor(o.1p[["top"]], levels = "log(r)", labels = "1"))
 
 	is.double(o.1p[["value"]])
 	is.double(o.1p[["deviance"]])
 
 	identical(unname(c(by(o.1p, o.1p[["linear_combination"]],
 	                      function(d) d[["value"]][[which.min(d[["deviance"]])]]))),
-	          unname(o.1c[1:2]))
+	          unname(o.1c[1L]))
 })
 
 
@@ -60,7 +60,7 @@ stopifnot(exprs = {
 
 f <-
 function(method, cores)
-	profile(o.1,
+	profile(o.1, top = "log(r)",
 	        subset = country == "A" & wave == 1,
 	        parallel = egf_parallel(method = method, cores = cores))
 
