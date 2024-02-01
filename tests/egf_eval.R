@@ -18,16 +18,6 @@ stopifnot(exprs = {
 })
 
 
-## egf_eval_order ######################################################
-
-stopifnot(exprs = {
-	identical(egf_eval_order(quote(order(x, decreasing = TRUE)), data), 10:1)
-	identical(egf_eval_order(NULL, data), 1:10)
-	identical(egf_eval_order(c(1:5, 10:6), data), c(1:5, 10:6))
-})
-assertError(egf_eval_order(1:5, data))
-
-
 ## egf_eval_select #####################################################
 
 stopifnot(exprs = {
@@ -37,6 +27,16 @@ stopifnot(exprs = {
 	identical(egf_eval_select(1:2, data), 1:2)
 	identical(egf_eval_select(c("y", "z"), data), 2:3)
 })
+
+
+## egf_eval_order ######################################################
+
+stopifnot(exprs = {
+	identical(egf_eval_order(quote(order(x, decreasing = TRUE)), data), 10:1)
+	identical(egf_eval_order(NULL, data), 1:10)
+	identical(egf_eval_order(c(1:5, 10:6), data), c(1:5, 10:6))
+})
+assertError(egf_eval_order(1:5, data))
 
 
 ## egf_eval_label ######################################################
