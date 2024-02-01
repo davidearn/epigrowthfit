@@ -8,9 +8,7 @@ function(fitted,
          trace = FALSE,
          grid_len = 12,
          subset = NULL,
-         append = NULL,
-         .subset = NULL,
-         .append = NULL,
+         select = NULL,
          ...) {
 	stopifnot(is_number_in_interval(level, 0, 1, "()"),
 	          inherits(parallel, "egf_parallel"),
@@ -56,10 +54,8 @@ function(fitted,
 
 		frame_windows <- model.frame(fitted, "windows")
 		frame_combined <- model.frame(fitted, "combined")
-		subset <- if (is.null(.subset)) substitute(subset) else .subset
 		subset <- egf_eval_subset(subset, frame_combined, parent.frame())
-		append <- if (is.null(.append)) substitute(append) else .append
-		append <- egf_eval_append(append, frame_combined, baseenv())
+		select <- egf_eval_select(select, frame_combined, baseenv())
 
 		l <- egf_preprofile(fitted, subset = subset, top = top)
 		Y <- l$Y
@@ -161,7 +157,7 @@ function(fitted,
 		                                    each = length(subset)), nr),
 		                  frame_windows[i, c("ts", "window"), drop = FALSE],
 		                  res,
-		                  frame_combined[i, append, drop = FALSE],
+		                  frame_combined[i, select, drop = FALSE],
 		                  row.names = NULL,
 		                  check.names = FALSE,
 		                  stringsAsFactors = FALSE)
@@ -225,7 +221,7 @@ function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
 
 plot.egf_profile <-
 function(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...) {
-	subset <- egf_eval_subset(substitute(subset), x, parent.frame())
+	subset <- egf_eval_subset(subset, x, parent.frame())
 	subset <- match(levels(factor(x$linear_combination[subset])),
 	                levels(x$linear_combination))
 

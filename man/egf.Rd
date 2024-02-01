@@ -15,6 +15,7 @@ egf(model, ...)
   data_windows,
   subset_ts = NULL,
   subset_windows = NULL,
+  select_windows = NULL,
   na_action_ts = c("fail", "pass"),
   na_action_windows = c("fail", "omit"),
   control = egf_control(),
@@ -22,7 +23,6 @@ egf(model, ...)
   se = FALSE,
   init = list(),
   map = list(),
-  append = NULL,
   ...
 )
 }
@@ -110,9 +110,19 @@ The result should be a valid index vector for the rows of the data frame
 Rows that are not indexed are discarded.
 Rows that are indexed are filtered further
 (e.g., time series with zero associated fitting windows are discarded
-regardless of \code{subset}).
+regardless of \code{subset_ts}).
 The default (\code{\link{NULL}}) is to preserve all rows for further
 filtering.}
+
+\item{select_windows}{An expression indicating additional variables
+in \code{data_windows} to be preserved in the returned object for use
+by methods.
+Usage requires that \code{data_windows} is a \link[=data.frame]{data frame}.
+The default (\code{\link{NULL}}) is to preserve nothing.
+A dot \samp{.} is to preserve all variables not occurring in
+\code{formula_windows} or \code{formula_parameters}.
+Outside of these two special cases, the expression is evaluated
+similarly to argument \code{select} of function \code{\link{subset}}.}
 
 \item{na_action_ts}{A \link{character} string affecting the handling of \code{\link{NA}}
 in \code{x} if \code{formula_ts = cbind(time, x) ~ ts}.
@@ -161,16 +171,6 @@ common value during estimation.
 \code{map[["name"]]} can be an index vector for segment \code{name},
 instead of a factor. In this case, the elements of segment \code{name}
 indexed by \code{map[["name"]]} are fixed at their initial values.}
-
-\item{append}{An expression indicating variables in \code{data_windows}
-to be preserved in the returned object for use by methods.
-Usage requires that \code{data_windows} is a
-\link[=data.frame]{data frame}.
-The default (\code{\link{NULL}}) is to preserve nothing.
-A dot \samp{.} is to preserve all variables not occurring
-in \code{formula_parameters}.
-Outside of these two special cases, expressions are evaluated
-similarly to argument \code{select} of function \code{\link{subset}}.}
 }
 \value{
 A \link{list} inheriting from \link{class} \code{"egf"}

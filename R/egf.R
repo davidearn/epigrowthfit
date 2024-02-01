@@ -12,6 +12,7 @@ function(model,
          data_windows,
          subset_ts = NULL,
          subset_windows = NULL,
+         select_windows = NULL,
          na_action_ts = c("fail", "pass"),
          na_action_windows = c("fail", "omit"),
          control = egf_control(),
@@ -19,7 +20,6 @@ function(model,
          se = FALSE,
          init = list(),
          map = list(),
-         append = NULL,
          ...) {
 	stopifnot(inherits(formula_ts, "formula"),
 	          inherits(formula_windows, "formula"))
@@ -45,6 +45,7 @@ function(model,
 	}
 	subset_ts <- substitute(subset_ts)
 	subset_windows <- substitute(subset_windows)
+	select_windows <- substitute(select_windows)
 	na_action_ts <- match.arg(na_action_ts)
 	na_action_windows <- match.arg(na_action_windows)
 	stopifnot(inherits(control, "egf_control"),
@@ -52,7 +53,6 @@ function(model,
 	          is_true_or_false(se),
 	          is.list(init),
 	          is.list(map))
-	append <- substitute(append)
 
 	names_parameters <- egf_get_names_top(model, link = TRUE)
 
@@ -70,9 +70,9 @@ function(model,
 	                        data_windows = data_windows,
 	                        subset_ts = subset_ts,
 	                        subset_windows = subset_windows,
+	                        select_windows = select_windows,
 	                        na_action_ts = na_action_ts,
-	                        na_action_windows = na_action_windows,
-	                        append = append)
+	                        na_action_windows = na_action_windows)
 
 	env <- new.env(parent = emptyenv())
 	tmb_args <- egf_tmb_make_args(model = model,

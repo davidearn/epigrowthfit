@@ -12,9 +12,7 @@
   trace = FALSE,
   grid_len = 12,
   subset = NULL,
-  append = NULL,
-  .subset = NULL,
-  .append = NULL,
+  select = NULL,
   ...
 )
 }
@@ -52,21 +50,16 @@ optimizer output.}
 \code{\link[TMB]{tmbprofile}} will generate approximately
 this many points on each side of a profile's minimum point.}
 
-\item{subset}{An expression to be evaluated in
-\code{\link[=model.frame.egf]{model.frame}(fitted, "combined")}
-It must evaluate to to a valid index vector for the rows of the
-data frame and, in turn, fitting windows.
-Only population fitted values for indexed windows are profiled.
-The default (\code{NULL}) is to consider all windows.
+\item{subset, select}{Index vectors for the rows and columns of
+\code{mf = \link[=model.frame.egf]{model.frame}(object, "combined")}
+or language objects evaluating to such vectors.
+\code{subset} indicates fitting windows for which likelihood profiles
+should be computed; the default (\code{NULL}) indicates all of them.
+\code{select} indicates variables that should be appended to the result;
+the default (\code{NULL}) is to append nothing.
+Evaluation of language objects follows the implementation of
+\code{\link{subset}(mf, subset, select)}.
 Ignored if \code{which} or \code{A} is non-\code{NULL}.}
-
-\item{append}{An expression indicating variables in
-\code{\link[=model.frame.egf]{model.frame}(object, "combined")}
-to be included with the result.
-The default (\code{NULL}) is to append nothing.}
-
-\item{.subset, .append}{Index vectors to be used (if non-\code{\link{NULL}}) in place of
-the result of evaluating \code{subset} and \code{append}.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -112,15 +105,12 @@ is OpenMP support and \code{fitted$control$omp_num_threads} is set to
 an integer greater than 1. If there is no OpenMP support, then computation
 can still be parallelized at the \R level with appropriate setting of
 \code{parallel}.
-
-See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-of \code{subset} and \code{append}.
 }
 \examples{
 fitted <- egf_cache("egf-1.rds")
 zz <- egf_cache("profile-egf-1.rds", {
     profile(fitted, top = "log(r)",
-            subset = (country == "A" & wave == 1))
+            subset = quote(country == "A" & wave == 1))
 })
 str(zz)
 

@@ -14,10 +14,10 @@ with lines at \code{deviance = \link{qchisq}(level, df = 1)}.}
 \item{sqrt}{A logical flag.
 If \code{TRUE}, then square root-transformed deviance is plotted.}
 
-\item{subset}{An expression to be evaluated in \code{x}.
-It must evaluate to a valid index vector for the rows of \code{x}.
-Only indexed profiles are plotted.
-The default (\code{NULL}) is to plot all profiles.}
+\item{subset}{An index vector for \code{seq_len(nrow(x))}
+or a language object evaluating in \code{x} to such a vector.
+\code{subset} indicates which profiles are plotted;
+the default (\code{NULL}) indicates all of them.}
 
 \item{...}{Graphical parameters passed to \code{\link{plot}}.}
 }
@@ -26,10 +26,6 @@ The default (\code{NULL}) is to plot all profiles.}
 }
 \description{
 A method for plotting likelihood profiles.
-}
-\details{
-See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-of \code{subset}.
 }
 \examples{
 x <- egf_cache("profile-egf-1.rds")

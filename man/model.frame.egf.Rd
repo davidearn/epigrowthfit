@@ -5,7 +5,7 @@
 \usage{
 \method{model.frame}{egf}(
   formula,
-  which = c("ts", "windows", "parameters", "append", "combined"),
+  which = c("ts", "windows", "parameters", "extra", "combined"),
   full = FALSE,
   top = egf_get_names_top(formula, link = TRUE),
   ...
@@ -13,7 +13,7 @@
 
 \method{model.frame}{egf_no_fit}(
   formula,
-  which = c("ts", "windows", "parameters", "append", "combined"),
+  which = c("ts", "windows", "parameters", "extra", "combined"),
   full = FALSE,
   top = egf_get_names_top(formula, link = TRUE),
   ...
@@ -27,11 +27,11 @@
 \code{"windows"}, fitting window endpoints;
 \code{"parameters"}, the mixed effects model frame
 corresponding to parameter \code{top};
-\code{"append"}, variables preserved in \code{formula}
-via \code{\link{egf}} argument \code{append}; or
+\code{"extra"}, variables preserved in \code{formula}
+via \code{\link{egf}} argument \code{select_windows}; or
 \code{"combined"}, the result of concatenating
 (in the sense of \code{\link{cbind}})
-the results of \code{"parameters"} and \code{"append"},
+the results of \code{"parameters"} and \code{"extra"},
 then deleting any duplicated variables.}
 
 \item{full}{A logical flag.

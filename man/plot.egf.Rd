@@ -89,22 +89,20 @@ stored in \code{cache} are reused if possible to avoid recomputation.}
 \item{plot}{A \link{logical} flag. If \code{FALSE}, then nothing is plotted.
 Useful when only the returned \code{"egf_plot_cache"} object is desired.}
 
-\item{subset}{An expression to be evaluated in
-in \code{\link[=model.frame.egf]{model.frame}(x, "combined")}.
-It must evaluate to a valid index vector for the rows of
-the data frame and, in turn, fitting windows.
-Only time series with indexed fitting windows are plotted.
-Only indexed fitting windows are highlighted in plots.
-The default (\code{NULL}) is to plot all time series
-and display all fitting windows in each time series.}
+\item{subset}{An index vector for the rows of
+\code{mf = \link[=model.frame.egf]{model.frame}(object, "combined")}
+or a language object evaluating to such a vector.
+Only time series corresponding to indexed rows are plotted and
+only fitting windows corresponding to indexed rows are highlighted;
+the default (\code{NULL}) is to plot all time series and highlight
+all fitting windows.
+Evaluation of language objects follows the implementation of
+\code{\link{subset}(mf, subset, select)}.}
 
-\item{order}{An expression to be evaluated in
-\code{\link[=model.frame.egf]{model.frame}(x, "combined")},
-typically a call to \code{\link{order}},
-determining the order in which time series are plotted.
-It must evaluate to a permutation of \code{seq_len(n)},
-where \code{n} is the number of rows of the data frame.
-The default (\code{NULL}) is to respect the original ordering.}
+\item{order}{A permutation of \code{seq_len(nrow(mf))}
+or a language object evaluating in \code{mf} to such a vector.
+\code{order} indicates the order in which time series are plotted;
+the default (\code{NULL}) indicates the original order.}
 
 \item{xlim, ylim}{Numeric vectors of length 2 specifying axis limits,
 which are recycled for all plots.
@@ -112,15 +110,12 @@ If \code{time_as = "Date"}, then \code{xlim} can instead
 be a \link{Date} vector or any vector coercible to Date
 via \code{\link{as.Date}(xlim)}.}
 
-\item{main, sub, xlab, ylab, ylab_outer}{Character strings or expressions used to generate
-plot (\code{main}, \code{sub}) and
-axis (\code{xlab}, \code{ylab}, \code{ylab_outer}).
-\code{main}, \code{sub}, \code{xlab}, and \code{ylab}
-are supported for all values of \code{type}.
-\code{ylab_outer} is used for \code{type = "rt"} only.
-\code{main} and \code{sub} are evaluated in
-\code{\link[=model.frame.egf]{model.frame}(x, "combined")}
-in order to generate unique (sub)titles for each plot.}
+\item{main, sub, xlab, ylab, ylab_outer}{Character or expression
+vectors or (\code{main}, \code{sub}) language objects evaluating
+in \code{mf} to such vectors.
+These are used to generate plot (\code{main}, \code{sub}) and
+axis (\code{xlab}, \code{ylab}, \code{ylab_outer}) labels.
+\code{ylab_outer} is used for \code{type = "rt"} only.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -149,12 +144,12 @@ correct results.
 }
 \examples{
 x <- egf_cache("egf-1.rds")
+l <- list(legend = list(cex = 0.8),
+          estimate = list(cex = 0.8, font = 2),
+          ci = list(cex = 0.8))
+control <- egf_plot_control(tdoubling = l)
 
 op <- par(mar = c(3.5, 5, 5, 1))
-control <-
-    egf_plot_control(tdoubling = list(legend = list(cex = 0.8),
-                                      estimate = list(cex = 0.8, font = 2),
-                                      ci = list(cex = 0.8)))
 plot(x,
      type = "interval",
      show_predict = 2L,
@@ -163,11 +158,11 @@ plot(x,
 plot(x,
      type = "cumulative",
      main = "Fitted exponential model",
-     sub = paste("Country", country))
+     sub = quote(paste("Country", country)))
 par(op)
 
 op <- par(mar = c(3.5, 9.5, 5, 1))
-plot(x, type = "rt", subset = country \%in\% LETTERS[4:6])
+plot(x, type = "rt", subset = quote(country \%in\% LETTERS[4:6]))
 par(op)
 
 }

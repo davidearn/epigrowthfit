@@ -8,15 +8,15 @@ with elements:
   A copy of the so-named argument of \code{\link{egf}}.
 }
 \item{frame}{
-  A list of the form \code{list(ts, windows, parameters, append)}.
+  A list of the form \code{list(ts, windows, parameters, extra)}.
   \code{ts} and \code{windows} are data frames preserving time series
   and fitting window endpoints.
   \code{parameters} is a list of mixed effects model frames,
   with one element for each top level nonlinear model parameter.
-  \code{append} is a data frame preserving additional variables
-  specified in \code{call$append}.
+  \code{extra} is a data frame preserving additional variables
+  specified in \code{call$select_windows}.
   \code{windows}, the model frames listed in \code{parameters},
-  and \code{append} all correspond rowwise.
+  and \code{extra} all correspond rowwise.
 }
 \item{priors}{
   A list of the form \code{list(top, bottom = list(beta, theta, Sigma))},

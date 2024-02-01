@@ -7,8 +7,8 @@
   per_plot = 12L,
   subset = NULL,
   order = NULL,
-  main = NULL,
   label = NULL,
+  main = NULL,
   ...
 )
 }
@@ -18,25 +18,23 @@
 \item{per_plot}{A positive integer. One plot will display at most this many
 confidence intervals.}
 
-\item{subset}{An expression to be evaluated in \code{x}.
-It must evaluate to a valid index vector for the rows of \code{x}.
-Only indexed confidence intervals are plotted.
-The default (\code{NULL}) is to plot all confidence intervals.}
+\item{subset}{An index vector for \code{seq_len(nrow(x))}
+or a language object evaluating in \code{x} to such a vector.
+\code{subset} indicates which confidence intervals are plotted;
+the default (\code{NULL}) indicates all of them.}
 
-\item{order}{An expression to be evaluated in \code{x},
-typically a call to \code{\link{order}},
-determining the order in which confidence intervals
-are plotted.
-It must evaluate to a permutation of \code{seq_len(nrow(x))}.
-The default (\code{NULL}) is equivalent to \code{seq_len(nrow(x))}.}
+\item{order}{A permutation of \code{seq_len(nrow(x))}
+or a language object evaluating in \code{x} to such a vector.
+\code{order} indicates the order in which confidence intervals are plotted;
+the default (\code{NULL}) indicates the original order.}
 
-\item{main}{An expression or character string indicating a plot title,
-to be recycled for all plots.}
+\item{label}{A character or expression vector of length \code{nrow(x)}
+(or a language object evaluating in \code{x} to such a vector).
+\code{label} indicates \eqn{y}-axis labels for confidence intervals;
+the default (\code{NULL}) is to obtain labels from \code{x[["window"]]}.}
 
-\item{label}{An expression to be evaluated in \code{x}, typically a factor,
-an interaction of factors, or a call to \code{\link{sprintf}}.
-It is used to create appropriate \eqn{y}-axis labels for confidence
-intervals. The default (\code{NULL}) is to take labels from \code{x$window}.}
+\item{main}{A character or expression vector of length 1
+indicating a plot title, to be recycled for all plots.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -48,10 +46,6 @@ A method for graphically comparing confidence intervals
 on fitted values of top level nonlinear model parameters.
 It creates a one-dimensional plot with
 confidence intervals drawn as stacked horizontal line segments.
-}
-\details{
-See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-of \code{subset}, \code{order}, and \code{label}.
 }
 \examples{
 x <- egf_cache("confint-egf-1.rds")

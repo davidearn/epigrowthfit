@@ -43,7 +43,7 @@ stopifnot(exprs = {
 f <-
 function(method, cores)
 	confint(o.1, top = "log(r)", method = "uniroot",
-	        subset = country == "A" & wave == 1,
+	        subset = quote(country == "A" & wave == 1),
 	        parallel = egf_parallel(method = method, cores = cores))
 
 windows <- .Platform[["OS.type"]] == "windows"

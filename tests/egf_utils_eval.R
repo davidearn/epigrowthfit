@@ -28,14 +28,14 @@ stopifnot(exprs = {
 assertError(egf_eval_order(1:5, data))
 
 
-## egf_eval_append #####################################################
+## egf_eval_select #####################################################
 
 stopifnot(exprs = {
-	identical(egf_eval_append(quote(c(x, y)), data), 1:2)
-	identical(egf_eval_append(quote(-x), data), 2:3)
-	identical(egf_eval_append(NULL, data), integer(0L))
-	identical(egf_eval_append(1:2, data), 1:2)
-	identical(egf_eval_append(c("y", "z"), data), 2:3)
+	identical(egf_eval_select(quote(c(x, y)), data), 1:2)
+	identical(egf_eval_select(quote(-x), data), 2:3)
+	identical(egf_eval_select(NULL, data), integer(0L))
+	identical(egf_eval_select(1:2, data), 1:2)
+	identical(egf_eval_select(c("y", "z"), data), 2:3)
 })
 
 

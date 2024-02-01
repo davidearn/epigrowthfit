@@ -89,13 +89,13 @@ mf0 <- model.frame(o.1, which = "ts", full = FALSE)
 mf1 <- model.frame(o.1, which = "ts", full = TRUE)
 mf2 <- model.frame(o.1, which = "windows")
 mf3 <- model.frame(o.1, which = "parameters", top = "log(r)")
-mf4 <- model.frame(o.1, which = "append")
+mf4 <- model.frame(o.1, which = "extra")
 mf5 <- model.frame(o.1, which = "combined")
 
 frame <- o.1[["frame"]]
 
 d5 <- do.call(cbind, unname(frame[["parameters"]]))
-d5 <- cbind(d5, frame[["append"]])
+d5 <- cbind(d5, frame[["extra"]])
 d5 <- d5[!duplicated(names(d5))]
 
 stopifnot(exprs = {
@@ -103,7 +103,7 @@ stopifnot(exprs = {
 	identical(mf1, frame[["ts"]])
 	identical(mf2, frame[["windows"]])
 	identical(mf3, frame[["parameters"]][["log(r)"]])
-	identical(mf4, frame[["append"]])
+	identical(mf4, frame[["extra"]])
 	identical(mf5, d5)
 })
 
@@ -116,7 +116,7 @@ Z <- model.matrix(o.1, which = "random")
 X1 <- model.matrix(o.1, which =  "fixed", top = "log(r)")
 Z1 <- model.matrix(o.1, which = "random", top = "log(r)")
 Z2 <- model.matrix(o.1, which = "random", top = "log(r)",
-                   random = (1 | country:wave))
+                   random = quote(1 | country:wave))
 
 o.1f <- fixef(o.1)
 o.1r <- ranef(o.1)

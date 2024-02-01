@@ -85,11 +85,10 @@ data_windows <- data.frame(country = gl(3L, 2L),
 
 subset_ts <- quote(day > 0)
 subset_windows <- quote(x1 < 0)
+select_windows <- quote(.)
 
 na_action_ts <- "pass"
 na_action_windows <- "omit"
-
-append <- quote(.)
 
 frame <- egf_make_frame(model = model,
                         formula_ts = formula_ts,
@@ -99,14 +98,14 @@ frame <- egf_make_frame(model = model,
                         data_windows = data_windows,
                         subset_ts = subset_ts,
                         subset_windows = subset_windows,
+                        select_windows = select_windows,
                         na_action_ts = na_action_ts,
-                        na_action_windows = na_action_windows,
-                        append = append)
+                        na_action_windows = na_action_windows)
 
 stopifnot(exprs = {
 	is.list(frame)
 	length(frame) == 4L
-	identical(names(frame), c("ts", "windows", "parameters", "append"))
+	identical(names(frame), c("ts", "windows", "parameters", "extra"))
 })
 
 l1 <- frame[["ts"]]
@@ -146,7 +145,7 @@ attr(l32.e, "terms") <- terms(formula_parameters[["log(c0)"]])
 row.names(l32.e) <- NULL
 stopifnot(identical(l32, l32.e))
 
-l4 <- frame[["append"]]
+l4 <- frame[["extra"]]
 l4.e <- droplevels(data_windows[3:5, c("country", "left", "right", "x2", "x3"), drop = FALSE])
 row.names(l4.e) <- NULL
 stopifnot(identical(l4, l4.e))

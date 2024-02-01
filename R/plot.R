@@ -86,14 +86,12 @@ function(x,
 	frame_windows <- frame_windows_bak <- model.frame(x, "windows")
 	frame_combined <- model.frame(x, "combined")
 
-	subset <- egf_eval_subset(substitute(subset), frame_combined,
-	                          parent.frame())
+	subset <- egf_eval_subset(subset, frame_combined, parent.frame())
 	if (length(subset) == 0L) {
 		stop1("'subset' indexes zero fitting windows, ",
 		      "so there is nothing to plot.")
 	}
-	order <- egf_eval_order(substitute(order), frame_combined,
-	                        parent.frame())
+	order <- egf_eval_order(order, frame_combined, parent.frame())
 	subset <- order[order %in% subset]
 	frame_windows <- frame_windows[subset, , drop = FALSE]
 
@@ -118,13 +116,11 @@ function(x,
 		n <- nlevels(frame_ts$ts)
 		subset1 <- subset[match(lts, frame_windows$ts, 0L)]
 		nplot <- n
-		main <- egf_eval_label(substitute(main), frame_combined,
-		                       parent.frame())[subset1]
+		main <- egf_eval_label(main, frame_combined, parent.frame())[subset1]
 		if (is.null(main)) {
 			main <- levels(frame_ts$ts)
 		}
-		sub <- egf_eval_label(substitute(sub), frame_combined,
-		                      parent.frame())[subset1]
+		sub <- egf_eval_label(sub, frame_combined, parent.frame())[subset1]
 		if (is.null(sub)) {
 			sub <- ""
 		}
@@ -200,7 +196,7 @@ function(x,
 			             top = "log(r)",
 			             link = TRUE,
 			             se = (show_tdoubling == 2L),
-			             .subset = (frame_windows_bak$window %in% required))
+			             subset = (frame_windows_bak$window %in% required))
 			if (show_tdoubling != 2L) {
 				fx$se <- NA_real_
 			}

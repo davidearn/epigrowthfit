@@ -14,9 +14,7 @@
   grid_len = 12,
   interval_scale = 7,
   subset = NULL,
-  append = NULL,
-  .subset = NULL,
-  .append = NULL,
+  select = NULL,
   ...
 )
 }
@@ -60,20 +58,15 @@ of width \code{interval_scale * se} centered at \code{estimate},
 where \code{estimate} is the fitted value (link scale)
 and \code{se} is the corresponding standard error.}
 
-\item{subset}{An expression to be evaluated in
-\code{\link[=model.frame.egf]{model.frame}(object, "combined")}.
-It must evaluate to a valid index vector for the rows of
-the data frame and, in turn, fitting windows.
-Confidence intervals are computed only for indexed windows.
-The default (\code{NULL}) is to consider all windows.}
-
-\item{append}{An expression indicating variables in
-\code{\link[=model.frame.egf]{model.frame}(object, "combined")}
-to be included with the result.
-The default (\code{NULL}) is to append nothing.}
-
-\item{.subset, .append}{Index vectors to be used (if non-\code{NULL}) in place of
-the result of evaluating \code{subset} and \code{append}.}
+\item{subset, select}{Index vectors for the rows and columns of
+\code{mf = \link[=model.frame.egf]{model.frame}(object, "combined")}
+or language objects evaluating to such vectors.
+\code{subset} indicates fitting windows for which fitted values
+should be retrieved; the default (\code{NULL}) indicates all of them.
+\code{select} indicates variables that should be appended to the result;
+the default (\code{NULL}) is to append nothing.
+Evaluation of language objects follows the implementation of
+\code{\link{subset}(mf, subset, select)}.}
 
 \item{...}{Unused optional arguments.}
 }
@@ -131,9 +124,6 @@ They are parallelized at the C++ level when there is OpenMP support and
 \code{object$control$omp_num_threads} is set to an integer greater than 1.
 If there is no OpenMP support, then computation can still be parallelized
 at the \R level with appropriate setting of \code{parallel}.
-
-See topic \code{\link{egf_eval}} for details on nonstandard evaluation
-of \code{subset} and \code{append}.
 }
 \examples{
 object <- egf_cache("egf-1.rds")
@@ -142,11 +132,11 @@ zz1 <- egf_cache("confint-egf-1.rds", {
 })
 zz2 <- egf_cache("confint-egf-2.rds", {
     confint(object, method = "profile", top = "log(r)",
-            subset = (country == "A" & wave == 1))
+            subset = quote(country == "A" & wave == 1))
 })
 zz3 <- egf_cache("confint-egf-3.rds", {
     confint(object, method = "uniroot", top = "log(r)",
-            subset = (country == "A" & wave == 1))
+            subset = quote(country == "A" & wave == 1))
 })
 str(zz1)
 

@@ -4,9 +4,7 @@ function(object,
          link = TRUE,
          se = FALSE,
          subset = NULL,
-         append = NULL,
-         .subset = NULL,
-         .append = NULL,
+         select = NULL,
          ...) {
 	stopifnot(is_true_or_false(link),
 	          is_true_or_false(se))
@@ -20,10 +18,8 @@ function(object,
 
 	frame_windows <- model.frame(object, "windows")
 	frame_combined <- model.frame(object, "combined")
-	subset <- if (is.null(.subset)) substitute(subset) else .subset
 	subset <- egf_eval_subset(subset, frame_combined, parent.frame())
-	append <- if (is.null(.append)) substitute(append) else .append
-	append <- egf_eval_append(append, frame_combined, baseenv())
+	select <- egf_eval_select(select, frame_combined, baseenv())
 
 	if (se) {
 		sdr <- egf_get_sdreport(object)
@@ -59,7 +55,7 @@ function(object,
 		levels(res$top) <- egf_link_remove(levels(res$top))
 	}
 	res <- data.frame(res,
-	                  frame_combined[subset, append, drop = FALSE],
+	                  frame_combined[subset, select, drop = FALSE],
 	                  row.names = NULL,
 	                  check.names = FALSE)
 	attr(res, "se") <- se
@@ -73,9 +69,7 @@ function(object,
          link = TRUE,
          se = FALSE,
          subset = NULL,
-         append = NULL,
-         .subset = NULL,
-         .append = NULL,
+         select = NULL,
          ...) {
 	if (se) {
 		stop1("Standard errors cannot be computed until the model ",
@@ -83,15 +77,8 @@ function(object,
 		      "'object <- update(object, se = TRUE, fit = TRUE, ...)'.")
 	}
 
-	## Passing arguments to method for class "egf" without evaluating
-	## 'subset' or 'append' requires minor acrobatics
 	call <- match.call(expand.dots = FALSE)
 	call[[1L]] <- quote(fitted.egf)
-	call$... <- NULL
-	nms <- names(call)
-	i <- match(nms[-1L], c("subset", "append"), 0L) == 0L
-	call[-1L][i] <- lapply(nms[-1L][i], as.name)
-
 	object$best <- object$init
 	eval(call)
 }

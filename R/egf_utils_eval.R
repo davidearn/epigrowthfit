@@ -1,3 +1,64 @@
+##' Nonstandard evaluation
+##'
+##' Utilities for obtaining index vectors from unevaluated \code{subset},
+##' \code{select}, and \code{order} expressions and character vectors from
+##' unevaluated \code{label} expressions.
+##'
+##' @param expr
+##'   A \link{language} object to be evaluated in \code{data} or,
+##'   in the case of \code{egf_eval_select},
+##'   in \code{`names<-`(as.list(seq_along(data)), names(data))}.
+##'   Alternatively, a non-language object to be used in place of
+##'   the hypothetical result of evaluation.
+##' @param data
+##'   A data frame.
+##' @param enclos
+##'   An environment to enclose \code{data}.
+##'
+##' @details
+##' \code{subset} must evaluate to a valid index vector
+##' for the rows of \code{data} (see \code{\link{[.data.frame}}).
+##'
+##' \code{order} must evaluate to a permutation of \code{seq_len(nrow(data))}.
+##'
+##' \code{select} must evaluate to a valid index vector
+##' for the variables in \code{data} (see \code{\link{[.data.frame}}).
+##'
+##' \code{label} must evaluate to an \R object coercible via \code{as.character}
+##' to a character vector of length 1 or length \code{nrow(data)}.
+##'
+##' @return
+##' Let \code{res} be the result of evaluating \code{expr}.
+##'
+##' \code{egf_eval_subset} returns an increasing integer vector indexing
+##' rows of \code{data}, obtained after some processing of \code{res}.
+##'
+##' \code{egf_eval_order} returns \code{as.integer(res)}.
+##'
+##' \code{egf_eval_select} returns
+##' \code{match(names(data[res]), names(data), 0L)},
+##' with zeros (if any) deleted.
+##'
+##' \code{egf_eval_label} returns \code{as.character(res)},
+##' repeated to length \code{nrow(data)}.
+##'
+##' @examples
+##' year <- 2021L
+##' data <- data.frame(month = sample(month.abb, 20L, replace = TRUE),
+##'                    day = sample(30L, 20L, replace = TRUE))
+##'
+##' subset <- quote(grepl("^J", month) & day < 16L)
+##' egf_eval_subset(subset, data)
+##'
+##' order <- quote(order(month, day))
+##' egf_eval_order(order, data)
+##'
+##' select <- quote(-day)
+##' egf_eval_select(select, data)
+##'
+##' label <- quote(sprintf("%d-%02d-%02d", year, match(month, month.abb, 0L), day))
+##' egf_eval_label(label, data)
+
 egf_eval_subset <-
 function(expr, data, enclos = parent.frame()) {
 	stopifnot(is.data.frame(data))
@@ -34,7 +95,7 @@ function(expr, data, enclos = parent.frame()) {
 	as.integer(order)
 }
 
-egf_eval_append <-
+egf_eval_select <-
 function(expr, data, enclos = baseenv()) {
 	stopifnot(is.data.frame(data))
 	if (is.null(expr)) {
@@ -43,12 +104,12 @@ function(expr, data, enclos = baseenv()) {
 	if (is.language(expr)) {
 		l <- as.list(seq_along(data))
 		names(l) <- names(data)
-		append <- eval(expr, l, enclos)
+		select <- eval(expr, l, enclos)
 	} else {
-		append <- expr
+		select <- expr
 	}
-	append <- match(names(data[append]), names(data), 0L)
-	append[append > 0L]
+	select <- match(names(data[select]), names(data), 0L)
+	select[select > 0L]
 }
 
 egf_eval_label <-

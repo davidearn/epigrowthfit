@@ -10,9 +10,7 @@ function(object,
          grid_len = 12,
          interval_scale = 7,
          subset = NULL,
-         append = NULL,
-         .subset = NULL,
-         .append = NULL,
+         select = NULL,
          ...) {
 	stopifnot(is_number_in_interval(level, 0, 1, "()"), is_true_or_false(link))
 	method <- match.arg(method)
@@ -23,14 +21,12 @@ function(object,
 
 	frame_windows <- model.frame(object, "windows")
 	frame_combined <- model.frame(object, "combined")
-	subset <- if (is.null(.subset)) substitute(subset) else .subset
 	subset <- egf_eval_subset(subset, frame_combined, parent.frame())
-	append <- if (is.null(.append)) substitute(append) else .append
-	append <- egf_eval_append(append, frame_combined, baseenv())
+	select <- egf_eval_select(select, frame_combined, baseenv())
 
 	if (method == "wald") {
 		fo <- fitted(object, top = top, se = TRUE,
-		             .subset = subset, .append = append)
+		             subset = subset, select = select)
 		res <- confint(fo, level = level, link = link)
 
 	} else if (method == "profile") {
@@ -40,8 +36,8 @@ function(object,
 		              parallel = parallel,
 		              trace = trace,
 		              grid_len = grid_len,
-		              .subset = subset,
-		              .append = append)
+		              subset = subset,
+		              select = select)
 		res <- confint(po, level = level, link = link)
 		res[["linear_combination"]] <- NULL
 		attr(res, "A") <- attr(res, "x") <- NULL
@@ -128,7 +124,7 @@ function(object,
 		                  window = frame_windows$window[subset],
 		                  estimate = as.double(A %*% object$best[!object$random]),
 		                  do.call(rbind, res),
-		                  frame_combined[subset, append, drop = FALSE],
+		                  frame_combined[subset, select, drop = FALSE],
 		                  row.names = NULL,
 		                  check.names = FALSE,
 		                  stringsAsFactors = FALSE)
@@ -154,19 +150,19 @@ function(x,
          per_plot = 12L,
          subset = NULL,
          order = NULL,
-         main = NULL,
          label = NULL,
+         main = NULL,
          ...) {
 	stopifnot(is_number(per_plot, "positive", integer = TRUE))
 	per_plot <- as.integer(per_plot)
 
-	subset <- egf_eval_subset(substitute(subset), x, parent.frame())
+	subset <- egf_eval_subset(subset, x, parent.frame())
 	if (length(subset) == 0L) {
 		stop1("'subset' indexes zero confidence intervals, ",
 		      "so there is nothing to plot.")
 	}
-	label <- egf_eval_label(substitute(label), x, parent.frame())
-	order <- egf_eval_order(substitute(order), x, parent.frame())
+	order <- egf_eval_order(order, x, parent.frame())
+	label <- egf_eval_label(label, x, parent.frame())
 	subset <- order[order %in% subset]
 
 	a <- attributes(x)

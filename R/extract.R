@@ -112,15 +112,14 @@ getCall.egf_no_fit <- getCall.egf
 
 model.frame.egf <-
 function(formula,
-         which = c("ts", "windows", "parameters",
-                   "append", "combined"),
+         which = c("ts", "windows", "parameters", "extra", "combined"),
          full = FALSE,
          top = egf_get_names_top(formula, link = TRUE),
          ...) {
 	which <- match.arg(which)
 	if (which == "combined") {
 		res <- do.call(cbind, unname(formula$frame$parameters))
-		res <- cbind(res, formula$frame$append)
+		res <- cbind(res, formula$frame$extra)
 		res[duplicated(names(res))] <- NULL
 		return(res)
 	}
@@ -176,7 +175,6 @@ function(object,
 		return(res)
 	}
 
-	random <- substitute(random)
 	any_random_effects <- length(l$random) > 0L
 
 	if (is.null(random)) {
@@ -204,14 +202,13 @@ function(object,
 		      "random effects terms.")
 	}
 
-	l$random <- lapply(l$random, function(x) call("(", x))
 	if (!any(l$random == random)) {
 		stop("Expected 'random = NULL' or 'random' matching one of:\n\n",
 		     paste0("  ", l$random, collapse = "\n"))
 	}
 
 	## Return term-specific random effects design matrix
-	egf_make_Z(random = random[[2L]], data = frame)
+	egf_make_Z(random = random, data = frame)
 }
 
 model.matrix.egf_no_fit <- model.matrix.egf

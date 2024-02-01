@@ -88,9 +88,8 @@ egf_make_frame <-
 function(model,
          formula_ts, formula_windows, formula_parameters,
          data_ts, data_windows,
-         subset_ts, subset_windows,
-         na_action_ts, na_action_windows,
-         append) {
+         subset_ts, subset_windows, select_windows,
+         na_action_ts, na_action_windows) {
 	## Reused for 'frame_ts' and 'frame_windows'
 	make_frame <-
 	function(formula, data, subset, na.action, drop.unused.levels) {
@@ -177,18 +176,18 @@ function(model,
 
 	### Appended stuff
 
-	if (!is.null(append) && is.data.frame(data_windows)) {
+	if (!is.null(select_windows) && is.data.frame(data_windows)) {
 		i <- egf_eval_subset(subset_windows, data_windows,
 		                     environment(formula_windows))
-		if (append == ".") {
+		if (select_windows == ".") {
 			j <- setdiff(names(data_windows),
 			             unlist1(lapply(frame_parameters, names)))
 		} else {
-			j <- egf_eval_append(append, data_windows, baseenv())
+			j <- egf_eval_select(select_windows, data_windows, baseenv())
 		}
-		frame_append <- data_windows[i, j]
+		frame_extra <- data_windows[i, j]
 	} else {
-		frame_append <- data.frame(row.names = seq_len(N))
+		frame_extra <- data.frame(row.names = seq_len(N))
 	}
 
 
@@ -260,7 +259,7 @@ function(model,
 	if (!all(cc)) {
 		frame_windows <- frame_windows[cc, , drop = FALSE]
 		frame_parameters <- lapply(frame_parameters, `[`, cc, , drop = FALSE)
-		frame_append <- frame_append[cc, , drop = FALSE]
+		frame_extra <- frame_extra[cc, , drop = FALSE]
 		frame_windows$ts <- droplevels(frame_windows$ts)
 	}
 
@@ -278,7 +277,7 @@ function(model,
 	i2 <- !is.na(frame_windows$ts)
 	frame_windows <- frame_windows[i2, , drop = FALSE]
 	frame_parameters <- lapply(frame_parameters, `[`, i2, , drop = FALSE)
-	frame_append <- frame_append[i2, , drop = FALSE]
+	frame_extra <- frame_extra[i2, , drop = FALSE]
 
 
 	### Another validation step ################################################
@@ -346,7 +345,7 @@ function(model,
 	o2 <- do.call(order, unname(frame_windows))
 	frame_windows <- frame_windows[o2, , drop = FALSE]
 	frame_parameters <- lapply(frame_parameters, `[`, o2, , drop = FALSE)
-	frame_append <- frame_append[o2, , drop = FALSE]
+	frame_extra <- frame_extra[o2, , drop = FALSE]
 
 	## Create enumerated labels for fitting windows as ordered
 	N <- nrow(frame_windows)
@@ -412,13 +411,13 @@ function(model,
 		row.names(frame_parameters[[i]]) <- NULL
 	}
 
-	frame_append <- droplevels(frame_append)
-	row.names(frame_append) <- NULL
+	frame_extra <- droplevels(frame_extra)
+	row.names(frame_extra) <- NULL
 
 	list(ts = frame_ts,
 	     windows = frame_windows,
 	     parameters = frame_parameters,
-	     append = frame_append)
+	     extra = frame_extra)
 }
 
 egf_make_priors <-

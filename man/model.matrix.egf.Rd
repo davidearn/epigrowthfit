@@ -30,8 +30,8 @@ to parameter \code{top} and term \code{random}.}
 
 \item{top}{A character string specifying a top level nonlinear model parameter.}
 
-\item{random}{A random effects term, i.e., an expression of the form \code{(tt | g)}.
-Note that parentheses are required. Unused if \code{which = "fixed"}.}
+\item{random}{A random effects term, i.e., a call to the \code{|} operator.
+Unused if \code{which = "fixed"}.}
 
 \item{...}{Unused optional arguments.}
 }
