@@ -19,10 +19,10 @@
 ##' \code{subset} must evaluate to a valid index vector
 ##' for the rows of \code{data} (see \code{\link{[.data.frame}}).
 ##'
-##' \code{order} must evaluate to a permutation of \code{seq_len(nrow(data))}.
-##'
 ##' \code{select} must evaluate to a valid index vector
 ##' for the variables in \code{data} (see \code{\link{[.data.frame}}).
+##'
+##' \code{order} must evaluate to a permutation of \code{seq_len(nrow(data))}.
 ##'
 ##' \code{label} must evaluate to an \R object coercible via \code{as.character}
 ##' to a character vector of length 1 or length \code{nrow(data)}.
@@ -33,11 +33,11 @@
 ##' \code{egf_eval_subset} returns an increasing integer vector indexing
 ##' rows of \code{data}, obtained after some processing of \code{res}.
 ##'
-##' \code{egf_eval_order} returns \code{as.integer(res)}.
-##'
 ##' \code{egf_eval_select} returns
 ##' \code{match(names(data[res]), names(data), 0L)},
 ##' with zeros (if any) deleted.
+##'
+##' \code{egf_eval_order} returns \code{as.integer(res)}.
 ##'
 ##' \code{egf_eval_label} returns \code{as.character(res)},
 ##' repeated to length \code{nrow(data)}.
@@ -50,11 +50,11 @@
 ##' subset <- quote(grepl("^J", month) & day < 16L)
 ##' egf_eval_subset(subset, data)
 ##'
-##' order <- quote(order(month, day))
-##' egf_eval_order(order, data)
-##'
 ##' select <- quote(-day)
 ##' egf_eval_select(select, data)
+##'
+##' order <- quote(order(month, day))
+##' egf_eval_order(order, data)
 ##'
 ##' label <- quote(sprintf("%d-%02d-%02d", year, match(month, month.abb, 0L), day))
 ##' egf_eval_label(label, data)
@@ -77,6 +77,23 @@ function(expr, data, enclos = parent.frame()) {
 	sort(unique(subset[!is.na(subset)]))
 }
 
+egf_eval_select <-
+function(expr, data, enclos = baseenv()) {
+	stopifnot(is.data.frame(data))
+	if (is.null(expr)) {
+		return(integer(0L))
+	}
+	if (is.language(expr)) {
+		l <- as.list(seq_along(data))
+		names(l) <- names(data)
+		select <- eval(expr, l, enclos)
+	} else {
+		select <- expr
+	}
+	select <- match(names(data[select]), names(data), 0L)
+	select[select > 0L]
+}
+
 egf_eval_order <-
 function(expr, data, enclos = parent.frame()) {
 	stopifnot(is.data.frame(data))
@@ -93,23 +110,6 @@ function(expr, data, enclos = parent.frame()) {
 	          length(order) == n,
 	          sort(order) == seq_len(n))
 	as.integer(order)
-}
-
-egf_eval_select <-
-function(expr, data, enclos = baseenv()) {
-	stopifnot(is.data.frame(data))
-	if (is.null(expr)) {
-		return(integer(0L))
-	}
-	if (is.language(expr)) {
-		l <- as.list(seq_along(data))
-		names(l) <- names(data)
-		select <- eval(expr, l, enclos)
-	} else {
-		select <- expr
-	}
-	select <- match(names(data[select]), names(data), 0L)
-	select[select > 0L]
 }
 
 egf_eval_label <-
