@@ -2,7 +2,7 @@
 ##'
 ##' Negates formula terms, taking some care to simplify double negatives.
 ##'
-##' @param x A \link{call}, \link{name}, or \link{atomic} scalar.
+##' @param x A \link{call}, \link{symbol}, or \link{atomic} constant.
 ##'
 ##' @return
 ##' If \code{x} is a \link{call} to the \code{`-`} operator with
@@ -30,9 +30,9 @@ function(x) {
 ##' Perform the inverse operation with \code{unsplit_terms}.
 ##'
 ##' @param x
-##'   A \link{call}, \link{name}, or \link{atomic} scalar.
+##'   A \link{call}, \link{symbol}, or \link{atomic} constant.
 ##' @param l
-##'   A \link{list} of \link{call}s, \link{name}s, and \link{atomic} scalars.
+##'   A \link{list} of \link{call}s, \link{symbol}s, and \link{atomic} constants.
 ##'
 ##' @details
 ##' Semantically extraneous calls to \code{`(`},
@@ -47,7 +47,7 @@ function(x) {
 ##' \code{x[[\link{length}(x)]]}, not \code{x}.
 ##'
 ##' @return
-##' A \link{list} of \link{call}s, \link{name}s, and \link{atomic} scalars.
+##' A \link{list} of \link{call}s, \link{symbol}s, and \link{atomic} constants.
 ##'
 ##' @examples
 ##' x <- quote(1 + a * b - b + (c | d) + (0 + e | f))
@@ -60,7 +60,7 @@ function(x) {
 	if (inherits(x, "formula")) {
 		x <- x[[length(x)]]
 	}
-	if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
+	if (is.symbol(x) || (is.atomic(x) && length(x) == 1L)) {
 		return(list(x))
 	}
 	stopifnot(is.call(x))
@@ -152,10 +152,10 @@ function(x) {
 ##' \code{`:`} from a nested \link{call} to \code{`:`}, excluding arguments
 ##' that are themselves \link{call}s to \code{`:`}.
 ##'
-##' @param x A \link{call}, \link{name}, or \link{atomic} scalar.
+##' @param x A \link{call}, \link{symbol}, or \link{atomic} constant.
 ##'
 ##' @return
-##' A \link{list} of \link{call}s, \link{name}s, and \link{atomic} scalars.
+##' A \link{list} of \link{call}s, \link{symbol}s, and \link{atomic} constants.
 ##'
 ##' @examples
 ##' x <- quote(a:b:I(f:g):sort(h))
@@ -163,7 +163,7 @@ function(x) {
 
 split_interaction <-
 function(x) {
-	if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
+	if (is.symbol(x) || (is.atomic(x) && length(x) == 1L)) {
 		return(list(x))
 	}
 	if (is.call(x)) {
@@ -173,7 +173,7 @@ function(x) {
 			return(list(x))
 		}
 	}
-	stop("'x' must be a call, name, or atomic scalar.")
+	stop("'x' must be a call, symbol, or atomic constant.")
 }
 
 ##' Replace `|` with `+` in formula terms
@@ -199,7 +199,7 @@ function(x) {
 		return(x)
 	}
 	m <- length(x)
-	l$random <- lapply(l$random, `[[<-`, 1L, as.name("+"))
+	l$random <- lapply(l$random, `[[<-`, 1L, as.symbol("+"))
 	x[[m]] <- unsplit_terms(c(l$fixed[[m]], l$random))
 	x
 }
@@ -212,7 +212,7 @@ function(x) {
 ##' to address handling of calls to binary operator \code{`|`}.
 ##'
 ##' @param x
-##'   A \link{call}, \link{name}, or \link{atomic} scalar.
+##'   A \link{call}, \link{symbol}, or \link{atomic} constant.
 ##'
 ##' @details
 ##' \code{x} is split into a \link{list} of constituent terms.
@@ -246,7 +246,7 @@ function(x) {
 ##' expressions are expanded and simplified separately.
 ##'
 ##' @return
-##' The \code{call}, \link{name}, or \link{atomic} scalar resulting from
+##' The \code{call}, \link{symbol}, or \link{atomic} constant resulting from
 ##' expansion and simplification of the constituent terms of \code{x}.
 ##'
 ##' @examples
@@ -260,7 +260,7 @@ function(x) {
 		x[-1L] <- lapply(x[-1L], simplify_terms)
 		return(x)
 	}
-	if (is.name(x) || (is.atomic(x) && length(x) == 1L)) {
+	if (is.symbol(x) || (is.atomic(x) && length(x) == 1L)) {
 		return(x)
 	}
 	stopifnot(is.call(x))
