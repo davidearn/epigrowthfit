@@ -62,13 +62,13 @@ function(x, which = "ymd", drop = TRUE) {
 ##' x <- .Date(sample.int(10000L, n) + rnorm(n))
 ##' dmy <- c("day", "month", "year")
 ##'
-##' l <- sapply(dmy, Dceiling, x = x, simplify = FALSE)
+##' l <- sapply(dmy, ceiling.Date, x = x, simplify = FALSE)
 ##' ceiling_x <- data.frame(unclass_x = unclass(x), x = x, l)
 ##'
-##' l <- sapply(dmy, Dfloor, x = x, simplify = FALSE)
+##' l <- sapply(dmy, floor.Date, x = x, simplify = FALSE)
 ##' floor_x <- replace(ceiling_x, dmy, l)
 
-Dceiling <-
+ceiling.Date <-
 function(x, to = c("day", "month", "year")) {
 	stopifnot(inherits(x, "Date"))
 	to <- match.arg(to)
@@ -88,7 +88,7 @@ function(x, to = c("day", "month", "year")) {
 	as.Date(x)
 }
 
-Dfloor <-
+floor.Date <-
 function(x, to = c("day", "month", "year")) {
 	stopifnot(inherits(x, "Date"))
 	to <- match.arg(to)

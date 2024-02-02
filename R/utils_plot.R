@@ -99,8 +99,8 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 	          is.list(major) || is.null(major))
 	usr <- par("usr")[if (side %% 2L == 1L) 1:2 else 3:4]
 	Dusr <- origin + usr
-	D0 <- min(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]))
-	D1 <- max(Dceiling(Dusr[1L]), Dfloor(Dusr[2L]), D0 + 1)
+	D0 <- min(ceiling.Date(Dusr[1L]), floor.Date(Dusr[2L]))
+	D1 <- max(ceiling.Date(Dusr[1L]), floor.Date(Dusr[2L]), D0 + 1)
 	t0 <- julian(D0, origin = origin)
 	t1 <- julian(D1, origin = origin)
 	w <- t1 - t0
@@ -118,7 +118,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 			major_at_as_Date <- D0
 			major_at <- 0
 		} else {
-			major_at_as_Date <- seq(Dceiling(D0, "m"), D1, by = "m")
+			major_at_as_Date <- seq(ceiling.Date(D0, "m"), D1, by = "m")
 			major_at <- julian(major_at_as_Date, origin = D0)
 			if (major_at[1L] > w / 8) {
 				major_at_as_Date <- c(D0, major_at_as_Date)
@@ -130,7 +130,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 	else if (w <= 3 * 365) {
 		## Months
 		by <- c(1L, 2L, 3L)[w <= c(1, 2, 3) * 365][1L]
-		minor_at_as_Date <- seq(Dceiling(D0, "m"), D1, by = paste(by, "m"))
+		minor_at_as_Date <- seq(ceiling.Date(D0, "m"), D1, by = paste(by, "m"))
 		minor_at <- julian(minor_at_as_Date, origin = D0)
 		minor_labels <- months(minor_at_as_Date, abbreviate = TRUE)
 
@@ -139,7 +139,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 			major_at_as_Date <- D0
 			major_at <- 0
 		} else {
-			major_at_as_Date <- seq(Dceiling(D0, "y"), D1, by = "y")
+			major_at_as_Date <- seq(ceiling.Date(D0, "y"), D1, by = "y")
 			major_at <- julian(major_at_as_Date, origin = D0)
 			if (major_at[1L] > w / 8) {
 				major_at_as_Date <- c(D0, major_at_as_Date)
@@ -150,7 +150,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 	} else {
 		## Years
 		by <- ceiling(ceiling(w / 365) / 7)
-		minor_at_as_Date <- seq(Dceiling(D0, "year"), D1 + (by + 1) * 365, by = paste(by, "y"))
+		minor_at_as_Date <- seq(ceiling.Date(D0, "year"), D1 + (by + 1) * 365, by = paste(by, "y"))
 		minor_at <- julian(minor_at_as_Date, origin = D0)
 		minor_labels <- ymd(minor_at_as_Date, "y")
 		minor_at <- c(minor_at, (minor_at[-1L] + minor_at[-length(minor_at)]) / 2)
