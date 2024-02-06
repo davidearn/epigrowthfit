@@ -19,21 +19,19 @@
 ##' by \code{which}.
 ##'
 ##' @examples
-##' x <- .Date(sample.int(1e+04L, 10L))
+##' x <- .Date(sample.int(10000L, 10L))
 ##' ymd(x)
 ##' ymd(x, which = "d")
 
 ymd <-
 function(x, which = "ymd", drop = TRUE) {
-	stopifnot(exprs = {
-		inherits(x, c("Date", "POSIXct", "POSIXlt"))
-		is.character(which)
-		length(which) == 1L
-		!is.na(which)
-		is.logical(drop)
-		length(drop) == 1L
-		!is.na(drop)
-	})
+	stopifnot(inherits(x, c("Date", "POSIXct", "POSIXlt")),
+	          is.character(which),
+	          length(which) == 1L,
+	          !is.na(which),
+	          is.logical(drop),
+	          length(drop) == 1L,
+	          !is.na(drop))
 	x <- as.POSIXct(x)
 	attr(x, "tzone") <- "UTC"
 	x <- as.POSIXlt(x)
@@ -80,7 +78,8 @@ function(x, to = c("day", "month", "year")) {
 		x$mon <- x$mon + off
 		x$year <- x$year + (off <- x$mon > 11L)
 		x$mon[off] <- 0L
-	} else {
+	}
+	else {
 		x$year <- x$year + (x$mon > 0L | off)
 		x$mon[] <- 0L
 	}
