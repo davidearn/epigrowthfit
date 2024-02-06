@@ -3,7 +3,7 @@
 ##' Extracts year, month, and day (in UTC) from a date-time object.
 ##'
 ##' @param x
-##'   a \link{Date}, \link{POSIXct}, or \link{POSIXlt} object.
+##'   a \code{Date}, \code{POSIXct}, or \code{POSIXlt} object.
 ##' @param which
 ##'   a character string composed of the letters \samp{y m d},
 ##'   indicating which of (and in what order) year, month, and day
@@ -13,10 +13,9 @@
 ##'   is coerced to a vector when one of its dimensions is less than 2.
 ##'
 ##' @return
-##' \code{X[, j, drop = drop]}, where \code{X} is an \link{integer}
-##' \link{matrix} with \code{length(x)} rows and 3 columns listing
-##' year, month, and day, and \code{j} is the index vector specified
-##' by \code{which}.
+##' \code{X[, j, drop = drop]}, where \code{X} is an integer matrix
+##' with \code{length(x)} rows and 3 columns listing year, month, and
+##' day, and \code{j} is the index vector specified by \code{which}.
 ##'
 ##' @examples
 ##' x <- .Date(sample.int(10000L, 10L))
@@ -49,8 +48,8 @@ function(x, which = "ymd", drop = TRUE) {
 ##' midnight on a first-of-the-month (\code{YYYY-MM-01}), or
 ##' midnight on a first-of-the-year (\code{YYYY-01-01}).
 ##'
-##' @param x a \link{Date} vector.
-##' @param to a \link{character} string.
+##' @param x a \code{Date} vector.
+##' @param to a character string.
 ##'
 ##' @return
 ##' \code{x} with elements rounded.
