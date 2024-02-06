@@ -40,10 +40,16 @@ stopifnot(exprs = {
 })
 
 x <- quote(w + (x | f/g) + (y + z | h))
-l <- list(quote(w), quote(x | f/g), quote(y + z | h))
+l <- list(quote(w), quote((x | f/g)), quote((y + z | h)))
+x.no.paren <- x
+x.no.paren[[2L]][[3L]] <- x.no.paren[[2L]][[3L]][[2L]]
+x.no.paren      [[3L]] <- x.no.paren      [[3L]][[2L]]
+l.no.paren <- list(l[[1L]], l[[2L]][[2L]], l[[3L]][[2L]])
 stopifnot(exprs = {
-	identical(split_terms(x), l)
-	identical(unsplit_terms(l), x)
+	identical(split_terms(x), l.no.paren)
+	identical(split_terms(x.no.paren), l.no.paren)
+	identical(unsplit_terms(l), x.no.paren)
+	identical(unsplit_terms(l.no.paren), x.no.paren)
 })
 
 
@@ -79,6 +85,6 @@ stopifnot(identical(simplify_terms(x1), y1))
 x2 <- ~0 + x * y - y + (1 | f/g) + (a | f) + (0 + b | f:g)
 y2 <- y1
 y2[[2L]] <- call("+",
-                 call("+", y2[[2L]], quote((a | f))),
-                 quote((b - 1 | f:g)))
+                 call("+", y2[[2L]], quote(a | f)),
+                 quote(b - 1 | f:g))
 stopifnot(identical(simplify_terms(x2), y2))

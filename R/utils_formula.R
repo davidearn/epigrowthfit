@@ -1,53 +1,53 @@
 ##' Negate formula terms
 ##'
-##' Negates formula terms, taking some care to simplify double negatives.
+##' Negates formula terms, simplifying \dQuote{double negatives}.
 ##'
-##' @param x A \link{call}, \link{symbol}, or \link{atomic} constant.
+##' @param x a call, symbol, or atomic constant.
 ##'
 ##' @return
-##' If \code{x} is a \link{call} to the \code{`-`} operator with
-##' one argument \code{y}, then \code{y}. Otherwise, a call to
-##' the \code{`-`} operator with \code{x} as its only argument.
+##' If \code{x} is a call to \code{-} with one argument \code{y},
+##' then \code{y}.  Otherwise, a call to \code{-} with \code{x} as
+##' its only argument.
 ##'
 ##' @examples
 ##' x <- quote(x)
 ##' minus_x <- call("-", x)
-##' stopifnot(identical(negate(x), minus_x))
-##' stopifnot(identical(negate(minus_x), x))
+##' stopifnot(identical(negate(x), minus_x),
+##'           identical(negate(minus_x), x))
 
 negate <-
 function(x) {
-	if (is.call(x) && x[[1L]] == "-" && length(x) == 2L) {
-		return(x[[2L]])
-	}
-	call("-", x)
+	if (is.call(x) && x[[1L]] == "-" && length(x) == 2L)
+		x[[2L]]
+	else call("-", x)
 }
 
 ##' Split and unsplit formula terms
 ##'
-##' Split nested \link{call}s to binary operators \code{`+`}
-##' and \code{`-`} with \code{split_terms}.
-##' Perform the inverse operation with \code{unsplit_terms}.
+##' Split calls to \code{+} and \code{-} using \code{split_terms}.
+##' Perform the inverse operation using \code{unsplit_terms}.
 ##'
-##' @param x
-##'   A \link{call}, \link{symbol}, or \link{atomic} constant.
-##' @param l
-##'   A \link{list} of \link{call}s, \link{symbol}s, and \link{atomic} constants.
+##' @param x a call, symbol, or atomic constant.
+##' @param l a list of calls, symbols, and atomic constants.
 ##'
 ##' @details
-##' Semantically extraneous calls to \code{`(`},
-##' as in the expression \code{(x) + (y)} are stripped when splitting.
-##' Calls to \code{`|`} are wrapped in \code{`(`} when unsplitting.
-##' For these reasons, it is possible for
-##' \code{\link{identical}(x, unsplit_terms(split_terms(x)))}
-##' to return \code{FALSE}.
+##' Calls to \code{(} are replaced with their first argument,
+##' hence \code{x} and \code{unsplit_terms(split_terms(x))} need
+##' not be identical.
 ##'
-##' If \code{x} is a formula, then the right hand side is split.
-##' In this case, \code{unsplit_terms(split_terms(x))} reproduces
-##' \code{x[[\link{length}(x)]]}, not \code{x}.
+##' If \code{x} is a formula, then \code{split_terms(x)} operates
+##' on its right hand side and \code{unsplit_terms(split_terms(x))}
+##' reproduces \code{x[[length(x)]]}, not \code{x}.
 ##'
 ##' @return
-##' A \link{list} of \link{call}s, \link{symbol}s, and \link{atomic} constants.
+##' For \code{split_terms}:
+##'
+##' A list of calls, symbols, and atomic constants,
+##' none of which is a call to \code{+} or \code{-}.
+##'
+##' For \code{unsplit_terms}:
+##'
+##' A call, symbol, or atomic constant.
 ##'
 ##' @examples
 ##' x <- quote(1 + a * b - b + (c | d) + (0 + e | f))
@@ -57,197 +57,138 @@ function(x) {
 
 split_terms <-
 function(x) {
-	if (inherits(x, "formula")) {
+	if (!(is.call(x) || is.symbol(x) || (is.atomic(x) && length(x) == 1L)))
+		stop(gettextf("'%s' is not a call, symbol, or atomic constant", "x"),
+		     domain = NA)
+	if (inherits(x, "formula"))
 		x <- x[[length(x)]]
+	if (!is.call(x))
+		list(x)
+	else if (x[[1L]] == "(")
+		Recall(x[[2L]])
+	else if (x[[1L]] == "+") {
+		if (length(x) == 2L)
+			Recall(x[[2L]])
+		else c(Recall(x[[2L]]), Recall(x[[3L]]))
 	}
-	if (is.symbol(x) || (is.atomic(x) && length(x) == 1L)) {
-		return(list(x))
+	else if (x[[1L]] == "-") {
+		if (length(x) == 2L)
+			lapply(Recall(x[[2L]]), negate)
+		else c(Recall(x[[2L]]), lapply(Recall(x[[3L]]), negate))
 	}
-	stopifnot(is.call(x))
-	if (x[[1L]] == "(") {
-		return(split_terms(x[[2L]]))
-	}
-	if (x[[1L]] == "+") {
-		if (length(x) == 2L) {
-			return(split_terms(x[[2L]]))
-		} else {
-			return(c(split_terms(x[[2L]]), split_terms(x[[3L]])))
-		}
-	}
-	if (x[[1L]] == "-") {
-		if (length(x) == 2L) {
-			return(lapply(split_terms(x[[2L]]), negate))
-		} else {
-			return(c(split_terms(x[[2L]]), split_terms(x[-2L])))
-		}
-	}
-	list(x)
+	else list(x)
 }
 
 unsplit_terms <-
 function(l) {
-	stopifnot(is.list(l))
-	if (length(l) == 0L) {
+	if (!is.list(l))
+		stop(gettextf("'%s' is not a list", "l"),
+		     domain = NA)
+	if (length(l) == 0L)
 		return(NULL)
-	}
-	is_pm <-
-	function(x)
-		is.call(x) && (x[[1L]] == "+" || x[[1L]] == "-") && length(x) == 2L
-	is_bar <-
-	function(x)
-		is.call(x) && x[[1L]] == "|"
 	x <- l[[1L]]
-	if (is_bar(x)) {
-		x <- call("(", x)
-	}
-	for (i in seq_along(l)[-1L]) {
-		y <- l[[i]]
-		if (is_pm(y)) {
-			x <- as.call(list(y[[1L]], x, y[[2L]]))
-		} else {
-			if (is_bar(y)) {
-				y <- call("(", y)
-			}
-			x <- call("+", x, y)
-		}
+	while (is.call(x) && x[[1L]] == "(")
+		x <- x[[2L]]
+	for (y in l[-1L]) {
+		while (is.call(y) && y[[1L]] == "(")
+			y <- y[[2L]]
+		x <-
+			if (is.call(y) && any(y[[1L]] == c("+", "-")) && length(y) == 2L)
+				as.call(list(y[[1L]], x, y[[2L]]))
+			else call("+", x, y)
 	}
 	x
 }
 
 ##' Split fixed and random effects terms
 ##'
-##' Retrieves from a mixed effects model \link{formula} the corresponding
-##' fixed effects model formula and a \link{list} of all random effects terms.
+##' Constructs from a mixed effects model formula the corresponding
+##' fixed effects model formula and a list of all random effects terms.
 ##'
-##' @param x A \link{formula}.
+##' @param x a formula.
 ##'
 ##' @return
-##' A \link{list} with elements:
-##' \item{fixed}{
-##'   A fixed effects model \link{formula}.
-##' }
-##' \item{random}{
-##'   A \link{list} of random effects terms,
-##'   i.e., \link{call}s to the \code{`|`} operator.
-##' }
+##' A list with elements:
+##' \item{fixed}{a formula.}
+##' \item{random}{a list of calls to \code{|}.}
 ##'
 ##' @examples
 ##' split_effects(y ~ 0 + x + (1 | f) + (a | g))
 
 split_effects <-
 function(x) {
-	stopifnot(inherits(x, "formula"))
+	if (!inherits(x, "formula"))
+		stop(gettextf("'%s' is not a formula", "x"),
+		     domain = NA)
 	l <- split_terms(x)
-	is_bar <-
-	function(x)
-		is.call(x) && x[[1L]] == "|"
-	l_is_bar <- vapply(l, is_bar, FALSE)
-	x[[length(x)]] <- if (all(l_is_bar)) 1 else unsplit_terms(l[!l_is_bar])
-	list(fixed = x, random = l[l_is_bar])
+	b <- vapply(l, function(x) is.call(x) && x[[1L]] == "|", FALSE)
+	x[[length(x)]] <- if (all(b)) 1 else unsplit_terms(l[!b])
+	list(fixed = x, random = l[b])
 }
 
 ##' Split an interaction
 ##'
-##' Recursively constructs a \link{list} of arguments to binary operator
-##' \code{`:`} from a nested \link{call} to \code{`:`}, excluding arguments
-##' that are themselves \link{call}s to \code{`:`}.
+##' Split calls to \code{:}.
 ##'
-##' @param x A \link{call}, \link{symbol}, or \link{atomic} constant.
+##' @param x a call, symbol, or atomic constant.
 ##'
 ##' @return
-##' A \link{list} of \link{call}s, \link{symbol}s, and \link{atomic} constants.
+##' A list of calls, symbols, and atomic constants,
+##' none of which is a call to \code{:}.
 ##'
 ##' @examples
-##' x <- quote(a:b:I(f:g):sort(h))
-##' split_interaction(x)
+##' split_interaction(quote(a:b:I(f:g):sort(h)))
 
 split_interaction <-
 function(x) {
-	if (is.symbol(x) || (is.atomic(x) && length(x) == 1L)) {
-		return(list(x))
-	}
-	if (is.call(x)) {
-		if (x[[1L]] == ":") {
-			return(do.call(c, lapply(x[-1L], split_interaction)))
-		} else {
-			return(list(x))
-		}
-	}
-	stop("'x' must be a call, symbol, or atomic constant.")
+	if (!(is.call(x) || is.symbol(x) || (is.atomic(x) && length(x) == 1L)))
+		stop(gettextf("'%s' is not a call, symbol, or atomic constant", "x"),
+		     domain = NA)
+	if (is.call(x) && x[[1L]] == ":")
+		c(Recall(x[[2L]]), Recall(x[[3L]]))
+	else list(x)
 }
 
-##' Replace `|` with `+` in formula terms
+##' Replace | with + in formula terms
 ##'
-##' Replaces the \code{`|`} operator in mixed effects model \link{formula}e
-##' with the \code{`+`} operator, enabling construction of model frames using
-##' \code{\link{model.frame}} machinery.
+##' Replaces the first element of \dQuote{first order} calls to \code{|}
+##' with the symbol \code{+}, in the right hand side of a formula.
 ##'
-##' @param x A \link{formula}.
-##'
-##' @return
-##' \code{x} with \code{`|`} in terms of the form \code{(tt | g)} replaced
-##' with \code{`+`}.
+##' @param x a formula.
 ##'
 ##' @examples
 ##' gsub_bar_plus(~x + (1 | f))
 
 gsub_bar_plus <-
 function(x) {
-	stopifnot(inherits(x, "formula"))
+	if (!inherits(x, "formula"))
+		stop(gettextf("'%s' is not a formula", "x"),
+		     domain = NA)
 	l <- split_effects(x)
-	if (length(l$random) == 0L) {
+	x <- l[[ "fixed"]]
+	l <- l[["random"]]
+	if (length(l) == 0L)
 		return(x)
-	}
-	m <- length(x)
-	l$random <- lapply(l$random, `[[<-`, 1L, as.symbol("+"))
-	x[[m]] <- unsplit_terms(c(l$fixed[[m]], l$random))
+	l <- lapply(l, `[[<-`, 1L, quote(`+`))
+	x[[length(x)]] <- unsplit_terms(c(list(x[[length(x)]]), l))
 	x
 }
 
 ##' Expand and simplify formula terms
 ##'
-##' Expands and simplifies nested \link{call}s to binary operators
-##' \code{`+`} and \code{`-`} using \code{\link{terms}(simplify = TRUE)}
-##' machinery. Rules outlined under \code{\link{formula}} are extended
-##' to address handling of calls to binary operator \code{`|`}.
+##' Expands and simplifies calls to \code{+} and \code{-} using
+##' \code{\link{terms}(simplify = TRUE)} machinery.
+##' Rules outlined under \code{\link{formula}} are extended to handle
+##' \dQuote{first order} calls to \code{|}.
 ##'
-##' @param x
-##'   A \link{call}, \link{symbol}, or \link{atomic} constant.
+##' @param x a call, symbol, or atomic constant.
 ##'
 ##' @details
-##' \code{x} is split into a \link{list} of constituent terms.
-##' Terms that _are not_ \link{call}s to \code{`|`} are regrouped,
-##' and the resulting expression is expanded and simplified
-##' using \code{\link{terms.formula}(simplify = TRUE)}.
-##' Terms that _are_ \link{call}s to \code{`|`} are regrouped,
-##' and the resulting expression is expanded and simplified
-##' following extended rules (see below).
-##' Finally, the two expressions are merged, yielding the final result.
-##'
-##' For example, consider the expression \code{w + (x * y | f) + (z | f/g)}.
-##' The first component of the final result is simply \code{w}.
-##' The second component is obtained from the subexpression
-##' \code{(x * y | f) + (z | f/g)}.
-##' First, the arguments of each \link{call} to \code{`|`} are
-##' expanded and simplified using \code{\link{terms.formula}(simplify = TRUE)},
-##' producing \code{(x + y + x:y | f) + (z | f + f:g)}.
-##' Second, left hand expressions are distributed to right hand terms,
-##' producing \code{(x + y + x:y | f) + (z | f) + (z | f:g)}.
-##' Third, left hand expressions with matching right hand terms are merged,
-##' producing \code{(x + y + x:y + z | f) + (z | f:g)}.
-##' Finally, left hand expressions are simplified,
-##' again using \code{\link{terms.formula}(simplify = TRUE)},
-##' producing \code{(x + y + z + x:y | f) + (z | f:g)}.
-##' (In this case, the effect is merely a permutation of terms
-##' according to their order.) Hence the final result is
-##' \code{w + (x + y + z + x:y | f) + (z | f:g)}.
-##'
-##' If \code{x} is a \link{formula}, then the left and right hand
-##' expressions are expanded and simplified separately.
+##' If \code{x} is a formula, then the right hand side is expanded
+##' and simplified.
 ##'
 ##' @return
-##' The \code{call}, \link{symbol}, or \link{atomic} constant resulting from
-##' expansion and simplification of the constituent terms of \code{x}.
+##' A call, symbol, or atomic constant.
 ##'
 ##' @examples
 ##' simplify_terms(~0 + x * y - y)
@@ -256,41 +197,39 @@ function(x) {
 
 simplify_terms <-
 function(x) {
+	if (!(is.call(x) || is.symbol(x) || (is.atomic(x) && length(x) == 1L)))
+		stop(gettextf("'%s' is not a call, symbol, or atomic constant", "x"),
+		     domain = NA)
 	if (inherits(x, "formula")) {
-		x[-1L] <- lapply(x[-1L], simplify_terms)
+		x[[length(x)]] <- Recall(x[[length(x)]])
 		return(x)
 	}
-	if (is.symbol(x) || (is.atomic(x) && length(x) == 1L)) {
+	if (!is.call(x))
 		return(x)
-	}
-	stopifnot(is.call(x))
 	l <- split_terms(x)
-	is_bar <-
-	function(x)
-		is.call(x) && x[[1L]] == "|"
-	l_is_bar <- vapply(l, is_bar, FALSE)
-	if (all(l_is_bar)) {
-		no_bar <- NULL
-	} else {
-		no_bar <- terms(as.formula(call("~", unsplit_terms(l[!l_is_bar]))), simplify = TRUE)[[2L]]
-		if (!any(l_is_bar)) {
-			return(no_bar)
-		}
+	b <- vapply(l, function(x) is.call(x) && x[[1L]] == "|", FALSE)
+	if (all(b))
+		x <- NULL
+	else {
+		x <- terms(eval(call("~", unsplit_terms(l[!b]))), simplify = TRUE)[[2L]]
+		if (!any(b))
+			return(x)
 	}
-	expand_bar <-
+	Recall. <- sys.function(0L)
+	expand <-
 	function(x) {
-		lhs <- simplify_terms(x[[2L]])
-		rhs <- split_terms(simplify_terms(x[[3L]]))
+		lhs <- Recall.(x[[2L]])
+		rhs <- split_terms(Recall.(x[[3L]]))
 		lapply(rhs, function(x) call("|", lhs, x))
 	}
-	bar <- do.call(c, lapply(l[l_is_bar], expand_bar))
-	rhs_deparsed <- vapply(bar, function(x) deparse1(x[[3L]]), "")
-	merge_bars <-
+	condense <-
 	function(l) {
 		lhs <- lapply(l, `[[`, 2L)
 		rhs <- l[[1L]][[3L]]
-		call("|", simplify_terms(unsplit_terms(lhs)), rhs)
+		call("|", Recall.(unsplit_terms(lhs)), rhs)
 	}
-	bar <- tapply(bar, rhs_deparsed, merge_bars, simplify = FALSE)
-	unsplit_terms(c(no_bar, bar))
+	l <- unlist(lapply(l[b], expand), recursive = FALSE)
+	g <- vapply(l, function(x) deparse(x[[3L]]), "")
+	unsplit_terms(c(if (!is.null(x)) list(x),
+	                tapply(l, g, condense, simplify = FALSE)))
 }
