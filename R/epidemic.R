@@ -1,6 +1,6 @@
 finalsize <-
 function(R0, S0, I0) {
-	stopifnot(requireNamespace("emdbook", quietly = TRUE))
+	stopifnot(requireNamespace("emdbook"))
 	if (missing(S0))
 		S0 <- 1 - I0
 	if (missing(I0))

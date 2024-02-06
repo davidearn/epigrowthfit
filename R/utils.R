@@ -18,21 +18,6 @@ function(..., width = 0.9 * getOption("width")) {
 	paste0(z, collapse = "\n")
 }
 
-## Tests that a package
-## (usually one listed in the 'Suggests' field of DESCRIPTION)
-## is installed and throws error if not.
-suggest <-
-function(package, name = NULL) {
-	if (!requireNamespace(package, quietly = TRUE)) {
-		name <- if (is.null(name)) package else paste0(package, "::", name)
-		stop1(sQuote(name), " is needed, but ", sQuote(package),
-		      " is not installed. Run ",
-		      sQuote(paste0("install.packages(", dQuote(package), ")")),
-		      " to install ", sQuote(package), ", then try again.")
-	}
-	invisible(NULL)
-}
-
 ## Creates and prints headings. Used to section 'print' method output.
 heading <-
 function(text, width = 0.9 * getOption("width"), symbol = ".") {
