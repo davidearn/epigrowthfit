@@ -9,8 +9,7 @@ function(object,
 	what <- unique(match.arg(what, several.ok = TRUE))
 	stopifnot(is_true_or_false(log), is_true_or_false(se))
 	if (se && !log) {
-		stop1("Standard errors are not available for inverse log-transformed ",
-		      "predicted values.")
+		stop("standard errors not available for inverse log-transformed predicted values")
 	}
 
 	frame_windows <- model.frame(object, "windows")
@@ -44,8 +43,9 @@ function(object,
 		len <- c(table(window))
 		min_len <- 1L + as.integer("interval" %in% what)
 		if (any(len < min_len)) {
-			stop("'time' must have length ", min_len, " or greater ",
-			     "in each level of 'window'.")
+			stop(gettextf("'%s' does not have minimum length %d in each level of '%s'",
+			              "time", min_len, "window"),
+			     domain = NA)
 		}
 
 		time_split <- split(time, window)
@@ -66,9 +66,12 @@ function(object,
 			check_ok_diff_time <- function(x) all(diff(x) > 0)
 		}
 		if (!all(vapply(time_split, check_ok_diff_time, FALSE))) {
-			stop1("'time' must be increasing ",
-			      if (do_day_of_week) "with one day spacing ",
-			      "in each level of 'window'.")
+			stop(switch(1L + do_day_of_week,
+			            gettextf("'%s' must be increasing in each level of '%'",
+			                     "time", "window"),
+			            gettextf("'%s' must be increasing with unit spacing in each level of '%'",
+			                     "time", "window")),
+			     domain = NA)
 		}
 
 		time <- unlist1(time_split)
@@ -130,9 +133,9 @@ function(object,
 confint.egf_predict <-
 function(object, parm, level = 0.95, log = TRUE, ...) {
 	if (!isTRUE(attr(object, "se"))) {
-		stop1("'object' must supply log scale predicted values ",
-		      "and corresponding standard errors. Retry with ",
-		      "'object = predict(<\"egf\" object>, log = TRUE, se = TRUE)'.")
+		stop(gettextf("'%s' does not supply log scale predicted values and corresponding standard errors; retry with %s",
+		              "object", "object = predict(<egf>, log = TRUE, se = TRUE)"),
+		     domain = NA)
 	}
 	stopifnot(is_number_in_interval(level, 0, 1, "()"), is_true_or_false(log))
 

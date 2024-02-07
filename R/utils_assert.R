@@ -47,20 +47,6 @@ function(..., m = "", n = 1L) {
 	invisible(NULL)
 }
 
-stop1 <-
-function(...) {
-	m <- wrap(...)
-	p <- sys.parent(1L)
-	stop(simpleError(m, call = if (p > 0L) sys.call(p)))
-}
-
-warning1 <-
-function(...) {
-	m <- wrap(...)
-	p <- sys.parent(1L)
-	warning(simpleWarning(m, call = if (p > 0L) sys.call(p)))
-}
-
 is_true_or_false <-
 function(x)
 	is.logical(x) && length(x) == 1L && !is.na(x)

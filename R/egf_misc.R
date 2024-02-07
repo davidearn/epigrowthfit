@@ -134,20 +134,17 @@ function(object) {
 	res <- object$sdreport
 	if (is.null(res)) {
 		if (egf_has_random(object)) {
-			warning1("Computing a Hessian matrix for a model with ",
-			         "random effects, which might take a while. ",
-			         "To avoid needless recomputation, retry after doing, ",
-			         "e.g., 'object <- update(object, se = TRUE)'.")
+			warning(gettextf("computing Hessian matrix for random effects model; retry with %s to avoid recomputation",
+			                 "object = update(object, se = TRUE)"),
+			        domain = NA)
 		}
-		res <- try(sdreport(object$tmb_out,
-		                    par.fixed = object$best[!object$random],
-		                    getReportCovariance = FALSE),
-		           silent = TRUE)
+		call <- quote(sdreport(object$tmb_out,
+		                       par.fixed = object$best[!object$random],
+		                       getReportCovariance = FALSE))
+		res <- tryCatch(eval(call), error = function(e) `[[<-`(e, "call", call))
 	}
-	if (inherits(res, "try-error")) {
-		stop1("Unable to proceed due to 'TMB::sdreport' error:\n\n ",
-		      conditionMessage(attr(res, "condition")), "\n\n",
-		      "Retry after diagnosing and refitting.")
+	if (inherits(res, "error")) {
+		stop(res)
 	}
 	res
 }
@@ -240,12 +237,9 @@ function(gr, inner_optimizer) {
 egf_preprofile <-
 function(object, subset, top) {
 	if (object$control$profile) {
-		stop1("Fixed effects coefficients have been \"profiled out\" of ",
-		      "the likelihood. Hence likelihood profiles with respect to ",
-		      "population fitted values ",
-		      "(linear functions of fixed effects coefficients) ",
-		      "are not defined. Retry after doing, e.g., 'object <- ",
-		      "update(object, control = egf_control(profile = FALSE))'.")
+		stop(gettextf("fixed effects coefficients profiled out of likelihood; retry with %s",
+		              "object = update(object, control = egf_control(profile = FALSE))"),
+		     domain = NA)
 	}
 
 	Y <- object$tmb_out$env$data$Y
@@ -278,8 +272,7 @@ function(object, subset, top) {
 	A <- cbind(A, Matrix(0, nrow(A), len[["theta"]]))
 
 	if (!all(rowSums(abs(A)) > 0)) {
-		stop1("At least one population fitted value is not a function ",
-		      "of any estimated parameters.")
+		stop("found population fitted value not depending on any fixed effects coefficient")
 	}
 	list(Y = Y, A = A)
 }

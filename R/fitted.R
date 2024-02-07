@@ -9,8 +9,7 @@ function(object,
 	stopifnot(is_true_or_false(link),
 	          is_true_or_false(se))
 	if (se && !link) {
-		stop1("Standard errors are not available for inverse link-transformed ",
-		      "fitted values.")
+		stop("standard errors not available for inverse link-transformed fitted values")
 	}
 
 	names_top <- egf_top(object)
@@ -72,9 +71,9 @@ function(object,
          select = NULL,
          ...) {
 	if (se) {
-		stop1("Standard errors cannot be computed until the model ",
-		      "is estimated. Retry after doing, e.g., ",
-		      "'object <- update(object, se = TRUE, fit = TRUE, ...)'.")
+		stop(gettextf("standard errors are not computed until model is estimated; retry with %s",
+		              "object = update(object, se = TRUE, fit = TRUE, ...)"),
+		     domain = NA)
 	}
 
 	call <- match.call(expand.dots = FALSE)
@@ -86,9 +85,9 @@ function(object,
 confint.egf_fitted <-
 function(object, parm, level = 0.95, link = TRUE, ...) {
 	if (!isTRUE(attr(object, "se"))) {
-		stop1("'object' must supply link scale fitted values ",
-		      "and corresponding standard errors. Retry with ",
-		      "'object = fitted(<\"egf\" object>, link = TRUE, se = TRUE)'.")
+		stop(gettextf("'%s' does not supply link scale fitted values and corresponding standard errors; retry with %s",
+		              "object", "object = fitted(<egf>, link = TRUE, se = TRUE)"),
+		     domain = NA)
 	}
 	stopifnot(is_number_in_interval(level, 0, 1, "()"),
 	          is_true_or_false(link))

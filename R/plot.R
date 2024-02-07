@@ -88,8 +88,8 @@ function(x,
 
 	subset <- egf_eval_subset(subset, frame_combined, parent.frame())
 	if (length(subset) == 0L) {
-		stop1("'subset' indexes zero fitting windows, ",
-		      "so there is nothing to plot.")
+		stop(gettextf("'%s' is empty; nothing to plot", "subset"),
+		     domain = NA)
 	}
 	order <- egf_eval_order(order, frame_combined, parent.frame())
 	subset <- order[order %in% subset]

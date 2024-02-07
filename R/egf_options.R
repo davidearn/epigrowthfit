@@ -51,8 +51,9 @@ function(f = nlminb, args = list(), control = list()) {
 	if (identical(f, optim)) {
 		if (is.null(args$method)) {
 			args$method <- "BFGS"
-			warning1("'optim' argument 'method' not specified, ",
-			         "using ", dQuote(args$method), ".")
+			warning(gettextf("'%s' argument '%s' not specified; using \"%s\"",
+			                 "optim", "method", args$method),
+			        domain = NA)
 		} else {
 			args$method <- match.arg(args$method, eval(formals(optim)$method))
 		}

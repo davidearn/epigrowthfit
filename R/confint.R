@@ -158,8 +158,8 @@ function(x,
 
 	subset <- egf_eval_subset(subset, x, parent.frame())
 	if (length(subset) == 0L) {
-		stop1("'subset' indexes zero confidence intervals, ",
-		      "so there is nothing to plot.")
+		stop(gettextf("'%s' is empty; nothing to plot", "subset"),
+		     domain = NA)
 	}
 	order <- egf_eval_order(order, x, parent.frame())
 	label <- egf_eval_label(label, x, parent.frame())

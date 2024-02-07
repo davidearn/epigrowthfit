@@ -197,14 +197,15 @@ function(object,
 	}
 
 	if (!any_random_effects) {
-		stop1("Expected 'random = NULL': mixed effects formula ",
-		      "for parameter ", sQuote(top), " does not contain ",
-		      "random effects terms.")
+		stop(gettextf("expected %s = %s : mixed effects formula for parameter '%s' does not contain random effects terms",
+		              "random", "NULL", top),
+		     domain = NA)
 	}
 
 	if (!any(l$random == random)) {
-		stop("Expected 'random = NULL' or 'random' matching one of:\n\n",
-		     paste0("  ", l$random, collapse = "\n"))
+		stop(gettextf("expected %s = %s or in %s",
+		              "random", "NULL", deparse(as.call(c(list(quote(expression)), l$random)))),
+		     domain = NA)
 	}
 
 	## Return term-specific random effects design matrix
