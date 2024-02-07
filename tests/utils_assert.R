@@ -3,39 +3,6 @@ library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## stopifnot1 ##########################################################
-
-stopifnot(is.null(stopifnot1(TRUE)))
-assertError(stopifnot1(FALSE))
-assertError(stopifnot1(NA))
-assertError(stopifnot1(NULL))
-assertError(stopifnot1(c(TRUE, FALSE)))
-assertError(stopifnot1(1))
-assertError(stopifnot1(TRUE, FALSE))
-assertError(stopifnot1(FALSE, m = "bar")) -> l
-stopifnot(exprs = {
-	length(l) == 1L
-	conditionMessage(l[[1L]]) == "bar"
-})
-
-
-## warnifnot1 ##########################################################
-
-stopifnot(is.null(warnifnot1(TRUE)))
-
-assertWarning(warnifnot1(FALSE))
-assertWarning(warnifnot1(NA))
-assertWarning(warnifnot1(NULL))
-assertWarning(warnifnot1(c(TRUE, FALSE)))
-assertWarning(warnifnot1(1))
-assertWarning(warnifnot1(TRUE, FALSE))
-assertWarning(warnifnot1(FALSE, m = "bar")) -> l
-stopifnot(exprs = {
-	length(l) == 1L
-	conditionMessage(l[[1L]]) == "bar"
-})
-
-
 ## is_true_or_false ####################################################
 
 stopifnot(exprs = {

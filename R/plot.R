@@ -64,18 +64,16 @@ function(x,
 			if (!is.numeric(xlim)) {
 				xlim <- try(julian(as.Date(xlim)))
 			}
-			stopifnot1(is.numeric(xlim),
-			           length(xlim) == 2L,
-			           is.finite(xlim),
-			           xlim[1L] < xlim[2L],
-			           m = "Invalid 'xlim'.")
+			stopifnot(is.numeric(xlim),
+			          length(xlim) == 2L,
+			          is.finite(xlim),
+			          xlim[1L] < xlim[2L])
 		}
 		if (!is.null(ylim)) {
-			stopifnot1(is.numeric(ylim),
-			           length(ylim) == 2L,
-			           is.finite(ylim),
-			           ylim[1L] < ylim[2L],
-			           m = "Invalid 'ylim'.")
+			stopifnot(is.numeric(ylim),
+			          length(ylim) == 2L,
+			          is.finite(ylim),
+			          ylim[1L] < ylim[2L])
 		}
 	}
 

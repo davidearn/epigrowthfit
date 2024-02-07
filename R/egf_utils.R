@@ -26,17 +26,19 @@ function(formula) {
 	s <- deparse1(substitute(formula))
 	tt <- terms(formula, simplify = TRUE)
 	a <- attributes(tt)
-	stopifnot1(a$response > 0L,
-	           is.call(lhs <- a$variables[[1L + a$response]]),
-	           lhs[[1L]] == "cbind",
-	           length(lhs) == 3L,
-	           m = wrap("Left hand side of ", sQuote(s), " must be ",
-	                    "a call to 'cbind' with 2 arguments."))
-	stopifnot1(a$intercept == 1L,
-	           is.null(a$offset),
-	           length(a$term.labels) < 2L,
-	           m = wrap("Right hand side of ", sQuote(s), " must be ",
-	                    "1 or have exactly one term."))
+	if (!(a$response > 0L &&
+	      is.call(lhs <- a$variables[[1L + a$response]]) &&
+	      lhs[[1L]] == "cbind" &&
+	      length(lhs) == 3L))
+		stop(gettextf("left hand side of '%s' must be a call to '%s' with %d arguments",
+		             s, "cbind", 2L),
+		     domain = NA)
+	if (!(a$intercept == 1L &&
+	      is.null(a$offset) &&
+	      length(a$term.labels) < 2L))
+		stop(gettextf("right hand side of '%s' must be %d or have exactly %d term",
+		              s, 1L, 1L),
+		     domain = NA)
 	formula(tt)
 }
 
