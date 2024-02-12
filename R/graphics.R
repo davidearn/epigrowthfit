@@ -3,7 +3,7 @@
 ##' A replacement for \code{axis} allowing the user to define the
 ##' extent of the axis line.
 ##'
-##' @param side,at,labels,...
+##' @param side,at,labels,\dots
 ##'   arguments to \code{axis}.
 ##' @param a,b
 ##'   lower and upper limits of the axis line in user coordinates.
@@ -189,7 +189,7 @@ function(at) {
 ##' @param horizontal
 ##'   a logical. If \code{TRUE}, then \code{target} represents
 ##'   a width rather than a height.
-##' @param ...
+##' @param \dots
 ##'   graphical parameters passed to \code{strwidth} or \code{strheight}.
 ##'
 ##' @return
