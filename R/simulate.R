@@ -156,10 +156,10 @@ function(object, nsim = 1L, seed = NULL,
 		set_RNGstate <- function() do.call(set.seed, RNGstate)
 	}
 
-	names_top <- egf_top(object)
-	p <- length(names_top)
+	top <- egf_top(object)
+	p <- length(top)
 	stopifnot(is.numeric(mu), length(mu) == p, is.finite(mu))
-	names(mu) <- names_top
+	names(mu) <- top
 	if (!is.null(Sigma)) {
 		stopifnot(is_number(tol, "nonnegative"),
 		          is.numeric(Sigma),
@@ -167,7 +167,7 @@ function(object, nsim = 1L, seed = NULL,
 		          is.finite(Sigma),
 		          isSymmetric(Sigma),
 		          (e <- eigen(Sigma, symmetric = TRUE, only.values = TRUE)$values) > -tol * abs(e[1L]))
-		dimnames(Sigma)[1:2] <- list(names_top)
+		dimnames(Sigma)[1:2] <- list(top)
 	}
 
 	has_inflection <- object$curve %in% c("gompertz", "logistic", "richards")
@@ -240,7 +240,7 @@ function(object, nsim = 1L, seed = NULL,
 		## determined by simulated inflection times
 		set_RNGstate()
 		sim <- mm$tmb_out$simulate(actual)
-		colnames(sim$Y) <- names_top
+		colnames(sim$Y) <- top
 		tmax <- ceiling(exp(sim$Y[, "log(tinfl)"])) + 1
 		time <- lapply(tmax, function(x) seq.int(0, x, 1))
 		data_ts <- data.frame(ts = rep.int(gl(nsim, 1L), lengths(time)),
@@ -255,7 +255,7 @@ function(object, nsim = 1L, seed = NULL,
 	## Simulate
 	set_RNGstate()
 	sim <- mm$tmb_out$simulate(actual)
-	colnames(sim$Y) <- names_top
+	colnames(sim$Y) <- top
 
 	## Replace dummy observations in 'data' with simulated ones
 	data_ts$x[] <- NA

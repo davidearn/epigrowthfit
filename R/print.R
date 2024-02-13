@@ -8,9 +8,8 @@ function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
 
 	## Top level nonlinear model
 	mu <- quote(f(t) - f(s))
-	if (x$model$day_of_week) {
+	if (x$model$day_of_week)
 		mu <- call("*", quote(w(s, t)), mu)
-	}
 	e1 <- call("~",
 	           quote(X(s, t)),
 	           switch(x$model$family,
@@ -24,9 +23,8 @@ function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
 	                  gompertz = quote(K * exp(-exp(-alpha * (t - tinfl)))),
 	                  logistic = quote(K / (1 + exp(-r * (t - tinfl)))),
 	                  richards = quote(K / (1 + a * exp(-a * r * (t - tinfl)))^(1 / a))))
-	if (x$model$excess) {
+	if (x$model$excess)
 		e2[[3L]] <- call("+", quote(b * t), e2[[3L]])
-	}
 	lines_top <- c(deparse(e1), "where", deparse(e2))
 
 	## Bottom level mixed effects model
@@ -38,8 +36,8 @@ function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
 	offset <-
 	function(s)
 		max(n <- nchar(s)) - n
-	names_top <- egf_top(x)
-	lines_bottom <- mapply(line, names_top, offset(names_top))
+	top <- egf_top(x)
+	lines_bottom <- mapply(line, top, offset(top))
 
 	## Number of observations
 	frame <- model.frame(x)

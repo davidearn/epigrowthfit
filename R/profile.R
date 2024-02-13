@@ -47,8 +47,8 @@ function(fitted,
 	else if (!is.null(top)) {
 		method <- "top"
 
-		names_top <- egf_top(fitted)
-		top <- unique(match.arg(top, names_top, several.ok = TRUE))
+		top. <- egf_top(fitted)
+		top <- unique(match.arg(top, top., several.ok = TRUE))
 
 		frame_windows <- model.frame(fitted, "windows")
 		frame_combined <- model.frame(fitted, "combined")
@@ -150,7 +150,7 @@ function(fitted,
 	                  row.names = NULL)
 	if (method == "top") {
 		i <- rep.int(rep.int(subset, length(top)), nr)
-		res <- data.frame(top = rep.int(rep(factor(top, levels = names_top),
+		res <- data.frame(top = rep.int(rep(factor(top, levels = top.),
 		                                    each = length(subset)), nr),
 		                  frame_windows[i, c("ts", "window"), drop = FALSE],
 		                  res,

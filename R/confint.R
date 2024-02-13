@@ -16,8 +16,8 @@ function(object,
 	method <- match.arg(method)
 	elu <- c("estimate", "lower", "upper")
 
-	names_top <- egf_top(object)
-	top <- unique(match.arg(top, names_top, several.ok = TRUE))
+	top. <- egf_top(object)
+	top <- unique(match.arg(top, top., several.ok = TRUE))
 
 	frame_windows <- model.frame(object, "windows")
 	frame_combined <- model.frame(object, "combined")
@@ -119,7 +119,7 @@ function(object,
 			              serial = Map(do_uniroot, i = seq_len(m), a = a))
 		}
 
-		res <- data.frame(top = rep(factor(top, levels = names_top),
+		res <- data.frame(top = rep(factor(top, levels = top.),
 		                            each = length(subset)),
 		                  ts = frame_windows$ts[subset],
 		                  window = frame_windows$window[subset],

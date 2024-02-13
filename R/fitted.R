@@ -11,8 +11,8 @@ function(object,
 	if (se && !link)
 		stop("standard errors not available for inverse link-transformed fitted values")
 
-	names_top <- egf_top(object)
-	top <- unique(match.arg(top, names_top, several.ok = TRUE))
+	top. <- egf_top(object)
+	top <- unique(match.arg(top, top., several.ok = TRUE))
 
 	frame_windows <- model.frame(object, "windows")
 	frame_combined <- model.frame(object, "combined")
@@ -32,17 +32,17 @@ function(object,
 
 	## 'Y[i, j]' is the fitted value of top level nonlinear model parameter 'j'
 	## (link scale) in fitting window 'i'
-	colnames(Y) <- names_top
+	colnames(Y) <- top.
 	Y <- Y[subset, top, drop = FALSE]
 
-	res <- data.frame(top = rep(factor(top, levels = names_top),
+	res <- data.frame(top = rep(factor(top, levels = top.),
 	                            each = length(subset)),
 	                  frame_windows[subset, c("ts", "window"), drop = FALSE],
 	                  estimate = as.numeric(Y),
 	                  row.names = NULL,
 	                  check.names = FALSE)
 	if (se) {
-		colnames(Y_se) <- names_top
+		colnames(Y_se) <- top.
 		Y_se <- Y_se[subset, top, drop = FALSE]
 		res$se <- as.numeric(Y_se)
 	}
