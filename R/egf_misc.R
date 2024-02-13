@@ -141,7 +141,8 @@ function(object) {
 		call <- quote(sdreport(object$tmb_out,
 		                       par.fixed = object$best[!object$random],
 		                       getReportCovariance = FALSE))
-		res <- tryCatch(eval(call), error = function(e) `[[<-`(e, "call", call))
+		res <- tryCatch(eval(call),
+		                error = function(e) `[[<-`(e, "call", call))
 	}
 	if (inherits(res, "error")) {
 		stop(res)
@@ -227,7 +228,9 @@ function(gr, inner_optimizer) {
 				return(v)
 			}
 		}
-		warning("Unable to evaluate 'gr(x)', returning NaN.")
+		warning(gettextf("unable to evaluate '%s', returning %f",
+		                 "gr(x)", NaN),
+		        domain = NA)
 		NaN # warning because length 1 result is unexpected
 	}
 	environment(pgr) <- e
@@ -303,15 +306,17 @@ function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
 			                  verbose = FALSE)
 			topic <- hs$matches$Topic
 			if (length(topic) != 1L) {
-				stop("Resource was not created because 'file' matches ",
-				     length(topic), " topics.")
+				stop(gettextf("resource not created because '%s' matches %d topics",
+				              "file", length(topic)),
+				     domain = NA)
 			}
 		}
 		example(topic, character.only = TRUE, package = "epigrowthfit",
 		        local = TRUE, echo = FALSE)
 		if (!file.exists(path)) {
-			stop("Examples for topic ", dQuote(topic), " were sourced ",
-			     "but resource was not created.")
+			stop(gettextf("examples for topic \"%s\" were sourced but resource was not created",
+			              topic),
+			     domain = NA)
 		}
 		return(readRDS(path))
 	}

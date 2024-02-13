@@ -221,7 +221,8 @@ function(x,
 	## 'cache' if the low level plot function throws an error
 	cache_bak <- cache
 	on.exit({
-		message("Augmented 'cache' returned despite error ...")
+		message(gettextf("augmented '%s' returned despite error", "cache"),
+		        domain = NA)
 		return(invisible(cache_bak))
 	})
 

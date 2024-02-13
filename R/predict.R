@@ -38,7 +38,8 @@ function(object,
 		window <- factor(window, levels = levels(frame_windows$window)[subset])
 
 		if (nlevels(window) == 0L) {
-			stop("'window' must have at least one valid level.")
+			stop(gettextf("'%s' must have at least one valid level", "window"),
+			     domain = NA)
 		}
 		len <- c(table(window))
 		min_len <- 1L + as.integer("interval" %in% what)
@@ -57,8 +58,9 @@ function(object,
 		day1 <- day1[subset]
 
 		if (any(t0 < start | t1 > end)) {
-			stop("'time[i]' must not occur before (after) the start (end) ",
-			     "of 'window[i]'.")
+			stop(gettextf("%s[i] occurs before the start or after the end of %s[i]",
+			              "time", "window"),
+			     domain = NA)
 		}
 		if (do_day_of_week) {
 			check_ok_diff_time <- function(x) all(diff(x) == 1)

@@ -270,12 +270,9 @@ function(object, nsim = 1L, seed = NULL,
 	if (anyNA(data_windows$start)) {
 		argna <- is.na(data_windows$start)
 		data_windows$start[argna] <- 0
-		warning("Threshold 'cstart' not exceeded in these time series:\n\n",
-		        paste0("  ", format(which(argna), justify = "right"),
-		               collapse = "\n"),
-		        "\n\n",
-		        "Corresponding fitting windows contain all observations ",
-		        "(for better or for worse).")
+		warning(gettextf("threshold '%s' not exceeded in time series %s; corresponding fitting windows contain all observations",
+		                 "cstart", deparse(which(argna))),
+		        domain = NA)
 	}
 
 	res <- list(model = object,

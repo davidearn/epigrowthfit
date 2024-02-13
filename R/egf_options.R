@@ -79,19 +79,12 @@ function(f = nlminb, args = list(), control = list()) {
 		          length(nf <- names(formals(f))) >= 4L,
 		          nf[1:3] != "...",
 		          "control" %in% nf[-(1:3)])
-		e <- quote(f(c(1, 1), function(x) sum(x^2), function(x) 2 * x))
-		f_out <- tryCatch(eval(e),
-		                  error = function(cond) {
-		                  	stop("Unable to validate 'f' due to ",
-		                  	     "following error in test ",
-		                  	     sQuote(deparse1(e)), ":\n\n",
-		                  	     conditionMessage(cond))
-		                  })
+		f.out <- f(c(1, 1), function(x) sum(x * x), function(x) 2 * x)
 		required <- c("par", "value", "convergence", "message")
-		if (!(is.list(f_out) && all(required %in% names(f_out)))) {
-			stop("'f' must return a list with elements ",
-			     paste(sQuote(required), collapse = ", "),
-			     " but _does not_ for test ", sQuote(deparse1(e)), ".")
+		if (!(is.list(f.out) && all(required %in% names(f.out)))) {
+			stop(gettextf("'%s' must return a list with elements %s",
+			              "f", deparse(required)),
+			     domain = NA)
 		}
 		f <-
 		function(par, fn, gr, control, ...)
@@ -124,13 +117,16 @@ function(f = newton, args = list(), control = list()) {
 	} else if (identical(f, optim)) {
 		if (is.null(args$method)) {
 			method <- "BFGS"
-			warning("'optim' argument 'method' not specified, ",
-			        "using ", dQuote(method), ".")
+			warning(gettextf("'%s' argument '%s' not specified; using \"%s\"",
+			                 "optim", "method", method),
+			        domain = NA)
 		} else {
 			method <- match.arg(args$method, eval(formals(optim)$method))
 		}
 	} else {
-		stop("'f' is currently restricted to 'TMB::newton' and 'stats::optim'.")
+		stop(gettextf("'%s' is currently restricted to %s and %s",
+		              "f", "TMB::newton", "stats::optim"),
+		     domain = NA)
 	}
 
 	res <- list(method = method, control = control)

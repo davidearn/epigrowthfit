@@ -205,11 +205,12 @@ function(model,
 	if (inherits(frame_ts$time, c("Date", "POSIXct", "POSIXlt"))) {
 		frame_ts$time <- julian(frame_ts$time)
 	} else if (!is.numeric(frame_ts$time)) {
-		stop(sQuote(nf1$time), " must be ",
-		     "a numeric, Date, or POSIXt vector.")
+		stop(gettextf("'%s' is not a numeric, Date, or POSIXt vector", nf1$time),
+		     domain = NA)
 	}
 	if (!is.numeric(frame_ts$x)) {
-		stop(sQuote(nf1$x), " must be a numeric vector.")
+		stop(gettextf("'%s' is not a numeric vector", nf1$x),
+             domain = NA)
 	}
 
 	### Fitting window stuff
@@ -220,8 +221,8 @@ function(model,
 		if (inherits(frame_windows[[s]], c("Date", "POSIXct", "POSIXlt"))) {
 			frame_windows[[s]] <- julian(frame_windows[[s]])
 		} else if (!is.numeric(frame_windows[[s]])) {
-			stop(sQuote(nf2[[s]]), " must be ",
-			     "a numeric, Date, or POSIXt vector.")
+			stop(gettextf("'%s' is not a numeric, Date, or POSIXt vector", nf2[[s]]),
+			     domain = NA)
 		}
 	}
 
@@ -315,7 +316,8 @@ function(model,
 		     domain = NA)
 	}
 	if (!all(frame_ts$x[!is.na(frame_ts$x)] >= 0)) {
-		stop(wrap(sQuote(nf1$x), " must be non-negative."))
+		stop(gettextf("'%s' is not non-negative", nf1$x),
+		     domain = NA)
 	}
 	if (is.double(frame_ts$x)) {
 		is_NaN_or_Inf <- is.nan(frame_ts$x) | is.infinite(frame_ts$x)

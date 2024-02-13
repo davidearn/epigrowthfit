@@ -22,6 +22,6 @@
 
 egf_get_flag <-
 function(enum, type) {
-	enum_all <- switch(type, .__ARGS__.stop("invalid 'type'"))
+	enum_all <- switch(type, .__ARGS__.stop(gettextf("invalid '%s'", "type"), domain = NA))
 	match(enum, enum_all, 0L) - 1L
 }

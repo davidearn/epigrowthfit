@@ -63,7 +63,9 @@ function(fitted,
 
 	## Otherwise
 	} else {
-		stop("One of 'which', 'A', and 'top' must be non-NULL.")
+		stop(gettextf("one of '%s', '%s', and '%s' must be non-NULL",
+		              "A", "which", "top"),
+		     domain = NA)
 	}
 
 	## Covariance matrix of 'c(beta, theta)'
