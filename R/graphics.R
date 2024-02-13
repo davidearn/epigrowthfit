@@ -72,7 +72,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 		## Days
 		by <- c(1, 2, 4, 7, 14)[delta <= c(14, 28, 56, 112, 210)][1L]
 		minor.at.Date <- seq(D0, D1, by = by)
-		minor.at <- julian(minor.at.Date., origin = D0)
+		minor.at <- julian(minor.at.Date, origin = D0)
 		minor.labels <- ymd(minor.at.Date, "d")
 
 		## Months
