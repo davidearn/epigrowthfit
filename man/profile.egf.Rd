@@ -5,8 +5,8 @@
 \method{profile}{egf}(
   fitted,
   level = 0.95,
-  which = NULL,
   A = NULL,
+  which = NULL,
   top = egf_top(fitted),
   parallel = egf_parallel(),
   trace = FALSE,
@@ -23,19 +23,19 @@
 Profiles will be computed up to a deviance
 of \code{\link{qchisq}(level, df = 1)}.}
 
-\item{which}{An integer vector indexing \code{fitted$best[!fitted$random]}.
-Only indexed parameters are profiled.}
-
 \item{A}{A numeric matrix with \code{sum(!fitted$random)} columns,
 Each row specifies a linear combination of the elements
-of \code{fitted$best[!fitted$random]} to be profiled.
+of \code{fitted$best[!fitted$random]} to be profiled.}
+
+\item{which}{An integer vector indexing \code{fitted$best[!fitted$random]}.
+Only indexed parameters are profiled.
 Ignored if \code{which} is non-\code{NULL}.}
 
 \item{top}{A subset of \code{\link{egf_top}(fitted, link = TRUE)}
 naming top level nonlinear model parameters whose population
 fitted values (see \code{\link[=fitted.egf]{fitted}}) should be
 profiled.
-Ignored if \code{which} or \code{A} is non-\code{NULL}.}
+Ignored if \code{A} or \code{which} is non-\code{NULL}.}
 
 \item{parallel}{An \code{"\link{egf_parallel}"} object defining options for \R level
 parallelization.}
@@ -59,7 +59,7 @@ should be computed; the default (\code{NULL}) indicates all of them.
 the default (\code{NULL}) is to append nothing.
 Evaluation of language objects follows the implementation of
 \code{\link{subset}(mf, subset, select)}.
-Ignored if \code{which} or \code{A} is non-\code{NULL}.}
+Ignored if \code{A} or \code{which} is non-\code{NULL}.}
 
 \item{...}{Unused optional arguments.}
 }

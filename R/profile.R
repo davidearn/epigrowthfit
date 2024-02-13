@@ -1,8 +1,8 @@
 profile.egf <-
 function(fitted,
          level = 0.95,
-         which = NULL,
          A = NULL,
+         which = NULL,
          top = egf_top(fitted),
          parallel = egf_parallel(),
          trace = FALSE,
@@ -16,20 +16,9 @@ function(fitted,
 	          is_number_in_interval(grid_len, 1, Inf, "[)"))
 	n <- sum(!fitted$random)
 
-	## If profiling user-specified elements of 'c(beta, theta)'
-	if (!is.null(which)) {
-		method <- "which"
-		eval(bquote(stopifnot(is.numeric(which),
-		                      which %in% seq_len(.(n)))))
-		which <- unique(which)
-		A <- sparseMatrix(i = seq_len(m),
-		                  j = which,
-		                  x = 1,
-		                  dims = c(length(which), n))
-	}
 	## If profiling user-specified linear combinations
 	## of elements of 'c(beta, theta)'
-	else if (!is.null(A)) {
+	if (!is.null(A)) {
 		method <- "A"
 		if (!is(A, "dMatrix")) {
 			stopifnot(is.numeric(A))
@@ -41,6 +30,17 @@ function(fitted,
 		                      ncol(A) == .(n),
 		                      is.finite(A),
 		                      rowSums(abs(A)) > 0)))
+	}
+	## If profiling user-specified elements of 'c(beta, theta)'
+	else if (!is.null(which)) {
+		method <- "which"
+		eval(bquote(stopifnot(is.numeric(which),
+		                      which %in% seq_len(.(n)))))
+		which <- unique(which)
+		A <- sparseMatrix(i = seq_len(m),
+		                  j = which,
+		                  x = 1,
+		                  dims = c(length(which), n))
 	}
 	## If profiling population fitted values
 	## of top level nonlinear model parameters
