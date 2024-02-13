@@ -1,8 +1,8 @@
-\name{plot.egf_confint}
-\alias{plot.egf_confint}
+\name{plot.confint.egf}
+\alias{plot.confint.egf}
 \title{Plot confidence intervals}
 \usage{
-\method{plot}{egf_confint}(
+\method{plot}{confint.egf}(
   x,
   per_plot = 12L,
   subset = NULL,
@@ -13,7 +13,7 @@
 )
 }
 \arguments{
-\item{x}{An \code{"\link[=confint.egf]{egf_confint}"} object.}
+\item{x}{An \code{"\link{confint.egf}"} object.}
 
 \item{per_plot}{A positive integer. One plot will display at most this many
 confidence intervals.}

@@ -41,7 +41,7 @@ optimizer output.}
 \item{...}{Unused optional arguments.}
 }
 \value{
-A list inheriting from class \code{"egf_simulate"}, with elements:
+A list inheriting from class \code{"simulate.egf"}, with elements:
 \item{simulations}{
   A data frame containing simulated incidence data. It has variables
   \code{ts}, \code{window}, and \code{time}, and \code{nsim} further

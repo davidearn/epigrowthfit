@@ -17,7 +17,7 @@ function(object, full = FALSE, ...) {
 		}
 	attr(res, "map") <- map
 	attr(res, "full") <- full
-	class(res) <- "egf_coef"
+	class(res) <- "coef.egf"
 	res
 }
 
@@ -27,7 +27,7 @@ function(object, full = FALSE, ...) {
 	coef.egf(object, full = full, ...)
 }
 
-print.egf_coef <-
+print.coef.egf <-
 function(x, ...) {
 	y <- x
 	attributes(x)[c("full", "lengths", "map", "class")] <- NULL
@@ -35,7 +35,7 @@ function(x, ...) {
 	invisible(y)
 }
 
-as.list.egf_coef <-
+as.list.coef.egf <-
 function(x, ...) {
 	names(x) <- NULL
 	len <- attr(x, "lengths")
@@ -48,7 +48,7 @@ function(x, ...) {
 	res
 }
 
-as.data.frame.egf_coef <- as.data.frame.vector
+as.data.frame.coef.egf <- as.data.frame.vector
 
 fixef.egf <-
 function(object, ...) {

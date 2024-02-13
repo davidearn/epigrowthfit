@@ -122,11 +122,11 @@ function(object,
 		levels(res$var) <- what
 	}
 	attr(res, "se") <- se
-	class(res) <- c("egf_predict", oldClass(res))
+	class(res) <- c("predict.egf", oldClass(res))
 	res
 }
 
-confint.egf_predict <-
+confint.predict.egf <-
 function(object, parm, level = 0.95, log = TRUE, ...) {
 	if (!attr(object, "se"))
 		stop(gettextf("'%s' does not supply log scale predicted values and corresponding standard errors; retry with %s",

@@ -162,7 +162,7 @@ function(method = c("serial", "multicore", "snow"),
 	res
 }
 
-egf_plot_control <-
+egf_control_plot <-
 function(window, data, predict, asymptote, box, axis, title, tdoubling) {
 	res <-
 	list(window =
@@ -237,6 +237,6 @@ function(window, data, predict, asymptote, box, axis, title, tdoubling) {
 			res$tdoubling$legend$adj <- if (adj > 0.5) 0 else 1
 	}
 
-	class(res) <- "egf_plot_control"
+	class(res) <- "egf_control_plot"
 	res
 }

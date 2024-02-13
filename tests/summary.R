@@ -10,7 +10,7 @@ o.1f <- egf_cache( "fitted-egf-1.rds")
 
 stopifnot(exprs = {
 	is.list(o.1s)
-	identical(oldClass(o.1s), "egf_summary")
+	identical(oldClass(o.1s), "summary.egf")
 	length(o.1s) == 5L
 	identical(names(o.1s), c("fitted", "convergence", "value", "gradient", "hessian"))
 	identical(o.1s[["convergence"]], o.1[["optimizer_out"]][["convergence"]])

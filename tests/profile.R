@@ -11,7 +11,7 @@ o.1c <- coef(o.1, full = TRUE)
 
 stopifnot(exprs = {
 	is.list(o.1p)
-	identical(oldClass(o.1p), c("egf_profile", "data.frame"))
+	identical(oldClass(o.1p), c("profile.egf", "data.frame"))
 	length(o.1p) == 6L
 	identical(names(o.1p), c("top", "ts", "window", "linear_combination", "value", "deviance"))
 

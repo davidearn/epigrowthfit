@@ -12,7 +12,7 @@
   show_predict = TRUE,
   show_tdoubling = FALSE,
   level = 0.95,
-  control = egf_plot_control(),
+  control = egf_control_plot(),
   cache = NULL,
   plot = TRUE,
   subset = NULL,
@@ -79,15 +79,15 @@ Supported only if \code{x$model$curve} is
 \item{level}{A number in the interval (0,1). This is the confidence level used
 when \code{show_predict = 2} or \code{show_tdoubling = 2}.}
 
-\item{control}{An \code{"\link{egf_plot_control}"} object controlling the appearance
+\item{control}{An \code{"\link{egf_control_plot}"} object controlling the appearance
 of most plot elements.}
 
-\item{cache}{An \code{"egf_plot_cache"} object returned by a previous evaluation
+\item{cache}{A \code{"plot.egf"} object returned by a previous evaluation
 of \code{plot(x)}. Fitted and predicted values and standard errors
 stored in \code{cache} are reused if possible to avoid recomputation.}
 
 \item{plot}{A \link{logical} flag. If \code{FALSE}, then nothing is plotted.
-Useful when only the returned \code{"egf_plot_cache"} object is desired.}
+Useful when only the returned \code{"plot.egf"} object is desired.}
 
 \item{subset}{An index vector for the rows of
 \code{mf = \link[=model.frame.egf]{model.frame}(object, "combined")}
@@ -120,7 +120,7 @@ axis (\code{xlab}, \code{ylab}, \code{ylab_outer}) labels.
 \item{...}{Unused optional arguments.}
 }
 \value{
-A data.frame inheriting from class \code{"egf_plot_cache"}.
+A data.frame inheriting from class \code{"plot.egf"}.
 If argument \code{cache} was supplied in the function call,
 then this data frame is the result of augmenting \code{cache}
 with new computations.
@@ -147,7 +147,7 @@ x <- egf_cache("egf-1.rds")
 l <- list(legend = list(cex = 0.8),
           estimate = list(cex = 0.8, font = 2),
           ci = list(cex = 0.8))
-control <- egf_plot_control(tdoubling = l)
+control <- egf_control_plot(tdoubling = l)
 
 op <- par(mar = c(3.5, 5, 5, 1))
 plot(x,

@@ -143,7 +143,7 @@ stopifnot(exprs = {
 })
 
 
-## egf_plot_control ####################################################
+## egf_control_plot ####################################################
 
 reference <- list(window = NULL,
                   data = list(main = NULL, short = NULL, long = NULL),
@@ -168,10 +168,10 @@ function(x, reference) {
 	TRUE
 }
 
-x <- egf_plot_control()
+x <- egf_control_plot()
 
 stopifnot(exprs = {
 	is.list(x)
-	identical(oldClass(x), "egf_plot_control")
+	identical(oldClass(x), "egf_control_plot")
 	recurseOK(x, reference)
 })

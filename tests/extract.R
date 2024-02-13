@@ -23,7 +23,7 @@ o.2c.e <- structure(as.double(o.2c),
                     lengths = c(beta = 2L, theta = 2L, b = 40L),
                     map = list(beta = NULL, theta = c(1L, 2L, NA), b = NULL),
                     full = FALSE,
-                    class = "egf_coef")
+                    class = "coef.egf")
 stopifnot(identical(o.2c, o.2c.e))
 
 o.2cl <- as.list(o.2c)

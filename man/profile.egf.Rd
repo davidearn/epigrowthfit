@@ -64,7 +64,7 @@ Ignored if \code{A} or \code{which} is non-\code{NULL}.}
 \item{...}{Unused optional arguments.}
 }
 \value{
-A data frame inheriting from class \code{"egf_profile"}, with variables:
+A data frame inheriting from class \code{"profile.egf"}, with variables:
 \item{top}{
   (\code{top}-based calls only.)
   Top level nonlinear model parameter,
@@ -116,5 +116,5 @@ str(zz)
 
 }
 \seealso{
-\code{\link{confint.egf_profile}}, \code{\link{plot.egf_profile}}
+\code{\link{confint.profile.egf}}, \code{\link{plot.profile.egf}}
 }

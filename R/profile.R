@@ -164,11 +164,11 @@ function(fitted,
 	attr(res, "x") <- fitted$best[!fitted$random]
 	attr(res, "level") <- level
 	attr(res, "method") <- method
-	class(res) <- c("egf_profile", oldClass(res))
+	class(res) <- c("profile.egf", oldClass(res))
 	res
 }
 
-confint.egf_profile <-
+confint.profile.egf <-
 function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
 	stopifnot(is_true_or_false(link),
 	          is_number_in_interval(level, 0, attr(object, "level"), "(]"))
@@ -216,7 +216,7 @@ function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
 	res
 }
 
-plot.egf_profile <-
+plot.profile.egf <-
 function(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...) {
 	subset <- egf_eval_subset(subset, x, parent.frame())
 	subset <- match(levels(factor(x$linear_combination[subset])),

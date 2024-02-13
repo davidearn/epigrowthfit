@@ -1,11 +1,11 @@
-\name{egf.egf_model_simulate}
-\alias{egf.egf_model_simulate}
+\name{egf.simulate.egf_model}
+\alias{egf.simulate.egf_model}
 \title{Fit simulated incidence time series}
 \usage{
-\method{egf}{egf_model_simulate}(model, ...)
+\method{egf}{simulate.egf_model}(model, ...)
 }
 \arguments{
-\item{model}{An \code{"\link[=simulate.egf_model]{egf_model_simulate}"} object
+\item{model}{An \code{"\link{simulate.egf_model}"} object
 supplying simulated time series and details about the generative model
 to be estimated.}
 
@@ -20,7 +20,7 @@ incidence time series.
 }
 \examples{
 model <- egf_cache("simulate-egf_model-1.rds")
-object <- egf_cache("egf-egf_model_simulate-1.rds", egf(model))
+object <- egf_cache("egf-simulate-egf_model-1.rds", egf(model))
 pp <- cbind(actual = coef(model), fitted = coef(object))
 
 }

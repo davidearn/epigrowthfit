@@ -57,7 +57,7 @@ function(object,
 	                  row.names = NULL,
 	                  check.names = FALSE)
 	attr(res, "se") <- se
-	class(res) <- c("egf_fitted", oldClass(res))
+	class(res) <- c("fitted.egf", oldClass(res))
 	res
 }
 
@@ -80,7 +80,7 @@ function(object,
 	eval(call)
 }
 
-confint.egf_fitted <-
+confint.fitted.egf <-
 function(object, parm, level = 0.95, link = TRUE, ...) {
 	if (!attr(object, "se"))
 		stop(gettextf("'%s' does not supply link scale fitted values and corresponding standard errors; retry with %s",

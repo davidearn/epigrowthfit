@@ -1,8 +1,8 @@
-\name{egf_plot_control}
-\alias{egf_plot_control}
+\name{egf_control_plot}
+\alias{egf_control_plot}
 \title{Define plot options}
 \usage{
-egf_plot_control(
+egf_control_plot(
   window,
   data,
   predict,
@@ -66,7 +66,7 @@ A named list.
 \description{
 Sets parameters controlling the graphical output of \code{\link{plot.egf}}.
 Supplied values override package defaults
-(retrievable as \code{defaults <- egf_plot_control()}),
+(retrievable as \code{defaults <- egf_control_plot()}),
 which in turn override global defaults set via \code{\link{par}}.\cr\cr
 Here, \code{x}, \code{type}, \code{time_as}, and \code{dt}
 refer to the so-named arguments of \code{plot.egf}.

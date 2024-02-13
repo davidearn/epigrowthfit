@@ -1,11 +1,11 @@
-\name{confint.egf_profile}
-\alias{confint.egf_profile}
+\name{confint.profile.egf}
+\alias{confint.profile.egf}
 \title{Confidence intervals from likelihood profiles}
 \usage{
-\method{confint}{egf_profile}(object, parm, level = attr(object, "level"), link = TRUE, ...)
+\method{confint}{profile.egf}(object, parm, level = attr(object, "level"), link = TRUE, ...)
 }
 \arguments{
-\item{object}{An \code{"\link[=profile.egf]{egf_profile}"} object.}
+\item{object}{An \code{"\link{profile.egf}"} object.}
 
 \item{parm}{Unused argument included for generic consistency.}
 

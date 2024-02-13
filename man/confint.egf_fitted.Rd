@@ -1,11 +1,11 @@
-\name{confint.egf_fitted}
-\alias{confint.egf_fitted}
+\name{confint.fitted.egf}
+\alias{confint.fitted.egf}
 \title{Confidence intervals on fitted values}
 \usage{
-\method{confint}{egf_fitted}(object, parm, level = 0.95, link = TRUE, ...)
+\method{confint}{fitted.egf}(object, parm, level = 0.95, link = TRUE, ...)
 }
 \arguments{
-\item{object}{An \code{"\link[=fitted.egf]{egf_fitted}"} object.
+\item{object}{An \code{"\link{fitted.egf}"} object.
 Must supply link scale fitted values and corresponding standard errors.}
 
 \item{parm}{Unused argument included for generic consistency.}

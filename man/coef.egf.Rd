@@ -29,7 +29,7 @@ are related by \code{y = x[i]}, with the exception that \code{map[i]} is
 \code{NULL} is used in place of an index vector where \code{x} and \code{y}
 are identical.
 
-In both cases, the result inherits from class \code{"egf_coef"},
+In both cases, the result inherits from class \code{"coef.egf"},
 which has \code{\link{print}} and \code{\link{as.list}} methods.
 }
 \description{

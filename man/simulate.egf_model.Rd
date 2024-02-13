@@ -57,7 +57,7 @@ when cumulative incidence first exceeds this threshold.}
 \item{...}{Unused optional arguments.}
 }
 \value{
-A list inheriting from class \code{"egf_model_simulate"}, with elements:
+A list inheriting from class \code{"simulate.egf_model"}, with elements:
 \item{model, mu, Sigma, origin}{
   Copies of the so-named arguments.
   (\code{model} is a copy of argument \code{object}.)
@@ -105,7 +105,7 @@ A list inheriting from class \code{"egf_model_simulate"}, with elements:
 }
 \item{call}{
   The \link{call} to \code{simulate.egf_model}, allowing for updates
-  to the \code{"egf_model_simulate"} object via \code{\link{update}}.
+  to the \code{"simulate.egf_model"} object via \code{\link{update}}.
 }
 Attribute \code{RNGstate} preserves the RNG state prior to simulation,
 making the result reproducible.
@@ -137,7 +137,7 @@ str(zz)
 
 }
 \seealso{
-\code{\link{egf.egf_model_simulate}} for estimating the generative model
+\code{\link{egf.simulate.egf_model}} for estimating the generative model
 from simulated time series,\cr
 \code{\link{simulate.egf}} for simulating time series from \emph{fitted}
 models

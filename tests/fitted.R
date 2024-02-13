@@ -13,7 +13,7 @@ o.1f.e <- data.frame(top = gl(2L, 20L, labels = c("log(r)", "log(c0)")),
                      estimate = as.double(o.1[["sdreport"]][["value"]]),
                      se = as.double(o.1[["sdreport"]][["sd"]]))
 attr(o.1f.e, "se") <- TRUE
-class(o.1f.e) <- c("egf_fitted", "data.frame")
+class(o.1f.e) <- c("fitted.egf", "data.frame")
 stopifnot(identical(o.1f, o.1f.e))
 
 

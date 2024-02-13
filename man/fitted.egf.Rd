@@ -37,7 +37,7 @@ If \code{FALSE}, then fitted values are inverse link-transformed.}
 then approximate delta method standard errors on fitted values
 are reported.
 Standard errors are required for subsequent use
-of \code{\link{confint.egf_fitted}}.
+of \code{\link{confint.fitted.egf}}.
 Setting \code{se = TRUE} and \code{link = FALSE} is an error,
 as standard errors are not available for inverse link-transformed
 fitted values.
@@ -57,7 +57,7 @@ Evaluation of language objects follows the implementation of
 \item{...}{Unused optional arguments.}
 }
 \value{
-A data frame inheriting from class \code{"egf_fitted"}, with variables:
+A data frame inheriting from class \code{"fitted.egf"}, with variables:
 \item{top}{
   Top level nonlinear model parameter,
   from \code{\link{egf_top}(object, link = link)}.
@@ -101,7 +101,7 @@ str(zz)
 
 }
 \seealso{
-\code{\link{confint.egf_fitted}}
+\code{\link{confint.fitted.egf}}
 
 Other extractors: 
 \code{\link{coef.egf}()},

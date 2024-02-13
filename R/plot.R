@@ -8,7 +8,7 @@ function(x,
          show_predict = TRUE,
          show_tdoubling = FALSE,
          level = 0.95,
-         control = egf_plot_control(),
+         control = egf_control_plot(),
          cache = NULL,
          plot = TRUE,
          subset = NULL,
@@ -52,9 +52,9 @@ function(x,
 		}
 		if (any(c(show_predict, show_tdoubling) == 2L))
 			stopifnot(is_number_in_interval(level, 0, 1, "()"))
-		stopifnot(inherits(control, "egf_plot_control"))
+		stopifnot(inherits(control, "egf_control_plot"))
 		if (!is.null(cache))
-			stopifnot(inherits(cache, "egf_plot_cache"))
+			stopifnot(inherits(cache, "plot.egf"))
 		if (!is.null(xlim)) {
 			if (!is.numeric(xlim))
 				xlim <- try(julian(as.Date(xlim)))
@@ -194,7 +194,7 @@ function(x,
 	i <- !duplicated(cache[1:4])
 	cache <- cache[i, , drop = FALSE]
 	row.names(cache) <- NULL
-	class(cache) <- c("egf_plot_cache", oldClass(cache))
+	class(cache) <- c("plot.egf", oldClass(cache))
 
 	## If not plotting, then return
 	if (!plot)

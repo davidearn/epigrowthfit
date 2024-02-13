@@ -1,11 +1,11 @@
-\name{plot.egf_profile}
-\alias{plot.egf_profile}
+\name{plot.profile.egf}
+\alias{plot.profile.egf}
 \title{Plot likelihood profiles}
 \usage{
-\method{plot}{egf_profile}(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...)
+\method{plot}{profile.egf}(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...)
 }
 \arguments{
-\item{x}{An \code{"\link[=profile.egf]{egf_profile}"} object.}
+\item{x}{An \code{"\link{profile.egf}"} object.}
 
 \item{level}{A numeric vector with elements in (0,1). If \code{sqrt = FALSE},
 then line segments are drawn to show the intersection of the profile

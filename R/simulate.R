@@ -120,11 +120,11 @@ function(object, nsim = 1L, seed = NULL,
 	}
 
 	attr(res, "RNGstate") <- RNGstate
-	class(res) <- c("egf_simulate", oldClass(res))
+	class(res) <- c("simulate.egf", oldClass(res))
 	res
 }
 
-print.egf_simulate <-
+print.simulate.egf <-
 function(x, ...) {
 	y <- x
 	attr(x, "RNGstate") <- NULL
@@ -289,11 +289,11 @@ function(object, nsim = 1L, seed = NULL,
 	            random = (names(actual) == "b"),
 	            call = match.call())
 	attr(res, "RNGstate") <- RNGstate
-	class(res) <- "egf_model_simulate"
+	class(res) <- "simulate.egf_model"
 	res
 }
 
-coef.egf_model_simulate <-
+coef.simulate.egf_model <-
 function(object, ...) {
 	res <- object[["actual"]]
 	len <- attr(res, "lengths")
@@ -301,18 +301,18 @@ function(object, ...) {
 	names(map) <- names(len)
 	attr(res, "map") <- map
 	attr(res, "full") <- TRUE
-	class(res) <- "egf_coef"
+	class(res) <- "coef.egf"
 	res
 }
 
-getCall.egf_model_simulate <-
+getCall.simulate.egf_model <-
 function(x, ...) {
 	call <- NextMethod("getCall")
 	call[[1L]] <- quote(simulate)
 	call
 }
 
-egf.egf_model_simulate <-
+egf.simulate.egf_model <-
 function(model, ...) {
 	nel <- c("model", "formula_ts", "formula_windows", "formula_parameters",
 	         "data_ts", "data_windows")

@@ -1,7 +1,7 @@
 library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
 
-.S3method("all.equal", "egf_confint",
+.S3method("all.equal", "confint.egf",
           function(target, current, ignore = NULL, ...) {
           	if (!is.null(ignore))
           		attributes(target)[ignore] <- attributes(current)[ignore] <-
@@ -25,15 +25,15 @@ o.1pc[["linear_combination"]] <- NULL
 
 stopifnot(exprs = {
 	is.list(o.1c.w)
-	identical(oldClass(o.1c.w), c("egf_confint", "data.frame"))
+	identical(oldClass(o.1c.w), c("confint.egf", "data.frame"))
 	all.equal(o.1c.w, o.1fc, ignore = c("class", "method"))
 
 	is.list(o.1c.p)
-	identical(oldClass(o.1c.p), c("egf_confint", "data.frame"))
+	identical(oldClass(o.1c.p), c("confint.egf", "data.frame"))
 	all.equal(o.1c.p, o.1pc, ignore = c("class", "method", "A", "x"))
 
 	is.list(o.1c.u)
-	identical(oldClass(o.1c.u), c("egf_confint", "data.frame"))
+	identical(oldClass(o.1c.u), c("confint.egf", "data.frame"))
 	all.equal(o.1c.u, o.1c.p, ignore = "method", tolerance = 1e-03)
 })
 

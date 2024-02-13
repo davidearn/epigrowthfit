@@ -71,7 +71,7 @@ Evaluation of language objects follows the implementation of
 \item{...}{Unused optional arguments.}
 }
 \value{
-A data frame inheriting from class \code{"egf_confint"}, with variables:
+A data frame inheriting from class \code{"confint.egf"}, with variables:
 \item{top}{
   Top level nonlinear model parameter,
   from \code{\link{egf_top}(object, link = TRUE)}.
@@ -99,10 +99,10 @@ model parameters.
 Three methods are provided for calculating confidence intervals:
 \describe{
 \item{\code{wald}}{
-  See \code{\link{confint.egf_fitted}}.
+  See \code{\link{confint.fitted.egf}}.
 }
 \item{\code{profile}}{
-  See \code{\link{confint.egf_profile}}.
+  See \code{\link{confint.profile.egf}}.
 }
 \item{\code{uniroot}}{
   Similar to \code{"profile"}, except that the two solutions
@@ -142,5 +142,5 @@ str(zz1)
 
 }
 \seealso{
-\code{\link{plot.egf_confint}}
+\code{\link{plot.confint.egf}}
 }

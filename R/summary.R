@@ -15,11 +15,11 @@ function(object, ...) {
 	            value = object$value,
 	            gradient = object$gradient,
 	            hessian = object$hessian)
-	class(res) <- "egf_summary"
+	class(res) <- "summary.egf"
 	res
 }
 
-print.egf_summary <-
+print.summary.egf <-
 function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
 	width <- as.integer(width)
 	indent <- strrep(" ", indent)

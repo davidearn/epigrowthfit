@@ -142,11 +142,11 @@ function(object,
 	row.names(res) <- NULL
 	attr(res, "method") <- method
 	attr(res, "level") <- level
-	class(res) <- c("egf_confint", oldClass(res))
+	class(res) <- c("confint.egf", oldClass(res))
 	res
 }
 
-plot.egf_confint <-
+plot.confint.egf <-
 function(x,
          per_plot = 12L,
          subset = NULL,
@@ -178,10 +178,10 @@ function(x,
 	x <- x[subset, , drop = FALSE]
 	x$top <- factor(x$top)
 
-	plot.egf_confint.bars(x, per_plot = per_plot, main = main)
+	plot.confint.egf.bars(x, per_plot = per_plot, main = main)
 }
 
-plot.egf_confint.bars <-
+plot.confint.egf.bars <-
 function(x, per_plot, main) {
 	x <- split(x, x$top)
 	for (xlab in names(x)) { # loop over parameters

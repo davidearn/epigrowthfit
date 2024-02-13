@@ -1,11 +1,11 @@
-\name{confint.egf_predict}
-\alias{confint.egf_predict}
+\name{confint.predict.egf}
+\alias{confint.predict.egf}
 \title{Confidence intervals on predicted values}
 \usage{
-\method{confint}{egf_predict}(object, parm, level = 0.95, log = TRUE, ...)
+\method{confint}{predict.egf}(object, parm, level = 0.95, log = TRUE, ...)
 }
 \arguments{
-\item{object}{An \code{"\link[=predict.egf]{egf_predict}"} object.
+\item{object}{An \code{"\link{predict.egf}"} object.
 Must supply log scale predicted values and corresponding standard errors.}
 
 \item{parm}{Unused argument included for generic consistency.}

@@ -38,7 +38,7 @@ then inverse log-transformed predicted values are returned.}
 then approximate delta method standard errors on predicted values
 are reported.
 Standard errors are required for subsequent use
-of \code{\link{confint.egf_predict}}.
+of \code{\link{confint.predict.egf}}.
 Setting \code{se = TRUE} and \code{log = FALSE} is an error,
 as standard errors are not available for inverse log-transformed
 predicted values.}
@@ -46,7 +46,7 @@ predicted values.}
 \item{...}{Unused optional arguments.}
 }
 \value{
-A data frame inheriting from class \code{"egf_predict"}, with variables:
+A data frame inheriting from class \code{"predict.egf"}, with variables:
 \item{var}{
   Predicted variable, from \code{what}.
 }
