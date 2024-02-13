@@ -12,11 +12,11 @@ function(x,
          integer = FALSE) {
 	kind <- match.arg(kind)
 	relop <- switch(kind,
-	                any = function(x, y) TRUE,
-	                positive = `>`,
-	                nonnegative = `>=`,
-	                negative = `<`,
-	                nonpositive = `<=`)
+	                "any"         = function(e1, e2) TRUE,
+	                "positive"    = `>`,
+	                "nonnegative" = `>=`,
+	                "negative"    = `<`,
+	                "nonpositive" = `<=`)
 	is.numeric(x) && length(x) == 1L && is.finite(x) &&
 		relop(x, 0) && (!integer || x %% 1 == 0)
 }
@@ -24,8 +24,8 @@ function(x,
 is_number_in_interval <-
 function(x, a = -Inf, b = Inf, include = c("()", "(]", "[)", "[]")) {
 	include <- match.arg(include)
-	relop1 <- switch(substr(include, 1L, 1L), `(` = `>`, `[` = `>=`)
-	relop2 <- switch(substr(include, 2L, 2L), `)` = `<`, `]` = `<=`)
+	relop1 <- switch(substr(include, 1L, 1L), "(" = `>`, "[" = `>=`)
+	relop2 <- switch(substr(include, 2L, 2L), ")" = `<`, "]" = `<=`)
 	is.numeric(x) && length(x) == 1L && !is.na(x) &&
 		relop1(x, a) && relop2(x, b)
 }
