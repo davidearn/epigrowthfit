@@ -3,21 +3,6 @@ unlist1 <-
 function(x)
 	unlist(x, recursive = FALSE, use.names = FALSE)
 
-## Coerces a sequence of R objects to character, concatenates them with
-## no separator, and formats the resulting string so that, when printed,
-## the user sees nicely wrapped paragraphs. Used inside of 'stop', etc.
-## so that condition messages print nicely.
-wrap <-
-function(..., width = 0.9 * getOption("width")) {
-	dots <- list(...)
-	x <- vapply(dots, paste0, "", collapse = "")
-	x1 <- paste0(x, collapse = "")
-	y <- unlist(strsplit(x1, "\n[ \t\n]*\n"), FALSE, FALSE)
-	y1 <- paste0(y, collapse = "\n\n")
-	z <- strwrap(y1, width = width)
-	paste0(z, collapse = "\n")
-}
-
 ## Creates and prints headings. Used to section 'print' method output.
 heading <-
 function(text, width = 0.9 * getOption("width"), symbol = ".") {
