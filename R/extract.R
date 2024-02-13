@@ -1,22 +1,20 @@
 coef.egf <-
 function(object, full = FALSE, ...) {
 	stopifnot(is_true_or_false(full))
-	if (full) {
+	if (full)
 		res <- egf_expand_par(object$tmb_out, par = object$best)
-	} else {
+	else {
 		res <- object$best
 		attr(res, "lengths") <- lengths(object$tmb_out$env$parameters)
 	}
 	map <- lapply(object$tmb_out$env$parameters, attr, "map")
-	if (!egf_has_random(object)) {
+	if (!egf_has_random(object))
 		map[names(map) != "beta"] <- list(NULL)
-	}
-	for (i in seq_along(map)) {
+	for (i in seq_along(map))
 		if (!is.null(map[[i]])) {
 			map[[i]] <- as.integer(map[[i]]) + 1L
 			map[[i]][map[[i]] == 0L] <- NA
 		}
-	}
 	attr(res, "map") <- map
 	attr(res, "full") <- full
 	class(res) <- "egf_coef"
@@ -44,9 +42,8 @@ function(x, ...) {
 	f <- rep.int(gl(length(len), 1L, labels = names(len)), len)
 	res <- split(x, f)
 	map <- attr(x, "map")
-	for (s in names(res)) {
+	for (s in names(res))
 		attr(res[[s]], "map") <- map[[s]]
-	}
 	attr(res, "full") <- attr(x, "full")
 	res
 }
@@ -76,9 +73,8 @@ function(object, build_cov = FALSE, ...) {
 	                  mode = par[names(par) == "b"],
 	                  row.names = NULL,
 	                  stringsAsFactors = FALSE)
-	if (!build_cov) {
+	if (!build_cov)
 		return(res)
-	}
 
 	d1 <- object$tmb_out$env$data$block_rows
 	d2 <- object$tmb_out$env$data$block_cols
@@ -87,9 +83,8 @@ function(object, build_cov = FALSE, ...) {
 	Sigma <- lapply(theta, theta2cov)
 	names(Sigma) <- levels(object$effects$b$cov)
 	tt <- table(object$effects$b$top, object$effects$b$cov)
-	for (i in seq_along(Sigma)) {
+	for (i in seq_along(Sigma))
 		dimnames(Sigma[[i]])[1:2] <- list(rownames(tt)[tt[, i] > 0L])
-	}
 	attr(res, "Sigma") <- Sigma
 	res
 }
@@ -97,9 +92,8 @@ function(object, build_cov = FALSE, ...) {
 ranef.egf_no_fit <- ranef.egf
 
 vcov.egf <-
-function(object, ...) {
+function(object, ...)
 	egf_get_sdreport(object)$cov.fixed
-}
 
 getCall.egf <-
 function(x, ...) {
@@ -124,19 +118,11 @@ function(formula,
 		return(res)
 	}
 	res <- formula$frame[[which]]
-	if (which == "ts") {
-		stopifnot(is_true_or_false(full))
-		if (full) {
-			return(res)
-		} else {
-			return(res[!is.na(res$window), , drop = FALSE])
-		}
-	}
-	if (which == "parameters") {
-		top <- match.arg(top)
-		return(res[[top]])
-	}
-	res
+	switch(which,
+	       "ts" = if (full) res else res[!is.na(res$window), , drop = FALSE],
+	       "windows" = res,
+	       "parameters" = res[[match.arg(top)]],
+	       "extra" = res)
 }
 
 model.frame.egf_no_fit <- model.frame.egf
@@ -196,17 +182,15 @@ function(object,
 		return(res)
 	}
 
-	if (!any_random_effects) {
+	if (!any_random_effects)
 		stop(gettextf("expected %s = %s : mixed effects formula for parameter '%s' does not contain random effects terms",
 		              "random", "NULL", top),
 		     domain = NA)
-	}
 
-	if (!any(l$random == random)) {
+	if (!any(l$random == random))
 		stop(gettextf("expected %s = %s or in %s",
 		              "random", "NULL", deparse(as.call(c(list(quote(expression)), l$random)))),
 		     domain = NA)
-	}
 
 	## Return term-specific random effects design matrix
 	egf_make_Z(random = random, data = frame)

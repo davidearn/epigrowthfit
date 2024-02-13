@@ -3,17 +3,13 @@ function(object, ...) {
 	safe_summary <-
 	function(x) {
 		res <- unclass(summary(x))
-		if (anyNA(x)) {
-			return(res)
-		}
-		c(res, `NA's` = 0)
+		if (anyNA(x)) res else c(res, "NA's" = 0)
 	}
 	fo <- fitted(object)
 	sfo <- aggregate(fo["estimate"], fo["top"], safe_summary)
 	sfo <- `colnames<-`(t(sfo[[2L]]), as.character(sfo[[1L]]))
-	if (sum(sfo["NA's", ] == 0)) {
+	if (sum(sfo["NA's", ] == 0))
 		sfo <- sfo[-match("NA's", rownames(sfo), 0L), , drop = FALSE]
-	}
 	res <- list(fitted = sfo,
 	            convergence = object$optimizer_out$convergence,
 	            value = object$value,

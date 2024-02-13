@@ -10,12 +10,11 @@ function(object, nsim = 1L, seed = NULL,
 	nsim <- as.integer(nsim)
 
 	## Set and preserve RNG state (modified from 'stats:::simulate.lm')
-	if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+	if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
 		runif(1L)
-	}
-	if (is.null(seed)) {
+	if (is.null(seed))
 		RNGstate <- get(".Random.seed", envir = .GlobalEnv)
-	} else {
+	else {
 		oRNGstate <- get(".Random.seed", envir = .GlobalEnv)
 		on.exit(assign(".Random.seed", oRNGstate, envir = .GlobalEnv),
 		        add = TRUE)
@@ -50,10 +49,9 @@ function(object, nsim = 1L, seed = NULL,
 
 		do_boot <-
 		function(i, x) {
-			if (trace) {
+			if (trace)
 				cat(sprintf("Commencing bootstrap optimization %d of %d...\n",
 				            i, nsim))
-			}
 			## Update
 			args$data$x <- x
 			## Retape
@@ -99,13 +97,13 @@ function(object, nsim = 1L, seed = NULL,
 			              envir = environment())
 			clusterEvalQ(cl, {
 				dyn.load(dll)
-				if (TMB::openmp(n = NULL) > 0L) {
+				if (TMB::openmp(n = NULL) > 0L)
 					TMB::openmp(n = nomp)
-				}
 			})
 			clusterSetRNGStream(cl)
 			res$boot <- clusterMap(cl, do_boot, i = seq_len(nsim), x = frame[nx], simplify = TRUE)
-		} else {
+		}
+		else {
 			if (given_outfile <- nzchar(parallel$outfile)) {
 				outfile <- file(parallel$outfile, open = "wt")
 				sink(outfile, type = "output")
@@ -143,13 +141,13 @@ function(object, nsim = 1L, seed = NULL,
 	nsim <- as.integer(nsim)
 
 	## Set and preserve RNG state (modified from 'stats:::simulate.lm')
-	if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+	if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
 		runif(1L)
-	}
 	if (is.null(seed)) {
 		RNGstate <- get(".Random.seed", envir = .GlobalEnv)
 		set_RNGstate <- function() assign(".Random.seed", RNGstate, .GlobalEnv)
-	} else {
+	}
+	else {
 		oRNGstate <- get(".Random.seed", envir = .GlobalEnv)
 		on.exit(assign(".Random.seed", oRNGstate, envir = .GlobalEnv),
 				add = TRUE)
@@ -173,23 +171,24 @@ function(object, nsim = 1L, seed = NULL,
 	}
 
 	has_inflection <- object$curve %in% c("gompertz", "logistic", "richards")
+	tmax <-
 	if (has_inflection) {
 		## Time: daily from 0 days to '<inflection time>+1' days
-		if (is.null(Sigma)) {
+		if (is.null(Sigma))
 			## Fixed intercept model: inflection time is known up front.
-			tmax <- ceiling(exp(mu[["log(tinfl)"]])) + 1
-		} else {
+			ceiling(exp(mu[["log(tinfl)"]])) + 1
+		else
 			## Random intercept model: inflection time is not known up front.
 			## Two passes are necessary. The first pass asks for time series
 			## of minimal length (hence 'tmax <- 1') and serves only to
 			## retrieve randomly generated inflection times. The second pass
 			## asks for time series of appropriate length.
-			tmax <- 1
-		}
-	} else {
+			1
+	}
+	else {
 		## Time: daily from 0 days to 'tmax' days
 		stopifnot(is_number(tmax, "positive"))
-		tmax <- max(1, trunc(tmax))
+		max(1, trunc(tmax))
 	}
 	stopifnot(is_number(cstart))
 
@@ -206,13 +205,15 @@ function(object, nsim = 1L, seed = NULL,
 		if (nsim == 1L) {
 			formula_parameters <- ~1
 			init <- list(beta = mu, theta = double(0L), b = double(0L))
-		} else {
+		}
+		else {
 			formula_parameters <- ~ts
 			beta <- double(p * nsim)
 			beta[seq.int(from = 1L, by = nsim, length.out = p)] <- mu
 			init <- list(beta = beta, theta = double(0L), b = double(0L))
 		}
-	} else {
+	}
+	else {
 		formula_parameters <- ~(1 | ts)
 		init <- list(beta = mu, theta = cov2theta(Sigma), b = double(nsim * p))
 	}
@@ -317,8 +318,7 @@ function(model, ...) {
 	         "data_ts", "data_windows")
 	args <- model[nel]
 	dots <- list(...)
-	if (length(dots) > 0L && !is.null(nd <- names(dots))) {
+	if (length(dots) > 0L && !is.null(nd <- names(dots)))
 		args <- c(args, dots[match(nd, nel, 0L) == 0L])
-	}
 	do.call(egf, args)
 }

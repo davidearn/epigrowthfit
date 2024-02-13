@@ -1,9 +1,8 @@
 dgi <-
 function(x, latent, infectious) {
 	stopifnot(is.numeric(x))
-	if (length(x) == 0L) {
+	if (length(x) == 0L)
 		return(x)
-	}
 	stopifnot(is.numeric(latent),
 	          (m <- length(latent)) > 0L,
 	          is.finite(latent),
@@ -41,9 +40,8 @@ function(x, latent, infectious) {
 pgi <-
 function(q, latent, infectious) {
 	stopifnot(is.numeric(q))
-	if (length(q) == 0L) {
+	if (length(q) == 0L)
 		return(q)
-	}
 	stopifnot(is.numeric(latent),
 	          (m <- length(latent)) > 0L,
 	          is.numeric(infectious),
@@ -65,9 +63,8 @@ function(q, latent, infectious) {
 qgi <-
 function(p, latent, infectious) {
 	stopifnot(is.numeric(p))
-	if (length(p) == 0L) {
+	if (length(p) == 0L)
 		return(p)
-	}
 	stopifnot(is.numeric(latent),
 	          (m <- length(latent)) > 0L,
 	          is.numeric(infectious),
@@ -89,14 +86,13 @@ function(p, latent, infectious) {
 
 rgi <-
 function(n, latent, infectious) {
-	if (length(n) > 1L) {
+	if (length(n) > 1L)
 		n <- length(n)
-	} else {
+	else {
 		stopifnot(is.numeric(n), length(n) == 1L, n >= 0)
 		n <- trunc(n)
-		if (n == 0) {
+		if (n == 0)
 			return(double(0L))
-		}
 	}
 	stopifnot(is.numeric(latent),
 	          length(latent) > 0L,
@@ -138,9 +134,8 @@ function(q, infectious) {
 	p[q < 1] <- 0
 	p[q >= n] <- 1
 	l <- !is.na(q) & q >= 1 & q < n
-	if (any(l)) {
+	if (any(l))
 		p[l] <- cumsum(infectious)[floor(q[l])]
-	}
 	p
 }
 

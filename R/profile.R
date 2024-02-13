@@ -26,27 +26,25 @@ function(fitted,
 		                  j = which,
 		                  x = 1,
 		                  dims = c(length(which), n))
-
+	}
 	## If profiling user-specified linear combinations
 	## of elements of 'c(beta, theta)'
-	} else if (!is.null(A)) {
+	else if (!is.null(A)) {
 		method <- "A"
 		if (!is(A, "dMatrix")) {
 			stopifnot(is.numeric(A))
-			if (is.null(dim(A))) {
+			if (is.null(dim(A)))
 				dim(A) <- c(1L, length(A))
-			} else {
-				stopifnot(is.matrix(A))
-			}
+			else stopifnot(is.matrix(A))
 		}
 		eval(bquote(stopifnot(nrow(A) > 0L,
 		                      ncol(A) == .(n),
 		                      is.finite(A),
 		                      rowSums(abs(A)) > 0)))
-
+	}
 	## If profiling population fitted values
 	## of top level nonlinear model parameters
-	} else if (!is.null(top)) {
+	else if (!is.null(top)) {
 		method <- "top"
 
 		names_top <- egf_top(fitted)
@@ -60,13 +58,10 @@ function(fitted,
 		l <- egf_preprofile(fitted, subset = subset, top = top)
 		Y <- l$Y
 		A <- l$A
-
-	## Otherwise
-	} else {
-		stop(gettextf("one of '%s', '%s', and '%s' must be non-NULL",
-		              "A", "which", "top"),
-		     domain = NA)
 	}
+	else stop(gettextf("one of '%s', '%s', and '%s' must be non-NULL",
+	                   "A", "which", "top"),
+	          domain = NA)
 
 	## Covariance matrix of 'c(beta, theta)'
 	V <- unclass(vcov(fitted))
@@ -75,7 +70,8 @@ function(fitted,
 		a <- which
 		h <- 0.25 * sqrt(diag(V)[which])
 		s <- "name"
-	} else {
+	}
+	else {
 		## Covariance matrix of 'A %*% c(beta, theta)'
 		V <- A %*% tcrossprod(V, A)
 		a <- lapply(seq_len(m), function(i) A[i, ])
@@ -90,9 +86,8 @@ function(fitted,
 
 	do_profile <-
 	function(i, a, h) {
-		if (trace) {
+		if (trace)
 			cat(sprintf("Computing likelihood profile %d of %d...\n", i, m))
-		}
 		args <- list(obj = obj, h = h, ytol = ytol, ystep = ystep)
 		args[[s]] <- a
 		res <- do.call(TMB::tmbprofile, args)
@@ -122,13 +117,13 @@ function(fitted,
 		clusterExport(cl, varlist = vars, envir = environment())
 		clusterEvalQ(cl, {
 			dyn.load(dll)
-			if (TMB::openmp(n = NULL) > 0L) {
+			if (TMB::openmp(n = NULL) > 0L)
 				TMB::openmp(n = nomp)
-			}
 			obj <- do.call(TMB::MakeADFun, args)
 		})
 		res <- clusterMap(cl, do_profile, i = seq_len(m), a = a, h = h)
-	} else {
+	}
+	else {
 		if (given_outfile <- nzchar(parallel$outfile)) {
 			outfile <- file(parallel$outfile, open = "wt")
 			sink(outfile, type = "output")
@@ -248,37 +243,28 @@ function(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...) {
 
 	dots <- list(...)
 	method <- attr(x, "method")
-	if (is.null(dots[["main"]])) {
-		if (method == "top") {
-			main <- c(tapply(as.character(x$window),
-			                 x$linear_combination, `[[`, 1L))[subset]
-		} else {
-			main <- character(length(subset))
-		}
-	} else {
-		main <- rep_len(dots$main, length(subset))
-	}
-	if (is.null(dots[["xlab"]])) {
-		if (method == "top") {
-			xlab <- c(tapply(as.character(x$top),
-			                 x$linear_combination, `[[`, 1L))[subset]
-		} else {
-			xlab <- paste0("linear combination ",
-			               levels(x$linear_combination)[subset])
-		}
-	} else {
-		xlab <- rep_len(dots$xlab, length(subset))
-	}
+	main <-
+		if (!is.null(dots[["main"]]))
+			rep_len(dots$main, length(subset))
+		else if (method == "top")
+			c(tapply(as.character(x$window),
+			         x$linear_combination, `[[`, 1L))[subset]
+		else character(length(subset))
+	xlab <-
+		if (!is.null(dots[["xlab"]]))
+			rep_len(dots$xlab, length(subset))
+		else if (method == "top")
+			c(tapply(as.character(x$top),
+			         x$linear_combination, `[[`, 1L))[subset]
+		else paste0("linear combination ", levels(x$linear_combination)[subset])
 	dots$main <- dots$xlab <- NULL
 	if (is.null(dots[["ylab"]])) {
 		dots$ylab <- "deviance"
-		if (sqrt) {
+		if (sqrt)
 			dots$ylab <- bquote(sqrt(.(dots$ylab)))
-		}
 	}
-	if (is.null(dots[["ylim"]])) {
+	if (is.null(dots[["ylim"]]))
 		dots$ylim <- c(0, f(max(x$deviance, na.rm = TRUE)))
-	}
 
 	for (i in seq_along(subset)) {
 		args <- list(formula = f(deviance) ~ value,

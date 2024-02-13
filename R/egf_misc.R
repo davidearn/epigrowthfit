@@ -5,35 +5,26 @@ function(object, ...)
 egf_top.default <-
 function(object, link = TRUE, ...) {
 	stopifnot(is.null(object))
-	names_top <- c("r", "alpha", "c0", "tinfl", "K",
-	               "p", "a", "b", "disp", paste0("w", 1:6))
-	if (!link) {
-		return(names_top)
-	}
-	egf_link_add(names_top)
+	top <- c("r", "alpha", "c0", "tinfl", "K",
+	         "p", "a", "b", "disp", paste0("w", 1:6))
+	if (link) egf_link_add(top) else top
 }
 
 egf_top.egf_model <-
 function(object, link = TRUE, ...) {
-	names_top <- switch(object$curve,
-	                    exponential = c("r", "c0"),
-	                    subexponential = c("alpha", "c0", "p"),
-	                    gompertz = c("alpha", "tinfl", "K"),
-	                    logistic = c("r", "tinfl", "K"),
-	                    richards = c("r", "tinfl", "K", "a"))
-	if (object$excess) {
-		names_top <- c(names_top, "b")
-	}
-	if (object$family == "nbinom") {
-		names_top <- c(names_top, "disp")
-	}
-	if (object$day_of_week > 0L) {
-		names_top <- c(names_top, paste0("w", 1:6))
-	}
-	if (!link) {
-		return(names_top)
-	}
-	egf_link_add(names_top)
+	top <- switch(object$curve,
+	              exponential = c("r", "c0"),
+	              subexponential = c("alpha", "c0", "p"),
+	              gompertz = c("alpha", "tinfl", "K"),
+	              logistic = c("r", "tinfl", "K"),
+	              richards = c("r", "tinfl", "K", "a"))
+	if (object$excess)
+		top <- c(top, "b")
+	if (object$family == "nbinom")
+		top <- c(top, "disp")
+	if (object$day_of_week > 0L)
+		top <- c(top, paste0("w", 1:6))
+	if (link) egf_link_add(top) else top
 }
 
 egf_top.egf <-
@@ -79,9 +70,8 @@ function(object, tol = 1) {
 egf_expand_par <-
 function(obj, par) {
 	l <- obj$env$parList(par[obj$env$lfixed()], par)
-	if (ncol(obj$env$data$Z) == 0L) {
+	if (ncol(obj$env$data$Z) == 0L)
 		l[names(l) != "beta"] <- list(double(0L))
-	}
 	len <- lengths(l)
 	res <- unlist1(l)
 	names(res) <- rep.int(names(l), len)
@@ -92,15 +82,15 @@ function(obj, par) {
 egf_condense_par <-
 function(obj, par) {
 	parameters <- obj$env$parameters
-	if (ncol(obj$env$data$Z) == 0L) {
+	if (ncol(obj$env$data$Z) == 0L)
 		parameters[names(parameters) != "beta"] <- list(double(0L))
-	}
 	f <-
 	function(x) {
 		if (is.null(map <- attr(x, "map"))) {
 			res <- seq_along(x)
 			attr(res, "n") <- length(x)
-		} else {
+		}
+		else {
 			res <- match(seq_len(attr(x, "nlevels")) - 1L, map)
 			attr(res, "n") <- length(map)
 		}
@@ -133,20 +123,18 @@ function(object) {
 	stopifnot(inherits(object, "egf"))
 	res <- object$sdreport
 	if (is.null(res)) {
-		if (egf_has_random(object)) {
+		if (egf_has_random(object))
 			warning(gettextf("computing Hessian matrix for random effects model; retry with %s to avoid recomputation",
 			                 "object = update(object, se = TRUE)"),
 			        domain = NA)
-		}
 		call <- quote(sdreport(object$tmb_out,
 		                       par.fixed = object$best[!object$random],
 		                       getReportCovariance = FALSE))
 		res <- tryCatch(eval(call),
 		                error = function(e) `[[<-`(e, "call", call))
 	}
-	if (inherits(res, "error")) {
+	if (inherits(res, "error"))
 		stop(res)
-	}
 	res
 }
 
@@ -170,9 +158,8 @@ function(object) {
 egf_patch_fn <-
 function(fn, inner_optimizer) {
 	e <- environment(fn)
-	if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
+	if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE))
 		e$.egf_env <- new.env(parent = emptyenv())
-	}
 	e$.egf_env$fn <- fn
 	e$.egf_env$inner_optimizer <- inner_optimizer
 
@@ -190,9 +177,8 @@ function(fn, inner_optimizer) {
 			inner.method <<- io$method
 			inner.control <<- io$control
 			v <- .egf_env$fn(x, ...)
-			if (is.numeric(v) && length(v) == 1L && is.finite(v)) {
+			if (is.numeric(v) && length(v) == 1L && is.finite(v))
 				return(v)
-			}
 		}
 		NaN # no warning to avoid duplication of 'optim' and 'nlminb' warnings
 	}
@@ -203,9 +189,8 @@ function(fn, inner_optimizer) {
 egf_patch_gr <-
 function(gr, inner_optimizer) {
 	e <- environment(gr)
-	if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE)) {
+	if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE))
 		e$.egf_env <- new.env(parent = emptyenv())
-	}
 	e$.egf_env$gr <- gr
 	e$.egf_env$inner_optimizer <- inner_optimizer
 
@@ -224,9 +209,8 @@ function(gr, inner_optimizer) {
 			inner.method <<- io$method
 			inner.control <<- io$control
 			v <- .egf_env$gr(x, ...)
-			if (is.numeric(v) && length(v) == n && all(is.finite(v))) {
+			if (is.numeric(v) && length(v) == n && all(is.finite(v)))
 				return(v)
-			}
 		}
 		warning(gettextf("unable to evaluate '%s', returning %f",
 		                 "gr(x)", NaN),
@@ -239,11 +223,10 @@ function(gr, inner_optimizer) {
 
 egf_preprofile <-
 function(object, subset, top) {
-	if (object$control$profile) {
+	if (object$control$profile)
 		stop(gettextf("fixed effects coefficients profiled out of likelihood; retry with %s",
 		              "object = update(object, control = egf_control(profile = FALSE))"),
 		     domain = NA)
-	}
 
 	Y <- object$tmb_out$env$data$Y
 	Y <- Y[subset, top, drop = FALSE]
@@ -256,7 +239,8 @@ function(object, subset, top) {
 	if (is.null(map)) {
 		argna <- logical(len[["beta"]])
 		fmap <- gl(len[["beta"]], 1L)
-	} else {
+	}
+	else {
 		argna <- is.na(map)
 		fmap <- factor(map[!argna])
 	}
@@ -274,25 +258,21 @@ function(object, subset, top) {
 	A <- tcrossprod(A[, !argna, drop = FALSE], as(fmap, "sparseMatrix"))
 	A <- cbind(A, Matrix(0, nrow(A), len[["theta"]]))
 
-	if (!all(rowSums(abs(A)) > 0)) {
-		stop("found population fitted value not depending on any fixed effects coefficient")
-	}
-	list(Y = Y, A = A)
+	if (all(rowSums(abs(A)) > 0))
+		list(Y = Y, A = A)
+	else stop("found population fitted value not depending on any fixed effects coefficient")
 }
 
 egf_cache <-
 function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
 	subdir <- R_user_dir("epigrowthfit", "cache")
-	if (clear_all) {
+	if (clear_all)
 		return(unlink(subdir, recursive = TRUE))
-	}
 	path <- file.path(subdir, file)
-	if (clear) {
+	if (clear)
 		return(unlink(path))
-	}
-	if (file.exists(path)) {
+	if (file.exists(path))
 		return(readRDS(path))
-	}
 	if (missing(object)) {
 		if (is.null(topic)) {
 			name <- sub("-\\d+\\.rds$", "", file)
@@ -305,24 +285,21 @@ function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
 			                  types = "help",
 			                  verbose = FALSE)
 			topic <- hs$matches$Topic
-			if (length(topic) != 1L) {
+			if (length(topic) != 1L)
 				stop(gettextf("resource not created because '%s' matches %d topics",
 				              "file", length(topic)),
 				     domain = NA)
-			}
 		}
 		example(topic, character.only = TRUE, package = "epigrowthfit",
 		        local = TRUE, echo = FALSE)
-		if (!file.exists(path)) {
-			stop(gettextf("examples for topic \"%s\" were sourced but resource was not created",
-			              topic),
-			     domain = NA)
-		}
-		return(readRDS(path))
+		if (file.exists(path))
+			return(readRDS(path))
+		else stop(gettextf("examples for topic \"%s\" were sourced but resource was not created",
+		                   topic),
+		          domain = NA)
 	}
-	if (!dir.exists(subdir)) {
+	if (!dir.exists(subdir))
 		dir.create(subdir)
-	}
 	saveRDS(object, file = path, ...)
 	object
 }

@@ -50,15 +50,15 @@ function(formula_parameters, names_parameters, check_intercept) {
 		p <- length(names_parameters)
 		formula_parameters <- rep.int(list(formula_parameters), p)
 		names(formula_parameters) <- names_parameters
-	} else {
+	}
+	else {
 		l <- lapply(formula_parameters, `[[`, 2L)
 		names(formula_parameters) <- vapply(l, deparse, "")
 		m <- match(names(formula_parameters), names_parameters, 0L)
-		if (min(1L, m) == 0L) {
+		if (min(1L, m) == 0L)
 			stop(gettextf("%s[[%d]][[2L]] is not an element of %s",
 			              "formula_parameters", which.min(m), deparse(as.call(c(list(quote(expression)), l)))),
 			     domain = NA)
-		}
 		g <- function(x) simplify_terms(x[-2L])
 		formula_parameters <- lapply(formula_parameters, g)
 		need <- setdiff(names_parameters, names(formula_parameters))
@@ -71,16 +71,14 @@ function(formula_parameters, names_parameters, check_intercept) {
 			a <- attributes(terms(split_effects(x)$fixed))
 			a$intercept == 1L || length(a$term.labels) == 0L
 		}
-		if (recycled) {
-			ok <- check(formula_parameters[[1L]])
-		} else {
-			ok <- all(vapply(formula_parameters, check, FALSE))
-		}
-		if (!ok) {
+		ok <-
+			if (recycled)
+				check(formula_parameters[[1L]])
+			else all(vapply(formula_parameters, check, FALSE))
+		if (!ok)
 			warning(gettextf("default initial values of fixed effects coefficients not reliable for zero-intercept models; consider setting '%s' argument '%s'",
 			                 "egf", "init"),
 			        domain = NA)
-		}
 	}
 	formula_parameters
 }
@@ -105,9 +103,8 @@ function(model,
 		                         env = environment(formula))
 		cl$subset <- subset
 		mf <- eval(cl, parent.frame())
-		if (!group) {
+		if (!group)
 			mf <- data.frame(gl(1L, nrow(mf)), mf)
-		}
 		attr(mf, "names_original") <- names_original
 		attr(mf, "terms") <- NULL
 		mf
@@ -125,11 +122,10 @@ function(model,
 	                       drop.unused.levels = TRUE)
 	names(frame_ts) <- c("ts", "time", "x")
 	frame_ts <- frame_ts[!is.na(frame_ts$ts), , drop = FALSE]
-	if (nrow(frame_ts) == 0L) {
+	if (nrow(frame_ts) == 0L)
 		stop(gettextf("data frame constructed from '%s' has zero rows",
 		              "*_ts"),
 		     domain = NA)
-	}
 
 	### Fitting window stuff
 
@@ -141,11 +137,10 @@ function(model,
 	                                               omit = na.pass),
 	                            drop.unused.levels = TRUE)
 	names(frame_windows) <- c("ts", "start", "end")
-	if ((N <- nrow(frame_windows)) == 0L) {
+	if ((N <- nrow(frame_windows)) == 0L)
 		stop(gettextf("data frame constructed from '%s' has zero rows",
 		              "*_windows"),
 		     domain = NA)
-	}
 
 	### Mixed effects stuff
 
@@ -172,27 +167,25 @@ function(model,
 	frame_parameters[len == 0L] <- list(data.frame(row.names = seq_len(N)))
 
 	## Test model frames for rowwise correspondence with 'frame_windows'
-	if (any(vapply(frame_parameters, nrow, 0L) != N)) {
+	if (any(vapply(frame_parameters, nrow, 0L) != N))
 		stop(gettextf("data frames constructed from '%s' and '%s' do not have a common number of rows",
 		              "formula_windows", "formula_parameters"),
 		     domain = NA)
-	}
 
 	### Appended stuff
 
+	frame_extra <-
 	if (!is.null(select_windows) && is.data.frame(data_windows)) {
 		i <- egf_eval_subset(subset_windows, data_windows,
 		                     environment(formula_windows))
-		if (select_windows == ".") {
-			j <- setdiff(names(data_windows),
-			             unlist1(lapply(frame_parameters, names)))
-		} else {
-			j <- egf_eval_select(select_windows, data_windows, baseenv())
-		}
-		frame_extra <- data_windows[i, j]
-	} else {
-		frame_extra <- data.frame(row.names = seq_len(N))
+		j <-
+			if (select_windows == ".")
+				setdiff(names(data_windows),
+				        unlist1(lapply(frame_parameters, names)))
+			else egf_eval_select(select_windows, data_windows, baseenv())
+		data_windows[i, j]
 	}
+	else data.frame(row.names = seq_len(N))
 
 
 	### Validation step ########################################################
@@ -202,38 +195,33 @@ function(model,
 	nf1 <- as.list(attr(frame_ts, "names_original"))
 	names(nf1) <- names(frame_ts)
 
-	if (inherits(frame_ts$time, c("Date", "POSIXct", "POSIXlt"))) {
+	if (inherits(frame_ts$time, c("Date", "POSIXct", "POSIXlt")))
 		frame_ts$time <- julian(frame_ts$time)
-	} else if (!is.numeric(frame_ts$time)) {
+	else if (!is.numeric(frame_ts$time))
 		stop(gettextf("'%s' is not a numeric, Date, or POSIXt vector", nf1$time),
 		     domain = NA)
-	}
-	if (!is.numeric(frame_ts$x)) {
+	if (!is.numeric(frame_ts$x))
 		stop(gettextf("'%s' is not a numeric vector", nf1$x),
-             domain = NA)
-	}
+		     domain = NA)
 
 	### Fitting window stuff
 
 	nf2 <- as.list(attr(frame_windows, "names_original"))
 	names(nf2) <- names(frame_windows)
-	for (s in c("start", "end")) {
-		if (inherits(frame_windows[[s]], c("Date", "POSIXct", "POSIXlt"))) {
+	for (s in c("start", "end"))
+		if (inherits(frame_windows[[s]], c("Date", "POSIXct", "POSIXlt")))
 			frame_windows[[s]] <- julian(frame_windows[[s]])
-		} else if (!is.numeric(frame_windows[[s]])) {
+		else if (!is.numeric(frame_windows[[s]]))
 			stop(gettextf("'%s' is not a numeric, Date, or POSIXt vector", nf2[[s]]),
 			     domain = NA)
-		}
-	}
 
 	### Mixed effects stuff
 
 	get_names_bar_lhs <-
 	function(formula) {
 		bars <- split_effects(formula)$random
-		if (length(bars) == 0L) {
+		if (length(bars) == 0L)
 			return(character(0L))
-		}
 		f <-
 		function(x) {
 			vars <- attr(terms(as.formula(call("~", x[[2L]]))), "variables")
@@ -249,11 +237,10 @@ function(model,
 			is.double(x) || is.integer(x) || is.logical(x)
 		all(vapply(data[names], f, FALSE))
 	}
-	if (!all(mapply(check_ok_bar_lhs, data = frame_parameters, names = names_bar_lhs))) {
+	if (!all(mapply(check_ok_bar_lhs, data = frame_parameters, names = names_bar_lhs)))
 		stop(gettextf("variables on left hand side of '%s' in '%s' must be of double, integer, or logical type",
 		              "|", "formula_parameters"),
 		     domain = NA)
-	}
 
 
 	### Subsetting step ########################################################
@@ -272,11 +259,10 @@ function(model,
 	## Discard time series without corresponding fitting windows
 	## and fitting windows without corresponding time series
 	lts <- intersect(levels(frame_ts$ts), levels(frame_windows$ts))
-	if (length(lts) == 0L) {
+	if (length(lts) == 0L)
 		stop(gettextf("found %d fitting windows with corresponding time series data",
 		              0L),
 		     domain = NA)
-	}
 	frame_ts$ts <- factor(frame_ts$ts, levels = lts, exclude = NULL)
 	i1 <- !is.na(frame_ts$ts)
 	frame_ts <- frame_ts[i1, , drop = FALSE]
@@ -291,34 +277,30 @@ function(model,
 
 	### Time series stuff
 
-	if (!all(is.finite(frame_ts$time))) {
+	if (!all(is.finite(frame_ts$time)))
 		stop(gettextf("'%s' is not finite", nf1$time),
 		     domain = NA)
-	}
+	check_ok_diff_time <-
 	if (do_day_of_week <- (model$day_of_week > 0L)) {
 		if (is.double(frame_ts$time)) {
-			if (!isTRUE(all.equal(frame_ts$time, z <- round(frame_ts$time)))) {
+			if (!isTRUE(all.equal(frame_ts$time, z <- round(frame_ts$time))))
 				stop(gettextf("'%s' is not integer-valued", nf1$time),
 				     domain = NA)
-			}
 			frame_ts$time <- z
 		}
-		check_ok_diff_time <- function(x) all(diff(x) == 1)
-	} else {
-		check_ok_diff_time <- function(x) all(diff(x) > 0)
+		function(x) all(diff(x) == 1)
 	}
-	if (!all(tapply(frame_ts$time, frame_ts$ts, check_ok_diff_time))) {
+	else function(x) all(diff(x) > 0)
+	if (!all(tapply(frame_ts$time, frame_ts$ts, check_ok_diff_time)))
 		stop(switch(1L + 2L * do_day_of_week + nzchar(nf1$ts),
 		            gettextf("'%s' must be increasing", nf1$time),
 		            gettextf("'%s' must be increasing in each level of %s", nf1$time, nf1$ts),
 		            gettextf("'%s' must be increasing with unit spacing", nf1$time, nf1$time),
 		            gettextf("'%s' must be increasing with unit spacing in each level of %s", nf1$time, nf1$ts)),
 		     domain = NA)
-	}
-	if (!all(frame_ts$x[!is.na(frame_ts$x)] >= 0)) {
+	if (!all(frame_ts$x[!is.na(frame_ts$x)] >= 0))
 		stop(gettextf("'%s' is not non-negative", nf1$x),
 		     domain = NA)
-	}
 	if (is.double(frame_ts$x)) {
 		is_NaN_or_Inf <- is.nan(frame_ts$x) | is.infinite(frame_ts$x)
 		if (any(is_NaN_or_Inf)) {
@@ -327,11 +309,10 @@ function(model,
 			        domain = NA)
 			frame_ts$x[is_NaN_or_Inf] <- NA
 		}
-		if (!isTRUE(all.equal(frame_ts$x, z <- round(frame_ts$x)))) {
+		if (!isTRUE(all.equal(frame_ts$x, z <- round(frame_ts$x))))
 			warning(gettextf("replacing '%s' with %s(%s)",
 			                 nf1$x, "round", nf1$x),
 			        domain = NA)
-		}
 		frame_ts$x <- z
 	}
 
@@ -344,11 +325,10 @@ function(model,
 		f <- function(x) any(is.infinite(x))
 		!any(vapply(data[i], f, FALSE))
 	}
-	if (!all(mapply(check_ok_bar_lhs_double, data = frame_parameters, names = names_bar_lhs))) {
+	if (!all(mapply(check_ok_bar_lhs_double, data = frame_parameters, names = names_bar_lhs)))
 		stop(gettextf("numeric variables on left hand side of '%f' in '%f' contain %f or %f",
 		              "|", "formula_parameters", Inf, -Inf),
              domain = NA)
-	}
 
 
 	### Labeling step ##########################################################
@@ -370,45 +350,37 @@ function(model,
 	make_window_segment <-
 	function(d1, d2) {
 
-		m0 <- sprintf("Fitting windows (%s, %s]", nf2$start, nf2$end)
-		if (nzchar(nf1$ts)) {
-			m0 <- paste(m0, "in time series", dQuote(d2$ts[1L]))
-		}
-		if (!all(d2$start < d2$end)) {
+		if (!all(d2$start < d2$end))
 			stop(switch(1L + nzchar(nf1$ts),
 			            gettextf("fitting windows (%s, %s] in time series \"%s\" do not satisfy %s < %s",
 			                     nf2$start, nf2$end, d2$ts[1L], nf2$start, nf2$end),
 			            gettextf("fitting windows (%s, %s] do not satisfy %s < %s",
 			                     nf2$start, nf2$end,            nf2$start, nf2$end)),
 			     domain = NA)
-		}
-		if (!all(d2$start[-1L] >= d2$end[-nrow(d2)])) {
+		if (!all(d2$start[-1L] >= d2$end[-nrow(d2)]))
 			stop(switch(1L + nzchar(nf1$ts),
 			            gettextf("fitting windows (%s, %s] in time series \"%s\" are not disjoint",
 			                     nf2$start, nf2$end, d2$ts[1L]),
 			            gettextf("fitting windows (%s, %s] are not disjoint",
 			                     nf2$start, nf2$end           )),
 			     domain = NA)
-		}
 		f <- function(a, b) which(d1$time >= a & d1$time <= b)[-1L]
 		index <- Map(f, a = d2$start, b = d2$end)
 		ulindex <- unlist1(index)
-		if (na_action_ts == "fail" && anyNA(d1$x[ulindex])) {
+		if (na_action_ts == "fail" && anyNA(d1$x[ulindex]))
 			stop(switch(1L + nzchar(nf1$ts),
 			            gettextf("fitting windows (%s, %s] in time series \"%s\" contain %d in '%s'",
 			                     nf2$start, nf2$end, d2$ts[1L], NA, nf1$x),
 			            gettextf("fitting windows (%s, %s] contain %d in '%s'",
 			                     nf2$start, nf2$end,            NA, nf1$x)),
 			     domain = NA)
-		}
-		if (any(vapply(index, function(i) sum(!is.na(d1$x[i])) == 0L, FALSE))) {
+		if (any(vapply(index, function(i) sum(!is.na(d1$x[i])) == 0L, FALSE)))
 			stop(switch(1L + nzchar(nf1$ts),
 			            gettextf("fitting windows (%s, %s] in time series \"%s\" contain %d observations of '%s'",
 			                     nf2$start, nf2$end, d2$ts[1L], 0L, nf1$x),
 			            gettextf("fitting windows (%s, %s] contain %d observations of '%s'",
 			                     nf2$start, nf2$end,            0L, nf1$x)),
 			     domain = NA)
-		}
 		window <- rep.int(factor(NA, levels = levels(d2$window)), nrow(d1))
 		window[ulindex] <- rep.int(d2$window, lengths(index))
 		window
@@ -475,31 +447,30 @@ function(formula_priors, top, beta, theta, Sigma) {
 		if (is.name(lhs) && any(m <- (lhs == nms))) {
 			kind <- nms[m]
 			index <- index_full[[nms[m]]]
-		} else if (is.call(lhs) &&
-		           (lhs[[1L]] == "[" || lhs[[1L]] == "[[") &&
-		           any(m <- (lhs[[2L]] == nms))) {
+		}
+		else if (is.call(lhs) &&
+		         (lhs[[1L]] == "[" || lhs[[1L]] == "[[") &&
+		         any(m <- (lhs[[2L]] == nms))) {
 			kind <- nms[m]
 			index <- eval(lhs, index_full, environment(x))
-			if (anyNA(index)) {
+			if (anyNA(index))
 				stop(gettextf("argument of '%s' on left hand side of %s[[%d]] not a valid index vector for '%s' of length %d",
 				              deparse(lhs[[1L]]), "formula_priors", i, kind, len[[kind]]),
 				     domain = NA)
-			}
-		} else if (any(m <- (lhs == names(priors$top)))) {
+		}
+		else if (any(m <- (lhs == names(priors$top))))
 			kind <- names(priors$top)[m]
-		} else {
+		else
 			stop(gettextf("left hand side of %s[[%d]] does not match any accepted format",
 			              "formula_priors", i),
 			     domain = NA)
-		}
 
 		rhs <- x[[3L]]
 		prior <- eval(rhs, environment(x))
-		if (!inherits(prior, "egf_prior")) {
+		if (!inherits(prior, "egf_prior"))
 			stop(gettextf("right hand side of %s[[%d]] does not evaluate to an \"%s\" object",
 			              "formula_priors", i, "egf_prior"),
 			     domain = NA)
-		}
 		if (kind %in% nms) {
 			allowed_prior_families <- l[[kind]]$family
 			prior$parameters <- lapply(prior$parameters, rep_len,
@@ -510,30 +481,28 @@ function(formula_priors, top, beta, theta, Sigma) {
 				prior
 			}
 			priors$bottom[[kind]][index] <- lapply(seq_along(index), f)
-		} else {
+		}
+		else {
 			allowed_prior_families <- top$family
 			prior$parameters <- lapply(prior$parameters, `[[`, 1L)
 			priors$top[[kind]] <- prior
 		}
-		if (!(prior$family %in% allowed_prior_families)) {
+		if (!(prior$family %in% allowed_prior_families))
 			stop(gettextf("priors on '%d' are restricted to families %s",
 			              kind, deparse(allowed_prior_families)),
 			     domain = NA)
-		}
 	}
 
 	x <- priors$bottom$Sigma
 	for (i in seq_along(x)) {
-		if (is.null(x[[i]]) || !grepl("^(inv)?wishart$", x[[i]]$family)) {
+		if (is.null(x[[i]]) || !grepl("^(inv)?wishart$", x[[i]]$family))
 			next
-		}
 		n1 <- as.integer(choose(length(x[[i]]$parameters$scale) + 1L, 2L))
 		n2 <- Sigma$rows[i]
-		if (n1 != n2) {
+		if (n1 != n2)
 			stop(gettextf("prior on %s[[%d]] specifies '%s' having %d rows, but the expected number is %d",
 			              "Sigma", i, "scale", n1, n2),
 			     domain = NA)
-		}
 	}
 
 	priors
@@ -731,9 +700,8 @@ function(fixed, X) {
 egf_combine_Z <-
 function(random, Z) {
 	stopifnot(length(random) == length(Z))
-	if (length(random) == 0L) {
+	if (length(random) == 0L)
 		return(NULL)
-	}
 
 	random_formula <- lapply(random, function(x) as.formula(call("~", x[[2L]])))
 	random_group <- lapply(random, `[[`, 3L)

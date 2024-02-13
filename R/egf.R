@@ -23,26 +23,21 @@ function(model,
          ...) {
 	stopifnot(inherits(formula_ts, "formula"),
 	          inherits(formula_windows, "formula"))
-	if (inherits(formula_parameters, "formula")) {
+	if (inherits(formula_parameters, "formula"))
 		stopifnot(length(formula_parameters) == 2L)
-	} else {
+	else
 		stopifnot(is.list(formula_parameters),
 		          vapply(formula_parameters, inherits, FALSE, "formula"),
 		          lengths(formula_parameters) == 3L)
-	}
 	stopifnot(is.list(formula_priors),
 	          vapply(formula_priors, inherits, FALSE, "formula"),
 	          lengths(formula_priors) == 3L)
-	if (missing(data_ts)) {
+	if (missing(data_ts))
 		data_ts <- environment(formula_ts)
-	} else {
-		stopifnot(is.list(data_ts) || is.environment(data_ts))
-	}
-	if (missing(data_windows)) {
+	else stopifnot(is.list(data_ts) || is.environment(data_ts))
+	if (missing(data_windows))
 		data_windows <- environment(formula_windows)
-	} else {
-		stopifnot(is.list(data_windows) || is.environment(data_windows))
-	}
+	else stopifnot(is.list(data_windows) || is.environment(data_windows))
 	subset_ts <- substitute(subset_ts)
 	subset_windows <- substitute(subset_windows)
 	select_windows <- substitute(select_windows)
@@ -136,15 +131,15 @@ function(model,
 
 	res$best <- tmb_out$env$last.par.best
 	res$value <- as.double(tmb_out$env$value.best)
-	if (se) {
+	if (se)
 		res$sdreport <- try(sdreport(tmb_out,
 		                             par.fixed = res$best[!res$random],
 		                             getReportCovariance = FALSE))
-	}
 	if (inherits(res$sdreport, "sdreport")) {
 		res$gradient <- res$sdreport$gradient.fixed
 		res$hessian <- res$sdreport$pdHess
-	} else {
+	}
+	else {
 		res$gradient <- tmb_out$gr(res$best[!res$random])
 		res$hessian <- NA
 	}

@@ -8,9 +8,8 @@ function(object,
          ...) {
 	what <- unique(match.arg(what, several.ok = TRUE))
 	stopifnot(is_true_or_false(log), is_true_or_false(se))
-	if (se && !log) {
+	if (se && !log)
 		stop("standard errors not available for inverse log-transformed predicted values")
-	}
 
 	frame_windows <- model.frame(object, "windows")
 	start <- frame_windows$start
@@ -23,10 +22,10 @@ function(object,
 		subset <- seq_along(len)
 		time <- object$tmb_out$env$data$time + rep.int(start, len)
 		time_split <- split(time, rep.int(subset, len))
-	} else {
-		if (inherits(time, c("Date", "POSIXct", "POSIXlt"))) {
+	}
+	else {
+		if (inherits(time, c("Date", "POSIXct", "POSIXlt")))
 			time <- julian(time)
-		}
 		stopifnot(is.numeric(time), length(time) > 0L, is.finite(time))
 		if (do_day_of_week) {
 			stopifnot(all.equal(time, z <- round(time)))
@@ -37,17 +36,15 @@ function(object,
 		subset <- which(levels(frame_windows$window)%in%levels(factor(window)))
 		window <- factor(window, levels = levels(frame_windows$window)[subset])
 
-		if (nlevels(window) == 0L) {
+		if (nlevels(window) == 0L)
 			stop(gettextf("'%s' must have at least one valid level", "window"),
 			     domain = NA)
-		}
 		len <- c(table(window))
 		min_len <- 1L + as.integer("interval" %in% what)
-		if (any(len < min_len)) {
+		if (any(len < min_len))
 			stop(gettextf("'%s' does not have minimum length %d in each level of '%s'",
 			              "time", min_len, "window"),
 			     domain = NA)
-		}
 
 		time_split <- split(time, window)
 		t0 <- vapply(time_split, min, 0)
@@ -57,29 +54,26 @@ function(object,
 		end <- end[subset]
 		day1 <- day1[subset]
 
-		if (any(t0 < start | t1 > end)) {
+		if (any(t0 < start | t1 > end))
 			stop(gettextf("%s[i] occurs before the start or after the end of %s[i]",
 			              "time", "window"),
 			     domain = NA)
-		}
-		if (do_day_of_week) {
-			check_ok_diff_time <- function(x) all(diff(x) == 1)
-		} else {
-			check_ok_diff_time <- function(x) all(diff(x) > 0)
-		}
-		if (!all(vapply(time_split, check_ok_diff_time, FALSE))) {
+		check_ok_diff_time <-
+			if (do_day_of_week)
+				function(x) all(diff(x) == 1)
+			else
+				function(x) all(diff(x) > 0)
+		if (!all(vapply(time_split, check_ok_diff_time, FALSE)))
 			stop(switch(1L + do_day_of_week,
 			            gettextf("'%s' must be increasing in each level of '%'",
 			                     "time", "window"),
 			            gettextf("'%s' must be increasing with unit spacing in each level of '%'",
 			                     "time", "window")),
 			     domain = NA)
-		}
 
 		time <- unlist1(time_split)
-		if (do_day_of_week) {
+		if (do_day_of_week)
 			day1 <- as.integer((day1 + (t0 - start)) %% 7)
-		}
 	}
 
 	tmb_args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
@@ -101,7 +95,8 @@ function(object,
 		                labels = sprintf("log(%s)", what))
 		report <- split(unname(ssdr[, "Estimate"]), index)
 		report_se <- split(unname(ssdr[, "Std. Error"]), index)
-	} else {
+	}
+	else {
 		report <- tmb_out_retape$report(object$best)[sprintf("log_%s", what)]
 		names(report) <- sprintf("log(%s)", what)
 	}
@@ -120,9 +115,8 @@ function(object,
 	                  time = time,
 	                  estimate =
 	                      unlist1(Map(replace, list(x), ix[what], report)))
-	if (se) {
+	if (se)
 		res$se <- unlist1(Map(replace, list(x), ix[what], report_se))
-	}
 	if (!log) {
 		res$estimate <- exp(res$estimate)
 		levels(res$var) <- what
@@ -134,22 +128,20 @@ function(object,
 
 confint.egf_predict <-
 function(object, parm, level = 0.95, log = TRUE, ...) {
-	if (!isTRUE(attr(object, "se"))) {
+	if (!attr(object, "se"))
 		stop(gettextf("'%s' does not supply log scale predicted values and corresponding standard errors; retry with %s",
 		              "object", "object = predict(<egf>, log = TRUE, se = TRUE)"),
 		     domain = NA)
-	}
 	stopifnot(is_number_in_interval(level, 0, 1, "()"), is_true_or_false(log))
 
 	res <- data.frame(object[-match("se", names(object), 0L)],
 	                  wald(estimate = object$estimate, se = object$se,
 	                       level = level))
 	attr(res, "level") <- level
-	if (log) {
-		return(res)
+	if (!log) {
+		elu <- c("estimate", "lower", "upper")
+		res[elu] <- exp(res[elu])
+		levels(res$var) <- sub("^log\\((.+)\\)$", "\\1", levels(res$var))
 	}
-	elu <- c("estimate", "lower", "upper")
-	res[elu] <- exp(res[elu])
-	levels(res$var) <- sub("^log\\((.+)\\)$", "\\1", levels(res$var))
 	res
 }

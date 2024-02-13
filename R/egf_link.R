@@ -77,17 +77,16 @@ function(fs) {
 
 egf_link_match <-
 function(f, inverse = FALSE) {
-	if (inverse) {
+	if (inverse)
 		switch(f,
 		       identity = identity,
 		       log = exp,
 		       logit = plogis,
 		       stop("link not implemented"))
-	} else {
+	else
 		switch(f,
 		       identity = identity,
 		       log = log,
 		       logit = qlogis,
 		       stop("link not implemented"))
-	}
 }

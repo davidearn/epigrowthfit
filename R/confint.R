@@ -29,7 +29,8 @@ function(object,
 		             subset = subset, select = select)
 		res <- confint(fo, level = level, link = link)
 
-	} else if (method == "profile") {
+	}
+	else if (method == "profile") {
 		po <- profile(object,
 		              level = level + min(0.01, 0.1 * (1 - level)),
 		              top = top,
@@ -42,7 +43,8 @@ function(object,
 		res[["linear_combination"]] <- NULL
 		attr(res, "A") <- attr(res, "x") <- NULL
 
-	} else { # "uniroot"
+	}
+	else { # "uniroot"
 		stopifnot(inherits(parallel, "egf_parallel"),
 		          is_true_or_false(trace),
 		          is_number(interval_scale, "positive"))
@@ -62,10 +64,9 @@ function(object,
 
 		do_uniroot <-
 		function(i, a) {
-			if (trace) {
+			if (trace)
 				cat(sprintf("Computing confidence interval %d of %d...\n",
 				            i, m))
-			}
 			res <- TMB::tmbroot(obj, lincomb = a, target = target,
 			                    sd.range = sd.range, trace = FALSE)
 			names(res) <- c("lower", "upper")
@@ -91,13 +92,13 @@ function(object,
 			clusterExport(cl, varlist = vars, envir = environment())
 			clusterEvalQ(cl, {
 				dyn.load(dll)
-				if (TMB::openmp(n = NULL) > 0L) {
+				if (TMB::openmp(n = NULL) > 0L)
 					TMB::openmp(n = nomp)
-				}
 				obj <- do.call(TMB::MakeADFun, args)
 			})
 			res <- clusterMap(cl, do_uniroot, i = seq_len(m), a = a)
-		} else {
+		}
+		else {
 			if (given_outfile <- nzchar(parallel$outfile)) {
 				outfile <- file(parallel$outfile, open = "wt")
 				sink(outfile, type = "output")
@@ -157,22 +158,19 @@ function(x,
 	per_plot <- as.integer(per_plot)
 
 	subset <- egf_eval_subset(subset, x, parent.frame())
-	if (length(subset) == 0L) {
+	if (length(subset) == 0L)
 		stop(gettextf("'%s' is empty; nothing to plot", "subset"),
 		     domain = NA)
-	}
 	order <- egf_eval_order(order, x, parent.frame())
 	label <- egf_eval_label(label, x, parent.frame())
 	subset <- order[order %in% subset]
 
 	a <- attributes(x)
-	if (is.null(main)) {
+	if (is.null(main))
 		main <- sprintf("%.3g%% confidence intervals by fitting window",
 		                100 * a$level)
-	}
-	if (is.null(label)) {
+	if (is.null(label))
 		label <- as.character(x[["window"]])
-	}
 
 	nx <- c("top", "ts", "window", "estimate", "lower", "upper")
 	x <- x[nx]

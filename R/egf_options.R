@@ -20,9 +20,8 @@ function(optimizer = egf_optimizer(),
          profile = FALSE,
          sparse_X = FALSE,
          omp_num_threads = getOption("egf.cores", 1L)) {
-	if (inherits(inner_optimizer, "egf_inner_optimizer")) {
+	if (inherits(inner_optimizer, "egf_inner_optimizer"))
 		inner_optimizer <- list(inner_optimizer)
-	}
 	stopifnot(inherits(optimizer, "egf_optimizer"),
 	          is.list(inner_optimizer),
 	          length(inner_optimizer) > 0L,
@@ -54,10 +53,10 @@ function(f = nlminb, args = list(), control = list()) {
 			warning(gettextf("'%s' argument '%s' not specified; using \"%s\"",
 			                 "optim", "method", args$method),
 			        domain = NA)
-		} else {
-			args$method <- match.arg(args$method, eval(formals(optim)$method))
 		}
-	} else if (identical(f, nlminb)) {
+		args$method <- match.arg(args$method, eval(formals(optim)$method))
+	}
+	else if (identical(f, nlminb))
 		f <-
 		function(par, fn, gr, control, ...) {
 			res <- nlminb(start = par, objective = fn, gradient = gr, control = control, ...)
@@ -65,7 +64,7 @@ function(f = nlminb, args = list(), control = list()) {
 			res["objective"] <- NULL
 			res
 		}
-	} else if (identical(f, nlm)) {
+	else if (identical(f, nlm))
 		f <-
 		function(par, fn, gr, control, ...) {
 			res <- nlm(f = structure(fn, gradient = gr), p = par, ...)
@@ -74,18 +73,17 @@ function(f = nlminb, args = list(), control = list()) {
 			res["message"] <- list(NULL)
 			res
 		}
-	} else {
+	else {
 		stopifnot(is.function(f),
 		          length(nf <- names(formals(f))) >= 4L,
 		          nf[1:3] != "...",
 		          "control" %in% nf[-(1:3)])
-		f.out <- f(c(1, 1), function(x) sum(x * x), function(x) 2 * x)
+		f.val <- f(c(1, 1), function(x) sum(x * x), function(x) 2 * x)
 		required <- c("par", "value", "convergence", "message")
-		if (!(is.list(f.out) && all(required %in% names(f.out)))) {
+		if (!(is.list(f.val) && all(required %in% names(f.val))))
 			stop(gettextf("'%s' must return a list with elements %s",
 			              "f", deparse(required)),
 			     domain = NA)
-		}
 		f <-
 		function(par, fn, gr, control, ...)
 			optimizer(par, fn, gr, control = control, ...)
@@ -95,7 +93,6 @@ function(f = nlminb, args = list(), control = list()) {
 		              names(formals(optimizer))[1:3])
 		args[reserved] <- NULL
 	}
-
 	res <- list(f = f, args = args, control = control)
 	class(res) <- "egf_optimizer"
 	res
@@ -110,25 +107,22 @@ function(f = newton, args = list(), control = list()) {
 			reserved <- c("par", "fn", "gr", "he", "env", "...")
 			args <- args[setdiff(names(args), reserved)]
 		}
-		if (!"trace" %in% names(args)) {
+		if (!"trace" %in% names(args))
 			args[["trace"]] <- 0L
-		}
 		control <- args
-	} else if (identical(f, optim)) {
+	}
+	else if (identical(f, optim)) {
 		if (is.null(args$method)) {
 			method <- "BFGS"
 			warning(gettextf("'%s' argument '%s' not specified; using \"%s\"",
 			                 "optim", "method", method),
 			        domain = NA)
-		} else {
-			method <- match.arg(args$method, eval(formals(optim)$method))
 		}
-	} else {
-		stop(gettextf("'%s' is currently restricted to %s and %s",
-		              "f", "TMB::newton", "stats::optim"),
-		     domain = NA)
+		method <- match.arg(args$method, eval(formals(optim)$method))
 	}
-
+	else stop(gettextf("'%s' is currently restricted to %s and %s",
+	                   "f", "TMB::newton", "stats::optim"),
+	          domain = NA)
 	res <- list(method = method, control = control)
 	class(res) <- "egf_inner_optimizer"
 	res
@@ -146,21 +140,22 @@ function(method = c("serial", "multicore", "snow"),
 		cores <- 1L
 		args <- list()
 		cl <- NULL
-	} else if (method == "multicore" || (method == "snow" && is.null(cl))) {
+	}
+	else if (method == "multicore" || (method == "snow" && is.null(cl))) {
 		stopifnot(is_number(cores, "positive", integer = TRUE), is.list(args))
 		cores <- as.integer(cores)
-		if (method == "multicore") {
+		if (method == "multicore")
 			args$mc.cores <- cores
-		} else {
+		else {
 			args$names <- cores
 			args$outfile <- outfile
 		}
-	} else {
+	}
+	else {
 		stopifnot(inherits(cl, "SOCKcluster"))
 		cores <- length(cl)
 		args <- list()
 	}
-
 	res <- list(method = method, outfile = outfile,
 	            cores = cores, args = args, cl = cl)
 	class(res) <- "egf_parallel"
@@ -200,58 +195,46 @@ function(window, data, predict, asymptote, box, axis, title, tdoubling) {
 	## recursively up to one level of nesting
 	rmerge <-
 	function(from, into, recursive = FALSE) {
-		if (is.null(from)) {
-			if (recursive) {
-				into[] <- list(NULL)
-				return(into)
-			}
-			return(NULL)
-		}
-		if (!is.list(from) || length(from) == 0L || is.null(names(from))) {
+		if (is.null(from))
+			return(if (recursive) { into[] <- list(NULL); into })
+		if (!is.list(from) || length(from) == 0L || is.null(names(from)))
 			return(into)
-		}
 		nms <- unique(names(from))
-		if (recursive) {
-			into[nms] <- Map(rmerge,
-			                 from = from[nms],
-			                 into = into[nms],
-			                 recursive = FALSE)
-		} else {
-			into[nms] <- from[nms]
-		}
+		into[nms] <-
+			if (recursive)
+				Map(rmerge,
+				    from = from[nms],
+				    into = into[nms],
+				    recursive = FALSE)
+			else from[nms]
 		into
 	}
 
 	recursive <- c("data", "predict", "axis", "title", "tdoubling")
 	nms <- names(match.call()[-1L])
-	if (length(nms)) {
+	if (length(nms))
 		res[nms] <- Map(rmerge,
 		                from = mget(nms, mode = "list",
 		                            ifnotfound = list(list()),
 		                            inherits = FALSE),
 		                into = res[nms],
 		                recursive = nms %in% recursive)
-	}
 
 	## Some default values are conditional on supplied values
 	## FIXME: ugly ...
-	for (s in c("short", "long")) {
+	for (s in c("short", "long"))
 		if (is.list(res$data[[s]])) {
 			nms <- setdiff(names(res$data$main), names(res$data[[s]]))
 			res$data[[s]][nms] <- res$data$main[nms]
 		}
-	}
-	if (is.list(res$predict$ci) && is.null(res$predict$ci$col)) {
+	if (is.list(res$predict$ci) && is.null(res$predict$ci$col))
 		res$predict$ci$col <- alpha(res$predict$estimate$col, 0.4)
-	}
 	adj <- res$title$main$adj
 	if (is.numeric(adj) && length(adj) == 1L && is.finite(adj)) {
-		if (is.list(res$title$sub) && is.null(res$title$sub$adj)) {
+		if (is.list(res$title$sub) && is.null(res$title$sub$adj))
 			res$title$sub$adj <- adj
-		}
-		if (is.list(res$tdoubling$legend) && is.null(res$tdoubling$legend$adj)) {
+		if (is.list(res$tdoubling$legend) && is.null(res$tdoubling$legend$adj))
 			res$tdoubling$legend$adj <- if (adj > 0.5) 0 else 1
-		}
 	}
 
 	class(res) <- "egf_plot_control"

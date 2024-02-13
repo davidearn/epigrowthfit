@@ -48,11 +48,8 @@ function(..., justify = "right", gap = 1L) {
 disambiguate <-
 function(x, nms = FALSE, fmt = "%s[%d]") {
 	if (nms) {
-		nx <- names(x)
-		if (is.null(nx)) {
-			return(x)
-		}
-		names(x) <- disambiguate(nx, nms = FALSE, fmt = fmt)
+		if (!is.null(nx <- names(x)))
+			names(x) <- disambiguate(nx, nms = FALSE, fmt = fmt)
 		return(x)
 	}
 	x <- as.character(x)
@@ -67,9 +64,8 @@ function(x, nms = FALSE, fmt = "%s[%d]") {
 literal_rle <-
 function(x) {
 	n <- length(x)
-	if (n == 0L) {
+	if (n == 0L)
 		return(list(lengths = integer(0L), values = x))
-	}
 	l <- x[-n] != x[-1L]
 	if (any(argna <- is.na(x))) {
 		l[is.na(l)] <- FALSE
@@ -87,14 +83,12 @@ function(x) {
 ## Last observation carried forward, with optional replacement of leading NA
 locf <-
 function(x, x0 = NULL) {
-	if (!anyNA(x)) {
+	if (!anyNA(x))
 		return(x)
-	}
 	rle_x <- literal_rle(x)
 	y <- rle_x$values
-	if (is.na(y[1L]) && !is.null(x0)) {
+	if (is.na(y[1L]) && !is.null(x0))
 		y[1L] <- x0
-	}
 	if (anyNA(y[-1L])) {
 		argna_y <- which(c(FALSE, is.na(y[-1L])))
 		y[argna_y] <- y[argna_y - 1L]
@@ -167,14 +161,13 @@ function(theta) {
 
 in_place_ragged_apply <-
 function(x, index, f) {
-	if (!is.list(f)) {
+	if (!is.list(f))
 		f <- list(f)
-	}
-	if (is.data.frame(x)) {
-		do_call <- function(g, y) { y[] <- lapply(y, g); y }
-	} else {
-		do_call <- function(g, y) g(y)
-	}
+	do_call <-
+		if (is.data.frame(x))
+			function(g, y) { y[] <- lapply(y, g); y }
+		else
+			function(g, y) g(y)
 	split(x, index) <- Map(do_call, y = split(x, index), g = f)
 	x
 }

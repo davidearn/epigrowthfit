@@ -24,11 +24,9 @@ function(x,
 	## Validate arguments ------------------------------------------------------
 
 	type <- match.arg(type)
-	if (x$model$day_of_week > 0L) {
+	if (x$model$day_of_week > 0L)
 		dt <- 1
-	} else {
-		stopifnot(is_number(dt, "positive"))
-	}
+	else stopifnot(is_number(dt, "positive"))
 	stopifnot(is_flag(show_predict))
 	show_predict <- min(2L, max(0L, as.integer(show_predict)))
 	if (x$model$curve %in% c("exponential", "logistic", "richards")) {
@@ -36,7 +34,8 @@ function(x,
 		show_tdoubling <- min(2L, max(0L, as.integer(show_tdoubling)))
 		show_asymptote <-
 			as.integer(type == "rt" && x$model$curve != "exponential")
-	} else {
+	}
+	else {
 		show_tdoubling <- 0L
 		show_asymptote <- 0L
 	}
@@ -45,36 +44,30 @@ function(x,
 		time_as <- match.arg(time_as)
 		stopifnot(is_true_or_false(log))
 		if (!is.null(zero)) {
-			if (type == "rt") {
+			if (type == "rt")
 				zero <- NULL
-			} else if (is.na(zero)) {
+			else if (is.na(zero))
 				zero <- as.double(zero)
-			} else {
-				stopifnot(is_number(zero, "positive"))
-			}
+			else stopifnot(is_number(zero, "positive"))
 		}
-		if (any(c(show_predict, show_tdoubling) == 2L)) {
+		if (any(c(show_predict, show_tdoubling) == 2L))
 			stopifnot(is_number_in_interval(level, 0, 1, "()"))
-		}
 		stopifnot(inherits(control, "egf_plot_control"))
-		if (!is.null(cache)) {
+		if (!is.null(cache))
 			stopifnot(inherits(cache, "egf_plot_cache"))
-		}
 		if (!is.null(xlim)) {
-			if (!is.numeric(xlim)) {
+			if (!is.numeric(xlim))
 				xlim <- try(julian(as.Date(xlim)))
-			}
 			stopifnot(is.numeric(xlim),
 			          length(xlim) == 2L,
 			          is.finite(xlim),
 			          xlim[1L] < xlim[2L])
 		}
-		if (!is.null(ylim)) {
+		if (!is.null(ylim))
 			stopifnot(is.numeric(ylim),
 			          length(ylim) == 2L,
 			          is.finite(ylim),
 			          ylim[1L] < ylim[2L])
-		}
 	}
 
 
@@ -85,10 +78,9 @@ function(x,
 	frame_combined <- model.frame(x, "combined")
 
 	subset <- egf_eval_subset(subset, frame_combined, parent.frame())
-	if (length(subset) == 0L) {
+	if (length(subset) == 0L)
 		stop(gettextf("'%s' is empty; nothing to plot", "subset"),
 		     domain = NA)
-	}
 	order <- egf_eval_order(order, frame_combined, parent.frame())
 	subset <- order[order %in% subset]
 	frame_windows <- frame_windows[subset, , drop = FALSE]
@@ -115,30 +107,25 @@ function(x,
 		subset1 <- subset[match(lts, frame_windows$ts, 0L)]
 		nplot <- n
 		main <- egf_eval_label(main, frame_combined, parent.frame())[subset1]
-		if (is.null(main)) {
+		if (is.null(main))
 			main <- levels(frame_ts$ts)
-		}
 		sub <- egf_eval_label(sub, frame_combined, parent.frame())[subset1]
-		if (is.null(sub)) {
+		if (is.null(sub))
 			sub <- ""
-		}
 		main <- rep_len(main, nplot)
 		sub <- rep_len(sub, nplot)
 
-		if (is.null(xlab)) {
+		if (is.null(xlab))
 			xlab <- switch(time_as, Date = "", numeric = "time")
-		}
 		if (type == "rt") {
-			if (is.null(ylab)) {
+			if (is.null(ylab))
 				ylab <- "per capita growth rate"
-			}
-			if (is.null(ylab_outer)) {
+			if (is.null(ylab_outer))
 				ylab_outer <- "doubling time"
-			}
-		} else {
-			if (is.null(ylab)) {
+		}
+		else {
+			if (is.null(ylab))
 				ylab <- paste(type, "incidence")
-			}
 			ylab_outer <- NULL
 		}
 	}
@@ -147,14 +134,13 @@ function(x,
 	## Augment 'cache' ---------------------------------------------------------
 
 	## If necessary, initialize
-	if (is.null(cache)) {
+	if (is.null(cache))
 		cache <- data.frame(var = factor(),
 		                    ts = factor(),
 		                    window = factor(),
 		                    time = double(0L),
 		                    estimate = double(0L),
 		                    se = double(0L))
-	}
 	nc <- names(cache)
 
 	## If necessary, augment 'cache' with predicted values
@@ -177,9 +163,8 @@ function(x,
 			                               lengths(time_split)),
 			              log = TRUE,
 			              se = (show_predict == 2L))
-			if (show_predict == 1L) {
+			if (show_predict == 1L)
 				px$se <- NA_real_
-			}
 			cache <- rbind(cache, px[nc])
 		}
 	}
@@ -195,9 +180,8 @@ function(x,
 			             link = TRUE,
 			             se = (show_tdoubling == 2L),
 			             subset = (frame_windows_bak$window %in% required))
-			if (show_tdoubling != 2L) {
+			if (show_tdoubling != 2L)
 				fx$se <- NA_real_
-			}
 			fx$time <- NA_real_
 			names(fx)[match("top", names(fx), 0L)] <- "var"
 			cache <- rbind(cache, fx[nc])
@@ -213,9 +197,8 @@ function(x,
 	class(cache) <- c("egf_plot_cache", oldClass(cache))
 
 	## If not plotting, then return
-	if (!plot) {
+	if (!plot)
 		return(invisible(cache))
-	}
 
 	## If plotting, then create an instruction to return
 	## 'cache' if the low level plot function throws an error
@@ -237,11 +220,10 @@ function(x,
 	i <-
 		(show_predict == 2L & cache$var == sprintf("log(%s)", type)) |
 		(show_tdoubling == 2L & cache$var == "log(r)")
-	if (any(i)) {
+	if (any(i))
 		cache[i, c("lower", "upper")] <-
 			do.call(wald, c(cache[i, c("estimate", "se"), drop = FALSE],
 			                list(level = level)))
-	}
 
 
 	## Augment 'control' -------------------------------------------------------
@@ -265,13 +247,12 @@ function(x,
 		               names(control$title$ylab))
 		control$title$ylab[nms] <- gp[nms]
 	}
-	for (s in c("ci", "estimate", "legend")) {
+	for (s in c("ci", "estimate", "legend"))
 		if (is.list(control$tdoubling[[s]])) {
 			nms <- setdiff(c("adj", "cex", "font", "family"),
 			               names(control$tdoubling[[s]]))
 			control$tdoubling[[s]][nms] <- gp[nms]
 		}
-	}
 
 	## Distinguish minor and major axes ...
 	if (time_as == "Date" && is.list(args <- control$axis$x)) {
@@ -377,63 +358,49 @@ function(frame_ts, frame_windows, cache,
 			       	y[!is.finite(y)] <- NA
 			       	y
 			       }))
-		if (log && is.null(zero)) {
+		if (log && is.null(zero))
 			data[[type]][data[[type]] == 0] <- NA
-		}
-		if (type == "interval") {
-			data$pty <- factor(sign(data$dt - dt),
-			                   levels = c(0, -1, 1),
-			                   labels = c("main", "short", "long"))
-		} else {
-			data$pty <- factor("main")
-		}
+		data$pty <-
+		if (type == "interval")
+			factor(sign(data$dt - dt),
+			       levels = c(0, -1, 1),
+			       labels = c("main", "short", "long"))
+		else factor("main")
 
 		## Axis limits (x)
 		xlim <- xlim_bak
-		if (is.null(xlim)) {
+		if (is.null(xlim))
 			xlim <- range(data$time)
-		}
 
 		## Axis limits (y)
 		ylim <- ylim_bak
 		if (is.null(ylim)) {
 			y <- data[[type]]
-			if (type == "rt" && show_predict > 0L) {
+			if (type == "rt" && show_predict > 0L)
 				y <- c(y, unlist1(cache_predict[elu]))
-			}
 			y <- y[!is.na(y)]
-			if (length(y) == 0L || all(y == 0)) {
-				if (log) {
-					ylim <- c(0.1, 1)
-				} else {
-					ylim <- c(0, 1)
-				}
-			} else {
-				if (log) {
-					if (type == "rt") {
-						ry <- range(y)
-						ylim <- exp(base::log(ry) +
-						            c(-1, 1) * 0.04 * diff(base::log(ry)))
-						ylim[!is.finite(ylim)] <- ry[!is.finite(ylim)]
-					} else {
-						if (all(y == 0 | y >= 1) && any(y > 1)) {
-							ylim <- exp(c(-0.04, 1.04) * log(max(y)))
-						} else {
-							ry <- range(y[y > 0])
-							ylim <- exp(base::log(ry) +
-							            c(-1, 1) * 0.04 * diff(base::log(ry)))
-							ylim[!is.finite(ylim)] <- ry[!is.finite(ylim)]
-						}
-					}
-				} else {
-					ylim <- c(0, 1.04 * max(y))
-				}
+			if (length(y) == 0L || all(y == 0))
+				ylim <- c(if (log) 0.1 else 0, 1)
+			else if (!log)
+				ylim <- c(0, 1.04 * max(y))
+			else if (type == "rt") {
+				ry <- range(y)
+				ylim <- exp(base::log(ry) +
+				            c(-1, 1) * 0.04 * diff(base::log(ry)))
+				ylim[!is.finite(ylim)] <- ry[!is.finite(ylim)]
+			}
+			else if (all(y == 0 | y >= 1) && any(y > 1))
+				ylim <- exp(c(-0.04, 1.04) * log(max(y)))
+			else {
+				ry <- range(y[y > 0])
+				ylim <- exp(base::log(ry) +
+				            c(-1, 1) * 0.04 * diff(base::log(ry)))
+				ylim[!is.finite(ylim)] <- ry[!is.finite(ylim)]
 			}
 		}
-		if (log && !is.null(zero)) {
+		if (log && !is.null(zero))
 			data[[type]][data[[type]] == 0] <-
 				if (is.na(zero)) ylim[1L] else zero
-		}
 
 		plot.new()
 		plot.window(xlim = xlim, ylim = ylim,
@@ -448,7 +415,7 @@ function(frame_ts, frame_windows, cache,
 		}
 
 		## Observed data
-		for (s in levels(data$pty)) {
+		for (s in levels(data$pty))
 			if (is.list(args <- control$data[[s]])) {
 				reserved <- c("formula", "data", "subset", "x", "y")
 				args[names(args) %in% reserved] <- NULL
@@ -457,16 +424,14 @@ function(frame_ts, frame_windows, cache,
 				          args)
 				do.call(points, args)
 			}
-		}
 
 		## Confidence bands on predicted curves
-		if (show_predict == 2L && is.list(args <- control$predict$ci)) {
+		if (show_predict == 2L && is.list(args <- control$predict$ci))
 			for (px in split(cache_predict, cache_predict$window, drop = TRUE)) {
 				if (type == "cumulative") {
 					c0 <- data[[type]][match(px$time[1L], data$time, 0L)]
-					if (is.na(c0)) {
+					if (is.na(c0))
 						next
-					}
 					px$lower <- c0 + px$lower - px$lower[1L]
 					px$upper <- c0 + px$upper - px$upper[1L]
 				}
@@ -474,16 +439,14 @@ function(frame_ts, frame_windows, cache,
 				args$y <- c(px$lower, rev(px$upper))
 				do.call(polygon, args)
 			}
-		}
 
 		## Predicted curves
-		if (show_predict > 0L && is.list(args <- control$predict$estimate)) {
+		if (show_predict > 0L && is.list(args <- control$predict$estimate))
 			for (px in split(cache_predict, cache_predict$window, drop = TRUE)) {
 				if (type == "cumulative") {
 					c0 <- data[[type]][match(px$time[1L], data$time, 0L)]
-					if (is.na(c0)) {
+					if (is.na(c0))
 						next
-					}
 					px$estimate <- c0 + px$estimate - px$estimate[1L]
 				}
 				reserved <- c("formula", "data", "subset", "x", "y")
@@ -491,7 +454,6 @@ function(frame_ts, frame_windows, cache,
 				args <- c(list(formula = estimate ~ time, data = px), args)
 				do.call(lines, args)
 			}
-		}
 
 		## Asymptote
 		if (show_asymptote > 0L && is.list(args <- control$asymptote)) {
@@ -501,9 +463,8 @@ function(frame_ts, frame_windows, cache,
 		}
 
 		## Box
-		if (is.list(args <- control$box)) {
+		if (is.list(args <- control$box))
 			do.call(box, args)
-		}
 
 		## Axis (x)
 		if (is.list(args <- control$axis$x)) {
@@ -522,11 +483,10 @@ function(frame_ts, frame_windows, cache,
 			args1$side <- 2
 			args1$las <- 1
 			args1$at <- axTicks(side = 2)
-			if (type != "rt" && max(args1$at) >= 1e+05) {
-				args1$labels <- get_scientific_labels(args1$at)
-			} else {
-				args1$labels <- as.character(args1$at)
-			}
+			args1$labels <-
+				if (type != "rt" && max(args1$at) >= 1e+05)
+					get_scientific_labels(args1$at)
+				else as.character(args1$at)
 			do.call(baxis, args1)
 			width <- max(strwidth(args1$labels,
 			                      units = "inches",
@@ -540,13 +500,12 @@ function(frame_ts, frame_windows, cache,
 		## Axis title (y)
 		if (is.list(args2 <- control$title$ylab)) {
 			args2$ylab <- ylab
-			if (is.list(args1)) {
+			if (is.list(args1))
 				args2$line <- line
-			} else {
+			else {
 				line <- args2$line
-				if (is.null(line)) {
+				if (is.null(line))
 					line <- args2$line <- args2$mgp[1L]
-				}
 			}
 			do.call(title, args2)
 			width <- strheight(args2$ylab,
@@ -598,9 +557,8 @@ function(frame_ts, frame_windows, cache,
 			                      legend = "initial doubling time:")
 			w <-
 			function(s, l) {
-				if (!is.list(l)) {
+				if (!is.list(l))
 					return(NA_real_)
-				}
 				strwidth(s,
 				         units = "user",
 				         cex = l$cex * gp$cex,
@@ -612,9 +570,8 @@ function(frame_ts, frame_windows, cache,
 			                           l = args[names(tdoubling$labels)])
 			h <-
 			function(s, l) {
-				if (!is.list(l)) {
+				if (!is.list(l))
 					return(NA_real_)
-				}
 				height <- strheight(s,
 				                    units = "inches",
 				                    cex = l$cex * gp$cex,
@@ -631,22 +588,18 @@ function(frame_ts, frame_windows, cache,
 				paste0(rep.int(c("", "label_"), c(2L, 3L)),
 				       names(tdoubling$labels)[c(1:2, 1:3)])
 
-			if (show_tdoubling == 2L && is.list(args$ci)) {
+			if (show_tdoubling == 2L && is.list(args$ci))
 				tdoubling$lines[-1L] <- tdoubling$lines[["ci"]] +
 					tdoubling$heights[["ci"]] + 0.15
-			}
-			if (is.list(args$estimate)) {
+			if (is.list(args$estimate))
 				tdoubling$lines[-(1:2)] <- tdoubling$lines[["estimate"]] +
 					tdoubling$heights[["estimate"]] + 1
-			}
-			if (show_tdoubling == 2L && is.list(args$ci)) {
+			if (show_tdoubling == 2L && is.list(args$ci))
 				tdoubling$lines[-(1:3)] <- tdoubling$lines[["label_ci"]] +
 					tdoubling$heights[["ci"]] + 0.15
-			}
-			if (is.list(args$estimate)) {
+			if (is.list(args$estimate))
 				tdoubling$lines[-(1:4)] <- tdoubling$lines[["label_estimate"]] +
 					tdoubling$heights[["estimate"]] + 0.25
-			}
 
 			## Legend
 			if (show_legend <- is.list(args$legend)) {
@@ -708,12 +661,11 @@ function(frame_ts, frame_windows, cache,
 		if (is.list(args1 <- control$title$sub)) {
 			args1$main <- sub[i]
 			names(args1) <- base::sub("\\.sub$", ".main", names(args1))
-			if (show_tdoubling > 0L && is.list(control$tdoubling)) {
+			if (show_tdoubling > 0L && is.list(control$tdoubling))
 				args1$line <- tdoubling$lines[["estimate"]] +
 					tdoubling$heights[["estimate"]] + 1
-			} else if (is.null(args1$line)) {
+			else if (is.null(args1$line))
 				args1$line <- args1$mgp[1L] + 1
-			}
 			do.call(title, args1)
 			height <- strheight(args1$main,
 			                    units = "inches",
@@ -727,12 +679,11 @@ function(frame_ts, frame_windows, cache,
 		## Plot title
 		if (is.list(args2 <- control$title$main)) {
 			args2$main <- main[i]
-			if (is.list(args1)) {
+			if (is.list(args1))
 				args2$line <- line
-			} else if (show_tdoubling > 0L && is.list(control$tdoubling)) {
+			else if (show_tdoubling > 0L && is.list(control$tdoubling))
 				args2$line <- tdoubling$lines[["estimate"]] +
 					tdoubling$heights[["estimate"]] + 1
-			}
 			do.call(title, args2)
 		}
 	} # loop over plots

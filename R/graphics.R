@@ -21,7 +21,8 @@ function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 		if (side %% 2L == 1L) {
 			usr <- gp[["usr"]][1:2]
 			log <- gp[["xlog"]]
-		} else {
+		}
+		else {
 			usr <- gp[["usr"]][3:4]
 			log <- gp[["ylog"]]
 		}
@@ -79,7 +80,8 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 		if (ymd(D0, "m") == ymd(D1, "m")) {
 			major.at.Date <- D0
 			major.at <- 0
-		} else {
+		}
+		else {
 			major.at.Date <- seq(ceiling.Date(D0, "m"), D1, by = "m")
 			major.at <- julian(major.at.Date, origin = D0)
 			if (major.at[1L] > delta / 8) {
@@ -100,7 +102,8 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 		if (ymd(D0, "y") == ymd(D1, "y")) {
 			major.at.Date <- D0
 			major.at <- 0
-		} else {
+		}
+		else {
 			major.at.Date <- seq(ceiling.Date(D0, "y"), D1, by = "y")
 			major.at <- julian(major.at.Date, origin = D0)
 			if (major.at[1L] > delta / 8) {

@@ -113,6 +113,7 @@ function(model, frame, control, env) {
 	## Incidence
 	x <- frame$ts$x[!is.na(frame$ts$window)]
 
+	day1 <-
 	if (model$day_of_week > 0L) {
 		## Date during 24 hours starting at earliest time point
 		Date1 <- .Date(frame$ts$time[first])
@@ -123,10 +124,9 @@ function(model, frame, control, env) {
 		## Less verbosely: i -> weekdays(.Date(2) + model$day_of_week + i),
 		## noting that weekdays(.Date(2)) == "Saturday" ...
 		origin <- .Date(2L + model$day_of_week)
-		day1 <- as.integer(julian(Date1, origin = origin) %% 7)
-	} else {
-		day1 <- rep.int(-1L, N)
+		as.integer(julian(Date1, origin = origin) %% 7)
 	}
+	else rep.int(-1L, N)
 
 	## Response matrix, offset component only
 	offsets <- lapply(frame$parameters, model.offset)
@@ -159,7 +159,8 @@ function(model, frame, control, env) {
 		b_index_tab <- integer(length(names_top))
 		block_rows <- integer(0L)
 		block_cols <- integer(0L)
-	} else {
+	}
+	else {
 		Zc$effects$top <- factor(Zc$effects$top, levels = names_top)
 		b_index <- as.integer(Zc$effects$top) - 1L
 		b_index_tab <- c(table(Zc$effects$top))
@@ -198,12 +199,18 @@ function(model, frame, control, env) {
 	     flags = flags,
 	     indices = indices,
 	     Y = Y,
-	     Xd = if (control$sparse_X) matrix(double(0L), N, 0L)
-	          else Xc$X,
-	     Xs = if (control$sparse_X) Xc$X
-	          else Matrix(double(0L), N, 0L, sparse = TRUE),
-	     Z = if (is.null(Zc)) Matrix(double(0L), N, 0L, sparse = TRUE)
-	         else Zc$Z,
+	     Xd =
+	         if (control$sparse_X)
+	         	matrix(double(0L), N, 0L)
+	         else Xc$X,
+	     Xs =
+	         if (control$sparse_X)
+	         	Xc$X
+	         else Matrix(double(0L), N, 0L, sparse = TRUE),
+	     Z =
+	         if (!is.null(Zc))
+	         	Zc$Z
+	         else Matrix(double(0L), N, 0L, sparse = TRUE),
 	     beta_index = beta_index,
 	     b_index = b_index,
 	     beta_index_tab = beta_index_tab,
@@ -280,15 +287,14 @@ function(model, frame, env) {
 	## whose mixed effects formula has an intercept
 	f <- function(x) attr(terms(x), "intercept") == 1L
 	has1 <- vapply(frame$parameters, f, FALSE)
-	if (!any(has1)) {
+	if (!any(has1))
 		return(res)
-	}
 
 	## Record naive estimates of top level nonlinear model parameters
 	## (one per time series segment)
 	tx <- split(frame$ts[c("time", "x")], frame$ts$window)
 	compute_naive <-
-    function(d) {
+	function(d) {
 		n <- max(2, trunc(nrow(d) / 2))
 		ab <- try(coef(lm(log1p(cumsum(x)) ~ time,
 		                  data = d,
@@ -298,7 +304,8 @@ function(model, frame, env) {
 		if (inherits(ab, "try-error") || !all(is.finite(ab))) {
 			r <- 0.04
 			c0 <- 1
-		} else {
+		}
+		else {
 			r <- ab[[2L]]
 			c0 <- exp(ab[[1L]])
 		}
@@ -350,7 +357,8 @@ function(model, frame, control, init, map, env) {
 			if (is.factor(map[[s]])) {
 				eval(bquote(stopifnot(length(map[[.(s)]]) == .(n))))
 				map[[s]] <- factor(map[[s]])
-			} else {
+			}
+			else {
 				eval(bquote(stopifnot(!anyNA(index <- seq_len(.(n))[map[[.(s)]]]))))
 				f <- rep.int(NA_integer_, n)
 				f[-index] <- seq_len(n - length(index))
@@ -361,10 +369,10 @@ function(model, frame, control, init, map, env) {
 		}
 	}
 
-	if (length(parameters$b) > 0L) {
+	if (length(parameters$b) > 0L)
 		## Declare that 'b' contains random effects
 		random <- "b"
-	} else {
+	else {
 		## Declare that there are no random effects
 		random <- NULL
 		## Fix 'theta' and 'b' to NA_real_ since only 'beta' is used
@@ -408,11 +416,9 @@ function(obj, par) {
 	res$parameters <- obj$env$parList(par[obj$env$lfixed()], par)
 	attr(res$data, "check.passed") <- NULL
 	attr(res$parameters, "check.passed") <- NULL
-	if (ncol(res$data$Z) > 0L) {
+	if (ncol(res$data$Z) > 0L)
 		res$random <- "b"
-	}
-	if (!is.null(res$profile)) {
+	if (!is.null(res$profile))
 		res$profile <- "beta"
-	}
 	res
 }

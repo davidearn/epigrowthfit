@@ -31,19 +31,16 @@ function(df, scale, tol = 1e-06) {
 	          length(tol) == 1L,
 	          is.finite(tol),
 	          tol >= 0)
-	if (is.matrix(scale)) {
+	if (is.matrix(scale))
 		scale <- list(scale)
-	} else {
-		stopifnot(is.list(scale))
-	}
-	for (i in seq_along(scale)) {
+	else stopifnot(is.list(scale))
+	for (i in seq_along(scale))
 		stopifnot(is.numeric(scale[[i]]),
 		          length(scale[[i]]) > 0L,
 		          is.finite(scale[[i]]),
 		          isSymmetric.matrix(scale[[i]]),
 		          (e <- eigen(scale[[i]], symmetric = TRUE, only.values = TRUE)$values) > -tol * abs(e[1L]),
 		          diag(scale[[i]]) > 0)
-	}
 	stopifnot(is.numeric(df),
 	          length(df) > 0L,
 	          is.finite(df),
