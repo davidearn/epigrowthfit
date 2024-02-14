@@ -15,10 +15,11 @@ convergence of the optimizer.
 }
 \value{
 A list inheriting from class \code{summary.egf}, with elements:
+
 \item{fitted}{a numeric matrix.  Each column is the result of applying
-  the default method for \code{\link{summary}} to a numeric vector
-  listing the fitted values of a top level nonlinear model parameters.
-  Fitted values are retrieved by \code{\link{fitted.egf}}.}
+  \code{\link{summary.default}} to a numeric vector listing the fitted
+  values of a top level nonlinear model parameters.  Fitted values are
+  retrieved by \code{\link{fitted.egf}}.}
 \item{convergence}{an integer code returned by the optimizer, with 0
   indicating successful convergence within the specified absolute or
   relative tolerance.}

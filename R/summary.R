@@ -39,7 +39,10 @@ function(x, width = 0.9 * getOption("width"), indent = 2L, ...) {
 	c2 <-
 	    c(as.character(x[["convergence"]]),
 	      sprintf("%.6e", x[["value"]]),
-	      paste0(sprintf("%.6e", range(abs(x[["gradient"]]))), collapse = " "),
+	      {
+	      	r <- range(abs(x[["gradient"]]))
+	      	sprintf("%.6e %.6e", r[1L], r[2L])
+	      },
 	      as.character(x[["hessian"]]))
 	writeLines(paste0(indent, align(c1, c2, justify = "l")))
 
