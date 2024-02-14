@@ -131,17 +131,20 @@ function(model,
 
 	res$best <- tmb_out$env$last.par.best
 	res$value <- as.double(tmb_out$env$value.best)
-	if (se)
-		res$sdreport <- try(sdreport(tmb_out,
-		                             par.fixed = res$best[!res$random],
-		                             getReportCovariance = FALSE))
-	if (inherits(res$sdreport, "sdreport")) {
-		res$gradient <- res$sdreport$gradient.fixed
-		res$hessian <- res$sdreport$pdHess
+	if (se) {
+		call <- quote(sdreport(res$tmb_out,
+		                       par.fixed = res$best[!res$random],
+		                       getReportCovariance = FALSE))
+		res$sdreport <- tryCatch(eval(call),
+		                         error = function(e) `[[<-`(e, "call", call))
 	}
-	else {
+	if (inherits(res$sdreport, "error")) {
 		res$gradient <- tmb_out$gr(res$best[!res$random])
 		res$hessian <- NA
+	}
+	else {
+		res$gradient <- res$sdreport$gradient.fixed
+		res$hessian <- res$sdreport$pdHess
 	}
 
 	class(res) <- "egf"
