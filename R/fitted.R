@@ -49,7 +49,7 @@ function(object,
 	if (!link) {
 		f <- lapply(egf_link_extract(levels(res$top)), egf_link_match,
 		            inverse = TRUE)
-		res$estimate <- in_place_ragged_apply(res$estimate, res$top, f = f)
+		res$estimate <- papply(res$estimate, res$top, f)
 		levels(res$top) <- egf_link_remove(levels(res$top))
 	}
 	res <- data.frame(res,
@@ -101,7 +101,7 @@ function(object, parm, level = 0.95, link = TRUE, ...) {
 		elu <- c("estimate", "lower", "upper")
 		f <- lapply(egf_link_extract(levels(res$top)), egf_link_match,
 		            inverse = TRUE)
-		res[elu] <- in_place_ragged_apply(res[elu], res$top, f = f)
+		res[elu] <- papply(res[elu], res$top, f)
 		levels(res$top) <- egf_link_remove(levels(res$top))
 	}
 	attr(res, "level") <- level

@@ -14,15 +14,16 @@ y <- `names<-`(seq_along(x), y)
 stopifnot(identical(disambiguate(x, nms = TRUE), y))
 
 
-## literal_rle #########################################################
+if (FALSE) {
+## rle1 ################################################################
 
 x <- c(0, NA_real_, NaN, Inf, 1)
 times <- 1:5
 y <- rep.int(x, times)
-rle_y <- literal_rle(y)
+rle.y <- rle1(y)
 stopifnot(exprs = {
-	identical(rle_y, list(lengths = times, values = x))
-	identical(y, inverse.rle(rle_y))
+	identical(rle.y, list(lengths = times, values = x))
+	identical(y, inverse.rle(rle.y))
 })
 
 
@@ -33,6 +34,7 @@ stopifnot(exprs = {
 	identical(locf(x), c(NA, NA, 1, 1, 2, 2, 3, 3))
 	identical(locf(x, x0 = 0), c(0, 0, 1, 1, 2, 2, 3, 3))
 })
+}
 
 
 ## wald ################################################################
@@ -55,28 +57,26 @@ stopifnot(exprs = {
 
 set.seed(230719L)
 n <- 6L
-A <- matrix(rnorm(n * n), n, n)
-S <- crossprod(A)
-R <- chol(S)
+Sigma <- crossprod(matrix(rnorm(n * n), n, n))
+R <- chol(Sigma)
 R1 <- R * rep(1 / diag(R, names = FALSE), each = n)
-
-theta <- c(0.5 * log(diag(S, names = FALSE)), R1[upper.tri(R1)])
+theta <- c(0.5 * log(diag(Sigma, names = FALSE)), R1[upper.tri(R1)])
 stopifnot(exprs = {
-	all.equal(cov2theta(S), theta)
-	all.equal(theta2cov(theta), S)
+	all.equal(cov2theta(Sigma), theta)
+	all.equal(theta2cov(theta), Sigma)
 })
 
 
-## in_place_ragged_apply ###############################################
+## papply ##############################################################
 
 submean <- function(x) x - mean(x)
 
 x <- 1:10
-y <- in_place_ragged_apply(x, index = gl(2L, 5L), f = list(cumprod, submean))
+y <- papply(x, gl(2L, 5L), list(cumprod, submean))
 f <- function(x) c(cumprod(x[1:5]), submean(x[6:10]))
 stopifnot(all.equal(y, f(x)))
 
 x <- as.data.frame(replicate(3L, c(exp(rnorm(5L)), qlogis(runif(5L)))))
-y <- in_place_ragged_apply(x, index = gl(2L, 5L), f = list(log, plogis))
+y <- papply(x, gl(2L, 5L), list(log, plogis))
 f <- function(x) c(log(x[1:5]), plogis(x[6:10]))
 stopifnot(identical(y, as.data.frame(lapply(x, f))))

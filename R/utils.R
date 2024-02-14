@@ -3,29 +3,30 @@ unlist1 <-
 function(x)
 	unlist(x, recursive = FALSE, use.names = FALSE)
 
-## Creates and prints headings. Used to section 'print' method output.
+## Creates and prints headings;
+## used to section 'print' method output
 heading <-
 function(text, width = 0.9 * getOption("width"), symbol = ".") {
 	line <- strrep(symbol, max(0L, width - 1L - nchar(text)))
 	cat(text, " ", line, "\n", sep = "")
 }
 
-## Conditionally pluralizes most singular English nouns.
-## Used to make sure 'print' and 'plot' method output is grammatical.
+## Conditionally pluralizes most singular English nouns;
+## used to make sure that 'print' and 'plot' method output is grammatical
 pluralize <-
 function(word, n) {
-	plural <- (n > 1L)
+	plural <- n > 1L
 	word[plural] <- paste0(word[plural], "s")
 	word
 }
 
-## Formats tables of text.
-## Used by 'print' methods instead of hacking 'print.default'.
+## Formats tables of text;
+## used by 'print' methods instead of hacking 'print.default'
 align <-
 function(..., justify = "right", gap = 1L) {
 	dots <- list(...) # list of column vectors
 	dots <- Map(format, x = dots, justify = justify, USE.NAMES = FALSE)
-	dots$sep <- strrep(" ", gap)
+	dots[["sep"]] <- strrep(" ", gap)
 	do.call(paste, dots)
 }
 
@@ -44,9 +45,10 @@ function(x, nms = FALSE, fmt = "%s[%d]") {
 	sprintf(fmt, x, i)
 }
 
+if (FALSE) {
 ## A drop-in replacement for 'rle' that regards NA as equal to previous NA
 ## and (in double vectors) NaN as equal to previous NaN
-literal_rle <-
+rle1 <-
 function(x) {
 	n <- length(x)
 	if (n == 0L)
@@ -70,89 +72,90 @@ locf <-
 function(x, x0 = NULL) {
 	if (!anyNA(x))
 		return(x)
-	rle_x <- literal_rle(x)
-	y <- rle_x$values
+	rle.x <- rle1(x)
+	y <- rle.x[["values"]]
 	if (is.na(y[1L]) && !is.null(x0))
 		y[1L] <- x0
 	if (anyNA(y[-1L])) {
-		argna_y <- which(c(FALSE, is.na(y[-1L])))
-		y[argna_y] <- y[argna_y - 1L]
+		argna.y <- which(c(FALSE, is.na(y[-1L])))
+		y[argna.y] <- y[argna.y - 1L]
 	}
-	rle_x$values <- y
-	inverse.rle(rle_x)
+	rle.x[["values"]] <- y
+	inverse.rle(rle.x)
+}
 }
 
-## Computes Wald confidence intervals from estimates and standard errors
+## Computes confidence intervals from point estimates, standard errors
 wald <-
 function(estimate, se, level) {
 	q <- qchisq(level, df = 1)
 	n <- length(estimate)
-	lu <- estimate + rep.int(sqrt(q) * c(-1, 1), c(n, n)) * se
+	lu <- estimate + rep(sqrt(q) * c(-1, 1), each = n) * se
 	dim(lu) <- c(n, 2L)
 	colnames(lu) <- c("lower", "upper")
 	lu
 }
 
+## Real symmetric positive definite matrix   to packed representation
 cov2theta <-
-function(S) {
-	n <- dim(S)[1L]
-	log_sd <- 0.5 * log(diag(S, names = FALSE))
-	R <- chol(S)
-	R <- R * rep.int(1 / diag(R), rep.int(n, n))
-	c(log_sd, R[upper.tri(R)])
+function(Sigma) {
+	n <- dim(Sigma)[1L]
+	R <- chol(Sigma)
+	R1 <- R * rep(1 / diag(R, names = FALSE), each = n)
+	c(0.5 * log(diag(Sigma, names = FALSE)), R1[upper.tri(R1)])
 }
 
+## Real symmetric positive definite matrix from packed representation
 theta2cov <-
 function(theta) {
 	n <- as.integer(round(0.5 * (-1 + sqrt(1 + 8 * length(theta)))))
-	i <- seq_len(n)
-	R <- diag(n)
-	R[upper.tri(R)] <- theta[-i]
-	S <- crossprod(R)
-	scale <- exp(theta[i] - 0.5 * log(diag(S, names = FALSE)))
-	scale * S * rep.int(scale, rep.int(n, n))
+	h <- seq_len(n)
+	R1 <- diag(n)
+	R1[upper.tri(R1)] <- theta[-h]
+	S <- crossprod(R1)
+	scale <- exp(theta[h] - 0.5 * log(diag(S, names = FALSE)))
+	scale * S * rep(scale, each = n)
 }
 
-##' Apply length-preserving functions to ragged vectors
+##' Apply Length-Preserving Functions to Ragged Vectors
 ##'
-##' Modifies ragged vectors in place by replacing each group of elements
-##' with the result of applying a length-preserving function to that group
-##' of elements.
+##' Modifies ragged vectors \dQuote{in place} by replacing each group of
+##' elements with the result of applying a length-preserving function to
+##' the group.
 ##'
 ##' @param x
-##'   A vector or data frame.
+##'   a vector or data frame.
 ##' @param index
-##'   A factor (insofar as \code{as.factor(index)} is a factor)
-##'   defining a grouping of the elements or rows of \code{x}.
-##' @param f
-##'   A function or list of one or more functions to be applied to the subsets
-##'   of \code{x} defined by \code{index}.
-##'   Functions are recycled to the number of levels of \code{index}.
-##'   Each function must accept a vector argument matching \code{typeof(x)}
-##'   (or \code{typeof(x[[j]])} for all \code{j} if \code{x} is a data frame)
-##'   and return a vector of the same length.
+##'   a factor (insofar as \code{as.factor(index)} is a factor) defining
+##'   a grouping of the elements or rows of \code{x}.
+##' @param fun
+##'   a function or list of functions to be applied to the subsets of
+##'   \code{x} defined by \code{index}.  Functions are recycled to the
+##'   number of levels of \code{index}.  Each function must accept a
+##'   vector argument matching \code{typeof(x)} (\code{typeof(x[[j]])}
+##'   for all \code{j} if \code{x} is a data frame) and return a vector
+##'   of the same length.
 ##'
 ##' @details
-##' Let \code{f} be a list of \code{nlevels(index)} functions,
+##' Let \code{fun} be a list of \code{nlevels(index)} functions,
 ##' and let \code{k = split(seq_along(index), index)}.
-##' For vectors \code{x}, function \code{f[[i]]} is applied to
+##' For vectors \code{x}, function \code{fun[[i]]} is applied to
 ##' \code{x[k[[i]]]}.
-##' For data frames \code{x}, function \code{f[[i]]} is applied to
+##' For data frames \code{x}, function \code{fun[[i]]} is applied to
 ##' \code{x[[j]][k[[i]]]} for all \code{j}.
 ##'
 ##' @return
 ##' If \code{x} is a vector, then a vector of the same length.
 ##' If \code{x} is a data frame, then a data frame with the same dimensions.
 
-in_place_ragged_apply <-
-function(x, index, f) {
-	if (!is.list(f))
-		f <- list(f)
-	do_call <-
+papply <-
+function(x, index, fun) {
+	F <-
 		if (is.data.frame(x))
-			function(g, y) { y[] <- lapply(y, g); y }
+			function(f, x) { x[] <- lapply(x, f); x }
 		else
-			function(g, y) g(y)
-	split(x, index) <- Map(do_call, y = split(x, index), g = f)
+			function(f, x) f(x)
+	split(x, index) <-
+		Map(F, if (is.list(fun)) fun else list(fun), split(x, index))
 	x
 }

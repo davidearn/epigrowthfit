@@ -205,7 +205,7 @@ function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
 		elu <- c("estimate", "lower", "upper")
 		f <- lapply(egf_link_extract(levels(res$top)), egf_link_match,
 		            inverse = TRUE)
-		res[elu] <- in_place_ragged_apply(res[elu], res$top, f = f)
+		res[elu] <- papply(res[elu], res$top, f)
 		levels(res$top) <- egf_link_remove(levels(res$top))
 	}
 	res$linear_combination <- as.integer(as.character(res$linear_combination))
