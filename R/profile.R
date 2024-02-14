@@ -99,7 +99,7 @@ function(fitted,
 	}
 
 	if (parallel$method == "snow") {
-		environment(do_profile) <- .GlobalEnv
+		environment(do_profile) <- globalenv()
 
 		## Reconstruct list of arguments to 'MakeADFun' from object internals
 		## for retaping

@@ -9,14 +9,14 @@ function(object, nsim = 1L, seed = NULL,
 	          is_number(nsim, "positive", integer = TRUE))
 	nsim <- as.integer(nsim)
 
-	## Set and preserve RNG state (modified from 'stats:::simulate.lm')
-	if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+	## Set and preserve RNG state (modified from stats:::simulate.lm)
+	if (!exists(".Random.seed", envir = globalenv(), inherits = FALSE))
 		runif(1L)
 	if (is.null(seed))
-		RNGstate <- get(".Random.seed", envir = .GlobalEnv)
+		RNGstate <- get(".Random.seed", envir = globalenv())
 	else {
-		oRNGstate <- get(".Random.seed", envir = .GlobalEnv)
-		on.exit(assign(".Random.seed", oRNGstate, envir = .GlobalEnv),
+		oRNGstate <- get(".Random.seed", envir = globalenv())
+		on.exit(assign(".Random.seed", oRNGstate, envir = globalenv()),
 		        add = TRUE)
 		RNGstate <- c(list(seed), as.list(RNGkind()))
 		names(RNGstate) <- names(formals(set.seed))
@@ -81,7 +81,7 @@ function(object, nsim = 1L, seed = NULL,
 			## which is never serialized, we avoid unnecessary overhead.
 			## https://stackoverflow.com/questions/17402077
 			## https://stackoverflow.com/questions/18035711
-			environment(do_boot) <- .GlobalEnv
+			environment(do_boot) <- globalenv()
 
 			## Retrieve path to shared object for loading
 			dll <- .dll
@@ -140,16 +140,16 @@ function(object, nsim = 1L, seed = NULL,
 	stopifnot(is_number(nsim, "positive", integer = TRUE))
 	nsim <- as.integer(nsim)
 
-	## Set and preserve RNG state (modified from 'stats:::simulate.lm')
-	if (!exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE))
+	## Set and preserve RNG state (modified from stats:::simulate.lm)
+	if (!exists(".Random.seed", envir = globalenv(), inherits = FALSE))
 		runif(1L)
 	if (is.null(seed)) {
-		RNGstate <- get(".Random.seed", envir = .GlobalEnv)
-		set_RNGstate <- function() assign(".Random.seed", RNGstate, .GlobalEnv)
+		RNGstate <- get(".Random.seed", envir = globalenv())
+		set_RNGstate <- function() assign(".Random.seed", RNGstate, globalenv())
 	}
 	else {
-		oRNGstate <- get(".Random.seed", envir = .GlobalEnv)
-		on.exit(assign(".Random.seed", oRNGstate, envir = .GlobalEnv),
+		oRNGstate <- get(".Random.seed", envir = globalenv())
+		on.exit(assign(".Random.seed", oRNGstate, envir = globalenv()),
 				add = TRUE)
 		RNGstate <- c(list(as.integer(seed)), as.list(RNGkind()))
 		names(RNGstate) <- names(formals(set.seed))
@@ -218,7 +218,7 @@ function(object, nsim = 1L, seed = NULL,
 		init <- list(beta = mu, theta = cov2theta(Sigma), b = double(nsim * p))
 	}
 	environment(formula_ts) <- environment(formula_windows) <-
-		environment(formula_parameters) <- .GlobalEnv
+		environment(formula_parameters) <- globalenv()
 
 	## Create TMB object without optimizing
 	mm <- egf(object,

@@ -74,7 +74,7 @@ function(object,
 		}
 
 		if (parallel$method == "snow") {
-			environment(do_uniroot) <- .GlobalEnv
+			environment(do_uniroot) <- globalenv()
 
 			## Reconstruct list of arguments to 'MakeADFun'
 			## from object internals for retaping
