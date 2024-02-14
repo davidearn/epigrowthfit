@@ -138,7 +138,7 @@ function(model,
 		res$sdreport <- tryCatch(eval(call),
 		                         error = function(e) `[[<-`(e, "call", call))
 	}
-	if (inherits(res$sdreport, "error")) {
+	if (!se || inherits(res$sdreport, "error")) {
 		res$gradient <- tmb_out$gr(res$best[!res$random])
 		res$hessian <- NA
 	}
