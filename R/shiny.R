@@ -4,7 +4,7 @@ function(app = c("toplevel", "windowselect"), ...) {
 	stopifnot(requireNamespace("shiny"))
 	if (app == "windowselect")
 	stopifnot(requireNamespace("shinyFeedback"))
-	dirname <- system.file("shiny", app, package = "epigrowthfit",
-	                       mustWork = TRUE)
-	shiny::runApp(dirname, ...)
+	appdir <- system.file("shiny", app, package = "epigrowthfit",
+	                      mustWork = TRUE)
+	shiny::runApp(appdir, ...)
 }
