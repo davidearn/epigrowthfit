@@ -1,5 +1,7 @@
 \name{simulate.egf_model}
 \alias{simulate.egf_model}
+\alias{coef.simulate.egf_model}
+\alias{getCall.simulate.egf_model}
 \title{Simulate Incidence Time Series}
 \description{
 Simulates equally spaced incidence time series according to a specified
@@ -72,6 +74,9 @@ A list inheriting from class \code{simulate.egf_model}, with elements:
 
 Attribute \code{RNGstate} preserves the RNG state prior to simulation,
 making the result reproducible.
+}
+\seealso{
+\code{\link{egf.simulate.egf_model}}.
 }
 \examples{
 r <- 0.04

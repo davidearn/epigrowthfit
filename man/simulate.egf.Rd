@@ -1,5 +1,6 @@
 \name{simulate.egf}
 \alias{simulate.egf}
+\alias{print.simulate.egf}
 \title{Simulation and Parametric Bootstrapping}
 \description{
 Simulates incidence data conditional on a fitted nonlinear mixed effects

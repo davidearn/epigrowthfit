@@ -1,5 +1,6 @@
 \name{summary.egf}
 \alias{summary.egf}
+\alias{print.summary.egf}
 \title{Summarize a Model Object}
 \description{
 Summarizes fitted values of top level nonlinear model parameters
