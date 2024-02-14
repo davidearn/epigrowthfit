@@ -47,5 +47,3 @@ function(x, ...) {
 	attr(res, "full") <- attr(x, "full")
 	res
 }
-
-as.data.frame.coef.egf <- as.data.frame.vector

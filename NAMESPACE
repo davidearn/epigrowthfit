@@ -1,4 +1,3 @@
-S3method(as.data.frame,coef.egf)
 S3method(as.list,coef.egf)
 S3method(coef,egf)
 S3method(coef,egf_no_fit)
