@@ -75,7 +75,7 @@ function(obj, par) {
 	len <- lengths(l)
 	res <- unlist1(l)
 	names(res) <- rep.int(names(l), len)
-	attr(res, "lengths") <- len
+	attr(res, "len") <- len
 	res
 }
 
@@ -103,7 +103,7 @@ function(obj, par) {
 	len <- lengths(l)
 	res <- unlist1(l)
 	names(res) <- rep.int(names(l), len)
-	attr(res, "lengths") <- len
+	attr(res, "len") <- len
 	res
 }
 
@@ -233,8 +233,8 @@ function(object, subset, top) {
 	X <- model.matrix(object, "fixed")
 	X <- X[subset, , drop = FALSE]
 
-	c0 <- coef(object, full = FALSE)
-	len <- attr(c0, "lengths")
+	c0 <- coef(object)
+	len <- attr(c0, "len")
 	map <- attr(c0, "map")$beta
 	if (is.null(map)) {
 		argna <- logical(len[["beta"]])

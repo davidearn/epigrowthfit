@@ -236,7 +236,7 @@ function(object, nsim = 1, seed = NULL,
 	actual <- unlist1(init)
 	len <- lengths(init)
 	names(actual) <- rep.int(names(len), len)
-	attr(actual, "lengths") <- len
+	attr(actual, "len") <- len
 
 	if (has.infl && !is.null(Sigma)) {
 		## Second pass with 'data' of appropriate length,
@@ -297,13 +297,18 @@ function(object, nsim = 1, seed = NULL,
 }
 
 coef.simulate.egf_model <-
-function(object, ...) {
+function(object, random = TRUE, ...) {
 	ans <- object[["actual"]]
-	len <- attr(ans, "lengths")
+	len <- attr(ans, "len")
 	map <- vector("list", length(len))
 	names(map) <- names(len)
+	if (!random) {
+		ans <- ans[names(ans) != "b"]
+		len <- len[names(len) != "b"]
+		map <- map[names(map) != "b"]
+	}
+	attr(ans, "len") <- len
 	attr(ans, "map") <- map
-	attr(ans, "full") <- TRUE
 	class(ans) <- "coef.egf"
 	ans
 }

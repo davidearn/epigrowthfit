@@ -1,59 +1,55 @@
 \name{coef.egf}
 \alias{coef.egf}
 \alias{coef.egf_no_fit}
-\title{Extract coefficients and covariance parameters}
+\alias{print.coef.egf}
+\alias{as.list.coef.egf}
+\title{Extract Coefficients and Random Effect Covariance Parameters}
+\description{
+Extracts the bottom level parameter vector \code{c(beta, theta, b)}
+or a subset.  Segments \code{beta}, \code{theta}, and \code{b} contain
+(respectively) fixed effect coefficients, random effect covariance
+parameters, and random effect coefficients.
+}
 \usage{
-\method{coef}{egf}(object, full = FALSE, ...)
-
-\method{coef}{egf_no_fit}(object, full = FALSE, ...)
+\method{coef}{egf}(object, random = TRUE, full = FALSE, \dots)
+\method{coef}{egf_no_fit}(object, \dots)
 }
 \arguments{
-\item{object}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}
-
-\item{full}{A logical flag. If \code{FALSE}, then the parameter vector is returned
-in the condensed format used by \pkg{TMB}, which excludes mapped elements.
-(See argument \code{map} of \code{\link{egf}}.)}
-
-\item{...}{Unused optional arguments.}
+\item{object}{an \code{\link{egf}} or \code{\link[=egf]{egf_no_fit}}
+  object.}
+\item{random}{a logical.  If \code{FALSE}, then segment \code{b}
+  is excluded.}
+\item{full}{a logical.  If \code{FALSE}, then mapped elements are
+  excluded, and the result is called \dQuote{condensed}.}
+\item{\dots}{unused optional arguments.}
 }
 \value{
-A named numeric vector concatenating \code{beta}, \code{theta}, and \code{b},
-without mapped elements if \code{full = FALSE}. The names group the elements
+A named numeric vector concatenating \code{beta}, \code{theta}, and
+\code{b}, without \code{b} if \code{random = FALSE} and without
+mapped elements if \code{full = FALSE}.  The names group the elements
 by segment.
 
-Attribute \code{map} is a named list of index vectors \code{i} such that
-that a full vector \code{y} and its condensed counterpart \code{x}
-are related by \code{y = x[i]}, with the exception that \code{map[i]} is
-\code{NA} if \code{y[i]} is mapped to an initial value
-(hence \code{x[map[i]]} is equal to \code{NA}, not \code{y[i]}).
-\code{NULL} is used in place of an index vector where \code{x} and \code{y}
-are identical.
+Attribute \code{map} is a named list of integer vectors \code{i}
+such that that a full segment \code{y} and its condensed counterpart
+\code{x} are related by \code{y = x[i]}, with the exception that
+\code{i[j]} is \code{NA} if \code{y[j]} is mapped to an initial value.
+\code{NULL} is used in place of an integer vector where \code{x}
+and \code{y} are identical.
 
-In both cases, the result inherits from class \code{"coef.egf"},
-which has \code{\link{print}} and \code{\link{as.list}} methods.
+The result inherits from class \code{coef.egf}, which has methods
+for \code{\link{print}} and \code{\link{as.list}}.
 }
-\description{
-Extracts the bottom level parameter vector \code{c(beta, theta, b)};
-see \code{\link{egf}}.
+\note{
+The method for class \code{egf_no_fit} returns the initial value
+of the parameter vector, not an estimated value.
 }
-\details{
-If \code{object} inherits from class \code{"egf_no_fit"},
-then the result contains initial parameter values to be used
-in the first likelihood evaluation.
+\examples{
+object <- egf_cache("egf-2.rds")
+for (random in c(FALSE, TRUE)) {
+    for (full in c(FALSE, TRUE)) {
+        cat(sprintf("random = \%s, full = \%s :\n\n", random, full))
+        str(coef(object, random = random, full = full))
+        cat("\n")
+    }
 }
-\seealso{
-Other extractors: 
-\code{\link{df.residual.egf}()},
-\code{\link{fitted.egf}()},
-\code{\link{fixef.egf}()},
-\code{\link{formula.egf}()},
-\code{\link{getCall.egf}()},
-\code{\link{logLik.egf}()},
-\code{\link{model.frame.egf}()},
-\code{\link{model.matrix.egf}()},
-\code{\link{nobs.egf}()},
-\code{\link{ranef.egf}()},
-\code{\link{terms.egf}()},
-\code{\link{vcov.egf}()}
 }
-\concept{extractors}

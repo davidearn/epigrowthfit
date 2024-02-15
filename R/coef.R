@@ -1,49 +1,56 @@
 coef.egf <-
-function(object, full = FALSE, ...) {
-	stopifnot(is_true_or_false(full))
-	if (full)
-		res <- egf_expand_par(object$tmb_out, par = object$best)
-	else {
-		res <- object$best
-		attr(res, "lengths") <- lengths(object$tmb_out$env$parameters)
+function(object, random = TRUE, full = FALSE, ...) {
+	stopifnot(is_true_or_false(random), is_true_or_false(full))
+	if (full) {
+		ans <- egf_expand_par(object[["tmb_out"]], par = object[["best"]])
+		len <- attr(ans, "len")
 	}
-	map <- lapply(object$tmb_out$env$parameters, attr, "map")
+	else {
+		ans <- object[["best"]]
+		len <- lengths(object[["tmb_out"]][["env"]][["parameters"]])
+	}
+	map <- lapply(object[["tmb_out"]][["env"]][["parameters"]], attr, "map")
 	if (!egf_has_random(object))
 		map[names(map) != "beta"] <- list(NULL)
+	if (!random) {
+		ans <- ans[names(ans) != "b"]
+		len <- len[names(len) != "b"]
+		map <- map[names(map) != "b"]
+	}
 	for (i in seq_along(map))
-		if (!is.null(map[[i]])) {
-			map[[i]] <- as.integer(map[[i]]) + 1L
-			map[[i]][map[[i]] == 0L] <- NA
+		if (!is.null(m <- map[[i]])) {
+			m <- as.integer(m) + 1L
+			m[m == 0L] <- NA
+			map[[i]] <- m
 		}
-	attr(res, "map") <- map
-	attr(res, "full") <- full
-	class(res) <- "coef.egf"
-	res
+	attr(ans, "len") <- len
+	attr(ans, "map") <- map
+	class(ans) <- "coef.egf"
+	ans
 }
 
 coef.egf_no_fit <-
-function(object, full = FALSE, ...) {
-	object$best <- object$init
-	coef.egf(object, full = full, ...)
+function(object, ...) {
+	object[["best"]] <- object[["init"]]
+	coef.egf(object, ...)
 }
 
 print.coef.egf <-
 function(x, ...) {
 	y <- x
-	attributes(x)[c("full", "lengths", "map", "class")] <- NULL
+	x <- as.double(x)
+	names(x) <- names(y)
 	NextMethod("print")
 	invisible(y)
 }
 
 as.list.coef.egf <-
 function(x, ...) {
-	names(x) <- NULL
-	len <- attr(x, "lengths")
-	f <- rep.int(gl(length(len), 1L, labels = names(len)), len)
-	res <- split(x, f)
+	len <- attr(x, "len")
 	map <- attr(x, "map")
-	for (s in names(res))
-		attr(res[[s]], "map") <- map[[s]]
-	attr(res, "full") <- attr(x, "full")
-	res
+	ans <- split(as.double(x),
+	             rep.int(gl(length(len), 1L, labels = names(len)), len))
+	for (s in names(ans))
+		attr(ans[[s]], "map") <- map[[s]]
+	ans
 }
