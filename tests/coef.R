@@ -7,7 +7,7 @@ nms <- c("beta", "theta", "b")
 
 ## object ##############################################################
 
-o.2c <- coef(o.2)
+o.2c <- coef(o.2, random = TRUE)
 o.2c.e <- structure(as.double(o.2c),
                     names = rep.int(nms, c(2L, 2L, 40L)),
                     len = c(beta = 2L, theta = 2L, b = 40L),

@@ -1,6 +1,6 @@
 fixef.egf <-
 function(object, ...) {
-	par <- coef(object, full = TRUE)
+	par <- coef(object, random = TRUE, full = TRUE)
 	nms <- c("bottom", "top", "term", "colname")
 	data.frame(object$effects$beta[nms],
 	           estimate = par[names(par) == "beta"],
@@ -15,7 +15,7 @@ function(object, build_cov = FALSE, ...) {
 	stopifnot(egf_has_random(object),
 	          is_true_or_false(build_cov))
 
-	par <- coef(object, full = TRUE)
+	par <- coef(object, random = TRUE, full = TRUE)
 	nms <- c("cov", "vec", "bottom", "top", "term", "group", "level", "colname")
 	res <- data.frame(object$effects$b[nms],
 	                  mode = par[names(par) == "b"],

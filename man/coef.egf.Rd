@@ -11,7 +11,7 @@ or a subset.  Segments \code{beta}, \code{theta}, and \code{b} contain
 parameters, and random effect coefficients.
 }
 \usage{
-\method{coef}{egf}(object, random = TRUE, full = FALSE, \dots)
+\method{coef}{egf}(object, random = FALSE, full = FALSE, \dots)
 \method{coef}{egf_no_fit}(object, \dots)
 }
 \arguments{

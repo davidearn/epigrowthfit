@@ -7,7 +7,7 @@ o.1p <- egf_cache("profile-egf-1.rds")
 
 ## object ##############################################################
 
-o.1c <- coef(o.1, full = TRUE)
+o.1c <- coef(o.1, random = TRUE, full = TRUE)
 
 stopifnot(exprs = {
 	is.list(o.1p)

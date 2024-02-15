@@ -1,5 +1,5 @@
 coef.egf <-
-function(object, random = TRUE, full = FALSE, ...) {
+function(object, random = FALSE, full = FALSE, ...) {
 	stopifnot(is_true_or_false(random), is_true_or_false(full))
 	if (full) {
 		ans <- egf_expand_par(object[["tmb_out"]], par = object[["best"]])

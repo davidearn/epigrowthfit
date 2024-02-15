@@ -297,7 +297,7 @@ function(object, nsim = 1, seed = NULL,
 }
 
 coef.simulate.egf_model <-
-function(object, random = TRUE, ...) {
+function(object, random = FALSE, ...) {
 	ans <- object[["actual"]]
 	len <- attr(ans, "len")
 	map <- vector("list", length(len))

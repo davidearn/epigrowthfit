@@ -15,7 +15,7 @@ o.2 <- egf_cache("egf-2.rds")
 
 ## fixef ###############################################################
 
-o.2c <- coef(o.2, full = TRUE)
+o.2c <- coef(o.2, random = TRUE, full = TRUE)
 o.2f <- fixef(o.2)
 o.2f.e <- data.frame(bottom = epigrowthfit:::disambiguate(rep.int("beta", 2L)),
                      top = gl(2L, 1L, labels = c("log(r)", "log(c0)")),
@@ -27,7 +27,7 @@ stopifnot(identical(o.2f, o.2f.e))
 
 ## ranef ###############################################################
 
-o.2c <- coef(o.2, full = TRUE)
+o.2c <- coef(o.2, random = TRUE, full = TRUE)
 o.2r <- ranef(o.2, build_cov = TRUE)
 
 o.2r.e <- data.frame(cov = gl(1L, 40L, labels = epigrowthfit:::disambiguate("Sigma")),
