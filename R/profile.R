@@ -4,16 +4,16 @@ function(fitted,
          A = NULL,
          which = NULL,
          top = egf_top(fitted),
+         grid = 12L,
          parallel = egf_parallel(),
          trace = FALSE,
-         grid_len = 12,
          subset = NULL,
          select = NULL,
          ...) {
 	stopifnot(is_number_in_interval(level, 0, 1, "()"),
 	          inherits(parallel, "egf_parallel"),
 	          is_true_or_false(trace),
-	          is_number_in_interval(grid_len, 1, Inf, "[)"))
+	          is_number_in_interval(grid, 1, Inf, "[)"))
 	n <- sum(!fitted$random)
 
 	## If profiling user-specified linear combinations
@@ -81,7 +81,7 @@ function(fitted,
 
 	## y := nll_restricted - nll_minimum = 0.5 * deviance
 	ytol <- 0.5 * qchisq(level, df = 1)
-	ystep <- ytol / grid_len
+	ystep <- ytol / grid
 	nomp <- fitted$control$omp_num_threads
 
 	do_profile <-

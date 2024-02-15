@@ -8,9 +8,9 @@
   A = NULL,
   which = NULL,
   top = egf_top(fitted),
+  grid = 12L,
   parallel = egf_parallel(),
   trace = FALSE,
-  grid_len = 12,
   subset = NULL,
   select = NULL,
   ...
