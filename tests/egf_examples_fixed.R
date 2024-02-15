@@ -14,7 +14,7 @@ zz <- simulate(egf_model(curve = "exponential", family = "pois"),
                cstart = 10)
 mm <- egf(zz)
 
-stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))
+stopifnot(all.equal(coef(zz), coef(mm), tolerance = 5e-02))
 
 
 ## subexponential ######################################################
@@ -31,7 +31,7 @@ zz <- simulate(egf_model(curve = "subexponential", family = "pois"),
 mm <- egf(zz,
           formula_priors = list(logit(p) ~ Normal(mu = qlogis(p), sigma = 0.5)))
 
-stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))
+stopifnot(all.equal(coef(zz), coef(mm), tolerance = 5e-02))
 
 
 ## gompertz ############################################################
@@ -47,7 +47,7 @@ zz <- simulate(egf_model(curve = "gompertz", family = "pois"),
                cstart = 10)
 mm <- egf(zz)
 
-stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))
+stopifnot(all.equal(coef(zz), coef(mm), tolerance = 5e-02))
 
 
 ## logistic ############################################################
@@ -63,7 +63,7 @@ zz <- simulate(egf_model(curve = "logistic", family = "pois"),
                cstart = 10)
 mm <- egf(zz)
 
-stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))
+stopifnot(all.equal(coef(zz), coef(mm), tolerance = 5e-02))
 
 
 ## richards ############################################################
@@ -81,4 +81,4 @@ zz <- simulate(egf_model(curve = "richards", family = "pois"),
 mm <- egf(zz,
           formula_priors = list(log(a) ~ Normal(mu = log(a), sigma = 0.05)))
 
-stopifnot(all.equal(coef(zz), coef(mm, full = TRUE), tolerance = 5e-02))
+stopifnot(all.equal(coef(zz), coef(mm), tolerance = 5e-02))
