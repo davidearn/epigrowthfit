@@ -1,141 +1,90 @@
 # epigrowthfit
 
-<!-- badges: start -->
-[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
-[![R-CMD-check](https://github.com/davidearn/epigrowthfit/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/davidearn/epigrowthfit/actions/workflows/R-CMD-check.yaml)
-<!-- badges: end -->
-
 **epigrowthfit** is an R package for fitting nonlinear mixed effects
 models of epidemic growth to collections of one or more disease
-incidence time series. It can be applied to birth processes other
-than epidemics, as the statistical machinery is agnostic to the
-precise interpretation of supplied count data. **epigrowthfit**
-is built on [Template Model Builder](https://cran.r-project.org/package=TMB).
+incidence time series.  It can be applied to birth processes other than
+epidemics, as the statistical machinery is agnostic to the precise
+interpretation of supplied count data.  **epigrowthfit** is built on
+[Template Model Builder](https://cran.r-project.org/package=TMB).
 
 ## Installation
 
 **epigrowthfit** is not (yet) available on
 [CRAN](https://cran.r-project.org/),
-but can be installed from its sources on GitHub.
+but can be installed from its sources on GitHub:
 
 ```r
-remotes::install_github("davidearn/epigrowthfit", build_vignettes = TRUE)
+remotes::install_github("davidearn/epigrowthfit")
 ```
 
-Since the package contains compiled code, installation from source 
-depends on compilers and related tools.
-These will already be available on most modern Linux installations.
+Installation from sources depends on compilers and related tools.
+These will already be available on modern Linux installations.
 Windows users must have installed
-[Rtools](https://cran.r-project.org/bin/windows/Rtools/)
-and placed it on their `PATH`.
-macOS users must have installed Apple's Command Line Tools for 
-[Xcode](https://developer.apple.com/xcode/).
-The most recent version of Command Line Tools can be installed 
-by running 
+[Rtools](https://cran.r-project.org/bin/windows/Rtools/).
+macOS users must have installed Apple's Command Line Tools for
+[Xcode](https://developer.apple.com/xcode/)
+and GNU Fortran.
+The most recent version of Command Line Tools supporting the
+version of macOS in use can be installed by running
 
 ```shell
 sudo rm -rf /Library/Developer/CommandLineTools
 sudo xcode-select --install
 ```
 
-in Terminal. Older binaries can be downloaded
-[here](https://developer.apple.com/download/all/?q=xcode).
+in Terminal.
+Binaries for older versions of Command Line Tools can be downloaded
+[here](https://developer.apple.com/download/all/?q=Command%20Line%20Tools%20for%20Xcode).
+GNU Fortran should be installed following the instructions on the
+R for macOS Developers [page](https://mac.r-project.org/tools/).
 
-Vignette builds depend on a 
+Vignette building depends on a
 [LaTeX](https://www.latex-project.org/get/) distribution.
-Specifically, `PATH` must specify a directory containing `pdflatex`. 
-A minimal distribution can be installed and managed via the R package 
-[**tinytex**](https://cran.r-project.org/package=tinytex).
-Should errors due to vignette builds persist, one can always install
-**epigrowthfit** without vignettes by setting `build_vignettes = FALSE`.
+Specifically, `PATH` must specify the location of `pdflatex`.
 
-Installation-related issues should be reported
+Issues related to installation should be reported (with relevant output)
 [here](https://github.com/davidearn/epigrowthfit/issues/1).
+Notably, details for Windows and macOS can differ for non-current
+versions of R or non-standard installations of R, where
+the "standard" way to install R is to download and unpack a binary
+built and published by [CRAN](https://cran.r-project.org/).
 
-### OpenMP support
+Compiler errors encountered on macOS are almost always explained
+by unmet dependencies or masking of native tools, headers, and
+libraries with non-native ones (e.g., ones installed by Homebrew).
+Masking occurs due to dubious configurations of `PATH` or dubious
+setting (typically in `~/.R/Makevars`) of Make variables such as
+`CPPFLAGS` and `LDFLAGS`.  Users should reattempt compilation
+after removing suspicious components of `PATH` (e.g., by
+removing relevant lines of startup files in your home directory,
+then launching a new shell) and (re)moving `~/.R/Makevars`.
 
-**epigrowthfit** supports low level parallelism via 
-[OpenMP](https://en.wikipedia.org/wiki/OpenMP).
-Whether OpenMP is supported on a given system depends on:
-
-1. the platform;
-2. the compiler and compiler flags used to build R from sources
-   (these settings are preserved in `R_HOME/etc/Makeconf`, 
-   unless it has been edited manually); and
-3. the compiler and compiler flags used to build **epigrowthfit**
-   from sources (these settings are taken from `HOME/.R/Makevars`
-   [`HOME/.R/Makevars.win` on Windows] and `R_HOME/etc/Makeconf`, 
-   in that order).
-
-On modern Linux and Windows (with Rtools), if one installs
-a current version of R from a binary prebuilt by CRAN, then
-OpenMP support is often automatic.
-On macOS, some configuration is needed, because Apple `clang`,
-the C compiler provided with Apple's Command Line Tools,
-does not support OpenMP.
-Below are _provisional_ instructions for obtaining a `clang`
-toolchain supporting OpenMP on Macs with Intel- or ARM-based 
-architectures running native builds of R. 
-These may need to be adapted to future releases of macOS, R,
-and R prerequisites.
-
-First, install Command Line Tools:
+**epigrowthfit** supports low level parallelism via
+[OpenMP](https://en.wikipedia.org/wiki/OpenMP).  The support tends to
+be automatic except on macOS, because Apple's Command Line Tools do
+not bundle the requisite headers and runtime library.  The R for macOS
+Developers [page](https://mac.r-project.org/openmp/) makes these files
+available for download, hence macOS users can follow the installation
+instructions there.  If `clang --version` gives 1403.0.22.14.1 (say),
+then one would do
 
 ```shell
-sudo xcode-select --install
+curl -O https://mac.r-project.org/openmp/openmp-15.0.7-darwin20-Release.tar.gz
+sudo mkdir -p /opt/R/$(uname -m)
+sudo tar -xvf openmp-15.0.7-darwin20-Release.tar.gz --strip-components=2 -C /opt/R/$(uname -m)
 ```
 
-Next, find your version of Apple `clang` with
-
-```shell
-clang --version
-```
-
-Use [this](https://mac.r-project.org/openmp/) link to download 
-the OpenMP runtime library suitable for your macOS and `clang` 
-versions, and install by unpacking to root.
-For example, if your `clang` version is `clang-1205.0.22.11`, 
-then you could do:
-
-```shell
-wget https://mac.r-project.org/openmp/openmp-11.0.1-darwin20-Release.tar.gz
-sudo tar xvf openmp-11.0.1-darwin20-Release.tar.gz -C /
-```
-
-Finally, add these lines to `HOME/.R/Makevars`:
+and create a `~/.R/Makevars` containing the lines
 
 ```make
-CPPFLAGS+=-I/usr/local/include -Xclang -fopenmp
-LDFLAGS+=-L/usr/local/lib -lomp
+CPPFLAGS += -Xclang -fopenmp
+LDFLAGS += -lomp
 ```
 
-### Package version mismatch
-
-**epigrowthfit** must be binary-compatible with 
-[**TMB**](https://cran.r-project.org/package=TMB). 
-In turn, **TMB** must be binary-compatible with 
-[**Matrix**](https://cran.r-project.org/package=Matrix). 
-This means that the version of **TMB** currently installed should 
-match the version that was installed when **epigrowthfit** was 
-built from sources. 
-Similarly, the version of **Matrix** currently installed should match
-the version that was installed when **TMB** was built from sources. 
-Thus, version mismatch can occur when a user:
-
-* updates **TMB** without rebuilding **epigrowthfit** from source, or
-* updates **Matrix** without rebuilding **TMB** from source.
-
-**epigrowthfit** and **TMB** perform checks when loaded 
-(e.g., via `library`) and issue warnings if they detect a mismatch. 
-If you are warned about a **Matrix**-**TMB** mismatch, then run:
-
-```r
-install.packages("TMB", type = "source")
-remotes::install_github("davidearn/epigrowthfit")
-```
-
-If you are only warned about a **TMB**-**epigrowthfit** mismatch,
-then only run the second line.
+The flags in the `tar` command line ensure that the files are unpacked
+under `/opt/R/x86_64` (Intel) or `/opt/R/arm64` (Apple Silicon).
+Standard installations of R will already be configured to search there
+for dependencies.
 
 ## References
 
