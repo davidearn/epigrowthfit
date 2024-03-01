@@ -52,7 +52,7 @@ built and published by [CRAN](https://cran.r-project.org/).
 Compiler errors encountered on macOS are almost always explained
 by unmet dependencies or masking of native tools, headers, and
 libraries with non-native ones (e.g., ones installed by Homebrew).
-Masking occurs due to dubious configurations of `PATH` or dubious
+Masking occurs due to dubious configuration of `PATH` or dubious
 setting (typically in `~/.R/Makevars`) of Make variables such as
 `CPPFLAGS` and `LDFLAGS`.  Users should reattempt compilation
 after removing suspicious components of `PATH` (e.g., by
