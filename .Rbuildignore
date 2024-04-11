@@ -1,3 +1,7 @@
 ^README[.]md$
 ^TODO[.]org$
 ^misc$
+
+^R/shiny.R$
+^inst/shiny$
+^man/egf_shiny.Rd$
