@@ -48,10 +48,10 @@ making the result reproducible.
 \details{
 Bootstrap optimizations are typically expensive for nontrivial models.
 They are parallelized at the \proglang{C++} level when there is OpenMP
-support and \code{object[["control"]][["omp_num_threads"]]} is set to
-an integer greater than 1.  When there is no OpenMP support,
-bootstrap optimizations can still be parallelized at the \R{} level
-with appropriate setting of argument \code{parallel}.
+support and \code{object[["control"]][["omp_num_threads"]]} is set
+to an integer greater than 1.  When there is no OpenMP support, they
+can still be parallelized at the \R{} level with appropriate setting
+of argument \code{parallel}.
 
 Arguments \code{control}, \code{parallel}, and \code{trace} are unused
 when \code{bootstrap = FALSE}.

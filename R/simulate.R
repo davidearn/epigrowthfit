@@ -47,7 +47,7 @@ function(object, nsim = 1, seed = NULL,
 		## for retaping
 		args <- egf_tmb_remake_args(object[["tmb_out"]], par = object[["best"]])
 
-		boot <-
+		do.bootstrap <-
 		function(i, x) {
 			if (trace)
 				cat(gettextf("commencing bootstrap optimization %d of %d ...",
@@ -81,7 +81,7 @@ function(object, nsim = 1, seed = NULL,
 			## function environments are unused and need not be serialized.
 			## By replacing them with the global environment,
 			## which is never serialized, we avoid unnecessary overhead.
-			environment(boot) <- globalenv()
+			environment(do.bootstrap) <- globalenv()
 
 			## Retrieve path to shared object for loading
 			dll <- .dll
@@ -91,10 +91,8 @@ function(object, nsim = 1, seed = NULL,
 				cl <- do.call(makePSOCKcluster, parallel[["args"]])
 				on.exit(add = TRUE, stopCluster(cl))
 			}
-			clusterExport(cl,
-			              varlist = c("dll", "nomp", "trace", "nsim",
-			                          "args", "control"),
-			              envir = environment())
+			vars <- c("dll", "nomp", "trace", "nsim", "args", "control")
+			clusterExport(cl, varlist = vars, envir = environment())
 			clusterEvalQ(cl, {
 				dyn.load(dll)
 				if (TMB::openmp(n = NULL) > 0L)
@@ -102,8 +100,7 @@ function(object, nsim = 1, seed = NULL,
 			})
 			clusterSetRNGStream(cl)
 			ans[["bootstrap"]] <-
-				clusterMap(cl, boot, i = seq_len(nsim), x = asplit(X, 2L),
-				           simplify = TRUE)
+				clusterMap(cl, do.bootstrap, i = seq_len(nsim), x = asplit(X, 2L), simplify = TRUE)
 		}
 		else {
 			if (nzchar(parallel[["outfile"]])) {
@@ -117,8 +114,8 @@ function(object, nsim = 1, seed = NULL,
 			}
 			ans[["bootstrap"]] <-
 				switch(parallel[["method"]],
-				       multicore = do.call(mcmapply, c(list(FUN = boot, i = seq_len(nsim), x = asplit(X, 2L)), parallel[["args"]])),
-				       serial = mapply(boot, seq_len(nsim), asplit(X, 2L)))
+				       multicore = do.call(mcmapply, c(list(FUN = do.bootstrap, i = seq_len(nsim), x = asplit(X, 2L)), parallel[["args"]])),
+				       serial = mapply(do.bootstrap, seq_len(nsim), asplit(X, 2L)))
 		}
 	}
 
