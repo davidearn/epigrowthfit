@@ -10,43 +10,38 @@ function(fitted,
          subset = NULL,
          select = NULL,
          ...) {
-	stopifnot(is_number_in_interval(level, 0, 1, "()"),
+	stopifnot(sum(m. <- c(missing(A), missing(which), missing(top))) >= 2L,
+	          is_number_in_interval(level, 0, 1, "()"),
+	          is_number_in_interval(grid, 1, Inf, "[)"),
 	          inherits(parallel, "egf_parallel"),
-	          is_true_or_false(trace),
-	          is_number_in_interval(grid, 1, Inf, "[)"))
-	n <- sum(!fitted$random)
+	          is_true_or_false(trace))
+	n <- sum(!fitted[["random"]])
+
 
 	## If profiling user-specified linear combinations
-	## of elements of 'c(beta, theta)'
+	## of elements of c(beta, theta)
 	if (!is.null(A)) {
-		method <- "A"
-		if (!is(A, "dMatrix")) {
-			stopifnot(is.numeric(A))
-			if (is.null(dim(A)))
-				dim(A) <- c(1L, length(A))
-			else stopifnot(is.matrix(A))
-		}
-		eval(bquote(stopifnot(nrow(A) > 0L,
-		                      ncol(A) == .(n),
-		                      is.finite(A),
-		                      rowSums(abs(A)) > 0)))
+		if (is.double(A) && !is.object(A) && !is.array(A))
+			dim(A) <- c(1L, length(A))
+		stopifnot((is.double(A) && !is.object(A) && is.matrix(A)) ||
+		          is(A, "dMatrix"),
+		          nrow(A) > 0L,
+		          ncol(A) == n,
+		          is.finite(range(A)),
+		          min(rowSums(A != 0)) > 0)
 	}
-	## If profiling user-specified elements of 'c(beta, theta)'
+	## If profiling user-specified elements of c(beta, theta)
 	else if (!is.null(which)) {
-		method <- "which"
-		eval(bquote(stopifnot(is.numeric(which),
-		                      which %in% seq_len(.(n)))))
-		which <- unique(which)
-		A <- sparseMatrix(i = seq_len(m),
-		                  j = which,
-		                  x = 1,
-		                  dims = c(length(which), n))
+		which <- seq_len(n)[which]
+		A <- as(new("dgRMatrix",
+	                Dim = c(length(which), n),
+	                p = 0:(length(which) - 1L),
+	                j = which - 1L,
+	                x = rep.int(1, length(which))), "CsparseMatrix")
 	}
 	## If profiling population fitted values
 	## of top level nonlinear model parameters
 	else if (!is.null(top)) {
-		method <- "top"
-
 		top. <- egf_top(fitted)
 		top <- unique(match.arg(top, top., several.ok = TRUE))
 
@@ -56,61 +51,64 @@ function(fitted,
 		select <- egf_eval_select(select, frame_combined, baseenv())
 
 		l <- egf_preprofile(fitted, subset = subset, top = top)
-		Y <- l$Y
-		A <- l$A
+		Y <- l[["Y"]]
+		A <- l[["A"]]
 	}
 	else stop(gettextf("one of '%s', '%s', and '%s' must be non-NULL",
 	                   "A", "which", "top"),
 	          domain = NA)
 
-	## Covariance matrix of 'c(beta, theta)'
+	## Covariance matrix of c(beta, theta)
 	V <- unclass(vcov(fitted))
 	m <- nrow(A)
-	if (method == "which") {
+	if (!m.[2L]) {
 		a <- which
-		h <- 0.25 * sqrt(diag(V)[which])
+		h <- 0.25 * sqrt(diag(V, names = FALSE)[which])
 		s <- "name"
 	}
 	else {
-		## Covariance matrix of 'A %*% c(beta, theta)'
+		## Covariance matrix of A %*% c(beta, theta)
 		V <- A %*% tcrossprod(V, A)
 		a <- lapply(seq_len(m), function(i) A[i, ])
-		h <- 0.25 * sqrt(diag(V))
+		h <- 0.25 * sqrt(diag(V, names = FALSE))
 		s <- "lincomb"
 	}
 
-	## y := nll_restricted - nll_minimum = 0.5 * deviance
+	## y := nll_restricted - nll_minimum = 0.5 * (change in deviance)
 	ytol <- 0.5 * qchisq(level, df = 1)
 	ystep <- ytol / grid
-	nomp <- fitted$control$omp_num_threads
+	nomp <- fitted[["control"]][["omp_num_threads"]]
 
-	do_profile <-
+	do.profile <-
 	function(i, a, h) {
 		if (trace)
-			cat(sprintf("Computing likelihood profile %d of %d...\n", i, m))
+			cat(gettextf("computing likelihood profile %d of %d ...",
+			             i, m),
+			    "\n", sep = "")
 		args <- list(obj = obj, h = h, ytol = ytol, ystep = ystep)
 		args[[s]] <- a
-		res <- do.call(TMB::tmbprofile, args)
-		i_min <- which.min(res[[2L]])
-		## deviance = 2 * (nll_restricted - nll_minimum)
-		res[[2L]] <- 2 * (res[[2L]] - res[i_min, 2L])
-		names(res) <- c("value", "deviance")
-		res[-i_min, , drop = FALSE] # 'tmbprofile' duplicates this row
+		ans <- do.call(TMB::tmbprofile, args)
+		nll <- ans[[2L]]
+		i.min <- which.min(nll)
+		## (change in deviance) = 2 * (nll_restricted - nll_minimum)
+		ans[[2L]] <- 2 * (nll - nll[i.min])
+		names(ans) <- c("value", "deviance")
+		ans[-i.min, , drop = FALSE] # 'tmbprofile' duplicates this row
 	}
 
-	if (parallel$method == "snow") {
-		environment(do_profile) <- globalenv()
+	if (parallel[["method"]] == "snow") {
+		environment(do.profile) <- globalenv()
 
 		## Reconstruct list of arguments to 'MakeADFun' from object internals
 		## for retaping
-		args <- egf_tmb_remake_args(fitted$tmb_out, par = fitted$best)
+		args <- egf_tmb_remake_args(fitted[["tmb_out"]], par = fitted[["best"]])
 
 		## Retrieve path to shared object for loading
 		dll <- .dll
 
-		cl <- parallel$cl
+		cl <- parallel[["cl"]]
 		if (is.null(cl)) {
-			cl <- do.call(makePSOCKcluster, parallel$args)
+			cl <- do.call(makePSOCKcluster, parallel[["args"]])
 			on.exit(stopCluster(cl), add = TRUE)
 		}
 		vars <- c("dll", "nomp", "args", "trace", "m", "s", "ytol", "ystep")
@@ -121,11 +119,11 @@ function(fitted,
 				TMB::openmp(n = nomp)
 			obj <- do.call(TMB::MakeADFun, args)
 		})
-		res <- clusterMap(cl, do_profile, i = seq_len(m), a = a, h = h)
+		ans <- clusterMap(cl, do.profile, i = seq_len(m), a = a, h = h)
 	}
 	else {
-		if (given_outfile <- nzchar(parallel$outfile)) {
-			outfile <- file(parallel$outfile, open = "wt")
+		if (nzchar(parallel[["outfile"]])) {
+			outfile <- file(parallel[["outfile"]], open = "wt")
 			sink(outfile, type = "output")
 			sink(outfile, type = "message")
 			on.exit(add = TRUE, {
@@ -138,34 +136,32 @@ function(fitted,
 			TMB::openmp(n = nomp)
 			on.exit(TMB::openmp(n = onomp), add = TRUE)
 		}
-		obj <- fitted$tmb_out
-		res <- switch(parallel$method,
-		              multicore = do.call(mcMap, c(list(f = do_profile, i = seq_len(m), a = a, h = h), parallel$args)),
-		              serial = Map(do_profile, i = seq_len(m), a = a, h = h))
+		obj <- fitted[["tmb_out"]]
+		ans <- switch(parallel[["method"]],
+		              multicore = do.call(mcMap, c(list(f = do.profile, i = seq_len(m), a = a, h = h), parallel[["args"]])),
+		              serial = Map(do.profile, i = seq_len(m), a = a, h = h))
 	}
 
-	nr <- vapply(res, nrow, 0L)
-	res <- data.frame(linear_combination = rep.int(gl(m, 1L), nr),
-	                  do.call(rbind, res),
+	nr <- vapply(ans, nrow, 0L)
+	ans <- data.frame(linear_combination = rep.int(gl(m, 1L), nr),
+	                  do.call(rbind, ans),
 	                  row.names = NULL)
-	if (method == "top") {
+	if (m.[1L] && m.[2L]) {
 		i <- rep.int(rep.int(subset, length(top)), nr)
-		res <- data.frame(top = rep.int(rep(factor(top, levels = top.),
+		ans <- data.frame(top = rep.int(rep(factor(top, levels = top.),
 		                                    each = length(subset)), nr),
 		                  frame_windows[i, c("ts", "window"), drop = FALSE],
-		                  res,
+		                  ans,
 		                  frame_combined[i, select, drop = FALSE],
 		                  row.names = NULL,
 		                  check.names = FALSE,
 		                  stringsAsFactors = FALSE)
-		res$value <- res$value + rep.int(as.double(Y), nr)
+		ans[["value"]] <- ans[["value"]] + rep.int(as.double(Y), nr)
 	}
-	attr(res, "A") <- A
-	attr(res, "x") <- fitted$best[!fitted$random]
-	attr(res, "level") <- level
-	attr(res, "method") <- method
-	class(res) <- c("profile.egf", oldClass(res))
-	res
+	attr(ans, "A") <- A
+	attr(ans, "level") <- level
+	class(ans) <- c("profile.egf", oldClass(ans))
+	ans
 }
 
 confint.profile.egf <-
@@ -173,20 +169,19 @@ function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
 	stopifnot(is_true_or_false(link),
 	          is_number_in_interval(level, 0, attr(object, "level"), "(]"))
 	q <- qchisq(level, df = 1)
-	method <- attr(object, "method")
 
-	do_solve <-
+	do.solve <-
 	function(d) {
-		i_min <- which.min(d$deviance)
-		i_left <- seq_len(i_min)
-		i_right <- seq.int(i_min, nrow(d))
-		estimate <- d$value[i_min]
-		lower <- approx(x = d$deviance[i_left],
-		                y = d$value[i_left],
-		                xout = q)$y
-		upper <- approx(x = d$deviance[i_right],
-		                y = d$value[i_right],
-		                xout = q)$y
+		i.min <- which.min(d[["deviance"]])
+		i.left <- seq_len(i.min)
+		i.right <- seq.int(i.min, nrow(d))
+		estimate <- d[["value"]][i.min]
+		lower <- approx(x = d[["deviance"]][i.left],
+		                y = d[["value"]][i.left],
+		                xout = q)[["y"]]
+		upper <- approx(x = d[["deviance"]][i.right],
+		                y = d[["value"]][i.right],
+		                xout = q)[["y"]]
 		d1 <- d[1L, , drop = FALSE]
 		m <- match(c("value", "deviance"), names(d1), 0L)
 		data.frame(d1[seq_len(m[1L] - 1L)],
@@ -199,89 +194,89 @@ function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
 		           stringsAsFactors = FALSE)
 	}
 
-	res <- do.call(rbind, by(object, object$linear_combination, do_solve,
-	                         simplify = FALSE))
-	if (method == "top" && !link) {
+	ans <- do.call(rbind,
+	               by(object, object[["linear_combination"]], do.solve,
+	                  simplify = FALSE))
+	if (any(names(object) == "top") && !link) {
 		elu <- c("estimate", "lower", "upper")
-		f <- lapply(egf_link_extract(levels(res$top)), egf_link_match,
+		f <- lapply(egf_link_extract(levels(ans[["top"]])), egf_link_match,
 		            inverse = TRUE)
-		res[elu] <- papply(res[elu], res$top, f)
-		levels(res$top) <- egf_link_remove(levels(res$top))
+		ans[elu] <- papply(ans[elu], ans[["top"]], f)
+		levels(ans[["top"]]) <- egf_link_remove(levels(ans[["top"]]))
 	}
-	res$linear_combination <- as.integer(as.character(res$linear_combination))
-	row.names(res) <- NULL
-	attr(res, "A") <- attr(object, "A")
-	attr(res, "x") <- attr(object, "x")
-	attr(res, "level") <- level
-	res
+	ans[["linear_combination"]] <- as.integer(as.character(ans[["linear_combination"]]))
+	row.names(ans) <- NULL
+	attr(ans, "A") <- attr(object, "A")
+	attr(ans, "level") <- level
+	ans
 }
 
 plot.profile.egf <-
 function(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...) {
 	subset <- egf_eval_subset(subset, x, parent.frame())
-	subset <- match(levels(factor(x$linear_combination[subset])),
-	                levels(x$linear_combination))
+	subset <- match(levels(factor(x[["linear_combination"]][subset])),
+	                levels(x[["linear_combination"]]))
 
 	stopifnot(is_true_or_false(sqrt))
 	f <- if (sqrt) base::sqrt else identity
-	do_segments <-
+	do.segments <-
 		!sqrt &&
 		is.numeric(level) &&
 		length(level) > 0L &&
 		!all(is.na(level))
-	if (do_segments) {
+	if (do.segments) {
 		level <- level[!is.na(level)]
 		stopifnot(level > 0, level <= attr(x, "level"))
 		## Line segments at heights 'h' in all plots
 		h <- qchisq(level, df = 1)
-		## Line segment 'j' to start at 'v_lower[[i]][j]'
-		## and end at 'v_upper[[i]][j]' in plot 'i'
+		## Line segment 'j' to start at 'v.lower[[i]][j]'
+		## and end at 'v.upper[[i]][j]' in plot 'i'
 		ci <- lapply(level, function(p) confint(x, level = p))
-		v_lower <- lapply(subset, function(i) vapply(ci, `[`, 0, i, "lower"))
-		v_upper <- lapply(subset, function(i) vapply(ci, `[`, 0, i, "upper"))
+		v.lower <- lapply(subset, function(i) vapply(ci, `[`, 0, i, "lower"))
+		v.upper <- lapply(subset, function(i) vapply(ci, `[`, 0, i, "upper"))
 	}
 
 	dots <- list(...)
-	method <- attr(x, "method")
 	main <-
 		if (!is.null(dots[["main"]]))
-			rep_len(dots$main, length(subset))
-		else if (method == "top")
-			c(tapply(as.character(x$window),
-			         x$linear_combination, `[[`, 1L))[subset]
+			rep_len(dots[["main"]], length(subset))
+		else if (any(names(x) == "top"))
+			c(tapply(as.character(x[["window"]]),
+			         x[["linear_combination"]], `[[`, 1L))[subset]
 		else character(length(subset))
 	xlab <-
 		if (!is.null(dots[["xlab"]]))
-			rep_len(dots$xlab, length(subset))
-		else if (method == "top")
-			c(tapply(as.character(x$top),
-			         x$linear_combination, `[[`, 1L))[subset]
-		else paste0("linear combination ", levels(x$linear_combination)[subset])
-	dots$main <- dots$xlab <- NULL
+			rep_len(dots[["xlab"]], length(subset))
+		else if (any(names(x) == "top"))
+			c(tapply(as.character(x[["top"]]),
+			         x[["linear_combination"]], `[[`, 1L))[subset]
+		else paste0("linear combination ",
+		            levels(x[["linear_combination"]])[subset])
+	dots[["main"]] <- dots[["xlab"]] <- NULL
 	if (is.null(dots[["ylab"]])) {
-		dots$ylab <- "deviance"
+		dots[["ylab"]] <- "deviance"
 		if (sqrt)
-			dots$ylab <- bquote(sqrt(.(dots$ylab)))
+			dots[["ylab"]] <- bquote(sqrt(.(dots[["ylab"]])))
 	}
 	if (is.null(dots[["ylim"]]))
-		dots$ylim <- c(0, f(max(x$deviance, na.rm = TRUE)))
+		dots[["ylim"]] <- c(0, f(max(x[["deviance"]], na.rm = TRUE)))
 
 	for (i in seq_along(subset)) {
 		args <- list(formula = f(deviance) ~ value,
 		             data = x,
-		             subset = (as.integer(x$linear_combination) == subset[i]),
+		             subset = (as.integer(x[["linear_combination"]]) == subset[i]),
 		             main = main[i],
 		             xlab = xlab[i])
 		do.call(plot, c(args, dots))
-		if (do_segments) {
+		if (do.segments) {
 			usr <- par("usr")
-			segments(x0 = v_lower[[i]],
-			         x1 = v_upper[[i]],
+			segments(x0 = v.lower[[i]],
+			         x1 = v.upper[[i]],
 			         y0 = h,
 			         y1 = h,
 			         lty = 3)
-			segments(x0 = c(v_lower[[i]], v_upper[[i]]),
-			         x1 = c(v_lower[[i]], v_upper[[i]]),
+			segments(x0 = c(v.lower[[i]], v.upper[[i]]),
+			         x1 = c(v.lower[[i]], v.upper[[i]]),
 			         y0 = usr[3L],
 			         y1 = rep.int(h, 2L),
 			         lty = 3)

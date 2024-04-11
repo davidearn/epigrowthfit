@@ -42,7 +42,6 @@ n <- nlevels(o.1p[["linear_combination"]])
 
 o.1pc.e <- structure(o.1p[!duplicated(o.1p[["linear_combination"]]), c("top", "ts", "window"), drop = FALSE],
                      A = attr(o.1p, "A"),
-                     x = attr(o.1p, "x"),
                      level = 0.95,
                      row.names = seq_len(n),
                      class = "data.frame")
