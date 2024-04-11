@@ -46,7 +46,7 @@ are printed.
 Depending on \code{fitted$control$trace}, these may be mixed with
 optimizer output.}
 
-\item{grid_len}{A positive integer. Step sizes chosen adaptively by
+\item{grid}{A positive integer. Step sizes chosen adaptively by
 \code{\link[TMB]{tmbprofile}} will generate approximately
 this many points on each side of a profile's minimum point.}
 
