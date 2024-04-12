@@ -25,6 +25,7 @@ function(object, random = FALSE, full = FALSE, ...) {
 		}
 	attr(ans, "len") <- len
 	attr(ans, "map") <- map
+	names(ans) <- NULL
 	class(ans) <- "coef.egf"
 	ans
 }
@@ -38,8 +39,8 @@ function(object, ...) {
 print.coef.egf <-
 function(x, ...) {
 	y <- x
-	x <- as.double(x)
-	names(x) <- names(y)
+	attributes(x) <- NULL
+	names(x) <- labels(y)
 	NextMethod("print")
 	invisible(y)
 }
@@ -48,9 +49,28 @@ as.list.coef.egf <-
 function(x, ...) {
 	len <- attr(x, "len")
 	map <- attr(x, "map")
-	ans <- split(as.double(x),
-	             rep.int(gl(length(len), 1L, labels = names(len)), len))
+	ans <- split(x, rep.int(gl(length(len), 1L, labels = names(len)), len))
 	for (s in names(ans))
 		attr(ans[[s]], "map") <- map[[s]]
 	ans
+}
+
+labels.coef.egf <-
+function(object, disambiguate = FALSE, ...) {
+	len <- attr(object, "len")
+	nms <- rep.int(names(len), len)
+	if (!disambiguate)
+		return(nms)
+	map <- attr(object, "map")
+	f <-
+	function(len, map) {
+		if (is.null(map) || length(map) == len)
+			seq_len(len)
+		else if (length(map) > len)
+			## 'map' is a sample with replacement from c(seq_len(len), NA)
+			match(unique(if (anyNA(map)) map[!is.na(map)] else map), map)
+		else stop("should never happen")
+	}
+	## FIXME: want fixed width for integer part
+	sprintf("%s[%d]", nms, unlist1(.mapply(f, list(len, map), NULL)))
 }

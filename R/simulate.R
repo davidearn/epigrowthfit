@@ -306,6 +306,7 @@ function(object, random = FALSE, ...) {
 	}
 	attr(ans, "len") <- len
 	attr(ans, "map") <- map
+	names(ans) <- NULL
 	class(ans) <- "coef.egf"
 	ans
 }

@@ -3,6 +3,7 @@
 \alias{coef.egf_no_fit}
 \alias{print.coef.egf}
 \alias{as.list.coef.egf}
+\alias{labels.coef.egf}
 \title{Extract Coefficients and Random Effect Covariance Parameters}
 \description{
 Extracts the bottom level parameter vector \code{c(beta, theta, b)}
@@ -24,10 +25,12 @@ parameters, and random effect coefficients.
 \item{\dots}{unused optional arguments.}
 }
 \value{
-A named numeric vector concatenating \code{beta}, \code{theta}, and
+A numeric vector concatenating \code{beta}, \code{theta}, and
 \code{b}, without \code{b} if \code{random = FALSE} and without
-mapped elements if \code{full = FALSE}.  The names group the elements
-by segment.
+mapped elements if \code{full = FALSE}.
+
+Attribute \code{len} is a named integer vector partitioning the
+result by segment.
 
 Attribute \code{map} is a named list of integer vectors \code{i}
 such that that a full segment \code{y} and its condensed counterpart

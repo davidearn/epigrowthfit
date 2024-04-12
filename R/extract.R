@@ -3,7 +3,7 @@ function(object, ...) {
 	par <- coef(object, random = TRUE, full = TRUE)
 	nms <- c("bottom", "top", "term", "colname")
 	data.frame(object$effects$beta[nms],
-	           estimate = par[names(par) == "beta"],
+	           estimate = par[labels(par) == "beta"],
 	           row.names = NULL,
 	           stringsAsFactors = FALSE)
 }
@@ -18,7 +18,7 @@ function(object, build_cov = FALSE, ...) {
 	par <- coef(object, random = TRUE, full = TRUE)
 	nms <- c("cov", "vec", "bottom", "top", "term", "group", "level", "colname")
 	res <- data.frame(object$effects$b[nms],
-	                  mode = par[names(par) == "b"],
+	                  mode = par[labels(par) == "b"],
 	                  row.names = NULL,
 	                  stringsAsFactors = FALSE)
 	if (!build_cov)
@@ -27,7 +27,7 @@ function(object, build_cov = FALSE, ...) {
 	d1 <- object$tmb_out$env$data$block_rows
 	d2 <- object$tmb_out$env$data$block_cols
 	p <- as.integer(choose(d1 + 1L, 2L))
-	theta <- split(par[names(par) == "theta"], rep.int(seq_along(p), p))
+	theta <- split(par[labels(par) == "theta"], rep.int(seq_along(p), p))
 	Sigma <- lapply(theta, theta2cov)
 	names(Sigma) <- levels(object$effects$b$cov)
 	tt <- table(object$effects$b$top, object$effects$b$cov)

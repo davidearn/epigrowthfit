@@ -246,7 +246,7 @@ function(object, subset, top) {
 	}
 
 	c1 <- coef(object, full = TRUE)
-	beta <- c1[names(c1) == "beta"]
+	beta <- c1[labels(c1) == "beta"]
 
 	ftop <- factor(fixef(object)$top, levels = top)
 	J <- as(ftop, "sparseMatrix")

@@ -9,7 +9,6 @@ nms <- c("beta", "theta", "b")
 
 o.2c <- coef(o.2, random = TRUE)
 o.2c.e <- structure(as.double(o.2c),
-                    names = rep.int(nms, c(2L, 2L, 40L)),
                     len = c(beta = 2L, theta = 2L, b = 40L),
                     map = list(beta = NULL, theta = c(1L, 2L, NA), b = NULL),
                     class = "coef.egf")
@@ -28,7 +27,7 @@ stopifnot(exprs = {
 ## as.list #############################################################
 
 o.2cl <- as.list(o.2c)
-o.2cl.e <- split(as.double(o.2c), factor(names(o.2c), levels = nms))
+o.2cl.e <- split(o.2c, factor(labels(o.2c), levels = nms))
 for (s in nms)
 	attr(o.2cl.e[[s]], "map") <- attr(o.2c, "map")[[s]]
 stopifnot(identical(o.2cl, o.2cl.e))
