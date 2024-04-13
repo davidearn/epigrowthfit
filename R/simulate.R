@@ -5,22 +5,18 @@ function(object, nsim = 1, seed = NULL,
          parallel = egf_parallel(),
          trace = FALSE,
          ...) {
-	stopifnot(isTrueFalse(bootstrap), isFlag(nsim), nsim >= 1)
-	nsim <- as.integer(nsim)
-
 	## Set and preserve RNG state (modified from stats:::simulate.lm)
 	if (!exists(".Random.seed", envir = globalenv(), inherits = FALSE))
 		runif(1L)
-	if (is.null(seed))
-		RNGstate <- get(".Random.seed", envir = globalenv())
-	else {
-		oRNGstate <- get(".Random.seed", envir = globalenv())
-		on.exit(add = TRUE,
-		        assign(".Random.seed", oRNGstate, envir = globalenv()))
-		RNGstate <- c(list(seed), as.list(RNGkind()))
-		names(RNGstate) <- names(formals(set.seed))
-		do.call(set.seed, RNGstate)
-	}
+	.R.s <- get(".Random.seed", envir = globalenv())
+	RNGstate <-
+		if (is.null(seed))
+			.R.s
+		else {
+			on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
+			set.seed(seed)
+			`attr<-`(seed, "kind", as.list(RNGkind()))
+		}
 
 	## Configure OpenMP
 	nomp <- object[["control"]][["omp_num_threads"]]
@@ -29,94 +25,101 @@ function(object, nsim = 1, seed = NULL,
 		on.exit(add = TRUE, TMB::openmp(n = onomp))
 	}
 
+	stopifnot(isFlag(nsim), nsim >= 1, isTrueFalse(bootstrap))
+	nsim <- as.integer(nsim)
+
 	## Simulations are fast and can be done in the master process.
 	## Simulating in the worker processes would require serializing
 	## or reconstructing the TMB object, adding nontrivial overhead.
 	frame <- model.frame(object)[c("ts", "window", "time")]
-	frame[["X"]] <- X <- replicate(nsim,
-		object[["tmb_out"]][["simulate"]](object[["best"]])[["x"]])
+	frame[["X"]] <- X <-
+		replicate(nsim,
+		          object[["tmb_out"]][["simulate"]](object[["best"]])[["x"]])
 	ans <- list(simulation = frame, bootstrap = NULL)
 
 	if (bootstrap) {
-		stopifnot(is.list(control),
-		          inherits(parallel, "egf_parallel"),
-		          isTrueFalse(trace))
 
-		## Reconstruct list of arguments to 'MakeADFun' from object internals
-		## for retaping
-		args <- egf_tmb_remake_args(object[["tmb_out"]], par = object[["best"]])
+	stopifnot(is.list(control),
+	          inherits(parallel, "egf_parallel"),
+	          isTrueFalse(trace))
 
-		do.bootstrap <-
-		function(i, x) {
-			if (trace)
-				cat(gettextf("commencing bootstrap optimization %d of %d ...",
-				             i, nsim),
-				    "\n", sep = "")
-			## Update
-			args[["data"]][["x"]] <- x
-			## Retape
-			tmb_out_retape <- do.call(TMB::MakeADFun, args)
-			## Optimize
-			tryCatch(expr = {
-			         	nlminb(tmb_out_retape[["par"]],
-			         	       tmb_out_retape[["fn"]],
-			         	       tmb_out_retape[["gr"]],
-			         	       control = control)
-			         	tmb_out_retape[["env"]][["last.par.best"]]
-			         },
-			         error = function(e) {
-			         	cat(gettextf("error in bootstrap optimization %d of %d : %s",
-			         	             i, nsim, conditionMessage(e)),
-			         	    "\n", sep = "")
-			         	par <- tmb_out_retape[["env"]][["last.par.best"]]
-			         	par[] <- NaN
-			         	par
-			         })
-		}
+	## Reconstruct list of arguments to 'MakeADFun' from object internals
+	## for retaping
+	args <- egf_tmb_remake_args(object[["tmb_out"]], par = object[["best"]])
 
-		if (parallel[["method"]] == "snow") {
-			## We use 'clusterExport' to export necessary objects to the
-			## global environments of all worker processes.  As a result,
-			## function environments are unused and need not be serialized.
-			## By replacing them with the global environment,
-			## which is never serialized, we avoid unnecessary overhead.
-			environment(do.bootstrap) <- globalenv()
-
-			## Retrieve path to shared object for loading
-			dll <- .dll
-
-			cl <- parallel[["cl"]]
-			if (is.null(cl)) {
-				cl <- do.call(makePSOCKcluster, parallel[["args"]])
-				on.exit(add = TRUE, stopCluster(cl))
-			}
-			vars <- c("dll", "nomp", "trace", "nsim", "args", "control")
-			clusterExport(cl, varlist = vars, envir = environment())
-			clusterEvalQ(cl, {
-				dyn.load(dll)
-				if (TMB::openmp(n = NULL) > 0L)
-					TMB::openmp(n = nomp)
-			})
-			clusterSetRNGStream(cl)
-			ans[["bootstrap"]] <-
-				clusterMap(cl, do.bootstrap, i = seq_len(nsim), x = asplit(X, 2L), simplify = TRUE)
-		}
-		else {
-			if (nzchar(parallel[["outfile"]])) {
-				outfile <- file(parallel[["outfile"]], open = "wt")
-				sink(outfile, type = "output")
-				sink(outfile, type = "message")
-				on.exit(add = TRUE, {
-					sink(type = "message")
-					sink(type = "output")
+	doBootstrap <-
+	function(i, x) {
+		if (trace)
+			cat(gettextf("commencing bootstrap optimization %d of %d ...",
+			             i, nsim),
+			    "\n", sep = "")
+		## Update
+		args[["data"]][["x"]] <- x
+		## Retape
+		retape <- do.call(TMB::MakeADFun, args)
+		## Optimize
+		tryCatch(
+			expr =
+				{
+					nlminb(retape[["par"]], retape[["fn"]], retape[["gr"]],
+					       control = control)
+					retape[["env"]][["last.par.best"]]
+				},
+			error =
+				function(e) {
+					cat(gettextf("error in bootstrap optimization %d of %d : %s",
+					             i, nsim, conditionMessage(e)),
+					    "\n", sep = "")
+					par <- retape[["env"]][["last.par.best"]]
+					par[] <- NaN
+					par
 				})
-			}
-			ans[["bootstrap"]] <-
-				switch(parallel[["method"]],
-				       multicore = do.call(mcmapply, c(list(FUN = do.bootstrap, i = seq_len(nsim), x = asplit(X, 2L)), parallel[["args"]])),
-				       serial = mapply(do.bootstrap, seq_len(nsim), asplit(X, 2L)))
-		}
 	}
+
+	if (parallel[["method"]] == "snow") {
+		## We use 'clusterExport' to export necessary objects to the
+		## global environments of all worker processes.  As a result,
+		## function environments are unused and need not be serialized.
+		## By replacing them with the global environment,
+		## which is never serialized, we avoid unnecessary overhead.
+		environment(doBootstrap) <- globalenv()
+
+		## Retrieve path to shared object for loading
+		dll <- .dll
+
+		cl <- parallel[["cl"]]
+		if (is.null(cl)) {
+			cl <- do.call(makePSOCKcluster, parallel[["args"]])
+			on.exit(add = TRUE, stopCluster(cl))
+		}
+		vars <- c("dll", "nomp", "trace", "nsim", "args", "control")
+		clusterExport(cl, varlist = vars, envir = environment())
+		clusterEvalQ(cl, {
+			dyn.load(dll)
+			if (TMB::openmp(n = NULL) > 0L)
+				TMB::openmp(n = nomp)
+		})
+		clusterSetRNGStream(cl)
+		ans[["bootstrap"]] <-
+			clusterMap(cl, doBootstrap, i = seq_len(nsim), x = asplit(X, 2L), simplify = TRUE)
+	}
+	else {
+		if (nzchar(parallel[["outfile"]])) {
+			outfile <- file(parallel[["outfile"]], open = "wt")
+			sink(outfile, type = "output")
+			sink(outfile, type = "message")
+			on.exit(add = TRUE, {
+				sink(type = "message")
+				sink(type = "output")
+			})
+		}
+		ans[["bootstrap"]] <-
+			switch(parallel[["method"]],
+			       multicore = do.call(mcmapply, c(list(FUN = doBootstrap, i = seq_len(nsim), x = asplit(X, 2L)), parallel[["args"]])),
+			       serial = mapply(doBootstrap, seq_len(nsim), asplit(X, 2L)))
+	}
+
+	} # if (bootstrap)
 
 	attr(ans, "RNGstate") <- RNGstate
 	class(ans) <- c("simulate.egf", oldClass(ans))
@@ -126,8 +129,7 @@ function(object, nsim = 1, seed = NULL,
 print.simulate.egf <-
 function(x, ...) {
 	y <- x
-	attr(x, "RNGstate") <- NULL
-	class(x) <- NULL
+	attributes(x) <- NULL
 	NextMethod("print")
 	invisible(y)
 }
@@ -136,24 +138,26 @@ simulate.egf_model <-
 function(object, nsim = 1, seed = NULL,
          mu, Sigma = NULL, tol = 1e-06,
          cstart = 0, tend = 100, ...) {
-	stopifnot(isFlag(nsim), nsim >= 1)
-	nsim <- as.integer(nsim)
-
 	## Set and preserve RNG state (modified from stats:::simulate.lm)
 	if (!exists(".Random.seed", envir = globalenv(), inherits = FALSE))
 		runif(1L)
-	if (is.null(seed)) {
-		RNGstate <- get(".Random.seed", envir = globalenv())
-		set_RNGstate <- function() assign(".Random.seed", RNGstate, globalenv())
+	.R.s <- get(".Random.seed", envir = globalenv())
+	RNGstate <-
+		if (is.null(seed))
+			.R.s
+		else {
+			on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
+			`attr<-`(seed, "kind", as.list(RNGkind()))
+		}
+	RNGreset <-
+	function() {
+		if (is.null(seed))
+			assign(".Random.seed", .R.s, globalenv())
+		else set.seed(seed)
 	}
-	else {
-		oRNGstate <- get(".Random.seed", envir = globalenv())
-		on.exit(add = TRUE,
-		        assign(".Random.seed", oRNGstate, envir = globalenv()))
-		RNGstate <- c(list(as.integer(seed)), as.list(RNGkind()))
-		names(RNGstate) <- names(formals(set.seed))
-		set_RNGstate <- function() do.call(set.seed, RNGstate)
-	}
+
+	stopifnot(isFlag(nsim), nsim >= 1)
+	nsim <- as.integer(nsim)
 
 	top <- egf_top(object)
 	p <- length(top)
@@ -234,10 +238,10 @@ function(object, nsim = 1, seed = NULL,
 	if (has.infl && !is.null(Sigma)) {
 		## Second pass with 'data' of appropriate length,
 		## determined by simulated inflection times
-		set_RNGstate()
-		sim <- mm[["tmb_out"]][["simulate"]](par)
-		colnames(sim[["Y"]]) <- top
-		tend <- ceiling(exp(sim[["Y"]][, "log(tinfl)"])) + 1
+		RNGreset()
+		ss <- mm[["tmb_out"]][["simulate"]](par)
+		dimnames(ss[["Y"]]) <- list(NULL, top)
+		tend <- ceiling(exp(ss[["Y"]][, "log(tinfl)"])) + 1
 		time <- lapply(tend, function(to) seq.int(0, to, 1))
 		data_ts <- data.frame(ts = rep.int(gl(nsim, 1L), lengths(time)),
 		                      time = unlist1(time),
@@ -249,13 +253,13 @@ function(object, nsim = 1, seed = NULL,
 	}
 
 	## Simulate
-	set_RNGstate()
-	sim <- mm[["tmb_out"]][["simulate"]](par)
-	colnames(sim[["Y"]]) <- top
+	RNGreset()
+	ss <- mm[["tmb_out"]][["simulate"]](par)
+	dimnames(ss[["Y"]]) <- list(NULL, top)
 
 	## Replace dummy observations in 'data' with simulated ones
 	data_ts[["x"]][] <- NA
-	data_ts[["x"]][duplicated(data_ts[["ts"]])] <- sim[["x"]]
+	data_ts[["x"]][duplicated(data_ts[["ts"]])] <- ss[["x"]]
 
 	## Choose fitting window start times according to 'cstart' rule
 	start <-
@@ -279,7 +283,7 @@ function(object, nsim = 1, seed = NULL,
 	            data_ts = data_ts,
 	            data_windows = data_windows,
 	            init = init[names(init) != "b"],
-	            Y = sim[["Y"]],
+	            Y = ss[["Y"]],
 	            call = match.call())
 	attr(ans, "RNGstate") <- RNGstate
 	class(ans) <- "simulate.egf_model"
