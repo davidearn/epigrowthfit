@@ -92,7 +92,7 @@ function(estimate, se, level) {
 	n <- length(estimate)
 	lu <- estimate + rep(sqrt(q) * c(-1, 1), each = n) * se
 	dim(lu) <- c(n, 2L)
-	colnames(lu) <- c("lower", "upper")
+	dimnames(lu) <- list(NULL, c("lower", "upper"))
 	lu
 }
 
