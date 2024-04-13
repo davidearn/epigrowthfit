@@ -4,7 +4,7 @@ function(curve = c("logistic", "richards",
          excess = FALSE,
          family = c("nbinom", "pois"),
          day_of_week = FALSE) {
-	stopifnot(isTrueFalse(excess), isFlag(day_of_week))
+	stopifnot(isTrueFalse(excess), isInteger(day_of_week))
 	day_of_week <- as.integer(day_of_week)
 	day_of_week <- (day_of_week > 0L) * (1L + (day_of_week - 1L) %% 7L)
 	res <- list(curve = match.arg(curve), excess = excess,
@@ -26,10 +26,10 @@ function(optimizer = egf_optimizer(),
 	          is.list(inner_optimizer),
 	          length(inner_optimizer) > 0L,
 	          vapply(inner_optimizer, inherits, FALSE, "egf_inner_optimizer"),
-	          isFlag(trace),
+	          isInteger(trace),
 	          isTrueFalse(profile),
 	          isTrueFalse(sparse_X),
-	          isFlag(omp_num_threads), omp_num_threads >= 1)
+	          isInteger(omp_num_threads), omp_num_threads >= 1)
 	trace <- as.integer(min(2, max(0, trace))) # coercion to '0:2'
 	omp_num_threads <- as.integer(omp_num_threads)
 
@@ -142,7 +142,7 @@ function(method = c("serial", "multicore", "snow"),
 		cl <- NULL
 	}
 	else if (method == "multicore" || (method == "snow" && is.null(cl))) {
-		stopifnot(isFlag(cores), cores >= 1, is.list(args))
+		stopifnot(isInteger(cores), cores >= 1, is.list(args))
 		cores <- as.integer(cores)
 		if (method == "multicore")
 			args$mc.cores <- cores

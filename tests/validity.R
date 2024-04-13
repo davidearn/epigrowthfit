@@ -15,22 +15,22 @@ stopifnot(exprs = {
 })
 
 
-## isFlag ##############################################################
+## isInteger ###########################################################
 
 stopifnot(exprs = {
-	 isFlag(TRUE)
-	 isFlag(FALSE)
-	!isFlag(NA)
-	 isFlag(1L)
-	 isFlag(-1)
-	 isFlag(-1.1)
-	!isFlag(0x1p+31)
-	!isFlag(NA_real_)
-	!isFlag(NaN)
-	!isFlag(Inf)
-	!isFlag(NULL)
-	!isFlag(c(1, 1))
-	!isFlag("1")
+	 isInteger(TRUE)
+	 isInteger(FALSE)
+	!isInteger(NA)
+	 isInteger(1L)
+	 isInteger(-1)
+	 isInteger(-1.1)
+	!isInteger(0x1p+31)
+	!isInteger(NA_real_)
+	!isInteger(NaN)
+	!isInteger(Inf)
+	!isInteger(NULL)
+	!isInteger(c(1, 1))
+	!isInteger("1")
 })
 
 

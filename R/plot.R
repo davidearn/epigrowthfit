@@ -27,10 +27,10 @@ function(x,
 	if (x$model$day_of_week > 0L)
 		dt <- 1
 	else stopifnot(isNumber(dt), dt > 0)
-	stopifnot(isFlag(show_predict))
+	stopifnot(isInteger(show_predict))
 	show_predict <- min(2L, max(0L, as.integer(show_predict)))
 	if (x$model$curve %in% c("exponential", "logistic", "richards")) {
-		stopifnot(isFlag(show_tdoubling))
+		stopifnot(isInteger(show_tdoubling))
 		show_tdoubling <- min(2L, max(0L, as.integer(show_tdoubling)))
 		show_asymptote <-
 			as.integer(type == "rt" && x$model$curve != "exponential")

@@ -154,7 +154,7 @@ function(x,
          label = NULL,
          main = NULL,
          ...) {
-	stopifnot(isFlag(per_plot), per_plot >= 1)
+	stopifnot(isInteger(per_plot), per_plot >= 1)
 	per_plot <- as.integer(per_plot)
 
 	subset <- egf_eval_subset(subset, x, parent.frame())

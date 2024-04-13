@@ -25,7 +25,7 @@ function(object, nsim = 1, seed = NULL,
 		on.exit(add = TRUE, TMB::openmp(n = onomp))
 	}
 
-	stopifnot(isFlag(nsim), nsim >= 1, isTrueFalse(bootstrap))
+	stopifnot(isInteger(nsim), nsim >= 1, isTrueFalse(bootstrap))
 	nsim <- as.integer(nsim)
 
 	## Simulations are fast and can be done in the master process.
@@ -156,7 +156,7 @@ function(object, nsim = 1, seed = NULL,
 		else set.seed(seed)
 	}
 
-	stopifnot(isFlag(nsim), nsim >= 1)
+	stopifnot(isInteger(nsim), nsim >= 1)
 	nsim <- as.integer(nsim)
 
 	top <- egf_top(object)
