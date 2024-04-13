@@ -6,11 +6,11 @@ function(object, ...) {
 		if (anyNA(x)) ans else c(ans, "NA's" = 0)
 	}
 	fo <- fitted(object)
-	sfo <- aggregate(fo["estimate"], fo["top"], summary1)
-	sfo <- `colnames<-`(t(sfo[[2L]]), as.character(sfo[[1L]]))
-	if (max(0, sfo["NA's", ]) == 0)
-		sfo <- sfo[-match("NA's", rownames(sfo), 0L), , drop = FALSE]
-	ans <- list(fitted = sfo,
+	ans. <- aggregate(fo["estimate"], fo["top"], summary1)
+	ans. <- `colnames<-`(t(ans.[[2L]]), as.character(ans.[[1L]]))
+	if (max(0, ans.["NA's", ]) == 0)
+		ans. <- ans.[-match("NA's", rownames(ans.), 0L), , drop = FALSE]
+	ans <- list(fitted = ans.,
 	            convergence = object[["optimizer_out"]][["convergence"]],
 	            value = object[["value"]],
 	            gradient = object[["gradient"]],
