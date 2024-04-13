@@ -230,16 +230,13 @@ function(object, nsim = 1, seed = NULL,
 	          init = init,
 	          fit = FALSE)
 
-	actual <- unlist1(init)
-	len <- lengths(init)
-	names(actual) <- rep.int(names(len), len)
-	attr(actual, "len") <- len
+	par <- unlist1(init)
 
 	if (has.infl && !is.null(Sigma)) {
 		## Second pass with 'data' of appropriate length,
 		## determined by simulated inflection times
 		set_RNGstate()
-		sim <- mm[["tmb_out"]][["simulate"]](actual)
+		sim <- mm[["tmb_out"]][["simulate"]](par)
 		colnames(sim[["Y"]]) <- top
 		tend <- ceiling(exp(sim[["Y"]][, "log(tinfl)"])) + 1
 		time <- lapply(tend, function(to) seq.int(0, to, 1))
@@ -254,7 +251,7 @@ function(object, nsim = 1, seed = NULL,
 
 	## Simulate
 	set_RNGstate()
-	sim <- mm[["tmb_out"]][["simulate"]](actual)
+	sim <- mm[["tmb_out"]][["simulate"]](par)
 	colnames(sim[["Y"]]) <- top
 
 	## Replace dummy observations in 'data' with simulated ones
@@ -277,16 +274,13 @@ function(object, nsim = 1, seed = NULL,
 	}
 
 	ans <- list(model = object,
-	            mu = mu,
-	            Sigma = Sigma,
-	            Y = sim[["Y"]],
 	            formula_ts = formula_ts,
 	            formula_windows = formula_windows,
 	            formula_parameters = formula_parameters,
 	            data_ts = data_ts,
 	            data_windows = data_windows,
-	            actual = actual,
-	            random = names(actual) == "b",
+	            init = init[names(init) != "b"],
+	            Y = sim[["Y"]],
 	            call = match.call())
 	attr(ans, "RNGstate") <- RNGstate
 	class(ans) <- "simulate.egf_model"
@@ -294,19 +288,14 @@ function(object, nsim = 1, seed = NULL,
 }
 
 coef.simulate.egf_model <-
-function(object, random = FALSE, ...) {
-	ans <- object[["actual"]]
-	len <- attr(ans, "len")
+function(object, ...) {
+	init <- object[["init"]]
+	ans <- unlist1(init)
+	len <- lengths(init)
 	map <- vector("list", length(len))
 	names(map) <- names(len)
-	if (!random) {
-		ans <- ans[names(ans) != "b"]
-		len <- len[names(len) != "b"]
-		map <- map[names(map) != "b"]
-	}
 	attr(ans, "len") <- len
 	attr(ans, "map") <- map
-	names(ans) <- NULL
 	class(ans) <- "coef.egf"
 	ans
 }

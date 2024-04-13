@@ -40,7 +40,7 @@ such that that a full segment \code{y} and its condensed counterpart
 and \code{y} are identical.
 
 The result inherits from class \code{coef.egf}, which has methods
-for \code{\link{print}} and \code{\link{as.list}}.
+for \code{\link{print}}, \code{\link{as.list}}, and \code{\link{labels}}.
 }
 \note{
 The method for class \code{egf_no_fit} returns the initial value

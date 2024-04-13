@@ -13,7 +13,7 @@ function(object, random = FALSE, full = FALSE, ...) {
 	if (!egf_has_random(object))
 		map[names(map) != "beta"] <- list(NULL)
 	if (!random) {
-		ans <- ans[names(ans) != "b"]
+		ans <- ans[rep.int(names(len) != "b", len)]
 		len <- len[names(len) != "b"]
 		map <- map[names(map) != "b"]
 	}
@@ -25,7 +25,6 @@ function(object, random = FALSE, full = FALSE, ...) {
 		}
 	attr(ans, "len") <- len
 	attr(ans, "map") <- map
-	names(ans) <- NULL
 	class(ans) <- "coef.egf"
 	ans
 }

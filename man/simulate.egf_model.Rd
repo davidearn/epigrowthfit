@@ -43,13 +43,7 @@ intercept model \code{~(1 | ts)}.
 \value{
 A list inheriting from class \code{simulate.egf_model}, with elements:
 
-\item{model, mu, Sigma}{copies of arguments \code{object}, \code{mu},
-  and \code{Sigma}.}
-\item{Y}{a numeric matrix with \code{nsim} rows and \code{length(mu)}
-  columns listing top level nonlinear model parameter values for each
-  time series.  If \code{Sigma = NULL}, then the row vectors of are
-  all \code{mu}.  Otherwise, \code{Y} is (conceptually) the result of
-  \code{MASS::mvrnorm(nsim, mu, Sigma, tol)}.}
+\item{model}{copy of argument \code{object}.}
 \item{formula_ts}{a formula, always \code{cbind(time, x) ~ ts},
   expressing how simulated time series are stored in \code{data_ts}.}
 \item{formula_windows}{a formula, always \code{cbind(start, end) ~ ts},
@@ -65,10 +59,14 @@ A list inheriting from class \code{simulate.egf_model}, with elements:
   for each simulated time series.  Start times are determined by
   \code{cstart}.  End times are always the last time point in the
   corresponding time series.}
-\item{actual}{a numeric vector giving the full bottom level parameter
-  vector of the generative model.}
-\item{random}{a logical vector indexing the elements of \code{actual}
-  that are random effects.}
+\item{init}{a named list of the form \code{list(beta, theta)}
+  giving the full bottom level parameter vector of the generative
+  model.}
+\item{Y}{a numeric matrix with \code{nsim} rows and \code{length(mu)}
+  columns listing top level nonlinear model parameter values for each
+  time series.  If \code{Sigma = NULL}, then the row vectors of are
+  all \code{mu}.  Otherwise, \code{Y} is (conceptually) the result of
+  \code{MASS::mvrnorm(nsim, mu, Sigma, tol)}.}
 \item{call}{the call to \code{\link{simulate}}, allowing for updates
   to the \code{simulate.egf_model} object via \code{\link{update}}.}
 

@@ -102,7 +102,7 @@ function(model,
 	            control = control,
 	            tmb_out = tmb_out,
 	            optimizer_out = NULL,
-	            init = tmb_out$env$par,
+	            init = as.double(tmb_out$env$par),
 	            best = NULL,
 	            random = tmb_out$env$lrandom(),
 	            value = NULL,
@@ -129,7 +129,7 @@ function(model,
 	                    control$optimizer[["args"]])
 	res$optimizer_out <- do.call(optimizer, optimizer_args)
 
-	res$best <- tmb_out$env$last.par.best
+	res$best <- as.double(tmb_out$env$last.par.best)
 	res$value <- as.double(tmb_out$env$value.best)
 	if (se) {
 		call <- quote(sdreport(res$tmb_out,

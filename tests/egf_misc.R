@@ -76,8 +76,8 @@ len <- c(table(factor(names(p.2), levels = c("beta", "theta", "b"))))
 
 stopifnot(exprs = {
 	all.equal(p.2e, structure(c(p.2[1:4], theta = 0, p.2[-(1:4)]),
-	                          len = len + c(0L, 1L, 0L)))
-	all.equal(p.2ec, structure(p.2, len = len))
+	                          len = len + c(0L, 1L, 0L), names = NULL))
+	all.equal(p.2ec, structure(p.2, len = len, names = NULL))
 })
 
 

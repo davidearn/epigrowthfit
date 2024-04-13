@@ -69,21 +69,19 @@ function(object, tol = 1) {
 
 egf_expand_par <-
 function(obj, par) {
+	names(par) <- NULL
 	l <- obj$env$parList(par[obj$env$lfixed()], par)
 	if (ncol(obj$env$data$Z) == 0L)
 		l[names(l) != "beta"] <- list(double(0L))
-	len <- lengths(l)
 	res <- unlist1(l)
-	names(res) <- rep.int(names(l), len)
-	attr(res, "len") <- len
+	attr(res, "len") <- lengths(l)
 	res
 }
 
 egf_condense_par <-
 function(obj, par) {
+	names(par) <- NULL
 	parameters <- obj$env$parameters
-	if (ncol(obj$env$data$Z) == 0L)
-		parameters[names(parameters) != "beta"] <- list(double(0L))
 	f <-
 	function(x) {
 		if (is.null(map <- attr(x, "map"))) {
@@ -100,10 +98,8 @@ function(obj, par) {
 	len <- vapply(index, attr, 0L, "n")
 	l <- split(par, rep.int(gl(length(len), 1L, labels = names(len)), len))
 	l <- Map(`[`, l, index)
-	len <- lengths(l)
 	res <- unlist1(l)
-	names(res) <- rep.int(names(l), len)
-	attr(res, "len") <- len
+	attr(res, "len") <- lengths(l)
 	res
 }
 
