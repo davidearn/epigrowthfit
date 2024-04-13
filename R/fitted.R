@@ -6,8 +6,8 @@ function(object,
          subset = NULL,
          select = NULL,
          ...) {
-	stopifnot(is_true_or_false(link),
-	          is_true_or_false(se))
+	stopifnot(isTrueFalse(link),
+	          isTrueFalse(se))
 	if (se && !link)
 		stop("standard errors not available for inverse link-transformed fitted values")
 
@@ -86,8 +86,7 @@ function(object, parm, level = 0.95, link = TRUE, ...) {
 		stop(gettextf("'%s' does not supply link scale fitted values and corresponding standard errors; retry with %s",
 		              "object", "object = fitted(<egf>, link = TRUE, se = TRUE)"),
 		     domain = NA)
-	stopifnot(is_number_in_interval(level, 0, 1, "()"),
-	          is_true_or_false(link))
+	stopifnot(isNumber(level), level > 0, level < 1, isTrueFalse(link))
 
 	s <- c("top", "ts", "window", "estimate", "se")
 	res <- data.frame(object[s[1:4]],

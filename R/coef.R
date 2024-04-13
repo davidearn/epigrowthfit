@@ -1,6 +1,6 @@
 coef.egf <-
 function(object, random = FALSE, full = FALSE, ...) {
-	stopifnot(is_true_or_false(random), is_true_or_false(full))
+	stopifnot(isTrueFalse(random), isTrueFalse(full))
 	if (full) {
 		ans <- egf_expand_par(object[["tmb_out"]], par = object[["best"]])
 		len <- attr(ans, "len")

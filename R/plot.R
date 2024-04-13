@@ -26,11 +26,11 @@ function(x,
 	type <- match.arg(type)
 	if (x$model$day_of_week > 0L)
 		dt <- 1
-	else stopifnot(is_number(dt, "positive"))
-	stopifnot(is_flag(show_predict))
+	else stopifnot(isNumber(dt), dt > 0)
+	stopifnot(isFlag(show_predict))
 	show_predict <- min(2L, max(0L, as.integer(show_predict)))
 	if (x$model$curve %in% c("exponential", "logistic", "richards")) {
-		stopifnot(is_flag(show_tdoubling))
+		stopifnot(isFlag(show_tdoubling))
 		show_tdoubling <- min(2L, max(0L, as.integer(show_tdoubling)))
 		show_asymptote <-
 			as.integer(type == "rt" && x$model$curve != "exponential")
@@ -39,19 +39,19 @@ function(x,
 		show_tdoubling <- 0L
 		show_asymptote <- 0L
 	}
-	stopifnot(is_true_or_false(plot))
+	stopifnot(isTrueFalse(plot))
 	if (plot) {
 		time_as <- match.arg(time_as)
-		stopifnot(is_true_or_false(log))
+		stopifnot(isTrueFalse(log))
 		if (!is.null(zero)) {
 			if (type == "rt")
 				zero <- NULL
 			else if (is.na(zero))
 				zero <- as.double(zero)
-			else stopifnot(is_number(zero, "positive"))
+			else stopifnot(isNumber(zero), zero > 0)
 		}
 		if (any(c(show_predict, show_tdoubling) == 2L))
-			stopifnot(is_number_in_interval(level, 0, 1, "()"))
+			stopifnot(isNumber(level), level > 0, level < 1)
 		stopifnot(inherits(control, "egf_control_plot"))
 		if (!is.null(cache))
 			stopifnot(inherits(cache, "plot.egf"))

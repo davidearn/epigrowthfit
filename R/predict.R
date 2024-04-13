@@ -7,7 +7,7 @@ function(object,
          se = FALSE,
          ...) {
 	what <- unique(match.arg(what, several.ok = TRUE))
-	stopifnot(is_true_or_false(log), is_true_or_false(se))
+	stopifnot(isTrueFalse(log), isTrueFalse(se))
 	if (se && !log)
 		stop("standard errors not available for inverse log-transformed predicted values")
 
@@ -132,7 +132,7 @@ function(object, parm, level = 0.95, log = TRUE, ...) {
 		stop(gettextf("'%s' does not supply log scale predicted values and corresponding standard errors; retry with %s",
 		              "object", "object = predict(<egf>, log = TRUE, se = TRUE)"),
 		     domain = NA)
-	stopifnot(is_number_in_interval(level, 0, 1, "()"), is_true_or_false(log))
+	stopifnot(isNumber(level), level > 0, level < 1, isTrueFalse(log))
 
 	res <- data.frame(object[-match("se", names(object), 0L)],
 	                  wald(estimate = object$estimate, se = object$se,

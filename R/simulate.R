@@ -5,8 +5,7 @@ function(object, nsim = 1, seed = NULL,
          parallel = egf_parallel(),
          trace = FALSE,
          ...) {
-	stopifnot(is_true_or_false(bootstrap),
-	          is_number(nsim, "positive", integer = TRUE))
+	stopifnot(isTrueFalse(bootstrap), isFlag(nsim), nsim >= 1)
 	nsim <- as.integer(nsim)
 
 	## Set and preserve RNG state (modified from stats:::simulate.lm)
@@ -41,7 +40,7 @@ function(object, nsim = 1, seed = NULL,
 	if (bootstrap) {
 		stopifnot(is.list(control),
 		          inherits(parallel, "egf_parallel"),
-		          is_true_or_false(trace))
+		          isTrueFalse(trace))
 
 		## Reconstruct list of arguments to 'MakeADFun' from object internals
 		## for retaping
@@ -137,7 +136,7 @@ simulate.egf_model <-
 function(object, nsim = 1, seed = NULL,
          mu, Sigma = NULL, tol = 1e-06,
          cstart = 0, tend = 100, ...) {
-	stopifnot(is_number(nsim, "positive", integer = TRUE))
+	stopifnot(isFlag(nsim), nsim >= 1)
 	nsim <- as.integer(nsim)
 
 	## Set and preserve RNG state (modified from stats:::simulate.lm)
@@ -161,7 +160,7 @@ function(object, nsim = 1, seed = NULL,
 	stopifnot(is.numeric(mu), length(mu) == p, is.finite(mu))
 	names(mu) <- top
 	if (!is.null(Sigma)) {
-		stopifnot(is_number(tol, "nonnegative"),
+		stopifnot(isNumber(tol), tol >= 0,
 		          is.numeric(Sigma),
 		          dim(Sigma) == length(mu),
 		          is.finite(Sigma),
@@ -187,10 +186,10 @@ function(object, nsim = 1, seed = NULL,
 	}
 	else {
 		## Time: daily from 0 days to 'tend' days
-		stopifnot(is_number(tend, "positive"))
+		stopifnot(isNumber(tend), tend > 0)
 		max(1, trunc(tend))
 	}
-	stopifnot(is_number(cstart))
+	stopifnot(isNumber(cstart))
 
 	## Construct arguments to 'egf' corresponding to 'nsim', 'mu', 'Sigma'
 	formula_ts <- cbind(time, x) ~ ts

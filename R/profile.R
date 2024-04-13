@@ -11,10 +11,10 @@ function(fitted,
          select = NULL,
          ...) {
 	stopifnot(sum(m. <- c(missing(A), missing(which), missing(top))) >= 2L,
-	          is_number_in_interval(level, 0, 1, "()"),
-	          is_number_in_interval(grid, 1, Inf, "[)"),
+	          isNumber(level), level > 0, level < 1,
+	          isNumber(grid), grid >= 1,
 	          inherits(parallel, "egf_parallel"),
-	          is_true_or_false(trace))
+	          isTrueFalse(trace))
 	n <- sum(!fitted[["random"]])
 
 
@@ -166,8 +166,8 @@ function(fitted,
 
 confint.profile.egf <-
 function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
-	stopifnot(is_true_or_false(link),
-	          is_number_in_interval(level, 0, attr(object, "level"), "(]"))
+	stopifnot(isNumber(level), level > 0, level <= attr(object, "level"),
+	          isTrueFalse(link))
 	q <- qchisq(level, df = 1)
 
 	do.solve <-
@@ -217,7 +217,7 @@ function(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...) {
 	subset <- match(levels(factor(x[["linear_combination"]][subset])),
 	                levels(x[["linear_combination"]]))
 
-	stopifnot(is_true_or_false(sqrt))
+	stopifnot(isTrueFalse(sqrt))
 	f <- if (sqrt) base::sqrt else identity
 	do.segments <-
 		!sqrt &&

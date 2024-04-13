@@ -13,7 +13,7 @@ fixef.egf_no_fit <- fixef.egf
 ranef.egf <-
 function(object, build_cov = FALSE, ...) {
 	stopifnot(egf_has_random(object),
-	          is_true_or_false(build_cov))
+	          isTrueFalse(build_cov))
 
 	par <- coef(object, random = TRUE, full = TRUE)
 	nms <- c("cov", "vec", "bottom", "top", "term", "group", "level", "colname")

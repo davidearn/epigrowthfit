@@ -44,8 +44,8 @@ function(model,
 	na_action_ts <- match.arg(na_action_ts)
 	na_action_windows <- match.arg(na_action_windows)
 	stopifnot(inherits(control, "egf_control"),
-	          is_true_or_false(fit),
-	          is_true_or_false(se),
+	          isTrueFalse(fit),
+	          isTrueFalse(se),
 	          is.list(init),
 	          is.list(map))
 

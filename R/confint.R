@@ -12,7 +12,7 @@ function(object,
          subset = NULL,
          select = NULL,
          ...) {
-	stopifnot(is_number_in_interval(level, 0, 1, "()"), is_true_or_false(link))
+	stopifnot(isNumber(level), level > 0, level < 1, isTrueFalse(link))
 	method <- match.arg(method)
 	elu <- c("estimate", "lower", "upper")
 
@@ -46,8 +46,8 @@ function(object,
 	}
 	else { # "uniroot"
 		stopifnot(inherits(parallel, "egf_parallel"),
-		          is_true_or_false(trace),
-		          is_number(interval_scale, "positive"))
+		          isTrueFalse(trace),
+		          isNumber(interval_scale), interval_scale > 0)
 		n <- sum(!object$random)
 
 		l <- egf_preprofile(object, subset = subset, top = top)
@@ -154,7 +154,7 @@ function(x,
          label = NULL,
          main = NULL,
          ...) {
-	stopifnot(is_number(per_plot, "positive", integer = TRUE))
+	stopifnot(isFlag(per_plot), per_plot >= 1)
 	per_plot <- as.integer(per_plot)
 
 	subset <- egf_eval_subset(subset, x, parent.frame())
