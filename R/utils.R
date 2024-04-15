@@ -3,6 +3,11 @@ unlist1 <-
 function(x)
 	unlist(x, recursive = FALSE, use.names = FALSE)
 
+## Format probability as percentage
+formatp <-
+function(x)
+	paste(round(x, digits = 1L), "%")
+
 ## Creates and prints headings;
 ## used to section 'print' method output
 heading <-

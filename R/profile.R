@@ -1,12 +1,12 @@
 profile.egf <-
 function(fitted,
+         A,
+         which,
          level = 0.95,
-         A = NULL,
-         which = NULL,
-         top = egf_top(fitted),
          grid = 12L,
          parallel = egf_parallel(),
          trace = FALSE,
+         top = egf_top(fitted),
          subset = NULL,
          select = NULL,
          ...) {
@@ -15,8 +15,8 @@ function(fitted,
 	          isNumber(grid), grid >= 1,
 	          inherits(parallel, "egf_parallel"),
 	          isTrueFalse(trace))
-	n <- sum(!fitted[["random"]])
 
+	par <- coef(fitted)
 
 	## If profiling user-specified linear combinations
 	## of elements of c(beta, theta)
@@ -26,18 +26,19 @@ function(fitted,
 		stopifnot((is.double(A) && !is.object(A) && is.matrix(A)) ||
 		          is(A, "dMatrix"),
 		          nrow(A) > 0L,
-		          ncol(A) == n,
+		          ncol(A) == length(par),
 		          is.finite(range(A)),
 		          min(rowSums(A != 0)) > 0)
 	}
 	## If profiling user-specified elements of c(beta, theta)
 	else if (!is.null(which)) {
-		which <- seq_len(n)[which]
-		A <- as(new("dgRMatrix",
-	                Dim = c(length(which), n),
-	                p = 0:(length(which) - 1L),
-	                j = which - 1L,
-	                x = rep.int(1, length(which))), "CsparseMatrix")
+		which <- `names<-`(seq_along(par), labels(par))[which]
+		A <- new("dgRMatrix",
+	             Dim = c(length(which), length(par)),
+	             Dimnames = list(names(which), NULL),
+	             p = 0:length(which),
+	             j = which - 1L,
+	             x = rep.int(1, length(which)))
 	}
 	## If profiling population fitted values
 	## of top level nonlinear model parameters
@@ -79,8 +80,9 @@ function(fitted,
 	ystep <- ytol / grid
 	nomp <- fitted[["control"]][["omp_num_threads"]]
 
-	do.profile <-
+	doProfile <-
 	function(i, a, h) {
+		## FIXME: write own version of 'tmbprofile' giving proper 'par.vals'!
 		if (trace)
 			cat(gettextf("computing likelihood profile %d of %d ...",
 			             i, m),
@@ -88,16 +90,20 @@ function(fitted,
 		args <- list(obj = obj, h = h, ytol = ytol, ystep = ystep)
 		args[[s]] <- a
 		ans <- do.call(TMB::tmbprofile, args)
+		dot <- ans[[1L]] # it's a "dot" product
 		nll <- ans[[2L]]
-		i.min <- which.min(nll)
-		## (change in deviance) = 2 * (nll_restricted - nll_minimum)
-		ans[[2L]] <- 2 * (nll - nll[i.min])
-		names(ans) <- c("value", "deviance")
-		ans[-i.min, , drop = FALSE] # 'tmbprofile' duplicates this row
+		i.min <- which.min(nll) # this row is duplicated => [-i.min] below
+		z <- sqrt(2 * (nll - nll[i.min]))
+		z[seq_len(i.min)] <- -z[seq_len(i.min)]
+		ans <- list(z[-i.min], as.matrix(dot[-i.min]))
+		attributes(ans) <- list(names = c("z", "par.vals"),
+		                        row.names = .set_row_names(length(z) - 1L),
+		                        class = "data.frame")
+		ans
 	}
 
 	if (parallel[["method"]] == "snow") {
-		environment(do.profile) <- globalenv()
+		environment(doProfile) <- globalenv()
 
 		## Reconstruct list of arguments to 'MakeADFun' from object internals
 		## for retaping
@@ -119,7 +125,7 @@ function(fitted,
 				TMB::openmp(n = nomp)
 			obj <- do.call(TMB::MakeADFun, args)
 		})
-		ans <- clusterMap(cl, do.profile, i = seq_len(m), a = a, h = h)
+		ans <- clusterMap(cl, doProfile, i = seq_len(m), a = a, h = h)
 	}
 	else {
 		if (nzchar(parallel[["outfile"]])) {
@@ -138,155 +144,149 @@ function(fitted,
 		}
 		obj <- fitted[["tmb_out"]]
 		ans <- switch(parallel[["method"]],
-		              multicore = do.call(mcMap, c(list(f = do.profile, i = seq_len(m), a = a, h = h), parallel[["args"]])),
-		              serial = Map(do.profile, i = seq_len(m), a = a, h = h))
+		              multicore = do.call(mcMap, c(list(f = doProfile, i = seq_len(m), a = a, h = h), parallel[["args"]])),
+		              serial = Map(doProfile, i = seq_len(m), a = a, h = h))
 	}
 
-	nr <- vapply(ans, nrow, 0L)
-	ans <- data.frame(linear_combination = rep.int(gl(m, 1L), nr),
-	                  do.call(rbind, ans),
-	                  row.names = NULL)
 	if (m.[1L] && m.[2L]) {
-		i <- rep.int(rep.int(subset, length(top)), nr)
-		ans <- data.frame(top = rep.int(rep(factor(top, levels = top.),
-		                                    each = length(subset)), nr),
-		                  frame_windows[i, c("ts", "window"), drop = FALSE],
-		                  ans,
-		                  frame_combined[i, select, drop = FALSE],
-		                  row.names = NULL,
-		                  check.names = FALSE,
-		                  stringsAsFactors = FALSE)
-		ans[["value"]] <- ans[["value"]] + rep.int(as.double(Y), nr)
+		attr(ans, "frame") <-
+			data.frame(frame_windows[subset, c("ts", "window"), drop = FALSE],
+			           frame_combined[subset, select, drop = FALSE],
+			           row.names = NULL,
+			           check.names = FALSE,
+			           stringsAsFactors = FALSE)
+		attr(ans, "top") <- factor(top, levels = top.)
+		attr(ans, "Y") <- Y
 	}
+	names(ans) <-
+		if (is.null(rn <- dimnames(A)[[1L]]))
+			paste0("(A %%*%% coef(.))", "[", format(seq_along(ans)), "]")
+		else rn
 	attr(ans, "A") <- A
 	attr(ans, "level") <- level
-	class(ans) <- c("profile.egf", oldClass(ans))
+	class(ans) <- c("profile.egf", "profile")
 	ans
 }
 
 confint.profile.egf <-
-function(object, parm, level = attr(object, "level"), link = TRUE, ...) {
-	stopifnot(isNumber(level), level > 0, level <= attr(object, "level"),
-	          isTrueFalse(link))
-	q <- qchisq(level, df = 1)
-
-	do.solve <-
-	function(d) {
-		i.min <- which.min(d[["deviance"]])
-		i.left <- seq_len(i.min)
-		i.right <- seq.int(i.min, nrow(d))
-		estimate <- d[["value"]][i.min]
-		lower <- approx(x = d[["deviance"]][i.left],
-		                y = d[["value"]][i.left],
-		                xout = q)[["y"]]
-		upper <- approx(x = d[["deviance"]][i.right],
-		                y = d[["value"]][i.right],
-		                xout = q)[["y"]]
-		d1 <- d[1L, , drop = FALSE]
-		m <- match(c("value", "deviance"), names(d1), 0L)
-		data.frame(d1[seq_len(m[1L] - 1L)],
-		           estimate,
-		           lower,
-		           upper,
-		           d1[-seq_len(m[2L])],
-		           row.names = FALSE,
-		           check.names = FALSE,
-		           stringsAsFactors = FALSE)
+function(object, parm = seq_along(object), level = attr(object, "level"),
+         maybeClass = FALSE, ...) {
+	stopifnot(isNumber(level), level > 0, level < 1,
+	          level <= attr(object, "level"))
+	which <- `names<-`(seq_along(object), names(object))[parm]
+	if (anyNA(which))
+		stop(gettextf("invalid '%s'", "parm"), domain = NA)
+	h <- 0.5 * (1 - level)
+	p <- c(h, 1 - h)
+	q <- qnorm(p)
+	percent <- formatp(p)
+	if (doClass <- maybeClass) {
+		l <- attributes(object)[c("frame", "top", "Y")]
+		doClass <- !any(vapply(l, is.null, FALSE))
 	}
-
-	ans <- do.call(rbind,
-	               by(object, object[["linear_combination"]], do.solve,
-	                  simplify = FALSE))
-	if (any(names(object) == "top") && !link) {
-		elu <- c("estimate", "lower", "upper")
-		f <- lapply(egf_link_extract(levels(ans[["top"]])), egf_link_match,
-		            inverse = TRUE)
-		ans[elu] <- papply(ans[elu], ans[["top"]], f)
-		levels(ans[["top"]]) <- egf_link_remove(levels(ans[["top"]]))
+	ans <- array(NA_real_,
+	             dim = c(length(which), 2L),
+	             dimnames = list(if (!doClass) names(which), percent))
+	for (i in which) {
+		pr <- object[[i]]
+		sp <- spline(x = pr[["par.vals"]][, 1L], y = pr[["z"]])
+		ans[i, ] <- approx(x = sp[["y"]], y = sp[["x"]], xout = q)[["y"]]
 	}
-	ans[["linear_combination"]] <- as.integer(as.character(ans[["linear_combination"]]))
-	row.names(ans) <- NULL
-	attr(ans, "A") <- attr(object, "A")
-	attr(ans, "level") <- level
+	if (doClass) {
+		dY <- dim(l[["Y"]])
+		ans <- data.frame(
+			top = rep(l[["top"]], each = dY[1L])[which],
+			l[["frame"]][rep.int(seq_len(dY[1L]), dY[2L])[which], ],
+			ci = I(ans + l[["Y"]][which]),
+			row.names = NULL,
+			check.names = FALSE,
+			stringsAsFactors = FALSE)
+		class(ans) <- c("confint.egf", oldClass(ans))
+	}
 	ans
 }
 
 plot.profile.egf <-
-function(x, level = attr(x, "level"), sqrt = FALSE, subset = NULL, ...) {
-	subset <- egf_eval_subset(subset, x, parent.frame())
-	subset <- match(levels(factor(x[["linear_combination"]][subset])),
-	                levels(x[["linear_combination"]]))
-
-	stopifnot(isTrueFalse(sqrt))
-	f <- if (sqrt) base::sqrt else identity
-	do.segments <-
-		!sqrt &&
-		is.numeric(level) &&
-		length(level) > 0L &&
-		!all(is.na(level))
-	if (do.segments) {
-		level <- level[!is.na(level)]
-		stopifnot(level > 0, level <= attr(x, "level"))
-		## Line segments at heights 'h' in all plots
-		h <- qchisq(level, df = 1)
-		## Line segment 'j' to start at 'v.lower[[i]][j]'
-		## and end at 'v.upper[[i]][j]' in plot 'i'
-		ci <- lapply(level, function(p) confint(x, level = p))
-		v.lower <- lapply(subset, function(i) vapply(ci, `[`, 0, i, "lower"))
-		v.upper <- lapply(subset, function(i) vapply(ci, `[`, 0, i, "upper"))
-	}
-
-	dots <- list(...)
-	main <-
-		if (!is.null(dots[["main"]]))
-			rep_len(dots[["main"]], length(subset))
-		else if (any(names(x) == "top"))
-			c(tapply(as.character(x[["window"]]),
-			         x[["linear_combination"]], `[[`, 1L))[subset]
-		else character(length(subset))
-	xlab <-
-		if (!is.null(dots[["xlab"]]))
-			rep_len(dots[["xlab"]], length(subset))
-		else if (any(names(x) == "top"))
-			c(tapply(as.character(x[["top"]]),
-			         x[["linear_combination"]], `[[`, 1L))[subset]
-		else paste0("linear combination ",
-		            levels(x[["linear_combination"]])[subset])
-	dots[["main"]] <- dots[["xlab"]] <- NULL
-	if (is.null(dots[["ylab"]])) {
-		dots[["ylab"]] <- "deviance"
-		if (sqrt)
-			dots[["ylab"]] <- bquote(sqrt(.(dots[["ylab"]])))
-	}
-	if (is.null(dots[["ylim"]]))
-		dots[["ylim"]] <- c(0, f(max(x[["deviance"]], na.rm = TRUE)))
-
-	for (i in seq_along(subset)) {
-		args <- list(formula = f(deviance) ~ value,
-		             data = x,
-		             subset = (as.integer(x[["linear_combination"]]) == subset[i]),
-		             main = main[i],
-		             xlab = xlab[i])
-		do.call(plot, c(args, dots))
-		if (do.segments) {
-			usr <- par("usr")
-			segments(x0 = v.lower[[i]],
-			         x1 = v.upper[[i]],
-			         y0 = h,
-			         y1 = h,
-			         lty = 3)
-			segments(x0 = c(v.lower[[i]], v.upper[[i]]),
-			         x1 = c(v.lower[[i]], v.upper[[i]]),
-			         y0 = usr[3L],
-			         y1 = rep.int(h, 2L),
-			         lty = 3)
+function(x, parm = seq_along(x), level = attr(x, "level"),
+         type = c("z", "abs(z)", "z^2"), ...) {
+	type <- match.arg(type)
+	if (!is.null(level))
+	stopifnot(is.double(level), !anyNA(level),
+	          min(1, level) > 0, max(0, level) < 1,
+	          max(0, level) <= attr(x, "level"))
+	which <- `names<-`(seq_along(x), names(x) -> nms)[parm]
+	if (anyNA(which))
+		stop(gettextf("invalid '%s'", "parm"), domain = NA)
+	h <- 0.5 * (1 - attr(x, "level"))
+	p <- c(h, 1 - h)
+	q <- qnorm(p)
+	ylim <- range(vapply(x, function(pr) range(pr[["z"]]), double(2L)))
+	ylim <- switch(type,
+	               "z"      = ylim,
+	               "abs(z)" = c(0, ylim[2L]),
+	               "z^2"    = c(0, ylim[2L]^2))
+	ylab <- switch(type,
+	               "z"      = quote(z),
+	               "abs(z)" = quote(group("|", z, "|")),
+	               "z^2"    = quote(z^2))
+	h <- 0.5 * (1 - level)
+	p <- rbind(h, 1 - h, deparse.level = 0L)
+	q <- qnorm(p)
+	for (i in which) {
+		dev.hold()
+		pr <- x[[i]]
+		pr.x <- pr[["par.vals"]][, 1L]
+		pr.y <- pr[["z"]]
+		pr.y. <- switch(type,
+		                "z"      = ,
+		                "abs(z)" = pr.y,
+		                "z^2"    = sign(pr.y) * pr.y^2)
+		sp <- spline(x = pr.x, y = pr.y.)
+		sp.x <- sp[["x"]]
+		sp.y <- sp[["y"]]
+		sp.y. <- switch(type,
+		                "z"      = sp.y,
+		                "abs(z)" = ,
+		                "z^2"    = abs(sp.y))
+		plot(x = sp.x, y = sp.y., type = "n",
+		     xlim = NULL, ylim = ylim, xlab = nms[i], ylab = ylab, ...)
+		lines(x = sp.x, y = sp.y., lty = 1L)
+		usr <- par("usr")
+		for (j in seq_along(level)) {
+			pj <- p[, j]
+			qj <- q[, j]
+			qj <- switch(type,
+			             "z"      = ,
+			             "abs(z)" = qj,
+			             "z^2"    = sign(qj) * qj^2)
+			hj <- switch(type,
+			             "z"      = qj,
+			             "abs(z)" = ,
+			             "z^2"    = c(usr[3L], qj[2L]))
+			vj <- approx(x = sp.y., y = sp.x, xout = qj)[["y"]]
+			segments(x0 = vj[c(1L, 1L, 2L, if (type == "z") 2L)],
+			         x1 = vj[c(1L, 2L, 2L, if (type == "z") 1L)],
+			         y0 = hj[c(1L, 2L, 2L, if (type == "z") 1L)],
+			         y1 = hj[c(2L, 2L, 1L, if (type == "z") 1L)],
+			         lty = 3L)
+			if (type == "z") {
+			abline(h = 0, lty = 3L)
+			text(x = vj[1L],
+			     y = hj[2L],
+			     labels = formatp(pj[2L]),
+			     adj = c(0, 0))
+			text(x = vj[2L],
+			     y = hj[1L],
+			     labels = formatp(pj[1L]),
+			     adj = c(1, 0))
+			}
+			else
 			text(x = mean(usr[1:2]),
-			     y = h,
-			     labels = sprintf("%.3g%%", 100 * level),
-			     pos = 3,
-			     offset = 0.1)
+			     y = hj[2L],
+			     labels = formatp(pj[2L] - pj[1L]),
+			     adj = c(0.5, 0))
 		}
+		dev.flush()
 	}
-
 	invisible(NULL)
 }

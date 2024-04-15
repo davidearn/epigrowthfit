@@ -70,6 +70,5 @@ function(object, disambiguate = FALSE, ...) {
 			match(unique(if (anyNA(map)) map[!is.na(map)] else map), map)
 		else stop("should never happen")
 	}
-	## FIXME: want fixed width for integer part
-	sprintf("%s[%d]", nms, unlist1(.mapply(f, list(len, map), NULL)))
+	paste0(nms, "[", format(unlist1(.mapply(f, list(len, map), NULL))), "]")
 }
