@@ -1,6 +1,7 @@
 \name{simulate.egf_model}
 \alias{simulate.egf_model}
 \alias{coef.simulate.egf_model}
+\alias{egf.simulate.egf_model}
 \alias{getCall.simulate.egf_model}
 \title{Simulate Incidence Time Series}
 \description{
@@ -73,9 +74,6 @@ A list inheriting from class \code{simulate.egf_model}, with elements:
 Attribute \code{RNGstate} preserves the RNG state prior to simulation,
 making the result reproducible.
 }
-\seealso{
-\code{\link{egf.simulate.egf_model}}.
-}
 \examples{
 r <- 0.04
 c0 <- 400
@@ -92,4 +90,7 @@ zz <- egf_cache("simulate-egf_model-1.rds",
              Sigma = Sigma,
              cstart = 10))
 str(zz)
+
+mm <- egf(zz)
+(pp <- cbind(actual = coef(zz), fitted = coef(mm)))
 }
