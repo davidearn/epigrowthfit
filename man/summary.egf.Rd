@@ -12,7 +12,7 @@ convergence of the optimizer.
 }
 \arguments{
 \item{object}{an \code{\link{egf}} object.}
-\item{\dots}{unused optional arguments.}
+\item{\dots}{additional arguments passed from or to other methods.}
 }
 \value{
 A list inheriting from class \code{summary.egf}, with elements:
@@ -33,6 +33,9 @@ A list inheriting from class \code{summary.egf}, with elements:
   the matrix was not computed by \code{\link{egf}}, either because
   \code{se = TRUE} was not passed in the function call or because an
   error was thrown during computation.}
+}
+\seealso{
+\code{\link{summary}}.
 }
 \examples{
 object <- egf_cache("egf-1.rds")

@@ -122,16 +122,8 @@ function(object, nsim = 1, seed = NULL,
 	} # if (bootstrap)
 
 	attr(ans, "RNGstate") <- RNGstate
-	class(ans) <- c("simulate.egf", oldClass(ans))
+	class(ans) <- "simulate.egf"
 	ans
-}
-
-print.simulate.egf <-
-function(x, ...) {
-	y <- x
-	attributes(x) <- NULL
-	NextMethod("print")
-	invisible(y)
 }
 
 simulate.egf_model <-
@@ -303,13 +295,6 @@ function(object, ...) {
 	ans
 }
 
-getCall.simulate.egf_model <-
-function(x, ...) {
-	call <- NextMethod("getCall")
-	call[[1L]] <- quote(simulate)
-	call
-}
-
 egf.simulate.egf_model <-
 function(model, ...) {
 	nel <- c("model", "formula_ts", "formula_windows", "formula_parameters",
@@ -318,4 +303,11 @@ function(model, ...) {
 	if (...length() > 0L && !is.null(ndots <- names(dots <- list(...))))
 		args <- c(args, dots[match(ndots, nel, 0L) == 0L])
 	do.call(egf, args)
+}
+
+getCall.simulate.egf_model <-
+function(x, ...) {
+	call <- NextMethod("getCall")
+	call[[1L]] <- quote(simulate)
+	call
 }

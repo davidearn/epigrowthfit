@@ -1,6 +1,5 @@
 \name{simulate.egf}
 \alias{simulate.egf}
-\alias{print.simulate.egf}
 \title{Simulation and Parametric Bootstrapping}
 \description{
 Simulates incidence data conditional on a fitted nonlinear mixed effects
@@ -27,7 +26,7 @@ of the bottom level parameter vector.
 \item{trace}{a logical.  If \code{TRUE}, then basic tracing messages
   indicating progress are printed.  These may be mixed with optimizer
   output depending on \code{object[["control"]][["trace"]]}.}
-\item{\dots}{unused optional arguments.}
+\item{\dots}{additional arguments passed from or to other methods.}
 }
 \value{
 A list inheriting from class \code{simulate.egf}, with elements:
@@ -55,6 +54,9 @@ of argument \code{parallel}.
 
 Arguments \code{control}, \code{parallel}, and \code{trace} are unused
 when \code{bootstrap = FALSE}.
+}
+\seealso{
+\code{\link{simulate}}.
 }
 \examples{
 object <- egf_cache("egf-2.rds")

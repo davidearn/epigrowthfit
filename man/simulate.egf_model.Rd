@@ -74,6 +74,9 @@ A list inheriting from class \code{simulate.egf_model}, with elements:
 Attribute \code{RNGstate} preserves the RNG state prior to simulation,
 making the result reproducible.
 }
+\seealso{
+\code{\link{simulate}}.
+}
 \examples{
 r <- 0.04
 c0 <- 400
