@@ -1,94 +1,133 @@
 confint.egf <-
-function(object,
-         parm,
-         level = 0.95,
-         top = egf_top(object),
-         link = TRUE,
+function(object, parm, level = 0.95,
+         A = seq_along(par),
          method = c("wald", "profile", "uniroot"),
+         scale = 7,
          parallel = egf_parallel(),
          trace = FALSE,
-         grid_len = 12,
-         interval_scale = 7,
+         top = egf_top(object),
          subset = NULL,
          select = NULL,
+         class = FALSE,
+         link = TRUE,
+         random = FALSE,
          ...) {
-	stopifnot(isNumber(level), level > 0, level < 1, isTrueFalse(link))
+	stopifnot(isNumber(level), level > 0, level < 1,
+	          isTrueFalse(class), isTrueFalse(link), isTrueFalse(random))
 	method <- match.arg(method)
-	elu <- c("estimate", "lower", "upper")
 
-	top. <- egf_top(object)
-	top <- unique(match.arg(top, top., several.ok = TRUE))
+	par <- coef(object)
+	which <- NULL
 
-	frame_windows <- model.frame(object, "windows")
-	frame_combined <- model.frame(object, "combined")
-	subset <- egf_eval_subset(subset, frame_combined, parent.frame())
-	select <- egf_eval_select(select, frame_combined, baseenv())
+	if (m.A <- is.null(A)) {
+		top. <- egf_top(fitted)
+		top <- unique(match.arg(top, top., several.ok = TRUE))
 
-	if (method == "wald") {
-		fo <- fitted(object, top = top, se = TRUE,
-		             subset = subset, select = select)
-		res <- confint(fo, level = level, link = link)
+		frame <- model.frame(object, "combined")
+		subset <- egf_eval_subset(subset, frame, parent.frame())
+		select <- egf_eval_select(select, frame, baseenv())
+		frame <- frame[subset, select, drop = FALSE]
 
+		info <- model.frame(object, "windows")[subset, c("ts", "window")]
+		ts     <- info[["ts"    ]]
+		window <- info[["window"]]
+
+		A <- egf_make_A(object, top = top, subset = subset)
+	}
+	else if ((is.double(A) && !is.object(A) && is.matrix(A)) ||
+	         is(A, "dMatrix"))
+		stopifnot(nrow(A) > 0L,
+		          ncol(A) == 1L + length(par),
+		          is.finite(range(A)),
+		          min(rowSums(A[, -1L] != 0)) > 0)
+	else {
+		which <- `names<-`(seq_along(par), labels(par))[which]
+		A <- new("dgRMatrix",
+		         Dim = c(length(which), 1L + length(par)),
+		         Dimnames = list(names(which), NULL),
+		         p = c(0L, 0L, seq_along(which)),
+		         j = which,
+		         x = rep.int(1, length(which)))
+	}
+
+	h <- 0.5 * (1 - level)
+	p <- c(h, 1 - h)
+	q <- qnorm(p)
+	percent <- formatp(p, 3L)
+	if (class)
+		class <- m.A
+
+	if (method == "wald" && m.A && random) {
+		rpt <- egf_get_sdreport(object)
+		i <- names(rpt[["value"]]) == "Y"
+		value <- rpt[["value"]][i]
+		se    <- rpt[["sd"   ]][i]
+		dim(value) <- dim(se) <- rpt[["env"]][["ADreportDims"]][["Y"]]
+		dimnames(value) <- dimnames(se) <- list(NULL, top.)
+		value <- as.vector(value[subset, top, drop = FALSE])
+		se    <- as.vector(se   [subset, top, drop = FALSE])
+		ans <- wald(value, se, level)
+	}
+	else if (method == "wald") {
+		rpt <- egf_get_sdreport(object)
+		P. <- rpt[["par.fixed"]]
+		V. <- rpt[["cov.fixed"]]
+		if (!is.null(which))
+			value <- P.[which]
+			se    <- sqrt(diag(V., names = FALSE)[which])
+		else {
+			A. <- A[, -1L, drop = FALSE]
+			V. <- A. %*% tcrossprod(V., A.)
+			value <- A %*% c(1, P.)
+			se    <- sqrt(diag(V., names = FALSE))
+		}
+		ans <- wald(value, se, level)
 	}
 	else if (method == "profile") {
-		po <- profile(object,
-		              level = level + min(0.01, 0.1 * (1 - level)),
-		              top = top,
-		              parallel = parallel,
-		              trace = trace,
-		              grid_len = grid_len,
-		              subset = subset,
-		              select = select)
-		res <- confint(po, level = level, link = link)
-		res[["linear_combination"]] <- NULL
-		attr(res, "A") <- attr(res, "x") <- NULL
-
+		po <- profile(object, level = level, A = A,
+		              parallel = parallel, trace = trace, ...)
+		ans <- confint(po, level = level)
 	}
-	else { # "uniroot"
+	else if (method == "uniroot") {
 		stopifnot(inherits(parallel, "egf_parallel"),
 		          isTrueFalse(trace),
-		          isNumber(interval_scale), interval_scale > 0)
-		n <- sum(!object$random)
+		          isNumber(scale), scale > 0)
 
-		l <- egf_preprofile(object, subset = subset, top = top)
-		Y <- l$Y
-		A <- l$A
+		a <- lapply(seq_len(nrow(A)), function(i) A[i, ])
 
-		m <- nrow(A)
-		a <- lapply(seq_len(m), function(i) A[i, ])
-
-		## y := nll_restricted - nll_minimum = 0.5 * deviance
+		## y := nll_restricted - nll_minimum = 0.5 * (change in deviance)
 		target <- 0.5 * qchisq(level, df = 1)
-		sd.range <- interval_scale
-		nomp <- object$control$omp_num_threads
+		sd.range <- scale
 
-		do_uniroot <-
+		nomp <- object[["control"]][["omp_num_threads"]]
+		nprf <- length(a)
+
+		doRoot <-
 		function(i, a) {
 			if (trace)
-				cat(sprintf("Computing confidence interval %d of %d...\n",
-				            i, m))
-			res <- TMB::tmbroot(obj, lincomb = a, target = target,
-			                    sd.range = sd.range, trace = FALSE)
-			names(res) <- c("lower", "upper")
-			res
+				cat(gettextf("computing interval %d of %d ...", i, nprf),
+				    "\n", sep = "")
+			a[1L] + TMB::tmbroot(obj, lincomb = a[-1L], target = target,
+			                     sd.range = sd.range, trace = FALSE)
 		}
 
-		if (parallel$method == "snow") {
-			environment(do_uniroot) <- globalenv()
+		if (parallel[["method"]] == "snow") {
+			environment(doRoot) <- globalenv()
 
 			## Reconstruct list of arguments to 'MakeADFun'
 			## from object internals for retaping
-			args <- egf_tmb_remake_args(object$tmb_out, par = object$best)
+			args <- egf_tmb_remake_args(object[["tmb_out"]], par = object[["best"]])
 
 			## Retrieve path to shared object for loading
 			dll <- .dll
 
-			cl <- parallel$cl
+			cl <- parallel[["cl"]]
 			if (is.null(cl)) {
 				cl <- do.call(makePSOCKcluster, parallel$args)
 				on.exit(stopCluster(cl), add = TRUE)
 			}
-			vars <- c("dll", "nomp", "args", "trace", "m", "target", "sd.range")
+			vars <- c("dll", "nomp", "nprf", "args", "trace",
+			          "target", "sd.range")
 			clusterExport(cl, varlist = vars, envir = environment())
 			clusterEvalQ(cl, {
 				dyn.load(dll)
@@ -96,11 +135,11 @@ function(object,
 					TMB::openmp(n = nomp)
 				obj <- do.call(TMB::MakeADFun, args)
 			})
-			res <- clusterMap(cl, do_uniroot, i = seq_len(m), a = a)
+			ans <- clusterMap(cl, doRoot, i = seq_len(nprf), a = a)
 		}
 		else {
-			if (given_outfile <- nzchar(parallel$outfile)) {
-				outfile <- file(parallel$outfile, open = "wt")
+			if (given_outfile <- nzchar(parallel[["outfile"]])) {
+				outfile <- file(parallel[["outfile"]], open = "wt")
 				sink(outfile, type = "output")
 				sink(outfile, type = "message")
 				on.exit(add = TRUE, {
@@ -113,123 +152,137 @@ function(object,
 				TMB::openmp(n = nomp)
 				on.exit(TMB::openmp(n = onomp), add = TRUE)
 			}
-			obj <- object$tmb_out
-			res <- switch(parallel$method,
-			              multicore = do.call(mcMap, c(list(f = do_uniroot, i = seq_len(m), a = a), parallel$args)),
-			              serial = Map(do_uniroot, i = seq_len(m), a = a))
+			obj <- object[["tmb_out"]]
+			ans <- switch(parallel[["method"]],
+			              multicore = do.call(mcMap, c(list(f = doRoot, i = seq_len(nprf), a = a), parallel[["args"]])),
+			              serial = Map(doRoot, i = seq_len(nprf), a = a))
 		}
+		ans <- matrix(unlist1(ans), length(ans), 2L, byrow = TRUE)
+	}
 
-		res <- data.frame(top = rep(factor(top, levels = top.),
-		                            each = length(subset)),
-		                  ts = frame_windows$ts[subset],
-		                  window = frame_windows$window[subset],
-		                  estimate = as.double(A %*% object$best[!object$random]),
-		                  do.call(rbind, res),
-		                  frame_combined[subset, select, drop = FALSE],
+	if (class || !m.A)
+		dimnames(ans) <- list(if (!class) dimnames(A)[[1L]], percent)
+	else {
+		dim(ans) <- c(length(subset), length(top), 2L)
+		dimnames(ans) <- list(paste(ts, window, sep = ", "), top, percent)
+	}
+
+	if (class) {
+		ns <- nrow(frame)
+		nt <- length(top)
+		i. <- rep.int(seq_len(ns), nt)
+		j. <- rep(seq_len(nt), each = ns)
+		if (!link) {
+			pos <- seq.int(from = 0L, by = ns, length.out = nt + 1L)
+			for (j in seq_len(length(pos) - 1L)) {
+				f <- egf_link_match(egf_link_extract(top[j]), inverse = TRUE)
+				k <- seq.int(pos[j] + 1L, pos[j + 1L])
+				ans[k, ] <- f(ans[k, ])
+			}
+			top <- egf_link_remove(top)
+			top. <- egf_link_remove(top.)
+		}
+		ans <- data.frame(top = factor(top, levels = top.)[j.],
+		                  ts = ts[i.],
+		                  window = window[i.],
+		                  value = as.vector(A %*% c(1, par)),
+		                  ci = I(ans),
+		                  frame[i., ],
 		                  row.names = NULL,
 		                  check.names = FALSE,
 		                  stringsAsFactors = FALSE)
-		res[elu] <- res[elu] + as.double(Y)
+		attr(ans, "level") <- level
+		class(ans) <- c("confint.egf", oldClass(ans))
+	}
 
-		if (!link) {
-			f <- lapply(egf_link_extract(levels(res$top)), egf_link_match,
-			            inverse = TRUE)
-			res[elu] <- papply(res[elu], res$top, f)
-			levels(res$top) <- egf_link_remove(levels(res$top))
-		}
-	} # "uniroot"
-
-	row.names(res) <- NULL
-	attr(res, "method") <- method
-	attr(res, "level") <- level
-	class(res) <- c("confint.egf", oldClass(res))
-	res
+	ans
 }
 
 plot.confint.egf <-
-function(x,
-         per_plot = 12L,
-         subset = NULL,
-         order = NULL,
-         label = NULL,
-         main = NULL,
-         ...) {
-	stopifnot(isInteger(per_plot), per_plot >= 1)
-	per_plot <- as.integer(per_plot)
+function(x, by = 12L,
+         subset = NULL, order = NULL, label = NULL, main = NULL, ...) {
+	stopifnot(isInteger(by), by >= 1)
+	by <- as.integer(by)
 
 	subset <- egf_eval_subset(subset, x, parent.frame())
-	if (length(subset) == 0L)
-		stop(gettextf("'%s' is empty; nothing to plot", "subset"),
-		     domain = NA)
 	order <- egf_eval_order(order, x, parent.frame())
-	label <- egf_eval_label(label, x, parent.frame())
-	subset <- order[order %in% subset]
+	subset <- order[match(order, subset, 0L) > 0L]
 
-	a <- attributes(x)
-	if (is.null(main))
-		main <- sprintf("%.3g%% confidence intervals by fitting window",
-		                100 * a$level)
-	if (is.null(label))
-		label <- as.character(x[["window"]])
-
-	nx <- c("top", "ts", "window", "estimate", "lower", "upper")
-	x <- x[nx]
-	x$label <- label
 	x <- x[subset, , drop = FALSE]
-	x$top <- factor(x$top)
+	nrx <- nrow(x)
+	ncx <- length(x)
 
-	plot.confint.egf.bars(x, per_plot = per_plot, main = main)
-}
+	value <- x[["value"]]
+	lower <- x[["ci"]][, 1L]
+	upper <- x[["ci"]][, 2L]
+	label <-
+		if (is.null(label))
+			as.character(x[["window"]])
+		else egf_eval_label(label, x, parent.frame())
 
-plot.confint.egf.bars <-
-function(x, per_plot, main) {
-	x <- split(x, x$top)
-	for (xlab in names(x)) { # loop over parameters
-		data <- x[[xlab]]
-		n <- nrow(data)
-		argna <- lapply(data[c("lower", "upper")], is.na)
-		xlim <- range(data[c("estimate", "lower", "upper")], na.rm = TRUE)
+	ylim <- c(by + 1, 0)
 
-		i <- 0L
-		while (i < n) { # loop over plots
-			k <- i + seq_len(min(per_plot, n - i))
+	grp <- split(seq_len(nrx), factor(x[["top"]]))
+	nms <- names(grp)
+	for (g in seq_along(grp)) { # loop over parameters
+		l <- grp[[g]]
+		value. <- value[l]
+		lower. <- lower[l]
+		upper. <- upper[l]
+		label. <- label[l]
+
+		xlim <- c(min(lower., na.rm = TRUE), max(upper., na.rm = TRUE))
+		xlab <- nms[g]
+
+		pos <- c(seq.int(from = 0L, to = length(l) - 1L, by = by), length(l))
+		for (j in seq_len(length(pos) - 1L)) { # loop over plots
+			k <- seq.int(pos[j] + 1L, pos[j + 1L]);
+			value.. <- value.[k]
+			lower.. <- lower.[k]
+			upper.. <- upper.[k]
+			label.. <- label.[k]
+
+			h <- as.double(seq_along(k))
+
+			dev.hold()
 			plot.new()
-			plot.window(xlim = xlim, ylim = c(per_plot + 1, 0),
-			            xaxs = "r", yaxs = "i")
-			gp <- par(c("usr", "cex", "mar"))
-			sfcex <- get_sfcex(x$label,
-			                   target = 0.95 * max(0, gp$mar[2L] - 0.25),
-			                   units = "lines")
-			abline(v = axTicks(side = 1), lty = 3, col = "grey75")
-			segments(x0 = replace(data$lower[k], argna$lower[k], gp$usr[1L]),
-			         x1 = data$estimate[k],
-			         y0 = seq_along(k),
-			         y1 = seq_along(k),
-			         lty = 1 + as.double(argna$lower[k]),
-			         lwd = 2 - as.double(argna$lower[k]))
-			segments(x0 = data$estimate[k],
-			         x1 = replace(data$upper[k], argna$upper[k], gp$usr[2L]),
-			         y0 = seq_along(k),
-			         y1 = seq_along(k),
-			         lty = 1 + as.double(argna$upper[k]),
-			         lwd = 2 - as.double(argna$upper[k]))
-			points(x = data$estimate[k],
-			       y = seq_along(k),
-			       pch = 21,
+			plot.window(xlim = xlim, ylim = ylim, xaxs = "r", yaxs = "i")
+			usr <- par("usr")
+			mar <- par("mar")
+			cex <- par("cex") *
+				get_sfcex(label, 0.95 * max(0, mar[2L] - 0.25), "lines")
+			abline(v = axTicks(side = 1L), lty = 3L, col = "grey75")
+			argna <- is.na(lower..)
+			segments(x0 = replace(lower.., argna, usr[1L]),
+			         x1 = value..,
+			         y0 = h,
+			         y1 = h,
+			         lty = 1L + argna,
+			         lwd = 2L - argna)
+			argna <- is.na(upper..)
+			segments(x0 = value..,
+			         x1 = replace(upper.., argna, usr[2L]),
+			         y0 = h,
+			         y1 = h,
+			         lty = 1L + argna,
+			         lwd = 2L - argna)
+			points(x = value..,
+			       y = h,
+			       pch = 21L,
 			       bg = "grey80")
 			box()
-			axis(side = 1)
-			mtext(text = data$label[k],
-			      side = 2,
+			axis(side = 1L)
+			mtext(text = label..,
+			      side = 2L,
 			      line = 0.25,
-			      at = seq_along(k),
+			      at = h,
 			      las = 1,
 			      adj = 1,
 			      padj = 0.5,
-			      cex = gp$cex * sfcex)
+			      cex = cex)
+			title(main = main)
 			title(xlab = xlab)
-			title(main, adj = 0)
-			i <- i + per_plot
+			dev.flush()
 		} # loop over plots
 	} # loop over parameters
 

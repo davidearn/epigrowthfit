@@ -3,10 +3,11 @@ unlist1 <-
 function(x)
 	unlist(x, recursive = FALSE, use.names = FALSE)
 
-## Format probability as percentage
+## Format probabilities as percentages {a copy of stats:::.format_perc}
 formatp <-
-function(x)
-	paste(round(x, digits = 1L), "%")
+function(probs, digits)
+	paste(format(100 * probs, trim = TRUE, scientific = FALSE, digits = digits),
+	      "%")
 
 ## Creates and prints headings;
 ## used to section 'print' method output
@@ -92,13 +93,13 @@ function(x, x0 = NULL) {
 
 ## Computes confidence intervals from point estimates, standard errors
 wald <-
-function(estimate, se, level) {
-	q <- qchisq(level, df = 1)
-	n <- length(estimate)
-	lu <- estimate + rep(sqrt(q) * c(-1, 1), each = n) * se
-	dim(lu) <- c(n, 2L)
-	dimnames(lu) <- list(NULL, c("lower", "upper"))
-	lu
+function(value, se, level) {
+	h <- 0.5 * (1 - level)
+	p <- c(h, 1 - h)
+	q <- qnorm(p)
+	ans <- value + rep(q, each = length(se)) * se
+	dim(ans) <- c(length(se), 2L)
+	ans
 }
 
 ## Real symmetric positive definite matrix   to packed representation
@@ -120,47 +121,4 @@ function(theta) {
 	S <- crossprod(R1)
 	scale <- exp(theta[h] - 0.5 * log(diag(S, names = FALSE)))
 	scale * S * rep(scale, each = n)
-}
-
-##' Apply Length-Preserving Functions to Ragged Vectors
-##'
-##' Modifies ragged vectors \dQuote{in place} by replacing each group of
-##' elements with the result of applying a length-preserving function to
-##' the group.
-##'
-##' @param x
-##'   a vector or data frame.
-##' @param index
-##'   a factor (insofar as \code{as.factor(index)} is a factor) defining
-##'   a grouping of the elements or rows of \code{x}.
-##' @param fun
-##'   a function or list of functions to be applied to the subsets of
-##'   \code{x} defined by \code{index}.  Functions are recycled to the
-##'   number of levels of \code{index}.  Each function must accept a
-##'   vector argument matching \code{typeof(x)} (\code{typeof(x[[j]])}
-##'   for all \code{j} if \code{x} is a data frame) and return a vector
-##'   of the same length.
-##'
-##' @details
-##' Let \code{fun} be a list of \code{nlevels(index)} functions,
-##' and let \code{k = split(seq_along(index), index)}.
-##' For vectors \code{x}, function \code{fun[[i]]} is applied to
-##' \code{x[k[[i]]]}.
-##' For data frames \code{x}, function \code{fun[[i]]} is applied to
-##' \code{x[[j]][k[[i]]]} for all \code{j}.
-##'
-##' @return
-##' If \code{x} is a vector, then a vector of the same length.
-##' If \code{x} is a data frame, then a data frame with the same dimensions.
-
-papply <-
-function(x, index, fun) {
-	F <-
-		if (is.data.frame(x))
-			function(f, x) { x[] <- lapply(x, f); x }
-		else
-			function(f, x) f(x)
-	split(x, index) <-
-		Map(F, if (is.list(fun)) fun else list(fun), split(x, index))
-	x
 }
