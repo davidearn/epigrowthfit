@@ -156,7 +156,7 @@ function(x,
 			                  from = frame_windows_bak$start[m],
 			                  to = frame_windows_bak$end[m],
 			                  by = dt)
-			px <- predict(x,
+			px <- .__predict.egf(x,
 			              what = type,
 			              time = unlist1(time_split),
 			              window = rep.int(frame_windows_bak$window[m],
@@ -273,7 +273,7 @@ function(x,
 	## is much less noisy but sensitive to the (unknown) initial value,
 	## so retrieve the predicted initial value and hope that it's reasonable
 	if (type == "rt") {
-		px <- predict(x,
+		px <- .__predict.egf(x,
 		              what = "cumulative",
 		              time = frame_windows$start,
 		              window = frame_windows$window,
