@@ -2,6 +2,6 @@
 ^TODO[.]org$
 ^misc$
 
-^R/shiny.R$
+^R/egf_shiny.R$
 ^inst/shiny$
 ^man/egf_shiny.Rd$

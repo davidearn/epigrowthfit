@@ -18,10 +18,10 @@ getReport <- local({
 	tt <- chartr("\t\r\n", "   ", tt)
 	tt <- sub("^.*?enum +test *\\{(.*?)\\} *;.*$", "\\1", tt)
 	tt <- gsub(" ", "", tt)
-	enums <- strsplit(tt, ",")[[1L]]
+	enum. <- strsplit(tt, ",")[[1L]]
 
 	function(enum, ...)
-		TMB::MakeADFun(data = list(flag = match(enum, enums, 0L) - 1L, ...),
+		TMB::MakeADFun(data = list(flag = match(enum, enum., 0L) - 1L, ...),
 		               parameters = list(),
 		               type = "Fun",
 		               checkParameterOrder = FALSE,

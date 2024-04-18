@@ -3,7 +3,7 @@
 #include "structs.h"
 #include "utils.h"
 #include "distributions.h"
-#include "enums.h"
+#include "enum.h"
 #include "curve.h"
 #include "nll.h"
 

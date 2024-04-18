@@ -49,15 +49,15 @@ struct indices_t
 template<class Type>
 struct flags_t
 {
-	/* Model of cumulative incidence (enums.h) */
+	/* Model of cumulative incidence (enum.h) */
 	int curve;
 	/* Baseline term in model of cumulative incidence (1=yes, 0=no) */
 	int excess;
-	/* Model of observation error (enums.h) */
+	/* Model of observation error (enum.h) */
 	int family;
 	/* Day of week effects (1=yes, 0=no) */
 	int day_of_week;
-	/* Priors on top and bottom level parameters (enums.h, -1=no prior) */
+	/* Priors on top and bottom level parameters (enum.h, -1=no prior) */
 	vector<int> regularize_top;
 	vector<int> regularize_bottom;
 	/* Trace
