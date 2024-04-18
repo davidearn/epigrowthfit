@@ -171,9 +171,9 @@ function(model, frame, control, env) {
 	}
 
 	## Flags
-	flags <- list(curve = egf_get_flag(model$curve, "curve"),
+	flags <- list(curve = egf_enum(model$curve, "curve"),
 	              excess = as.integer(model$excess),
-	              family = egf_get_flag(model$family, "family"),
+	              family = egf_enum(model$family, "family"),
 	              day_of_week = as.integer(model$day_of_week > 0L),
 	              trace = control$trace,
 	              sparse_X = as.integer(control$sparse_X),
@@ -398,7 +398,7 @@ function(data, priors) {
 		n <- length(l)
 		argnull <- vapply(l, is.null, FALSE)
 
-		flag <- egf_get_flag(vapply(l[!argnull], `[[`, "", "family"), "prior")
+		flag <- egf_enum(vapply(l[!argnull], `[[`, "", "family"), "prior")
 		flag <- replace(rep.int(-1L, n), !argnull, flag)
 		data$flags[[paste0("regularize_", s)]] <- flag
 
