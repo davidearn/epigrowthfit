@@ -1,21 +1,21 @@
-##' Nonstandard evaluation
+##' Nonstandard Evaluation
 ##'
 ##' Utilities for obtaining index vectors from \code{subset}, \code{select},
 ##' and \code{order} arguments and character or expression vectors from
 ##' \code{label} arguments.
 ##'
 ##' @param expr
-##'   A \link{symbol} or \link{call} to be evaluated in an environment
+##'   a \link{symbol} or \link{call} to be evaluated in an environment
 ##'   constructed from \code{data} and \code{enclos} or, in the case of
 ##'   \code{egf_eval_select}, from
 ##'   \code{`names<-`(as.list(seq_len(ncol(data))), names(data))}
 ##'   and \code{enclos}.
-##'   Alternatively, an \R object of a different type to be used in place
-##'   of the hypothetical result of evaluation.
+##'   Alternatively, an \R{} object of a different type to be used in
+##'   place of the hypothetical result of evaluation.
 ##' @param data
-##'   A data frame.
+##'   a data frame.
 ##' @param enclos
-##'   An environment to enclose \code{data}.
+##'   an environment to enclose \code{data}.
 ##'
 ##' @details
 ##' \code{subset} must evaluate to a valid index vector for
@@ -28,22 +28,22 @@
 ##' \code{seq_len(nrow(data))}.
 ##'
 ##' \code{label} must evaluate to a character vector or expression vector
-##' of length 1 or length \code{nrow(data)} or, otherwise, to an \R object
+##' of length 1 or length \code{nrow(data)} or otherwise to an \R{} object
 ##' coercible via \code{as.character} to such a vector.
 ##'
 ##' @return
-##' Let \code{res} be the result of evaluating \code{expr}.
+##' Let \code{val} be the result of evaluating \code{expr}.
 ##'
 ##' \code{egf_eval_subset} returns an increasing integer vector indexing
-##' rows of \code{data}, obtained after some processing of \code{res}.
+##' rows of \code{data}, obtained after some processing of \code{val}.
 ##'
 ##' \code{egf_eval_select} returns
-##' \code{match(names(data[res]), names(data), 0L)},
+##' \code{match(names(data[val]), names(data), 0L)},
 ##' with zeros (if any) deleted.
 ##'
-##' \code{egf_eval_order} returns \code{res}.
+##' \code{egf_eval_order} returns \code{val}.
 ##'
-##' \code{egf_eval_label} returns \code{res} or \code{as.character(res)},
+##' \code{egf_eval_label} returns \code{val} or \code{as.character(val)},
 ##' repeated to length \code{nrow(data)}.
 ##'
 ##' @examples
@@ -60,7 +60,7 @@
 ##' order <- quote(order(month, day))
 ##' egf_eval_order(order, data)
 ##'
-##' label <- quote(sprintf("%d-%02d-%02d", year, match(month, month.abb, 0L), day))
+##' label <- quote(sprintf("%04d-%02d-%02d", year, match(month, month.abb, 0L), day))
 ##' egf_eval_label(label, data)
 
 egf_eval_subset <-

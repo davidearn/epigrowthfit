@@ -33,16 +33,16 @@ function(R0, S0, I0) {
 
 R0 <-
 function(r, breaks, probs) {
-	stopifnot(exprs = {
-		is.double(r)
-		is.double(breaks)
-		length(breaks) >= 2L
-		all(is.finite(range(breaks)))
-		min(diff(breaks)) > 0
-		is.double(probs)
-		length(probs) == length(breaks) - 1L
-		all(is.finite(mm <- range(probs))) && mm[1L] >= 0 && mm[2L] > 0
-	})
+	stopifnot(is.double(r),
+	          is.double(breaks),
+	          length(breaks) >= 2L,
+	          all(is.finite(range(breaks))),
+	          min(diff(breaks)) > 0,
+	          is.double(probs),
+	          length(probs) == length(breaks) - 1L,
+	          all(is.finite(range(probs))),
+	          min(probs) >= 0,
+	          max(probs) >  0)
 	if (min(0, r, na.rm = TRUE) < 0) {
 		warning(gettextf("NaNs produced: negative %s[i]", "r"),
 		        domain = NA)

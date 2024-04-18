@@ -31,7 +31,7 @@ function(word, n) {
 align <-
 function(..., justify = "right", gap = 1L) {
 	dots <- list(...) # list of column vectors
-	dots <- Map(format, x = dots, justify = justify, USE.NAMES = FALSE)
+	dots <- .mapply(format, list(x = dots, justify = justify), NULL)
 	dots[["sep"]] <- strrep(" ", gap)
 	do.call(paste, dots)
 }

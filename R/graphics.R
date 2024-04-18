@@ -1,4 +1,4 @@
-##' Limited axis
+##' Better Axis
 ##'
 ##' A replacement for \code{axis} allowing the user to define the
 ##' extent of the axis line.
@@ -39,7 +39,7 @@ function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 	do.call(axis, c(args, replace(dots, c("lwd", "lwd.ticks"), list(0, dots[["lwd.ticks"]]))))
 }
 
-##' Date axis
+##' Date Axis
 ##'
 ##' Adds an axis to the current plot and labels it with day, month,
 ##' and year, taking care to ensure that labels are nicely spaced.
@@ -48,8 +48,9 @@ function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 ##'   an integer indicating a side of the plot on which to draw the
 ##'   axis, passed to \code{axis}.
 ##' @param origin
-##'   a Date.  Horizontal user coordinates measure time as a number
-##'   of days since \code{julian(origin)} days after 1970-01-01 00:00:00.
+##'   a \code{Date} vector of length 1.  Horizontal user coordinates
+##'   measure time as a number of days since \code{julian(origin)}
+##'   days after 1970-01-01 00:00:00.
 ##' @param minor,major
 ##'   named lists of arguments to \code{axis}, affecting the appearance
 ##'   of the minor (day or month) and major (month or year) axes,
@@ -137,9 +138,9 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 	list(minor = t0 + minor.at, major = t0 + major.at)
 }
 
-##' Get nicely formatted tick labels
+##' Scientific Labels for Axis Ticks
 ##'
-##' Generates nice \code{"mantissa x 10^power"} tick labels for axes,
+##' Generates nice \code{"mantissa x 10^power"} labels for axis ticks,
 ##' at least for count data.
 ##'
 ##' @param at
@@ -176,7 +177,7 @@ function(at) {
 	        expression(0))
 }
 
-##' Calculate a space-filling text size
+##' Space-Filling Character Expansion
 ##'
 ##' Finds the character expansion factor (what is multiplied by
 ##' \code{par("cex")} to obtain the actual magnification) necessary
@@ -190,7 +191,7 @@ function(at) {
 ##' @param units
 ##'   a character string indicating the units of \code{target}.
 ##' @param horizontal
-##'   a logical. If \code{TRUE}, then \code{target} represents
+##'   a logical.  If \code{TRUE}, then \code{target} represents
 ##'   a width rather than a height.
 ##' @param \dots
 ##'   graphical parameters passed to \code{strwidth} or \code{strheight}.
@@ -212,7 +213,7 @@ function(text, target, units = c("lines", "inches", "user"),
 	target / current
 }
 
-##' Modify colour transparency
+##' Modify Colour Transparency
 ##'
 ##' @param col
 ##'   a numeric or character vector listing colours;

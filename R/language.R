@@ -1,4 +1,4 @@
-##' Negate formula terms
+##' Negate Formula Terms
 ##'
 ##' Negates formula terms, simplifying \dQuote{double negatives}.
 ##'
@@ -11,18 +11,18 @@
 ##'
 ##' @examples
 ##' x <- quote(x)
-##' minus_x <- call("-", x)
-##' stopifnot(identical(negate(x), minus_x),
-##'           identical(negate(minus_x), x))
+##' minus.x <- call("-", x)
+##' stopifnot(identical(negate(x), minus.x),
+##'           identical(negate(minus.x), x))
 
 negate <-
 function(x) {
-	if (is.call(x) && x[[1L]] == "-" && length(x) == 2L)
+	if (is.call(x) && identical(x[[1L]], quote(`-`)) && length(x) == 2L)
 		x[[2L]]
 	else call("-", x)
 }
 
-##' Split and unsplit formula terms
+##' Split and Unsplit Formula Terms
 ##'
 ##' Split calls to \code{+} and \code{-} using \code{split_terms}.
 ##' Perform the inverse operation using \code{unsplit_terms}.
@@ -64,14 +64,14 @@ function(x) {
 		x <- x[[length(x)]]
 	if (!is.call(x))
 		list(x)
-	else if (x[[1L]] == "(")
+	else if (identical(x[[1L]], quote(`(`)))
 		Recall(x[[2L]])
-	else if (x[[1L]] == "+") {
+	else if (identical(x[[1L]], quote(`+`))) {
 		if (length(x) == 2L)
 			Recall(x[[2L]])
 		else c(Recall(x[[2L]]), Recall(x[[3L]]))
 	}
-	else if (x[[1L]] == "-") {
+	else if (identical(x[[1L]], quote(`-`))) {
 		if (length(x) == 2L)
 			lapply(Recall(x[[2L]]), negate)
 		else c(Recall(x[[2L]]), lapply(Recall(x[[3L]]), negate))
@@ -87,23 +87,23 @@ function(l) {
 	if (length(l) == 0L)
 		return(NULL)
 	x <- l[[1L]]
-	while (is.call(x) && x[[1L]] == "(")
+	while (is.call(x) && identical(x[[1L]], quote(`(`)))
 		x <- x[[2L]]
 	for (y in l[-1L]) {
-		while (is.call(y) && y[[1L]] == "(")
+		while (is.call(y) && identical(y[[1L]], quote(`(`)))
 			y <- y[[2L]]
 		x <-
-			if (is.call(y) && any(y[[1L]] == c("+", "-")) && length(y) == 2L)
+			if (is.call(y) && (identical(y[[1L]], quote(`+`)) || identical(y[[1L]], quote(`-`))) && length(y) == 2L)
 				as.call(list(y[[1L]], x, y[[2L]]))
 			else call("+", x, y)
 	}
 	x
 }
 
-##' Split fixed and random effects terms
+##' Split Fixed and Random Effect Terms
 ##'
 ##' Constructs from a mixed effects model formula the corresponding
-##' fixed effects model formula and a list of all random effects terms.
+##' fixed effects model formula and a list of all random effect terms.
 ##'
 ##' @param x a formula.
 ##'
@@ -121,12 +121,12 @@ function(x) {
 		stop(gettextf("'%s' is not a formula", "x"),
 		     domain = NA)
 	l <- split_terms(x)
-	b <- vapply(l, function(x) is.call(x) && x[[1L]] == "|", FALSE)
+	b <- vapply(l, function(x) is.call(x) && identical(x[[1L]], quote(`|`)), FALSE)
 	x[[length(x)]] <- if (all(b)) 1 else unsplit_terms(l[!b])
 	list(fixed = x, random = l[b])
 }
 
-##' Split an interaction
+##' Split an Interaction
 ##'
 ##' Split calls to \code{:}.
 ##'
@@ -144,12 +144,12 @@ function(x) {
 	if (!(is.call(x) || is.symbol(x) || (is.atomic(x) && length(x) == 1L)))
 		stop(gettextf("'%s' is not a call, symbol, or atomic constant", "x"),
 		     domain = NA)
-	if (is.call(x) && x[[1L]] == ":")
+	if (is.call(x) && identical(x[[1L]], quote(`:`)))
 		c(Recall(x[[2L]]), Recall(x[[3L]]))
 	else list(x)
 }
 
-##' Replace | with + in formula terms
+##' Replace | with + in Formula Terms
 ##'
 ##' Replaces the first element of \dQuote{first order} calls to \code{|}
 ##' with the symbol \code{+}, in the right hand side of a formula.
@@ -174,10 +174,10 @@ function(x) {
 	x
 }
 
-##' Expand and simplify formula terms
+##' Expand and Simplify Formula Terms
 ##'
 ##' Expands and simplifies calls to \code{+} and \code{-} using
-##' \code{\link{terms}(simplify = TRUE)} machinery.
+##' \code{\link{terms.formula}(simplify = TRUE)} machinery.
 ##' Rules outlined under \code{\link{formula}} are extended to handle
 ##' \dQuote{first order} calls to \code{|}.
 ##'
@@ -207,7 +207,7 @@ function(x) {
 	if (!is.call(x))
 		return(x)
 	l <- split_terms(x)
-	b <- vapply(l, function(x) is.call(x) && x[[1L]] == "|", FALSE)
+	b <- vapply(l, function(x) is.call(x) && identical(x[[1L]], quote(`|`)), FALSE)
 	if (all(b))
 		x <- NULL
 	else {

@@ -1,4 +1,4 @@
-##' Manipulate top level nonlinear model parameter names
+##' Manipulate Top Level Nonlinear Model Parameter Names
 ##'
 ##' Utilities for modifying strings \code{s} and
 ##' \code{fs = \link{sprintf}("\%s(\%s)", f, s)},
@@ -8,7 +8,7 @@
 ##' (either \code{"log"} or \code{"logit"})
 ##' used internally for that parameter.
 ##'
-##' @param s,fs Character vectors.
+##' @param s,fs character vectors.
 ##'
 ##' @return
 ##' For strings \code{s}, \code{f}, and \code{fs} as described above,
@@ -59,14 +59,14 @@ function(fs) {
 	fs
 }
 
-##' Get link and inverse link functions
+##' Get Link and Inverse Link Functions
 ##'
 ##' Retrieve the link function named by a string, or its inverse.
 ##'
 ##' @param f
-##'   A \link{character} string naming a link function.
+##'   a \link{character} string naming a link function.
 ##' @param inverse
-##'   A \link{logical} flag. If \code{TRUE}, then the inverse is returned.
+##'   a \link{logical}.  If \code{TRUE}, then the inverse is returned.
 ##'
 ##' @return
 ##' A function.

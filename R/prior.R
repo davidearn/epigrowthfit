@@ -2,60 +2,59 @@ Normal <-
 function(mu = 0, sigma = 1) {
 	stopifnot(is.numeric(mu),
 	          length(mu) > 0L,
-	          is.finite(mu),
+	          all(is.finite(range(mu))),
 	          is.numeric(sigma),
 	          length(sigma) > 0L,
-	          is.finite(sigma),
-	          sigma > 0)
-	res <- list(family = "norm",
+	          all(is.finite(range(sigma))),
+	          min(sigma) > 0)
+	ans <- list(family = "norm",
 	            parameters = list(mu = as.double(mu), sigma = as.double(sigma)))
-	class(res) <- "egf_prior"
-	res
+	class(ans) <- "egf_prior"
+	ans
 }
 
 LKJ <-
 function(eta = 1) {
 	stopifnot(is.numeric(eta),
 	          length(eta) > 0L,
-	          is.finite(eta),
-	          eta > 0)
-	res <- list(family = "lkj",
+	          all(is.finite(range(eta))),
+	          min(eta) > 0)
+	ans <- list(family = "lkj",
 	            parameters = list(eta = as.double(eta)))
-	class(res) <- "egf_prior"
-	res
+	class(ans) <- "egf_prior"
+	ans
 }
 
 Wishart <-
 function(df, scale, tol = 1e-06) {
-	stopifnot(is.numeric(tol),
+	if (is.matrix(scale))
+		scale <- list(scale)
+	stopifnot(is.numeric(df),
+	          length(df) > 0L,
+	          all(is.finite(range(df))),
+	          is.list(scale),
+	          is.numeric(tol),
 	          length(tol) == 1L,
 	          is.finite(tol),
 	          tol >= 0)
-	if (is.matrix(scale))
-		scale <- list(scale)
-	else stopifnot(is.list(scale))
 	for (i in seq_along(scale))
-		stopifnot(is.numeric(scale[[i]]),
-		          length(scale[[i]]) > 0L,
-		          is.finite(scale[[i]]),
-		          isSymmetric.matrix(scale[[i]]),
-		          (e <- eigen(scale[[i]], symmetric = TRUE, only.values = TRUE)$values) > -tol * abs(e[1L]),
-		          diag(scale[[i]]) > 0)
-	stopifnot(is.numeric(df),
-	          length(df) > 0L,
-	          is.finite(df),
-	          rep.int(df, length(scale)) > rep.int(vapply(scale, nrow, 0L), length(df)) - 1L)
-	scale <- lapply(scale, cov2theta)
-	res <- list(family = "wishart",
-	            parameters = list(df = as.double(df),
-	                              scale = unname(scale)))
-	class(res) <- "egf_prior"
-	res
+	stopifnot(is.numeric(scale[[i]]),
+	          length(scale[[i]]) > 0L,
+	          all(is.finite(range(scale[[i]]))),
+	          isSymmetric.matrix(scale[[i]]),
+	          min(e <- eigen(scale[[i]], symmetric = TRUE, only.values = TRUE)[["values"]]) > -tol * abs(e[1L]),
+	          min(diag(scale[[i]], names = FALSE)) > 0)
+	stopifnot(all(rep.int(df, length(scale)) > rep.int(vapply(scale, nrow, 0L), length(df)) - 1L))
+	scale <- unname(lapply(scale, cov2theta))
+	ans <- list(family = "wishart",
+	            parameters = list(df = as.double(df), scale = scale))
+	class(ans) <- "egf_prior"
+	ans
 }
 
 InverseWishart <-
 function(df, scale, tol = 1e-06) {
-	res <- Wishart(df = df, scale = scale, tol = tol)
-	res$family <- "invwishart"
-	res
+	ans <- Wishart(df = df, scale = scale, tol = tol)
+	ans[["family"]] <- "invwishart"
+	ans
 }

@@ -1,4 +1,4 @@
-##' Decompose a date-time object
+##' Decompose a Date-Time Object
 ##'
 ##' Extracts year, month, and day (in UTC) from a date-time object.
 ##'
@@ -37,11 +37,11 @@ function(x, which = "ymd", drop = TRUE) {
 	ans <- c(1900L + x$year, 1L + x$mon, x$mday)
 	dim(ans) <- c(length(x), 3L)
 	dimnames(ans) <- list(names(x), c("y", "m", "d"))
-	j <- match(strsplit(which, "")[[1L]], colnames(ans), 0L)
+	j <- match(strsplit(which, "")[[1L]], c("y", "m", "d"), 0L)
 	ans[, j, drop = drop]
 }
 
-##' Round a Date vector
+##' Round a Date Vector
 ##'
 ##' Rounds each element of a \link{Date} vector to the previous or next
 ##' midnight (\code{00:00:00}),
@@ -60,20 +60,20 @@ function(x, which = "ymd", drop = TRUE) {
 ##' dmy <- c("day", "month", "year")
 ##'
 ##' l <- sapply(dmy, ceiling.Date, x = x, simplify = FALSE)
-##' ceiling_x <- data.frame(unclass_x = unclass(x), x = x, l)
+##' ceiling.x <- data.frame(unclass.x = unclass(x), x = x, l)
 ##'
 ##' l <- sapply(dmy, floor.Date, x = x, simplify = FALSE)
-##' floor_x <- replace(ceiling_x, dmy, l)
+##' floor.x <- replace(ceiling.x, dmy, l)
 
 ceiling.Date <-
-function(x, to = c("day", "month", "year")) {
+function(x, units = c("day", "month", "year")) {
 	stopifnot(inherits(x, "Date"))
-	to <- match.arg(to)
-	if (to == "day")
+	units <- match.arg(units)
+	if (units == "day")
 		return(.Date(ceiling(unclass(x))))
 	x <- as.POSIXlt(x)
 	off <- x$mday > 1L | x$hour > 0L | x$min > 0L | x$sec > 0
-	if (to == "month") {
+	if (units == "month") {
 		x$mon <- x$mon + off
 		x$year <- x$year + (off <- x$mon > 11L)
 		x$mon[off] <- 0L
@@ -87,14 +87,14 @@ function(x, to = c("day", "month", "year")) {
 }
 
 floor.Date <-
-function(x, to = c("day", "month", "year")) {
+function(x, units = c("day", "month", "year")) {
 	stopifnot(inherits(x, "Date"))
-	to <- match.arg(to)
-	if (to == "day")
+	units <- match.arg(units)
+	if (units == "day")
 		return(.Date(floor(unclass(x))))
 	x <- as.POSIXlt(x)
 	x$mday[] <- 1L
-	if (to == "year")
+	if (units == "year")
 		x$mon[] <- 0L
 	as.Date(x)
 }
