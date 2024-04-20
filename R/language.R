@@ -1,3 +1,15 @@
+asExpr <-
+as.expression.default
+
+xapply <-
+function(...)
+	asExpr(lapply(...))
+
+split.expression <-
+function(x, f, drop = FALSE, ...)
+	lapply(split.default(x = seq_along(x), f = f, drop = drop, ...),
+	       function(i) x[i])
+
 ##' Negate Formula Terms
 ##'
 ##' Negates formula terms, simplifying \dQuote{double negatives}.
@@ -28,7 +40,7 @@ function(x) {
 ##' Perform the inverse operation using \code{unsplit_terms}.
 ##'
 ##' @param x a call, symbol, or atomic constant.
-##' @param l a list of calls, symbols, and atomic constants.
+##' @param l an expression vector.
 ##'
 ##' @details
 ##' Calls to \code{(} are replaced with their first argument,
@@ -42,8 +54,7 @@ function(x) {
 ##' @return
 ##' For \code{split_terms}:
 ##'
-##' A list of calls, symbols, and atomic constants,
-##' none of which is a call to \code{+} or \code{-}.
+##' An expression vector without calls to \code{+} or \code{-}.
 ##'
 ##' For \code{unsplit_terms}:
 ##'
@@ -63,7 +74,7 @@ function(x) {
 	if (inherits(x, "formula"))
 		x <- x[[length(x)]]
 	if (!is.call(x))
-		list(x)
+		asExpr(x)
 	else if (identical(x[[1L]], quote(`(`)))
 		Recall(x[[2L]])
 	else if (identical(x[[1L]], quote(`+`))) {
@@ -73,16 +84,16 @@ function(x) {
 	}
 	else if (identical(x[[1L]], quote(`-`))) {
 		if (length(x) == 2L)
-			lapply(Recall(x[[2L]]), negate)
-		else c(Recall(x[[2L]]), lapply(Recall(x[[3L]]), negate))
+			xapply(Recall(x[[2L]]), negate)
+		else c(Recall(x[[2L]]), xapply(Recall(x[[3L]]), negate))
 	}
-	else list(x)
+	else asExpr(x)
 }
 
 unsplit_terms <-
 function(l) {
-	if (!is.list(l))
-		stop(gettextf("'%s' is not a list", "l"),
+	if (!is.expression(l))
+		stop(gettextf("'%s' is not an expression vector", "l"),
 		     domain = NA)
 	if (length(l) == 0L)
 		return(NULL)
@@ -102,15 +113,15 @@ function(l) {
 
 ##' Split Fixed and Random Effect Terms
 ##'
-##' Constructs from a mixed effects model formula the corresponding
-##' fixed effects model formula and a list of all random effect terms.
+##' Constructs from a mixed effects model formula an expression
+##' vector containing the corresponding fixed effects model formula
+##' and any random effect terms.
 ##'
 ##' @param x a formula.
 ##'
 ##' @return
-##' A list with elements:
-##' \item{fixed}{a formula.}
-##' \item{random}{a list of calls to \code{|}.}
+##' An expression vector of length at least one.  The first element
+##' is a formula and the remaining elements are calls to \code{|}.
 ##'
 ##' @examples
 ##' split_effects(y ~ 0 + x + (1 | f) + (a | g))
@@ -123,7 +134,7 @@ function(x) {
 	l <- split_terms(x)
 	b <- vapply(l, function(x) is.call(x) && identical(x[[1L]], quote(`|`)), FALSE)
 	x[[length(x)]] <- if (all(b)) 1 else unsplit_terms(l[!b])
-	list(fixed = x, random = l[b])
+	c(asExpr(x), l[b])
 }
 
 ##' Split an Interaction
@@ -133,8 +144,7 @@ function(x) {
 ##' @param x a call, symbol, or atomic constant.
 ##'
 ##' @return
-##' A list of calls, symbols, and atomic constants,
-##' none of which is a call to \code{:}.
+##' An expression vector without calls to \code{:}.
 ##'
 ##' @examples
 ##' split_interaction(quote(a:b:I(f:g):sort(h)))
@@ -146,10 +156,10 @@ function(x) {
 		     domain = NA)
 	if (is.call(x) && identical(x[[1L]], quote(`:`)))
 		c(Recall(x[[2L]]), Recall(x[[3L]]))
-	else list(x)
+	else asExpr(x)
 }
 
-##' Replace | with + in Formula Terms
+##' Replace \code{|} with \code{+} in Formula Terms
 ##'
 ##' Replaces the first element of \dQuote{first order} calls to \code{|}
 ##' with the symbol \code{+}, in the right hand side of a formula.
@@ -165,12 +175,11 @@ function(x) {
 		stop(gettextf("'%s' is not a formula", "x"),
 		     domain = NA)
 	l <- split_effects(x)
-	x <- l[[ "fixed"]]
-	l <- l[["random"]]
-	if (length(l) == 0L)
-		return(x)
-	l <- lapply(l, `[[<-`, 1L, quote(`+`))
-	x[[length(x)]] <- unsplit_terms(c(list(x[[length(x)]]), l))
+	x <- l[[1L]]
+	if (length(l) > 1L) {
+		l <- xapply(l[-1L], `[[<-`, 1L, quote(`+`))
+		x[[length(x)]] <- unsplit_terms(c(asExpr(x[[length(x)]]), l))
+	}
 	x
 }
 
@@ -220,16 +229,15 @@ function(x) {
 	function(x) {
 		lhs <- Recall.(x[[2L]])
 		rhs <- split_terms(Recall.(x[[3L]]))
-		lapply(rhs, function(x) call("|", lhs, x))
+		xapply(rhs, function(x) call("|", lhs, x))
 	}
 	condense <-
 	function(l) {
-		lhs <- lapply(l, `[[`, 2L)
+		lhs <- xapply(l, `[[`, 2L)
 		rhs <- l[[1L]][[3L]]
 		call("|", Recall.(unsplit_terms(lhs)), rhs)
 	}
-	l <- unlist(lapply(l[b], expand), recursive = FALSE)
+	l <- asExpr(unlist(lapply(l[b], expand), recursive = FALSE, use.names = FALSE))
 	g <- vapply(l, function(x) deparse(x[[3L]]), "")
-	unsplit_terms(c(if (!is.null(x)) list(x),
-	                tapply(l, g, condense, simplify = FALSE)))
+	unsplit_terms(c(if (!is.null(x)) asExpr(x), xapply(split(l, g), condense)))
 }

@@ -138,8 +138,8 @@ function(model, frame, control, env) {
 
 	## List of fixed effects formulae and list of lists of random effects terms
 	l <- lapply(frame$parameters, function(x) split_effects(formula(terms(x))))
-	fixed <- lapply(l, `[[`, "fixed")
-	random <- lapply(l, `[[`, "random")
+	fixed <- lapply(l, `[[`, 1L)
+	random <- lapply(l, `[`, -1L)
 
 	## Fixed effects infrastructure
 	X <- Map(egf_make_X, fixed = fixed,
@@ -149,7 +149,7 @@ function(model, frame, control, env) {
 	beta_index_tab <- c(table(Xc$effects$top))
 
 	## Random effects infrastructure
-	random1 <- unlist1(random)
+	random1 <- asExpr(unlist1(random))
 	names(random1) <- rep.int(names(random), lengths(random))
 	Z <- Map(egf_make_Z, random = random1,
 	         data = rep.int(frame$parameters, lengths(random)))

@@ -68,7 +68,7 @@ function(formula_parameters, names_parameters, check_intercept) {
 	if (check_intercept) {
 		check <-
 		function(x) {
-			a <- attributes(terms(split_effects(x)$fixed))
+			a <- attributes(terms(split_effects(x)[[1L]]))
 			a$intercept == 1L || length(a$term.labels) == 0L
 		}
 		ok <-
@@ -99,7 +99,7 @@ function(model,
 		          USE.NAMES = FALSE)
 		cl <- match.call()
 		cl[[1L]] <- quote(model.frame)
-		cl$formula <- as.formula(call("~", unsplit_terms(tt)),
+		cl$formula <- as.formula(call("~", unsplit_terms(asExpr(tt))),
 		                         env = environment(formula))
 		cl$subset <- subset
 		mf <- eval(cl, parent.frame())
@@ -219,15 +219,15 @@ function(model,
 
 	get_names_bar_lhs <-
 	function(formula) {
-		bars <- split_effects(formula)$random
-		if (length(bars) == 0L)
+		l <- split_effects(formula)
+		if (length(l) == 1L)
 			return(character(0L))
 		f <-
 		function(x) {
 			vars <- attr(terms(as.formula(call("~", x[[2L]]))), "variables")
 			vapply(vars, deparse1, "")[-1L]
 		}
-		unique(unlist1(lapply(bars, f)))
+		unique(unlist1(lapply(l[-1L], f)))
 	}
 	names_bar_lhs <- lapply(formula_parameters, get_names_bar_lhs)
 	check_ok_bar_lhs <-
@@ -574,7 +574,7 @@ function(fixed, data, sparse) {
 egf_make_Z <-
 function(random, data) {
 	X <- egf_make_X(as.formula(call("~", random[[2L]])), data = data, sparse = FALSE)
-	ng <- vapply(split_interaction(random[[3L]]), deparse1, "")
+	ng <- vapply(split_interaction(random[[3L]]), deparse, "")
 	g <- interaction(data[ng], drop = TRUE, sep = ":", lex.order = FALSE)
 	Z <- t(fastKhatriRao(g, t(X)))
 	## For consistency, we desire 'model.matrix'-style names for group levels

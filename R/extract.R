@@ -113,19 +113,19 @@ function(object,
 
 	if (which == "fixed") {
 		## Return parameter-specific fixed effects design matrix
-		ans <- egf_make_X(fixed = l[["fixed"]],
+		ans <- egf_make_X(fixed = l[[1L]],
 		                  data = frame,
 		                  sparse = object[["control"]][["sparse_X"]])
 		return(ans)
 	}
 
 	if (is.null(random)) {
-		if (length(l[["random"]]) == 0L)
+		if (length(l) == 1L)
 			## Return empty sparse matrix with correct number of rows
 			ans <- object[["tmb_out"]][["env"]][["data"]][["Z"]][, integer(0L), drop = FALSE]
 		else {
 			## Return parameter-specific combined random effects design matrix
-			Z <- lapply(l[["random"]], egf_make_Z, data = frame)
+			Z <- lapply(l[-1L], egf_make_Z, data = frame)
 			ans <- do.call(cbind, Z)
 
 			## Append 'contrasts' but not 'assign', which only makes sense
@@ -139,13 +139,13 @@ function(object,
 
 	stopifnot(is.call(random), identical(random[[1L]], quote(`|`)))
 
-	if (length(l[["random"]]) == 0L)
+	if (length(l) == 1L)
 		stop(gettextf("expected %s = %s : mixed effects model formula for parameter '%s' does not contain random effects terms",
 		              "random", "NULL", top),
 		     domain = NA)
-	if (!any(match(l[["random"]], list(random), 0L)))
+	if (!any(match(l[-1L], asExpr(random), 0L)))
 		stop(gettextf("expected %s = %s or in %s",
-		              "random", "NULL", deparse(as.expression(l[["random"]]))),
+		              "random", "NULL", deparse(l[-1L])),
 		     domain = NA)
 
 	## Return term-specific random effects design matrix
@@ -169,8 +169,8 @@ function(x, top = egf_top(x), split = FALSE, ...) {
 	ans <- formula(terms(x, top = top))
 	if (split) {
 		l <- split_effects(ans)
-		ans <- l[["fixed"]]
-		attr(ans, "random") <- lapply(l[["random"]], function(x) call("(", x))
+		ans <- l[[1L]]
+		attr(ans, "random") <- l[-1L]
 	}
 	ans
 }
