@@ -44,7 +44,7 @@ function(formula) {
 
 egf_sanitize_formula_parameters <-
 function(formula_parameters, names_parameters, check_intercept) {
-	recycled <- inherits(formula_parameters, "formula")
+	recycled <- is.formula(formula_parameters)
 	if (recycled) {
 		formula_parameters <- simplify_terms(formula_parameters)
 		p <- length(names_parameters)

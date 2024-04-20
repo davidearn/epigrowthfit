@@ -21,16 +21,15 @@ function(model,
          init = list(),
          map = list(),
          ...) {
-	stopifnot(inherits(formula_ts, "formula"),
-	          inherits(formula_windows, "formula"))
-	if (inherits(formula_parameters, "formula"))
+	stopifnot(is.formula(formula_ts), is.formula(formula_windows))
+	if (is.formula(formula_parameters))
 		stopifnot(length(formula_parameters) == 2L)
 	else
 		stopifnot(is.list(formula_parameters),
-		          vapply(formula_parameters, inherits, FALSE, "formula"),
+		          all(vapply(formula_parameters, is.formula, FALSE)),
 		          lengths(formula_parameters) == 3L)
 	stopifnot(is.list(formula_priors),
-	          vapply(formula_priors, inherits, FALSE, "formula"),
+	          all(vapply(formula_priors, is.formula, FALSE)),
 	          lengths(formula_priors) == 3L)
 	if (missing(data_ts))
 		data_ts <- environment(formula_ts)
@@ -44,10 +43,8 @@ function(model,
 	na_action_ts <- match.arg(na_action_ts)
 	na_action_windows <- match.arg(na_action_windows)
 	stopifnot(inherits(control, "egf_control"),
-	          isTrueFalse(fit),
-	          isTrueFalse(se),
-	          is.list(init),
-	          is.list(map))
+	          isTrueFalse(fit), isTrueFalse(se),
+	          is.list(init), is.list(map))
 
 	names_parameters <- egf_top(model)
 

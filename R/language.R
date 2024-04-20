@@ -10,6 +10,10 @@ function(x, f, drop = FALSE, ...)
 	lapply(split.default(x = seq_along(x), f = f, drop = drop, ...),
 	       function(i) x[i])
 
+is.formula <-
+function(x)
+	inherits(x, "formula")
+
 ##' Negate Formula Terms
 ##'
 ##' Negates formula terms, simplifying \dQuote{double negatives}.
@@ -71,7 +75,7 @@ function(x) {
 	if (!(is.call(x) || is.symbol(x) || (is.atomic(x) && length(x) == 1L)))
 		stop(gettextf("'%s' is not a call, symbol, or atomic constant", "x"),
 		     domain = NA)
-	if (inherits(x, "formula"))
+	if (is.formula(x))
 		x <- x[[length(x)]]
 	if (!is.call(x))
 		asExpr(x)
@@ -128,7 +132,7 @@ function(l) {
 
 split_effects <-
 function(x) {
-	if (!inherits(x, "formula"))
+	if (!is.formula(x))
 		stop(gettextf("'%s' is not a formula", "x"),
 		     domain = NA)
 	l <- split_terms(x)
@@ -171,7 +175,7 @@ function(x) {
 
 gsub_bar_plus <-
 function(x) {
-	if (!inherits(x, "formula"))
+	if (!is.formula(x))
 		stop(gettextf("'%s' is not a formula", "x"),
 		     domain = NA)
 	l <- split_effects(x)
@@ -209,7 +213,7 @@ function(x) {
 	if (!(is.call(x) || is.symbol(x) || (is.atomic(x) && length(x) == 1L)))
 		stop(gettextf("'%s' is not a call, symbol, or atomic constant", "x"),
 		     domain = NA)
-	if (inherits(x, "formula")) {
+	if (is.formula(x)) {
 		x[[length(x)]] <- Recall(x[[length(x)]])
 		return(x)
 	}
