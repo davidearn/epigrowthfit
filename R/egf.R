@@ -108,7 +108,6 @@ function(model,
 	            value = NULL,
 	            gradient = NULL,
 	            hessian = NULL,
-	            sdreport = NULL,
 	            effects = env$effects,
 	            contrasts = env$contrasts,
 	            call = match.call())
@@ -131,20 +130,15 @@ function(model,
 
 	res$best <- as.double(tmb_out$env$last.par.best)
 	res$value <- as.double(tmb_out$env$value.best)
-	if (se) {
-		call <- quote(sdreport(res$tmb_out,
-		                       par.fixed = res$best[!res$random],
-		                       getReportCovariance = FALSE))
-		res$sdreport <- tryCatch(eval(call),
-		                         error = function(e) `[[<-`(e, "call", call))
-	}
-	if (!se || inherits(res$sdreport, "error")) {
+	if (se)
+		rpt <- egf_adreport(res, check = FALSE)
+	if (!se || inherits(rpt, "error")) {
 		res$gradient <- tmb_out$gr(res$best[!res$random])
 		res$hessian <- NA
 	}
 	else {
-		res$gradient <- res$sdreport$gradient.fixed
-		res$hessian <- res$sdreport$pdHess
+		res$gradient <- rpt$gradient.fixed
+		res$hessian <- rpt$pdHess
 	}
 
 	class(res) <- "egf"

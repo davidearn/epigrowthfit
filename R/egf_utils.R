@@ -576,8 +576,7 @@ function(random, data) {
 	X <- egf_make_X(as.formula(call("~", random[[2L]])), data = data, sparse = FALSE)
 	ng <- vapply(split_interaction(random[[3L]]), deparse1, "")
 	g <- interaction(data[ng], drop = TRUE, sep = ":", lex.order = FALSE)
-	J <- as(g, Class = "sparseMatrix")
-	Z <- t(KhatriRao(J, t(X)))
+	Z <- t(fastKhatriRao(g, t(X)))
 	## For consistency, we desire 'model.matrix'-style names for group levels
 	G <- model.matrix(as.formula(call("~", call("+", 0, random[[3L]]))), data = data)
 	j <- colSums(abs(G)) > 0
@@ -590,6 +589,47 @@ function(random, data) {
 	          assign = rep(attr(X, "assign"), times = ncol(G)),
 	          contrasts = attr(X, "contrasts"),
 	          level = gl(ncol(G), ncol(X), labels = levels(g)))
+}
+
+egf_make_A <-
+function(object, top, subset) {
+	stopifnot(!object[["control"]][["profile"]])
+
+	ftop <- factor(fixef(object)[["top"]], levels = top)
+
+	par <- coef(object)
+	len <- attr(par, "len")
+	map <- attr(par, "map")
+
+	Y <- object[["tmb_out"]][["env"]][["data"]][["Y"]]
+	Y <- as.vector(Y[subset, top, drop = FALSE])
+
+	X <- model.matrix(object, "fixed")
+	X <- as(X[subset, , drop = FALSE], "CsparseMatrix")
+
+	A <- fastKhatriRao(ftop, X)
+
+	if (!is.null(map[["beta"]])) {
+	fmap <- as.factor(map[["beta"]])
+	if (!anyNA(fmap))
+		A <- A %*% fastFactorAsSparse(fmap, 1L)
+	else {
+		par. <- coef(object, full = TRUE)
+		beta <- par.[labels(par.) == "beta"]
+		k <- is.na(fmap)
+		Y <- Y + as.vector(tcrossprod(X[, k, drop = FALSE],
+		                              fastKhatriRao(ftop[k], t(beta[k]))))
+		A <- A[, !k, drop = FALSE] %*% fastFactorAsSparse(fmap[!k], 1L)
+	}
+	}
+
+	if (min(rowSums(A != 0)) == 0)
+		stop("found population fitted value not depending on any fixed effects coefficient")
+
+	m <- nrow(A)
+	n <- len[["theta"]]
+	cbind(Y, A, new("dgCMatrix", Dim = c(m, n), p = integer(n + 1L)),
+	      deparse.level = 0L)
 }
 
 ##' Combine design matrices

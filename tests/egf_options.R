@@ -152,7 +152,7 @@ reference <- list(window = NULL,
                   box = NULL,
                   axis = list(x = NULL, y = NULL),
                   title = list(main = NULL, sub = NULL, xlab = NULL, ylab = NULL),
-                  tdoubling = c(legend = NULL, estimate = NULL, ci = NULL))
+                  doubling = c(legend = NULL, estimate = NULL, ci = NULL))
 
 recurseOK <-
 function(x, reference) {

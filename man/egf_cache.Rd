@@ -2,7 +2,7 @@
 \alias{egf_cache}
 \title{Cache example objects}
 \usage{
-egf_cache(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...)
+egf_cache(file, object, topic = NULL, clear = FALSE, clearAll = FALSE, ...)
 }
 \arguments{
 \item{file}{A character string containing the base name of a file.
@@ -18,18 +18,18 @@ from \code{file}, and an error is thrown if the attempt fails.}
 \item{clear}{A logical flag. If \code{TRUE}, then \code{file} is deleted by
 \code{\link{file.remove}} if it exists, and nothing else is done.}
 
-\item{clear_all}{A logical flag. If \code{TRUE}, then the package subdirectory
+\item{clearAll}{A logical flag. If \code{TRUE}, then the package subdirectory
 containing all cache files is deleted if it exists, and nothing
-else is done. \code{clear_all} is resolved before \code{clear}.}
+else is done. \code{clearAll} is resolved before \code{clear}.}
 
 \item{...}{Arguments passed to \code{\link{saveRDS}}.}
 }
 \value{
-If \code{clear = FALSE} and \code{clear_all = FALSE},
+If \code{clear = FALSE} and \code{clearAll = FALSE},
 then \code{object} or an \R object restored from \code{file}
 by \code{\link{readRDS}}.
 
-If \code{clear = TRUE} or \code{clear_all = TRUE},
+If \code{clear = TRUE} or \code{clearAll = TRUE},
 then the result of \code{\link{unlink}}.
 }
 \description{
@@ -39,7 +39,7 @@ It is not intended for use outside of this context.
 (It is only exported so that it can be accessed without \code{\link{:::}}
 in Examples.)
 }
-\section{Behaviour when clear = FALSE and clear_all = FALSE}{
+\section{Behaviour when clear = FALSE and clearAll = FALSE}{
 
 If \code{file} is found by \code{\link{file.exists}}, then the
 cached object is restored by \code{\link{readRDS}} and returned.

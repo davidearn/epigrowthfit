@@ -2,11 +2,11 @@
 \alias{egf_has_converged}
 \title{Check for convergence}
 \usage{
-egf_has_converged(object, tol = 1)
+egf_has_converged(object, check = TRUE, tol = 1)
 }
 \arguments{
 \item{object}{An \code{"\link{egf}"} object.}
-
+\item{check}{a logical.  If \code{TRUE}, then test inheritance.}
 \item{tol}{A positive number. Convergence requires all gradient elements
 to be less than or equal to \code{tol} in absolute value.}
 }

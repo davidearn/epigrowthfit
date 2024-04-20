@@ -20,7 +20,7 @@ function(object, parm, level = 0.95,
 	which <- NULL
 
 	if (m.A <- is.null(A)) {
-		top. <- egf_top(fitted)
+		top. <- egf_top(object)
 		top <- unique(match.arg(top, top., several.ok = TRUE))
 
 		frame <- model.frame(object, "combined")
@@ -39,7 +39,7 @@ function(object, parm, level = 0.95,
 		stopifnot(nrow(A) > 0L,
 		          ncol(A) == 1L + length(par),
 		          is.finite(range(A)),
-		          min(rowSums(A[, -1L] != 0)) > 0)
+		          min(rowSums(A[, -1L, drop = FALSE] != 0)) > 0)
 	else {
 		which <- `names<-`(seq_along(par), labels(par))[which]
 		A <- new("dgRMatrix",
@@ -58,7 +58,7 @@ function(object, parm, level = 0.95,
 		class <- m.A
 
 	if (method == "wald" && m.A && random) {
-		rpt <- egf_get_sdreport(object)
+		rpt <- egf_adreport(object)
 		i <- names(rpt[["value"]]) == "Y"
 		value <- rpt[["value"]][i]
 		se    <- rpt[["sd"   ]][i]
@@ -69,16 +69,17 @@ function(object, parm, level = 0.95,
 		ans <- wald(value, se, level)
 	}
 	else if (method == "wald") {
-		rpt <- egf_get_sdreport(object)
+		rpt <- egf_adreport(object)
 		P. <- rpt[["par.fixed"]]
 		V. <- rpt[["cov.fixed"]]
-		if (!is.null(which))
+		if (!is.null(which)) {
 			value <- P.[which]
 			se    <- sqrt(diag(V., names = FALSE)[which])
+		}
 		else {
 			A. <- A[, -1L, drop = FALSE]
 			V. <- A. %*% tcrossprod(V., A.)
-			value <- A %*% c(1, P.)
+			value <- as.vector(A %*% c(1, P.))
 			se    <- sqrt(diag(V., names = FALSE))
 		}
 		ans <- wald(value, se, level)

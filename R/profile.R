@@ -37,7 +37,7 @@ function(fitted,
 		stopifnot(nrow(A) > 0L,
 		          ncol(A) == 1L + length(par),
 		          is.finite(range(A)),
-		          min(rowSums(A[, -1L] != 0)) > 0)
+		          min(rowSums(A[, -1L, drop = FALSE] != 0)) > 0)
 	else {
 		which <- `names<-`(seq_along(par), labels(par))[A]
 		A <- new("dgRMatrix",

@@ -5,8 +5,8 @@ function(object, ...) {
 		ans <- unclass(summary(x))
 		if (anyNA(x)) ans else c(ans, "NA's" = 0)
 	}
-	fo <- fitted(object)
-	ans. <- aggregate(fo["estimate"], fo["top"], summary1)
+	fo <- fitted(object, class = TRUE)
+	ans. <- aggregate(fo["value"], fo["top"], summary1)
 	ans. <- `colnames<-`(t(ans.[[2L]]), as.character(ans.[[1L]]))
 	if (max(0, ans.["NA's", ]) == 0)
 		ans. <- ans.[-match("NA's", rownames(ans.), 0L), , drop = FALSE]

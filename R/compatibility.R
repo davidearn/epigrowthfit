@@ -140,8 +140,7 @@ function(object, parm, level = 0.95, log = TRUE, ...) {
 	          isTrueFalse(log), attr(object, "se"))
 
 	res <- data.frame(object[-match("se", names(object), 0L)],
-	                  wald(estimate = object$estimate, se = object$se,
-	                       level = level))
+	                  wald(object$estimate, object$se, level = level))
 	attr(res, "level") <- level
 	if (!log) {
 		elu <- c("estimate", "lower", "upper")

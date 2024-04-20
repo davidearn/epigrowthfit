@@ -10,7 +10,7 @@
   log = TRUE,
   zero = NA,
   show_predict = TRUE,
-  show_tdoubling = FALSE,
+  show_doubling = FALSE,
   level = 0.95,
   control = egf_control_plot(),
   cache = NULL,
@@ -67,7 +67,7 @@ when \code{log = TRUE}.
 0 is to draw neither.
 Logical values are coerced to integer.}
 
-\item{show_tdoubling}{An integer flag:
+\item{show_doubling}{An integer flag:
 2 is to print initial doubling time estimates in the top margin
 with confidence intervals,
 1 is to print estimates only,
@@ -77,7 +77,7 @@ Supported only if \code{x$model$curve} is
 \code{"exponential"}, \code{"logistic"}, or \code{"richards"}.}
 
 \item{level}{A number in the interval (0,1). This is the confidence level used
-when \code{show_predict = 2} or \code{show_tdoubling = 2}.}
+when \code{show_predict = 2} or \code{show_doubling = 2}.}
 
 \item{control}{An \code{"\link{egf_control_plot}"} object controlling the appearance
 of most plot elements.}
@@ -147,13 +147,13 @@ x <- egf_cache("egf-1.rds")
 l <- list(legend = list(cex = 0.8),
           estimate = list(cex = 0.8, font = 2),
           ci = list(cex = 0.8))
-control <- egf_control_plot(tdoubling = l)
+control <- egf_control_plot(doubling = l)
 
 op <- par(mar = c(3.5, 5, 5, 1))
 plot(x,
      type = "interval",
      show_predict = 2L,
-     show_tdoubling = 2L,
+     show_doubling = 2L,
      control = control)
 plot(x,
      type = "cumulative",

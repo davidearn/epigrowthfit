@@ -2,7 +2,7 @@ coef.egf <-
 function(object, random = FALSE, full = FALSE, ...) {
 	stopifnot(isTrueFalse(random), isTrueFalse(full))
 	if (full) {
-		ans <- egf_expand_par(object[["tmb_out"]], par = object[["best"]])
+		ans <- egf_par_expand(object[["tmb_out"]], par = object[["best"]])
 		len <- attr(ans, "len")
 	}
 	else {

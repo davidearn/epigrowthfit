@@ -45,7 +45,7 @@ ranef.egf_no_fit <- ranef.egf
 
 vcov.egf <-
 function(object, ...)
-	egf_get_sdreport(object)[["cov.fixed"]]
+	egf_adreport(object)[["cov.fixed"]]
 
 getCall.egf <-
 function(x, ...) {

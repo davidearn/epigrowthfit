@@ -12,140 +12,151 @@ function(object, link = TRUE, ...) {
 
 egf_top.egf_model <-
 function(object, link = TRUE, ...) {
-	top <- switch(object$curve,
+	top <- switch(object[["curve"]],
 	              exponential = c("r", "c0"),
 	              subexponential = c("alpha", "c0", "p"),
 	              gompertz = c("alpha", "tinfl", "K"),
 	              logistic = c("r", "tinfl", "K"),
 	              richards = c("r", "tinfl", "K", "a"))
-	if (object$excess)
+	if (object[["excess"]])
 		top <- c(top, "b")
-	if (object$family == "nbinom")
+	if (object[["family"]] == "nbinom")
 		top <- c(top, "disp")
-	if (object$day_of_week > 0L)
+	if (object[["day_of_week"]] > 0L)
 		top <- c(top, paste0("w", 1:6))
 	if (link) egf_link_add(top) else top
 }
 
 egf_top.egf <-
 function(object, link = TRUE, ...)
-	egf_top(object$model, link = link)
+	egf_top(object[["model"]], link = link, ...)
 
 egf_top.egf_no_fit <- egf_top.egf
 
 egf_has_random <-
-function(object) {
-	stopifnot(inherits(object, c("egf", "egf_no_fit")))
-	ncol(object$tmb_out$env$data$Z) > 0L
+function(object, check = TRUE) {
+	if (check) stopifnot(inherits(object, c("egf", "egf_no_fit")))
+	ncol(object[["tmb_out"]][["env"]][["data"]][["Z"]]) > 0L
 }
 
 egf_has_converged <-
-function(object, tol = 1) {
-	stopifnot(inherits(object, "egf"))
-	object$optimizer_out$convergence == 0L &&
-	    is.finite(object$value) &&
-	    all(is.finite(object$gradient)) &&
-	    max(abs(object$gradient)) < tol &&
-	    object$hessian
+function(object, check = TRUE, tol = 1) {
+	if (check) stopifnot(inherits(object, "egf"))
+	object[["optimizer_out"]][["convergence"]] == 0L &&
+		is.finite(object[["value"]]) &&
+		all(is.finite(range(object[["gradient"]]))) &&
+		max(abs(range(object[["gradient"]]))) < tol &&
+		object[["hessian"]]
 }
 
-##' Convert between condensed and full parameter vectors
+##' Convert Condensed and Full Parameter Vectors
 ##'
 ##' Condense the full bottom level parameter vector \code{c(beta, theta, b)}
 ##' to the representation used by \pkg{TMB} (as in, e.g., \code{last.par.best}),
 ##' which excludes mapped elements, or do the inverse operation.
 ##'
 ##' @param obj
-##'   A list returned by \code{\link[TMB]{MakeADFun}}.
+##'   a list returned by \code{\link[TMB]{MakeADFun}}.
 ##' @param par
-##'   A numeric vector.
+##'   a numeric vector.
 ##'
 ##' @return
-##' \code{egf_expand_par} returns \code{c(beta, theta, b)}.
-##' \code{egf_condense_par} returns \code{c(cbeta, ctheta, cb)},
+##' \code{egf_par_expand} returns \code{c(beta, theta, b)}.
+##' \code{egf_par_condense} returns \code{c(cbeta, ctheta, cb)},
 ##' where \code{cbeta} is the condensed representation of \code{beta},
 ##' and so on.
-##' Attribute \code{lengths} preserves the length of each segment.
+##' Attribute \code{len} preserves the length of each segment.
 
-egf_expand_par <-
+egf_par_expand <-
 function(obj, par) {
 	names(par) <- NULL
-	l <- obj$env$parList(par[obj$env$lfixed()], par)
-	if (ncol(obj$env$data$Z) == 0L)
+	l <- obj[["env"]][["parList"]](par[obj[["env"]][["lfixed"]]()], par)
+	if (ncol(obj[["env"]][["data"]][["Z"]]) == 0L)
 		l[names(l) != "beta"] <- list(double(0L))
-	res <- unlist1(l)
-	attr(res, "len") <- lengths(l)
-	res
+	ans <- unlist1(l)
+	attr(ans, "len") <- lengths(l)
+	ans
 }
 
-egf_condense_par <-
+egf_par_condense <-
 function(obj, par) {
 	names(par) <- NULL
-	parameters <- obj$env$parameters
+	parameters <- obj[["env"]][["parameters"]]
 	f <-
 	function(x) {
 		if (is.null(map <- attr(x, "map"))) {
-			res <- seq_along(x)
-			attr(res, "n") <- length(x)
+			ans <- seq_along(x)
+			attr(ans, "n") <- length(x)
 		}
 		else {
-			res <- match(seq_len(attr(x, "nlevels")) - 1L, map)
-			attr(res, "n") <- length(map)
+			ans <- match(seq_len(attr(x, "nlevels")) - 1L, map)
+			attr(ans, "n") <- length(map)
 		}
-		res
+		ans
 	}
 	index <- lapply(parameters, f)
 	len <- vapply(index, attr, 0L, "n")
 	l <- split(par, rep.int(gl(length(len), 1L, labels = names(len)), len))
 	l <- Map(`[`, l, index)
-	res <- unlist1(l)
-	attr(res, "len") <- lengths(l)
-	res
+	ans <- unlist1(l)
+	attr(ans, "len") <- lengths(l)
+	ans
 }
 
-##' Extract TMB-generated covariance information
+##' Extract \pkg{TMB}-Generated \dQuote{Reports}
 ##'
-##' A utility for extracting or, if necessary, computing covariance information,
-##' reused by various methods.
+##' Utilities for retrieving (or, if necessary, computing) the result
+##' of a call to \code{report} or \code{\link[TMB]{sdreport}}.
 ##'
-##' @param object
-##'   An \code{"\link{egf}"} object.
+##' @param object an \code{\link{egf}} object.
 ##'
-##' @return
-##' An \code{"\link{sdreport}"} object.
+##' @return A list.
 
-egf_get_sdreport <-
-function(object) {
-	stopifnot(inherits(object, "egf"))
-	res <- object$sdreport
-	if (is.null(res)) {
-		if (egf_has_random(object))
-			warning(gettextf("computing Hessian matrix for random effects model; retry with %s to avoid recomputation",
-			                 "object = update(object, se = TRUE)"),
-			        domain = NA)
-		call <- quote(sdreport(object$tmb_out,
-		                       par.fixed = object$best[!object$random],
-		                       getReportCovariance = FALSE))
-		res <- tryCatch(eval(call),
-		                error = function(e) `[[<-`(e, "call", call))
+egf_report <-
+function(object, check = TRUE) {
+	if (check) stopifnot(inherits(object, "egf"))
+	ans <- object[["tmb_out"]][[".__egf__."]][["report"]]
+	if (is.null(ans)) {
+		call <- quote(object[["tmb_out"]][["report"]](object[["best"]]))
+		ans <- object[["tmb_out"]][[".__egf__."]][["report"]] <-
+			tryCatch(eval(call), error = function(e) `[[<-`(e, "call", call))
 	}
-	if (inherits(res, "error"))
-		stop(res)
-	res
+	if (inherits(ans, "error"))
+		stop(ans)
+	ans
 }
 
-##' Patch TMB-generated functions
+egf_adreport <-
+function(object, check = TRUE) {
+	if (check) stopifnot(inherits(object, "egf"))
+	ans <- object[["tmb_out"]][[".__egf__."]][["adreport"]]
+	if (is.null(ans)) {
+		if (egf_has_random(object, check = check))
+			message("computing a Hessian matrix ...")
+		call <- quote(sdreport(object[["tmb_out"]],
+		                       par.fixed = object[["best"]][!object[["random"]]],
+		                       getReportCovariance = FALSE))
+		ans <- object[["tmb_out"]][[".__egf__."]][["adreport"]] <-
+			tryCatch(eval(call), error = function(e) `[[<-`(e, "call", call))
+	}
+	if (inherits(ans, "error"))
+		stop(ans)
+	ans
+}
+
+##' Patch \pkg{TMB}-Generated Functions
 ##'
 ##' Define wrapper functions on top of \code{\link[TMB]{MakeADFun}}-generated
-##' functions \code{fn} and \code{gr}, so that function and gradient evaluations
-##' can retry inner optimization using fallback methods in the event that the
-##' default method (usually \code{\link[TMB]{newton}}) fails.
+##' functions \code{fn} and \code{gr}, so that function and gradient
+##' evaluations can retry inner optimization using fallback methods
+##' in the event that the default method (usually \code{\link[TMB]{newton}})
+##' fails.
 ##'
 ##' @param fn,gr
-##'   Functions to be patched, assumed to be the so-named elements
-##'   of a \code{\link[TMB]{MakeADFun}}-generated list object.
+##'   functions to be patched, assumed to be the so-named elements
+##'   of a list returned by \code{\link[TMB]{MakeADFun}}.
 ##' @param inner_optimizer
-##'   A list of \code{"\link{egf_inner_optimizer}"} objects
+##'   a list of \code{\link{egf_inner_optimizer}} objects
 ##'   specifying inner optimization methods to be tried in turn.
 ##'
 ##' @return
@@ -154,13 +165,13 @@ function(object) {
 egf_patch_fn <-
 function(fn, inner_optimizer) {
 	e <- environment(fn)
-	if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE))
-		e$.egf_env <- new.env(parent = emptyenv())
-	e$.egf_env$fn <- fn
-	e$.egf_env$inner_optimizer <- inner_optimizer
+	if (!exists(".__egf__.", where = e, mode = "environment", inherits = FALSE))
+		e[[".__egf__."]] <- new.env(parent = emptyenv())
+	e[[".__egf__."]][["fn"]] <- fn
+	e[[".__egf__."]][["inner_optimizer"]] <- inner_optimizer
 
 	## For 'R CMD check'
-	last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL
+	last.par <- random <- inner.method <- inner.control <- .__egf__. <- NULL
 	pfn <-
 	function(x = last.par[-random], ...) {
 		oim <- inner.method
@@ -169,10 +180,10 @@ function(fn, inner_optimizer) {
 			inner.method <<- oim
 			inner.control <<- oic
 		})
-		for (io in .egf_env$inner_optimizer) {
-			inner.method <<- io$method
-			inner.control <<- io$control
-			v <- .egf_env$fn(x, ...)
+		for (io in .__egf__.[["inner_optimizer"]]) {
+			inner.method <<- io[["method"]]
+			inner.control <<- io[["control"]]
+			v <- .__egf__.[["fn"]](x, ...)
 			if (is.numeric(v) && length(v) == 1L && is.finite(v))
 				return(v)
 		}
@@ -185,13 +196,13 @@ function(fn, inner_optimizer) {
 egf_patch_gr <-
 function(gr, inner_optimizer) {
 	e <- environment(gr)
-	if (!exists(".egf_env", where = e, mode = "environment", inherits = FALSE))
-		e$.egf_env <- new.env(parent = emptyenv())
-	e$.egf_env$gr <- gr
-	e$.egf_env$inner_optimizer <- inner_optimizer
+	if (!exists(".__egf__.", where = e, mode = "environment", inherits = FALSE))
+		e[[".__egf__."]] <- new.env(parent = emptyenv())
+	e[[".__egf__."]][["gr"]] <- gr
+	e[[".__egf__."]][["inner_optimizer"]] <- inner_optimizer
 
 	# For 'R CMD check'
-	last.par <- random <- inner.method <- inner.control <- .egf_env <- NULL
+	last.par <- random <- inner.method <- inner.control <- .__egf__. <- NULL
 	pgr <-
 	function(x = last.par[-random], ...) {
 		oim <- inner.method
@@ -201,14 +212,14 @@ function(gr, inner_optimizer) {
 			inner.control <<- oic
 		})
 		n <- length(x)
-		for (io in .egf_env$inner_optimizer) {
-			inner.method <<- io$method
-			inner.control <<- io$control
-			v <- .egf_env$gr(x, ...)
-			if (is.numeric(v) && length(v) == n && all(is.finite(v)))
+		for (io in .__egf__.[["inner_optimizer"]]) {
+			inner.method <<- io[["method"]]
+			inner.control <<- io[["control"]]
+			v <- .__egf__.[["gr"]](x, ...)
+			if (is.numeric(v) && length(v) == n && all(is.finite(range(v))))
 				return(v)
 		}
-		warning(gettextf("unable to evaluate '%s', returning %f",
+		warning(gettextf("unable to evaluate %s, returning %f",
 		                 "gr(x)", NaN),
 		        domain = NA)
 		NaN # warning because length 1 result is unexpected
@@ -217,52 +228,10 @@ function(gr, inner_optimizer) {
 	pgr
 }
 
-egf_preprofile <-
-function(object, subset, top) {
-	if (object$control$profile)
-		stop(gettextf("fixed effects coefficients profiled out of likelihood; retry with %s",
-		              "object = update(object, control = egf_control(profile = FALSE))"),
-		     domain = NA)
-
-	Y <- object$tmb_out$env$data$Y
-	Y <- Y[subset, top, drop = FALSE]
-	X <- model.matrix(object, "fixed")
-	X <- X[subset, , drop = FALSE]
-
-	c0 <- coef(object)
-	len <- attr(c0, "len")
-	map <- attr(c0, "map")$beta
-	if (is.null(map)) {
-		argna <- logical(len[["beta"]])
-		fmap <- gl(len[["beta"]], 1L)
-	}
-	else {
-		argna <- is.na(map)
-		fmap <- factor(map[!argna])
-	}
-
-	c1 <- coef(object, full = TRUE)
-	beta <- c1[labels(c1) == "beta"]
-
-	ftop <- factor(fixef(object)$top, levels = top)
-	J <- as(ftop, "sparseMatrix")
-	A <- KhatriRao(J, X)
-
-	B <- KhatriRao(J, t(beta))
-	Y <- Y + tcrossprod(X[, argna, drop = FALSE], B[, argna, drop = FALSE])
-
-	A <- tcrossprod(A[, !argna, drop = FALSE], as(fmap, "sparseMatrix"))
-	A <- cbind(A, Matrix(0, nrow(A), len[["theta"]]))
-
-	if (all(rowSums(abs(A)) > 0))
-		list(Y = Y, A = A)
-	else stop("found population fitted value not depending on any fixed effects coefficient")
-}
-
 egf_cache <-
-function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
+function(file, object, topic = NULL, clear = FALSE, clearAll = FALSE, ...) {
 	subdir <- R_user_dir("epigrowthfit", "cache")
-	if (clear_all)
+	if (clearAll)
 		return(unlink(subdir, recursive = TRUE))
 	path <- file.path(subdir, file)
 	if (clear)
@@ -272,15 +241,14 @@ function(file, object, topic = NULL, clear = FALSE, clear_all = FALSE, ...) {
 	if (missing(object)) {
 		if (is.null(topic)) {
 			name <- sub("-\\d+\\.rds$", "", file)
-			pattern <- paste0("^", gsub("-", "\\\\W", name))
-			pattern <- paste0(pattern, "$")
+			pattern <- paste0("^", gsub("-", "\\\\W", name), "$")
 			hs <- help.search(pattern,
 			                  ignore.case = FALSE,
 			                  package = "epigrowthfit",
 			                  fields = "name",
 			                  types = "help",
 			                  verbose = FALSE)
-			topic <- hs$matches$Topic
+			topic <- hs[["matches"]][["Topic"]]
 			if (length(topic) != 1L)
 				stop(gettextf("resource not created because '%s' matches %d topics",
 				              "file", length(topic)),

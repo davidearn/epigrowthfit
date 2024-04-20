@@ -4,14 +4,14 @@
 \alias{ranef.egf_no_fit}
 \title{Extract random effect conditional modes}
 \usage{
-\method{ranef}{egf}(object, build_cov = FALSE, ...)
+\method{ranef}{egf}(object, makeSigma = FALSE, ...)
 
-\method{ranef}{egf_no_fit}(object, build_cov = FALSE, ...)
+\method{ranef}{egf_no_fit}(object, makeSigma = FALSE, ...)
 }
 \arguments{
 \item{object}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}
 
-\item{build_cov}{A logical flag.
+\item{makeSigma}{A logical flag.
 If \code{TRUE}, then random effect covariance matrices are constructed
 from segment \code{theta} of
 \code{\link[=coef.egf]{coef}(object, full = TRUE)}
@@ -57,7 +57,7 @@ A data frame with one row per coefficient and variables:
   from segment \code{b} of
   \code{\link[=coef.egf]{coef}(object, full = TRUE)}.
 }
-If \code{build_cov = TRUE}, then the result has attribute \code{Sigma},
+If \code{makeSigma = TRUE}, then the result has attribute \code{Sigma},
 a list of covariance matrices corresponding to the levels of variable
 \code{cov}.
 }

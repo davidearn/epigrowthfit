@@ -201,16 +201,16 @@ function(model, frame, control, env) {
 	     Y = Y,
 	     Xd =
 	         if (control$sparse_X)
-	         	matrix(double(0L), N, 0L)
+	         	array(0, dim = c(N, 0L))
 	         else Xc$X,
 	     Xs =
 	         if (control$sparse_X)
 	         	Xc$X
-	         else Matrix(double(0L), N, 0L, sparse = TRUE),
+	         else new("dgCMatrix", Dim = c(N, 0L)),
 	     Z =
 	         if (!is.null(Zc))
 	         	Zc$Z
-	         else Matrix(double(0L), N, 0L, sparse = TRUE),
+	         else new("dgCMatrix", Dim = c(N, 0L)),
 	     beta_index = beta_index,
 	     b_index = b_index,
 	     beta_index_tab = beta_index_tab,

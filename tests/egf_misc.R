@@ -64,13 +64,14 @@ stopifnot(exprs = {
 })
 
 
-## egf_(expand|condense)_par ###########################################
+## egf_par_expand   ####################################################
+## egf_par_condense ####################################################
 
 t.2 <- o.2[["tmb_out"]]
 p.2 <- t.2[["env"]][["last.par.best"]]
 
-p.2e <- egf_expand_par(t.2, p.2)
-p.2ec <- egf_condense_par(t.2, p.2e)
+p.2e <- egf_par_expand(t.2, p.2)
+p.2ec <- egf_par_condense(t.2, p.2e)
 
 len <- c(table(factor(names(p.2), levels = c("beta", "theta", "b"))))
 

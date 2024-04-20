@@ -10,7 +10,7 @@ egf_control_plot(
   box,
   axis,
   title,
-  tdoubling
+  doubling
 )
 }
 \arguments{
@@ -55,7 +55,7 @@ The elements are named lists of arguments to \code{\link{title}}
 affecting the appearance of plot (sub)titles and axis labels.
 \code{sub$adj} defaults to \code{main$adj}.}
 
-\item{tdoubling}{A named list of the form \code{list(legend, estimate, ci)}.
+\item{doubling}{A named list of the form \code{list(legend, estimate, ci)}.
 The elements are named lists of arguments to \code{\link{mtext}}
 affecting the appearance of initial doubling times printed in the
 top margin.}

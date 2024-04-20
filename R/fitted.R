@@ -14,8 +14,8 @@ function(object,
 	top <- unique(match.arg(top, top., several.ok = TRUE))
 
 	frame <- model.frame(object, "combined")
-	subset <- egf_eval_subset(subset, frame_combined, parent.frame())
-	select <- egf_eval_select(select, frame_combined, baseenv())
+	subset <- egf_eval_subset(subset, frame, parent.frame())
+	select <- egf_eval_select(select, frame, baseenv())
 	frame <- frame[subset, select, drop = FALSE]
 
 	info <- model.frame(object, "windows")[subset, c("ts", "window")]
@@ -23,7 +23,7 @@ function(object,
 	window <- info[["window"]]
 
 	if (se. <- se) {
-		rpt <- egf_get_sdreport(object)
+		rpt <- egf_adreport(object)
 		i <- names(rpt[["value"]]) == "Y"
 		value <- rpt[["value"]][i]
 		se    <- rpt[["sd"   ]][i]
@@ -33,7 +33,7 @@ function(object,
 		se    <- as.vector(se   [subset, top, drop = FALSE])
 	}
 	else {
-		value <- object[["tmb_out"]][["report"]](object[["best"]])[["Y"]]
+		value <- egf_report(object)[["Y"]]
 		dimnames(value) <- list(NULL, top.)
 		value <- as.vector(value[subset, top, drop = FALSE])
 	}
@@ -106,6 +106,8 @@ function(object, parm = seq_len(nrow(object)), level = 0.95,
 		dimnames(ans) <- list(paste(o.[["top"]], o.[["ts"]], o.[["window"]], sep = ", "),
 		                      percent)
 	else {
+		ns <- attr(object, "ns")
+		nt <- attr(object, "nt")
 		dim(ans) <- c(ns, nt, 2L)
 		dimnames(ans) <- list(paste(o.[["ts"]][seq_len(ns)], o.[["window"]][seq_len(ns)], sep = ", "),
 		                      as.character(o.[["top"]][seq.int(1L, by = ns, length.out = nt)]),
