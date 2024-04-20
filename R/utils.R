@@ -122,3 +122,60 @@ function(theta) {
 	scale <- exp(theta[h] - 0.5 * log(diag(S, names = FALSE)))
 	scale * S * rep(scale, each = n)
 }
+
+## op(Matrix::fac2sparse(x)), more directly
+fastFactorAsSparse <- function(x, margin = 1L) {
+	x <- as.factor(x)
+	l <- levels(x)
+	m <- length(x)
+	n <- length(l)
+	if (!anyNA(x)) {
+		p <- 0L:m
+		j <- as.integer(x) - 1L
+	}
+	else {
+		k <- is.na(x)
+		p <- c(0L, cumsum(!k))
+		j <- as.integer(x)[!k] - 1L
+	}
+	if (margin == 1L) {
+		A <- new("dgRMatrix")
+		A@Dim <- c(m, n)
+		A@Dimnames <- list(names(x), l)
+		A@j <- j
+	}
+	else if (margin == 2L) {
+		A <- new("dgCMatrix")
+		A@Dim <- c(n, m)
+		A@Dimnames <- list(l, names(x))
+		A@i <- j
+	}
+	else stop("should never happen")
+	A@p <- p
+	A@x <- rep.int(1, length(j))
+	A
+}
+
+## Matrix::KhatriRao(Matrix::fac2sparse(x), Y), more directly
+fastKhatriRao <- function(x, Y) {
+	Y <- as(Y, "CsparseMatrix")
+	d <- Y@Dim
+	if (length(x) != d[2L])
+		stop("should never happen")
+	p.diff <- Y@p[-1L] - Y@p[-length(Y@p)]
+	x <- as.factor(x)
+	i <- (as.integer(x) - 1L) * d[1L]
+	A <- new("dgCMatrix")
+	A@Dim <- d * c(nlevels(x), 1L)
+	if (!anyNA(x))
+		A@p <- Y@p
+	else {
+		k <- is.na(x)
+		p.diff[k] <- 0L
+		A@p <- c(0L, cumsum(p.diff))
+		Y <- Y[, !k, drop = FALSE]
+	}
+	A@i <- Y@i + rep.int(i, p.diff)
+	A@x <- Y@x
+	A
+}
