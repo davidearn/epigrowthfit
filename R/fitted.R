@@ -73,6 +73,7 @@ function(object, ...) {
 	call <- match.call(expand.dots = FALSE)
 	call[[1L]] <- quote(fitted.egf)
 	object[["best"]] <- object[["init"]]
+	class(object) <- "egf" # for egf_report(., check = TRUE)
 	eval(call)
 }
 

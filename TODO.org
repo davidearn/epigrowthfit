@@ -33,6 +33,8 @@ a nontrivial 'napredict' method
 but maybe move towards camel case or "other" for exported functions
 and methods
 
+** TODO Decide about partial 'egf' objects, then document
+
 ** TODO Expand tests ...
 
 * TODO epigrowthfit 0.16.z
