@@ -1,34 +1,50 @@
-* TODO Submit epigrowthfit 0.15.0 to CRAN
+* TODO epigrowthfit 0.15.z
 
-** TODO Finish transition away from testthat
+** TODO Use language objects, not strings, to store <link>(<response>)
 
-Easy stuff done with 'sed -e s/*/*/g'; rest "by hand".
+** TODO 'profile' with conventional 'par.vals'
 
-** TODO De-activate "features" no longer wanted in API
+** TODO 'fixef' and 'ranef' with option to get just the coefficients
 
-Mostly straightforward, but documentation must be updated.
+** TODO 'coef' excluding 'theta' by default
 
-*** TODO plot(<egf_confint>, type = "boxes")
-*** TODO confint(<egf>, top = c("R0", "tdoubling"))
-*** TODO '.subset', '.append' arguments to methods [replace with 'nse' flag]
+Maybe an argument which = <subset of c("beta", "theta", "b")>
+replacing random = <T|F> ...
 
-** TODO API change: user should specify cumulative incidence
+** TODO 'plot' using 'dev.hold' and 'dev.flush'
 
-So that future changes for non-count data are backwards compatible.
+** TODO 'predict' with nontrivial 'newdata'
 
-Will resolve awkwardness with interval incidence: first observation
-is often discarded unnecessarily.
+** TODO API for getting predicted _incidence_ ... maybe 'predictNL' ??
 
-** TODO Prior distribution density function should integrate to one
+** TODO 'egf' option for supplying cumulative incidence
 
-So that later transition to TMB entry points is backwards compatible.
-https://github.com/kaskr/adcomp/issues/351
+** TODO Refactor for 'egf' argument validation
 
-** TODO Update README.md
+Support start = -Inf, end = Inf; try to catch more nonsense cases;
+handle 'na.action' in a more conventional way and then maybe define
+a nontrivial 'napredict' method
 
-Should definitely happen, even if it is in .Rbuildignore.
+** TODO Implement missing methods (consider all generic functions in stats, nlme)
 
+** TODO Loosely enforce a variable naming convention
 
-* TODO Submit epigrowthfit 0.15.1 to CRAN
+'egf_' prefix with snake case is OK for organizing internal functions
+but maybe move towards camel case or "other" for exported functions
+and methods
 
-** TODO Simple vignette ...
+** TODO Expand tests ...
+
+* TODO epigrowthfit 0.16.z
+
+** TODO Prior distribution density functions integrating to unity
+
+** TODO Simple vignette
+
+** TODO Debug Shiny applications then re-activate 'egf_shiny'
+
+** TODO Expand tests ...
+
+* TODO epigrowthfit 0.17.z
+
+** TODO Support non-count data, distribution families
