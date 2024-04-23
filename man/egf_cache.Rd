@@ -1,50 +1,49 @@
 \name{egf_cache}
 \alias{egf_cache}
-\title{Cache example objects}
+\title{Cache Example Objects}
+\description{
+A utility for caching objects created when code in the \sQuote{Examples}
+section of an \pkg{epigrowthfit} help page is sourced, typically by a
+call to \code{\link{example}}.  It is not intended for use outside of
+this context.  It is only exported so that it can be accessed without
+\code{\link{:::}} in \sQuote{Examples}.
+}
 \usage{
-egf_cache(file, object, topic = NULL, clear = FALSE, clearAll = FALSE, ...)
+egf_cache(file, object, topic = NULL, clear = FALSE, clearAll = FALSE, \dots)
 }
 \arguments{
-\item{file}{A character string containing the base name of a file.
-The absolute path to the cache file is
-\code{\link{file.path}(tools::\link{R_user_dir}("epigrowthfit", "cache"), file)}.}
-
-\item{object}{An \R object.}
-
-\item{topic}{A character string specifying the topic associated with \code{file}.
-If \code{NULL}, then an attempt is made to recover \code{topic}
-from \code{file}, and an error is thrown if the attempt fails.}
-
-\item{clear}{A logical flag. If \code{TRUE}, then \code{file} is deleted by
-\code{\link{file.remove}} if it exists, and nothing else is done.}
-
-\item{clearAll}{A logical flag. If \code{TRUE}, then the package subdirectory
-containing all cache files is deleted if it exists, and nothing
-else is done. \code{clearAll} is resolved before \code{clear}.}
-
-\item{...}{Arguments passed to \code{\link{saveRDS}}.}
+\item{file}{
+  a character string containing the base name of a file.
+  The absolute path to the cache file is
+  \code{\link{file.path}(\link[tools]{R_user_dir}("epigrowthfit", "cache"), file)}.}
+\item{object}{
+  an \R{} object.}
+\item{topic}{
+  a character string specifying the topic associated with \code{file}.
+  If \code{NULL}, then an attempt is made to recover \code{topic} from
+  \code{file}, and an error is thrown if the attempt fails.}
+\item{clear}{
+  a logical flag.  If \code{TRUE}, then \code{file} is removed by
+  \code{\link{unlink}} if it exists, and nothing else is done.}
+\item{clearAll}{
+  a logical flag.  If \code{TRUE}, then the cache directory is
+  removed by \code{\link{unlink}} if it exists, and nothing else
+  is done.  \code{clearAll} is resolved before \code{clear}.}
+\item{\dots}{
+  optional arguments passed to \code{\link{saveRDS}}.}
 }
 \value{
 If \code{clear = FALSE} and \code{clearAll = FALSE},
-then \code{object} or an \R object restored from \code{file}
+then \code{object} or an \R{} object restored from \code{file}
 by \code{\link{readRDS}}.
 
 If \code{clear = TRUE} or \code{clearAll = TRUE},
-then the result of \code{\link{unlink}}.
+then the value of the call to \code{\link{unlink}}.
 }
-\description{
-A utility for caching objects created when code in the Examples section
-of an \pkg{epigrowthfit} help page is sourced by \code{\link{example}}.
-It is not intended for use outside of this context.
-(It is only exported so that it can be accessed without \code{\link{:::}}
-in Examples.)
-}
-\section{Behaviour when clear = FALSE and clearAll = FALSE}{
-
+\section{Behaviour when \code{clear = FALSE} and \code{clearAll = FALSE}}{
 If \code{file} is found by \code{\link{file.exists}}, then the
 cached object is restored by \code{\link{readRDS}} and returned.
-Due to lazy evaluation of arguments by \R, \code{object} remains
-a \link{promise} and is never evaluated.
+In this case, \code{object} is never evaluated.
 
 If \code{file} is not found but \code{object} is supplied,
 then \code{object} is written to \code{file} by \code{\link{saveRDS}}
@@ -52,22 +51,25 @@ and returned.
 
 If \code{file} is not found and \code{object} is missing,
 then \code{\link{example}(topic, character.only = TRUE)}
-is run in order to create the file.
-If this works, then the cached object is restored using
-\code{\link{readRDS}}. Otherwise, an error is thrown.
+is run in order to create the file.  If this works, then
+the cached object is restored using \code{\link{readRDS}}.
+Otherwise, an error is thrown.
+}
+\section{File Naming System}{
+In calls to \code{egf_cache} found in the \sQuote{Examples}
+for topic \code{topic}, \code{file} is set equal to the string
+obtained by
+
+\itemize{
+\item replacing non-word characters in \code{topic} with hyphens,
+then
+\item appending a hyphen, an integer index, and a \file{.rds}
+extension to the end of the resulting string.
 }
 
-\section{File naming system}{
-
-In calls to \code{egf_cache} found in the Examples for topic \code{topic}
-(except for this one) \code{file} is set equal to the string obtained by
-(i) replacing non-word characters in \code{topic} with hyphens; then
-(ii) appending a hyphen, an integer index, and an \code{".rds"} extension
-to the end of the resulting string.
 This system allows \code{topic} to be recovered from \code{file} via
 pattern matching against topics found by \code{\link{help.search}}.
 }
-
 \examples{
 subdir <- tools::R_user_dir("epigrowthfit", "cache")
 lf1 <- list.files(subdir)
@@ -85,5 +87,4 @@ stopifnot(identical(x, 1),
           identical(a, 1),
           identical(setdiff(lf2, lf1), file),
           identical(lf3, lf1))
-
 }

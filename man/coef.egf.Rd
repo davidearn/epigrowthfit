@@ -13,16 +13,17 @@ parameters, and random effect coefficients.
 }
 \usage{
 \method{coef}{egf}(object, random = FALSE, full = FALSE, \dots)
-\method{coef}{egf_no_fit}(object, \dots)
 }
 \arguments{
-\item{object}{an \code{\link{egf}} or \code{\link[=egf]{egf_no_fit}}
-  object.}
-\item{random}{a logical.  If \code{FALSE}, then segment \code{b}
-  is excluded.}
-\item{full}{a logical.  If \code{FALSE}, then mapped elements are
-  excluded, and the result is called \dQuote{condensed}.}
-\item{\dots}{unused optional arguments.}
+\item{object}{
+  an \code{\link{egf}} object.}
+\item{random}{
+  a logical.  If \code{FALSE}, then segment \code{b} is excluded.}
+\item{full}{
+  a logical.  If \code{FALSE}, then mapped elements are excluded,
+  and the result is called \dQuote{condensed}.}
+\item{\dots}{
+  unused optional arguments.}
 }
 \value{
 A numeric vector concatenating \code{beta}, \code{theta}, and
@@ -42,9 +43,8 @@ and \code{y} are identical.
 The result inherits from class \code{coef.egf}, which has methods
 for \code{\link{print}}, \code{\link{as.list}}, and \code{\link{labels}}.
 }
-\note{
-The method for class \code{egf_no_fit} returns the initial value
-of the parameter vector, not an estimated value.
+\seealso{
+The generic function \code{\link{coef}}.
 }
 \examples{
 object <- egf_cache("egf-2.rds")

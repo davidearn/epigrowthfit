@@ -1,16 +1,19 @@
 \name{egf_has_random}
 \alias{egf_has_random}
-\title{Check for random effects}
+\title{Test for Random Effects}
+\description{
+Tests whether an object specifies a model with random effects.
+}
 \usage{
 egf_has_random(object, check = TRUE)
 }
 \arguments{
-\item{object}{An \code{"\link{egf}"} or \code{"egf_no_fit"} object.}
-\item{check}{a logical.  If \code{TRUE}, then test inheritance.}
+\item{object}{
+  an \code{\link{egf}} object.}
+\item{check}{
+  a logical.  If \code{TRUE}, then an error is thrown if \code{object}
+  does not actually inherit from class \code{\link{egf}}.}
 }
 \value{
 \code{TRUE} or \code{FALSE}.
-}
-\description{
-Determines whether an object specifies a random effects model.
 }

@@ -11,13 +11,15 @@ cov2theta(Sigma)
 theta2cov(theta)
 }
 \arguments{
-\item{Sigma}{an \eqn{n}-by-\eqn{n} real, symmetric positive definite
-  matrix.  Only the upper triangle is \dQuote{seen}.}
-\item{theta}{a numeric vector of length \eqn{n(n+1)/2}{n*(n+1)/2}
-  whose first \eqn{n} elements are positive.}
+\item{Sigma}{
+  an \eqn{n}-by-\eqn{n} real, symmetric positive definite matrix.
+  Only the upper triangle is \dQuote{seen}.}
+\item{theta}{
+  a numeric vector of length \eqn{n(n+1)/2}{n*(n+1)/2} whose first
+  \eqn{n} elements are positive.}
 }
 \details{
-An \eqn{n}-by-\eqn{n} real, symmetric positive definite matrix
+An \eqn{n}-by-\eqn{n} real, symmetric, positive definite matrix
 \eqn{\Sigma} can be factorized as
 \deqn{\Sigma = R' R\,.}{Sigma = R' * R .}
 The upper triangular Cholesky factor \eqn{R} can be written as

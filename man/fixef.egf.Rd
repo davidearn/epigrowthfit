@@ -2,59 +2,42 @@
 \alias{fixef.egf}
 \alias{fixef}
 \alias{fixef.egf_no_fit}
-\title{Extract fixed effect coefficients}
+\title{Details about Fixed Effect Coefficients}
+\description{
+Extracts from a model object details about the fixed effect
+coefficients, namely segment \code{beta} of the bottom level
+parameter vector.
+}
 \usage{
-\method{fixef}{egf}(object, ...)
-
-\method{fixef}{egf_no_fit}(object, ...)
+\method{fixef}{egf}(object, \dots)
 }
 \arguments{
-\item{object}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}
-
-\item{...}{Unused optional arguments.}
+\item{object}{
+  an \code{\link{egf}} object.}
+\item{\dots}{
+  unused optional arguments.}
 }
 \value{
 A data frame with one row per coefficient and variables:
+
 \item{bottom}{
-  Name of a bottom level mixed effects model parameter,
-  in this case a fixed effects coefficient;
-  this is a string of the form \code{"beta[\%d]"}.
-}
+  label for a bottom level mixed effects model parameter,
+  in this case for a fixed effect coefficient.
+  This is a string with format \code{"beta[\%d]"}.}
 \item{top}{
-  Name of the top level nonlinear model parameter whose fitted value
-  is a function of \code{bottom},
-  from \code{\link{egf_top}(object, link = TRUE)}.
-}
+  name of the top level nonlinear model parameter whose
+  fitted value is a function of \code{bottom},
+  from \code{\link{egf_top}(object)}.}
 \item{term}{
-  Term from the fixed effects component of the mixed effects model formula
-  for parameter \code{top}.
-}
+  term from the fixed effects component of the mixed effects
+  model formula for parameter \code{top}.}
 \item{colname}{
-  Column name in the fixed effects design matrix
-  \code{\link[=model.matrix.egf]{model.matrix}(object, "fixed")}.
-}
-\item{estimate}{
-  Coefficient estimate, from segment \code{beta} of
-  \code{\link[=coef.egf]{coef}(object, full = TRUE)}.
-}
-}
-\description{
-Retrieve the coefficients of the fixed effects component
-of a mixed effects model.
+  column name in the fixed effects design matrix
+  \code{\link[=model.matrix.egf]{model.matrix}(object, "fixed")}.}
+\item{value}{
+  coefficient estimate, from segment \code{beta} of
+  \code{\link[=coef.egf]{coef}(object, full = TRUE)}.}
 }
 \seealso{
-Other extractors: 
-\code{\link{coef.egf}()},
-\code{\link{df.residual.egf}()},
-\code{\link{fitted.egf}()},
-\code{\link{formula.egf}()},
-\code{\link{getCall.egf}()},
-\code{\link{logLik.egf}()},
-\code{\link{model.frame.egf}()},
-\code{\link{model.matrix.egf}()},
-\code{\link{nobs.egf}()},
-\code{\link{ranef.egf}()},
-\code{\link{terms.egf}()},
-\code{\link{vcov.egf}()}
+The generic function \code{\link[nlme]{fixef}}.
 }
-\concept{extractors}

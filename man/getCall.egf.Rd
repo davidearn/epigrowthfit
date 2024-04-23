@@ -1,38 +1,24 @@
 \name{getCall.egf}
 \alias{getCall.egf}
 \alias{getCall.egf_no_fit}
-\title{Extract model calls}
+\title{Extract Model Calls}
+\description{
+Extracts from a model object the call to \code{\link{egf}} that produced it.
+This method exists mainly to enable compatibility with the default method of
+generic function \code{\link{update}}.
+}
 \usage{
-\method{getCall}{egf}(x, ...)
-
-\method{getCall}{egf_no_fit}(x, ...)
+\method{getCall}{egf}(x, \dots)
 }
 \arguments{
-\item{x}{An \code{"\link{egf}"} or \code{"\link[=egf]{egf_no_fit}"} object.}
-
-\item{...}{Unused optional arguments.}
+\item{x}{
+  an \code{\link{egf}} object.}
+\item{\dots}{
+  unused optional arguments.}
 }
 \value{
-A \link{call} to \code{\link{egf}}.
-}
-\description{
-Extract the \link{call} to \code{\link{egf}} that produced the given
-model object. These methods exist mainly to enable compatibility with
-the default method of \code{\link{update}}.
+A call to \code{\link{egf}}.
 }
 \seealso{
-Other extractors: 
-\code{\link{coef.egf}()},
-\code{\link{df.residual.egf}()},
-\code{\link{fitted.egf}()},
-\code{\link{fixef.egf}()},
-\code{\link{formula.egf}()},
-\code{\link{logLik.egf}()},
-\code{\link{model.frame.egf}()},
-\code{\link{model.matrix.egf}()},
-\code{\link{nobs.egf}()},
-\code{\link{ranef.egf}()},
-\code{\link{terms.egf}()},
-\code{\link{vcov.egf}()}
+The generic function \code{\link{getCall}}.
 }
-\concept{extractors}
