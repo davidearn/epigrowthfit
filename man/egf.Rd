@@ -163,7 +163,9 @@ egf(model, \dots)
   initial values.}
 \item{fit}{
   a logical.  If \code{FALSE}, then \code{egf} returns early
-  (\emph{before} fitting) with a partial model object.}
+  (\emph{before} fitting) with a partial model object.
+  The details of the partial result are subject to change and
+  therefore sparsely documented, on purpose \ldots}
 \item{se}{
   a logical.  If \code{TRUE}, then the Hessian matrix of the negative
   log marginal likelihood function is computed and inverted to
@@ -176,8 +178,7 @@ egf(model, \dots)
   additional arguments passed from or to other methods.}
 }
 \value{
-A list inheriting from class \code{egf} or \code{egf_no_fit}
-depending on the value of argument \code{fit}.
+A list inheriting from class \code{egf}.
 See topic \code{\link{egf-class}} for class documentation.
 }
 \details{
