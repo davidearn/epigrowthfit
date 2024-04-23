@@ -3,7 +3,10 @@ library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
 
-## egf_link_(get|add|remove|extract) ###################################
+## egf_link_get     ####################################################
+## egf_link_add     ####################################################
+## egf_link_remove  ####################################################
+## egf_link_extract ####################################################
 
 x0 <- egf_top(NULL, link = FALSE)
 x1 <- egf_link_add(x0)
@@ -37,3 +40,28 @@ identical(egf_link_match("identity", inverse = TRUE), identity)
 identical(egf_link_match("log", inverse = TRUE), exp)
 identical(egf_link_match("logit", inverse = TRUE), plogis)
 assertError(egf_link_match("invalid name", inverse = TRUE))
+
+
+## egf_top #############################################################
+
+x1 <- NULL
+x2 <- egf_model()
+x3 <- list(model = x2)
+class(x3) <- "egf"
+
+s1 <- egf_top(x1, link = FALSE)
+s2 <- egf_top(x2, link = FALSE)
+s3 <- egf_top(x3, link = FALSE)
+
+stopifnot(exprs = {
+	is.character(s1)
+	length(s1) > 0L
+	!anyNA(s1)
+	is.null(names(s1))
+
+	is.character(s2)
+	length(s2) > 0L
+	match(s2, s1, 0L) > 0L
+
+	identical(s3, s2)
+})

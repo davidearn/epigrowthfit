@@ -7,31 +7,6 @@ o.1 <- egf_cache("egf-1.rds")
 o.2 <- egf_cache("egf-2.rds")
 
 
-## egf_top #############################################################
-
-x1 <- NULL
-x2 <- egf_model()
-x3 <- list(model = x2)
-class(x3) <- "egf"
-
-s1 <- egf_top(x1, link = FALSE)
-s2 <- egf_top(x2, link = FALSE)
-s3 <- egf_top(x3, link = FALSE)
-
-stopifnot(exprs = {
-	is.character(s1)
-	length(s1) > 0L
-	!anyNA(s1)
-	is.null(names(s1))
-
-	is.character(s2)
-	length(s2) > 0L
-	match(s2, s1, 0L) > 0L
-
-	identical(s3, s2)
-})
-
-
 ## egf_has_random ######################################################
 
 e <- new.env()
