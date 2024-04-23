@@ -168,17 +168,20 @@ The generic function \code{\link{confint}}.
 \examples{
 object <- egf_cache("egf-1.rds")
 zz1 <- egf_cache("confint-egf-1.rds",
-    confint(object, A = NULL, method =    "wald", class = TRUE,
+    confint(object, A = NULL, method = "wald", class = TRUE,
             random = TRUE))
+str(zz1)
+
+op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
+plot(zz1)
+par(op)
+
+\donttest{
 zz2 <- egf_cache("confint-egf-2.rds",
     confint(object, A = NULL, method = "profile", class = TRUE,
             top = "log(r)", subset = quote(country == "A" & wave == 1)))
 zz3 <- egf_cache("confint-egf-3.rds",
     confint(object, A = NULL, method = "uniroot", class = TRUE,
             top = "log(r)", subset = quote(country == "A" & wave == 1)))
-str(zz1)
-
-op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
-plot(zz1)
-par(op)
+}
 }

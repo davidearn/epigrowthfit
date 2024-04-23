@@ -117,7 +117,7 @@ function(file, object, topic = NULL, clear = FALSE, clearAll = FALSE, ...) {
 				     domain = NA)
 		}
 		example(topic, character.only = TRUE, package = "epigrowthfit",
-		        local = TRUE, echo = FALSE)
+		        local = TRUE, echo = FALSE, run.donttest = TRUE)
 		if (file.exists(path))
 			return(readRDS(path))
 		else stop(gettextf("examples for topic \"%s\" were sourced but resource was not created",
