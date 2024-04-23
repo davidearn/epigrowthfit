@@ -33,7 +33,7 @@ function(object,
 		se    <- as.vector(se   [subset, top, drop = FALSE])
 	}
 	else {
-		value <- egf_report(object)[["Y"]]
+		value <- egf_report(object, check = FALSE)[["Y"]]
 		dimnames(value) <- list(NULL, top.)
 		value <- as.vector(value[subset, top, drop = FALSE])
 	}
@@ -70,11 +70,8 @@ function(object,
 
 fitted.egf_no_fit <-
 function(object, ...) {
-	call <- match.call(expand.dots = FALSE)
-	call[[1L]] <- quote(fitted.egf)
 	object[["best"]] <- object[["init"]]
-	class(object) <- "egf" # for egf_report(., check = TRUE)
-	eval(call)
+	fitted.egf(object, ...)
 }
 
 confint.fitted.egf <-
