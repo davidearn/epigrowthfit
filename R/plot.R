@@ -287,32 +287,32 @@ function(x,
 
 	## Plot and return ---------------------------------------------------------
 
-	plot.egf.curve(frame_ts = frame_ts,
-	               frame_windows = frame_windows,
-	               cache = cache,
-	               type = type,
-	               time_as = time_as,
-	               delta = delta,
-	               log = log,
-	               zero = zero,
-	               show_predict = show_predict,
-	               show_doubling = show_doubling,
-	               show_asymptote = show_asymptote,
-	               level = level,
-	               control = control,
-	               xlim = xlim,
-	               ylim = ylim,
-	               main = main,
-	               sub = sub,
-	               xlab = xlab,
-	               ylab = ylab)
+	.plot.egf.worker(frame_ts = frame_ts,
+	                 frame_windows = frame_windows,
+	                 cache = cache,
+	                 type = type,
+	                 time_as = time_as,
+	                 delta = delta,
+	                 log = log,
+	                 zero = zero,
+	                 show_predict = show_predict,
+	                 show_doubling = show_doubling,
+	                 show_asymptote = show_asymptote,
+	                 level = level,
+	                 control = control,
+	                 xlim = xlim,
+	                 ylim = ylim,
+	                 main = main,
+	                 sub = sub,
+	                 xlab = xlab,
+	                 ylab = ylab)
 
 	## Discard exit instructions if low level plot function runs without error
 	on.exit()
 	invisible(cache)
 }
 
-plot.egf.curve <-
+.plot.egf.worker <-
 function(frame_ts, frame_windows, cache,
          type, time_as, delta, log, zero,
          show_predict, show_doubling, show_asymptote,

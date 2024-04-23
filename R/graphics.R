@@ -63,8 +63,8 @@ function(side, a = NULL, b = NULL, at = NULL, labels = TRUE, ...) {
 Daxis <-
 function(side, origin = .Date(0), minor = list(), major = list()) {
 	usr <- origin + par("usr")[if (side %% 2L == 1L) 1:2 else 3:4]
-	D0 <- min(ceiling.Date(usr[1L]), floor.Date(usr[2L]))
-	D1 <- max(ceiling.Date(usr[1L]), floor.Date(usr[2L]), D0 + 1)
+	D0 <- min(.ceiling.Date(usr[1L]), .floor.Date(usr[2L]))
+	D1 <- max(.ceiling.Date(usr[1L]), .floor.Date(usr[2L]), D0 + 1)
 	t0 <- julian(D0, origin = origin)
 	t1 <- julian(D1, origin = origin)
 	delta <- t1 - t0
@@ -83,7 +83,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 			major.at <- 0
 		}
 		else {
-			major.at.Date <- seq(ceiling.Date(D0, "m"), D1, by = "m")
+			major.at.Date <- seq(.ceiling.Date(D0, "m"), D1, by = "m")
 			major.at <- julian(major.at.Date, origin = D0)
 			if (major.at[1L] > delta / 8) {
 				major.at.Date <- c(D0, major.at.Date)
@@ -95,7 +95,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 	else if (delta <= 3 * 365) {
 		## Months
 		by <- c(1L, 2L, 3L)[delta <= c(1, 2, 3) * 365][1L]
-		minor.at.Date <- seq(ceiling.Date(D0, "m"), D1, by = paste(by, "m"))
+		minor.at.Date <- seq(.ceiling.Date(D0, "m"), D1, by = paste(by, "m"))
 		minor.at <- julian(minor.at.Date, origin = D0)
 		minor.labels <- months(minor.at.Date, abbreviate = TRUE)
 
@@ -105,7 +105,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 			major.at <- 0
 		}
 		else {
-			major.at.Date <- seq(ceiling.Date(D0, "y"), D1, by = "y")
+			major.at.Date <- seq(.ceiling.Date(D0, "y"), D1, by = "y")
 			major.at <- julian(major.at.Date, origin = D0)
 			if (major.at[1L] > delta / 8) {
 				major.at.Date <- c(D0, major.at.Date)
@@ -117,7 +117,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 	else {
 		## Years
 		by <- ceiling(ceiling(delta / 365) / 7)
-		minor.at.Date <- seq(ceiling.Date(D0, "y"), D1 + (by + 1) * 365, by = paste(by, "y"))
+		minor.at.Date <- seq(.ceiling.Date(D0, "y"), D1 + (by + 1) * 365, by = paste(by, "y"))
 		minor.at <- julian(minor.at.Date, origin = D0)
 		minor.labels <- ymd(minor.at.Date, "y")
 		minor.at <- c(minor.at, 0.5 * (minor.at[-1L] + minor.at[-length(minor.at)]))
