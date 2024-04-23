@@ -39,17 +39,17 @@ stopifnot(exprs = {
 
 ## wald ################################################################
 
-estimate <- rnorm(6L, 0, 1)
+value <- rnorm(6L, 0, 1)
 se <- rlnorm(6L, 0, 0.1)
 level <- 0.95
 q <- qchisq(level, df = 1)
-W <- wald(estimate = estimate, se = se, level = level)
+W <- wald(value = value, se = se, level = level)
 stopifnot(exprs = {
 	is.double(W)
 	identical(dim(W), c(6L, 2L))
-	identical(dimnames(W), list(NULL, c("lower", "upper")))
-	all.equal(W[, "lower"], estimate - sqrt(q) * se)
-	all.equal(W[, "upper"], estimate + sqrt(q) * se)
+	is.null(dimnames(W))
+	all.equal(W[, 1L], value - sqrt(q) * se)
+	all.equal(W[, 2L], value + sqrt(q) * se)
 })
 
 
@@ -65,18 +65,3 @@ stopifnot(exprs = {
 	all.equal(cov2theta(Sigma), theta)
 	all.equal(theta2cov(theta), Sigma)
 })
-
-
-## papply ##############################################################
-
-submean <- function(x) x - mean(x)
-
-x <- 1:10
-y <- papply(x, gl(2L, 5L), list(cumprod, submean))
-f <- function(x) c(cumprod(x[1:5]), submean(x[6:10]))
-stopifnot(all.equal(y, f(x)))
-
-x <- as.data.frame(replicate(3L, c(exp(rnorm(5L)), qlogis(runif(5L)))))
-y <- papply(x, gl(2L, 5L), list(log, plogis))
-f <- function(x) c(log(x[1:5]), plogis(x[6:10]))
-stopifnot(identical(y, as.data.frame(lapply(x, f))))

@@ -19,22 +19,21 @@ o.1p   <- egf_cache("profile-egf-1.rds")
 
 ## object ##############################################################
 
-o.1fc <- confint(o.1f)
-o.1pc <- confint(o.1p)
-o.1pc[["linear_combination"]] <- NULL
+o.1fc <- confint(o.1f, class = TRUE)
+o.1pc <- confint(o.1p, class = TRUE)
 
 stopifnot(exprs = {
 	is.list(o.1c.w)
 	identical(oldClass(o.1c.w), c("confint.egf", "data.frame"))
-	all.equal(o.1c.w, o.1fc, ignore = c("class", "method"))
+	all.equal(o.1c.w, o.1fc)
 
 	is.list(o.1c.p)
 	identical(oldClass(o.1c.p), c("confint.egf", "data.frame"))
-	all.equal(o.1c.p, o.1pc, ignore = c("class", "method", "A", "x"))
+	all.equal(o.1c.p, o.1pc)
 
 	is.list(o.1c.u)
 	identical(oldClass(o.1c.u), c("confint.egf", "data.frame"))
-	all.equal(o.1c.u, o.1c.p, ignore = "method", tolerance = 1e-03)
+	all.equal(o.1c.u, o.1c.p, tolerance = 5e-06)
 })
 
 
@@ -42,8 +41,8 @@ stopifnot(exprs = {
 
 f <-
 function(method, cores)
-	confint(o.1, top = "log(r)", method = "uniroot",
-	        subset = quote(country == "A" & wave == 1),
+	confint(o.1, A = NULL, method = "uniroot", class = TRUE,
+	        top = "log(r)", subset = quote(country == "A" & wave == 1),
 	        parallel = egf_parallel(method = method, cores = cores))
 
 windows <- .Platform[["OS.type"]] == "windows"
@@ -56,5 +55,5 @@ stopifnot(exprs = {
 ## plot ################################################################
 
 op <- par(mar = c(4.5, 4, 2, 1), oma = c(0, 0, 0, 0))
-plot(o.1c.p)
+plot(o.1c.w)
 par(op)

@@ -57,7 +57,8 @@ stopifnot(exprs = {
 })
 
 
-## egf_get_sdreport ####################################################
+## egf_report   ########################################################
+## egf_adreport ########################################################
 
 identical. <-
 function(x, y, ...) {
@@ -65,37 +66,23 @@ function(x, y, ...) {
 	identical(x, y, ...)
 }
 
-sd.1 <- o.1[["sdreport"]]
-sd.1. <- egf_get_sdreport(o.1)
-stopifnot(identical.(sd.1., sd.1))
+r.1 <- o.1[["tmb_out"]][["env"]][[".__egf__."]][["report"]]
+r.1. <- egf_report(o.1)
+stopifnot(identical.(r.1., r.1))
 
-o.1[["sdreport"]] <- NULL
-assertWarning(sd.1. <- egf_get_sdreport(o.1))
-stopifnot(identical.(sd.1., sd.1))
+o.1[["tmb_out"]][["env"]][[".__egf__."]][["report"]] <- NULL
+r.1. <- egf_report(o.1)
+stopifnot(identical.(r.1., r.1))
 
+r.1 <- o.1[["tmb_out"]][["env"]][[".__egf__."]][["adreport"]]
+r.1. <- egf_adreport(o.1)
+stopifnot(identical.(r.1., r.1))
 
-## egf_preprofile ######################################################
-## FIXME: only testing a trivial case as no elements of 'beta' are mapped
-
-l <- egf_preprofile(o.1, subset = 1:20, top = c("log(r)", "log(c0)"))
-
-stopifnot(exprs = {
-	is.list(l)
-	length(l) == 2L
-	identical(names(l), c("Y", "A"))
-	identical(unname(l[["Y"]]),
-	          new("dgCMatrix",
-	              Dim = c(20L, 2L),
-	              p = c(0L, 0L, 0L)))
-	identical(unname(l[["A"]]),
-	          new("dgCMatrix",
-	              Dim = c(40L, 5L),
-	              p = c(0L, 20L, 40L, 40L, 40L, 40L),
-	              i = 0:39,
-	              x = rep.int(1, 40L)))
-})
+o.1[["tmb_out"]][["env"]][[".__egf__."]][["adreport"]] <- NULL
+assertCondition(r.1. <- egf_adreport(o.1), "message")
+stopifnot(identical.(r.1., r.1))
 
 
 ## egf_cache ###########################################################
 
-## tested in example("egf_cache")
+## see example("egf_cache")

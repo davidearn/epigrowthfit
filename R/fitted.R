@@ -48,7 +48,7 @@ function(object,
 		                  ts = ts[i.],
 		                  window = window[i.],
 		                  value = value,
-		                  se = NA_real_,
+		                  se = NA,
 		                  frame[i., ],
 		                  row.names = NULL,
 		                  check.names = FALSE,
@@ -85,6 +85,8 @@ function(object, parm = seq_len(nrow(object)), level = 0.95,
 	if (anyNA(which))
 		stop(gettextf("invalid '%s'", "parm"), domain = NA)
 	o. <- object[which, ]
+	attr(o., "se") <- attr(o., "ns") <- attr(o., "nt") <- NULL
+	class(o.) <- oldClass(o.)[oldClass(o.) != "fitted.egf"]
 
 	h <- 0.5 * (1 - level)
 	p <- c(h, 1 - h)

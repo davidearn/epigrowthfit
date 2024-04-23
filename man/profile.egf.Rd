@@ -116,7 +116,7 @@ str(zz)
 confint(zz, class = TRUE)
 
 pty <- c("z", "abs(z)", "z^2")
-bty <- c("o", "u", "u")
+bty <- c("l", "u", "u")
 for (i in 1:3)
     plot(zz, type = pty[i], bty = bty[i], las = 1)
 }

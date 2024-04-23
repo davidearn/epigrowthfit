@@ -95,8 +95,12 @@ function(model,
 			             family = c("lkj", "wishart", "invwishart"),
 			             rows = tmb_args[["data"]][["block_rows"]])))
 
-	priors <- egf_make_priors(formula_priors, info_priors)
-	tmb_args[["data"]] <- egf_tmb_update_data(tmb_args[["data"]], priors)
+	priors <- egf_sanitize_formula_priors(
+	    formula = formula_priors,
+	    info = info_priors)
+	tmb_args[["data"]] <- egf_tmb_update_data(
+	    data = tmb_args[["data"]],
+	    priors = priors)
 
 	tmb_out <- do.call(MakeADFun, tmb_args)
 
@@ -134,15 +138,14 @@ function(model,
 
 	ans[["best"]] <- as.double(tmb_out[["env"]][["last.par.best"]])
 	ans[["value"]] <- as.double(tmb_out[["env"]][["value.best"]])
-	if (se)
-		rpt <- egf_adreport(ans, check = FALSE)
-	if (!se || inherits(rpt, "error")) {
-		ans[["gradient"]] <- tmb_out[["gr"]](ans[["best"]][!ans[["random"]]])
-		ans[["hessian"]] <- NA
-	}
-	else {
+	egf_report(ans, check = FALSE)
+	if (se && !inherits(rpt <- egf_adreport(ans, check = FALSE), "error")) {
 		ans[["gradient"]] <- rpt[["gradient.fixed"]]
 		ans[["hessian"]] <- rpt[["pdHess"]]
+	}
+	else {
+		ans[["gradient"]] <- tmb_out[["gr"]](ans[["best"]][!ans[["random"]]])
+		ans[["hessian"]] <- NA
 	}
 
 	class(ans) <- "egf"

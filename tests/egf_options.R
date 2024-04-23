@@ -34,8 +34,8 @@ stopifnot(exprs = {
 ## egf_control #########################################################
 
 x <- egf_control()
-nms <- c("optimizer", "inner_optimizer", "trace",
-            "profile", "sparse_X", "omp_num_threads")
+nms <- c("outer_optimizer", "inner_optimizer", "trace",
+         "profile", "sparse_X", "omp_num_threads")
 
 stopifnot(exprs = {
 	is.list(x)
@@ -43,15 +43,11 @@ stopifnot(exprs = {
 	length(x) == 6L
 	identical(names(x), nms)
 
-	is.list(x[["optimizer"]])
-	identical(oldClass(x[["optimizer"]]), "egf_optimizer")
+	is.list(x[["outer_optimizer"]])
+	identical(oldClass(x[["outer_optimizer"]]), "egf_optimizer")
 
 	is.list(x[["inner_optimizer"]])
-	length(x[["inner_optimizer"]]) > 0L
-	vapply(x[["inner_optimizer"]],
-	       function(y)
-	       	is.list(y) && identical(oldClass(y), "egf_inner_optimizer"),
-	       FALSE)
+	identical(oldClass(x[["inner_optimizer"]]), "egf_optimizer")
 
 	is.integer(x[["trace"]])
 	length(x[["trace"]]) == 1L
@@ -92,27 +88,6 @@ stopifnot(exprs = {
 })
 
 
-## egf_inner_optimizer #################################################
-
-x <- egf_inner_optimizer()
-nms <- c("method", "control")
-
-stopifnot(exprs = {
-	is.list(x)
-	identical(oldClass(x), "egf_inner_optimizer")
-	length(x) == 2L
-	identical(names(x), nms)
-
-	is.character(x[["method"]])
-	length(x[["method"]]) == 1L
-	any(x[["method"]] == c("newton", eval(formals(optim)[["method"]])))
-
-	is.list(x[["control"]])
-	x[["method"]] != "newton" ||
-		match(names(x[["control"]]), c("par", "fn", "gr", "he", "env", "..."), 0L) == 0L
-})
-
-
 ## egf_parallel ########################################################
 
 x <- egf_parallel()
@@ -147,12 +122,12 @@ stopifnot(exprs = {
 
 reference <- list(window = NULL,
                   data = list(main = NULL, short = NULL, long = NULL),
-                  predict = list(estimate = NULL, ci = NULL),
+                  predict = list(value = NULL, ci = NULL),
                   asymptote = NULL,
                   box = NULL,
                   axis = list(x = NULL, y = NULL),
                   title = list(main = NULL, sub = NULL, xlab = NULL, ylab = NULL),
-                  doubling = c(legend = NULL, estimate = NULL, ci = NULL))
+                  doubling = c(legend = NULL, value = NULL, ci = NULL))
 
 recurseOK <-
 function(x, reference) {

@@ -103,7 +103,6 @@ function(object,
 		return(ans)
 	}
 
-	top <- match.arg(top)
 	frame <- model.frame(object, which = "parameters", top = top)
 	l <- split_effects(formula(terms(frame)))
 

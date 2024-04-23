@@ -4,9 +4,7 @@ options(warn = 2L, error = if (interactive()) recover)
 .S3method("split", "formula",
           function(x, f, drop = FALSE, ...) {
           	l <- epigrowthfit:::split_effects(x)
-          	r <- l[["fixed"]]
-          	attr(r, "random") <- lapply(l[["random"]], function(x) call("(", x))
-          	r
+          	`attr<-`(l[[1L]], "random", l[-1L])
           })
 
 o.1 <- egf_cache("egf-1.rds")
@@ -21,14 +19,14 @@ o.2f.e <- data.frame(bottom = epigrowthfit:::disambiguate(rep.int("beta", 2L)),
                      top = gl(2L, 1L, labels = c("log(r)", "log(c0)")),
                      term = gl(1L, 2L, labels = "(Intercept)"),
                      colname = rep.int("(Intercept)", 2L),
-                     estimate = o.2c[1:2])
+                     value = o.2c[1:2])
 stopifnot(identical(o.2f, o.2f.e))
 
 
 ## ranef ###############################################################
 
 o.2c <- coef(o.2, random = TRUE, full = TRUE)
-o.2r <- ranef(o.2, build_cov = TRUE)
+o.2r <- ranef(o.2, makeSigma = TRUE)
 
 o.2r.e <- data.frame(cov = gl(1L, 40L, labels = epigrowthfit:::disambiguate("Sigma")),
                      vec = gl(20L, 2L, labels = epigrowthfit:::disambiguate(rep.int("u", 20L))),
@@ -38,7 +36,7 @@ o.2r.e <- data.frame(cov = gl(1L, 40L, labels = epigrowthfit:::disambiguate("Sig
                      group = gl(1L, 40L, labels = "country:wave"),
                      level = gl(20L, 2L, labels = paste0(gl(10L, 1L, 20L, labels = LETTERS[1:10]), ":", gl(2L, 10L))),
                      colname = sprintf("((Intercept) | country%s:wave%s)", gl(10L, 2L, 40L, labels = LETTERS[1:10]), gl(2L, 20L)),
-                     mode = o.2c[-(1:5)])
+                     value = o.2c[-(1:5)])
 
 Sigma <- list(theta2cov(o.2c[3:5]))
 names(Sigma) <- levels(o.2r[["cov"]])
@@ -50,7 +48,8 @@ stopifnot(identical(o.2r, o.2r.e))
 
 ## vcov ################################################################
 
-stopifnot(identical(vcov(o.1), o.1[["sdreport"]][["cov.fixed"]]))
+stopifnot(identical(vcov(o.1),
+                    o.1[["tmb_out"]][["env"]][[".__egf__."]][["adreport"]][["cov.fixed"]]))
 
 
 ## getCall #############################################################

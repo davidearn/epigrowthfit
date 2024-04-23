@@ -41,11 +41,11 @@ function(object, parm, level = 0.95,
 		          is.finite(range(A)),
 		          min(rowSums(A[, -1L, drop = FALSE] != 0)) > 0)
 	else {
-		which <- `names<-`(seq_along(par), labels(par))[which]
+		which <- `names<-`(seq_along(par), labels(par))[A]
 		A <- new("dgRMatrix",
 		         Dim = c(length(which), 1L + length(par)),
 		         Dimnames = list(names(which), NULL),
-		         p = c(0L, 0L, seq_along(which)),
+		         p = c(0L, seq_along(which)),
 		         j = which,
 		         x = rep.int(1, length(which)))
 	}
@@ -183,15 +183,20 @@ function(object, parm, level = 0.95,
 			top <- egf_link_remove(top)
 			top. <- egf_link_remove(top.)
 		}
-		ans <- data.frame(top = factor(top, levels = top.)[j.],
+		tmp <- data.frame(top = factor(top, levels = top.)[j.],
 		                  ts = ts[i.],
 		                  window = window[i.],
-		                  value = as.vector(A %*% c(1, par)),
-		                  ci = I(ans),
+		                  value =
+		                      if (method == "wald" && m.A && random)
+		                          value
+		                      else as.vector(A %*% c(1, par)),
+		                  ci = NA,
 		                  frame[i., ],
 		                  row.names = NULL,
 		                  check.names = FALSE,
 		                  stringsAsFactors = FALSE)
+		tmp[["ci"]] <- ans
+		ans <- tmp
 		attr(ans, "level") <- level
 		class(ans) <- c("confint.egf", oldClass(ans))
 	}

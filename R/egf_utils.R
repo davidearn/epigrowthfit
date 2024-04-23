@@ -8,11 +8,16 @@
 ##' without excessive conditional logic.
 ##'
 ##' @return
-##' \item{egf_sanitize_formula_ts}{a formula.}
-##' \item{egf_sanitize_formula_windows}{a formula.}
-##' \item{egf_sanitize_formula_parameters}{a list of formulae.}
-##' \item{egf_make_frame}{a recursive list of data frames.}
-##' \item{egf_make_priors}{a recursive list of \code{\link{egf_prior}} objects.}
+##' \item{egf_sanitize_formula_ts}{
+##'   a formula.}
+##' \item{egf_sanitize_formula_windows}{
+##'   a formula.}
+##' \item{egf_sanitize_formula_parameters}{
+##'   a list of formulae.}
+##' \item{egf_sanitize_formula_priors}{
+##'   a recursive list of \code{\link{egf_prior}} objects.}
+##' \item{egf_make_frame}{
+##'   a recursive list of data frames.}
 
 egf_sanitize_formula_ts <-
 egf_sanitize_formula_windows <-
@@ -54,7 +59,7 @@ function(formula, top, check) {
 			              which.min(m), deparse(lhs)),
 			     domain = NA)
 		s <- setdiff(top, names(formula))
-		formula <- lapply(formula, function(x) simplify_terms(x[-2L]))
+		formula <- xapply(formula, function(x) simplify_terms(x[-2L]))
 		formula[s] <- asExpr(`environment<-`(~1, globalenv()))
 		formula <- formula[top]
 	}
@@ -74,6 +79,88 @@ function(formula, top, check) {
 			        domain = NA)
 	}
 	formula
+}
+
+egf_sanitize_formula_priors <-
+function(formula, info) {
+	top <- info[["top"]][["names"]]
+	len <- vapply(info[["bottom"]], `[[`, 0L, "length")
+	ind <- lapply(len, seq_len)
+	nms <- names(len)[len > 0L]
+
+	ans <- list(top = `names<-`(vector("list", length(top)), top),
+	            bottom = lapply(len, vector, mode = "list"))
+
+	for (i in seq_along(formula)) {
+		x <- formula[[i]]
+
+		lhs <- x[[2L]]
+		if (is.symbol(lhs) && any(m <- deparse(lhs) == nms)) {
+			nms. <- nms[m]
+			ind. <- ind[[nms[m]]]
+		}
+		else if (is.call(lhs) &&
+		         (identical(lhs[[1L]], quote(`[`)) ||
+		          identical(lhs[[1L]], quote(`[[`))) &&
+		         is.symbol(lhs[[2L]]) &&
+		         any(m <- deparse(lhs[[2L]]) == nms)) {
+			nms. <- nms[m]
+			ind. <- eval(lhs, ind, environment(x))
+			if (anyNA(ind.))
+				stop(gettextf("argument of '%s' on left hand side of %s[[%d]] not a valid index vector for '%s' of length %d",
+				              deparse(lhs[[1L]]), "formula_priors", i, nms., len[[nms.]]),
+				     domain = NA)
+		}
+		else if (any(m <- deparse(lhs) == top))
+			nms. <- top[m]
+		else
+			stop(gettextf("left hand side of %s[[%d]] does not match any accepted format",
+			              "formula_priors", i),
+			     domain = NA)
+
+		rhs <- x[[3L]]
+		obj <- eval(rhs, environment(x))
+		if (!inherits(obj, "egf_prior"))
+			stop(gettextf("right hand side of %s[[%d]] does not evaluate to an \"%s\" object",
+			              "formula_priors", i, "egf_prior"),
+			     domain = NA)
+		if (any(nms. == nms)) {
+			allowed <- info[["bottom"]][[nms.]][["family"]]
+			obj[["parameters"]] <- lapply(obj[["parameters"]], rep_len,
+			                              length.out = length(ind.))
+			f <-
+			function(k) {
+				obj[["parameters"]] <- lapply(obj[["parameters"]], `[[`, k)
+				obj
+			}
+			ans[["bottom"]][[nms.]][ind.] <- lapply(seq_along(ind.), f)
+		}
+		else {
+			allowed <- info[["top"]][["family"]]
+			obj[["parameters"]] <- lapply(obj[["parameters"]], `[[`, 1L)
+			ans[["top"]][[nms.]] <- obj
+		}
+		if (!any(obj[["family"]] == allowed))
+			stop(gettextf("priors on '%s' are restricted to families %s",
+			              nms., deparse(allowed)),
+			     domain = NA)
+	}
+
+	l <- ans[["bottom"]][["Sigma"]]
+	for (i in seq_along(l)) {
+		if (is.null(l[[i]]) ||
+		    !any(l[[i]][["family"]] == c("wishart", "invwishart")))
+			next
+		p <- length(x[[i]][["parameters"]][["scale"]])
+		n1 <- p + (p * (p - 1L)) %/% 2L
+		n2 <- info[["bottom"]][["Sigma"]][["rows"]][i]
+		if (n1 != n2)
+			stop(gettextf("prior on %s[[%d]] specifies '%s' having %d rows, but the expected number is %d",
+			              "Sigma", i, "scale", n1, n2),
+			     domain = NA)
+	}
+
+	ans
 }
 
 egf_make_frame <-
@@ -440,88 +527,6 @@ function(model,
 	     windows = frame_windows,
 	     parameters = frame_parameters,
 	     extra = frame_extra)
-}
-
-egf_make_priors <-
-function(formula, info) {
-	top <- info[["top"]][["names"]]
-	len <- vapply(info[["bottom"]], `[[`, 0L, "length")
-	ind <- lapply(len, seq_len)
-	nms <- names(len)[len > 0L]
-
-	ans <- list(top = `names<-`(vector("list", length(top)), top),
-	            bottom = lapply(len, vector, mode = "list"))
-
-	for (i in seq_along(formula)) {
-		x <- formula[[i]]
-
-		lhs <- x[[2L]]
-		if (is.symbol(lhs) && any(m <- deparse(lhs) == nms)) {
-			nms. <- nms[m]
-			ind. <- ind[[nms[m]]]
-		}
-		else if (is.call(lhs) &&
-		         (identical(lhs[[1L]], quote(`[`)) ||
-		          identical(lhs[[1L]], quote(`[[`))) &&
-		         is.symbol(lhs[[2L]]) &&
-		         any(m <- deparse(lhs[[2L]]) == nms)) {
-			nms. <- nms[m]
-			ind. <- eval(lhs, ind, environment(x))
-			if (anyNA(ind.))
-				stop(gettextf("argument of '%s' on left hand side of %s[[%d]] not a valid index vector for '%s' of length %d",
-				              deparse(lhs[[1L]]), "formula_priors", i, nms., len[[nms.]]),
-				     domain = NA)
-		}
-		else if (any(m <- deparse(lhs) == top))
-			nms. <- top[m]
-		else
-			stop(gettextf("left hand side of %s[[%d]] does not match any accepted format",
-			              "formula_priors", i),
-			     domain = NA)
-
-		rhs <- x[[3L]]
-		obj <- eval(rhs, environment(x))
-		if (!inherits(obj, "egf_prior"))
-			stop(gettextf("right hand side of %s[[%d]] does not evaluate to an \"%s\" object",
-			              "formula_priors", i, "egf_prior"),
-			     domain = NA)
-		if (any(nms. == nms)) {
-			allowed <- info[["bottom"]][[nms.]][["family"]]
-			obj[["parameters"]] <- lapply(obj[["parameters"]], rep_len,
-			                              length.out = length(ind.))
-			f <-
-			function(k) {
-				obj[["parameters"]] <- lapply(obj[["parameters"]], `[[`, k)
-				obj
-			}
-			ans[["bottom"]][[nms.]][ind.] <- lapply(seq_along(ind.), f)
-		}
-		else {
-			allowed <- info[["top"]][["family"]]
-			obj[["parameters"]] <- lapply(obj[["parameters"]], `[[`, 1L)
-			ans[["top"]][[nms.]] <- obj
-		}
-		if (!any(obj[["family"]] == allowed))
-			stop(gettextf("priors on '%s' are restricted to families %s",
-			              nms., deparse(allowed)),
-			     domain = NA)
-	}
-
-	l <- ans[["bottom"]][["Sigma"]]
-	for (i in seq_along(l)) {
-		if (is.null(l[[i]]) ||
-		    !any(l[[i]][["family"]] == c("wishart", "invwishart")))
-			next
-		p <- length(x[[i]][["parameters"]][["scale"]])
-		n1 <- p + (p * (p - 1L)) %/% 2L
-		n2 <- info[["bottom"]][["Sigma"]][["rows"]][i]
-		if (n1 != n2)
-			stop(gettextf("prior on %s[[%d]] specifies '%s' having %d rows, but the expected number is %d",
-			              "Sigma", i, "scale", n1, n2),
-			     domain = NA)
-	}
-
-	ans
 }
 
 ##' Construct Design Matrices

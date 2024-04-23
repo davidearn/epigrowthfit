@@ -1,3 +1,6 @@
+expr <- function(...)
+	as.expression.default(list(...))
+
 asExpr <- function(x)
 	as.expression.default(x)
 

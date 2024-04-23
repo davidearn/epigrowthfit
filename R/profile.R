@@ -43,7 +43,7 @@ function(fitted,
 		A <- new("dgRMatrix",
 		         Dim = c(length(which), 1L + length(par)),
 		         Dimnames = list(names(which), NULL),
-		         p = c(0L, 0L, seq_along(which)),
+		         p = c(0L, seq_along(which)),
 		         j = which,
 		         x = rep.int(1, length(which)))
 	}
@@ -192,15 +192,17 @@ function(object, parm = seq_along(object), level = attr(object, "level"),
 		nt <- length(a.[["top"]])
 		i. <- rep.int(seq_len(ns), nt)[which]
 		j. <- rep(seq_len(nt), each = ns)[which]
-		ans <- data.frame(top = a.[["top"]][j.],
+		tmp <- data.frame(top = a.[["top"]][j.],
 		                  ts = a.[["ts"]][i.],
 		                  window = a.[["window"]][i.],
 		                  value = as.vector(a.[["A"]] %*% c(1, a.[["par"]])),
-		                  ci = I(ans),
+		                  ci = NA,
 		                  a.[["frame"]][i., ],
 		                  row.names = NULL,
 		                  check.names = FALSE,
 		                  stringsAsFactors = FALSE)
+		tmp[["ci"]] <- ans
+		ans <- tmp
 		attr(ans, "level") <- level
 		class(ans) <- c("confint.egf", oldClass(ans))
 	}
@@ -265,7 +267,7 @@ function(x, parm = seq_along(x), level = attr(x, "level"),
 			             "z"      = qj,
 			             "abs(z)" = ,
 			             "z^2"    = c(usr[3L], qj[2L]))
-			vj <- approx(x = sp.y., y = sp.x, xout = qj)[["y"]]
+			vj <- approx(x = sp.y, y = sp.x, xout = qj)[["y"]]
 			segments(x0 = vj[c(1L, 1L, 2L, if (type == "z") 2L)],
 			         x1 = vj[c(1L, 2L, 2L, if (type == "z") 1L)],
 			         y0 = hj[c(1L, 2L, 2L, if (type == "z") 1L)],

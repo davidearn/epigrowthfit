@@ -17,7 +17,7 @@ stopifnot(exprs = {
 	identical(o.1s[["value"]], o.1[["value"]])
 	identical(o.1s[["gradient"]], o.1[["gradient"]])
 	identical(o.1s[["hessian"]], o.1[["hessian"]])
-	all.equal(o.1s[["fitted"]], simplify2array(c(tapply(o.1f[["estimate"]], o.1f[["top"]], summary))))
+	all.equal(o.1s[["fitted"]], simplify2array(c(tapply(o.1f[["value"]], o.1f[["top"]], summary))))
 })
 
 

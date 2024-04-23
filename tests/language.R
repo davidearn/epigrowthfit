@@ -24,27 +24,28 @@ stopifnot(exprs = {
 })
 
 
-## (un)?split_terms ####################################################
+## split_terms   #######################################################
+## unsplit_terms #######################################################
 
 stopifnot(exprs = {
-	identical(split_terms(quote(+1)), list(quote(1)))
-	identical(split_terms(quote(-1)), list(quote(-1)))
-	is.null(unsplit_terms(list()))
+	identical(split_terms(quote(+1)), expression( 1))
+	identical(split_terms(quote(-1)), expression(-1))
+	is.null(unsplit_terms(expression()))
 })
 
 x <- quote(1 + a * b - b)
-l <- list(1, quote(a * b), quote(-b))
+l <- expression(1, a * b, -b)
 stopifnot(exprs = {
 	identical(split_terms(x), l)
 	identical(unsplit_terms(l), x)
 })
 
 x <- quote(w + (x | f/g) + (y + z | h))
-l <- list(quote(w), quote((x | f/g)), quote((y + z | h)))
+l <- expression(w, (x | f/g), (y + z | h))
 x.no.paren <- x
 x.no.paren[[2L]][[3L]] <- x.no.paren[[2L]][[3L]][[2L]]
 x.no.paren      [[3L]] <- x.no.paren      [[3L]][[2L]]
-l.no.paren <- list(l[[1L]], l[[2L]][[2L]], l[[3L]][[2L]])
+l.no.paren <- as.expression(list(l[[1L]], l[[2L]][[2L]], l[[3L]][[2L]]))
 stopifnot(exprs = {
 	identical(split_terms(x), l.no.paren)
 	identical(split_terms(x.no.paren), l.no.paren)
@@ -56,24 +57,25 @@ stopifnot(exprs = {
 ## split_effects #######################################################
 
 x <- y ~ x + (1 | f) + (a + b | g)
-l <- list(fixed = y ~ x, random = list(quote(1 | f), quote(a + b | g)))
+l <- expression(y ~ x, 1 | f, a + b | g)
+l[[1L]] <- as.formula(l[[1L]])
 stopifnot(identical(split_effects(x), l))
 
 
 ## split_interaction ###################################################
 
 x <- quote(a:b:I(f:g):log(h))
-l <- list(quote(a), quote(b), quote(I(f:g)), quote(log(h)))
+l <- expression(a, b, I(f:g), log(h))
 stopifnot(identical(split_interaction(x), l))
-assertError(split_interaction(list()))
+assertError(split_interaction(expression()))
 
 
-## gsub_bar_plus #######################################################
+## sub_bar_plus ########################################################
 
 x1 <- ~x + (1 | f) + (a + b | g)
 x2 <- call("+", call("+", quote(x), quote(1 + f)), quote(a + b + g))
 x2 <- as.formula(call("~", x2))
-stopifnot(identical(gsub_bar_plus(x1), x2))
+stopifnot(identical(sub_bar_plus(x1), x2))
 
 
 ## simplify_terms ######################################################

@@ -3,8 +3,11 @@ library(methods)
 library(tools)
 options(warn = 2L, error = if (interactive()) recover)
 
+o.1 <- egf_cache("egf-1.rds")
 
-## egf_sanitize_formula ################################################
+
+## egf_sanitize_formula_ts      ########################################
+## egf_sanitize_formula_windows ########################################
 
 l1 <- list(cbind(x, y) ~ 1,
            cbind(x, y) ~ g,
@@ -25,33 +28,30 @@ l2 <- list(~g,
            cbind(x, y, z) ~ g,
            rbind(x, y) ~ g) # i.e., anything other than 'cbind'
 
-stopifnot(identical(lapply(l1, egf_sanitize_formula),
+stopifnot(identical(lapply(l1, egf_sanitize_formula_ts),
                     l1[c(1L, 2L, 2L, 2L, 5:8)]))
 for (formula in l2)
-	assertError(egf_sanitize_formula(formula))
+	assertError(egf_sanitize_formula_ts(formula))
 
 
 ## egf_sanitize_formula_parameters #####################################
 
 model <- egf_model(curve = "exponential", family = "pois")
-names_parameters <- egf_top(model)
+top <- egf_top(model)
 
 s <-
-function(formula_parameters)
-	egf_sanitize_formula_parameters(
-		formula_parameters = formula_parameters,
-		names_parameters = names_parameters,
-		check_intercept = TRUE)
+function(formula)
+	egf_sanitize_formula_parameters(formula, top, check = TRUE)
 
 fp1 <- ~x * y + (z | g) + (zz | g/h)
-l1 <- rep.int(list(simplify_terms(fp1)), 2L)
+l1 <- rep.int(expr(simplify_terms(fp1)), 2L)
 names(l1) <- c("log(r)", "log(c0)")
 
-fp2 <- list(replace(fp1, 2:3, list(quote(log(r)), fp1[[2L]])))
-l2 <- replace(l1, "log(c0)", list(~1))
+fp2 <- expr(replace(fp1, 2:3, expr(quote(log(r)), fp1[[2L]])))
+l2 <- replace(l1, "log(c0)", expr(~1))
 
-fp3 <- c(fp2, list(log(c0) ~ x))
-l3 <- replace(l2, "log(c0)", list(~x))
+fp3 <- c(fp2, expr(log(c0) ~ x))
+l3 <- replace(l2, "log(c0)", expr(~x))
 
 stopifnot(exprs = {
 	identical(s(fp1), l1)
@@ -59,6 +59,52 @@ stopifnot(exprs = {
 	identical(s(fp3), l3)
 })
 assertWarning(s(~0 + x))
+
+
+## egf_sanitize_formula_priors #########################################
+
+p1 <- Normal(mu =  0, sigma = 1)
+p2 <- Normal(mu =  1, sigma = c(0.5, 1))
+p3 <- Normal(mu = -1, sigma = 2)
+p4 <- LKJ(eta = 1)
+
+fp. <- list(foo(bar) ~ p1,
+            baz ~ p1,
+            beta ~ p1,
+            theta[[1L]] ~ p1,
+            theta[2:3] ~ p2,
+            theta[-(1:5)] ~ p3,
+            theta[replace(logical(6L), 4L, TRUE)] ~ p1,
+            Sigma ~ p4)
+
+ip. <- list(
+	top    = list(names = c("foo(bar)", "baz"), family = "norm"),
+	bottom = list(
+		beta  = list(length = 4L, family = "norm"),
+		theta = list(length = 6L, family = "norm"),
+		Sigma = list(length = 1L, family = c("lkj", "wishart", "invwishart"),
+		             rows = 4L)))
+
+priors <- egf_sanitize_formula_priors(formula = fp., info = ip.)
+
+p2.elt <-
+function(i) {
+	p2[["parameters"]][["sigma"]] <- p2[["parameters"]][["sigma"]][[i]]
+	p2
+}
+
+stopifnot(exprs = {
+	is.list(priors)
+	length(priors) == 2L
+	identical(names(priors), c("top", "bottom"))
+
+	identical(priors[["top"]],
+	          `names<-`(list(p1, p1), ip.[["top"]][["names"]]))
+	identical(priors[["bottom"]],
+	          list(beta = list(p1, p1, p1, p1),
+	               theta = list(p1, p2.elt(1L), p2.elt(2L), p1, NULL, p3),
+	               Sigma = list(p4)))
+})
 
 
 ## egf_make_frame ######################################################
@@ -151,55 +197,6 @@ row.names(l4.e) <- NULL
 stopifnot(identical(l4, l4.e))
 
 
-## egf_make_priors #####################################################
-
-p1 <- Normal(mu = 0, sigma = 1)
-p2 <- Normal(mu = 1, sigma = c(0.5, 1))
-p3 <- Normal(mu = -1, sigma = 2)
-p4 <- LKJ(eta = 1)
-
-formula_priors <- list(foo(bar) ~ p1,
-                       baz ~ p1,
-                       beta ~ p1,
-                       theta[[1L]] ~ p1,
-                       theta[2:3] ~ p2,
-                       theta[-(1:5)] ~ p3,
-                       theta[replace(logical(6L), 4L, TRUE)] ~ p1,
-                       Sigma ~ p4)
-
-top <- list(names = c("foo(bar)", "baz"), family = "norm")
-
-beta <- list(length = 4L, family = "norm")
-theta <- list(length = 6L, family = "norm")
-Sigma <- list(length = 1L, family = c("lkj", "wishart", "invwishart"),
-              rows = 4L)
-
-priors <- egf_make_priors(formula_priors = formula_priors,
-                          top = top,
-                          beta = beta,
-                          theta = theta,
-                          Sigma = Sigma)
-
-p2.elt <-
-function(i) {
-	p2[["parameters"]][["sigma"]] <- p2[["parameters"]][["sigma"]][[i]]
-	p2
-}
-
-stopifnot(exprs = {
-	is.list(priors)
-	length(priors) == 2L
-	identical(names(priors), c("top", "bottom"))
-
-	identical(priors[["top"]],
-	          `names<-`(list(p1, p1), top[["names"]]))
-	identical(priors[["bottom"]],
-	          list(beta = list(p1, p1, p1, p1),
-	               theta = list(p1, p2.elt(1L), p2.elt(2L), p1, NULL, p3),
-	               Sigma = list(p4)))
-})
-
-
 ## egf_make_X ##########################################################
 
 formula <- ~x + y + z
@@ -237,6 +234,19 @@ attr(Z2, "level") <- gl(6L, 1L, labels = c("1:1", "2:1", "3:1", "3:2", "4:2", "5
 stopifnot(identical(Z1, Z2))
 
 
+## egf_make_A ##########################################################
+## FIXME: only testing a trivial case as no elements of 'beta' are mapped
+
+A <- egf_make_A(o.1, top = c("log(r)", "log(c0)"), subset = 1:20)
+A.e <- new("dgCMatrix",
+           Dim = c(40L, 6L),
+           p = c(0L, 0L, 20L, 40L, 40L, 40L, 40L),
+           i = 0:39,
+           x = rep.int(1, 40L))
+
+stopifnot(identical(A, A.e))
+
+
 ## egf_combine_X #######################################################
 
 fixed <- list(a = ~x, b = ~f)
@@ -244,26 +254,16 @@ data <- data.frame(x = 1:6, f = gl(2L, 3L))
 l <- egf_combine_X(fixed = fixed,
                    X = lapply(fixed, egf_make_X, data = data, sparse = FALSE))
 
-stopifnot(exprs = {
-	is.list(l)
-	length(l) == 3L
-	identical(names(l), c("X", "effects", "contrasts"))
-})
+bottom <- disambiguate(rep.int("beta", 4L))
+top <- gl(2L, 2L, labels = c("a", "b"))
+term <- factor(c("(Intercept)", "x", "(Intercept)", "f"))
 
-X <- cbind(1, 1:6, 1, rep(0:1, each = 3L))
-dimnames(X) <- list(as.character(1:6),
-                    c("(Intercept)", "x", "(Intercept)", "f2"))
-effects <- data.frame(bottom = disambiguate(rep.int("beta", 4L)),
-                      top = gl(2L, 2L, labels = c("a", "b")),
-                      term = factor(c("(Intercept)", "x", "(Intercept)", "f")),
-                      colname = colnames(X))
-contrasts <- list(f = getOption("contrasts")[["unordered"]])
+X <- `dimnames<-`(cbind(1, 1:6, 1, rep(0:1, each = 3L)),
+                  list(as.character(1:6),
+                       c("(Intercept)", "x", "(Intercept)", "f2")))
+coefficients <- data.frame(bottom, top, term, colname = colnames(X))
 
-stopifnot(exprs = {
-	identical(l[["X"]], X)
-	identical(l[["effects"]], effects)
-	identical(l[["contrasts"]], contrasts)
-})
+stopifnot(identical(l, list(X = X, coefficients = coefficients)))
 
 
 ## egf_combine_Z #######################################################
@@ -273,24 +273,10 @@ data <- data.frame(x = 1:6, y = -1, f = gl(2L, 3L), g = gl(3L, 2L))
 l <- egf_combine_Z(random = random,
                    Z = lapply(random, egf_make_Z, data = data))
 
-stopifnot(exprs = {
-	is.list(l)
-	length(l) == 3L
-	identical(names(l), c("Z", "effects", "contrasts"))
-})
-
-Z <- new("dgCMatrix",
-         Dim = c(6L, 10L),
-         Dimnames = list(as.character(1:6),
-                         sprintf("(%s | %s)", rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L)), rep.int(c("f1", "f2", "g1", "g2", "g3"), 2L))),
-         p = cumsum(c(0L, rep.int(c(3L, 2L, 3L, 2L), c(2L, 3L, 2L, 3L)))),
-         i = rep.int(0:5, 4L),
-         x = c(rep.int(1, 12L), 1:6, rep.int(-1, 6L)))
-
-cov <- interaction(l[["effects"]][c("term", "group")],
+cov <- interaction(l[["coefficients"]][c("term", "group")],
                    drop = TRUE, lex.order = TRUE)
 levels(cov) <- disambiguate(rep.int("Sigma", 4L))
-vec <- interaction(l[["effects"]][c("term", "group", "level")],
+vec <- interaction(l[["coefficients"]][c("term", "group", "level")],
                    drop = TRUE, lex.order = TRUE)
 levels(vec) <- disambiguate(rep.int("u", 10L))
 
@@ -299,11 +285,15 @@ top <- rep.int(factor(rep.int(c("a", "b"), c(2L, 3L))), 2L)
 term <- factor(rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L)))
 group <- rep.int(factor(rep.int(c("f", "g"), c(2L, 3L))), 2L)
 level <- rep.int(factor(c(1:2, 1:3)), 2L)
-colname <- colnames(Z)
-effects <- data.frame(cov, vec, bottom, top, term, group, level, colname)
 
-stopifnot(exprs = {
-	identical(l[["Z"]], Z)
-	identical(l[["effects"]], effects)
-	is.null(l[["contrasts"]])
-})
+Z <- new("dgCMatrix",
+         Dim = c(6L, 10L),
+         Dimnames = list(as.character(1:6),
+                         sprintf("(%s | %s)", rep.int(c("(Intercept)", "x", "y"), c(5L, 2L, 3L)), rep.int(c("f1", "f2", "g1", "g2", "g3"), 2L))),
+         p = cumsum(c(0L, rep.int(c(3L, 2L, 3L, 2L), c(2L, 3L, 2L, 3L)))),
+         i = rep.int(0:5, 4L),
+         x = c(rep.int(1, 12L), 1:6, rep.int(-1, 6L)))
+coefficients <- data.frame(cov, vec, bottom, top, term, group, level,
+                           colname = colnames(Z))
+
+stopifnot(identical(l, list(Z = Z, coefficients = coefficients)))
