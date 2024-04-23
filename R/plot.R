@@ -1,8 +1,10 @@
+## MJ: priority for refactoring
+
 plot.egf <-
 function(x,
          type = c("interval", "cumulative", "rt"),
          time_as = c("Date", "numeric"),
-         dt = 1,
+         delta = 1,
          log = TRUE,
          zero = NA,
          show_predict = TRUE,
@@ -19,14 +21,13 @@ function(x,
          sub = NULL,
          xlab = NULL,
          ylab = NULL,
-         ylab_outer = NULL,
          ...) {
 	## Validate arguments ------------------------------------------------------
 
 	type <- match.arg(type)
 	if (x$model$day_of_week > 0L)
-		dt <- 1
-	else stopifnot(isNumber(dt), dt > 0)
+		delta <- 1
+	else stopifnot(isNumber(delta), delta > 0)
 	stopifnot(isInteger(show_predict))
 	show_predict <- min(2L, max(0L, as.integer(show_predict)))
 	if (x$model$curve %in% c("exponential", "logistic", "richards")) {
@@ -119,14 +120,14 @@ function(x,
 			xlab <- switch(time_as, Date = "", numeric = "time")
 		if (type == "rt") {
 			if (is.null(ylab))
-				ylab <- "per capita growth rate"
-			if (is.null(ylab_outer))
-				ylab_outer <- "doubling time"
+				ylab <- c("per capita growth rate", "doubling time")
+			else if ((is.character(ylab) || is.expression(ylab)) &&
+			         length(ylab) == 1L)
+				ylab <- c(ylab, "doubling time")
 		}
 		else {
 			if (is.null(ylab))
 				ylab <- paste(type, "incidence")
-			ylab_outer <- NULL
 		}
 	}
 
@@ -139,7 +140,7 @@ function(x,
 		                    ts = factor(),
 		                    window = factor(),
 		                    time = double(0L),
-		                    estimate = double(0L),
+		                    value = double(0L),
 		                    se = double(0L))
 	nc <- names(cache)
 
@@ -155,7 +156,7 @@ function(x,
 			time_split <- Map(seq.int,
 			                  from = frame_windows_bak$start[m],
 			                  to = frame_windows_bak$end[m],
-			                  by = dt)
+			                  by = delta)
 			px <- .__predict.egf(x,
 			              what = type,
 			              time = unlist1(time_split),
@@ -222,7 +223,7 @@ function(x,
 		(show_doubling == 2L & cache$var == "log(r)")
 	if (any(i))
 		cache[i, c("lower", "upper")] <-
-			do.call(wald, c(cache[i, c("estimate", "se"), drop = FALSE],
+			do.call(wald, c(cache[i, c("value", "se"), drop = FALSE],
 			                list(level = level)))
 
 
@@ -247,7 +248,7 @@ function(x,
 		               names(control$title$ylab))
 		control$title$ylab[nms] <- gp[nms]
 	}
-	for (s in c("ci", "estimate", "legend"))
+	for (s in c("ci", "value", "legend"))
 		if (is.list(control$doubling[[s]])) {
 			nms <- setdiff(c("adj", "cex", "font", "family"),
 			               names(control$doubling[[s]]))
@@ -280,7 +281,7 @@ function(x,
 		              log = FALSE,
 		              se = FALSE)
 		frame_windows$c0 <-
-			px$estimate[match(frame_windows$window, px$window, 0L)]
+			px$value[match(frame_windows$window, px$window, 0L)]
 	}
 
 
@@ -291,7 +292,7 @@ function(x,
 	               cache = cache,
 	               type = type,
 	               time_as = time_as,
-	               dt = dt,
+	               delta = delta,
 	               log = log,
 	               zero = zero,
 	               show_predict = show_predict,
@@ -304,8 +305,7 @@ function(x,
 	               main = main,
 	               sub = sub,
 	               xlab = xlab,
-	               ylab = ylab,
-	               ylab_outer = ylab_outer)
+	               ylab = ylab)
 
 	## Discard exit instructions if low level plot function runs without error
 	on.exit()
@@ -314,15 +314,14 @@ function(x,
 
 plot.egf.curve <-
 function(frame_ts, frame_windows, cache,
-         type, time_as, dt, log, zero,
+         type, time_as, delta, log, zero,
          show_predict, show_doubling, show_asymptote,
-         level, control, xlim, ylim,
-         main, sub, xlab, ylab, ylab_outer) {
+         level, control, xlim, ylim, main, sub, xlab, ylab) {
 	n <- nlevels(frame_ts$ts)
 	formula <- as.formula(call("~", as.name(type), quote(time)))
 	xlim_bak <- xlim
 	ylim_bak <- ylim
-	elu <- c("estimate", "lower", "upper")
+	elu <- c("value", "lower", "upper")
 
 	## Graphical parameters
 	gp <- par()
@@ -339,10 +338,10 @@ function(frame_ts, frame_windows, cache,
 			cache_predict[elu] <- exp(cache_predict[elu])
 		}
 
-		data$dt <- c(NA, diff(data$time))
+		data$delta <- c(NA, diff(data$time))
 		data[[type]] <-
 			switch(type,
-			       interval = c(NA, data$x[-1L]) * dt / data$dt,
+			       interval = c(NA, data$x[-1L]) * delta / data$delta,
 			       cumulative = c(0, cumsum(data$x[-1L])),
 			       rt = local({
 			       	f <-
@@ -362,7 +361,7 @@ function(frame_ts, frame_windows, cache,
 			data[[type]][data[[type]] == 0] <- NA
 		data$pty <-
 		if (type == "interval")
-			factor(sign(data$dt - dt),
+			factor(sign(data$delta - delta),
 			       levels = c(0, -1, 1),
 			       labels = c("main", "short", "long"))
 		else factor("main")
@@ -441,24 +440,24 @@ function(frame_ts, frame_windows, cache,
 			}
 
 		## Predicted curves
-		if (show_predict > 0L && is.list(args <- control$predict$estimate))
+		if (show_predict > 0L && is.list(args <- control$predict$value))
 			for (px in split(cache_predict, cache_predict$window, drop = TRUE)) {
 				if (type == "cumulative") {
 					c0 <- data[[type]][match(px$time[1L], data$time, 0L)]
 					if (is.na(c0))
 						next
-					px$estimate <- c0 + px$estimate - px$estimate[1L]
+					px$value <- c0 + px$value - px$value[1L]
 				}
 				reserved <- c("formula", "data", "subset", "x", "y")
 				args[names(args) %in% reserved] <- NULL
-				args <- c(list(formula = estimate ~ time, data = px), args)
+				args <- c(list(formula = value ~ time, data = px), args)
 				do.call(lines, args)
 			}
 
 		## Asymptote
 		if (show_asymptote > 0L && is.list(args <- control$asymptote)) {
 			args[c("x0", "x1")] <- data_windows[c("start", "end")]
-			args[c("y0", "y1")] <- cache_r["estimate"]
+			args[c("y0", "y1")] <- cache_r["value"]
 			do.call(segments, args)
 		}
 
@@ -499,7 +498,7 @@ function(frame_ts, frame_windows, cache,
 
 		## Axis title (y)
 		if (is.list(args2 <- control$title$ylab)) {
-			args2$ylab <- ylab
+			args2$ylab <- ylab[[1L]]
 			if (is.list(args1))
 				args2$line <- line
 			else {
@@ -541,7 +540,7 @@ function(frame_ts, frame_windows, cache,
 
 			## Axis title (y), outer
 			if (is.list(args2)) {
-				args2$ylab <- ylab_outer
+				args2$ylab <- ylab[[2L]]
 				args2$line <- line
 				do.call(title, args2)
 			}
@@ -553,8 +552,8 @@ function(frame_ts, frame_windows, cache,
 			names(doubling) <- elu[c(1L, 3L, 2L)]
 
 			doubling$labels <- c(ci = sprintf("(%.3g%% CI)", 100 * level),
-			                      estimate = "estimate",
-			                      legend = "initial doubling time:")
+			                     value = "value",
+			                     legend = "initial doubling time:")
 			w <-
 			function(s, l) {
 				if (!is.list(l))
@@ -566,8 +565,8 @@ function(frame_ts, frame_windows, cache,
 				         family = l$family)
 			}
 			doubling$widths <- mapply(w,
-			                           s = doubling$labels,
-			                           l = args[names(doubling$labels)])
+			                          s = doubling$labels,
+			                          l = args[names(doubling$labels)])
 			h <-
 			function(s, l) {
 				if (!is.list(l))
@@ -580,8 +579,8 @@ function(frame_ts, frame_windows, cache,
 				diff(grconvertY(c(0, height), "inches", "lines"))
 			}
 			doubling$heights <- mapply(h,
-			                            s = doubling$labels,
-			                            l = args[names(doubling$labels)])
+			                           s = doubling$labels,
+			                           l = args[names(doubling$labels)])
 
 			doubling$lines <- rep.int(0.25, 5L)
 			names(doubling$lines) <-
@@ -591,15 +590,15 @@ function(frame_ts, frame_windows, cache,
 			if (show_doubling == 2L && is.list(args$ci))
 				doubling$lines[-1L] <- doubling$lines[["ci"]] +
 					doubling$heights[["ci"]] + 0.15
-			if (is.list(args$estimate))
-				doubling$lines[-(1:2)] <- doubling$lines[["estimate"]] +
-					doubling$heights[["estimate"]] + 1
+			if (is.list(args$value))
+				doubling$lines[-(1:2)] <- doubling$lines[["value"]] +
+					doubling$heights[["value"]] + 1
 			if (show_doubling == 2L && is.list(args$ci))
 				doubling$lines[-(1:3)] <- doubling$lines[["label_ci"]] +
 					doubling$heights[["ci"]] + 0.15
-			if (is.list(args$estimate))
-				doubling$lines[-(1:4)] <- doubling$lines[["label_estimate"]] +
-					doubling$heights[["estimate"]] + 0.25
+			if (is.list(args$value))
+				doubling$lines[-(1:4)] <- doubling$lines[["label_value"]] +
+					doubling$heights[["value"]] + 0.25
 
 			## Legend
 			if (show_legend <- is.list(args$legend)) {
@@ -607,7 +606,7 @@ function(frame_ts, frame_windows, cache,
 				x_legend <- xlim[1L] + adj *
 					max(0, xlim[2L] - xlim[1L] - doubling$widths[["legend"]])
 				x_body <- x_legend + doubling$widths[["legend"]] -
-					0.5 * max(doubling$widths[c("estimate", "ci")])
+					0.5 * max(doubling$widths[c("value", "ci")])
 
 				args$legend$text <- doubling$labels[["legend"]]
 				args$legend$side <- 3
@@ -619,23 +618,23 @@ function(frame_ts, frame_windows, cache,
 				do.call(mtext, args$legend)
 			}
 
-			## Estimates
-			if (is.list(args$estimate)) {
-				args$estimate$text <-
-					c(sprintf("%.1f", doubling$estimate),
-					  if (show_legend) doubling$labels[["estimate"]])
-				args$estimate$side <- 3
-				args$estimate$line <-
-					c(rep.int(doubling$lines[["estimate"]],
+			## Values
+			if (is.list(args$value)) {
+				args$value$text <-
+					c(sprintf("%.1f", doubling$value),
+					  if (show_legend) doubling$labels[["value"]])
+				args$value$side <- 3
+				args$value$line <-
+					c(rep.int(doubling$lines[["value"]],
 					          nrow(data_windows)),
-					  if (show_legend) doubling$lines[["label_estimate"]])
-				args$estimate$at <-
+					  if (show_legend) doubling$lines[["label_value"]])
+				args$value$at <-
 					c((data_windows$start + data_windows$end) / 2,
 					  if (show_legend) x_body)
-				args$estimate$adj <- 0.5
-				args$estimate$padj <- 0
-				args$estimate$cex <- args$estimate$cex * gp$cex
-				do.call(mtext, args$estimate)
+				args$value$adj <- 0.5
+				args$value$padj <- 0
+				args$value$cex <- args$value$cex * gp$cex
+				do.call(mtext, args$value)
 			}
 
 			## Confidence intervals
@@ -662,8 +661,8 @@ function(frame_ts, frame_windows, cache,
 			args1$main <- sub[i]
 			names(args1) <- base::sub("\\.sub$", ".main", names(args1))
 			if (show_doubling > 0L && is.list(control$doubling))
-				args1$line <- doubling$lines[["estimate"]] +
-					doubling$heights[["estimate"]] + 1
+				args1$line <- doubling$lines[["value"]] +
+					doubling$heights[["value"]] + 1
 			else if (is.null(args1$line))
 				args1$line <- args1$mgp[1L] + 1
 			do.call(title, args1)
@@ -682,8 +681,8 @@ function(frame_ts, frame_windows, cache,
 			if (is.list(args1))
 				args2$line <- line
 			else if (show_doubling > 0L && is.list(control$doubling))
-				args2$line <- doubling$lines[["estimate"]] +
-					doubling$heights[["estimate"]] + 1
+				args2$line <- doubling$lines[["value"]] +
+					doubling$heights[["value"]] + 1
 			do.call(title, args2)
 		}
 	} # loop over plots

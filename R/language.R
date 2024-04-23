@@ -1,5 +1,5 @@
-asExpr <-
-as.expression.default
+asExpr <- function(x)
+	as.expression.default(x)
 
 xapply <-
 function(...)
@@ -171,9 +171,9 @@ function(x) {
 ##' @param x a formula.
 ##'
 ##' @examples
-##' gsub_bar_plus(~x + (1 | f))
+##' sub_bar_plus(~x + (1 | f))
 
-gsub_bar_plus <-
+sub_bar_plus <-
 function(x) {
 	if (!is.formula(x))
 		stop(gettextf("'%s' is not a formula", "x"),

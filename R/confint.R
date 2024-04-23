@@ -124,7 +124,7 @@ function(object, parm, level = 0.95,
 
 			cl <- parallel[["cl"]]
 			if (is.null(cl)) {
-				cl <- do.call(makePSOCKcluster, parallel$args)
+				cl <- do.call(makePSOCKcluster, parallel[["args"]])
 				on.exit(stopCluster(cl), add = TRUE)
 			}
 			vars <- c("dll", "nomp", "nprf", "args", "trace",

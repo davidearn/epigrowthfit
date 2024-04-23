@@ -14,18 +14,14 @@ function(curve = c("logistic", "richards",
 }
 
 egf_control <-
-function(optimizer = egf_optimizer(),
-         inner_optimizer = egf_inner_optimizer(),
+function(outer_optimizer = egf_optimizer(nlminb),
+         inner_optimizer = egf_optimizer(newton),
          trace = FALSE,
          profile = FALSE,
          sparse_X = FALSE,
          omp_num_threads = getOption("egf.cores", 1L)) {
-	if (inherits(inner_optimizer, "egf_inner_optimizer"))
-		inner_optimizer <- list(inner_optimizer)
-	stopifnot(inherits(optimizer, "egf_optimizer"),
-	          is.list(inner_optimizer),
-	          length(inner_optimizer) > 0L,
-	          vapply(inner_optimizer, inherits, FALSE, "egf_inner_optimizer"),
+	stopifnot(inherits(outer_optimizer, "egf_optimizer"),
+	          inherits(inner_optimizer, "egf_optimizer"),
 	          isInteger(trace),
 	          isTrueFalse(profile),
 	          isTrueFalse(sparse_X),
@@ -33,7 +29,7 @@ function(optimizer = egf_optimizer(),
 	trace <- as.integer(min(2, max(0, trace))) # coercion to 0:2
 	omp_num_threads <- as.integer(omp_num_threads)
 
-	ans <- list(optimizer = optimizer,
+	ans <- list(outer_optimizer = outer_optimizer,
 	            inner_optimizer = inner_optimizer,
 	            trace = trace,
 	            profile = profile,
@@ -45,22 +41,41 @@ function(optimizer = egf_optimizer(),
 
 egf_optimizer <-
 function(f = nlminb, args = list(), control = list()) {
-	optimizer <- f
 	stopifnot(is.list(args), is.list(control))
-	if (identical(f, optim))
+	optimizer <- f
+	if (identical(f, newton)) {
+		f <- .f <- # avoid false positive NOTE: "multiple local ..."
+		function(par, fn, gr, he = function(par) optimHess(par, fn, gr),
+		         control = control, ...) {
+			ans <- newton(par = par, fn = fn, gr = gr, he = he,
+			              control = control, ...)
+			ans[c("convergence", "message")] <- list(0L, NULL)
+			ans
+		}
+		if (!any(names(args) == "trace"))
+			args[["trace"]] <- 0L
+		control <- list()
+		attr(f, "method") <- "newton"
+	}
+	else if (identical(f, optim)) {
 		args[["method"]] <-
 			if (is.null(args[["method"]]))
 				"BFGS"
 			else match.arg(args[["method"]], eval(formals(optim)[["method"]]))
-	else if (identical(f, nlminb))
+		attr(f, "method") <- "optim"
+	}
+	else if (identical(f, nlminb)) {
 		f <-
 		function(par, fn, gr, control, ...) {
-			ans <- nlminb(start = par, objective = fn, gradient = gr, control = control, ...)
+			ans <- nlminb(start = par, objective = fn, gradient = gr,
+			              control = control, ...)
 			m <- match("objective", names(ans), 0L)
 			names(ans)[m] <- "value"
 			ans
 		}
-	else if (identical(f, nlm))
+		attr(f, "method") <- "nlminb"
+	}
+	else if (identical(f, nlm)) {
 		f <-
 		function(par, fn, gr, control, ...) {
 			ans <- nlm(f = `attr<-`(fn, "gradient", gr), p = par, ...)
@@ -69,6 +84,8 @@ function(f = nlminb, args = list(), control = list()) {
 			ans["message"] <- list(NULL)
 			ans
 		}
+		attr(f, "method") <- "nlm"
+	}
 	else {
 		stopifnot(is.function(f),
 		          length(nf <- names(formals(f))) >= 4L,
@@ -83,40 +100,15 @@ function(f = nlminb, args = list(), control = list()) {
 		f <-
 		function(par, fn, gr, control, ...)
 			optimizer(par, fn, gr, control = control, ...)
+		attr(f, "method") <- ""
 	}
 	if (!is.null(names(args))) {
-		reserved <- c("par", "fn", "gr", "control", "...",
+		reserved <- c("par", "fn", "gr", "he", "control", "...",
 		              names(formals(optimizer))[1:3])
 		args <- args[match(names(args), reserved, 0L) == 0L]
 	}
 	ans <- list(f = f, args = args, control = control)
 	class(ans) <- "egf_optimizer"
-	ans
-}
-
-egf_inner_optimizer <-
-function(f = newton, args = list(), control = list()) {
-	stopifnot(is.list(args), is.list(control))
-	if (identical(f, newton)) {
-		method <- "newton"
-		if (!is.null(names(args))) {
-			reserved <- c("par", "fn", "gr", "he", "env", "...")
-			args <- args[match(names(args), reserved, 0L) == 0L]
-		}
-		if (!any(names(args) == "trace"))
-			args[["trace"]] <- 0L
-		control <- args
-	}
-	else if (identical(f, optim))
-		method <-
-			if (is.null(args[["method"]]))
-				"BFGS"
-			else match.arg(args[["method"]], eval(formals(optim)[["method"]]))
-	else stop(gettextf("'%s' is currently restricted to %s and %s",
-	                   "f", "TMB::newton", "stats::optim"),
-	          domain = NA)
-	ans <- list(method = method, control = control)
-	class(ans) <- "egf_inner_optimizer"
 	ans
 }
 
@@ -154,18 +146,16 @@ function(method = c("serial", "multicore", "snow"),
 	ans
 }
 
-egf_control_plot <-
-function(window, data, predict, asymptote, box, axis, title, doubling) {
-	ans <-
+.defaults <-
 	list(window =
-	         list(col = alpha("#DDCC77", 0.25),
+	         list(col = "#DDCC773F", # alpha("#DDCC77", 0.25)
 	              border = NA),
 	     data =
 	         list(main = list(pch = 21, col = "#BBBBBB", bg = "#DDDDDD"),
 	              short = list(),
 	              long = list()),
 	     predict =
-	         list(estimate = list(col = "#44AA99", lwd = 2),
+	         list(value = list(col = "#44AA99", lwd = 2),
 	              ci = list(border = NA)),
 	     asymptote =
 	         list(lty = "dotted", lwd = 2),
@@ -182,6 +172,10 @@ function(window, data, predict, asymptote, box, axis, title, doubling) {
 	         list(legend = list(),
 	              value = list(),
 	              ci = list()))
+
+egf_control_plot <-
+function(window, data, predict, asymptote, box, axis, title, doubling) {
+	ans <- .defaults
 
 	## Multi-assign from 'value' into 'default', recursively
 	rmerge <-

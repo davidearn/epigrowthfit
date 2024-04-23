@@ -1,4 +1,6 @@
-##   MJ: This evalates cumulative incidence as a function of time
+## MJ: priority for refactoring
+
+## NOTE: This evalates cumulative incidence as a function of time
 ##       conditional on an estimated nonlinear mixed effects model.
 ##       Originally, it was registered as a method for generic function
 ##       'predict', but that was unconventional and now it is an
@@ -6,6 +8,7 @@
 ##
 ## TODO: Implement a _proper_ method for 'predict' and figure out
 ##       how best to expose whatever _this_ is ...
+
 .__predict.egf <-
 function(object,
          what = c("interval", "cumulative", "rt"),
@@ -121,12 +124,12 @@ function(object,
 	                  ts = rep.int(frame_windows$ts[subset], len),
 	                  window = rep.int(frame_windows$window[subset], len),
 	                  time = time,
-	                  estimate =
+	                  value =
 	                      unlist1(Map(replace, list(x), ix[what], report)))
 	if (se)
 		res$se <- unlist1(Map(replace, list(x), ix[what], report_se))
 	if (!log) {
-		res$estimate <- exp(res$estimate)
+		res$value <- exp(res$value)
 		levels(res$var) <- what
 	}
 	attr(res, "se") <- se
@@ -140,10 +143,10 @@ function(object, parm, level = 0.95, log = TRUE, ...) {
 	          isTrueFalse(log), attr(object, "se"))
 
 	res <- data.frame(object[-match("se", names(object), 0L)],
-	                  wald(object$estimate, object$se, level = level))
+	                  wald(object$value, object$se, level = level))
 	attr(res, "level") <- level
 	if (!log) {
-		elu <- c("estimate", "lower", "upper")
+		elu <- c("value", "lower", "upper")
 		res[elu] <- exp(res[elu])
 		levels(res$var) <- sub("^log\\((.+)\\)$", "\\1", levels(res$var))
 	}

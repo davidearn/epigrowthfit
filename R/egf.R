@@ -1,3 +1,5 @@
+## MJ: priority for refactoring
+
 egf <-
 function(model, ...)
 	UseMethod("egf", model)
@@ -16,10 +18,10 @@ function(model,
          na_action_ts = c("fail", "pass"),
          na_action_windows = c("fail", "omit"),
          control = egf_control(),
-         fit = TRUE,
-         se = FALSE,
          init = list(),
          map = list(),
+         fit = TRUE,
+         se = FALSE,
          ...) {
 	stopifnot(is.formula(formula_ts), is.formula(formula_windows))
 	if (is.formula(formula_parameters))
@@ -52,12 +54,12 @@ function(model,
 
 	names_parameters <- egf_top(model)
 
-	formula_ts <- egf_sanitize_formula(formula_ts)
-	formula_windows <- egf_sanitize_formula(formula_windows)
+	formula_ts <- egf_sanitize_formula_ts(formula_ts)
+	formula_windows <- egf_sanitize_formula_windows(formula_windows)
 	formula_parameters <- egf_sanitize_formula_parameters(
-		formula_parameters = formula_parameters,
-		names_parameters = names_parameters,
-		check_intercept = is.null(init))
+		formula = formula_parameters,
+		top = names_parameters,
+		check = is.null(init))
 
 	frame <- egf_make_frame(
 		model = model,
@@ -81,29 +83,22 @@ function(model,
 		map = map,
 		env = env)
 
-	priors <- egf_make_priors(
-		formula_priors = formula_priors,
-		top   = list(names = names_parameters,
-		             family = "norm"),
-		beta  = list(length = env[["len"]][["beta"]],
-		             family = "norm"),
-		theta = list(length = env[["len"]][["theta"]],
-		             family = "norm"),
-		Sigma = list(length = length(tmb_args[["data"]][["block_rows"]]),
-		             family = c("lkj", "wishart", "invwishart"),
-		             rows = tmb_args[["data"]][["block_rows"]]))
+	info_priors <- list(
+		top = list(names = names_parameters,
+		           family = "norm"),
+		bottom = list(
+			beta  = list(length = env[["len"]][["beta"]],
+			             family = "norm"),
+			theta = list(length = env[["len"]][["theta"]],
+			             family = "norm"),
+			Sigma = list(length = length(tmb_args[["data"]][["block_rows"]]),
+			             family = c("lkj", "wishart", "invwishart"),
+			             rows = tmb_args[["data"]][["block_rows"]])))
 
-	tmb_args[["data"]] <- egf_tmb_update_data(
-		tmb_args[["data"]],
-		priors = priors)
+	priors <- egf_make_priors(formula_priors, info_priors)
+	tmb_args[["data"]] <- egf_tmb_update_data(tmb_args[["data"]], priors)
 
 	tmb_out <- do.call(MakeADFun, tmb_args)
-	tmb_out[["fn"]] <- egf_patch_fn(
-		tmb_out[["fn"]],
-		inner_optimizer = control[["inner_optimizer"]])
-	tmb_out[["gr"]] <- egf_patch_gr(
-		tmb_out[["gr"]],
-		inner_optimizer = control[["inner_optimizer"]])
 
 	ans <- list(model = model,
 	            frame = frame,
@@ -113,11 +108,11 @@ function(model,
 	            optimizer_out = NULL,
 	            init = as.double(tmb_out[["env"]][["par"]]),
 	            best = NULL,
-	            random = tmb_out[["env"]][["lrandom"]]()
+	            random = tmb_out[["env"]][["lrandom"]](),
 	            value = NULL,
 	            gradient = NULL,
 	            hessian = NULL,
-	            effects = env[["effects"]],
+	            coefficients = env[["coefficients"]],
 	            contrasts = env[["contrasts"]],
 	            call = match.call())
 
@@ -127,14 +122,14 @@ function(model,
 	}
 
 	onomp <- openmp(n = NULL)
-	if (on > 0L) {
+	if (onomp > 0L) {
 		openmp(n = control[["omp_num_threads"]])
 		on.exit(openmp(n = onomp))
 	}
-	optimizer <- control[["optimizer"]][["f"]]
+	optimizer <- control[["outer_optimizer"]][["f"]]
 	optimizer_args <- c(tmb_out[c("par", "fn", "gr")],
-	                    control[["optimizer"]]["control"],
-	                    control[["optimizer"]][["args"]])
+	                    control[["outer_optimizer"]]["control"],
+	                    control[["outer_optimizer"]][["args"]])
 	ans[["optimizer_out"]] <- do.call(optimizer, optimizer_args)
 
 	ans[["best"]] <- as.double(tmb_out[["env"]][["last.par.best"]])

@@ -1,31 +1,4 @@
-##' Manipulate Top Level Nonlinear Model Parameter Names
-##'
-##' Utilities for modifying strings \code{s} and
-##' \code{fs = \link{sprintf}("\%s(\%s)", f, s)},
-##' where \code{s} is the name used internally
-##' for a top level nonlinear model parameter
-##' and \code{f} is the name of the link function
-##' (either \code{"log"} or \code{"logit"})
-##' used internally for that parameter.
-##'
-##' @param s,fs character vectors.
-##'
-##' @return
-##' For strings \code{s}, \code{f}, and \code{fs} as described above,
-##' \code{egf_link_get(s)} returns \code{f},
-##' \code{egf_link_add(s)} returns \code{fs},
-##' \code{egf_link_remove(fs)} returns \code{s}, and
-##' \code{egf_link_extract(fs)} returns \code{f}.
-##'
-##' \code{NA_character_} is returned for invalid values of the argument.
-##'
-##' @examples
-##' egf_link_get("r")
-##' egf_link_add("r")
-##' egf_link_remove("log(r)")
-##' egf_link_extract("log(r)")
-##'
-##' egf_link_extract("invalid string", "r" , "log(r)")
+## MJ: priority for refactoring
 
 egf_link_get <-
 function(s) {
@@ -59,22 +32,6 @@ function(fs) {
 	fs
 }
 
-##' Get Link and Inverse Link Functions
-##'
-##' Retrieve the link function named by a string, or its inverse.
-##'
-##' @param f
-##'   a \link{character} string naming a link function.
-##' @param inverse
-##'   a \link{logical}.  If \code{TRUE}, then the inverse is returned.
-##'
-##' @return
-##' A function.
-##'
-##' @examples
-##' egf_link_match("log")
-##' egf_link_match("log", inverse = TRUE)
-
 egf_link_match <-
 function(f, inverse = FALSE) {
 	if (inverse)
@@ -90,3 +47,38 @@ function(f, inverse = FALSE) {
 		       logit = qlogis,
 		       stop("link not implemented"))
 }
+
+egf_top <-
+function(object, ...)
+	UseMethod("egf_top", object)
+
+egf_top.default <-
+function(object, link = TRUE, ...) {
+	stopifnot(is.null(object))
+	top <- c("r", "alpha", "c0", "tinfl", "K",
+	         "p", "a", "b", "disp", paste0("w", 1:6))
+	if (link) egf_link_add(top) else top
+}
+
+egf_top.egf_model <-
+function(object, link = TRUE, ...) {
+	top <- switch(object[["curve"]],
+	              exponential = c("r", "c0"),
+	              subexponential = c("alpha", "c0", "p"),
+	              gompertz = c("alpha", "tinfl", "K"),
+	              logistic = c("r", "tinfl", "K"),
+	              richards = c("r", "tinfl", "K", "a"))
+	if (object[["excess"]])
+		top <- c(top, "b")
+	if (object[["family"]] == "nbinom")
+		top <- c(top, "disp")
+	if (object[["day_of_week"]] > 0L)
+		top <- c(top, paste0("w", 1:6))
+	if (link) egf_link_add(top) else top
+}
+
+egf_top.egf <-
+function(object, link = TRUE, ...)
+	egf_top(object[["model"]], link = link, ...)
+
+egf_top.egf_no_fit <- egf_top.egf

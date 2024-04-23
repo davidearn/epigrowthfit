@@ -1,3 +1,5 @@
+## MJ: priority for refactoring
+
 ##' Construct data objects for C++ template
 ##'
 ##' Gathers in a list data objects to be passed to
@@ -145,8 +147,8 @@ function(model, frame, control, env) {
 	X <- Map(egf_make_X, fixed = fixed,
 	         data = frame$parameters, sparse = control$sparse_X)
 	Xc <- egf_combine_X(fixed = fixed, X = X)
-	beta_index <- as.integer(Xc$effects$top) - 1L
-	beta_index_tab <- c(table(Xc$effects$top))
+	beta_index <- as.integer(Xc$coefficients$top) - 1L
+	beta_index_tab <- c(table(Xc$coefficients$top))
 
 	## Random effects infrastructure
 	random1 <- asExpr(unlist1(random))
@@ -161,13 +163,13 @@ function(model, frame, control, env) {
 		block_cols <- integer(0L)
 	}
 	else {
-		Zc$effects$top <- factor(Zc$effects$top, levels = names_top)
-		b_index <- as.integer(Zc$effects$top) - 1L
-		b_index_tab <- c(table(Zc$effects$top))
+		Zc$coefficients$top <- factor(Zc$coefficients$top, levels = names_top)
+		b_index <- as.integer(Zc$coefficients$top) - 1L
+		b_index_tab <- c(table(Zc$coefficients$top))
 		block_rows <-
-			as.integer(colSums(table(Zc$effects$top, Zc$effects$cov) > 0L))
+			as.integer(colSums(table(Zc$coefficients$top, Zc$coefficients$cov) > 0L))
 		block_cols <-
-			as.integer(colSums(table(Zc$effects$vec, Zc$effects$cov) > 0L))
+			as.integer(colSums(table(Zc$coefficients$vec, Zc$coefficients$cov) > 0L))
 	}
 
 	## Flags
@@ -186,8 +188,8 @@ function(model, frame, control, env) {
 	names(indices) <- sub("^(log|logit)\\((.*)\\)$", "\\1_\\2", names_top_all)
 
 	## Stuff to preserve but not return
-	env$effects <- list(beta = Xc$effects, b = Zc$effects)
-	env$contrasts <- list(X = Xc$contrasts, Z = Zc$contrasts)
+	env$coefficients <- list(fixed = Xc$coefficients, random = Zc$coefficients)
+	env$contrasts <- list(fixed = Xc$contrasts, random = Zc$contrasts)
 	env$len <- c(beta = ncol(Xc$X),
 	             theta = sum(as.integer(choose(block_rows + 1L, 2L))),
 	             b = sum(block_rows * block_cols))
@@ -295,7 +297,7 @@ function(model, frame, env) {
 	tx <- split(frame$ts[c("time", "x")], frame$ts$window)
 	compute_naive <-
 	function(d) {
-		n <- max(2, trunc(nrow(d) / 2))
+		n <- max(2, trunc(0.5 * nrow(d)))
 		ab <- try(coef(lm(log1p(cumsum(x)) ~ time,
 		                  data = d,
 		                  subset = seq_len(n),
@@ -328,7 +330,7 @@ function(model, frame, env) {
 	## Identify elements of 'beta' corresponding to "(Intercept)"
 	## and assign means of naive estimates over time series segments
 	names_top <- names(frame$parameters)
-	m <- match(names_top[has1], env$effects$beta$top, 0L)
+	m <- match(names_top[has1], env$coefficients$fixed$top, 0L)
 	res$beta[m] <- colMeans(naive[names_top[has1]])
 	res
 }
@@ -381,11 +383,16 @@ function(model, frame, control, init, map, env) {
 		map$theta <- map$b <- factor(NA)
 	}
 
+	optimizer <- control[["inner_optimizer"]]
+	method <- attr(optimizer[["f"]], "method")
+
 	list(data = data,
 	     parameters = parameters,
 	     map = map,
 	     random = random,
 	     profile = if (control$profile) "beta" else NULL,
+	     inner.method = switch(method, newton = "newton", "optim"),
+	     inner.control = switch(method, newton = optimizer[["args"]], optim = optimizer[["control"]], list()),
 	     DLL = "epigrowthfit",
 	     silent = (control$trace == 0L))
 }

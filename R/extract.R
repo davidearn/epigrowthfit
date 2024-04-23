@@ -2,7 +2,7 @@ fixef.egf <-
 function(object, ...) {
 	par <- coef(object, random = TRUE, full = TRUE)
 	nms <- c("bottom", "top", "term", "colname")
-	data.frame(object[["effects"]][["beta"]][nms],
+	data.frame(object[["coefficients"]][["fixed"]][nms],
 	           value = par[labels(par) == "beta"],
 	           row.names = NULL,
 	           stringsAsFactors = FALSE)
@@ -16,8 +16,8 @@ function(object, makeSigma = FALSE, ...) {
 
 	par <- coef(object, random = TRUE, full = TRUE)
 	nms <- c("cov", "vec", "bottom", "top", "term", "group", "level", "colname")
-	ans <- data.frame(object[["effects"]][["b"]][nms],
-	                  mode = par[labels(par) == "b"],
+	ans <- data.frame(object[["coefficients"]][["random"]][nms],
+	                  value = par[labels(par) == "b"],
 	                  row.names = NULL,
 	                  stringsAsFactors = FALSE)
 	if (!makeSigma)
@@ -26,12 +26,12 @@ function(object, makeSigma = FALSE, ...) {
 	n <- object[["tmb_out"]][["env"]][["data"]][["block_rows"]]
 	p <- n + ((n - 1L) * n) %/% 2L
 
-	tt <- table(object[["effects"]][["b"]][["top"]],
-	            object[["effects"]][["b"]][["cov"]])
+	tt <- table(object[["coefficients"]][["random"]][["top"]],
+	            object[["coefficients"]][["random"]][["cov"]])
 
 	theta <- split(par[labels(par) == "theta"], rep.int(seq_along(p), p))
 	Sigma <- vector("list", length(theta))
-	names(Sigma) <- levels(object[["effects"]][["b"]][["cov"]])
+	names(Sigma) <- levels(object[["coefficients"]][["random"]][["cov"]])
 	for (j in seq_along(theta)) {
 		tmp <- theta2cov(theta[[j]])
 		dimnames(tmp) <- rep.int(list(rownames(tt)[tt[, j] > 0L]), 2L)
@@ -59,8 +59,8 @@ getCall.egf_no_fit <- getCall.egf
 model.frame.egf <-
 function(formula,
          which = c("ts", "windows", "parameters", "extra", "combined"),
-         full = FALSE,
          top = egf_top(formula),
+         full = FALSE,
          ...) {
 	which <- match.arg(which)
 	ans <-
@@ -100,10 +100,6 @@ function(object,
 		                       else "Xd",
 		               random = "Z")
 		ans <- object[["tmb_out"]][["env"]][["data"]][[name]]
-
-		## Append 'contrasts' but not 'assign', which only makes sense
-		## for submatrices
-		attr(ans, "contrasts") <- object[["contrasts"]][[substr(name, 1L, 1L)]]
 		return(ans)
 	}
 
@@ -127,12 +123,6 @@ function(object,
 			## Return parameter-specific combined random effects design matrix
 			Z <- lapply(l[-1L], egf_make_Z, data = frame)
 			ans <- do.call(cbind, Z)
-
-			## Append 'contrasts' but not 'assign', which only makes sense
-			## for submatrices
-			contrasts <- unlist1(lapply(Z, attr, "contrasts"))
-			contrasts[duplicated(names(contrasts))] <- NULL
-			attr(ans, "contrasts") <- contrasts
 		}
 		return(ans)
 	}

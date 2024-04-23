@@ -120,7 +120,7 @@ function(side, origin = .Date(0), minor = list(), major = list()) {
 		minor.at.Date <- seq(ceiling.Date(D0, "y"), D1 + (by + 1) * 365, by = paste(by, "y"))
 		minor.at <- julian(minor.at.Date, origin = D0)
 		minor.labels <- ymd(minor.at.Date, "y")
-		minor.at <- c(minor.at, (minor.at[-1L] + minor.at[-length(minor.at)]) / 2)
+		minor.at <- c(minor.at, 0.5 * (minor.at[-1L] + minor.at[-length(minor.at)]))
 		length(minor.labels) <- length(minor.at)
 
 		major.at <- double(0L)
