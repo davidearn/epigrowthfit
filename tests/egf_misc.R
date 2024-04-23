@@ -123,21 +123,4 @@ stopifnot(exprs = {
 
 ## egf_cache ###########################################################
 
-subdir <- R_user_dir("epigrowthfit", "cache")
-lf1 <- list.files(subdir)
-file <- "test.rds"
-a <- 1
-x <- egf_cache(file, a)
-y <- egf_cache(file, a <- 2)
-lf2 <- list.files(subdir)
-z <- egf_cache(file, clear = TRUE)
-lf3 <- list.files(subdir)
-
-stopifnot(exprs = {
-	identical(x, 1)
-	identical(y, 1)
-	identical(z, 0L)
-	identical(a, 1)
-	identical(setdiff(lf2, lf1), file)
-	identical(lf3, lf1)
-})
+## tested in example("egf_cache")

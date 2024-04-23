@@ -90,10 +90,12 @@ function(object, check = TRUE) {
 
 egf_cache <-
 function(file, object, topic = NULL, clear = FALSE, clearAll = FALSE, ...) {
-	subdir <- R_user_dir("epigrowthfit", "cache")
+	pkgdir <- R_user_dir("epigrowthfit", "cache")
+	verdir <- file.path(pkgdir, packageVersion("epigrowthfit"))
 	if (clearAll)
-		return(unlink(subdir, recursive = TRUE))
-	path <- file.path(subdir, file)
+		return(unlink(pkgdir, recursive = TRUE))
+	stopifnot(identical(file, basename(file)), grepl("^[A-Za-z]", file))
+	path <- file.path(verdir, file)
 	if (clear)
 		return(unlink(path))
 	if (file.exists(path))
@@ -122,8 +124,8 @@ function(file, object, topic = NULL, clear = FALSE, clearAll = FALSE, ...) {
 		                   topic),
 		          domain = NA)
 	}
-	if (!dir.exists(subdir))
-		dir.create(subdir)
+	if (!dir.exists(verdir))
+		dir.create(verdir, recursive = TRUE)
 	saveRDS(object, file = path, ...)
 	object
 }
