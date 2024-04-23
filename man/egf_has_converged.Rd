@@ -4,7 +4,7 @@
 \description{
 Performs simple diagnostic tests to assess whether the optimizer that
 produced an estimated model actually converged to a local minimum point
-of the negative log likelihood function.
+of the negative log marginal likelihood function.
 }
 \usage{
 egf_has_converged(object, check = TRUE, tol = 1)

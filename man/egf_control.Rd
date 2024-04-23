@@ -47,10 +47,10 @@ likelihood evaluations:
 \item{\code{0}}{
   likelihood evaluations are always silent.}
 \item{\code{1}}{
-  a message is printed whenever a negative log likelihood term
-  is \code{NaN} or exceeds \code{1e+09}.}
+  a message is printed whenever a negative log marginal likelihood
+  term is \code{NaN} or exceeds \code{1e+09}.}
 \item{\code{2}}{
-  all negative log likelihood terms are printed.}
+  all negative log marginal likelihood terms are printed.}
 }
 
 \code{\link{egf}} passes \code{silent = trace == 0L} to

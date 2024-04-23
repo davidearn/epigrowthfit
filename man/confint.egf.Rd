@@ -147,8 +147,8 @@ Three methods for computing confidence intervals are available:
   equation
   \preformatted{2 * (f(x) - f(value)) = q}
   where \code{q = qchisq(level, df = 1)}
-  and \code{f} is the negative log likelihood function expressed
-  as a function of the parameter \code{x} in question.
+  and \code{f} is the negative log marginal likelihood function
+  expressed as a function of the parameter \code{x} in question.
   Solutions are approximated by interpolating a likelihood profile
   (\code{"profile"}) or by rootfinding (\code{"uniroot"}).}
 }
