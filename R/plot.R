@@ -178,7 +178,7 @@ function(x,
 		if (length(required) > 0L) {
 			fx <- fitted(x,
 			             top = "log(r)",
-			             link = TRUE,
+			             class = TRUE,
 			             se = (show_doubling == 2L),
 			             subset = (frame_windows_bak$window %in% required))
 			if (show_doubling != 2L)
