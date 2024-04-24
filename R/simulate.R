@@ -13,7 +13,7 @@ function(object, nsim = 1, seed = NULL,
 		if (is.null(seed))
 			.R.s
 		else {
-			on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
+			NULL ## on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
 			set.seed(seed)
 			`attr<-`(seed, "kind", as.list(RNGkind()))
 		}
@@ -138,13 +138,13 @@ function(object, nsim = 1, seed = NULL,
 		if (is.null(seed))
 			.R.s
 		else {
-			on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
+			NULL ## on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
 			`attr<-`(seed, "kind", as.list(RNGkind()))
 		}
 	RNGreset <-
 	function() {
 		if (is.null(seed))
-			assign(".Random.seed", .R.s, globalenv())
+			NULL ## assign(".Random.seed", .R.s, globalenv())
 		else set.seed(seed)
 	}
 
