@@ -1,6 +1,21 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
 
+\section{Changes in version 0.15.1 (2024-04-24)}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Expand \samp{Description} field in \file{DESCRIPTION}.
+
+      \item Add \code{\value{}} entries to two \file{man/*.Rd}.
+
+      \item Clean up after \code{par} calls in \code{plot} method.
+
+      \item Do not assign to global environment in \code{simulate}
+      methods.  % revert after escaping newbies queue
+    }
+  }
+}
+
 \section{Changes in version 0.15.0 (2024-04-23)}{
   \subsection{NEW FEATURES}{
     \itemize{
