@@ -1,17 +1,29 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
 
+\section{Changes in version 0.15.2 (2024-04-24)}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item Use \verb{\donttest} for examples in
+      \file{man/profile.egf.Rd}, which remained too long.
+
+      \item Include URL in \file{man/covid19.ontario.Rd} with
+      \verb{\verb} instead of \verb{\href} to avoid HTTP 403.
+    }
+  }
+}
+
 \section{Changes in version 0.15.1 (2024-04-24)}{
   \subsection{BUG FIXES}{
     \itemize{
       \item Expand \samp{Description} field in \file{DESCRIPTION}.
 
-      \item Add \code{\value{}} entries to two \file{man/*.Rd}.
+      \item Add \verb{\value} tags to two \file{man/*.Rd}.
 
       \item Clean up after \code{par} calls in \code{plot} method.
 
       \item Do not assign to global environment in \code{simulate}
-      methods.  % revert after escaping newbies queue
+      methods. % revert after escaping newbies queue
     }
   }
 }

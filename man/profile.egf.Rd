@@ -107,10 +107,11 @@ The more basic \dQuote{next} method for generic function
 \code{\link{plot}}, namely \code{\link{plot.profile}}.
 }
 \examples{
+\donttest{
 fitted <- egf_cache("egf-1.rds")
 zz <- egf_cache("profile-egf-1.rds",
-    profile(fitted, A = NULL, top = "log(r)",
-            subset = quote(country == "A" & wave == 1)))
+    profile(fitted, A = NULL,
+            top = "log(r)", subset = quote(country == "A" & wave == 1)))
 str(zz)
 
 confint(zz, class = TRUE)
@@ -119,4 +120,5 @@ pty <- c("z", "abs(z)", "z^2")
 bty <- c("l", "u", "u")
 for (i in 1:3)
     plot(zz, type = pty[i], bty = bty[i], las = 1)
+}
 }

@@ -29,7 +29,8 @@ A data frame with 814 rows and 3 variables:
 \source{
 This data set is a processed subset of a larger data set downloaded
 on 2024-01-10 from the
-\href{https://data.ontario.ca/}{Ontario Data Catalogue}.
+%% \href{https://data.ontario.ca/}{Ontario Data Catalogue}.
+%% Ontario Data Catalogue (\verb{https://data.ontario.ca/}).
 It is updated using an installed script:
 \preformatted{\link{system.file}("scripts", "covid19.ontario.R", package = "epigrowthfit")}
 }
