@@ -18,6 +18,10 @@ theta2cov(theta)
   a numeric vector of length \eqn{n(n+1)/2}{n*(n+1)/2} whose first
   \eqn{n} elements are positive.}
 }
+\value{
+A vector like \code{theta} (\code{cov2theta}) or a matrix like
+\code{Sigma} (\code{theta2cov}); see \sQuote{Details}.
+}
 \details{
 An \eqn{n}-by-\eqn{n} real, symmetric, positive definite matrix
 \eqn{\Sigma} can be factorized as

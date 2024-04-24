@@ -17,6 +17,9 @@ A method for printing objects of class \code{\link{egf}}.
 \item{\dots}{
   unused optional arguments.}
 }
+\value{
+The argument \code{x}, unchanged but \link{invisible}.
+}
 \seealso{
 The generic function \code{\link{print}}.
 }
