@@ -229,10 +229,13 @@ function(x,
 
 	## Augment 'control' -------------------------------------------------------
 
+	ogp <- par(no.readonly = TRUE)
+	on.exit(par(ogp), add = TRUE, after = FALSE)
+
 	## Gather parameter values necessary to determine text dimensions ...
 	## those not specified in 'control' are obtained from 'gp'
 	par(cex = 1)
-	gp <- par()
+	gp <- par(no.readonly = TRUE)
 	if (is.list(control$axis$y)) {
 		nms <- setdiff(c("mgp", "cex.axis", "font.axis", "family"),
 		               names(control$axis$y))
@@ -308,7 +311,7 @@ function(x,
 	                 ylab = ylab)
 
 	## Discard exit instructions if low level plot function runs without error
-	on.exit()
+	on.exit(par(ogp))
 	invisible(cache)
 }
 
@@ -324,7 +327,10 @@ function(frame_ts, frame_windows, cache,
 	elu <- c("value", "lower", "upper")
 
 	## Graphical parameters
-	gp <- par()
+	ogp <- par(no.readonly = TRUE)
+	on.exit(par(ogp))
+
+	gp <- par(no.readonly = TRUE)
 
 	for (i in seq_len(n)) { # loop over plots
 		data <- frame_ts[unclass(frame_ts$ts) == i, , drop = FALSE]
