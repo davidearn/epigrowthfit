@@ -1,5 +1,6 @@
 \name{epigrowthfit-package}
 \alias{epigrowthfit-package}
+\alias{epigrowthfit}
 \docType{package}
 \title{\R{} Package \pkg{epigrowthfit}}
 \description{
