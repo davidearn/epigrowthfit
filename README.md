@@ -9,13 +9,23 @@ interpretation of supplied count data.  **epigrowthfit** is built on
 
 ## Installation
 
-**epigrowthfit** is not (yet) available on
-[CRAN](https://cran.r-project.org/),
-but can be installed from its sources on GitHub:
+[CRAN](https://cran.r-project.org/package=epigrowthfit) distributes
+both the package sources and binaries for Windows and macOS.  Hence
+typical users will install **epigrowthfit** with
 
 ```r
-remotes::install_github("davidearn/epigrowthfit")
+install.packages("epigrowthfit")
 ```
+
+or perhaps
+
+```r
+install.packages("epigrowthfit", type = "source")
+```
+
+to force installation from sources where installation of a binary
+would occur by default.  The rest of this section concerns the
+`type = "source"` case.
 
 Installation from sources depends on compilers and related tools.
 These will already be available on modern Linux installations.
@@ -85,6 +95,26 @@ The flags in the `tar` command line ensure that the files are unpacked
 under `/opt/R/x86_64` (Intel) or `/opt/R/arm64` (Apple Silicon).
 Standard installations of R will already be configured to search there
 for dependencies.
+
+## Repository structure
+
+Active development happens on branch `master`.  Tested changes intended
+for the next release are ported to branch `release-candidate`,
+where tarballs submitted to CRAN are eventually built.  Neither `master`
+nor `release-candidate` should be considered stable.
+
+The stable branches are named `release-x.y.z`.  They branch from
+`release-candidate` before the version number there is incremented,
+typically just after a tarball is submitted to CRAN.
+
+To install **epigrowthfit** from sources in a given branch or commit,
+install [**remotes**](https://cran.r-project.org/package=remotes) and
+run, e.g.,
+
+```r
+remotes::install_github("davidearn/epigrowthfit", ref = "release-0.15.2")
+remotes::install_github("davidearn/epigrowthfit", ref = "cf6fdd8")
+```
 
 ## References
 
