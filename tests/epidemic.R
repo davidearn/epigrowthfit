@@ -9,7 +9,7 @@ n <- 10L
 R0 <- rlnorm(n, 0, 2)
 S0 <- runif(n, 0, 1)
 I0 <- runif(n, 0, 1 - S0)
-Z <- S0 + emdbook::lambertW(-R0 * S0 * exp(-R0 * (S0 + I0))) / R0
+Z <- S0 + epigrowthfit:::Wp(-R0 * S0 * exp(-R0 * (S0 + I0))) / R0
 
 stopifnot(exprs = {
 	all.equal(finalsize(R0 = R0, S0 = S0, I0 = I0), Z)

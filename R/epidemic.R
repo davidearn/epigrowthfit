@@ -1,6 +1,34 @@
+## emdbook::lambertW(z = [-exp(-1), 0], b = 0L), simplified and adapted
+Wp <-
+function(z, iter.max = 10L, eps = 100 * .Machine[["double.eps"]]) {
+	stopifnot(is.double(z), all(is.finite(r <- range(0, z))),
+	          r[1L] >= -exp(-1), r[2L] <= 0,
+	          is.integer(iter.max), length(iter.max) == 1L, !is.na(iter.max),
+	          is.double(eps), length(eps) == 1L, is.finite(eps), eps >= 0)
+	w <- sqrt(exp(1) * z + 1) - 1 # a number in [-1, 0]
+	iter <- 0L
+	done <- FALSE
+	while (iter < iter.max) {
+		p <- exp(w)
+		t <- w * p - z
+		f <- w != -1
+		w <- w - f * t / (p * (w + f) - 0.5 * (w + 2) * t / (w + f))
+		aok <- all(ok <- is.finite(t) & is.finite(w)) # ever not TRUE?
+		if (all(abs(if (aok) t else t[ok]) <= eps * (1 + abs(if (aok) w else w[ok])))) {
+			done <- TRUE
+			break
+		}
+		iter <- iter - 1L
+	}
+	if (!done)
+		warning(gettextf("iteration limit (%d) reached in Lambert W approximation",
+		                 iter.max),
+		        domain = NA)
+	w
+}
+
 finalsize <-
 function(R0, S0, I0) {
-	stopifnot(requireNamespace("emdbook"))
 	if (missing(S0))
 		S0 <- 1 - I0
 	if (missing(I0))
@@ -26,7 +54,7 @@ function(R0, S0, I0) {
 		R0 <- R0[ok]
 		S0 <- S0[ok]
 		I0 <- I0[ok]
-		ans[ok] <- S0 + emdbook::lambertW(-R0 * S0 * exp(-R0 * (S0 + I0))) / R0
+		ans[ok] <- S0 + Wp(-R0 * S0 * exp(-R0 * (S0 + I0))) / R0
 	}
 	ans
 }

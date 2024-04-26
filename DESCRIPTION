@@ -39,5 +39,4 @@ Depends: R (>= 4.3.0)
 LinkingTo: RcppEigen (>= 0.3.4.0.0), TMB
 Imports: Matrix (>= 1.6-2), TMB, grDevices, graphics, methods, nlme,
 	stats, tools, utils
-Suggests: emdbook
 LazyData: true
