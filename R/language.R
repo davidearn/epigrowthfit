@@ -244,7 +244,7 @@ function(x) {
 		rhs <- l[[1L]][[3L]]
 		call("|", Recall.(unsplit_terms(lhs)), rhs)
 	}
-	l <- asExpr(unlist(lapply(l[b], expand), recursive = FALSE, use.names = FALSE))
+	l <- unlist(lapply(l[b], expand), recursive = FALSE, use.names = FALSE)
 	g <- vapply(l, function(x) deparse(x[[3L]]), "")
 	unsplit_terms(c(if (!is.null(x)) asExpr(x), xapply(split(l, g), condense)))
 }
