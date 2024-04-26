@@ -5,7 +5,7 @@ function(z, iter.max = 10L, eps = 100 * .Machine[["double.eps"]]) {
 	          r[1L] >= -exp(-1), r[2L] <= 0,
 	          is.integer(iter.max), length(iter.max) == 1L, !is.na(iter.max),
 	          is.double(eps), length(eps) == 1L, is.finite(eps), eps >= 0)
-	w <- sqrt(exp(1) * z + 1) - 1 # a number in [-1, 0]
+	w <- sqrt(2 * (exp(1) * z + 1)) - 1
 	iter <- 0L
 	done <- FALSE
 	while (iter < iter.max) {
