@@ -7,13 +7,13 @@ function(object, nsim = 1, seed = NULL,
          ...) {
 	## Set and preserve RNG state (modified from stats:::simulate.lm)
 	if (!exists(".Random.seed", envir = globalenv(), inherits = FALSE))
-		runif(1L)
-	.R.s <- get(".Random.seed", envir = globalenv())
+		set.seed(NULL, "default", "default", "default")
+	.R.s <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
 	RNGstate <-
 		if (is.null(seed))
 			.R.s
 		else {
-			NULL ## on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
+			on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
 			set.seed(seed)
 			`attr<-`(seed, "kind", as.list(RNGkind()))
 		}
@@ -132,13 +132,13 @@ function(object, nsim = 1, seed = NULL,
          cstart = 0, tend = 100, ...) {
 	## Set and preserve RNG state (modified from stats:::simulate.lm)
 	if (!exists(".Random.seed", envir = globalenv(), inherits = FALSE))
-		runif(1L)
-	.R.s <- get(".Random.seed", envir = globalenv())
+		set.seed(NULL, "default", "default", "default")
+	.R.s <- get(".Random.seed", envir = globalenv(), inherits = FALSE)
 	RNGstate <-
 		if (is.null(seed))
 			.R.s
 		else {
-			NULL ## on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
+			on.exit(assign(".Random.seed", .R.s, envir = globalenv()))
 			`attr<-`(seed, "kind", as.list(RNGkind()))
 		}
 	RNGreset <-
