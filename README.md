@@ -96,6 +96,19 @@ under `/opt/R/x86_64` (Intel) or `/opt/R/arm64` (Apple Silicon).
 Standard installations of R will already be configured to search there
 for dependencies.
 
+## Documentation
+
+After installing, users can access the package index (a list of
+available help topics) with:
+
+```r
+help(package = "epigrowthfit")
+```
+
+The HTML help contains useful hyperlinks and typeset math.
+You can force HTML rendering, where that is not the default,
+by passing `help_type = "html"`.
+
 ## Repository structure
 
 Active development happens on branch `master`.  Tested changes intended
