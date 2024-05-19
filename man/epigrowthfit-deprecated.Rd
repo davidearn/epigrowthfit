@@ -9,11 +9,7 @@ may become defunct as soon as the next release.
 \usage{
 ## Nothing yet!
 }
-\details{
-These either are stubs reporting that they are defunct or
-have been removed completely (apart from being documented here).
-}
 \seealso{
 \code{\link{Defunct}}, \code{\link{base-defunct}},
-\code{\link{epigrowthfit-deprecated}}, \code{\link{epigrowthfit-notyet}}.
+\code{\link{epigrowthfit-defunct}}, \code{\link{epigrowthfit-notyet}}.
 }

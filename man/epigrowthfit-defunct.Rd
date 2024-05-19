@@ -14,5 +14,5 @@ have been removed completely (apart from being documented here).
 }
 \seealso{
 \code{\link{Deprecated}}, \code{\link{base-deprecated}},
-\code{\link{epigrowthfit-defunct}}, \code{\link{epigrowthfit-notyet}}.
+\code{\link{epigrowthfit-deprecated}}, \code{\link{epigrowthfit-notyet}}.
 }
