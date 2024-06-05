@@ -2,7 +2,8 @@
 ^TODO[.]org$
 ^misc$
 
-^R/egf_shiny.R$
+^R/egf_shiny[.]R$
 ^inst/shiny$
-^man/egf_shiny.Rd$
-.github
+^man/egf_shiny[.]Rd$
+
+^[.]github$
