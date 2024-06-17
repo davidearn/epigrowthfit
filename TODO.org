@@ -1,5 +1,9 @@
 * TODO epigrowthfit 0.15.z
 
+** DONE eliminate dependency on package emdbook
+
+** TODO eliminate 'egf_cache' which introduced race condition when running concurrent checks
+
 ** TODO Use language objects, not strings, to store <link>(<response>)
 
 ** TODO 'profile' with conventional 'par.vals'
