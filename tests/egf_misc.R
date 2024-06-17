@@ -1,10 +1,7 @@
 attach(asNamespace("epigrowthfit"))
-library(methods)
 library(tools)
 options(warn = 2L, error = if (interactive()) recover)
-
-o.1 <- egf_cache("egf-1.rds")
-o.2 <- egf_cache("egf-2.rds")
+example("egf", package = "epigrowthfit"); o.1 <- m1; o.2 <- m2
 
 
 ## egf_has_random ######################################################
@@ -81,8 +78,3 @@ stopifnot(identical.(r.1., r.1))
 o.1[["tmb_out"]][["env"]][[".__egf__."]][["adreport"]] <- NULL
 assertCondition(r.1. <- egf_adreport(o.1), "message")
 stopifnot(identical.(r.1., r.1))
-
-
-## egf_cache ###########################################################
-
-## see example("egf_cache")
