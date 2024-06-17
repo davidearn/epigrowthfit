@@ -1,13 +1,13 @@
 library(epigrowthfit)
 library(methods)
 options(warn = 2L, error = if (interactive()) recover)
-
-o.1  <- egf_cache(        "egf-1.rds")
-o.1p <- egf_cache("profile-egf-1.rds")
+example("egf", package = "epigrowthfit"); o.1 <- m1; o.2 <- m2
 
 
 ## object ##############################################################
 
+o.1p <- profile(o.1, A = NULL,
+                top = "log(r)", subset = quote(country == "A" & wave == 1))
 stopifnot(exprs = {
 	is.list(o.1p)
 	identical(oldClass(o.1p), c("profile.egf", "profile"))

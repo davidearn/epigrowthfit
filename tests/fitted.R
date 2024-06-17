@@ -1,12 +1,11 @@
 library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
-
-o.1  <- egf_cache(       "egf-1.rds")
-o.1f <- egf_cache("fitted-egf-1.rds")
+example("egf", package = "epigrowthfit"); o.1 <- m1; o.2 <- m2
 
 
 ## object ##############################################################
 
+o.1f <- fitted(o.1, class = TRUE, se = TRUE)
 o.1f.e <- data.frame(top = gl(2L, 20L, labels = c("log(r)", "log(c0)")),
                      ts = gl(10L, 2L, 40L, labels = LETTERS[1:10]),
                      window = gl(20L, 1L, 40L, labels = sprintf("window_%02d", 1:20)),

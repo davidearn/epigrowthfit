@@ -1,14 +1,12 @@
 library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
+example("egf", package = "epigrowthfit"); o.1 <- m1; o.2 <- m2
 
 .S3method("split", "formula",
           function(x, f, drop = FALSE, ...) {
           	l <- epigrowthfit:::split_effects(x)
           	`attr<-`(l[[1L]], "random", l[-1L])
           })
-
-o.1 <- egf_cache("egf-1.rds")
-o.2 <- egf_cache("egf-2.rds")
 
 
 ## fixef ###############################################################

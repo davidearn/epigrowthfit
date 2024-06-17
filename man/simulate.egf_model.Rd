@@ -101,13 +101,12 @@ s <- 0.2
 mu <- log(c(r, c0))
 Sigma <- diag(rep.int(s^2, length(mu)))
 
-zz <- egf_cache("simulate-egf_model-1.rds",
-    simulate(object = egf_model(curve = "exponential", family = "pois"),
-             nsim = 20L,
-             seed = 202737L,
-             mu = mu,
-             Sigma = Sigma,
-             cstart = 10))
+zz <- simulate(object = egf_model(curve = "exponential", family = "pois"),
+               nsim = 20L,
+               seed = 202737L,
+               mu = mu,
+               Sigma = Sigma,
+               cstart = 10)
 str(zz)
 
 mm <- egf(zz)

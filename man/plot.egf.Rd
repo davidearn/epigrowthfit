@@ -120,25 +120,26 @@ to produce correct results.
 The generic function \code{\link{plot}}.
 }
 \examples{
-x <- egf_cache("egf-1.rds")
+example("egf", package = "epigrowthfit")
+
 l <- list(legend = list(cex = 0.8),
           value = list(cex = 0.8, font = 2),
           ci = list(cex = 0.8))
 control <- egf_control_plot(doubling = l)
 
 op <- par(mar = c(3.5, 5, 5, 1))
-plot(x,
+plot(m1,
      type = "interval",
      show_predict = 2L,
      show_doubling = 2L,
      control = control)
-plot(x,
+plot(m1,
      type = "cumulative",
      main = "Fitted exponential model",
      sub = quote(paste("Country", country)))
 par(op)
 
 op <- par(mar = c(3.5, 9.5, 5, 1))
-plot(x, type = "rt", subset = quote(country \%in\% LETTERS[4:6]))
+plot(m1, type = "rt", subset = quote(country \%in\% LETTERS[4:6]))
 par(op)
 }

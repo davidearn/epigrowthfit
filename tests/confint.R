@@ -1,5 +1,6 @@
 library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
+example("egf", package = "epigrowthfit"); o.1 <- m1; o.2 <- m2
 
 .S3method("all.equal", "confint.egf",
           function(target, current, ignore = NULL, ...) {
@@ -9,17 +10,21 @@ options(warn = 2L, error = if (interactive()) recover)
           	NextMethod()
           })
 
-o.1    <- egf_cache(        "egf-1.rds")
-o.1c.w <- egf_cache("confint-egf-1.rds") # confint(method =    "wald")
-o.1c.p <- egf_cache("confint-egf-2.rds") # confint(method = "profile")
-o.1c.u <- egf_cache("confint-egf-3.rds") # confint(method = "uniroot")
-o.1f   <- egf_cache( "fitted-egf-1.rds")
-o.1p   <- egf_cache("profile-egf-1.rds")
-
 
 ## object ##############################################################
 
+o.1c.w <- confint(o.1, A = NULL, method =    "wald", class = TRUE,
+                  random = TRUE)
+o.1c.p <- confint(o.1, A = NULL, method = "profile", class = TRUE,
+                  top = "log(r)", subset = quote(country == "A" & wave == 1))
+o.1c.u <- confint(o.1, A = NULL, method = "uniroot", class = TRUE,
+                  top = "log(r)", subset = quote(country == "A" & wave == 1))
+
+o.1f <- fitted(o.1, class = TRUE, se = TRUE)
 o.1fc <- confint(o.1f, class = TRUE)
+
+o.1p <- profile(o.1, A = NULL,
+                top = "log(r)", subset = quote(country == "A" & wave == 1))
 o.1pc <- confint(o.1p, class = TRUE)
 
 stopifnot(exprs = {

@@ -2,8 +2,7 @@ attach(asNamespace("epigrowthfit"))
 library(methods)
 library(tools)
 options(warn = 2L, error = if (interactive()) recover)
-
-o.1 <- egf_cache("egf-1.rds")
+example("egf", package = "epigrowthfit"); o.1 <- m1; o.2 <- m2
 
 
 ## egf_sanitize_formula_ts      ########################################

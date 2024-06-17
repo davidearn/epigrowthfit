@@ -47,11 +47,12 @@ for \code{\link{print}}, \code{\link{as.list}}, and \code{\link{labels}}.
 The generic function \code{\link{coef}}.
 }
 \examples{
-object <- egf_cache("egf-2.rds")
+example("egf", package = "epigrowthfit")
+
 for (random in c(FALSE, TRUE)) {
     for (full in c(FALSE, TRUE)) {
         cat(sprintf("random = \%s, full = \%s :\n\n", random, full))
-        str(coef(object, random = random, full = full))
+        str(coef(m1, random = random, full = full))
         cat("\n")
     }
 }

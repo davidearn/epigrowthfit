@@ -83,10 +83,12 @@ A data frame inheriting from class \code{fitted.egf}, with variables:
 The generic function \code{\link{fitted}}.
 }
 \examples{
-object <- egf_cache("egf-1.rds")
-zz <- egf_cache("fitted-egf-1.rds",
-    fitted(object, class = TRUE, se = TRUE))
+\donttest{
+example("egf", package = "epigrowthfit")
+
+zz <- fitted(m1, class = TRUE, se = TRUE)
 str(zz)
 
 confint(zz, class = TRUE)
+}
 }

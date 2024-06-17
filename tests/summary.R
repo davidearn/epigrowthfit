@@ -1,13 +1,12 @@
 library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
-
-o.1  <- egf_cache(        "egf-1.rds")
-o.1s <- egf_cache("summary-egf-1.rds")
-o.1f <- egf_cache( "fitted-egf-1.rds")
+example("egf", package = "epigrowthfit"); o.1 <- m1; o.2 <- m2
 
 
 ## object ##############################################################
 
+o.1s <- summary(o.1)
+o.1f <- fitted(o.1, class = TRUE, se = TRUE)
 stopifnot(exprs = {
 	is.list(o.1s)
 	identical(oldClass(o.1s), "summary.egf")

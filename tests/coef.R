@@ -1,8 +1,6 @@
 library(epigrowthfit)
 options(warn = 2L, error = if (interactive()) recover)
-
-o.2  <- egf_cache("egf-2.rds")
-nms <- c("beta", "theta", "b")
+example("egf", package = "epigrowthfit"); o.1 <- m1; o.2 <- m2
 
 
 ## object ##############################################################
@@ -26,6 +24,7 @@ stopifnot(exprs = {
 
 ## as.list #############################################################
 
+nms <- c("beta", "theta", "b")
 o.2cl <- as.list(o.2c)
 o.2cl.e <- split(o.2c, factor(labels(o.2c), levels = nms))
 for (s in nms)

@@ -67,10 +67,11 @@ when \code{bootstrap = FALSE}.
 The generic function \code{\link{simulate}}.
 }
 \examples{
-object <- egf_cache("egf-2.rds")
-zz <- egf_cache("simulate-egf-1.rds",
-    simulate(object, nsim = 6L, seed = 181952L, bootstrap = TRUE))
+example("egf", package = "epigrowthfit")
+
+zz <- simulate(m2, nsim = 6L, seed = 181952L, bootstrap = TRUE)
 str(zz)
-matplot(t(zz[["bootstrap"]][!object[["random"]], ]),
+
+matplot(t(zz[["bootstrap"]][!m2[["random"]], ]),
         type = "o", las = 1, xlab = "simulation", ylab = "value")
 }

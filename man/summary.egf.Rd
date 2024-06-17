@@ -44,7 +44,8 @@ A list inheriting from class \code{summary.egf}, with elements:
 The generic function \code{\link{summary}}.
 }
 \examples{
-object <- egf_cache("egf-1.rds")
-zz <- egf_cache("summary-egf-1.rds", summary(object))
+example("egf", package = "epigrowthfit")
+
+zz <- summary(m1)
 str(zz)
 }

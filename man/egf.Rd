@@ -218,19 +218,18 @@ listed by \code{\link{methods}(class = "egf")}.
 ## Simulate 'N' incidence time series exhibiting exponential growth
 set.seed(180149L)
 N <- 10L
-time <- seq.int(0, 40, 1)
-mu <- c(-3.2, 6)
-sigma <- c(0.2, 0.2)
-r <- rlnorm(N, -3.2, 0.2)
-c0 <- rlnorm(N, 6, 0.2)
 f <- function(time, r, c0) {
     lambda <- diff(exp(log(c0) + r * time))
     c(NA, rpois(lambda, lambda))
 }
+time <- seq.int(0, 40, 1)
+r <- rlnorm(N, -3.2, 0.2)
+c0 <- rlnorm(N, 6, 0.2)
 data_ts <-
     data.frame(country = gl(N, length(time), labels = LETTERS[1:N]),
                time = rep.int(time, N),
                x = unlist(Map(f, time = list(time), r = r, c0 = c0)))
+rm(f, time)
 
 ## Define fitting windows (here, two per time series)
 data_windows <-
@@ -242,24 +241,25 @@ data_windows <-
                        sample(seq.int(35, 40, 1), N, TRUE)))
 
 ## Estimate the generative model
-m1 <- egf_cache("egf-1.rds",
+m1 <-
     egf(model = egf_model(curve = "exponential", family = "pois"),
         formula_ts = cbind(time, x) ~ country,
         formula_windows = cbind(start, end) ~ country,
         formula_parameters = ~(1 | country:wave),
         data_ts = data_ts,
         data_windows = data_windows,
-        se = TRUE))
+        se = TRUE)
 
 ## Re-estimate the generative model with:
-## * Gaussian prior on 'beta[1L]'
-## * LKJ prior on all random effect covariance matrices (here there happens to be just one)
+## * Gaussian prior on beta[1L]
+## * LKJ prior on all random effect covariance matrices
+##   (here there happens to be just one)
 ## * initial value of 'theta' set explicitly
-## * 'theta[3L]' fixed at initial value
-m2 <- egf_cache("egf-2.rds",
+## * theta[3L] fixed at initial value
+m2 <-
     update(m1,
            formula_priors = list(beta[1L] ~ Normal(mu = -3, sigma = 1),
                                  Sigma ~ LKJ(eta = 2)),
            init = list(theta = c(log(0.5), log(0.5), 0)),
-           map = list(theta = 3L)))
+           map = list(theta = 3L))
 }

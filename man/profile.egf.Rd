@@ -108,10 +108,10 @@ The more basic \dQuote{next} method for generic function
 }
 \examples{
 \donttest{
-fitted <- egf_cache("egf-1.rds")
-zz <- egf_cache("profile-egf-1.rds",
-    profile(fitted, A = NULL,
-            top = "log(r)", subset = quote(country == "A" & wave == 1)))
+example("egf", package = "epigrowthfit")
+
+zz <- profile(m1, A = NULL,
+              top = "log(r)", subset = quote(country == "A" & wave == 1))
 str(zz)
 
 confint(zz, class = TRUE)
