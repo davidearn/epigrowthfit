@@ -1,7 +1,7 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
 
-\section{Changes in version 0.15.3 (2024-06-18)}{
+\section{Changes in version 0.15.4 (2024-06-18)}{
   \subsection{DEPRECATED AND DEFUNCT}{
     \item .
   }
