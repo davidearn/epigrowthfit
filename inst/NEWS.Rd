@@ -1,6 +1,21 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
 
+\section{Changes in version 0.15.3 (2024-06-18)}{
+  \subsection{DEPRECATED AND DEFUNCT}{
+    \item .
+  }
+  \subsection{INSTALLATION}{
+    \item .
+  }
+  \subsection{BUG FIXES}{
+    \item .
+  }
+  \subsection{NEW FEATURES}{
+    \item .
+  }
+}
+
 \section{Changes in version 0.15.3 (2024-06-17)}{
   \subsection{DEPRECATED AND DEFUNCT}{
     \itemize{
