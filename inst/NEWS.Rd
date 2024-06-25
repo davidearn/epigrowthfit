@@ -3,16 +3,24 @@
 
 \section{Changes in version 0.15.4 (2024-06-18)}{
   \subsection{DEPRECATED AND DEFUNCT}{
-    \item .
+    \itemize{
+      \item .
+    }
   }
   \subsection{INSTALLATION}{
-    \item .
+    \itemize{
+      \item .
+    }
   }
   \subsection{BUG FIXES}{
-    \item .
+    \itemize{
+      \item .
+    }
   }
   \subsection{NEW FEATURES}{
-    \item .
+    \itemize{
+      \item .
+    }
   }
 }
 
