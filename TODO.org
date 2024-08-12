@@ -4,6 +4,8 @@
 
 ** DONE eliminate 'egf_cache' which introduced race condition when running concurrent checks
 
+** TODO 'configure' script to automate OpenMP configuration
+
 ** TODO Use language objects, not strings, to store <link>(<response>)
 
 Expression vectors need class 'AsIs' to be formatted correctly as
