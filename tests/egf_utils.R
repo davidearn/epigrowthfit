@@ -116,7 +116,7 @@ formula_parameters <- list(`log(r)`  = ~x1 + (1 | g1) + (1 | g1:g2),
                            `log(c0)` = ~(1 | g3))
 
 data_ts <- data.frame(country = gl(6L, 11L),
-                      day = seq.int(0, 10, by = 1),
+                      day = as.double(seq.int(0, 10, 1)),
                       count = rpois(11L, 100 * exp(0.04 * 0:10)))
 data_windows <- data.frame(country = gl(3L, 2L),
                            left = rep.int(c(0, 5), 3L),
@@ -158,7 +158,7 @@ l1.e <- data.frame(ts = gl(2L, 10L, labels = 2:3),
                    window = factor(rep.int(c(NA, 1, 2, NA, 3, NA),
                                            c(1L, 4L, 5L, 1L, 4L, 5L)),
                                    labels = sprintf("window_%d", 1:3)),
-                   time = rep.int(seq.int(1, 10, by = 1), 2L),
+                   time = rep.int(as.double(seq.int(1, 10, 1)), 2L),
                    x = data_ts[["count"]][c(NA, 14:22, NA, 25:33)])
 attr(l1.e, "first") <- c(1L, 5L, 11L)
 attr(l1.e, "last") <- c(5L, 10L, 15L)
