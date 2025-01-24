@@ -1,6 +1,6 @@
 Package: epigrowthfit
 Version: 0.15.4
-Date: 2025-01-13
+Date: 2025-01-24
 License: GPL-3
 Encoding: UTF-8
 URL: https://github.com/davidearn/epigrowthfit
@@ -24,14 +24,19 @@ Description:
 Authors@R:
 	c(person("Mikael", "Jagan", role = c("aut", "cre"),
 	         email = "jaganmn@mcmaster.ca",
-	         comment = c(ORCID = "0000-0002-3542-2938")),
+	         comment = c(ORCID = "0000-0002-3542-2938",
+	                     ROR = "02fa3aq29")),
 	  person("Ben", "Bolker", role = "aut",
-	         comment = c(ORCID = "0000-0002-2127-0443")),
+	         comment = c(ORCID = "0000-0002-2127-0443",
+	                     ROR = "02fa3aq29")),
 	  person("Jonathan", "Dushoff", role = "ctb",
-	         comment = c(ORCID = "0000-0003-0506-4794")),
+	         comment = c(ORCID = "0000-0003-0506-4794",
+	                     ROR = "02fa3aq29")),
 	  person("David", "Earn", role = "ctb",
-	         comment = c(ORCID = "0000-0003-3597-617X")),
-	  person("Junling", "Ma", role = "ctb"))
+	         comment = c(ORCID = "0000-0003-3597-617X",
+	                     ROR = "02fa3aq29")),
+	  person("Junling", "Ma", role = "ctb",
+	         comment = c(ROR = "04s5mat29")))
 Depends: R (>= 4.3)
 LinkingTo: RcppEigen (>= 0.3.4.0.0), TMB
 Imports: Matrix (>= 1.6-2), TMB, grDevices, graphics, methods, nlme,

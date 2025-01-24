@@ -1,7 +1,7 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
 
-\section{Changes in version 0.15.4 (2025-01-13)}{
+\section{Changes in version 0.15.4 (2025-01-24)}{
   \subsection{BUG FIXES}{
     \itemize{
       \item Tests in \file{tests/egf_utils.R} wrongly relied on the
