@@ -5,5 +5,3 @@
 ^R/egf_shiny[.]R$
 ^inst/shiny$
 ^man/egf_shiny[.]Rd$
-
-^[.]github$
