@@ -14,7 +14,7 @@ Type objective_function<Type>::operator()()
 	this->max_parallel_regions = omp_get_max_threads();
 #endif
 
-	/* Parameters =========================================================== */
+	/* Parameters =================================================== */
 
 	/* Concatenated vectors of fixed effects coefficients */
 	PARAMETER_VECTOR(beta);
@@ -22,11 +22,13 @@ Type objective_function<Type>::operator()()
 	/* Concatenated vectors of random effects covariance parameters */
 	PARAMETER_VECTOR(theta);
 
-	/* Concatenated vectors of random effects coefficients (unit variance) */
+	/* Concatenated vectors of random effects coefficients
+	   (unit variance)
+	*/
 	PARAMETER_VECTOR(b);
 
 
-	/* Flags ================================================================ */
+	/* Flags ======================================================== */
 
 	/* Structure storing integer and Boolean flags specifying model
 	   being estimated and template behaviour
@@ -35,19 +37,21 @@ Type objective_function<Type>::operator()()
 	flags.do_simulate = this->do_simulate;
 
 
-	/* Fixed effects infrastructure ========================================= */
+	/* Fixed effects infrastructure ================================= */
 
 	/* Combined fixed effects model matrix
-	   - dim=(N, length(beta)) if do_sparse_X=false, dim=(N, 0) otherwise
+	   - dim=(N, length(beta)) if do_sparse_X=false,
+	     dim=(N, 0) otherwise
 	*/
 	DATA_MATRIX(Xd);
 	/*
-	   - dim=(N, length(beta)) if do_sparse_X=true,  dim=(N, 0) otherwise
+	   - dim=(N, length(beta)) if do_sparse_X=true,
+	     dim=(N, 0) otherwise
 	*/
 	DATA_SPARSE_MATRIX(Xs);
 
-	/* "Factor" splitting fixed effects model matrix columns by relation
-	   to a nonlinear model parameter
+	/* "Factor" splitting fixed effects model matrix columns
+	   by relation to a nonlinear model parameter
 	   - length=length(beta)
 	   - val={0,...,p-1}
 	*/
@@ -63,7 +67,9 @@ Type objective_function<Type>::operator()()
 	/* Number of nonlinear model parameters */
 	int p = beta_index_tab.size();
 
-	/* Fixed effects coefficient matrix, to be multiplied on the left by 'X' */
+	/* Fixed effects coefficient matrix, to be multiplied on the left
+	   by 'X'
+	*/
 	Eigen::SparseMatrix<Type> beta_matrix(beta.size(), p);
 	beta_matrix.reserve(beta_index_tab);
 	for (int i = 0; i < beta.size(); ++i)
@@ -72,7 +78,7 @@ Type objective_function<Type>::operator()()
 	}
 
 
-	/* Random effects infrastructure ======================================== */
+	/* Random effects infrastructure ================================ */
 
 	/* Combined random effects model matrix
 	   - dim=(N, length(b))
@@ -80,19 +86,23 @@ Type objective_function<Type>::operator()()
 	DATA_SPARSE_MATRIX(Z);
 	flags.do_random_effects = (Z.cols() > 0);
 
-	/* Random effects coefficient matrix, to be multiplied on the left by 'Z' */
+	/* Random effects coefficient matrix, to be multiplied on the left
+	   by 'Z'
+	*/
 	Eigen::SparseMatrix<Type> b_matrix;
 
 	/* Number of random effects blocks */
 	int M;
 
 	/* List of random effects blocks
-	   - each block is a matrix whose columns vectors are contiguous segments
-	     of parameter vector 'b'
-	   - blocks, row vectors, and column vectors correspond to random effect
-	     terms, nonlinear model parameters, and group levels, respectively
-	   - column vectors represent realizations of a multivariate normal random
-	     variable with zero mean, unit variance, and unstructured covariance
+	   - each block is a matrix whose columns vectors are contiguous
+	     segments of parameter vector 'b'
+	   - blocks, row vectors, and column vectors correspond to random
+	     effect terms, nonlinear model parameters, and group levels,
+	     respectively
+	   - column vectors represent realizations of a multivariate normal
+	     random variable with zero mean, unit variance, and unstructured
+	     covariance
 	*/
 	vector< matrix<Type> > list_of_blocks;
 
@@ -109,8 +119,8 @@ Type objective_function<Type>::operator()()
 	{
 		/* Data ------------------------------------------------------------- */
 
-		/* "Factor" splitting random effects model matrix
-		   columns by relation to a nonlinear model parameter
+		/* "Factor" splitting random effects model matrix columns
+		   by relation to a nonlinear model parameter
 		   - length=length(b)
 		   - val={0,...,p-1}
 		*/
@@ -138,7 +148,7 @@ Type objective_function<Type>::operator()()
 		M = block_cols.size();
 
 
-		/* Initialization --------------------------------------------------- */
+		/* Initialization ------------------------------------------- */
 
 		b_matrix.resize(b.size(), p);
 		b_matrix.reserve(b_index_tab);
@@ -205,9 +215,10 @@ Type objective_function<Type>::operator()()
 	*/
 	DATA_MATRIX(Y);
 
-	/* Structure storing integer column indices of nonlinear model parameters
-	   in response matrix
-	   - val={0,...p-1} if parameter is used, val=-1 otherwise
+	/* Structure storing integer column indices of nonlinear model
+	   parameters in response matrix
+	   - val={0,...p-1} if parameter is used,
+	     val=-1 otherwise
 	*/
 	DATA_STRUCT(indices, egf::indices_t);
 
@@ -227,7 +238,7 @@ Type objective_function<Type>::operator()()
 	}
 
 
-	/* Time series infrastructure =========================================== */
+	/* Time series infrastructure =================================== */
 
 	/* Concatenated vectors of time points
 	   - length=n
@@ -249,7 +260,8 @@ Type objective_function<Type>::operator()()
 
 	/* Segment initial days of week
 	   - length=N
-	   - val={0,...,6} if do_day_of_week=true, val=-1 otherwise
+	   - val={0,...,6} if do_day_of_week=true,
+	     val=-1 otherwise
 	*/
 	DATA_IVECTOR(day1);
 
@@ -280,7 +292,7 @@ Type objective_function<Type>::operator()()
 	}
 
 
-	/* Random effect likelihood --------------------------------------------- */
+	/* Random effect likelihood ------------------------------------- */
 
 	if (flags.do_random_effects) {
 		if (flags.do_trace)
@@ -296,7 +308,7 @@ Type objective_function<Type>::operator()()
 	}
 
 
-	/* Top level parameter value likelihood --------------------------------- */
+	/* Top level parameter value likelihood ------------------------- */
 
 	if (flags.do_regularize_top)
 	{
@@ -318,7 +330,7 @@ Type objective_function<Type>::operator()()
 	}
 
 
-	/* Bottom level parameter value likelihood ------------------------------ */
+	/* Bottom level parameter value likelihood ---------------------- */
 
 	if (flags.do_regularize_bottom)
 	{
@@ -341,11 +353,11 @@ Type objective_function<Type>::operator()()
 	}
 
 
-	/* Prediction =========================================================== */
+	/* Prediction =================================================== */
 
 	if (flags.do_predict)
 	{
-		/* Flags ------------------------------------------------------------ */
+		/* Flags ---------------------------------------------------- */
 
 		/* What should be predicted? */
 		DATA_IVECTOR(what);
@@ -368,7 +380,7 @@ Type objective_function<Type>::operator()()
 		bool do_predict_log_rt = (what(2) == 1);
 
 
-		/* Data ------------------------------------------------------------- */
+		/* Data ----------------------------------------------------- */
 
 		/* Time series segments for which predictions should be computed
 		   - length=N'
@@ -391,12 +403,13 @@ Type objective_function<Type>::operator()()
 
 		/* Segment initial days of week
 		   - length=N'
-		   - val={0,...,6} if do_day_of_week=true, val=-1 otherwise
+		   - val={0,...,6} if do_day_of_week=true,
+		     val=-1 otherwise
 		*/
 		DATA_IVECTOR(new_day1);
 
 
-		/* Log cumulative incidence since time -Inf, no day of week effects - */
+		/* Log cumulative incidence since time -Inf, no day of week effects */
 
 		vector< vector<Type> > list_of_predict(N);
 		int n;
@@ -416,7 +429,7 @@ Type objective_function<Type>::operator()()
 		}
 
 
-		/* Prediction variables --------------------------------------------- */
+		/* Prediction variables ------------------------------------- */
 
 		vector<Type> Y_row;
 		if (do_predict_log_rt)

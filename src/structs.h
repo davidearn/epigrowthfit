@@ -99,10 +99,8 @@ struct flags_t
 		do_sparse_X      = (sparse_X    == 1);
 		do_predict       = (predict     == 1);
 
-		regularize_top =
-			asVector<int>(getListElement(x, "regularize_top"   , &Rf_isNumeric));
-		regularize_bottom =
-			asVector<int>(getListElement(x, "regularize_bottom", &Rf_isNumeric));
+		regularize_top    = asVector<int>(getListElement(x, "regularize_top"   , &Rf_isNumeric));
+		regularize_bottom = asVector<int>(getListElement(x, "regularize_bottom", &Rf_isNumeric));
 
 		do_regularize_top = false;
 		for (int i = 0; !do_regularize_top    && i < regularize_top   .size(); ++i)

@@ -1,5 +1,5 @@
 template<class Type>
-bool is_nll_term_ok(Type nll_term, double tol = 1.0e+09)
+bool is_nll_term_ok(Type nll_term, double tol = 1.0e+9)
 {
 	return egf::is_finite(nll_term) && asDouble(nll_term) < tol;
 }
