@@ -1,5 +1,5 @@
 library(epigrowthfit)
-options(warn = 2L, error = if (interactive()) recover, egf.cores = 2L)
+options(warn = 2L, error = if (interactive()) recover)
 
 
 ## exponential #########################################################
