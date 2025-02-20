@@ -1,6 +1,14 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
 
+\section{Changes in version 0.15.5 (2025-02-20)}{
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item .
+    }
+  }
+}
+
 \section{Changes in version 0.15.4 (2025-02-14)}{
   \subsection{BUG FIXES}{
     \itemize{
