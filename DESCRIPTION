@@ -1,6 +1,6 @@
 Package: epigrowthfit
 Version: 0.15.5
-Date: 2025-02-20
+Date: 2025-10-15
 License: GPL-3
 Encoding: UTF-8
 URL: https://github.com/davidearn/epigrowthfit
@@ -33,7 +33,7 @@ Authors@R:
 	         comment = c(ORCID = "0000-0003-3597-617X")),
 	  person("Junling", "Ma", role = "ctb"))
 Depends: R (>= 4.3)
-LinkingTo: RcppEigen (>= 0.3.4.0.0), TMB
+LinkingTo: RcppEigen (>= 0.3.4), TMB
 Imports: Matrix (>= 1.6-2), TMB, grDevices, graphics, methods, nlme,
 	stats, utils
 LazyData: true

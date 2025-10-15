@@ -1,16 +1,45 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
-
-\section{Changes in version 0.15.5 (2025-02-20)}{
-  \subsection{BUG FIXES}{
+\newcommand{\GH}{\href{https://github.com/davidearn/epigrowthfit/issues/#1}{GH##1}}
+\section{Changes in version 0.15.5 (2025-10-15)}{
+  \subsection{Significant User-Visible Changes}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Deprecated and Defunct}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Bug Fixes}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{New Features}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Installation}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Documentation}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Internals}{
     \itemize{
       \item .
     }
   }
 }
-
 \section{Changes in version 0.15.4 (2025-02-14)}{
-  \subsection{BUG FIXES}{
+  \subsection{Bug Fixes}{
     \itemize{
       \item Tests in \file{tests/egf_utils.R} wrongly relied on the
       type of the value of a call to \code{seq.int}, causing errors
@@ -18,9 +47,8 @@
     }
   }
 }
-
 \section{Changes in version 0.15.3 (2024-06-17)}{
-  \subsection{DEPRECATED AND DEFUNCT}{
+  \subsection{Deprecated and Defunct}{
     \itemize{
       \item \code{egf_cache} is removed.  Serializing objects under
       \code{tools::R_user_dir("epigrowthfit", "cache")} for reuse in
@@ -28,7 +56,7 @@
       or more checks concurrently, and workarounds were not appealing.
     }
   }
-  \subsection{INSTALLATION}{
+  \subsection{Installation}{
     \itemize{
       \item \pkg{emdbook} is removed from the \code{Suggests} field of
       \file{DESCRIPTION}.  A full check of the package requires only
@@ -36,9 +64,8 @@
     }
   }
 }
-
 \section{Changes in version 0.15.2 (2024-04-24)}{
-  \subsection{BUG FIXES}{
+  \subsection{Bug Fixes}{
     \itemize{
       \item Use \verb{\donttest} for examples in
       \file{man/profile.egf.Rd}, which remained too long.
@@ -48,9 +75,8 @@
     }
   }
 }
-
 \section{Changes in version 0.15.1 (2024-04-24)}{
-  \subsection{BUG FIXES}{
+  \subsection{Bug Fixes}{
     \itemize{
       \item Expand \samp{Description} field in \file{DESCRIPTION}.
 
@@ -63,9 +89,8 @@
     }
   }
 }
-
 \section{Changes in version 0.15.0 (2024-04-23)}{
-  \subsection{NEW FEATURES}{
+  \subsection{New Features}{
     \itemize{
       \item A \dQuote{traditional} model estimating function \code{egf},
       returning model objects of class \code{egf}.
@@ -87,3 +112,41 @@
     }
   }
 }
+
+%% \section{Changes in version x.y.z (yyyy-mm-dd)}{
+%%   \subsection{Significant User-Visible Changes}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Deprecated and Defunct}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Bug Fixes}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{New Features}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Installation}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Documentation}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Internals}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%% }
