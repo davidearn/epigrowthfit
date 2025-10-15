@@ -204,8 +204,7 @@ points can be mapped unambiguously to days of week.
 Furthermore, in this case, \code{time} (after coercion to numeric) is
 required to be integer-valued with one day spacing in all time series.
 This means that
-\preformatted{isTRUE(all.equal(time, round(time))) &&
-    all(range(diff(round(time))) == 1)}
+\preformatted{isTRUE(all.equal(time, round(time))) && all(diff(round(time)) == 1)}
 must be \code{TRUE} in each level of \code{ts1}.
 These conditions ensure that intervals between successive time points
 represent exactly one day of week.
@@ -213,6 +212,10 @@ represent exactly one day of week.
 \seealso{
 The many methods for class \code{egf},
 listed by \code{\link{methods}(class = "egf")}.
+
+Function \code{\link{egf1}}, an interface to \code{egf} providing
+simpler usage for the case in which there is exactly one time series and
+exactly one fitting window.
 }
 \examples{
 ## Simulate 'N' incidence time series exhibiting exponential growth

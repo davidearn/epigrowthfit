@@ -19,7 +19,9 @@
   }
   \subsection{New Features}{
     \itemize{
-      \item .
+      \item Function \code{egf1} wrapping function \code{egf} and
+      handling its simplest usage, when there is exactly one time series
+      and exactly one fitting window.
     }
   }
   \subsection{Installation}{
@@ -114,22 +116,12 @@
 }
 
 %% \section{Changes in version x.y.z (yyyy-mm-dd)}{
-%%   \subsection{Significant User-Visible Changes}{
+%%   \subsection{Description}{
 %%     \itemize{
 %%       \item .
 %%     }
 %%   }
-%%   \subsection{Deprecated and Defunct}{
-%%     \itemize{
-%%       \item .
-%%     }
-%%   }
-%%   \subsection{Bug Fixes}{
-%%     \itemize{
-%%       \item .
-%%     }
-%%   }
-%%   \subsection{New Features}{
+%%   \subsection{Compatibility}{
 %%     \itemize{
 %%       \item .
 %%     }
@@ -140,6 +132,41 @@
 %%     }
 %%   }
 %%   \subsection{Documentation}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Significant User-Visible Changes}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Deprecated and Defunct}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Classes}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Generic Functions}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Methods}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{New Features}{
+%%     \itemize{
+%%       \item .
+%%     }
+%%   }
+%%   \subsection{Bug Fixes}{
 %%     \itemize{
 %%       \item .
 %%     }

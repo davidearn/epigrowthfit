@@ -151,3 +151,17 @@ function(model,
 	class(ans) <- "egf"
 	ans
 }
+
+egf1 <-
+function(model, time, x, start = NULL, end = NULL,
+         init = NULL, map = NULL, ...)
+    egf(model,
+        formula_ts = cbind(time, x) ~ 1,
+        formula_windows = cbind(start, end) ~ 1,
+        data_ts = list(time = time, x = x),
+        data_windows =
+            list(start = if (is.null(start)) -Inf else start,
+                 end   = if (is.null(end  ))  Inf else end  ),
+        init = if (is.null(init)) list() else list(beta = init),
+        map  = if (is.null(map )) list() else list(beta = map ),
+        ...)
