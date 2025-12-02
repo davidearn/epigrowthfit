@@ -1,7 +1,7 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
 \newcommand{\GH}{\href{https://github.com/davidearn/epigrowthfit/issues/#1}{GH##1}}
-\section{Changes in version 0.15.5 (2025-10-16)}{
+\section{Changes in version 0.15.5 (2025-12-02)}{
   \subsection{Description}{
     \itemize{
       \item .

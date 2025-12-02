@@ -1,5 +1,6 @@
 \name{egf1}
 \alias{egf1}
+\alias{egf1scan}
 \title{Fit Nonlinear Models of Epidemic Growth}
 \description{
 An interface to \code{\link{egf}} providing simpler usage for the case
@@ -9,6 +10,9 @@ window.
 \usage{
 egf1(model, time, x, start = NULL, end = NULL,
      init = NULL, map = NULL, \dots)
+
+egf1scan(model, time, x, start.min, end.max,
+         band.min, band.max = band.min, \dots)
 }
 \arguments{
 \item{model}{

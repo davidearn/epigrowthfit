@@ -158,10 +158,70 @@ function(model, time, x, start = NULL, end = NULL,
     egf(model,
         formula_ts = cbind(time, x) ~ 1,
         formula_windows = cbind(start, end) ~ 1,
-        data_ts = list(time = time, x = x),
+        data_ts = data.frame(time = time, x = x),
         data_windows =
-            list(start = if (is.null(start)) -Inf else start,
-                 end   = if (is.null(end  ))  Inf else end  ),
+            data.frame(start = if (is.null(start)) -Inf else start,
+                       end   = if (is.null(end  ))  Inf else end  ),
         init = if (is.null(init)) list() else list(beta = init),
         map  = if (is.null(map )) list() else list(beta = map ),
         ...)
+
+egf1scan <-
+function(model, time, x, start.min, end.max,
+         band.min, band.max = band.min, ...) {
+    L <- list(time, start.min, end.max, band.min, band.max)
+    stopifnot(all(vapply(L[1L:3L], is.numeric, FALSE)) ||
+              all(vapply(L[1L:3L], inherits, FALSE, c("Date", "POSIXt"))),
+              all(vapply(L[4L:5L], is.numeric, FALSE)) ||
+              all(vapply(L[4L:5L], inherits, FALSE, "difftime")),
+              all(lengths(L[2L:5L]) == 1L),
+              !is.unsorted(time, strictly = TRUE),
+              length(time) >= 2L, length(x) == length(time),
+              start.min < end.max, band.min > 0, band.max >= band.min)
+    subtime <- time[time >= start.min & time <= end.max]
+    if ((d  <-                      length(subtime)) == 0L ||
+        (d. <- sum(subtime + band.min < subtime[d])) == 0L)
+        stop("number of candidate models is zero")
+    Imin <- 0L
+    Jmin <- 0L
+    Fmin <- Inf
+    Omin <- NULL
+    Ecount <- 0L
+    for (i in 1L:d.) {
+        start <- subtime[i]
+        w <- which.max(subtime >= start + band.min)
+        for (j in w:d) {
+            end <- subtime[j]
+            if (end > start + band.max)
+                break
+            object <- tryCatch(egf1(model, time, x, start, end, ...),
+                               error = function (e) {
+                                   cat(sprintf("%s\n", conditionMessage(e)))
+                                   NULL
+                               })
+            if (is.null(object)) {
+                Ecount <- Ecount + 1L
+                next
+            }
+            ll <- logLik(object)
+            Fval <- -as.double(ll)/attr(ll, "nobs")
+            if (Fval < Fmin) {
+                Imin <- i
+                Jmin <- j
+                Fmin <- Fval
+                Omin <- object
+            }
+        }
+    }
+    if (is.null(Omin))
+        stop(gettextf("failed to fit all %d candidate models",
+                      Ecount),
+             domain = NA)
+    if (Ecount > 0L)
+        message(gettextf("failed to fit %d candidate models",
+                         Ecount),
+                domain = NA)
+    ans <- list(object = Omin, criterion = Fmin,
+                start = subtime[Imin], end = subtime[Jmin])
+    ans
+}
