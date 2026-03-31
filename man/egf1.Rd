@@ -44,6 +44,10 @@ egf1scan(model, time, x, start.min, end.max,
 \item{map}{
   an index vector for \code{init}.  The indexed parameters are fixed at
   their initial values.}
+\item{start.min, end.max, band.min, band.max}{
+  numeric vectors of length 1.  A fitting window \code{(start, end]} is
+  considered only if \code{start >= start.min}, \code{end <= end.max},
+  \code{end - start >= band.min}, and \code{end - start <= band.max}.}
 \item{\dots}{
   additional arguments passed to \code{\link{egf}}.}
 }
