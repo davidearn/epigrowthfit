@@ -229,12 +229,11 @@ function(x,
 
 	## Augment 'control' -------------------------------------------------------
 
-	ogp <- par(no.readonly = TRUE)
+	ogp <- par(cex = 1)
 	on.exit(par(ogp), add = TRUE, after = FALSE)
 
 	## Gather parameter values necessary to determine text dimensions ...
 	## those not specified in 'control' are obtained from 'gp'
-	par(cex = 1)
 	gp <- par(no.readonly = TRUE)
 	if (is.list(control$axis$y)) {
 		nms <- setdiff(c("mgp", "cex.axis", "font.axis", "family"),
@@ -327,9 +326,6 @@ function(frame_ts, frame_windows, cache,
 	elu <- c("value", "lower", "upper")
 
 	## Graphical parameters
-	ogp <- par(no.readonly = TRUE)
-	on.exit(par(ogp))
-
 	gp <- par(no.readonly = TRUE)
 
 	for (i in seq_len(n)) { # loop over plots
