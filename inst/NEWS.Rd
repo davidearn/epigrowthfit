@@ -41,7 +41,16 @@
   }
   \subsection{Bug Fixes}{
     \itemize{
-      \item .
+      \item Naive estimates of \code{tinfl} and \code{c0}, used as
+      initial values, measure time from the start of the fitting window,
+      as the model does.  They measured time from the origin of the time
+      variable, so that, in windows starting far from time zero (as with
+      \code{Date} times) or in windows of negative times, fits with
+      \code{excess = TRUE} could stop at their initial values without
+      warning, fits of exponential, subexponential, and Gompertz models
+      could fail, and other fits could converge to worse optima.  Fits
+      to numeric times can change wherever a window does not start at
+      time zero.
     }
   }
   \subsection{Internals}{

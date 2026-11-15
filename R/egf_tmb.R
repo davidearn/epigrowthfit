@@ -240,7 +240,8 @@ function(model, frame, control, env) {
 ##'
 ##' @details
 ##' Naive estimates of top level nonlinear model parameters are obtained
-##' for each fitting window as follows:
+##' for each fitting window as follows, where \code{time} is measured
+##' from the start of the fitting window, as it is in the model:
 ##' \describe{
 ##' \item{\code{r}}{
 ##'   The slope of a linear model fit to \code{log1p(cumsum(x)))}.
@@ -293,8 +294,13 @@ function(model, frame, env) {
 		return(res)
 
 	## Record naive estimates of top level nonlinear model parameters
-	## (one per time series segment)
+	## (one per time series segment), measuring time from the start of
+	## the segment as in egf_tmb_make_data.  Otherwise 'tinfl' and 'c0'
+	## are far from the data whenever time is far from zero, as it is
+	## for Date times.
 	tx <- split(frame$ts[c("time", "x")], frame$ts$window)
+	tx <- Map(function(d, t0) { d$time <- d$time - t0; d },
+	          tx, frame$ts$time[attr(frame$ts, "first")])
 	compute_naive <-
 	function(d) {
 		n <- max(2, trunc(0.5 * nrow(d)))
