@@ -2,26 +2,6 @@
 \title{News for \R{} Package \pkg{epigrowthfit}}
 \newcommand{\GH}{\href{https://github.com/davidearn/epigrowthfit/issues/#1}{GH##1}}
 \section{Changes in version 0.16.0 (2026-11-20)}{
-  \subsection{Description}{
-    \itemize{
-      \item .
-    }
-  }
-  \subsection{Compatibility}{
-    \itemize{
-      \item .
-    }
-  }
-  \subsection{Installation}{
-    \itemize{
-      \item .
-    }
-  }
-  \subsection{Documentation}{
-    \itemize{
-      \item .
-    }
-  }
   \subsection{Significant User-Visible Changes}{
     \itemize{
       \item The bug fix (see below) changes the starting point of
@@ -32,11 +12,6 @@
       use \code{egf(\dots, init = L)}, where \code{L} is the value of
       \code{as.list(coef(egf(\dots, fit = FALSE)))} under the old
       version of \pkg{epigrowthfit}.
-    }
-  }
-  \subsection{Deprecated and Defunct}{
-    \itemize{
-      \item .
     }
   }
   \subsection{New Features}{
@@ -54,11 +29,6 @@
       numeric), causing problems with convergence when those initial
       values were not set in the call.  Thanks to Chai Molina for the
       report and diagnosis (\GH{10}).
-    }
-  }
-  \subsection{Internals}{
-    \itemize{
-      \item .
     }
   }
 }
