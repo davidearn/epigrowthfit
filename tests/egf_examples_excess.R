@@ -19,3 +19,15 @@ zz <- simulate(egf_model(curve = "logistic", family = "nbinom",
 mm <- egf(zz, formula_priors = list(log(b) ~ Normal(mu = 2.5, sigma = 1)))
 
 stopifnot(all.equal(coef(zz), coef(mm), tolerance = 5e-02))
+
+
+## invariance w.r.t. time offset #######################################
+
+## time offset changed starting point of optimization when that was not
+## set in the call (GH#10)
+off <- 20777 # == julian(as.Date("2026-11-20"))
+dts <- transform(zz$data_ts, time = time + off)
+dwi <- transform(zz$data_windows, start = start + off, end = end + off)
+mmOff <- update(mm, data_ts = dts, data_windows = dwi)
+stopifnot(all.equal(coef(mmOff), coef(mm), tolerance = 1e-14))
+##        identical, typically

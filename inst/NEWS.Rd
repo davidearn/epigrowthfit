@@ -24,7 +24,14 @@
   }
   \subsection{Significant User-Visible Changes}{
     \itemize{
-      \item .
+      \item The bug fix (see below) changes the starting point of
+      optimization in calls to \code{egf} not setting
+      \code{init = list(beta = \var{numeric})}, when the left endpoint
+      of any fitting window is not zero (after coercion to numeric).
+      In order to reproduce old results obtained by such a call,
+      use \code{egf(\dots, init = L)}, where \code{L} is the value of
+      \code{as.list(coef(egf(\dots, fit = FALSE)))} under the old
+      version of \pkg{epigrowthfit}.
     }
   }
   \subsection{Deprecated and Defunct}{
@@ -41,7 +48,12 @@
   }
   \subsection{Bug Fixes}{
     \itemize{
-      \item .
+      \item \code{egf} computed default initial values for certain
+      \code{"(Intercept)"} coefficients incorrectly when the left
+      endpoint of any fitting window was not zero (after coercion to
+      numeric), causing problems with convergence when those initial
+      values were not set in the call.  Thanks to Chai Molina for the
+      report and diagnosis (\GH{10}).
     }
   }
   \subsection{Internals}{

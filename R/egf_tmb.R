@@ -250,7 +250,7 @@ function(model, frame, control, env) {
 ##'   a linear model fit to \code{log1p(cumsum(x))}.
 ##' }
 ##' \item{\code{tinfl}}{
-##'   \code{max(time)}. This assumes that the fitting window ends
+##'   \code{diff(range(time))}. This assumes that the fitting window ends
 ##'   near the time of a peak in incidence.
 ##' }
 ##' \item{\code{K}}{
@@ -297,6 +297,7 @@ function(model, frame, env) {
 	tx <- split(frame$ts[c("time", "x")], frame$ts$window)
 	compute_naive <-
 	function(d) {
+		d$time <- d$time - d$time[1L] # for intercept at d$time[1L] (GH#10)
 		n <- max(2, trunc(0.5 * nrow(d)))
 		ab <- try(coef(lm(log1p(cumsum(x)) ~ time,
 		                  data = d,

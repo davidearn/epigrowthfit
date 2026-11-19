@@ -24,7 +24,7 @@ p1 <- as.list(coef(zz))
 p2 <- as.list(coef(mm))
 
 stopifnot(exprs = {
-	max(abs(mm[["gradient"]])) < 5e-05
+	max(abs(mm[["gradient"]])) < 5e-04
 	all.equal(p1[["beta"]], p2[["beta"]], tolerance = 5e-02)
 	all.equal(theta2cov(p1[["theta"]]), theta2cov(p2[["theta"]]), tolerance = 5e-02)
 })
@@ -55,7 +55,7 @@ p1 <- as.list(coef(zz))
 p2 <- as.list(coef(mm))
 
 stopifnot(exprs = {
-	max(abs(mm[["gradient"]])) < 5e-04
+	max(abs(mm[["gradient"]])) < 2e-03
 	all.equal(p1[["beta"]], p2[["beta"]], tolerance = 5e-02)
 	all.equal(theta2cov(p1[["theta"]]), theta2cov(p2[["theta"]]), tolerance = 2e-02)
 })
@@ -86,7 +86,7 @@ p1 <- as.list(coef(zz))
 p2 <- as.list(coef(mm))
 
 stopifnot(exprs = {
-	max(abs(mm[["gradient"]])) < 5e-04
+	max(abs(mm[["gradient"]])) < 1e-03
 	all.equal(p1[["beta"]], p2[["beta"]], tolerance = 5e-02)
 	all.equal(theta2cov(p1[["theta"]]), theta2cov(p2[["theta"]]), tolerance = 2e-02)
 })
@@ -115,7 +115,7 @@ p1 <- as.list(coef(zz))
 p2 <- as.list(coef(mm))
 
 stopifnot(exprs = {
-	max(abs(mm[["gradient"]])) < 1e-02
+	max(abs(mm[["gradient"]])) < 2e-03
 	all.equal(p1[["beta"]], p2[["beta"]], tolerance = 1e-02)
 	all.equal(theta2cov(p1[["theta"]]), theta2cov(p2[["theta"]]), tolerance = 2e-02)
 })
