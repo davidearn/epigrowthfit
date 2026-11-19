@@ -1,7 +1,7 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
 \newcommand{\GH}{\href{https://github.com/davidearn/epigrowthfit/issues/#1}{GH##1}}
-\section{Changes in version 0.15.5 (2025-12-02)}{
+\section{Changes in version 0.16.0 (2026-11-20)}{
   \subsection{Description}{
     \itemize{
       \item .
@@ -34,9 +34,9 @@
   }
   \subsection{New Features}{
     \itemize{
-      \item Function \code{egf1} wrapping function \code{egf} and
-      handling its simplest usage, when there is exactly one time series
-      and exactly one fitting window.
+      \item Functions \code{egf1} and \code{egf1scan} wrapping function
+      \code{egf} and handling its simplest usage, when there is exactly
+      one time series and exactly one fitting window.
     }
   }
   \subsection{Bug Fixes}{
