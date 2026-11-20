@@ -295,9 +295,12 @@ function(model, frame, env) {
 	## Record naive estimates of top level nonlinear model parameters
 	## (one per time series segment)
 	tx <- split(frame$ts[c("time", "x")], frame$ts$window)
+	tx <- Map(function(d, off) { d$time <- d$time - off; d },
+	          ## mirroring 'egf_tmb_make_data' (GH#10)
+	          ## NB: off < d$time[1L]; see body(egf_make_frame)
+	          tx, frame$ts$time[attr(frame$ts, "first")])
 	compute_naive <-
 	function(d) {
-		d$time <- d$time - d$time[1L] # for intercept at d$time[1L] (GH#10)
 		n <- max(2, trunc(0.5 * nrow(d)))
 		ab <- try(coef(lm(log1p(cumsum(x)) ~ time,
 		                  data = d,
