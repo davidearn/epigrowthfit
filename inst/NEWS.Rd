@@ -1,6 +1,53 @@
 \name{NEWS}
 \title{News for \R{} Package \pkg{epigrowthfit}}
 \newcommand{\GH}{\href{https://github.com/davidearn/epigrowthfit/issues/#1}{GH##1}}
+\section{Changes in version 0.16.1 (2026-11-20)}{
+  \subsection{Description}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Compatibility}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Installation}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Documentation}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Significant User-Visible Changes}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Deprecated and Defunct}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{New Features}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Bug Fixes}{
+    \itemize{
+      \item .
+    }
+  }
+  \subsection{Internals}{
+    \itemize{
+      \item .
+    }
+  }
+}
 \section{Changes in version 0.16.0 (2026-11-20)}{
   \subsection{Significant User-Visible Changes}{
     \itemize{
